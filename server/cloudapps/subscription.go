@@ -18,5 +18,8 @@ type Subscription struct {
 
 	// Scope
 	ChannelID string
-	Expand    *Expand
+	TeamID    string
+	Regexp    string
+
+	Expand *Expand
 }
