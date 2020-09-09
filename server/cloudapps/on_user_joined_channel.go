@@ -10,6 +10,7 @@ import (
 
 type UserJoinedChannelNotification struct {
 	SubscriptionID SubscriptionID
+	Subject        SubscriptionSubject
 	UserID         string
 	ChannelID      string
 	Expanded       *Expanded

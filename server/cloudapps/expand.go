@@ -30,6 +30,11 @@ type Expand struct {
 	Channel    ExpandLevel
 	Config     bool
 	User       ExpandLevel
+	Post       ExpandLevel
+	ParentPost ExpandLevel
+	RootPost   ExpandLevel
+	Team       ExpandLevel
+	Mentioned  ExpandLevel
 }
 
 type Expanded struct {
@@ -37,6 +42,11 @@ type Expanded struct {
 	Channel    *model.Channel
 	Config     *MattermostConfig
 	User       *model.User
+	Post       *model.Post
+	ParentPost *model.Post
+	RootPost   *model.Post
+	Team       *model.Team
+	Mentioned  []*model.User
 }
 
 type MattermostConfig struct {
