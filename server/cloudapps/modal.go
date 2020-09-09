@@ -16,7 +16,7 @@ type modalElementProps struct {
 
 type modalProps struct {
 	elementProps
-	autocompleteElementProps
+	modalElementProps
 }
 
 type ModalTextElement struct {

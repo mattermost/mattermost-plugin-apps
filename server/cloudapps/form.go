@@ -1,8 +1,13 @@
 package cloudapps
 
 type Form struct {
-	RefreshURL string
-	Elements   []interface{} // of *XXXElement
+	// RefreshOnChangeTo indicates that changes to the listed fields must reload
+	// the form. Values of the fields with values that are not included in the
+	// refreshed form are lost. Values that no longer apply are reset.
+	RefreshOnChangeTo []string `json:"refresh_on_change_to,omitempty"`
+	RefreshURL        string
+
+	Elements []interface{} // of *XXXElement
 }
 
 type ElementType string
@@ -28,8 +33,7 @@ type elementProps struct {
 	// Label, and in Autocomplete as Help
 	Description string `json:"description,omitempty"`
 
-	IsRequired      bool `json:"is_required,omitempty"`
-	RefreshOnChange bool `json:"refresh_on_change,omitempty"`
+	IsRequired bool `json:"is_required,omitempty"`
 }
 
 type staticSelectElementProps struct {
@@ -37,10 +41,10 @@ type staticSelectElementProps struct {
 }
 
 type dynamicSelectElementProps struct {
-	URL string `json:"url,omitempty"`
-
-	// ReloadOnChangeTo indicates that changes to the 
-	ReloadOnChangeTo []string `json:"load_on_change,omitempty"`
+	// RefreshOnChangeTo indicates that changes to the listed fields must reload
+	// the list (and reset the current value if the old one is not available).
+	RefreshOnChangeTo []string `json:"refresh_on_change_to,omitempty"`
+	RefreshURL        string   `json:"url,omitempty"`
 }
 
 type textElementProps struct {
@@ -55,13 +59,13 @@ type SelectOption struct {
 	Value string `json:"value"`
 }
 
-type unmarshalledElement struct {
-	elementProps
+// type unmarshalledElement struct {
+// 	elementProps
 
-	autocompleteElementProps
-	modalElementProps
+// 	autocompleteElementProps
+// 	modalElementProps
 
-	staticSelectElementProps
-	dynamicSelectElementProps
-	textElementProps
-}
+// 	staticSelectElementProps
+// 	dynamicSelectElementProps
+// 	textElementProps
+// }
