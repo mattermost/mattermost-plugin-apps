@@ -114,7 +114,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	rootID = dialogRequest.CallbackId
 
 	if dialogRequest.Cancelled {
-		message = "Installation was cancelled by the user"
+		message = "Installation was canceled by the user"
 		return
 	}
 
