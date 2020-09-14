@@ -1,4 +1,4 @@
-package cloudapps
+package apps
 
 // TODO: Placeholder structs, to be defined or removed
 

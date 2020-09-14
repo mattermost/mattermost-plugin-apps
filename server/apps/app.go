@@ -1,4 +1,4 @@
-package cloudapps
+package apps
 
 type AppID string
 

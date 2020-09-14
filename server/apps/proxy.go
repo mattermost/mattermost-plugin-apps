@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type Proxy interface {
