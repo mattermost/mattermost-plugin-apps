@@ -6,10 +6,11 @@ package command
 import (
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/md"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (c *command) handleInfo(parameters []string) (md.MD, error) {
-	conf := c.Configurator.Get()
+func (s *service) executeInfo(params *params) (*model.CommandResponse, error) {
+	conf := s.apps.Config.GetConfig()
 	resp := md.Markdownf("Mattermost Cloud Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
 		conf.Version,
@@ -18,5 +19,5 @@ func (c *command) handleInfo(parameters []string) (md.MD, error) {
 		conf.BuildHash,
 		conf.BuildDate)
 
-	return resp, nil
+	return normalOut(params, resp, nil)
 }

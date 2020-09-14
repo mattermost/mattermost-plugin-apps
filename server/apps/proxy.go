@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"encoding/json"
@@ -21,17 +21,17 @@ type Proxy interface {
 }
 
 type proxy struct {
-	configurator.Configurator
-	mm       *pluginapi.Client
-	registry Registry
+	configurator configurator.Service
+	mm           *pluginapi.Client
+	registry     Registry
 	Subscriptions
 }
 
 var _ Proxy = (*proxy)(nil)
 
-func NewProxy(mm *pluginapi.Client, configurator configurator.Configurator, subs Subscriptions) Proxy {
+func NewProxy(mm *pluginapi.Client, configurator configurator.Service, subs Subscriptions) Proxy {
 	return &proxy{
-		Configurator:  configurator,
+		configurator:  configurator,
 		Subscriptions: subs,
 		mm:            mm,
 	}
@@ -60,7 +60,7 @@ func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
 		}
 	}()
 
-	u := path.Join(app.RootURL, "notify", string(SubjectUserJoinedChannel))
+	u := path.Join(app.Manifest.RootURL, "notify", string(SubjectUserJoinedChannel))
 	// <><> TODO ticket: progressive backoff on errors
 	resp, err := client.Post(u, "application/json", piper)
 	if err != nil {

@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
@@ -14,7 +14,7 @@ type Registry interface {
 }
 
 type registry struct {
-	configurator.Configurator
+	configurator configurator.Service
 
 	// <><> Needs to come from config to be synchronized, or read from KV every request, sync.Map is unnecessary
 	apps map[AppID]*App
@@ -22,8 +22,9 @@ type registry struct {
 
 var _ Registry = (*registry)(nil)
 
-func NewRegistry(configurator configurator.Configurator) Registry {
+func NewRegistry(configurator configurator.Service) Registry {
 	return &registry{
-		Configurator: configurator,
+		configurator: configurator,
+		apps:         map[AppID]*App{},
 	}
 }

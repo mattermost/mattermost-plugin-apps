@@ -6,6 +6,7 @@ package plugin
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/pkg/errors"
@@ -13,10 +14,13 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
+	"github.com/mattermost/mattermost-plugin-cloudapps/server/apps"
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/command"
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
+	myhttp "github.com/mattermost/mattermost-plugin-cloudapps/server/http"
+	"github.com/mattermost/mattermost-plugin-cloudapps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-cloudapps/server/http/helloapp"
 )
 
 type Configurator interface {
@@ -29,13 +33,11 @@ type Plugin struct {
 	plugin.MattermostPlugin
 	*configurator.BuildConfig
 
-	mm           *pluginapi.Client
-	configurator configurator.Configurator
-	command      command.Command
-	registry     cloudapps.Registry
-	proxy        cloudapps.Proxy
-
-	botUserID string
+	mattermost   *pluginapi.Client
+	configurator configurator.Service
+	apps         *apps.Service
+	http         myhttp.Service
+	command      command.Service
 }
 
 func NewPlugin(buildConfig *configurator.BuildConfig) *Plugin {
@@ -45,23 +47,30 @@ func NewPlugin(buildConfig *configurator.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.mm = pluginapi.NewClient(p.API)
+	p.mattermost = pluginapi.NewClient(p.API)
 
-	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
+	botUserID, err := p.mattermost.Bot.EnsureBot(&model.Bot{
 		Username:    constants.BotUserName,
 		DisplayName: constants.BotDisplayName,
 		Description: constants.BotDescription,
-	}, plugin.ProfileImagePath("assets/profile.png"))
+	}, pluginapi.ProfileImagePath("assets/profile.png"))
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
-	p.botUserID = botUserID
 
-	p.configurator = configurator.NewConfigurator(p.BuildConfig, p.mm)
+	p.configurator = configurator.NewConfigurator(p.mattermost, p.BuildConfig, botUserID)
+	p.apps = apps.NewService(p.mattermost, p.configurator)
 
-	p.registry = cloudapps.NewRegistry(p.configurator)
-	p.command = command.NewCommand(p.configurator, p.API)
-	return p.command.Init(p.BuildConfig)
+	p.http = myhttp.NewService(mux.NewRouter(), p.apps,
+		dialog.Init,
+		helloapp.Init,
+	)
+
+	p.command, err = command.MakeService(p.apps)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize own command handling")
+	}
+	return nil
 }
 
 func (p *Plugin) OnConfigurationChange() error {
@@ -73,18 +82,14 @@ func (p *Plugin) OnConfigurationChange() error {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	out, err := p.command.Handle(c, args)
-	if err != nil {
-		return nil, model.NewAppError("Cloud Apps", "", nil, err.Error(), http.StatusInternalServerError)
-	}
-	p.mm.Post.SendEphemeralPost(args.UserId, &model.Post{
-		ChannelId: args.ChannelId,
-		UserId:    p.botUserID,
-		Message:   out.String(),
-	})
-	return &model.CommandResponse{}, nil
+	resp, _ := p.command.ExecuteCommand(c, args)
+	return resp, nil
+}
+
+func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, req *http.Request) {
+	p.http.ServeHTTP(c, w, req)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.proxy.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+	p.apps.Proxy.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
 }

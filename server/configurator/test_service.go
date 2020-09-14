@@ -6,15 +6,15 @@ type testConfigurator struct {
 	config *Config
 }
 
-var _ Configurator = (*testConfigurator)(nil)
+var _ Service = (*testConfigurator)(nil)
 
-func NewTestConfigurator(config *Config) Configurator {
+func NewTestConfigurator(config *Config) Service {
 	return &testConfigurator{
 		config: config,
 	}
 }
 
-func (c *testConfigurator) Get() Config {
+func (c *testConfigurator) GetConfig() Config {
 	return *c.config
 }
 

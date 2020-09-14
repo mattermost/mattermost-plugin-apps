@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -28,7 +28,7 @@ func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, actingUser.Id, cm.UserId, cm.ChannelId)

@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
@@ -12,14 +12,14 @@ type Subscriptions interface {
 }
 
 type subscriptions struct {
-	configurator.Configurator
+	configurator configurator.Service
 }
 
 var _ Subscriptions = (*subscriptions)(nil)
 
-func NewSubscriptions(configurator configurator.Configurator) Subscriptions {
+func NewSubscriptions(configurator configurator.Service) Subscriptions {
 	return &subscriptions{
-		Configurator: configurator,
+		configurator: configurator,
 	}
 }
 

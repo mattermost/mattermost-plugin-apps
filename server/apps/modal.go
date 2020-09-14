@@ -1,4 +1,4 @@
-package cloudapps
+package apps
 
 type Modal struct {
 	Name    string

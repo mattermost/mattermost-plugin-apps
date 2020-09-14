@@ -1,4 +1,4 @@
-package cloudapps
+package apps
 
 type Form struct {
 	// RefreshOnChangeTo indicates that changes to the listed fields must reload

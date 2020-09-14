@@ -12,4 +12,8 @@ const (
 	BotUserName    = "cloudappsbot"
 	BotDisplayName = "Cloud Apps"
 	BotDescription = "Cloud Apps Registry and API proxy."
+
+	APIPath               = "/api/v1"
+	InteractiveDialogPath = "/dialog"
+	HelloAppPath          = "/hello"
 )
