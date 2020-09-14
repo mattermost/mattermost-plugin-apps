@@ -12,11 +12,11 @@ var manifest *model.Manifest
 
 const manifestStr = `
 {
-  "id": "com.mattermost.plugin-starter-template",
-  "name": "Plugin Starter Template",
-  "description": "This plugin serves as a starting point for writing a Mattermost plugin.",
+  "id": "com.mattermost.cloudapps",
+  "name": "Cloud Apps",
+  "description": "Cloud Apps Registry and API proxy.",
   "version": "0.1.0",
-  "min_server_version": "5.12.0",
+  "min_server_version": "5.26.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -24,14 +24,6 @@ const manifestStr = `
       "windows-amd64": "server/dist/plugin-windows-amd64.exe"
     },
     "executable": ""
-  },
-  "webapp": {
-    "bundle_path": "webapp/dist/main.js"
-  },
-  "settings_schema": {
-    "header": "",
-    "footer": "",
-    "settings": []
   }
 }
 `

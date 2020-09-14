@@ -1,3 +1,4 @@
+OS := $(shell uname 2> /dev/null)
 GO ?= $(shell command -v go 2> /dev/null)
 NPM ?= $(shell command -v npm 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)
@@ -9,7 +10,22 @@ GO_BUILD_FLAGS ?=
 MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
 
+
 export GO111MODULE=on
+
+MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
+MINIMUM_SUPPORTED_GO_MINOR_VERSION = 12
+GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
+GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
+GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to at least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
+BUILD_DATE = $(shell date -u)
+BUILD_HASH = $(shell git rev-parse HEAD)
+BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
+LDFLAGS += -X "main.BuildDate=$(BUILD_DATE)"
+LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
+LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
+GOBUILD = $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)'
+GOTEST = $(GO) test $(GOFLAGS) $(GO_TEST_FLAGS) -ldflags '$(LDFLAGS)'
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
