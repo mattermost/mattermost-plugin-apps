@@ -21,27 +21,33 @@ func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL st
 	}
 	intro += "\n---\n"
 
-	var elements []model.DialogElement
+	elements := []model.DialogElement{
+		{
+			DisplayName: "App secret:",
+			Name:        "secret",
+			Type:        "text",
+			SubType:     "password",
+			HelpText:    "TODO: How to obtain the App Secret",
+		},
+	}
 	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
-		elements = []model.DialogElement{
-			{
-				DisplayName: "Require user consent to use REST API first time they use the app:",
-				Name:        "consent",
-				Type:        "radio",
-				Default:     "require",
-				HelpText:    "please indicate if user consent is required to allow the app to act on their behalf",
-				Options: []*model.PostActionOptions{
-					{
-						Text:  "Require user consent",
-						Value: "require",
-					},
-					{
-						Text:  "Do not require user consent",
-						Value: "notrequire",
-					},
+		elements = append(elements, model.DialogElement{
+			DisplayName: "Require user consent to use REST API first time they use the app:",
+			Name:        "consent",
+			Type:        "radio",
+			Default:     "require",
+			HelpText:    "please indicate if user consent is required to allow the app to act on their behalf",
+			Options: []*model.PostActionOptions{
+				{
+					Text:  "Require user consent",
+					Value: "require",
+				},
+				{
+					Text:  "Do not require user consent",
+					Value: "notrequire",
 				},
 			},
-		}
+		})
 	}
 
 	return model.OpenDialogRequest{
@@ -105,6 +111,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rootID = dialogRequest.CallbackId
+
+	if dialogRequest.Cancelled {
+		message = "Installation was cancelled by the user"
+		return
+	}
+
 	v := dialogRequest.Submission["consent"]
 	consentValue, _ := v.(string)
 	noUserConsentForOAuth2 := false
@@ -112,7 +125,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		noUserConsentForOAuth2 = true
 	}
 
-	rootID = dialogRequest.CallbackId
+	v = dialogRequest.Submission["secret"]
+	secret, _ := v.(string)
 
 	var manifest apps.Manifest
 	err = json.Unmarshal([]byte(dialogRequest.State), &manifest)
@@ -125,11 +139,12 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		ActingMattermostUserID: actingUserID,
 		NoUserConsentForOAuth2: noUserConsentForOAuth2,
 		Manifest:               &manifest,
+		Secret:                 secret,
 	})
 	if err != nil {
 		status = http.StatusInternalServerError
 		return
 	}
 
-	message = "Installed " + manifest.DisplayName
+	message = "Installed App: " + manifest.DisplayName
 }

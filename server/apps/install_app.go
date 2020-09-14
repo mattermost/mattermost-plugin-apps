@@ -13,6 +13,7 @@ type InInstallApp struct {
 	ActingMattermostUserID string
 	NoUserConsentForOAuth2 bool
 	Manifest               *Manifest
+	Secret                 string
 }
 
 type OutInstallApp struct {

@@ -64,6 +64,9 @@ type Manifest struct {
 type App struct {
 	Manifest *Manifest
 
+	// Secret is used to issue JWT
+	Secret string
+
 	// Grants should be scopable in the future, per team, channel, post with regexp
 	GrantedPermissions     Permissions
 	NoUserConsentForOAuth2 bool
