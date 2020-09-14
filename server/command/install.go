@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/apps"
+	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
 	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
 )
 

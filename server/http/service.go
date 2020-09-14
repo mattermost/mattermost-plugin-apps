@@ -7,7 +7,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/apps"
+	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
 )
 
 type Service interface {
