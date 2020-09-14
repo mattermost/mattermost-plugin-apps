@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
-	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {

@@ -1,12 +1,12 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package cloudapps
+package apps
 
 import (
 	"errors"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type InInstallApp struct {
@@ -32,6 +32,7 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 		Manifest:               in.Manifest,
 		GrantedPermissions:     in.Manifest.RequestedPermissions,
 		NoUserConsentForOAuth2: in.NoUserConsentForOAuth2,
+		Secret:                 in.Secret,
 	}
 	r.apps[in.Manifest.AppID] = app
 

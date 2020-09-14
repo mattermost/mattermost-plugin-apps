@@ -4,8 +4,8 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 

@@ -1,10 +1,10 @@
-package cloudapps
+package apps
 
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type AppID string

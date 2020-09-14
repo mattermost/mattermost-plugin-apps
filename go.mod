@@ -1,4 +1,4 @@
-module github.com/mattermost/mattermost-plugin-cloudapps
+module github.com/mattermost/mattermost-plugin-apps
 
 go 1.15
 

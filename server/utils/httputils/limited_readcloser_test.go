@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/stretchr/testify/require"
 )
 

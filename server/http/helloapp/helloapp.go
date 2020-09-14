@@ -3,14 +3,14 @@ package helloapp
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 
 	"github.com/gorilla/mux"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 )
 
 type helloapp struct {

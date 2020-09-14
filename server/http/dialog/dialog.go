@@ -3,8 +3,8 @@ package dialog
 import (
 	"github.com/gorilla/mux"
 
-	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 )
 
 const (

@@ -14,13 +14,13 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	apps "github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/command"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
-	myhttp "github.com/mattermost/mattermost-plugin-cloudapps/server/http"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/http/dialog"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	myhttp "github.com/mattermost/mattermost-plugin-apps/server/http"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 )
 
 type Configurator interface {
