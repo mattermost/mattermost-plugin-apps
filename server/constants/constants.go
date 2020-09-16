@@ -4,12 +4,12 @@
 package constants
 
 const (
-	Repository     = "mattermost-plugin-cloudapps"
+	Repository     = "mattermost-plugin-apps"
 	CommandTrigger = "apps"
 )
 
 const (
-	BotUserName    = "cloudappsbot"
-	BotDisplayName = "Cloud Apps"
-	BotDescription = "Cloud Apps Registry and API proxy."
+	BotUserName    = "appsbot"
+	BotDisplayName = "Mattermost Apps"
+	BotDescription = "Mattermost Apps Registry and API proxy."
 )

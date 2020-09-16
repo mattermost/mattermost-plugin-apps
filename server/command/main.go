@@ -4,7 +4,7 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (c *command) handleMain(parameters []string) (md.MD, error) {
