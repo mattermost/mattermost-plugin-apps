@@ -60,7 +60,7 @@ func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
 		}
 	}()
 
-	u := path.Join(app.RootURL, "notify", string(SubjectUserJoinedChannel))
+	u := path.Join(app.RootURL, "notify", string(s.Subject))
 	// <><> TODO ticket: progressive backoff on errors
 	resp, err := client.Post(u, "application/json", piper)
 	if err != nil {
