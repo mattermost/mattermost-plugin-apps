@@ -58,6 +58,7 @@ type Expander struct {
 	configurator configurator.Configurator
 
 	ActingUser *model.User
+	Team       *model.Team
 	Channel    *model.Channel
 	Config     *model.Config
 	User       *model.User
@@ -75,7 +76,7 @@ func (e *Expander) Expand(expand *Expand, actingUserID, userID, channelID string
 		e.collectConfig,
 		e.collectUser(userID, &e.User),
 		e.collectUser(actingUserID, &e.ActingUser),
-		e.collectChannel(channelID),
+		e.collectChannelAndTeam(channelID),
 	} {
 		err = f(expand)
 		if err != nil {
@@ -95,7 +96,7 @@ func (e *Expander) collectConfig(expand *Expand) error {
 	return nil
 }
 
-func (e *Expander) collectChannel(channelID string) func(*Expand) error {
+func (e *Expander) collectChannelAndTeam(channelID string) func(*Expand) error {
 	return func(expand *Expand) error {
 		if channelID == "" || !isValidExpandLevel(expand.Channel) {
 			return nil
@@ -106,7 +107,15 @@ func (e *Expander) collectChannel(channelID string) func(*Expand) error {
 			return err
 		}
 
+		mmteam, err := e.mm.Team.Get(mmchannel.TeamId)
+		if err != nil {
+			return err
+		}
+
 		e.Channel = mmchannel
+		if e.Team == nil {
+			e.Team = mmteam
+		}
 		return nil
 	}
 }
