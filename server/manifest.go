@@ -12,7 +12,7 @@ var manifest *model.Manifest
 
 const manifestStr = `
 {
-  "id": "com.mattermost.cloudapps",
+  "id": "com.mattermost.apps",
   "name": "Cloud Apps",
   "description": "Cloud Apps Registry and API proxy.",
   "version": "0.1.0",

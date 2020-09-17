@@ -13,10 +13,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/cloudapps"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/command"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-cloudapps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 )
 
 type Configurator interface {
@@ -32,8 +32,8 @@ type Plugin struct {
 	mm           *pluginapi.Client
 	configurator configurator.Configurator
 	command      command.Command
-	registry     cloudapps.Registry
-	proxy        cloudapps.Proxy
+	registry     apps.Registry
+	proxy        apps.Proxy
 
 	botUserID string
 }
@@ -59,7 +59,7 @@ func (p *Plugin) OnActivate() error {
 
 	p.configurator = configurator.NewConfigurator(p.BuildConfig, p.mm)
 
-	p.registry = cloudapps.NewRegistry(p.configurator)
+	p.registry = apps.NewRegistry(p.configurator)
 	p.command = command.NewCommand(p.configurator, p.API)
 	return p.command.Init(p.BuildConfig)
 }
