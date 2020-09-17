@@ -32,12 +32,12 @@ type Configurator interface {
 type Plugin struct {
 	plugin.MattermostPlugin
 	*configurator.BuildConfig
+	mattermost *pluginapi.Client
 
-	mattermost   *pluginapi.Client
-	configurator configurator.Service
 	apps         *apps.Service
-	http         myhttp.Service
 	command      command.Service
+	configurator configurator.Service
+	http         myhttp.Service
 }
 
 func NewPlugin(buildConfig *configurator.BuildConfig) *Plugin {
