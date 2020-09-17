@@ -8,7 +8,9 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -21,23 +23,39 @@ type Proxy interface {
 }
 
 type proxy struct {
-	configurator.Configurator
-	mm       *pluginapi.Client
-	registry Registry
+	configurator configurator.Service
+	mm           *pluginapi.Client
+	registry     Registry
 	Subscriptions
 }
 
 var _ Proxy = (*proxy)(nil)
 
-func NewProxy(mm *pluginapi.Client, configurator configurator.Configurator, subs Subscriptions) Proxy {
+func NewProxy(mm *pluginapi.Client, configurator configurator.Service, subs Subscriptions) Proxy {
 	return &proxy{
-		Configurator:  configurator,
+		configurator:  configurator,
 		Subscriptions: subs,
 		mm:            mm,
 	}
 }
 
+func (p *proxy) CreateJWT(userID, secret string) (string, error) {
+	var err error
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["user_id"] = userID
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token, err := at.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
 func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
+	conf := p.configurator.GetConfig()
+
 	client, err := p.GetNotificationClient(s.AppID)
 	if err != nil {
 		// <><> TODO log
@@ -45,6 +63,12 @@ func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
 	}
 
 	app, err := p.registry.GetApp(s.AppID)
+	if err != nil {
+		// <><> TODO log
+		return
+	}
+
+	token, err := p.CreateJWT(conf.BotUserID, app.Secret)
 	if err != nil {
 		// <><> TODO log
 		return
@@ -60,14 +84,19 @@ func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
 		}
 	}()
 
-	u := path.Join(app.RootURL, "notify", string(SubjectUserJoinedChannel))
-	// <><> TODO ticket: progressive backoff on errors
-	resp, err := client.Post(u, "application/json", piper)
+	req, err := http.NewRequest(http.MethodPost, path.Join(app.Manifest.RootURL, "notify", string(SubjectUserJoinedChannel)), piper)
 	if err != nil {
 		// <><> TODO log
 		return
 	}
-	defer resp.Body.Close()
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		// <><> TODO log
+		// TODO ticket: progressive backoff on errors
+		return
+	}
+	resp.Body.Close()
 }
 
 func (p *proxy) GetNotificationClient(appID AppID) (*http.Client, error) {
