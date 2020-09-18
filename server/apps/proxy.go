@@ -22,6 +22,7 @@ type Proxy interface {
 	OnUserLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actor *model.User)
 	OnUserJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actor *model.User)
 	OnUserLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actor *model.User)
+	OnChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel)
 }
 
 type proxy struct {

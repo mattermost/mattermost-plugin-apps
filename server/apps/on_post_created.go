@@ -8,20 +8,25 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
-type UserCreatedNotification struct {
+type PostCreatedNotification struct {
 	SubscriptionID SubscriptionID
 	Subject        SubscriptionSubject
+	ChannelID      string
+	ParentID       string
+	PostID         string
+	RootID         string
 	UserID         string
-	Expanded       *Expanded
+	// TeamID         string
+	Expanded *Expanded
 }
 
 // OnUserHasBeenCreated sends a change notification when a new user has
 // joined a team.
-func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserCreated, "")
+func (p *proxy) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
+	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectPostCreated, "")
 	if err != nil {
-		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
-		// 	SubjectUserCreated, user.UserId, err)
+		// p.Logger.Debugf("OnPostHasBeenCreated: failed to get subscriptions: %s %s: ",
+		// 	SubjectPostCreated, user.UserId, err)
 		return
 	}
 	if len(subs) == 0 {
@@ -37,8 +42,13 @@ func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 			return
 		}
 
-		msg := UserCreatedNotification{
-			UserID:   user.Id,
+		msg := PostCreatedNotification{
+			PostID:    post.Id,
+			UserID:    post.UserId,
+			ChannelID: post.ChannelId,
+			ParentID:  post.ParentId,
+			RootID:    post.RootId,
+			// TeamID:    post.TeamId, // doesn't exist in post
 			Expanded: expanded,
 		}
 

@@ -39,7 +39,7 @@ func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acting
 		}
 
 		msg := UserLeftTeamNotification{
-			UserID:   tm.UserId,
+			UserID:   actingUser.Id,
 			TeamID:   tm.TeamId,
 			Expanded: expanded,
 		}

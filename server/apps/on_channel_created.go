@@ -8,17 +8,18 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
-type UserCreatedNotification struct {
+type ChannelCreatedNotification struct {
 	SubscriptionID SubscriptionID
 	Subject        SubscriptionSubject
-	UserID         string
+	ChannelID      string
+	TeamID         string
 	Expanded       *Expanded
 }
 
-// OnUserHasBeenCreated sends a change notification when a new user has
-// joined a team.
-func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserCreated, "")
+// OnChannelHasBeenCreated sends a change notification when a new channel has
+// been created
+func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
+	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectChannelCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserCreated, user.UserId, err)
@@ -37,9 +38,10 @@ func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 			return
 		}
 
-		msg := UserCreatedNotification{
-			UserID:   user.Id,
-			Expanded: expanded,
+		msg := ChannelCreatedNotification{
+			ChannelID: channel.Id,
+			TeamID:    channel.TeamId,
+			Expanded:  expanded,
 		}
 
 		go p.SendChangeNotification(s, msg)

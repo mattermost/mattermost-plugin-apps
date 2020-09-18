@@ -39,7 +39,7 @@ func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, 
 		}
 
 		msg := UserLeftChannelNotification{
-			UserID:    cm.UserId,
+			UserID:    actingUser.Id,
 			ChannelID: cm.ChannelId,
 			Expanded:  expanded,
 		}
