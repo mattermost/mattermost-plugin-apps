@@ -9,6 +9,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+type Expander interface {
+	Expand(expand *Expand, actingUserID, userID, channelID string) (*Expanded, error)
+}
+
 type ExpandEntity string
 
 const (
@@ -53,9 +57,9 @@ type MattermostConfig struct {
 	SiteURL string
 }
 
-type Expander struct {
+type expander struct {
 	mm           *pluginapi.Client
-	configurator configurator.Configurator
+	configurator configurator.Service
 
 	ActingUser *model.User
 	Team       *model.Team
@@ -64,14 +68,14 @@ type Expander struct {
 	User       *model.User
 }
 
-func NewExpander(mm *pluginapi.Client, configurator configurator.Configurator) *Expander {
-	return &Expander{
+func NewExpander(mm *pluginapi.Client, configurator configurator.Service) Expander {
+	return &expander{
 		mm:           mm,
 		configurator: configurator,
 	}
 }
 
-func (e *Expander) Expand(expand *Expand, actingUserID, userID, channelID string) (expanded *Expanded, err error) {
+func (e *expander) Expand(expand *Expand, actingUserID, userID, channelID string) (expanded *Expanded, err error) {
 	for _, f := range []func(*Expand) error{
 		e.collectConfig,
 		e.collectUser(userID, &e.User),
@@ -88,7 +92,7 @@ func (e *Expander) Expand(expand *Expand, actingUserID, userID, channelID string
 	return expanded, nil
 }
 
-func (e *Expander) collectConfig(expand *Expand) error {
+func (e *expander) collectConfig(expand *Expand) error {
 	if e.Config != nil || !expand.Config {
 		return nil
 	}
@@ -96,7 +100,7 @@ func (e *Expander) collectConfig(expand *Expand) error {
 	return nil
 }
 
-func (e *Expander) collectChannelAndTeam(channelID string) func(*Expand) error {
+func (e *expander) collectChannelAndTeam(channelID string) func(*Expand) error {
 	return func(expand *Expand) error {
 		if channelID == "" || !isValidExpandLevel(expand.Channel) {
 			return nil
@@ -120,7 +124,7 @@ func (e *Expander) collectChannelAndTeam(channelID string) func(*Expand) error {
 	}
 }
 
-func (e *Expander) collectUser(userID string, userref **model.User) func(*Expand) error {
+func (e *expander) collectUser(userID string, userref **model.User) func(*Expand) error {
 	return func(expand *Expand) error {
 		if *userref != nil || userID == "" || !isValidExpandLevel(expand.User) {
 			return nil
@@ -137,7 +141,7 @@ func (e *Expander) collectUser(userID string, userref **model.User) func(*Expand
 	}
 }
 
-func (e *Expander) produce(expand *Expand) *Expanded {
+func (e *expander) produce(expand *Expand) *Expanded {
 	expanded := &Expanded{}
 
 	if expand.Config {

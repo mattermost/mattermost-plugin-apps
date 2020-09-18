@@ -5,13 +5,11 @@ package apps
 
 import "github.com/mattermost/mattermost-plugin-apps/server/utils"
 
+// <><> TODO remove mock, implement for real
 func (r *registry) GetApp(appID AppID) (*App, error) {
-	if appID != "hello" {
+	app, found := r.apps[appID]
+	if !found {
 		return nil, utils.ErrNotFound
 	}
-	return &App{
-		AppID:       "hello",
-		DisplayName: "Hallo სამყარო",
-		RootURL:     "https://levb.ngrok.io/plugin/com.mattermost.apps/hello",
-	}, nil
+	return app, nil
 }

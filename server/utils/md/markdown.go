@@ -11,7 +11,9 @@ import (
 
 type MD string
 
-var _ Markdowner = MD("")
+const Nil = MD("")
+
+var _ Markdowner = Nil
 
 type Markdowner interface {
 	fmt.Stringer
@@ -44,4 +46,8 @@ func Indent(in Markdowner, prefix string) MD {
 		lines[i] = prefix + l
 	}
 	return Markdownf(strings.Join(lines, "\n"))
+}
+
+func Bold(in Markdowner) MD {
+	return Markdownf("**%s**", in)
 }

@@ -19,15 +19,15 @@ type Subscriptions interface {
 }
 
 type subscriptions struct {
-	configurator.Configurator
-	mm *pluginapi.Client
+	configurator configurator.Service
+	mm           *pluginapi.Client
 }
 
 var _ Subscriptions = (*subscriptions)(nil)
 
-func NewSubscriptions(configurator configurator.Configurator) Subscriptions {
+func NewSubscriptions(configurator configurator.Service) Subscriptions {
 	return &subscriptions{
-		Configurator: configurator,
+		configurator: configurator,
 	}
 }
 
