@@ -16,8 +16,7 @@ type UserLeftChannelNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserLeftChannel sends a change notification when a new user has
-// left a channel.
+// OnUserLeftChannel sends a change notification when a new user has left a channel
 func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserLeftChannel, cm.ChannelId)
 	if err != nil {
@@ -29,7 +28,7 @@ func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, 
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, actingUser.Id, cm.UserId, cm.ChannelId)

@@ -33,7 +33,7 @@ func (p *proxy) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, "", "", "")

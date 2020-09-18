@@ -16,8 +16,7 @@ type UserLeftTeamNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserLeftTeam sends a change notification when a new user has
-// left a team.
+// OnUserLeftTeam sends a change notification when a new user has left a team
 func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserLeftTeam, tm.TeamId)
 	if err != nil {
@@ -29,7 +28,7 @@ func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acting
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, actingUser.Id, tm.UserId, tm.TeamId)

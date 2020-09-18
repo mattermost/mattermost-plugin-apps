@@ -28,7 +28,7 @@ func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, "", "", "")

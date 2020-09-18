@@ -16,8 +16,7 @@ type UserJoinedChannelNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserJoinedChannel sends a change notification when a new user has
-// joined a channel.
+// OnUserJoinedChannel sends a change notification when a new user has joined a channel
 func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {

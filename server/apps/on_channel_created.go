@@ -16,8 +16,7 @@ type ChannelCreatedNotification struct {
 	Expanded       *Expanded
 }
 
-// OnChannelHasBeenCreated sends a change notification when a new channel has
-// been created
+// OnChannelHasBeenCreated sends a change notification when a new channel has been created
 func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
 	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectChannelCreated, "")
 	if err != nil {
@@ -29,7 +28,7 @@ func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Chan
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, "", "", "")

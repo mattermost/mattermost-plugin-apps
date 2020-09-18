@@ -16,8 +16,7 @@ type UserJoinedTeamNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserJoinedTeam sends a change notification when a new user has
-// joined a team.
+// OnUserJoinedTeam sends a change notification when a new user has joined a team
 func (p *proxy) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserJoinedTeam, tm.TeamId)
 	if err != nil {
@@ -29,7 +28,7 @@ func (p *proxy) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, acti
 		return
 	}
 
-	expander := NewExpander(p.mm, p.Configurator)
+	expander := NewExpander(p.mm, p.configurator)
 
 	for _, s := range subs {
 		expanded, err := expander.Expand(s.Expand, actingUser.Id, tm.UserId, tm.TeamId)
