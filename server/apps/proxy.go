@@ -17,7 +17,11 @@ import (
 )
 
 type Proxy interface {
+	OnUserHasBeenCreated(pluginContext *plugin.Context, user *model.User)
 	OnUserJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actor *model.User)
+	OnUserLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actor *model.User)
+	OnUserJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actor *model.User)
+	OnUserLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actor *model.User)
 }
 
 type proxy struct {

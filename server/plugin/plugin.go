@@ -85,6 +85,22 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	return &model.CommandResponse{}, nil
 }
 
+func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
+	p.proxy.OnUserHasBeenCreated(pluginContext, user)
+}
+
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
 	p.proxy.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+}
+
+func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
+	p.proxy.OnUserLeftChannel(pluginContext, channelMember, actingUser)
+}
+
+func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
+	p.proxy.OnUserJoinedTeam(pluginContext, teamMember, actingUser)
+}
+
+func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
+	p.proxy.OnUserLeftTeam(pluginContext, teamMember, actingUser)
 }

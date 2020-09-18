@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
-type UserJoinedChannelNotification struct {
+type UserLeftChannelNotification struct {
 	SubscriptionID SubscriptionID
 	Subject        SubscriptionSubject
 	UserID         string
@@ -16,13 +16,13 @@ type UserJoinedChannelNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserJoinedChannel sends a change notification when a new user has
-// joined a channel.
-func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserJoinedChannel, cm.ChannelId)
+// OnUserLeftChannel sends a change notification when a new user has
+// left a channel.
+func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserLeftChannel, cm.ChannelId)
 	if err != nil {
-		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
-		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
+		// p.Logger.Debugf("OnUserHasLeftChannel: failed to get subscriptions: %s %s: ",
+		// 	SubjectUserLeftChannel, channelMember.ChannelId, err)
 		return
 	}
 	if len(subs) == 0 {
@@ -38,7 +38,7 @@ func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember
 			return
 		}
 
-		msg := UserJoinedChannelNotification{
+		msg := UserLeftChannelNotification{
 			UserID:    cm.UserId,
 			ChannelID: cm.ChannelId,
 			Expanded:  expanded,

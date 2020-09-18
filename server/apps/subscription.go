@@ -6,7 +6,13 @@ package apps
 type SubscriptionSubject string
 
 const (
+	SubjectUserCreated       = SubscriptionSubject("user_created")
 	SubjectUserJoinedChannel = SubscriptionSubject("user_joined_channel")
+	SubjectUserLeftChannel   = SubscriptionSubject("user_left_channel")
+	SubjectUserJoinedTeam    = SubscriptionSubject("user_joined_team")
+	SubjectUserLeftTeam      = SubscriptionSubject("user_left_team")
+	SubjectChannelCreated    = SubscriptionSubject("channel_created")
+	SubjectUserUpdated       = SubscriptionSubject("user_updated")
 )
 
 type SubscriptionID string

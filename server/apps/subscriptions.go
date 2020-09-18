@@ -9,11 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const SubsPrefixKey = "sub"
+const SubsPrefixKey = "sub_"
 
 type Subscriptions interface {
-	GetSubscriptionsForChannel(subj SubscriptionSubject, channelID string) ([]*Subscription, error)
-	GetSubscriptionsForTeam(subj SubscriptionSubject, teamID string) ([]*Subscription, error)
+	GetSubscriptionsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
 	GetSubscriptionsForApp(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
 	StoreSubscription(subj SubscriptionSubject, sub Subscription, channelID string) error
 	DeleteSubscription(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
@@ -32,24 +31,16 @@ func NewSubscriptions(configurator configurator.Configurator) Subscriptions {
 	}
 }
 
-// GetSubscriptionsForChannel returns subscriptions for a given subject and
-// channelID from the store
-func (subs *subscriptions) GetSubscriptionsForChannel(subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
-	// TODO Implement KVGet
-	//   check if key subs_channelID exists
-	//   if yes, return them
-	//   if no, return empty (or nil??) subs
-	return []*Subscription{
-		{
-			AppID:     "Hello",
-			Subject:   subj,
-			ChannelID: "",
-		},
-	}, nil
-}
+// GetSubscriptionsForChannelOrTeam returns subscriptions for a given subject and
+// channelID or teamID from the store
+func (subs *subscriptions) GetSubscriptionsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
+	key := GetSubsKVkey(subj, channelOrTeamID)
+	var savedSubs []*Subscription
+	if err := subs.mm.KV.Get(key, &savedSubs); err != nil {
+		return nil, errors.Wrap(err, "failed to get saved subscriptions")
+	}
 
-func (subs *subscriptions) GetSubscriptionsForTeam(subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
-	return nil, nil
+	return savedSubs, nil
 }
 
 func (subs *subscriptions) GetSubscriptionsForApp(app string, subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
@@ -115,11 +106,14 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	return nil
 }
 
-func GetSubsKVkey(subj SubscriptionSubject, channelID string) string {
-	key := SubsPrefixKey
+func GetSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) string {
+	key := SubsPrefixKey + string(subj)
 	switch subj {
-	case SubjectUserJoinedChannel:
-		key += "_" + string(SubjectUserJoinedChannel) + channelID
+	case SubjectUserJoinedChannel,
+		SubjectUserLeftChannel,
+		SubjectUserJoinedTeam,
+		SubjectUserLeftTeam:
+		key += "_" + teamOrChannelID
 	// case value2:
 	default:
 	}
