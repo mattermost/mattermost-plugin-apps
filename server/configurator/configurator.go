@@ -14,62 +14,68 @@ type Mapper interface {
 	MapOnto(onto map[string]interface{}) (result map[string]interface{})
 }
 
-type Configurator interface {
-	Get() Config
+type Service interface {
+	GetConfig() Config
 	GetMattermostConfig() *model.Config
 	Refresh() error
 	Store(Mapper) error
 }
 
-var _ Configurator = (*configurator)(nil)
+var _ Service = (*service)(nil)
 
-type configurator struct {
+type service struct {
 	*BuildConfig
+	botUserID string
+
 	conf *Config
 
-	lock   *sync.RWMutex
-	mm     *pluginapi.Client
-	mmconf *model.Config
+	lock             *sync.RWMutex
+	mattermost       *pluginapi.Client
+	mattermostConfig *model.Config
 }
 
-func NewConfigurator(buildConfig *BuildConfig, mm *pluginapi.Client) Configurator {
-	return &configurator{
+func NewConfigurator(mattermost *pluginapi.Client, buildConfig *BuildConfig, botUserID string) Service {
+	return &service{
 		lock:        &sync.RWMutex{},
-		mm:          mm,
+		mattermost:  mattermost,
 		BuildConfig: buildConfig,
+		botUserID:   botUserID,
 	}
 }
 
-func (c *configurator) Get() Config {
-	c.lock.RLock()
-	conf := c.conf
-	c.lock.RUnlock()
+func (s *service) GetConfig() Config {
+	s.lock.RLock()
+	conf := s.conf
+	s.lock.RUnlock()
 
 	if conf == nil {
-		return Config{}
+		return Config{
+			BuildConfig: s.BuildConfig,
+			BotUserID:   s.botUserID,
+		}
 	}
 	return *conf
 }
 
-func (c *configurator) GetMattermostConfig() *model.Config {
-	c.lock.RLock()
-	mmconf := c.mmconf
-	c.lock.RUnlock()
+func (s *service) GetMattermostConfig() *model.Config {
+	s.lock.RLock()
+	mmconf := s.mattermostConfig
+	s.lock.RUnlock()
 
 	if mmconf == nil {
-		mmconf = c.mm.Configuration.GetConfig()
-		c.lock.Lock()
-		c.mmconf = mmconf
-		c.lock.Unlock()
+		mmconf = s.mattermost.Configuration.GetConfig()
+		s.lock.Lock()
+		s.mattermostConfig = mmconf
+		s.lock.Unlock()
 	}
-	return c.mmconf
+	return s.mattermostConfig
 }
 
-func (c *configurator) Refresh() error {
+func (s *service) Refresh() error {
 	stored := StoredConfig{}
-	_ = c.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = s.mattermost.Configuration.LoadPluginConfiguration(&stored)
 
-	mattermostSiteURL := c.GetMattermostConfig().ServiceSettings.SiteURL
+	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
 	}
@@ -77,28 +83,24 @@ func (c *configurator) Refresh() error {
 	if err != nil {
 		return err
 	}
-	pluginURLPath := "/plugins/" + c.BuildConfig.Manifest.Id
+	pluginURLPath := "/plugins/" + s.BuildConfig.Manifest.Id
 	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
 
-	newConfig := c.conf
-	if newConfig == nil {
-		newConfig = &Config{}
-	}
+	newConfig := s.GetConfig()
 	newConfig.StoredConfig = &stored
-	newConfig.BuildConfig = c.BuildConfig
 	newConfig.MattermostSiteURL = *mattermostSiteURL
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
 
-	c.lock.Lock()
-	c.conf = newConfig
-	c.lock.Unlock()
+	s.lock.Lock()
+	s.conf = &newConfig
+	s.lock.Unlock()
 
 	return nil
 }
 
-func (c *configurator) Store(newStored Mapper) error {
+func (s *service) Store(newStored Mapper) error {
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
-	return c.mm.Configuration.SavePluginConfig(newStored.MapOnto(nil))
+	return s.mattermost.Configuration.SavePluginConfig(newStored.MapOnto(nil))
 }
