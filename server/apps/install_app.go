@@ -60,8 +60,8 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 	r.apps[in.Manifest.AppID] = app
 
 	extraInfo := fmt.Sprintf(`Bot token: %s
-	OAuth Client ID: %s
-	OAuth Client Secret: %s`, token.Token, oAuthApp.Id, oAuthApp.ClientSecret)
+OAuth Client ID: %s
+OAuth Client Secret: %s`, token.Token, oAuthApp.Id, oAuthApp.ClientSecret)
 
 	out := &OutInstallApp{
 		MD:  md.Markdownf("Installed %s (%s)\n%s", in.Manifest.DisplayName, in.Manifest.AppID, extraInfo),
