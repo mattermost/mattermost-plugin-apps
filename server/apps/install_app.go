@@ -109,11 +109,6 @@ func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bo
 		}
 	}
 
-	tokens, _ := client.GetUserAccessTokensForUser(fullBot.UserId, 0, 1)
-	if len(tokens) > 0 {
-		return fullBot, tokens[0], nil
-	}
-
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Default Token")
 	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {

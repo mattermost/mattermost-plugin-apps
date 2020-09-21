@@ -148,7 +148,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, err = d.apps.Registry.InstallApp(&apps.InInstallApp{
+	out, err := d.apps.Registry.InstallApp(&apps.InInstallApp{
 		ActingMattermostUserID: actingUserID,
 		NoUserConsentForOAuth2: noUserConsentForOAuth2,
 		Manifest:               &manifest,
@@ -160,5 +160,5 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	message = "Installed App: " + manifest.DisplayName
+	message = out.MD.String()
 }
