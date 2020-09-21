@@ -42,7 +42,7 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	oAuthApp, err := r.createOAuthApp(in.ActingMattermostUserID, token.Token, in.Manifest)
+	oAuthApp, err := r.createOAuthApp(in.ActingMattermostUserID, in.SessionToken, in.Manifest)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,6 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 
 func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	client := model.NewAPIv4Client(r.configurator.GetConfig().MattermostSiteURL)
-	fmt.Printf("session token: %s\n", sessionToken)
 	client.SetToken(sessionToken)
 	bot := &model.Bot{
 		Username:    string(manifest.AppID),
@@ -80,21 +79,47 @@ func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bo
 		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
 	}
 
-	fullBot, response := client.CreateBot(bot)
+	var fullBot *model.Bot
+	user, _ := client.GetUserByUsername(bot.Username, "")
+	if user == nil {
+		var response *model.Response
+		fullBot, response = client.CreateBot(bot)
 
-	if response.StatusCode != http.StatusCreated {
-		if response.Error != nil {
-			return nil, nil, response.Error
+		if response.StatusCode != http.StatusCreated {
+			if response.Error != nil {
+				return nil, nil, response.Error
+			}
+			return nil, nil, errors.New("could not create bot")
 		}
-		return nil, nil, errors.New("could not create bot")
+	} else {
+		if !user.IsBot {
+			return nil, nil, errors.New("a user already owns the bot username")
+		}
+
+		fullBot = model.BotFromUser(user)
+		if fullBot.DeleteAt != 0 {
+			var response *model.Response
+			fullBot, response = client.EnableBot(fullBot.UserId)
+			if response.StatusCode != http.StatusOK {
+				if response.Error != nil {
+					return nil, nil, response.Error
+				}
+				return nil, nil, errors.New("could not enable bot")
+			}
+		}
+	}
+
+	tokens, _ := client.GetUserAccessTokensForUser(fullBot.UserId, 0, 1)
+	if len(tokens) > 0 {
+		return fullBot, tokens[0], nil
 	}
 
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Default Token")
-	if response.StatusCode != http.StatusCreated {
+	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {
 			return nil, nil, response.Error
 		}
-		return nil, nil, errors.New("could not create token")
+		return nil, nil, fmt.Errorf("could not create token, status code = %v", response.StatusCode)
 	}
 
 	return fullBot, token, nil
@@ -107,17 +132,20 @@ func (r *registry) createOAuthApp(userID string, sessionToken string, manifest *
 		CreatorId:    userID,
 		Name:         manifest.DisplayName,
 		Description:  manifest.Description,
-		CallbackUrls: []string{},
+		CallbackUrls: []string{manifest.CallbackURL},
+		Homepage:     manifest.Homepage,
 		IsTrusted:    true,
 	}
+
+	client.SetToken(sessionToken)
 
 	fullApp, response := client.CreateOAuthApp(&app)
 
 	if response.StatusCode != http.StatusCreated {
 		if response.Error != nil {
-			return nil, response.Error
+			return nil, fmt.Errorf("error creating the app, %v", response.Error)
 		}
-		return nil, errors.New("could not create the app")
+		return nil, fmt.Errorf("could not create the app, status code = %v", response.StatusCode)
 	}
 
 	return fullApp, nil

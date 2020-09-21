@@ -59,6 +59,8 @@ type Manifest struct {
 	Description          string
 	RootURL              string
 	RequestedPermissions Permissions
+	CallbackURL          string
+	Homepage             string
 }
 
 type App struct {
