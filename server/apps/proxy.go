@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"net/http"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -52,9 +50,4 @@ func (p *proxy) SendChangeNotification(s *appmodel.Subscription, msg interface{}
 	}
 
 	c.SendNotification(appmodel.SubjectUserJoinedChannel, msg)
-}
-
-func (p *proxy) GetNotificationClient(appID appmodel.AppID) (*http.Client, error) {
-	// <><> TODO cache the client per app
-	return nil, nil
 }
