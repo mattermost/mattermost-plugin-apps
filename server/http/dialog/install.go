@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL string, postID string) model.OpenDialogRequest {
+func NewInstallAppDialog(triggerID string, manifest *appmodel.Manifest, pluginURL string, postID string) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -30,7 +31,7 @@ func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL st
 			HelpText:    "TODO: How to obtain the App Secret",
 		},
 	}
-	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
+	if manifest.RequestedPermissions.Contains(appmodel.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -141,7 +142,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
-	var manifest apps.Manifest
+	var manifest appmodel.Manifest
 	err = json.Unmarshal([]byte(dialogRequest.State), &manifest)
 	if err != nil {
 		err = errors.Wrap(err, "failed to unmarshal manifest as state")

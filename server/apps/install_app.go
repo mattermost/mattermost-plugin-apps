@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
+	"github.com/mattermost/mattermost-plugin-apps/server/client"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -15,14 +17,14 @@ import (
 type InInstallApp struct {
 	ActingMattermostUserID string
 	NoUserConsentForOAuth2 bool
-	Manifest               *Manifest
+	Manifest               *appmodel.Manifest
 	Secret                 string
 	SessionToken           string
 }
 
 type OutInstallApp struct {
 	md.MD
-	App *App
+	App *appmodel.App
 }
 
 type InstallRequest struct {
@@ -47,7 +49,7 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 		return nil, err
 	}
 
-	app := &App{
+	app := &appmodel.App{
 		Manifest:               in.Manifest,
 		GrantedPermissions:     in.Manifest.RequestedPermissions,
 		NoUserConsentForOAuth2: in.NoUserConsentForOAuth2,
@@ -59,18 +61,22 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 	}
 	r.apps[in.Manifest.AppID] = app
 
-	extraInfo := fmt.Sprintf(`Bot token: %s
-OAuth Client ID: %s
-OAuth Client Secret: %s`, token.Token, oAuthApp.Id, oAuthApp.ClientSecret)
+	c, err := client.New(in.ActingMattermostUserID, app)
+	if err != nil {
+		return nil, err
+	}
+
+	c.InstallComplete()
 
 	out := &OutInstallApp{
-		MD:  md.Markdownf("Installed %s (%s)\n%s", in.Manifest.DisplayName, in.Manifest.AppID, extraInfo),
+		MD:  md.Markdownf("Installed %s (%s)", in.Manifest.DisplayName, in.Manifest.AppID),
 		App: app,
 	}
+
 	return out, nil
 }
 
-func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (r *registry) createBot(manifest *appmodel.Manifest, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	client := model.NewAPIv4Client(r.configurator.GetConfig().MattermostSiteURL)
 	client.SetToken(sessionToken)
 	bot := &model.Bot{
@@ -120,7 +126,7 @@ func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bo
 	return fullBot, token, nil
 }
 
-func (r *registry) createOAuthApp(userID string, sessionToken string, manifest *Manifest) (*model.OAuthApp, error) {
+func (r *registry) createOAuthApp(userID string, sessionToken string, manifest *appmodel.Manifest) (*model.OAuthApp, error) {
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
 	client := model.NewAPIv4Client(r.configurator.GetConfig().MattermostSiteURL)
 	app := model.OAuthApp{

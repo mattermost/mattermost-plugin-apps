@@ -1,4 +1,7 @@
-package apps
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
+package appmodel
 
 import (
 	"fmt"
@@ -7,10 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type AppID string
-
-type PermissionType string
-
 const (
 	PermissionUserJoinedChannelNotification = PermissionType("user_joined_channel_notification")
 	PermissionAddToPostMenu                 = PermissionType("add_to_post_menu")
@@ -18,6 +17,8 @@ const (
 	PermissionActAsUser                     = PermissionType("act_as_user")
 	PermissionActAsBot                      = PermissionType("act_as_bot")
 )
+
+type PermissionType string
 
 func (p PermissionType) String() string {
 	m := ""
@@ -51,31 +52,4 @@ func (p Permissions) Contains(permission PermissionType) bool {
 		}
 	}
 	return false
-}
-
-type Manifest struct {
-	AppID                AppID
-	DisplayName          string
-	Description          string
-	RootURL              string
-	RequestedPermissions Permissions
-	CallbackURL          string
-	Homepage             string
-}
-
-type App struct {
-	Manifest *Manifest
-
-	// Secret is used to issue JWT
-	Secret string
-
-	OAuthAppID string
-	// Should secret be here? Or should we just fetch it using the ID?
-	OAuthSecret string
-
-	BotID    string
-	BotToken string
-	// Grants should be scopable in the future, per team, channel, post with regexp
-	GrantedPermissions     Permissions
-	NoUserConsentForOAuth2 bool
 }
