@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"fmt"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/pkg/errors"
@@ -76,13 +74,18 @@ func (subs *subscriptions) StoreSubscription(subj SubscriptionSubject, sub Subsc
 
 	// check if sub exists
 	var newSubs []*Subscription
+	foundSub := 0
 	for _, s := range savedSubs {
 		// modify the sub to the latest request
 		if s.SubscriptionID == sub.SubscriptionID {
+			foundSub++
 			newSubs = append(newSubs, &sub)
 			continue
 		}
 		newSubs = append(newSubs, s)
+	}
+	if foundSub == 0 {
+		newSubs = append(newSubs, &sub)
 	}
 
 	// sub exists. update and save updated subs
@@ -106,7 +109,6 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	// check if sub exists
 	var newSubs []*Subscription
 	for _, s := range savedSubs {
-		fmt.Println("ONLY DELETE THE SUBSCRIPRION FOR THE SPECIFIED APPID")
 		if s.SubscriptionID == subID {
 			continue
 		}

@@ -36,6 +36,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 		configurator: apps.Config,
 	}
 
+	// subscribe paths
 	subrouter := router.PathPrefix(constants.APIPath + SubscribePath).Subrouter()
 	subrouter.HandleFunc("/channel_created", a.handleSubscribeChannelCreated).Methods("POST")
 	subrouter.HandleFunc("/post_created", a.handleSubscribePostCreated).Methods("POST")
@@ -45,12 +46,22 @@ func Init(router *mux.Router, apps *apps.Service) {
 	subrouter.HandleFunc("/user_left_channel", a.handleSubscribeUserLeftChannel).Methods("POST")
 	subrouter.HandleFunc("/user_joined_team", a.handleSubscribeUserJoinedTeam).Methods("POST")
 	subrouter.HandleFunc("/user_left_team", a.handleSubscribeUserLeftTeam).Methods("POST")
+
+	// TODO need unsubscribe paths (which remove sub from the kv store)
+	// subrouter.HandleFunc("/channel_created", a.handleSubscribeChannelCreated).Methods("DELETE")
+	// subrouter.HandleFunc("/post_created", a.handleSubscribePostCreated).Methods("DELETE")
+	// subrouter.HandleFunc("/user_created", a.handleSubscribeUserCreated).Methods("DELETE")
+	// subrouter.HandleFunc("/user_updated", a.handleSubscribeUserUpdated).Methods("DELETE")
+	subrouter.HandleFunc("/user_joined_channel", a.handleUnsubscribeUserJoinedChannel).Methods("DELETE")
+	// subrouter.HandleFunc("/user_left_channel", a.handleSubscribeUserLeftChannel).Methods("DELETE")
+	// subrouter.HandleFunc("/user_joined_team", a.handleSubscribeUserJoinedTeam).Methods("DELETE")
+	// subrouter.HandleFunc("/user_left_team", a.handleSubscribeUserLeftTeam).Methods("DELETE")
 }
 
 func (a *api) handleSubscribeUserJoinedChannel(w http.ResponseWriter, req *http.Request) {
 	var err error
 
-	//create a dummy
+	// create a dummy TODO decode request body into a apps.Subscription
 	var subRequest apps.Subscription
 	subRequest.Subject = "user_joined_channel"
 	subRequest.AppID = "AppID"
@@ -61,6 +72,41 @@ func (a *api) handleSubscribeUserJoinedChannel(w http.ResponseWriter, req *http.
 
 	subs := apps.NewSubscriptions(a.mm, a.configurator)
 	err = subs.StoreSubscription(subRequest.Subject, subRequest, subRequest.ChannelID)
+	if err != nil {
+		// status = http.StatusBadRequest
+		return
+	}
+
+	// actingUserID := req.Header.Get("Mattermost-User-Id")
+	// fmt.Printf("actingUserID = %+v\n", actingUserID)
+	// if actingUserID == "" {
+	// 	// err = errors.New("user not logged in")
+	// 	status = http.StatusUnauthorized
+	// 	return
+	// }
+
+	// var subRequest apps.Subscription
+	// err = json.NewDecoder(req.Body).Decode(&subRequest)
+	// if err != nil {
+	// 	status = http.StatusBadRequest
+	// 	return
+	// }
+}
+
+func (a *api) handleUnsubscribeUserJoinedChannel(w http.ResponseWriter, req *http.Request) {
+	var err error
+
+	// create a dummy TODO decode request body into a apps.Subscription
+	var subRequest apps.Subscription
+	subRequest.Subject = "user_joined_channel"
+	subRequest.AppID = "AppID"
+	subRequest.SubscriptionID = "SubsID"
+	subRequest.ChannelID = "some_channel_idXXX2"
+	subRequestD, _ := json.MarshalIndent(subRequest, "", "    ")
+	fmt.Printf("subRequest = %+v\n", string(subRequestD))
+
+	subs := apps.NewSubscriptions(a.mm, a.configurator)
+	err = subs.DeleteSubscription(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
 	if err != nil {
 		// status = http.StatusBadRequest
 		return
