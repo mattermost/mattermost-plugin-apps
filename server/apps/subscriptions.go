@@ -7,10 +7,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
-type Subscriptions interface {
-	GetSubscriptionsForChannel(subj SubscriptionSubject, channelID string) ([]*Subscription, error)
-}
-
 type subscriptions struct {
 	configurator configurator.Service
 }

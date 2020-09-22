@@ -9,6 +9,27 @@ import (
 
 type AppID string
 
+type Manifest struct {
+	AppID                AppID
+	DisplayName          string
+	Description          string
+	RequestedPermissions Permissions
+
+	RootURL string
+	Install *WishManifest
+}
+
+type App struct {
+	Manifest *Manifest
+
+	// Secret is used to issue JWT
+	Secret string
+
+	// Grants should be scopable in the future, per team, channel, post with regexp
+	GrantedPermissions     Permissions
+	NoUserConsentForOAuth2 bool
+}
+
 type PermissionType string
 
 const (
@@ -51,23 +72,4 @@ func (p Permissions) Contains(permission PermissionType) bool {
 		}
 	}
 	return false
-}
-
-type Manifest struct {
-	AppID                AppID
-	DisplayName          string
-	Description          string
-	RootURL              string
-	RequestedPermissions Permissions
-}
-
-type App struct {
-	Manifest *Manifest
-
-	// Secret is used to issue JWT
-	Secret string
-
-	// Grants should be scopable in the future, per team, channel, post with regexp
-	GrantedPermissions     Permissions
-	NoUserConsentForOAuth2 bool
 }

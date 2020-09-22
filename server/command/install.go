@@ -52,6 +52,8 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
+	// Finish the installation when the Dialog is submitted, see
+	// <plugin>/http/dialog/install.go
 	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(
 			params.commandArgs.TriggerId,

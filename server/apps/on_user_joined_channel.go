@@ -16,9 +16,9 @@ type UserJoinedChannelNotification struct {
 	Expanded       *Expanded
 }
 
-func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember,
+func (s *service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember,
 	actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannel(SubjectUserJoinedChannel, cm.ChannelId)
+	subs, err := s.Subscriptions.GetSubscriptionsForChannel(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
@@ -28,10 +28,10 @@ func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember
 		return
 	}
 
-	expander := NewExpander(p.mm, p.configurator)
+	expander := NewExpander(s.Mattermost, s.Config)
 
-	for _, s := range subs {
-		expanded, err := expander.Expand(s.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
+	for _, sub := range subs {
+		expanded, err := expander.Expand(sub.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
 		if err != nil {
 			// <><> TODO log
 			return
@@ -43,6 +43,6 @@ func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember
 			Expanded:  expanded,
 		}
 
-		go p.SendChangeNotification(s, msg)
+		go s.Proxy.SendChangeNotification(sub, msg)
 	}
 }
