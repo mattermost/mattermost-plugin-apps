@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"fmt"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/pkg/errors"
@@ -18,6 +20,18 @@ type Subscriptions interface {
 	DeleteSubscription(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
 }
 
+type SubscriptionCreatedNotification struct {
+	SubscriptionID SubscriptionID
+	Subject        SubscriptionSubject
+	Expanded       *Expanded
+}
+
+type SubscriptionDeletedNotification struct {
+	SubscriptionID SubscriptionID
+	Subject        SubscriptionSubject
+	Expanded       *Expanded
+}
+
 type subscriptions struct {
 	configurator configurator.Service
 	mm           *pluginapi.Client
@@ -25,8 +39,9 @@ type subscriptions struct {
 
 var _ Subscriptions = (*subscriptions)(nil)
 
-func NewSubscriptions(configurator configurator.Service) Subscriptions {
+func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) Subscriptions {
 	return &subscriptions{
+		mm:           mm,
 		configurator: configurator,
 	}
 }
@@ -91,6 +106,7 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	// check if sub exists
 	var newSubs []*Subscription
 	for _, s := range savedSubs {
+		fmt.Println("ONLY DELETE THE SUBSCRIPRION FOR THE SPECIFIED APPID")
 		if s.SubscriptionID == subID {
 			continue
 		}
@@ -103,9 +119,20 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
+
+	// msg := SubscriptionDeletedNotification{
+	// 	SubscriptionID: subID,
+	// 	Subject:        subj,
+	// 	Expanded:       expanded,
+	// }
+	//
+	// go p.SendChangeNotification(s, msg)
 	return nil
 }
 
+// GetSubsKey returns the KVstore Key for a subsject. If teamOrChannelID
+// provided, the value is appended to the subject key making it unique to the
+// channelID or teamID
 func GetSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) string {
 	key := SubsPrefixKey + string(subj)
 	switch subj {

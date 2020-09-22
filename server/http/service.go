@@ -24,7 +24,7 @@ func NewService(router *mux.Router, apps *apps.Service, initf ...func(*mux.Route
 	for _, f := range initf {
 		f(router, apps)
 	}
-	router.Handle("{anything:.*}", http.NotFoundHandler())
+	router.Handle("/{anything:.*}", http.NotFoundHandler())
 
 	return &service{
 		router: router,
