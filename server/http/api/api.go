@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
@@ -36,46 +37,12 @@ func Init(router *mux.Router, apps *apps.Service) {
 		configurator: apps.Config,
 	}
 
-	// subscribe paths
-	subrouter := router.PathPrefix(constants.APIPath + SubscribePath).Subrouter()
-	subrouter.HandleFunc("/channel_created", a.handleSubscribeChannelCreated).Methods("POST")
-	subrouter.HandleFunc("/post_created", a.handleSubscribePostCreated).Methods("POST")
-	subrouter.HandleFunc("/user_created", a.handleSubscribeUserCreated).Methods("POST")
-	subrouter.HandleFunc("/user_updated", a.handleSubscribeUserUpdated).Methods("POST")
-	subrouter.HandleFunc("/user_joined_channel", a.handleSubscribeUserJoinedChannel).Methods("POST")
-	subrouter.HandleFunc("/user_left_channel", a.handleSubscribeUserLeftChannel).Methods("POST")
-	subrouter.HandleFunc("/user_joined_team", a.handleSubscribeUserJoinedTeam).Methods("POST")
-	subrouter.HandleFunc("/user_left_team", a.handleSubscribeUserLeftTeam).Methods("POST")
-
-	// TODO need unsubscribe paths (which remove sub from the kv store)
-	// subrouter.HandleFunc("/channel_created", a.handleSubscribeChannelCreated).Methods("DELETE")
-	// subrouter.HandleFunc("/post_created", a.handleSubscribePostCreated).Methods("DELETE")
-	// subrouter.HandleFunc("/user_created", a.handleSubscribeUserCreated).Methods("DELETE")
-	// subrouter.HandleFunc("/user_updated", a.handleSubscribeUserUpdated).Methods("DELETE")
-	subrouter.HandleFunc("/user_joined_channel", a.handleUnsubscribeUserJoinedChannel).Methods("DELETE")
-	// subrouter.HandleFunc("/user_left_channel", a.handleSubscribeUserLeftChannel).Methods("DELETE")
-	// subrouter.HandleFunc("/user_joined_team", a.handleSubscribeUserJoinedTeam).Methods("DELETE")
-	// subrouter.HandleFunc("/user_left_team", a.handleSubscribeUserLeftTeam).Methods("DELETE")
+	subrouter := router.PathPrefix(constants.APIPath).Subrouter()
+	subrouter.HandleFunc(SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
 }
 
-func (a *api) handleSubscribeUserJoinedChannel(w http.ResponseWriter, req *http.Request) {
+func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 	var err error
-
-	// create a dummy TODO decode request body into a apps.Subscription
-	var subRequest apps.Subscription
-	subRequest.Subject = "user_joined_channel"
-	subRequest.AppID = "AppID"
-	subRequest.SubscriptionID = "SubsID"
-	subRequest.ChannelID = "some_channel_idXXX2"
-	subRequestD, _ := json.MarshalIndent(subRequest, "", "    ")
-	fmt.Printf("subRequest = %+v\n", string(subRequestD))
-
-	subs := apps.NewSubscriptions(a.mm, a.configurator)
-	err = subs.StoreSubscription(subRequest.Subject, subRequest, subRequest.ChannelID)
-	if err != nil {
-		// status = http.StatusBadRequest
-		return
-	}
 
 	// actingUserID := req.Header.Get("Mattermost-User-Id")
 	// fmt.Printf("actingUserID = %+v\n", actingUserID)
@@ -85,66 +52,28 @@ func (a *api) handleSubscribeUserJoinedChannel(w http.ResponseWriter, req *http.
 	// 	return
 	// }
 
-	// var subRequest apps.Subscription
-	// err = json.NewDecoder(req.Body).Decode(&subRequest)
-	// if err != nil {
-	// 	status = http.StatusBadRequest
-	// 	return
-	// }
-}
+	body, err := ioutil.ReadAll(req.Body)
 
-func (a *api) handleUnsubscribeUserJoinedChannel(w http.ResponseWriter, req *http.Request) {
-	var err error
-
-	// create a dummy TODO decode request body into a apps.Subscription
 	var subRequest apps.Subscription
-	subRequest.Subject = "user_joined_channel"
-	subRequest.AppID = "AppID"
-	subRequest.SubscriptionID = "SubsID"
-	subRequest.ChannelID = "some_channel_idXXX2"
-	subRequestD, _ := json.MarshalIndent(subRequest, "", "    ")
-	fmt.Printf("subRequest = %+v\n", string(subRequestD))
+	if err = json.Unmarshal(body, &subRequest); err != nil {
+		errD, _ := json.MarshalIndent(err, "", "    ")
+		fmt.Printf("err = %+v\n", string(errD))
+		// return respondErr(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	subs := apps.NewSubscriptions(a.mm, a.configurator)
-	err = subs.DeleteSubscription(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
+
+	switch req.Method {
+	case http.MethodPost:
+		err = subs.StoreSubscription(subRequest.Subject, subRequest, subRequest.ChannelID)
+	case http.MethodDelete:
+		err = subs.DeleteSubscription(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
+	default:
+	}
 	if err != nil {
 		// status = http.StatusBadRequest
 		return
 	}
 
-	// actingUserID := req.Header.Get("Mattermost-User-Id")
-	// fmt.Printf("actingUserID = %+v\n", actingUserID)
-	// if actingUserID == "" {
-	// 	// err = errors.New("user not logged in")
-	// 	status = http.StatusUnauthorized
-	// 	return
-	// }
-
-	// var subRequest apps.Subscription
-	// err = json.NewDecoder(req.Body).Decode(&subRequest)
-	// if err != nil {
-	// 	status = http.StatusBadRequest
-	// 	return
-	// }
-}
-
-func (a *api) handleSubscribeUserLeftChannel(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribeChannelCreated(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribePostCreated(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribeUserCreated(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribeUserJoinedTeam(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribeUserLeftTeam(w http.ResponseWriter, req *http.Request) {
-}
-
-func (a *api) handleSubscribeUserUpdated(w http.ResponseWriter, req *http.Request) {
 }

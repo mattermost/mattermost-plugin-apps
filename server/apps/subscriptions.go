@@ -116,7 +116,9 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	}
 
 	// sub was deleted. update and save updated subs
-	// TODO check for don't need to save if sub was not deleted?
+	// TODO check for following:
+	//   - don't need to save if sub was not deleted?
+	//   - if delete the last subscription for the channel, delete the key also
 	_, err := subs.mm.KV.Set(key, newSubs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
