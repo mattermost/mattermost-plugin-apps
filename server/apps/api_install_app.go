@@ -4,7 +4,7 @@
 package apps
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -21,7 +21,7 @@ type OutInstallApp struct {
 	App *App
 }
 
-func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
+func (s *Service) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 	if in.Manifest.AppID == "" {
 		return nil, errors.New("app ID must not be empty")
 	}
@@ -34,10 +34,20 @@ func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
 		NoUserConsentForOAuth2: in.NoUserConsentForOAuth2,
 		Secret:                 in.Secret,
 	}
-	r.apps[in.Manifest.AppID] = app
+
+	err := s.Registry.Store(app)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO expand CallData
+	resp, err := s.PostWish(app.Manifest.AppID, in.ActingMattermostUserID, app.Manifest.Install, &CallData{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Install failed")
+	}
 
 	out := &OutInstallApp{
-		MD:  md.Markdownf("Installed %s (%s)", in.Manifest.DisplayName, in.Manifest.AppID),
+		MD:  resp.Markdown,
 		App: app,
 	}
 	return out, nil

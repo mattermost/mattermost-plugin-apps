@@ -16,7 +16,7 @@ type UserJoinedChannelNotification struct {
 	Expanded       *Expanded
 }
 
-func (s *service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember,
+func (s *Service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember,
 	actingUser *model.User) {
 	subs, err := s.Subscriptions.GetSubscriptionsForChannel(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {
@@ -28,10 +28,8 @@ func (s *service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMemb
 		return
 	}
 
-	expander := NewExpander(s.Mattermost, s.Config)
-
 	for _, sub := range subs {
-		expanded, err := expander.Expand(sub.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
+		expanded, err := s.Expander.Expand(sub.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
 		if err != nil {
 			// <><> TODO log
 			return
@@ -43,6 +41,6 @@ func (s *service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMemb
 			Expanded:  expanded,
 		}
 
-		go s.Proxy.SendChangeNotification(sub, msg)
+		go s.PostChangeNotification(sub.AppID, sub, msg)
 	}
 }

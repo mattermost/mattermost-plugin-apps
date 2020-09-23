@@ -16,7 +16,7 @@ type Manifest struct {
 	RequestedPermissions Permissions
 
 	RootURL string
-	Install *WishManifest
+	Install *Wish
 }
 
 type App struct {

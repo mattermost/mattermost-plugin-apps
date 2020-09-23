@@ -42,7 +42,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	conf := s.apps.Config.GetConfig()
+	conf := s.apps.Configurator.GetConfig()
 	post := &model.Post{
 		Message: fmt.Sprintf("Installing App: **%s**", manifest.DisplayName),
 	}
@@ -58,7 +58,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		dialog.NewInstallAppDialog(
 			params.commandArgs.TriggerId,
 			&manifest,
-			s.apps.Config.GetConfig().PluginURL,
+			conf.PluginURL,
 			post.Id))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))

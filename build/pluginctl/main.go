@@ -2,11 +2,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )

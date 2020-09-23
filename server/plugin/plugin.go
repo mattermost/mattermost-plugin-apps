@@ -7,10 +7,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -22,12 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 )
-
-type Configurator interface {
-	Get() configurator.Config
-	Refresh() error
-	Store(*configurator.StoredConfig)
-}
 
 type Plugin struct {
 	plugin.MattermostPlugin
@@ -91,5 +84,5 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, req *http.R
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Proxy.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+	p.apps.Hooks.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
 }

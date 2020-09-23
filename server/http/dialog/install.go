@@ -71,8 +71,9 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	message := ""
 	actingUserID := ""
 	status := http.StatusOK
+
 	defer func() {
-		conf := d.apps.Config.GetConfig()
+		conf := d.apps.Configurator.GetConfig()
 		resp := model.SubmitDialogResponse{}
 		if err != nil {
 			resp.Error = errors.Wrap(err, "failed to install").Error()
@@ -135,7 +136,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	out, err := d.apps.Registry.InstallApp(&apps.InInstallApp{
+	out, err := d.apps.API.InstallApp(&apps.InInstallApp{
 		ActingMattermostUserID: actingUserID,
 		NoUserConsentForOAuth2: noUserConsentForOAuth2,
 		Manifest:               &manifest,
@@ -146,7 +147,5 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	d.apps.Proxy.CallWish(out.App.Manifest.Install, Expand{})
-
-	message = "Installed App: " + manifest.DisplayName
+	message = out.String()
 }

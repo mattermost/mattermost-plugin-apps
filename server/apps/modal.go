@@ -37,3 +37,7 @@ type ModalDynamicSelectElement struct {
 type ModalBoolElement modalProps
 type ModalUserElement modalProps
 type ModalChannelElement modalProps
+
+func (s *Service) CallModal(appID AppID, m *Modal, data *CallData) (*CallResponse, error) {
+	return nil, nil
+}

@@ -1,10 +1,11 @@
 package configurator
 
 import (
-	"errors"
 	"net/url"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"

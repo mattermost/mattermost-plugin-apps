@@ -1,6 +1,6 @@
 package apps
 
-type FormDef struct {
+type Form struct {
 	// RefreshOnChangeTo indicates that changes to the listed fields must reload
 	// the form. Values of the fields with values that are not included in the
 	// refreshed form are lost. Values that no longer apply are reset.
