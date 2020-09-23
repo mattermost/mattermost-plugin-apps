@@ -1,6 +1,6 @@
 package apps
 
-type AutocompleteDef struct {
+type Autocomplete struct {
 	Form
 }
 
