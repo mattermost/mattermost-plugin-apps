@@ -1,22 +1,48 @@
 const exec = require('child_process').exec;
 
-var path = require('path');
+const path = require('path');
+
+const PLUGIN_ID = require('../plugin.json').id;
 
 const NPM_TARGET = process.env.npm_lifecycle_event; //eslint-disable-line no-process-env
-
-var DEV = false;
-if (NPM_TARGET === 'run') {
-    DEV = true;
+let mode = 'production';
+let devtool = '';
+if (NPM_TARGET === 'debug' || NPM_TARGET === 'debug:watch') {
+    mode = 'development';
+    devtool = 'source-map';
 }
 
-const config = {
+const plugins = [];
+if (NPM_TARGET === 'build:watch' || NPM_TARGET === 'debug:watch') {
+    plugins.push({
+        apply: (compiler) => {
+            compiler.hooks.watchRun.tap('WatchStartPlugin', () => {
+                // eslint-disable-next-line no-console
+                console.log('Change detected. Rebuilding webapp.');
+            });
+            compiler.hooks.afterEmit.tap('AfterEmitPlugin', () => {
+                exec('cd .. && make deploy-from-watch', (err, stdout, stderr) => {
+                    if (stdout) {
+                        process.stdout.write(stdout);
+                    }
+                    if (stderr) {
+                        process.stderr.write(stderr);
+                    }
+                });
+            });
+        },
+    });
+}
+
+module.exports = {
     entry: [
-        './src/index.ts',
+        './src/index.js',
     ],
     resolve: {
         modules: [
             'src',
             'node_modules',
+            path.resolve(__dirname),
         ],
         extensions: ['*', '.js', '.jsx', '.ts', '.tsx'],
     },
@@ -30,20 +56,9 @@ const config = {
                     options: {
                         cacheDirectory: true,
 
-                        // Babel configuration is in .babelrc because jest requires it to be there.
+                        // Babel configuration is in babel.config.js because jest requires it to be there.
                     },
                 },
-            },
-            {
-                test: /\.(png|jpg|gif)$/i,
-                use: [
-                    {
-                        loader: 'url-loader',
-                        options: {
-                            limit: 8192,
-                        },
-                    },
-                ],
             },
             {
                 test: /\.scss$/,
@@ -55,7 +70,9 @@ const config = {
                     {
                         loader: 'sass-loader',
                         options: {
-                            includePaths: ['node_modules/compass-mixins/lib', 'sass'],
+                            sassOptions: {
+                                includePaths: ['node_modules/compass-mixins/lib', 'sass'],
+                            },
                         },
                     },
                 ],
@@ -68,53 +85,15 @@ const config = {
         'react-redux': 'ReactRedux',
         'prop-types': 'PropTypes',
         'react-bootstrap': 'ReactBootstrap',
+        'react-router-dom': 'ReactRouterDom',
     },
     output: {
-        devtoolNamespace: 'apps',
+        devtoolNamespace: PLUGIN_ID,
         path: path.join(__dirname, '/dist'),
         publicPath: '/',
         filename: 'main.js',
     },
-    devtool: 'source-map',
-    plugins: [
-        {
-            apply: (compiler) => {
-                compiler.hooks.afterEmit.tap('AfterEmitPlugin', () => {
-                    exec('cd .. && make reset', (err, stdout, stderr) => {
-                        if (stdout) {
-                            process.stdout.write(stdout);
-                        }
-                        if (stderr) {
-                            process.stderr.write(stderr);
-                        }
-                    });
-                });
-            },
-        },
-    ],
+    devtool,
+    mode,
+    plugins,
 };
-
-config.mode = 'production';
-
-if (DEV) {
-    // Development mode configuration
-    config.mode = 'development';
-}
-
-// Export PRODUCTION_PERF_DEBUG=1 when running webpack to enable support for the react profiler
-// even while generating production code. (Performance testing development code is typically
-// not helpful.)
-// See https://reactjs.org/blog/2018/09/10/introducing-the-react-profiler.html and
-// https://gist.github.com/bvaughn/25e6233aeb1b4f0cdb8d8366e54a3977
-if (process.env.PRODUCTION_PERF_DEBUG) { //eslint-disable-line no-process-env
-    console.log('Enabling production performance debug settings'); //eslint-disable-line no-console
-    config.resolve.alias['react-dom'] = 'react-dom/profiling';
-    config.resolve.alias['schedule/tracing'] = 'schedule/tracing-profiling';
-    config.optimization = {
-
-        // Skip minification to make the profiled data more useful.
-        minimize: false,
-    };
-}
-
-module.exports = config;
