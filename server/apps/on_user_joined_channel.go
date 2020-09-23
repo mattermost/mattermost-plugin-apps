@@ -4,22 +4,21 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
 type UserJoinedChannelNotification struct {
-	SubscriptionID appmodel.SubscriptionID
-	Subject        appmodel.SubscriptionSubject
+	SubscriptionID SubscriptionID
+	Subject        SubscriptionSubject
 	UserID         string
 	ChannelID      string
-	Expanded       *appmodel.Expanded
+	Expanded       *Expanded
 }
 
 func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember,
 	actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannel(appmodel.SubjectUserJoinedChannel, cm.ChannelId)
+	subs, err := p.Subscriptions.GetSubscriptionsForChannel(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)

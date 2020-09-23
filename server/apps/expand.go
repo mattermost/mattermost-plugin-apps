@@ -5,10 +5,57 @@ package apps
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
+
+type Expander interface {
+	Expand(expand *Expand, actingUserID, userID, channelID string) (*Expanded, error)
+}
+
+type ExpandEntity string
+
+const (
+	ExpandActingUser = ExpandEntity("ActingUser")
+	ExpandUser       = ExpandEntity("User")
+	ExpandChannel    = ExpandEntity("Channel")
+	ExpandConfig     = ExpandEntity("Config")
+)
+
+type ExpandLevel string
+
+const (
+	ExpandAll     = ExpandLevel("All")
+	ExpandSummary = ExpandLevel("Summary")
+)
+
+type Expand struct {
+	ActingUser ExpandLevel
+	Channel    ExpandLevel
+	Config     bool
+	User       ExpandLevel
+	Post       ExpandLevel
+	ParentPost ExpandLevel
+	RootPost   ExpandLevel
+	Team       ExpandLevel
+	Mentioned  ExpandLevel
+}
+
+type Expanded struct {
+	ActingUser *model.User
+	Channel    *model.Channel
+	Config     *MattermostConfig
+	User       *model.User
+	Post       *model.Post
+	ParentPost *model.Post
+	RootPost   *model.Post
+	Team       *model.Team
+	Mentioned  []*model.User
+}
+
+type MattermostConfig struct {
+	SiteURL string
+}
 
 type expander struct {
 	mm           *pluginapi.Client
@@ -20,15 +67,15 @@ type expander struct {
 	User       *model.User
 }
 
-func NewExpander(mm *pluginapi.Client, configurator configurator.Service) appmodel.Expander {
+func NewExpander(mm *pluginapi.Client, configurator configurator.Service) Expander {
 	return &expander{
 		mm:           mm,
 		configurator: configurator,
 	}
 }
 
-func (e *expander) Expand(expand *appmodel.Expand, actingUserID, userID, channelID string) (expanded *appmodel.Expanded, err error) {
-	for _, f := range []func(*appmodel.Expand) error{
+func (e *expander) Expand(expand *Expand, actingUserID, userID, channelID string) (expanded *Expanded, err error) {
+	for _, f := range []func(*Expand) error{
 		e.collectConfig,
 		e.collectUser(userID, &e.User),
 		e.collectUser(actingUserID, &e.ActingUser),
@@ -44,7 +91,7 @@ func (e *expander) Expand(expand *appmodel.Expand, actingUserID, userID, channel
 	return expanded, nil
 }
 
-func (e *expander) collectConfig(expand *appmodel.Expand) error {
+func (e *expander) collectConfig(expand *Expand) error {
 	if e.Config != nil || !expand.Config {
 		return nil
 	}
@@ -52,8 +99,8 @@ func (e *expander) collectConfig(expand *appmodel.Expand) error {
 	return nil
 }
 
-func (e *expander) collectChannel(channelID string) func(*appmodel.Expand) error {
-	return func(expand *appmodel.Expand) error {
+func (e *expander) collectChannel(channelID string) func(*Expand) error {
+	return func(expand *Expand) error {
 		if channelID == "" || !isValidExpandLevel(expand.Channel) {
 			return nil
 		}
@@ -68,8 +115,8 @@ func (e *expander) collectChannel(channelID string) func(*appmodel.Expand) error
 	}
 }
 
-func (e *expander) collectUser(userID string, userref **model.User) func(*appmodel.Expand) error {
-	return func(expand *appmodel.Expand) error {
+func (e *expander) collectUser(userID string, userref **model.User) func(*Expand) error {
+	return func(expand *Expand) error {
 		if *userref != nil || userID == "" || !isValidExpandLevel(expand.User) {
 			return nil
 		}
@@ -85,11 +132,11 @@ func (e *expander) collectUser(userID string, userref **model.User) func(*appmod
 	}
 }
 
-func (e *expander) produce(expand *appmodel.Expand) *appmodel.Expanded {
-	expanded := &appmodel.Expanded{}
+func (e *expander) produce(expand *Expand) *Expanded {
+	expanded := &Expanded{}
 
 	if expand.Config {
-		expanded.Config = &appmodel.MattermostConfig{}
+		expanded.Config = &MattermostConfig{}
 		if e.Config.ServiceSettings.SiteURL != nil {
 			expanded.Config.SiteURL = *e.Config.ServiceSettings.SiteURL
 		}
@@ -100,13 +147,13 @@ func (e *expander) produce(expand *appmodel.Expand) *appmodel.Expanded {
 	return nil
 }
 
-func produceUser(user *model.User, expand *appmodel.Expand) *model.User {
+func produceUser(user *model.User, expand *Expand) *model.User {
 	if expand.User == "" || !isValidExpandLevel(expand.User) {
 		return nil
 	}
 
 	switch expand.User {
-	case appmodel.ExpandSummary:
+	case ExpandSummary:
 		return &model.User{
 			Id:             user.Id,
 			Username:       user.Username,
@@ -121,13 +168,13 @@ func produceUser(user *model.User, expand *appmodel.Expand) *model.User {
 			BotDescription: user.BotDescription,
 		}
 
-	case appmodel.ExpandAll:
+	case ExpandAll:
 		return user
 	}
 
 	return nil
 }
 
-func isValidExpandLevel(l appmodel.ExpandLevel) bool {
-	return l == appmodel.ExpandAll || l == appmodel.ExpandSummary
+func isValidExpandLevel(l ExpandLevel) bool {
+	return l == ExpandAll || l == ExpandSummary
 }

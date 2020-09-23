@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -28,7 +28,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	var manifest appmodel.Manifest
+	var manifest apps.Manifest
 	resp, err := http.Get(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)

@@ -16,6 +16,4 @@ const (
 	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
 	HelloAppPath          = "/hello"
-
-	HelloInstallCompletePath = "/installComplete"
 )

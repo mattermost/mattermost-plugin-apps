@@ -4,12 +4,11 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type Subscriptions interface {
-	GetSubscriptionsForChannel(subj appmodel.SubscriptionSubject, channelID string) ([]*appmodel.Subscription, error)
+	GetSubscriptionsForChannel(subj SubscriptionSubject, channelID string) ([]*Subscription, error)
 }
 
 type subscriptions struct {
@@ -24,11 +23,11 @@ func NewSubscriptions(configurator configurator.Service) Subscriptions {
 	}
 }
 
-func (subs *subscriptions) GetSubscriptionsForChannel(subj appmodel.SubscriptionSubject, channelID string) ([]*appmodel.Subscription, error) {
-	return []*appmodel.Subscription{
+func (subs *subscriptions) GetSubscriptionsForChannel(subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
+	return []*Subscription{
 		{
 			AppID:     "Hello",
-			Subject:   appmodel.SubjectUserJoinedChannel,
+			Subject:   SubjectUserJoinedChannel,
 			ChannelID: "",
 		},
 	}, nil

@@ -4,21 +4,20 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type Registry interface {
 	InstallApp(*InInstallApp) (*OutInstallApp, error)
 	ListApps() (*OutListApps, error)
-	GetApp(appmodel.AppID) (*appmodel.App, error)
+	GetApp(AppID) (*App, error)
 }
 
 type registry struct {
 	configurator configurator.Service
 
 	// <><> Needs to come from config to be synchronized, or read from KV every request, sync.Map is unnecessary
-	apps map[appmodel.AppID]*appmodel.App
+	apps map[AppID]*App
 }
 
 var _ Registry = (*registry)(nil)
@@ -26,6 +25,6 @@ var _ Registry = (*registry)(nil)
 func NewRegistry(configurator configurator.Service) Registry {
 	return &registry{
 		configurator: configurator,
-		apps:         map[appmodel.AppID]*appmodel.App{},
+		apps:         map[AppID]*App{},
 	}
 }

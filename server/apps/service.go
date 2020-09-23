@@ -6,13 +6,12 @@ package apps
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type Service struct {
 	Config        configurator.Service
-	Expander      appmodel.Expander
+	Expander      Expander
 	Mattermost    *pluginapi.Client
 	Proxy         Proxy
 	Registry      Registry

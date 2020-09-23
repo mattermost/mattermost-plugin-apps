@@ -4,14 +4,17 @@
 package apps
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
+	"path"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/appmodel"
-	"github.com/mattermost/mattermost-plugin-apps/server/client"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
@@ -36,8 +39,28 @@ func NewProxy(mm *pluginapi.Client, configurator configurator.Service, subs Subs
 	}
 }
 
-func (p *proxy) SendChangeNotification(s *appmodel.Subscription, msg interface{}) {
+func (p *proxy) CreateJWT(userID, secret string) (string, error) {
+	var err error
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["user_id"] = userID
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token, err := at.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (p *proxy) SendChangeNotification(s *Subscription, msg interface{}) {
 	conf := p.configurator.GetConfig()
+
+	client, err := p.GetNotificationClient(s.AppID)
+	if err != nil {
+		// <><> TODO log
+		return
+	}
 
 	app, err := p.registry.GetApp(s.AppID)
 	if err != nil {
@@ -45,16 +68,38 @@ func (p *proxy) SendChangeNotification(s *appmodel.Subscription, msg interface{}
 		return
 	}
 
-	c, err := client.New(conf.BotUserID, app)
+	token, err := p.CreateJWT(conf.BotUserID, app.Secret)
 	if err != nil {
 		// <><> TODO log
 		return
 	}
 
-	c.SendNotification(appmodel.SubjectUserJoinedChannel, msg)
+	piper, pipew := io.Pipe()
+	go func() {
+		defer pipew.Close()
+		encodeErr := json.NewEncoder(pipew).Encode(msg)
+		if encodeErr != nil {
+			// <><> TODO log
+			return
+		}
+	}()
+
+	req, err := http.NewRequest(http.MethodPost, path.Join(app.Manifest.RootURL, "notify", string(SubjectUserJoinedChannel)), piper)
+	if err != nil {
+		// <><> TODO log
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		// <><> TODO log
+		// TODO ticket: progressive backoff on errors
+		return
+	}
+	resp.Body.Close()
 }
 
-func (p *proxy) GetNotificationClient(appID appmodel.AppID) (*http.Client, error) {
+func (p *proxy) GetNotificationClient(appID AppID) (*http.Client, error) {
 	// <><> TODO cache the client per app
 	return nil, nil
 }
