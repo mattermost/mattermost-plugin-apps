@@ -23,13 +23,11 @@ func (s *Service) PostChangeNotification(appID AppID, sub *Subscription, msg int
 	}
 
 	resp, err := s.post(app, "", path.Join(app.Manifest.RootURL, "notify", string(sub.Subject)), msg)
-	if resp != nil && resp.Body != nil {
-		defer resp.Body.Close()
-	}
 	if err != nil {
 		// <><> TODO log
 		return
 	}
+	defer resp.Body.Close()
 }
 
 func (s *Service) PostWish(appID AppID, fromMattermostUserID string, w *Wish, data *CallData) (*CallResponse, error) {
@@ -38,12 +36,11 @@ func (s *Service) PostWish(appID AppID, fromMattermostUserID string, w *Wish, da
 		return nil, err
 	}
 	resp, err := s.post(app, fromMattermostUserID, w.URL, data)
-	if resp != nil && resp.Body != nil {
-		defer resp.Body.Close()
-	}
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	cr := CallResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	if err != nil {
@@ -103,4 +100,20 @@ func createJWT(actingUserID, secret string) (string, error) {
 type JWTClaims struct {
 	jwt.StandardClaims
 	ActingUserID string `json:"acting_user_id,omitempty"`
+}
+
+func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
+	var manifest Manifest
+	resp, err := http.Get(manifestURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&manifest)
+	if err != nil {
+		return nil, err
+	}
+
+	return &manifest, nil
 }

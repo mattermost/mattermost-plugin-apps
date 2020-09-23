@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
@@ -106,17 +107,20 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	logDM := func(m string) {
-		if logChannelID == "" {
+		if logChannelID == "" && logRootPostID == "" {
 			return
 		}
-		_, _ = mmClient.CreatePost(&model.Post{
-			UserId:    conf.BotUserID,
-			ChannelId: logChannelID,
-			RootId:    logRootPostID,
-			ParentId:  logRootPostID,
-			Message:   m,
-			Type:      model.POST_DEFAULT,
-		})
+		// fmt.Printf("<><> IDS %q %q\n", logChannelID, logRootPostID)
+		// _, r := mmClient.CreatePost(&model.Post{
+		// 	UserId:    claims.ActingUserID,
+		// 	ChannelId: logChannelID,
+		// 	RootId:    logRootPostID,
+		// 	// ParentId:  logRootPostID,
+		// 	Message: m,
+		// 	Type:    model.POST_DEFAULT,
+		// })
+
+		// fmt.Printf("<><> ERRRRR %v\n", r.Error.Error())
 	}
 
 	teams, _ := mmClient.GetAllTeams("", 0, 100)
@@ -129,11 +133,13 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	uniq := fmt.Sprintf("%v", time.Now().Unix())
+	uniq = uniq[len(uniq)-5:]
 	channel, api4Resp := mmClient.CreateChannel(&model.Channel{
 		TeamId:      teams[0].Id,
 		Type:        model.CHANNEL_OPEN,
-		DisplayName: "Hallo სამყარო",
-		Name:        "hello",
+		DisplayName: "Hallo სამყარო, " + uniq,
+		Name:        "hello-" + uniq,
 		Header:      "Hallo სამყარო header",
 		Purpose:     "inquires about new member's emotional state",
 	})
@@ -152,7 +158,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
 		Message:   "Users joining this channel will be asked about their well-being, and the information displayed publicly.",
 		Type:      model.POST_DEFAULT,
 	})
-	logDM("created ~Hallo სამყარო")
+	logDM("<><> created ~Hallo სამყარო")
 
 	// TODO Subscribe
 

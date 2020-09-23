@@ -11,9 +11,9 @@ import (
 
 type InInstallApp struct {
 	ActingMattermostUserID string
-	NoUserConsentForOAuth2 bool
-	Manifest               *Manifest
-	Secret                 string
+	LogChannelID           string
+	LogRootPostID          string
+	App                    *App
 }
 
 type OutInstallApp struct {
@@ -22,33 +22,41 @@ type OutInstallApp struct {
 }
 
 func (s *Service) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
-	if in.Manifest.AppID == "" {
+	if in.App.Manifest.AppID == "" {
 		return nil, errors.New("app ID must not be empty")
 	}
 	// TODO check if acting user is a sysadmin
 
 	// TODO remove mock, implement for real
-	app := &App{
-		Manifest:               in.Manifest,
-		GrantedPermissions:     in.Manifest.RequestedPermissions,
-		NoUserConsentForOAuth2: in.NoUserConsentForOAuth2,
-		Secret:                 in.Secret,
-	}
+	app := *in.App
+	app.GrantedPermissions = app.Manifest.RequestedPermissions
 
-	err := s.Registry.Store(app)
+	err := s.Registry.Store(&app)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO expand CallData
-	resp, err := s.PostWish(app.Manifest.AppID, in.ActingMattermostUserID, app.Manifest.Install, &CallData{})
+	callData := &CallData{
+		Values: FormValues{
+			Parsed: map[string]interface{}{
+				"X": "Y",
+			},
+		},
+		Env: map[string]interface{}{
+			"log_root_post_id": in.LogRootPostID,
+			"log_channel_id":   in.LogChannelID,
+		},
+	}
+
+	resp, err := s.PostWish(app.Manifest.AppID, in.ActingMattermostUserID, app.Manifest.Install, callData)
 	if err != nil {
 		return nil, errors.Wrap(err, "Install failed")
 	}
 
 	out := &OutInstallApp{
 		MD:  resp.Markdown,
-		App: app,
+		App: &app,
 	}
 	return out, nil
 }

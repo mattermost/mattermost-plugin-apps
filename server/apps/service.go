@@ -14,6 +14,7 @@ import (
 type AppClient interface {
 	PostWish(toAppID AppID, fromMattermostUserID string, w *Wish, data *CallData) (*CallResponse, error)
 	PostChangeNotification(AppID, *Subscription, interface{})
+	GetManifest(manifestURL string) (*Manifest, error)
 }
 
 type Hooks interface {

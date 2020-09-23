@@ -4,11 +4,8 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -28,16 +25,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	var manifest apps.Manifest
-	resp, err := http.Get(manifestURL)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return normalOut(params, nil, errors.Errorf("expected 200 OK, got %v %v", resp.StatusCode, resp.Status))
-	}
-	err = json.NewDecoder(resp.Body).Decode(&manifest)
+	manifest, err := s.apps.AppClient.GetManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
@@ -57,9 +45,11 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(
 			params.commandArgs.TriggerId,
-			&manifest,
+			manifest,
+			manifestURL,
 			conf.PluginURL,
-			post.Id))
+			post.Id,
+			post.ChannelId))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}

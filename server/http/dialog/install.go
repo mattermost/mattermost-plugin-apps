@@ -3,8 +3,8 @@ package dialog
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
@@ -13,7 +13,14 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL string, postID string) model.OpenDialogRequest {
+func NewInstallAppDialog(
+	triggerID string,
+	manifest *apps.Manifest,
+	manifestURL string,
+	pluginURL string,
+	logChannelID, logRootPostID string,
+) model.OpenDialogRequest {
+
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -54,20 +61,20 @@ func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL st
 		TriggerId: triggerID,
 		URL:       pluginURL + constants.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
-			CallbackId:       postID,
+			CallbackId:       logChannelID + "/" + logRootPostID,
 			Title:            "Install App - " + manifest.DisplayName,
 			IntroductionText: intro.String(),
 			Elements:         elements,
 			SubmitLabel:      "Approve and Install",
 			NotifyOnCancel:   true,
-			State:            utils.ToJSON(manifest),
+			State:            manifestURL,
 		},
 	}
 }
 
 func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	var err error
-	rootID := ""
+	logChannelID, logRootPostID := "", ""
 	message := ""
 	actingUserID := ""
 	status := http.StatusOK
@@ -85,8 +92,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 		if actingUserID != "" {
 			_ = d.apps.Mattermost.Post.DM(conf.BotUserID, actingUserID, &model.Post{
-				RootId:   rootID,
-				ParentId: rootID,
+				RootId:   logRootPostID,
+				ParentId: logRootPostID,
 				Message:  message,
 			})
 		}
@@ -112,7 +119,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rootID = dialogRequest.CallbackId
+	ss := strings.Split(dialogRequest.CallbackId, "/")
+	if len(ss) != 2 {
+		err = errors.New("expected channelId/postId as CallbackId, got " + dialogRequest.CallbackId)
+		status = http.StatusBadRequest
+		return
+	}
+	logChannelID, logRootPostID = ss[0], ss[1]
 
 	if dialogRequest.Cancelled {
 		message = "Installation was canceled by the user"
@@ -129,18 +142,21 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
-	var manifest apps.Manifest
-	err = json.Unmarshal([]byte(dialogRequest.State), &manifest)
+	manifest, err := d.apps.AppClient.GetManifest(dialogRequest.State)
 	if err != nil {
-		err = errors.Wrap(err, "failed to unmarshal manifest as state")
+		err = errors.Wrapf(err, "failed to get manifest from %s", dialogRequest.State)
 		return
 	}
 
 	out, err := d.apps.API.InstallApp(&apps.InInstallApp{
 		ActingMattermostUserID: actingUserID,
-		NoUserConsentForOAuth2: noUserConsentForOAuth2,
-		Manifest:               &manifest,
-		Secret:                 secret,
+		App: &apps.App{
+			Manifest:               manifest,
+			NoUserConsentForOAuth2: noUserConsentForOAuth2,
+			Secret:                 secret,
+		},
+		LogChannelID:  logChannelID,
+		LogRootPostID: logRootPostID,
 	})
 	if err != nil {
 		status = http.StatusInternalServerError
