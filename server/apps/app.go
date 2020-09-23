@@ -59,6 +59,8 @@ type Manifest struct {
 	Description          string
 	RootURL              string
 	RequestedPermissions Permissions
+	CallbackURL          string
+	Homepage             string
 }
 
 type App struct {
@@ -67,6 +69,12 @@ type App struct {
 	// Secret is used to issue JWT
 	Secret string
 
+	OAuthAppID string
+	// Should secret be here? Or should we just fetch it using the ID?
+	OAuthSecret string
+
+	BotID    string
+	BotToken string
 	// Grants should be scopable in the future, per team, channel, post with regexp
 	GrantedPermissions     Permissions
 	NoUserConsentForOAuth2 bool

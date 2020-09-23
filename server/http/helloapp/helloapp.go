@@ -42,5 +42,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionActAsUser,
 				apps.PermissionActAsBot,
 			},
+			CallbackURL: "http://localhost:8065/plugins/apps/helloapp/oauth",
+			Homepage:    "http://localhost:8065/plugins/apps/helloapp",
 		})
 }
