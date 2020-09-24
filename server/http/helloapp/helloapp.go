@@ -3,6 +3,7 @@ package helloapp
 import (
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 
@@ -16,6 +17,10 @@ import (
 type helloapp struct {
 	mm           *pluginapi.Client
 	configurator configurator.Service
+
+	OAuther           oauther.OAuther
+	OAuthClientID     string
+	OAuthClientSecret string
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
