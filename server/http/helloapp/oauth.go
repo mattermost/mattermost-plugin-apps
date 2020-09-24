@@ -36,7 +36,7 @@ func (h *helloapp) doOAuthedAction(userID string) {
 		return
 	}
 
-	c := model.NewAPIv4Client("")
+	c := model.NewAPIv4Client(h.configurator.GetConfig().MattermostSiteURL)
 	c.SetOAuthToken(t.AccessToken)
 	// Do something
 	h.mm.Log.Debug("Doing action with token", "token", t.AccessToken)
