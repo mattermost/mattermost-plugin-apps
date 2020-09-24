@@ -28,7 +28,6 @@ func (h *helloapp) startOAuth(userID string) {
 }
 
 func (h *helloapp) onConnect(userID string, token oauth2.Token, payload []byte) {
-	//<><> TODO store token
 	h.mm.Log.Debug("User connected", "userID", userID, "token", token.AccessToken, "payload", string(payload))
 }
 
