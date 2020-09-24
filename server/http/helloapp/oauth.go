@@ -1,10 +1,9 @@
 package helloapp
 
 import (
-	"context"
-
 	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"golang.org/x/oauth2"
 )
 
@@ -32,12 +31,13 @@ func (h *helloapp) onConnect(userID string, token oauth2.Token, payload []byte) 
 }
 
 func (h *helloapp) doOAuthedAction(userID string) {
-	ctx := context.Background()
 	t, err := h.OAuther.GetToken(userID)
 	if err != nil {
 		return
 	}
-	client := h.GetOAuthConfig().Client(ctx, t)
-	client.Get("https://www.google.com")
+
+	c := model.NewAPIv4Client("")
+	c.SetOAuthToken(t.AccessToken)
+	// Do something
 	h.mm.Log.Debug("Doing action with token", "token", t.AccessToken)
 }
