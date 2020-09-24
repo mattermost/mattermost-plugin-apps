@@ -31,6 +31,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
 	subrouter.HandleFunc("/mattermost-app.json", a.handleManifest).Methods("GET")
+	subrouter.PathPrefix("/oauth2").HandlerFunc(a.handleOAuth).Methods(http.MethodGet, http.MethodPost)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
@@ -50,4 +51,13 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			CallbackURL: "http://localhost:8065/plugins/apps/helloapp/oauth",
 			Homepage:    "http://localhost:8065/plugins/apps/helloapp",
 		})
+}
+
+func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
+	if h.OAuther == nil {
+		http.Error(w, "OAuth not initialized", http.StatusInternalServerError)
+		return
+	}
+
+	h.OAuther.ServeHTTP(w, req)
 }
