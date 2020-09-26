@@ -54,3 +54,15 @@ func (s *Service) Call(toAppID AppID, fromMattermostUserID string, c *Call) (*Ca
 		return nil, errors.New("invalid Call, only one of Wish, Modal can be specified")
 	}
 }
+
+func (cd *CallData) GetEnv(name string) string {
+	if cd.Env == nil {
+		return ""
+	}
+	v, ok := cd.Env[name]
+	if !ok {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
+}

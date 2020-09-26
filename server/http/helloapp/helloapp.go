@@ -58,8 +58,8 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			Install: &apps.Wish{
 				URL: rootURL + "/wish/install",
 			},
-			CallbackURL: "http://localhost:8065/plugins/apps/helloapp/oauth",
-			Homepage:    "http://localhost:8065/plugins/apps/helloapp",
+			CallbackURL: rootURL + "/oauth",
+			Homepage:    rootURL,
 		})
 }
 
@@ -92,37 +92,26 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	conf := h.configurator.GetConfig()
 	mmClient := model.NewAPIv4Client(conf.MattermostSiteURL)
+	mmClient.SetToken(data.Expanded.App.BotToken)
 
-	// TODO get the token from the request
-	mmClient.SetToken("kuk76mfjhpnppruqpmkkeuhacw")
+	logChannelID := data.GetEnv("log_channel_id")
+	logRootPostID := data.GetEnv("log_root_post_id")
 
-	logChannelID, logRootPostID := "", ""
-	if data.Env != nil {
-		v, ok := data.Env["log_channel_id"]
-		if ok {
-			logChannelID = v.(string)
-		}
-
-		v, ok = data.Env["log_root_post_id"]
-		if ok {
-			logRootPostID = v.(string)
-		}
-	}
 	logDM := func(m string) {
 		if logChannelID == "" && logRootPostID == "" {
 			return
 		}
-		// fmt.Printf("<><> IDS %q %q\n", logChannelID, logRootPostID)
-		// _, r := mmClient.CreatePost(&model.Post{
-		// 	UserId:    claims.ActingUserID,
-		// 	ChannelId: logChannelID,
-		// 	RootId:    logRootPostID,
-		// 	// ParentId:  logRootPostID,
-		// 	Message: m,
-		// 	Type:    model.POST_DEFAULT,
-		// })
+		fmt.Printf("<><> IDS %q %q\n", logChannelID, logRootPostID)
+		_, r := mmClient.CreatePost(&model.Post{
+			// UserId:    claims.ActingUserID,
+			ChannelId: logChannelID,
+			// RootId:    logRootPostID,
+			// ParentId:  logRootPostID,
+			Message: "<><><>" + m,
+			Type:    model.POST_DEFAULT,
+		})
 
-		// fmt.Printf("<><> ERRRRR %v\n", r.Error.Error())
+		fmt.Printf("<><> ERRRRR %v\n", r.Error.Error())
 	}
 
 	teams, _ := mmClient.GetAllTeams("", 0, 100)
