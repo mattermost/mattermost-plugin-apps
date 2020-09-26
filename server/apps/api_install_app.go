@@ -11,9 +11,10 @@ import (
 
 type InInstallApp struct {
 	ActingMattermostUserID string
+	App                    *App
 	LogChannelID           string
 	LogRootPostID          string
-	App                    *App
+	SessionToken           string
 }
 
 type OutInstallApp struct {

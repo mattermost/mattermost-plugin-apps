@@ -13,14 +13,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func NewInstallAppDialog(
-	triggerID string,
-	manifest *apps.Manifest,
-	manifestURL string,
-	pluginURL string,
-	logChannelID, logRootPostID string,
-) model.OpenDialogRequest {
-
+func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, manifestURL string,
+	pluginURL string, logChannelID, logRootPostID string) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -107,6 +101,19 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 	// <><> TODO check for sysadmin
 
+	sessionID := req.Header.Get("MM_SESSION_ID")
+	if sessionID == "" {
+		err = errors.New("no session")
+		status = http.StatusUnauthorized
+		return
+	}
+
+	session, err := d.apps.Mattermost.Session.Get(sessionID)
+	if err != nil {
+		status = http.StatusInternalServerError
+		return
+	}
+
 	var dialogRequest model.SubmitDialogRequest
 	err = json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -157,6 +164,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		},
 		LogChannelID:  logChannelID,
 		LogRootPostID: logRootPostID,
+		SessionToken:  session.Token,
 	})
 	if err != nil {
 		status = http.StatusInternalServerError

@@ -58,6 +58,8 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			Install: &apps.Wish{
 				URL: rootURL + "/wish/install",
 			},
+			CallbackURL: "http://localhost:8065/plugins/apps/helloapp/oauth",
+			Homepage:    "http://localhost:8065/plugins/apps/helloapp",
 		})
 }
 
