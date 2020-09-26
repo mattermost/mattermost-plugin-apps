@@ -11,13 +11,13 @@ type AppID string
 
 type Manifest struct {
 	AppID                AppID
-	CallbackURL          string
-	Description          string
 	DisplayName          string
-	Homepage             string
+	Description          string
 	Install              *Wish
 	RequestedPermissions Permissions
 	RootURL              string
+	CallbackURL          string
+	Homepage             string
 }
 
 type App struct {
