@@ -1,16 +1,12 @@
 package helloapp
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
@@ -23,6 +19,10 @@ const AppSecret = "1234"
 type helloapp struct {
 	mm           *pluginapi.Client
 	configurator configurator.Service
+
+	OAuther           oauther.OAuther
+	OAuthClientID     string
+	OAuthClientSecret string
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
@@ -35,6 +35,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 	subrouter.HandleFunc("/mattermost-app.json", a.handleManifest).Methods("GET")
 
 	subrouter.HandleFunc("/wish/install", a.handleInstall).Methods("POST")
+	subrouter.PathPrefix("/oauth2").HandlerFunc(a.handleOAuth).Methods(http.MethodGet, http.MethodPost)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
@@ -58,46 +59,5 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			},
 			CallbackURL: rootURL + "/oauth",
 			Homepage:    rootURL,
-		})
-}
-
-func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
-	authValue := req.Header.Get(apps.OutgoingAuthHeader)
-	if !strings.HasPrefix(authValue, "Bearer ") {
-		httputils.WriteBadRequestError(w, errors.Errorf("missing %s: Bearer header", apps.OutgoingAuthHeader))
-		return
-	}
-
-	jwtoken := strings.TrimPrefix(authValue, "Bearer ")
-	claims := apps.JWTClaims{}
-	_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(AppSecret), nil
-	})
-	if err != nil {
-		httputils.WriteBadRequestError(w, err)
-		return
-	}
-
-	data := apps.CallData{}
-	err = json.NewDecoder(req.Body).Decode(&data)
-	if err != nil {
-		httputils.WriteBadRequestError(w, err)
-		return
-	}
-
-	// The freshly created bot token is largely useless, so we need the acting
-	// user (sysadmin) to OAuth2 connect first. This can be done after OAuth2
-	// (OAuther) is fully integrated.
-
-	// TODO Install: create channel, subscribe, etc.
-
-	httputils.WriteJSON(w,
-		apps.CallResponse{
-			Type:     apps.ResponseTypeOK,
-			Markdown: "Installed! <><>",
-			Data:     map[string]interface{}{"status": "ok"},
 		})
 }
