@@ -5,6 +5,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Wish struct {
+	URL string
+}
+
 type Call struct {
 	// Only one of Wish or Modal can be set
 	Wish  *Wish  `json:"wish,omitempty"`
@@ -14,10 +18,48 @@ type Call struct {
 }
 
 type CallData struct {
-	Values   FormValues             `json:"values,omitempty"`
-	Expanded *Expanded              `json:"expanded,omitempty"`
-	Env      map[string]interface{} `json:"env,omitempty"`
-	From     []*Location            `json:"from,omitempty"`
+	Context  CallContext `json:"context"`
+	Values   FormValues  `json:"values,omitempty"`
+	Expanded *Expanded   `json:"expanded,omitempty"`
+	From     []*Location `json:"from,omitempty"`
+}
+
+type CallContext struct {
+	// For convenience, to use in go-land to pass the AppID around
+	AppID AppID `json:"-"`
+
+	// ActingUserID is the Mattermost User ID of the acting user
+	ActingUserID string `json:"acting_user_id"`
+
+	// TeamID, ChannelID, PostID represent the "location" in Mattermost that the
+	// call is associated with. TeamID is usually set, ChannelID and PostID are
+	// optional.
+	TeamID    string `json:"team_id"`
+	ChannelID string `json:"channel_id,omitempty"`
+	PostID    string `json:"post_id,omitempty"`
+
+	LogTo *Thread `json:"log_to,omitempty"`
+
+	Props map[string]string `json:"props,omitempty"`
+}
+
+type Thread struct {
+	ChannelID  string `json:"channel_id"`
+	RootPostID string `json:"root_post_id"`
+}
+
+func (c *CallContext) Get(n string) string {
+	if len(c.Props) == 0 {
+		return ""
+	}
+	return c.Props[n]
+}
+
+func (c *CallContext) Set(n, v string) {
+	if len(c.Props) == 0 {
+		c.Props = map[string]string{}
+	}
+	c.Props[n] = v
 }
 
 type CallResponseType string
@@ -44,25 +86,13 @@ type CallResponse struct {
 	Call *Call `json:"call,omitempty"`
 }
 
-func (s *Service) Call(toAppID AppID, fromMattermostUserID string, c *Call) (*CallResponse, error) {
+func (s *Service) Call(call Call) (*CallResponse, error) {
 	switch {
-	case c.Wish != nil && c.Modal == nil:
-		return s.PostWish(toAppID, fromMattermostUserID, c.Wish, c.Data)
-	case c.Modal != nil && c.Wish == nil:
-		return s.CallModal(toAppID, c.Modal, c.Data)
+	case call.Wish != nil && call.Modal == nil:
+		return s.PostWish(call)
+	case call.Modal != nil && call.Wish == nil:
+		return s.CallModal(call)
 	default:
 		return nil, errors.New("invalid Call, only one of Wish, Modal can be specified")
 	}
-}
-
-func (cd *CallData) GetEnv(name string) string {
-	if cd.Env == nil {
-		return ""
-	}
-	v, ok := cd.Env[name]
-	if !ok {
-		return ""
-	}
-	s, _ := v.(string)
-	return s
 }

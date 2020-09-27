@@ -5,6 +5,7 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -13,10 +14,16 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-const AuthHeader = "Mattermost-App-Authorization"
+type Client interface {
+	PostWish(Call) (*CallResponse, error)
+	PostChangeNotification(Subscription, interface{})
+	GetManifest(manifestURL string) (*Manifest, error)
+}
 
-func (s *Service) PostChangeNotification(appID AppID, sub *Subscription, msg interface{}) {
-	app, err := s.Registry.Get(appID)
+const OutgoingAuthHeader = "Mattermost-App-Authorization"
+
+func (s *Service) PostChangeNotification(sub Subscription, msg interface{}) {
+	app, err := s.Registry.Get(sub.AppID)
 	if err != nil {
 		// <><> TODO log
 		return
@@ -30,12 +37,12 @@ func (s *Service) PostChangeNotification(appID AppID, sub *Subscription, msg int
 	defer resp.Body.Close()
 }
 
-func (s *Service) PostWish(appID AppID, fromMattermostUserID string, w *Wish, data *CallData) (*CallResponse, error) {
-	app, err := s.Registry.Get(appID)
+func (s *Service) PostWish(call Call) (*CallResponse, error) {
+	app, err := s.Registry.Get(call.Data.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.post(app, fromMattermostUserID, w.URL, data)
+	resp, err := s.post(app, call.Data.Context.ActingUserID, call.Wish.URL, call.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -59,26 +66,27 @@ func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg 
 		return nil, err
 	}
 
-	var encodeErr error
 	piper, pipew := io.Pipe()
 	go func() {
-		defer pipew.Close()
-		encodeErr = json.NewEncoder(pipew).Encode(msg)
+		encodeErr := json.NewEncoder(pipew).Encode(msg)
+		if encodeErr != nil {
+			pipew.CloseWithError(encodeErr)
+		}
+		pipew.Close()
 	}()
+
 	req, err := http.NewRequest(http.MethodPost, url, piper)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(AuthHeader, "Bearer "+jwtoken)
+	req.Header.Set(OutgoingAuthHeader, "Bearer "+jwtoken)
 
 	resp, err := client.Do(req)
 	if err != nil {
 		// TODO ticket: progressive backoff on errors
 		return nil, err
 	}
-	if encodeErr != nil {
-		return nil, encodeErr
-	}
+
 	return resp, nil
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
 package apps
@@ -7,6 +7,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
+
+type Hooks interface {
+	OnUserJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actor *model.User)
+}
 
 type UserJoinedChannelNotification struct {
 	SubscriptionID SubscriptionID
@@ -41,6 +45,6 @@ func (s *Service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMemb
 			Expanded:  expanded,
 		}
 
-		go s.PostChangeNotification(sub.AppID, sub, msg)
+		go s.PostChangeNotification(*sub, msg)
 	}
 }

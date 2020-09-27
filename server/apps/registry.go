@@ -8,6 +8,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
+type Registry interface {
+	Store(*App) error
+	Get(AppID) (*App, error)
+}
+
 type registry struct {
 	configurator configurator.Service
 

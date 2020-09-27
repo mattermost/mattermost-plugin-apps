@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 
 	"github.com/gorilla/mux"
@@ -90,68 +88,11 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	conf := h.configurator.GetConfig()
-	mmClient := model.NewAPIv4Client(conf.MattermostSiteURL)
-	mmClient.SetToken(data.Expanded.App.BotToken)
+	// The freshly created bot token is largely useless, so we need the acting
+	// user (sysadmin) to OAuth2 connect first. This can be done after OAuth2
+	// (OAuther) is fully integrated.
 
-	logChannelID := data.GetEnv("log_channel_id")
-	logRootPostID := data.GetEnv("log_root_post_id")
-
-	logDM := func(m string) {
-		if logChannelID == "" && logRootPostID == "" {
-			return
-		}
-		fmt.Printf("<><> IDS %q %q\n", logChannelID, logRootPostID)
-		_, r := mmClient.CreatePost(&model.Post{
-			// UserId:    claims.ActingUserID,
-			ChannelId: logChannelID,
-			// RootId:    logRootPostID,
-			// ParentId:  logRootPostID,
-			Message: "<><><>" + m,
-			Type:    model.POST_DEFAULT,
-		})
-
-		fmt.Printf("<><> ERRRRR %v\n", r.Error.Error())
-	}
-
-	teams, _ := mmClient.GetAllTeams("", 0, 100)
-	if len(teams) == 0 {
-		httputils.WriteJSONStatus(w, http.StatusInternalServerError,
-			apps.CallResponse{
-				Type:  apps.ResponseTypeError,
-				Error: errors.New("no teams found to create Hallo სამყარო channel in"),
-			})
-		return
-	}
-
-	uniq := fmt.Sprintf("%v", time.Now().Unix())
-	uniq = uniq[len(uniq)-5:]
-	channel, api4Resp := mmClient.CreateChannel(&model.Channel{
-		TeamId:      teams[0].Id,
-		Type:        model.CHANNEL_OPEN,
-		DisplayName: "Hallo სამყარო, " + uniq,
-		Name:        "hello-" + uniq,
-		Header:      "Hallo სამყარო header",
-		Purpose:     "inquires about new member's emotional state",
-	})
-	if channel == nil {
-		httputils.WriteJSONStatus(w, http.StatusInternalServerError,
-			apps.CallResponse{
-				Type:  apps.ResponseTypeError,
-				Error: errors.Wrapf(api4Resp.Error, "failed to create ~Hallo სამყარო channel in %v\n", teams[0].Id),
-			})
-		return
-	}
-
-	_, _ = mmClient.CreatePost(&model.Post{
-		UserId:    conf.BotUserID,
-		ChannelId: channel.Id,
-		Message:   "Users joining this channel will be asked about their well-being, and the information displayed publicly.",
-		Type:      model.POST_DEFAULT,
-	})
-	logDM("<><> created ~Hallo სამყარო")
-
-	// TODO Subscribe
+	// TODO Install: create channel, subscribe, etc.
 
 	httputils.WriteJSON(w,
 		apps.CallResponse{

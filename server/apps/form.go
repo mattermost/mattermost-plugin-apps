@@ -11,8 +11,8 @@ type Form struct {
 }
 
 type FormValues struct {
-	Parsed map[string]interface{}
-	Raw    string
+	Data interface{}
+	Raw  string
 }
 
 type ElementType string

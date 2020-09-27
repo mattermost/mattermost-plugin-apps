@@ -30,8 +30,9 @@ type App struct {
 	// Should secret be here? Or should we just fetch it using the ID?
 	OAuthSecret string
 
-	BotID    string
-	BotToken string
+	BotUserID              string
+	BotPersonalAccessToken string
+
 	// Grants should be scopable in the future, per team, channel, post with regexp
 	GrantedPermissions     Permissions
 	NoUserConsentForOAuth2 bool

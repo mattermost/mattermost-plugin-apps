@@ -25,7 +25,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	manifest, err := s.apps.AppClient.GetManifest(manifestURL)
+	manifest, err := s.apps.Client.GetManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
@@ -44,12 +44,11 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	// <plugin>/http/dialog/install.go
 	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(
-			params.commandArgs.TriggerId,
 			manifest,
-			manifestURL,
 			conf.PluginURL,
-			post.Id,
-			post.ChannelId))
+			params.commandArgs,
+			post.ChannelId,
+			post.Id))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}

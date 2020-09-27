@@ -9,6 +9,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+type Expander interface {
+	Expand(expand *Expand, actingUserID, userID, channelID string) (*Expanded, error)
+}
+
 type ExpandEntity string
 
 const (
