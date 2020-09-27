@@ -4,7 +4,7 @@
 package plugin
 
 import (
-	"net/http"
+	gohttp "net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	myhttp "github.com/mattermost/mattermost-plugin-apps/server/http"
+	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 )
@@ -30,7 +30,7 @@ type Plugin struct {
 	apps         *apps.Service
 	command      command.Service
 	configurator configurator.Service
-	http         myhttp.Service
+	http         http.Service
 }
 
 func NewPlugin(buildConfig *configurator.BuildConfig) *Plugin {
@@ -54,7 +54,7 @@ func (p *Plugin) OnActivate() error {
 	p.configurator = configurator.NewConfigurator(p.mattermost, p.BuildConfig, botUserID)
 	p.apps = apps.NewService(p.mattermost, p.configurator)
 
-	p.http = myhttp.NewService(mux.NewRouter(), p.apps,
+	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
 	)
@@ -79,7 +79,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	return resp, nil
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, req *http.Request) {
+func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
 	p.http.ServeHTTP(c, w, req)
 }
 
