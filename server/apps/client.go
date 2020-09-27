@@ -5,7 +5,6 @@ package apps
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -70,7 +69,7 @@ func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg 
 	go func() {
 		encodeErr := json.NewEncoder(pipew).Encode(msg)
 		if encodeErr != nil {
-			pipew.CloseWithError(encodeErr)
+			_ = pipew.CloseWithError(encodeErr)
 		}
 		pipew.Close()
 	}()
@@ -112,7 +111,7 @@ type JWTClaims struct {
 
 func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
 	var manifest Manifest
-	resp, err := http.Get(manifestURL)
+	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
 	}

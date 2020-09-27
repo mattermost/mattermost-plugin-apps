@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/gorilla/mux"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 const AppSecret = "1234"
@@ -62,9 +62,9 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
-	authValue := req.Header.Get(apps.AuthHeader)
+	authValue := req.Header.Get(apps.OutgoingAuthHeader)
 	if !strings.HasPrefix(authValue, "Bearer ") {
-		httputils.WriteBadRequestError(w, errors.Errorf("missing %s: Bearer header", apps.AuthHeader))
+		httputils.WriteBadRequestError(w, errors.Errorf("missing %s: Bearer header", apps.OutgoingAuthHeader))
 		return
 	}
 

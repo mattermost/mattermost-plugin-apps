@@ -6,13 +6,13 @@ package command
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
-
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
