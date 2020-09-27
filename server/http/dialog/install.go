@@ -95,15 +95,10 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(status)
 		_ = json.NewEncoder(w).Encode(resp)
 
-		if stateData.LogChannelID != "" {
-			_ = d.apps.Mattermost.Post.CreatePost(
-				&model.Post{
-					ChannelId: stateData.LogChannelID,
-					RootId:    stateData.LogRootPostID,
-					ParentId:  stateData.LogRootPostID,
-					Message:   logMessage,
-				})
-		}
+		conf := d.apps.Configurator.GetConfig()
+		_ = d.apps.Mattermost.Post.DM(conf.BotUserID, actingUserID, &model.Post{
+			Message: logMessage,
+		})
 	}()
 
 	actingUserID = req.Header.Get("Mattermost-User-Id")

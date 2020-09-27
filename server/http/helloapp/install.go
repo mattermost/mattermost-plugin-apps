@@ -1,55 +1,52 @@
 package helloapp
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request) {
-	authValue := req.Header.Get(apps.OutgoingAuthHeader)
-	if !strings.HasPrefix(authValue, "Bearer ") {
-		httputils.WriteBadRequestError(w, errors.Errorf("missing %s: Bearer header", apps.OutgoingAuthHeader))
-		return
-	}
-
-	jwtoken := strings.TrimPrefix(authValue, "Bearer ")
-	claims := apps.JWTClaims{}
-	_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(AppSecret), nil
-	})
+func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error) {
+	connectURL, err := h.startOAuth2Connect(
+		data.Context.ActingUserID,
+		apps.Call{
+			Wish: apps.NewWish(h.AppURL(PathWishConnectedInstall)),
+			Data: data,
+		})
 	if err != nil {
-		httputils.WriteBadRequestError(w, err)
-		return
+		return http.StatusInternalServerError, err
 	}
 
-	data := apps.CallData{}
-	err = json.NewDecoder(req.Body).Decode(&data)
+	httputils.WriteJSON(w,
+		apps.CallResponse{
+			Type: apps.ResponseTypeOK,
+			Markdown: md.Markdownf(
+				"**Hallo სამყარო** needs to continue its installation using your system administrator's credentials. Please [connect](%s) the application to your Mattermost account.",
+				connectURL),
+		})
+	return http.StatusOK, nil
+}
+
+func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error) {
+	err := h.asUser(data.Context.ActingUserID,
+		func(client *model.Client4) error {
+			teams, api4Resp := client.GetAllTeams("", 0, 100)
+			fmt.Printf("<><> RESPONSE: %+v\n", api4Resp)
+			fmt.Printf("<><> TEAMS: %+v\n", teams)
+			return nil
+		})
 	if err != nil {
-		httputils.WriteBadRequestError(w, err)
-		return
+		return http.StatusInternalServerError, err
 	}
-
-	// The freshly created bot token is largely useless, so we need the acting
-	// user (sysadmin) to OAuth2 connect first. This can be done after OAuth2
-	// (OAuther) is fully integrated.
-
-	// TODO Install: create channel, subscribe, etc.
 
 	httputils.WriteJSON(w,
 		apps.CallResponse{
 			Type:     apps.ResponseTypeOK,
-			Markdown: "Installed! <><>",
-			Data:     map[string]interface{}{"status": "ok"},
+			Markdown: "<><> OK",
 		})
+	return http.StatusOK, nil
 }

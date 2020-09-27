@@ -4,10 +4,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type Wish struct {
-	URL string
-}
-
 type Call struct {
 	// Only one of Wish or Modal can be set
 	Wish  *Wish  `json:"wish,omitempty"`

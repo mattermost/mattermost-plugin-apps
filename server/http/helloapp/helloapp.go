@@ -1,9 +1,14 @@
 package helloapp
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
@@ -16,7 +21,15 @@ import (
 
 const AppSecret = "1234"
 
+const (
+	PathManifest             = "/mattermost-app.json"
+	PathWishInstall          = "/wish/install"
+	PathWishConnectedInstall = "/wish/connected_install"
+	PathOAuth2               = "/oauth2"
+)
+
 type helloapp struct {
+	apps         *apps.Service
 	mm           *pluginapi.Client
 	configurator configurator.Service
 
@@ -26,38 +39,62 @@ type helloapp struct {
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
-	a := helloapp{
+	h := helloapp{
 		mm:           apps.Mattermost,
 		configurator: apps.Configurator,
+		apps:         apps,
 	}
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
-	subrouter.HandleFunc("/mattermost-app.json", a.handleManifest).Methods("GET")
+	subrouter.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	subrouter.HandleFunc("/wish/install", a.handleInstall).Methods("POST")
-	subrouter.PathPrefix("/oauth2").HandlerFunc(a.handleOAuth).Methods(http.MethodGet, http.MethodPost)
+	subrouter.HandleFunc(PathWishInstall, wish(h.handleInstall)).Methods("POST")
+	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
+
+	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods(http.MethodGet, http.MethodPost)
+
+	h.InitOAuther()
 }
 
-func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
+func (h *helloapp) AppURL(path string) string {
 	conf := h.configurator.GetConfig()
+	return conf.PluginURL + constants.HelloAppPath + path
+}
 
-	rootURL := conf.PluginURL + constants.HelloAppPath
+type WishHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error)
 
-	httputils.WriteJSON(w,
-		apps.Manifest{
-			AppID:       "hello",
-			DisplayName: "Hallo სამყარო",
-			Description: "Hallo სამყარო test app",
-			RootURL:     rootURL,
-			RequestedPermissions: []apps.PermissionType{
-				apps.PermissionUserJoinedChannelNotification,
-				apps.PermissionActAsUser,
-				apps.PermissionActAsBot,
-			},
-			Install: &apps.Wish{
-				URL: rootURL + "/wish/install",
-			},
-			CallbackURL: rootURL + "/oauth",
-			Homepage:    rootURL,
+func wish(wishHandler WishHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		authValue := req.Header.Get(apps.OutgoingAuthHeader)
+		if !strings.HasPrefix(authValue, "Bearer ") {
+			httputils.WriteBadRequestError(w, errors.Errorf("missing %s: Bearer header", apps.OutgoingAuthHeader))
+			return
+		}
+
+		jwtoken := strings.TrimPrefix(authValue, "Bearer ")
+		claims := apps.JWTClaims{}
+		_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(AppSecret), nil
 		})
+		if err != nil {
+			httputils.WriteBadRequestError(w, err)
+			return
+		}
+
+		data := apps.CallData{}
+		err = json.NewDecoder(req.Body).Decode(&data)
+		if err != nil {
+			httputils.WriteBadRequestError(w, err)
+			return
+		}
+
+		statusCode, err := wishHandler(w, req, &claims, &data)
+		if err != nil {
+			httputils.WriteJSONError(w, statusCode, "", err)
+			return
+		}
+	}
 }
