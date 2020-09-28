@@ -108,9 +108,10 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 
 	// check if sub exists
 	var newSubs []*Subscription
-	for _, s := range savedSubs {
+	for i, s := range savedSubs {
 		if s.SubscriptionID == subID {
-			continue
+			newSubs = append(newSubs, savedSubs[i+1:]...)
+			break
 		}
 		newSubs = append(newSubs, s)
 	}
