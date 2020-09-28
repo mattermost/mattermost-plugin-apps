@@ -13,7 +13,7 @@ import (
 const SubsPrefixKey = "sub_"
 
 type Subscriptions interface {
-	GetSubsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
+	GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
 	GetAppSubs(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
 	StoreSub(subj SubscriptionSubject, sub Subscription, channelID string) error
 	DeleteSub(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
@@ -47,7 +47,7 @@ func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) S
 
 // GetSubsForChannelOrTeam returns subscriptions for a given subject and
 // channelID or teamID from the store
-func (s *subscriptions) GetSubsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
+func (s *subscriptions) GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
 	key := GetSubsKVkey(subj, channelOrTeamID)
 	var savedSubs []*Subscription
 	if err := s.mm.KV.Get(key, &savedSubs); err != nil {

@@ -18,7 +18,7 @@ type UserLeftTeamNotification struct {
 
 // OnUserLeftTeam sends a change notification when a new user has left a team
 func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectUserLeftTeam, tm.TeamId)
+	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectUserLeftTeam, tm.TeamId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasLeftTeam: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserLeftTeam, tm.TeamId, err)

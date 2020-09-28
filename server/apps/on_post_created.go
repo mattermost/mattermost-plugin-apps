@@ -23,7 +23,7 @@ type PostCreatedNotification struct {
 // OnUserHasBeenCreated sends a change notification when a new user has
 // joined a team.
 func (p *proxy) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
-	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectPostCreated, "")
+	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectPostCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnPostHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectPostCreated, user.UserId, err)

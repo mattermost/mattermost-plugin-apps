@@ -18,7 +18,7 @@ type UserJoinedChannelNotification struct {
 
 // OnUserJoinedChannel sends a change notification when a new user has joined a channel
 func (p *proxy) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectUserJoinedChannel, cm.ChannelId)
+	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
