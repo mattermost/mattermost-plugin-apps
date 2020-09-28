@@ -19,9 +19,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	myhttp "github.com/mattermost/mattermost-plugin-apps/server/http"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
 type Configurator interface {
@@ -65,7 +65,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = myhttp.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
-		api.Init,
+		restapi.Init,
 	)
 
 	p.command, err = command.MakeService(p.apps)
