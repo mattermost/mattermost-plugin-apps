@@ -24,9 +24,6 @@ func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
-	if len(subs) == 0 {
-		return
-	}
 
 	expander := NewExpander(p.mm, p.configurator)
 

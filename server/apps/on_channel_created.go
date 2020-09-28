@@ -24,9 +24,6 @@ func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Chan
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
-	if len(subs) == 0 {
-		return
-	}
 
 	expander := NewExpander(p.mm, p.configurator)
 

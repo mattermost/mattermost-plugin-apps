@@ -6,6 +6,7 @@ package apps
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 )
 
@@ -51,6 +52,9 @@ func (subs *subscriptions) GetSubscriptionsForChannelOrTeam(subj SubscriptionSub
 	var savedSubs []*Subscription
 	if err := subs.mm.KV.Get(key, &savedSubs); err != nil {
 		return nil, errors.Wrap(err, "failed to get saved subscriptions")
+	}
+	if len(savedSubs) == 0 {
+		return nil, utils.ErrNotFound
 	}
 
 	return savedSubs, nil

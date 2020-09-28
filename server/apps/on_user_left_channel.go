@@ -24,9 +24,6 @@ func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, 
 		// 	SubjectUserLeftChannel, channelMember.ChannelId, err)
 		return
 	}
-	if len(subs) == 0 {
-		return
-	}
 
 	expander := NewExpander(p.mm, p.configurator)
 

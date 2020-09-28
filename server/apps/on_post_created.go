@@ -29,9 +29,6 @@ func (p *proxy) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 		// 	SubjectPostCreated, user.UserId, err)
 		return
 	}
-	if len(subs) == 0 {
-		return
-	}
 
 	expander := NewExpander(p.mm, p.configurator)
 

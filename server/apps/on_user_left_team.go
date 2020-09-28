@@ -24,9 +24,6 @@ func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acting
 		// 	SubjectUserLeftTeam, tm.TeamId, err)
 		return
 	}
-	if len(subs) == 0 {
-		return
-	}
 
 	expander := NewExpander(p.mm, p.configurator)
 
