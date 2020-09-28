@@ -18,7 +18,7 @@ type ChannelCreatedNotification struct {
 
 // OnChannelHasBeenCreated sends a change notification when a new channel has been created
 func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectChannelCreated, "")
+	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectChannelCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserCreated, user.UserId, err)

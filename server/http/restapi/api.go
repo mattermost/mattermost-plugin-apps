@@ -66,9 +66,9 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 
 	switch req.Method {
 	case http.MethodPost:
-		err = subs.StoreSubscription(subRequest.Subject, subRequest, subRequest.ChannelID)
+		err = subs.StoreSub(subRequest.Subject, subRequest, subRequest.ChannelID)
 	case http.MethodDelete:
-		err = subs.DeleteSubscription(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
+		err = subs.DeleteSub(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
 	default:
 	}
 	if err != nil {

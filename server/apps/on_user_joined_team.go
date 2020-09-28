@@ -18,7 +18,7 @@ type UserJoinedTeamNotification struct {
 
 // OnUserJoinedTeam sends a change notification when a new user has joined a team
 func (p *proxy) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserJoinedTeam, tm.TeamId)
+	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectUserJoinedTeam, tm.TeamId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasJoinedTeam: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserJoinedTeam, tm.TeamId, err)

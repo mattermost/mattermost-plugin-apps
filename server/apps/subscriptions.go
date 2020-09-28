@@ -13,10 +13,10 @@ import (
 const SubsPrefixKey = "sub_"
 
 type Subscriptions interface {
-	GetSubscriptionsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
-	GetSubscriptionsForApp(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
-	StoreSubscription(subj SubscriptionSubject, sub Subscription, channelID string) error
-	DeleteSubscription(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
+	GetSubsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
+	GetAppSubs(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
+	StoreSub(subj SubscriptionSubject, sub Subscription, channelID string) error
+	DeleteSub(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
 }
 
 type SubscriptionCreatedNotification struct {
@@ -45,12 +45,12 @@ func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) S
 	}
 }
 
-// GetSubscriptionsForChannelOrTeam returns subscriptions for a given subject and
+// GetSubsForChannelOrTeam returns subscriptions for a given subject and
 // channelID or teamID from the store
-func (subs *subscriptions) GetSubscriptionsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
+func (s *subscriptions) GetSubsForChannelOrTeam(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
 	key := GetSubsKVkey(subj, channelOrTeamID)
 	var savedSubs []*Subscription
-	if err := subs.mm.KV.Get(key, &savedSubs); err != nil {
+	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
 		return nil, errors.Wrap(err, "failed to get saved subscriptions")
 	}
 	if len(savedSubs) == 0 {
@@ -60,19 +60,19 @@ func (subs *subscriptions) GetSubscriptionsForChannelOrTeam(subj SubscriptionSub
 	return savedSubs, nil
 }
 
-func (subs *subscriptions) GetSubscriptionsForApp(app string, subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
+func (s *subscriptions) GetAppSubs(app string, subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
 	// if subj is nil, grab all subjects for the
 	return nil, nil
 }
 
-// StoreSubscription stores a subscription for a change notification
+// StoreSub stores a subscription for a change notification
 // TODO move this to store package or file
-func (subs *subscriptions) StoreSubscription(subj SubscriptionSubject, sub Subscription, channelID string) error {
+func (s *subscriptions) StoreSub(subj SubscriptionSubject, sub Subscription, channelID string) error {
 	key := GetSubsKVkey(subj, channelID)
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
-	if err := subs.mm.KV.Get(key, &savedSubs); err != nil {
+	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
 		return errors.Wrap(err, "failed to get saved subscriptions")
 	}
 
@@ -93,20 +93,20 @@ func (subs *subscriptions) StoreSubscription(subj SubscriptionSubject, sub Subsc
 	}
 
 	// sub exists. update and save updated subs
-	_, err := subs.mm.KV.Set(key, newSubs)
+	_, err := s.mm.KV.Set(key, newSubs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
 	return nil
 }
 
-// DeleteSubscription deletes a subscription
-func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID SubscriptionID, channelID string) error {
+// DeleteSubs deletes a subscription
+func (s *subscriptions) DeleteSub(subj SubscriptionSubject, subID SubscriptionID, channelID string) error {
 	key := GetSubsKVkey(subj, channelID)
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
-	if err := subs.mm.KV.Get(key, &savedSubs); err != nil {
+	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
 		return errors.Wrap(err, "failed to get saved subscriptions")
 	}
 
@@ -124,7 +124,7 @@ func (subs *subscriptions) DeleteSubscription(subj SubscriptionSubject, subID Su
 	// TODO check for following:
 	//   - don't need to save if sub was not deleted?
 	//   - if delete the last subscription for the channel, delete the key also
-	_, err := subs.mm.KV.Set(key, newSubs)
+	_, err := s.mm.KV.Set(key, newSubs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}

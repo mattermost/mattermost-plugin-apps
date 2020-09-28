@@ -18,7 +18,7 @@ type UserCreatedNotification struct {
 // OnUserHasBeenCreated sends a change notification when a new user has
 // joined a team.
 func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserCreated, "")
+	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectUserCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserCreated, user.UserId, err)

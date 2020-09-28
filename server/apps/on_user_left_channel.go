@@ -18,7 +18,7 @@ type UserLeftChannelNotification struct {
 
 // OnUserLeftChannel sends a change notification when a new user has left a channel
 func (p *proxy) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetSubscriptionsForChannelOrTeam(SubjectUserLeftChannel, cm.ChannelId)
+	subs, err := p.Subscriptions.GetSubsForChannelOrTeam(SubjectUserLeftChannel, cm.ChannelId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasLeftChannel: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserLeftChannel, channelMember.ChannelId, err)
