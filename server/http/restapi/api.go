@@ -25,8 +25,8 @@ type SubscribeResponse struct {
 }
 
 type api struct {
-	mm   *pluginapi.Client
-	apps *apps.Service
+	mm *pluginapi.Client
+	// apps *apps.Service
 	// subs         *apps.Subscriptions
 	configurator configurator.Service
 }
@@ -52,7 +52,7 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 	// 	return
 	// }
 
-	body, err := ioutil.ReadAll(req.Body)
+	body, _ := ioutil.ReadAll(req.Body)
 
 	var subRequest apps.Subscription
 	if err = json.Unmarshal(body, &subRequest); err != nil {
@@ -75,5 +75,4 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 		// status = http.StatusBadRequest
 		return
 	}
-
 }
