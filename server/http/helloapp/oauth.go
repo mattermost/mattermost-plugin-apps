@@ -21,18 +21,10 @@ func (h *helloapp) InitOAuther() error {
 	h.OAuther = oauther.NewFromClient(h.apps.Mattermost,
 		*oauth2Config,
 		h.finishOAuth2Connect,
-		logger.NewNilLogger(),
+		logger.NewNilLogger(), // TODO replace with a real logger
 		oauther.OAuthURL(constants.HelloAppPath+PathOAuth2),
 		oauther.StorePrefix("hello_oauth_"))
 	return nil
-}
-
-func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
-	if h.OAuther == nil {
-		http.Error(w, "OAuth not initialized", http.StatusInternalServerError)
-		return
-	}
-	h.OAuther.ServeHTTP(w, req)
 }
 
 func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
@@ -50,9 +42,17 @@ func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 			AuthURL:  conf.MattermostSiteURL + "/oauth/authorize",
 			TokenURL: conf.MattermostSiteURL + "/oauth/access_token",
 		},
-		RedirectURL: h.AppURL(PathOAuth2Complete),
+		// RedirectURL: h.AppURL(PathOAuth2Complete), - not needed, OAuther will configure
 		// TODO Scopes:
 	}, nil
+}
+
+func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
+	if h.OAuther == nil {
+		http.Error(w, "OAuth not initialized", http.StatusInternalServerError)
+		return
+	}
+	h.OAuther.ServeHTTP(w, req)
 }
 
 func (h *helloapp) startOAuth2Connect(userID string, callOnComplete apps.Call) (string, error) {
@@ -87,7 +87,7 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	cr, _ := h.apps.API.Call(call)
 
 	conf := h.apps.Configurator.GetConfig()
-	h.apps.Mattermost.Post.DM(conf.BotUserID, call.Data.Context.ActingUserID, &model.Post{
+	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Data.Context.ActingUserID, &model.Post{
 		Message: cr.Markdown.String(),
 	})
 }

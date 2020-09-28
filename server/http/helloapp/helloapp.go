@@ -43,7 +43,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 	subrouter.HandleFunc(PathWishInstall, wish(h.handleInstall)).Methods("POST")
 	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
 
-	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods(http.MethodGet, http.MethodPost)
+	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("POST")
 
 	_ = h.InitOAuther()
 }
