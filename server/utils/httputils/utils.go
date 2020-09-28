@@ -60,6 +60,12 @@ func WriteJSON(w http.ResponseWriter, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
 func WriteInternalServerError(w http.ResponseWriter, err error) {
 	WriteJSONError(w, http.StatusInternalServerError, "An internal error has occurred. Check app server logs for details.", err)
 }

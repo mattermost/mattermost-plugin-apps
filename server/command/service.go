@@ -25,7 +25,7 @@ type service struct {
 var _ Service = (*service)(nil)
 
 func MakeService(apps *apps.Service) (Service, error) {
-	conf := apps.Config.GetConfig()
+	conf := apps.Configurator.GetConfig()
 
 	s := &service{
 		apps: apps,

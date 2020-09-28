@@ -10,26 +10,36 @@ import (
 )
 
 type Service struct {
-	Config        configurator.Service
-	Expander      Expander
+	Configurator  configurator.Service
 	Mattermost    *pluginapi.Client
-	Proxy         Proxy
+	Expander      Expander
 	Registry      Registry
 	Subscriptions Subscriptions
+	Client        Client
+	Hooks         Hooks
+	API           API
 }
 
 func NewService(mm *pluginapi.Client, configurator configurator.Service) *Service {
 	registry := NewRegistry(configurator)
 	expander := NewExpander(mm, configurator)
+<<<<<<< HEAD
 	subs := NewSubscriptions(mm, configurator)
 	proxy := NewProxy(mm, configurator, subs)
+=======
+	subs := NewSubscriptions(configurator)
+>>>>>>> master
 
-	return &Service{
-		Config:        configurator,
-		Expander:      expander,
+	s := &Service{
+		Configurator:  configurator,
 		Mattermost:    mm,
-		Proxy:         proxy,
+		Expander:      expander,
 		Registry:      registry,
 		Subscriptions: subs,
 	}
+	s.Hooks = s
+	s.Client = s
+	s.API = s
+
+	return s
 }
