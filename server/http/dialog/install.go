@@ -20,7 +20,7 @@ type installDialogState struct {
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs *model.CommandArgs, logChannelID, logRootPostID string) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -58,10 +58,8 @@ func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs 
 	}
 
 	stateData, _ := json.Marshal(installDialogState{
-		Manifest:      manifest,
-		TeamID:        commandArgs.TeamId,
-		LogRootPostID: logRootPostID,
-		LogChannelID:  logChannelID,
+		Manifest: manifest,
+		TeamID:   commandArgs.TeamId,
 	})
 
 	return model.OpenDialogRequest{

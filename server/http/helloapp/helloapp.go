@@ -10,11 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -26,23 +24,17 @@ const (
 	PathWishInstall          = "/wish/install"
 	PathWishConnectedInstall = "/wish/connected_install"
 	PathOAuth2               = "/oauth2"
+	PathOAuth2Complete       = "/oauth2/complete" // /complete comes from OAuther
 )
 
 type helloapp struct {
-	apps         *apps.Service
-	mm           *pluginapi.Client
-	configurator configurator.Service
-
-	OAuther           oauther.OAuther
-	OAuthClientID     string
-	OAuthClientSecret string
+	apps    *apps.Service
+	OAuther oauther.OAuther
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
 	h := helloapp{
-		mm:           apps.Mattermost,
-		configurator: apps.Configurator,
-		apps:         apps,
+		apps: apps,
 	}
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
@@ -53,11 +45,11 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods(http.MethodGet, http.MethodPost)
 
-	h.InitOAuther()
+	_ = h.InitOAuther()
 }
 
 func (h *helloapp) AppURL(path string) string {
-	conf := h.configurator.GetConfig()
+	conf := h.apps.Configurator.GetConfig()
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 

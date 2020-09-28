@@ -31,24 +31,11 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}
 
 	conf := s.apps.Configurator.GetConfig()
-	post := &model.Post{
-		Message: fmt.Sprintf("Installing App: **%s**", manifest.DisplayName),
-	}
-
-	err = s.apps.Mattermost.Post.DM(conf.BotUserID, params.commandArgs.UserId, post)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
 	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(
-			manifest,
-			conf.PluginURL,
-			params.commandArgs,
-			post.ChannelId,
-			post.Id))
+		dialog.NewInstallAppDialog(manifest, conf.PluginURL, params.commandArgs))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
@@ -60,7 +47,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 	return &model.CommandResponse{
 		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + constants.BotUserName,
-		Text:         "redirected to the DM with @" + constants.BotUserName,
+		Text:         fmt.Sprintf("redirected to the DM with @%s to continue installing **%s**", constants.BotUserName, manifest.DisplayName),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }

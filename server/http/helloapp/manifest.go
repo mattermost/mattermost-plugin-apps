@@ -26,7 +26,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionActAsBot,
 			},
 			Install:     apps.NewWish(h.AppURL(PathWishInstall)),
-			CallbackURL: h.AppURL(PathOAuth2),
+			CallbackURL: h.AppURL(PathOAuth2Complete),
 			Homepage:    h.AppURL("/"),
 		})
 }

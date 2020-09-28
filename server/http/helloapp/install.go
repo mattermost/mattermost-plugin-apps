@@ -1,7 +1,6 @@
 package helloapp
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
@@ -11,6 +10,15 @@ import (
 )
 
 func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error) {
+	err := h.storeOAuth2AppCredentials(data.Expanded.App.OAuthAppID, data.Expanded.App.OAuthSecret)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	err = h.InitOAuther()
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
 	connectURL, err := h.startOAuth2Connect(
 		data.Context.ActingUserID,
 		apps.Call{
@@ -32,11 +40,10 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 }
 
 func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error) {
+	var teams []*model.Team
 	err := h.asUser(data.Context.ActingUserID,
 		func(client *model.Client4) error {
-			teams, api4Resp := client.GetAllTeams("", 0, 100)
-			fmt.Printf("<><> RESPONSE: %+v\n", api4Resp)
-			fmt.Printf("<><> TEAMS: %+v\n", teams)
+			teams, _ = client.GetAllTeams("", 0, 100)
 			return nil
 		})
 	if err != nil {
@@ -46,7 +53,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 	httputils.WriteJSON(w,
 		apps.CallResponse{
 			Type:     apps.ResponseTypeOK,
-			Markdown: "<><> OK",
+			Markdown: md.Markdownf("<><> OK: found %v teams", len(teams)),
 		})
 	return http.StatusOK, nil
 }

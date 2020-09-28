@@ -9,16 +9,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
 
-func (h *helloapp) InitOAuther() {
-	h.OAuther = oauther.NewFromClient(h.mm,
-		*h.GetOAuthConfig(),
+func (h *helloapp) InitOAuther() error {
+	oauth2Config, err := h.GetOAuthConfig()
+	if err != nil {
+		return err
+	}
+	h.OAuther = oauther.NewFromClient(h.apps.Mattermost,
+		*oauth2Config,
 		h.finishOAuth2Connect,
 		logger.NewNilLogger(),
 		oauther.OAuthURL(constants.HelloAppPath+PathOAuth2),
 		oauther.StorePrefix("hello_oauth_"))
+	return nil
 }
 
 func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
@@ -29,12 +35,24 @@ func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
 	h.OAuther.ServeHTTP(w, req)
 }
 
-func (h *helloapp) GetOAuthConfig() *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     h.OAuthClientID,
-		ClientSecret: h.OAuthClientSecret,
-		// <><> TODO Add scopes and maybe Endpoint
+func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
+	conf := h.apps.Configurator.GetConfig()
+
+	id, secret, err := h.getOAuth2AppCredentials()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve App OAuth2 credentials")
 	}
+
+	return &oauth2.Config{
+		ClientID:     id,
+		ClientSecret: secret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  conf.MattermostSiteURL + "/oauth/authorize",
+			TokenURL: conf.MattermostSiteURL + "/oauth/access_token",
+		},
+		RedirectURL: h.AppURL(PathOAuth2Complete),
+		// TODO Scopes:
+	}, nil
 }
 
 func (h *helloapp) startOAuth2Connect(userID string, callOnComplete apps.Call) (string, error) {
@@ -66,7 +84,12 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// the app.
 
 	call.Data.Context.AppID = AppID
-	_, _ = h.apps.API.Call(call)
+	cr, _ := h.apps.API.Call(call)
+
+	conf := h.apps.Configurator.GetConfig()
+	h.apps.Mattermost.Post.DM(conf.BotUserID, call.Data.Context.ActingUserID, &model.Post{
+		Message: cr.Markdown.String(),
+	})
 }
 
 func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
@@ -74,8 +97,32 @@ func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
 	if err != nil {
 		return err
 	}
-	mmClient := model.NewAPIv4Client(h.configurator.GetConfig().MattermostSiteURL)
+	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
 	mmClient.SetOAuthToken(t.AccessToken)
 
 	return f(mmClient)
+}
+
+const OAuth2AppCredentialsKey = "key_oauth2_app_credentials"
+
+type OAuth2AppCredentials struct {
+	ID     string
+	Secret string
+}
+
+func (h *helloapp) storeOAuth2AppCredentials(id, secret string) error {
+	_, err := h.apps.Mattermost.KV.Set(OAuth2AppCredentialsKey, OAuth2AppCredentials{
+		ID:     id,
+		Secret: secret,
+	})
+	return err
+}
+
+func (h *helloapp) getOAuth2AppCredentials() (id, secret string, err error) {
+	creds := OAuth2AppCredentials{}
+	err = h.apps.Mattermost.KV.Get(OAuth2AppCredentialsKey, &creds)
+	if err != nil {
+		return "", "", err
+	}
+	return creds.ID, creds.Secret, nil
 }
