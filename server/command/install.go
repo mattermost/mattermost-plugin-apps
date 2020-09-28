@@ -4,18 +4,15 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
-
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
@@ -28,36 +25,17 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	var manifest apps.Manifest
-	resp, err := http.Get(manifestURL)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return normalOut(params, nil, errors.Errorf("expected 200 OK, got %v %v", resp.StatusCode, resp.Status))
-	}
-	err = json.NewDecoder(resp.Body).Decode(&manifest)
+	manifest, err := s.apps.Client.GetManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
 
-	conf := s.apps.Config.GetConfig()
-	post := &model.Post{
-		Message: fmt.Sprintf("Installing App: **%s**", manifest.DisplayName),
-	}
+	conf := s.apps.Configurator.GetConfig()
 
-	err = s.apps.Mattermost.Post.DM(conf.BotUserID, params.commandArgs.UserId, post)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-
+	// Finish the installation when the Dialog is submitted, see
+	// <plugin>/http/dialog/install.go
 	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(
-			params.commandArgs.TriggerId,
-			&manifest,
-			s.apps.Config.GetConfig().PluginURL,
-			post.Id))
+		dialog.NewInstallAppDialog(manifest, conf.PluginURL, params.commandArgs))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
@@ -69,7 +47,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 	return &model.CommandResponse{
 		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + constants.BotUserName,
-		Text:         "redirected to the DM with @" + constants.BotUserName,
+		Text:         fmt.Sprintf("redirected to the DM with @%s to continue installing **%s**", constants.BotUserName, manifest.DisplayName),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }

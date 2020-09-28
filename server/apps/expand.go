@@ -5,8 +5,9 @@ package apps
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type Expander interface {
@@ -30,31 +31,32 @@ const (
 )
 
 type Expand struct {
-	ActingUser ExpandLevel
-	Channel    ExpandLevel
-	Config     bool
-	User       ExpandLevel
-	Post       ExpandLevel
-	ParentPost ExpandLevel
-	RootPost   ExpandLevel
-	Team       ExpandLevel
-	Mentioned  ExpandLevel
+	ActingUser ExpandLevel `json:"acting_user"`
+	Channel    ExpandLevel `json:"channel,omitempty"`
+	Config     bool        `json:"config,omitempty"`
+	Mentioned  ExpandLevel `json:"mentioned,omitempty"`
+	ParentPost ExpandLevel `json:"parent_post,omitempty"`
+	Post       ExpandLevel `json:"post,omitempty"`
+	RootPost   ExpandLevel `json:"root_post,omitempty"`
+	Team       ExpandLevel `json:"team,omitempty"`
+	User       ExpandLevel `json:"user,omitempty"`
 }
 
 type Expanded struct {
-	ActingUser *model.User
-	Channel    *model.Channel
-	Config     *MattermostConfig
-	User       *model.User
-	Post       *model.Post
-	ParentPost *model.Post
-	RootPost   *model.Post
-	Team       *model.Team
-	Mentioned  []*model.User
+	ActingUser *model.User       `json:"acting_user"`
+	App        *App              `json:"app,omitempty"`
+	Channel    *model.Channel    `json:"channel,omitempty"`
+	Config     *MattermostConfig `json:"config,omitempty"`
+	Mentioned  []*model.User     `json:"mentioned,omitempty"`
+	ParentPost *model.Post       `json:"parent_post,omitempty"`
+	Post       *model.Post       `json:"post,omitempty"`
+	RootPost   *model.Post       `json:"root_post,omitempty"`
+	Team       *model.Team       `json:"team,omitempty"`
+	User       *model.User       `json:"user,omitempty"`
 }
 
 type MattermostConfig struct {
-	SiteURL string
+	SiteURL string `json:"site_url"`
 }
 
 type expander struct {

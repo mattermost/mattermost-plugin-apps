@@ -10,6 +10,11 @@ type Form struct {
 	Elements []interface{} // of *XXXElement
 }
 
+type FormValues struct {
+	Data interface{}
+	Raw  string
+}
+
 type ElementType string
 
 const (

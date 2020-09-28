@@ -4,16 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL string, postID string) model.OpenDialogRequest {
+type installDialogState struct {
+	Manifest      *apps.Manifest
+	TeamID        string
+	LogRootPostID string
+	LogChannelID  string
+}
+
+func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -50,45 +57,46 @@ func NewInstallAppDialog(triggerID string, manifest *apps.Manifest, pluginURL st
 		})
 	}
 
+	stateData, _ := json.Marshal(installDialogState{
+		Manifest: manifest,
+		TeamID:   commandArgs.TeamId,
+	})
+
 	return model.OpenDialogRequest{
-		TriggerId: triggerID,
+		TriggerId: commandArgs.TriggerId,
 		URL:       pluginURL + constants.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
-			CallbackId:       postID,
 			Title:            "Install App - " + manifest.DisplayName,
 			IntroductionText: intro.String(),
 			Elements:         elements,
 			SubmitLabel:      "Approve and Install",
 			NotifyOnCancel:   true,
-			State:            utils.ToJSON(manifest),
+			State:            string(stateData),
 		},
 	}
 }
 
 func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	var err error
-	rootID := ""
-	message := ""
+	stateData := installDialogState{}
+	logMessage := ""
 	actingUserID := ""
-	status := http.StatusOK
+	status := http.StatusInternalServerError
+
 	defer func() {
-		conf := d.apps.Config.GetConfig()
 		resp := model.SubmitDialogResponse{}
 		if err != nil {
 			resp.Error = errors.Wrap(err, "failed to install").Error()
-			message = "Error: " + resp.Error
+			logMessage = "Error: " + resp.Error
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
 		_ = json.NewEncoder(w).Encode(resp)
 
-		if actingUserID != "" {
-			_ = d.apps.Mattermost.Post.DM(conf.BotUserID, actingUserID, &model.Post{
-				RootId:   rootID,
-				ParentId: rootID,
-				Message:  message,
-			})
-		}
+		conf := d.apps.Configurator.GetConfig()
+		_ = d.apps.Mattermost.Post.DM(conf.BotUserID, actingUserID, &model.Post{
+			Message: logMessage,
+		})
 	}()
 
 	actingUserID = req.Header.Get("Mattermost-User-Id")
@@ -108,7 +116,6 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	session, err := d.apps.Mattermost.Session.Get(sessionID)
 	if err != nil {
-		status = http.StatusInternalServerError
 		return
 	}
 
@@ -124,10 +131,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rootID = dialogRequest.CallbackId
-
 	if dialogRequest.Cancelled {
-		message = "Installation was canceled by the user"
+		logMessage = "Installation was canceled by the user"
 		return
 	}
 
@@ -141,24 +146,33 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
-	var manifest apps.Manifest
-	err = json.Unmarshal([]byte(dialogRequest.State), &manifest)
+	err = json.Unmarshal([]byte(dialogRequest.State), &stateData)
 	if err != nil {
-		err = errors.Wrap(err, "failed to unmarshal manifest as state")
+		status = http.StatusBadRequest
 		return
 	}
 
-	out, err := d.apps.Registry.InstallApp(&apps.InInstallApp{
-		ActingMattermostUserID: actingUserID,
-		NoUserConsentForOAuth2: noUserConsentForOAuth2,
-		Manifest:               &manifest,
-		Secret:                 secret,
-		SessionToken:           session.Token,
+	out, err := d.apps.API.InstallApp(apps.InInstallApp{
+		Context: apps.CallContext{
+			ActingUserID: actingUserID,
+			AppID:        stateData.Manifest.AppID,
+			TeamID:       stateData.TeamID,
+			LogTo: &apps.Thread{
+				ChannelID:  stateData.LogChannelID,
+				RootPostID: stateData.LogRootPostID,
+			},
+		},
+		App: apps.App{
+			Manifest:               stateData.Manifest,
+			NoUserConsentForOAuth2: noUserConsentForOAuth2,
+			Secret:                 secret,
+		},
+		SessionToken: session.Token,
 	})
 	if err != nil {
-		status = http.StatusInternalServerError
 		return
 	}
 
-	message = out.MD.String()
+	status = http.StatusOK
+	logMessage = out.String()
 }

@@ -4,20 +4,20 @@
 package apps
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type InInstallApp struct {
-	ActingMattermostUserID string
-	NoUserConsentForOAuth2 bool
-	Manifest               *Manifest
-	Secret                 string
-	SessionToken           string
+	Context      CallContext
+	App          App
+	SessionToken string
 }
 
 type OutInstallApp struct {
@@ -25,58 +25,68 @@ type OutInstallApp struct {
 	App *App
 }
 
-type InstallRequest struct {
-	OAuthAPIKey string
-	OAuthSecret string
-}
-
-func (r *registry) InstallApp(in *InInstallApp) (*OutInstallApp, error) {
-	if in.Manifest.AppID == "" {
+func (s *Service) InstallApp(in InInstallApp) (*OutInstallApp, error) {
+	if in.App.Manifest.AppID == "" {
 		return nil, errors.New("app ID must not be empty")
 	}
 	// TODO check if acting user is a sysadmin
 
-	// TODO remove mock, implement for real
-
-	bot, token, err := r.createBot(in.Manifest, in.SessionToken)
+	conf := s.Configurator.GetConfig()
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(in.SessionToken)
+	bot, token, err := createBot(client, &in)
 	if err != nil {
 		return nil, err
 	}
-	oAuthApp, err := r.createOAuthApp(in.ActingMattermostUserID, in.SessionToken, in.Manifest)
+	oAuthApp, err := createOAuthApp(client, &in)
 	if err != nil {
 		return nil, err
 	}
 
-	app := &App{
-		Manifest:               in.Manifest,
-		GrantedPermissions:     in.Manifest.RequestedPermissions,
-		NoUserConsentForOAuth2: in.NoUserConsentForOAuth2,
-		Secret:                 in.Secret,
-		BotID:                  bot.UserId,
-		BotToken:               token.Token,
-		OAuthAppID:             oAuthApp.Id,
-		OAuthSecret:            oAuthApp.ClientSecret,
-	}
-	r.apps[in.Manifest.AppID] = app
+	app := in.App
+	app.GrantedPermissions = app.Manifest.RequestedPermissions
+	app.BotUserID = bot.UserId
+	app.BotPersonalAccessToken = token.Token
+	app.OAuthAppID = oAuthApp.Id
+	app.OAuthSecret = oAuthApp.ClientSecret
 
-	extraInfo := fmt.Sprintf(`Bot token: %s
-OAuth Client ID: %s
-OAuth Client Secret: %s`, token.Token, oAuthApp.Id, oAuthApp.ClientSecret)
+	err = s.Registry.Store(&app)
+	if err != nil {
+		return nil, err
+	}
+
+	in.Context.AppID = app.Manifest.AppID
+	expApp := app
+	expApp.Manifest = nil
+	expApp.Secret = ""
+
+	resp, err := s.PostWish(
+		Call{
+			Wish: app.Manifest.Install,
+			Data: &CallData{
+				Values:  FormValues{},
+				Context: in.Context,
+				Expanded: &Expanded{
+					App: &expApp,
+				},
+			},
+		})
+	if err != nil {
+		return nil, errors.Wrap(err, "Install failed")
+	}
 
 	out := &OutInstallApp{
-		MD:  md.Markdownf("Installed %s (%s)\n%s", in.Manifest.DisplayName, in.Manifest.AppID, extraInfo),
-		App: app,
+		MD:  resp.Markdown,
+		App: &app,
 	}
 	return out, nil
 }
 
-func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
-	client := model.NewAPIv4Client(r.configurator.GetConfig().MattermostSiteURL)
-	client.SetToken(sessionToken)
+func createBot(client *model.Client4, in *InInstallApp) (*model.Bot, *model.UserAccessToken, error) {
 	bot := &model.Bot{
-		Username:    string(manifest.AppID),
-		DisplayName: manifest.DisplayName,
-		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
+		Username:    string(in.App.Manifest.AppID),
+		DisplayName: in.App.Manifest.DisplayName,
+		Description: fmt.Sprintf("Bot account for `%s` App.", in.App.Manifest.DisplayName),
 	}
 
 	var fullBot *model.Bot
@@ -120,22 +130,19 @@ func (r *registry) createBot(manifest *Manifest, sessionToken string) (*model.Bo
 	return fullBot, token, nil
 }
 
-func (r *registry) createOAuthApp(userID string, sessionToken string, manifest *Manifest) (*model.OAuthApp, error) {
+func createOAuthApp(client *model.Client4, in *InInstallApp) (*model.OAuthApp, error) {
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
-	client := model.NewAPIv4Client(r.configurator.GetConfig().MattermostSiteURL)
+	m := in.App.Manifest
 	app := model.OAuthApp{
-		CreatorId:    userID,
-		Name:         manifest.DisplayName,
-		Description:  manifest.Description,
-		CallbackUrls: []string{manifest.CallbackURL},
-		Homepage:     manifest.Homepage,
+		CreatorId:    in.Context.ActingUserID,
+		Name:         m.DisplayName,
+		Description:  m.Description,
+		CallbackUrls: []string{m.CallbackURL},
+		Homepage:     m.Homepage,
 		IsTrusted:    true,
 	}
 
-	client.SetToken(sessionToken)
-
 	fullApp, response := client.CreateOAuthApp(&app)
-
 	if response.StatusCode != http.StatusCreated {
 		if response.Error != nil {
 			return nil, fmt.Errorf("error creating the app, %v", response.Error)
