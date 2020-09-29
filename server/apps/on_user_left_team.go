@@ -17,18 +17,16 @@ type UserLeftTeamNotification struct {
 }
 
 // OnUserLeftTeam sends a change notification when a new user has left a team
-func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectUserLeftTeam, tm.TeamId)
+func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserLeftTeam, tm.TeamId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasLeftTeam: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserLeftTeam, tm.TeamId, err)
 		return
 	}
 
-	expander := NewExpander(p.mm, p.configurator)
-
-	for _, s := range subs {
-		expanded, err := expander.Expand(s.Expand, actingUser.Id, tm.UserId, tm.TeamId)
+	for _, sub := range subs {
+		expanded, err := s.Expander.Expand(sub.Expand, actingUser.Id, tm.UserId, tm.TeamId)
 		if err != nil {
 			// <><> TODO log
 			return
@@ -40,6 +38,6 @@ func (p *proxy) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acting
 			Expanded: expanded,
 		}
 
-		go p.SendChangeNotification(s, msg)
+		go s.PostChangeNotification(*sub, msg)
 	}
 }

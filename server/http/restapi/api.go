@@ -25,16 +25,16 @@ type SubscribeResponse struct {
 }
 
 type api struct {
-	mm *pluginapi.Client
-	// apps *apps.Service
+	mm   *pluginapi.Client
+	apps *apps.Service
 	// subs         *apps.Subscriptions
 	configurator configurator.Service
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
 	a := api{
-		mm:           apps.Mattermost,
-		configurator: apps.Config,
+		mm:   apps.Mattermost,
+		apps: apps,
 	}
 
 	subrouter := router.PathPrefix(constants.APIPath).Subrouter()

@@ -23,12 +23,7 @@ type Service struct {
 func NewService(mm *pluginapi.Client, configurator configurator.Service) *Service {
 	registry := NewRegistry(configurator)
 	expander := NewExpander(mm, configurator)
-<<<<<<< HEAD
 	subs := NewSubscriptions(mm, configurator)
-	proxy := NewProxy(mm, configurator, subs)
-=======
-	subs := NewSubscriptions(configurator)
->>>>>>> master
 
 	s := &Service{
 		Configurator:  configurator,

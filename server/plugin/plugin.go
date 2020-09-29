@@ -86,21 +86,21 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	p.apps.Proxy.OnUserHasBeenCreated(pluginContext, user)
+	p.apps.OnUserHasBeenCreated(pluginContext, user)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Hooks.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+	p.apps.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Proxy.OnUserLeftChannel(pluginContext, channelMember, actingUser)
+	p.apps.OnUserLeftChannel(pluginContext, channelMember, actingUser)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.Proxy.OnUserJoinedTeam(pluginContext, teamMember, actingUser)
+	p.apps.OnUserJoinedTeam(pluginContext, teamMember, actingUser)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.Proxy.OnUserLeftTeam(pluginContext, teamMember, actingUser)
+	p.apps.OnUserLeftTeam(pluginContext, teamMember, actingUser)
 }

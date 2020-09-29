@@ -17,18 +17,16 @@ type UserCreatedNotification struct {
 
 // OnUserHasBeenCreated sends a change notification when a new user has
 // joined a team.
-func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
-	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectUserCreated, "")
+func (s *Service) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
+	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
 
-	expander := NewExpander(p.mm, p.configurator)
-
-	for _, s := range subs {
-		expanded, err := expander.Expand(s.Expand, "", "", "")
+	for _, sub := range subs {
+		expanded, err := s.Expander.Expand(sub.Expand, "", "", "")
 		if err != nil {
 			// <><> TODO log
 			return
@@ -39,6 +37,6 @@ func (p *proxy) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 			Expanded: expanded,
 		}
 
-		go p.SendChangeNotification(s, msg)
+		go s.PostChangeNotification(*sub, msg)
 	}
 }

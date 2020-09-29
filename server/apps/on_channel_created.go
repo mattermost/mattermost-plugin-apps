@@ -17,18 +17,16 @@ type ChannelCreatedNotification struct {
 }
 
 // OnChannelHasBeenCreated sends a change notification when a new channel has been created
-func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
-	subs, err := p.Subscriptions.GetChannelOrTeamSubs(SubjectChannelCreated, "")
+func (s *Service) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
+	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectChannelCreated, "")
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasBeenCreated: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
 
-	expander := NewExpander(p.mm, p.configurator)
-
-	for _, s := range subs {
-		expanded, err := expander.Expand(s.Expand, "", "", "")
+	for _, sub := range subs {
+		expanded, err := s.Expander.Expand(sub.Expand, "", "", "")
 		if err != nil {
 			// <><> TODO log
 			return
@@ -40,6 +38,6 @@ func (p *proxy) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Chan
 			Expanded:  expanded,
 		}
 
-		go p.SendChangeNotification(s, msg)
+		go s.PostChangeNotification(*sub, msg)
 	}
 }
