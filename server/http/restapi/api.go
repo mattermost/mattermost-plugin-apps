@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -56,8 +55,6 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 
 	var subRequest apps.Subscription
 	if err = json.Unmarshal(body, &subRequest); err != nil {
-		errD, _ := json.MarshalIndent(err, "", "    ")
-		fmt.Printf("err = %+v\n", string(errD))
 		// return respondErr(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -70,7 +67,6 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 		err = subs.DeleteSub(subRequest)
 	default:
 	}
-	fmt.Printf("err= %+v\n", err)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

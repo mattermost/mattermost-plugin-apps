@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
@@ -132,8 +130,7 @@ func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMembe
 		}
 		msg.SubscriptionID = sub.SubscriptionID
 		msg.Expanded = expanded
-		fmt.Printf("expanded = %+v\n", expanded)
-		// TODO send the notification
-		// go s.PostChangeNotification(s, msg)
+
+		go s.PostChangeNotification(s, msg)
 	}
 }
