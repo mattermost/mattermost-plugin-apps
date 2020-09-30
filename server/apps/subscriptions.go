@@ -19,18 +19,6 @@ type Subscriptions interface {
 	DeleteSub(sub Subscription) error
 }
 
-type SubscriptionCreatedNotification struct {
-	SubscriptionID SubscriptionID
-	Subject        SubscriptionSubject
-	Expanded       *Expanded
-}
-
-type SubscriptionDeletedNotification struct {
-	SubscriptionID SubscriptionID
-	Subject        SubscriptionSubject
-	Expanded       *Expanded
-}
-
 type subscriptions struct {
 	configurator configurator.Service
 	mm           *pluginapi.Client
@@ -145,13 +133,6 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
 
-	// msg := SubscriptionDeletedNotification{
-	// 	SubscriptionID: subID,
-	// 	Subject:        subj,
-	// 	Expanded:       expanded,
-	// }
-	//
-	// go p.SendChangeNotification(s, msg)
 	return nil
 }
 
