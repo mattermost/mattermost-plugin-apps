@@ -29,8 +29,7 @@ type SubscriptionNotification struct {
 	Expanded       *Expanded
 }
 
-// OnUserHasBeenCreated sends a change notification when a new user has
-// joined a team.
+// OnPostHasBeenCreated sends a notification when a new post has been created
 func (s *Service) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectPostCreated, "")
 	if err != nil {
@@ -42,7 +41,7 @@ func (s *Service) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 
 }
 
-// OnChannelHasBeenCreated sends a change notification when a new channel has been created
+// OnChannelHasBeenCreated sends a notification when a new channel has been created
 func (s *Service) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectChannelCreated, "")
 	if err != nil {
@@ -53,19 +52,7 @@ func (s *Service) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Ch
 	s.SendNotifications(subs, nil, nil, channel, nil, SubjectChannelCreated)
 }
 
-// OnUserJoinedChannel sends a change notification when a new user has joined a channel
-func (s *Service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserJoinedChannel, cm.ChannelId)
-	if err != nil {
-		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
-		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
-		return
-	}
-	s.SendNotifications(subs, cm, actingUser, nil, nil, SubjectUserJoinedChannel)
-}
-
-// OnUserHasBeenCreated sends a change notification when a new user has
-// joined a team.
+// OnUserHasBeenCreated sends a notification when a new user has been created
 func (s *Service) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserCreated, "")
 	if err != nil {
@@ -76,7 +63,18 @@ func (s *Service) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 	s.SendNotifications(subs, nil, user, nil, nil, SubjectUserCreated)
 }
 
-// OnUserLeftChannel sends a change notification when a new user has left a channel
+// OnUserJoinedChannel sends a notification when a new user has joined a channel
+func (s *Service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserJoinedChannel, cm.ChannelId)
+	if err != nil {
+		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
+		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
+		return
+	}
+	s.SendNotifications(subs, cm, actingUser, nil, nil, SubjectUserJoinedChannel)
+}
+
+// OnUserLeftChannel sends a notification when a new user has left a channel
 func (s *Service) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserLeftChannel, cm.ChannelId)
 	if err != nil {
@@ -87,7 +85,7 @@ func (s *Service) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember
 	s.SendNotifications(subs, cm, actingUser, nil, nil, SubjectUserLeftChannel)
 }
 
-// OnUserJoinedTeam sends a change notification when a new user has joined a team
+// OnUserJoinedTeam sends a notification when a new user has joined a team
 func (s *Service) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserJoinedTeam, tm.TeamId)
 	if err != nil {
@@ -98,7 +96,7 @@ func (s *Service) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, ac
 	s.SendNotifications(subs, nil, actingUser, nil, nil, SubjectUserJoinedTeam)
 }
 
-// OnUserLeftTeam sends a change notification when a new user has left a team
+// OnUserLeftTeam sends a notification when a new user has left a team
 func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserLeftTeam, tm.TeamId)
 	if err != nil {
@@ -109,7 +107,7 @@ func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acti
 	s.SendNotifications(subs, nil, actingUser, nil, nil, SubjectUserLeftTeam)
 }
 
-// OnUserLeftTeam sends a change notification when a new user has left a team
+// SendNotifications sends a POST change notifiation for a set of subscriptions
 func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject) {
 	expander := NewExpander(s.Mattermost, s.Configurator)
 	// TODO rectify the case where IDs exist from multiple function param inputs
