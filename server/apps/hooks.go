@@ -111,14 +111,15 @@ func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acti
 func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject) {
 	expander := NewExpander(s.Mattermost, s.Configurator)
 	// TODO rectify the case where IDs exist from multiple function param inputs
-	var msg SubscriptionNotification
-	msg.Subject = subject
-	msg.ChannelID = cm.ChannelId
-	msg.ParentID = post.ParentId
-	msg.PostID = post.Id
-	msg.RootID = post.RootId
-	msg.TeamID = channel.TeamId
-	msg.UserID = actingUser.Id
+	msg := &SubscriptionNotification{
+		Subject:   subject,
+		ChannelID: cm.ChannelId,
+		ParentID:  post.ParentId,
+		PostID:    post.Id,
+		RootID:    post.RootId,
+		TeamID:    channel.TeamId,
+		UserID:    actingUser.Id,
+	}
 
 	for _, sub := range subs {
 		expanded, err := expander.Expand(sub.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
