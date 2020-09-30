@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
@@ -51,10 +50,8 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 	// 	return
 	// }
 
-	body, _ := ioutil.ReadAll(req.Body)
-
 	var subRequest apps.Subscription
-	if err = json.Unmarshal(body, &subRequest); err != nil {
+	if err = json.NewDecoder(req.Body).Decode(&subRequest); err != nil {
 		// return respondErr(w, http.StatusInternalServerError, err)
 		return
 	}
