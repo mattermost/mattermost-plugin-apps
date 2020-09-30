@@ -131,6 +131,6 @@ func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMembe
 		msg.SubscriptionID = sub.SubscriptionID
 		msg.Expanded = expanded
 
-		go s.PostChangeNotification(s, msg)
+		go s.PostChangeNotification(*sub, msg)
 	}
 }
