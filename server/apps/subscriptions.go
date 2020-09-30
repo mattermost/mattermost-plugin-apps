@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"fmt"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
@@ -36,7 +38,10 @@ func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) S
 // GetSubsForChannelOrTeam returns subscriptions for a given subject and
 // channelID or teamID from the store
 func (s *subscriptions) GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
-	key := GetSubsKVkey(subj, channelOrTeamID)
+	key, err := s.getAndValidateSubsKVkey(subj, channelOrTeamID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get subscriptions key")
+	}
 	var savedSubs []*Subscription
 	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
 		return nil, errors.Wrap(err, "failed to get saved subscriptions")
@@ -64,7 +69,10 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 	if sub.ChannelID == "" {
 		return errors.New("failed to get subscription channelID")
 	}
-	key := GetSubsKVkey(sub.Subject, sub.ChannelID)
+	key, err := s.getAndValidateSubsKVkey(sub.Subject, sub.ChannelID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get subscriptions key")
+	}
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
@@ -90,7 +98,7 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 	}
 
 	// sub exists. update and save updated subs
-	_, err := s.mm.KV.Set(key, newSubs)
+	_, err = s.mm.KV.Set(key, newSubs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
@@ -102,16 +110,19 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 	if sub.Subject == "" {
 		return errors.New("failed to get subscription subject")
 	}
-	// TODO check that channelID exists
 	if sub.ChannelID == "" {
 		return errors.New("failed to get subscription channelID")
 	}
-	key := GetSubsKVkey(sub.Subject, sub.ChannelID)
+
+	key, err := s.getAndValidateSubsKVkey(sub.Subject, sub.ChannelID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get subscriptions key")
+	}
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
 	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
-		return errors.Wrap(err, "failed to saved subscriptions")
+		return errors.Wrap(err, "failed to get saved subscriptions")
 	}
 
 	// check if sub exists
@@ -128,7 +139,7 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 	// TODO check for following:
 	//   - don't need to save if sub was not deleted?
 	//   - if delete the last subscription for the channel, delete the key also
-	_, err := s.mm.KV.Set(key, newSubs)
+	_, err = s.mm.KV.Set(key, newSubs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
@@ -136,19 +147,39 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 	return nil
 }
 
-// GetSubsKey returns the KVstore Key for a subsject. If teamOrChannelID
+// GetSubsKey returns the KVstore Key for a subject. If teamOrChannelID
 // provided, the value is appended to the subject key making it unique to the
-// channelID or teamID
-func GetSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) string {
+// channelID or teamID. Also validates the team or channel ID exists
+// TODO what to do if the app wants to delete a subscription for a channel that
+// was deleted?
+func (s *subscriptions) getAndValidateSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) (string, error) {
+
+	// verify valid subject request and create the key
 	key := SubsPrefixKey + string(subj)
 	switch subj {
 	case SubjectUserJoinedChannel,
 		SubjectUserLeftChannel,
 		SubjectUserJoinedTeam,
 		SubjectUserLeftTeam:
+
+		if teamOrChannelID == "" {
+			return "", errors.New("failed to specifiy a teamOrChannelID")
+		}
+
+		_, errChan := s.mm.Channel.Get(teamOrChannelID)
+		_, errTeam := s.mm.Team.Get(teamOrChannelID)
+		if (errChan != nil) && (errTeam != nil) {
+			return "", errors.New(fmt.Sprintf("teamOrChannelID %s does not exist", teamOrChannelID))
+		}
+
 		key += "_" + teamOrChannelID
-	// case value2:
+		return key, nil
+	case SubjectChannelCreated,
+		SubjectPostCreated,
+		SubjectUserCreated,
+		SubjectUserUpdated:
+		return key, nil
 	default:
+		return "", errors.New(fmt.Sprintf("subj %s does is not a valid subject", subj))
 	}
-	return key
 }
