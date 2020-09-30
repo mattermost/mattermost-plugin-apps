@@ -15,8 +15,8 @@ const SubsPrefixKey = "sub_"
 type Subscriptions interface {
 	GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
 	GetAppSubs(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
-	StoreSub(subj SubscriptionSubject, sub Subscription, channelID string) error
-	DeleteSub(subj SubscriptionSubject, sub SubscriptionID, channelID string) error
+	StoreSub(sub Subscription) error
+	DeleteSub(sub Subscription) error
 }
 
 type SubscriptionCreatedNotification struct {
@@ -67,24 +67,33 @@ func (s *subscriptions) GetAppSubs(app string, subj SubscriptionSubject, channel
 
 // StoreSub stores a subscription for a change notification
 // TODO move this to store package or file
-func (s *subscriptions) StoreSub(subj SubscriptionSubject, sub Subscription, channelID string) error {
-	key := GetSubsKVkey(subj, channelID)
+func (s *subscriptions) StoreSub(sub Subscription) error {
+
+	if sub.Subject == "" {
+		return errors.New("failed to get subscription subject")
+	}
+	// TODO check that channelID exists
+	if sub.ChannelID == "" {
+		return errors.New("failed to get subscription channelID")
+	}
+	key := GetSubsKVkey(sub.Subject, sub.ChannelID)
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
 	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
-		return errors.Wrap(err, "failed to get saved subscriptions")
+		return errors.Wrap(err, "failed to get subscriptions")
 	}
 
 	// check if sub exists
 	var newSubs []*Subscription
 	foundSub := 0
-	for _, s := range savedSubs {
+	for i, s := range savedSubs {
 		// modify the sub to the latest request
 		if s.SubscriptionID == sub.SubscriptionID {
 			foundSub++
 			newSubs = append(newSubs, &sub)
-			continue
+			newSubs = append(newSubs, savedSubs[i+1:]...)
+			break
 		}
 		newSubs = append(newSubs, s)
 	}
@@ -101,19 +110,26 @@ func (s *subscriptions) StoreSub(subj SubscriptionSubject, sub Subscription, cha
 }
 
 // DeleteSubs deletes a subscription
-func (s *subscriptions) DeleteSub(subj SubscriptionSubject, subID SubscriptionID, channelID string) error {
-	key := GetSubsKVkey(subj, channelID)
+func (s *subscriptions) DeleteSub(sub Subscription) error {
+	if sub.Subject == "" {
+		return errors.New("failed to get subscription subject")
+	}
+	// TODO check that channelID exists
+	if sub.ChannelID == "" {
+		return errors.New("failed to get subscription channelID")
+	}
+	key := GetSubsKVkey(sub.Subject, sub.ChannelID)
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
 	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
-		return errors.Wrap(err, "failed to get saved subscriptions")
+		return errors.Wrap(err, "failed to saved subscriptions")
 	}
 
 	// check if sub exists
 	var newSubs []*Subscription
 	for i, s := range savedSubs {
-		if s.SubscriptionID == subID {
+		if s.SubscriptionID == sub.SubscriptionID {
 			newSubs = append(newSubs, savedSubs[i+1:]...)
 			break
 		}

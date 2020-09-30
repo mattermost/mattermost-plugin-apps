@@ -61,18 +61,18 @@ func (a *api) handleSubscribe(w http.ResponseWriter, req *http.Request) {
 		// return respondErr(w, http.StatusInternalServerError, err)
 		return
 	}
-
 	subs := apps.NewSubscriptions(a.mm, a.configurator)
 
 	switch req.Method {
 	case http.MethodPost:
-		err = subs.StoreSub(subRequest.Subject, subRequest, subRequest.ChannelID)
+		err = subs.StoreSub(subRequest)
 	case http.MethodDelete:
-		err = subs.DeleteSub(subRequest.Subject, subRequest.SubscriptionID, subRequest.ChannelID)
+		err = subs.DeleteSub(subRequest)
 	default:
 	}
+	fmt.Printf("err= %+v\n", err)
 	if err != nil {
-		// status = http.StatusBadRequest
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
