@@ -19,7 +19,7 @@ type Hooks interface {
 	SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject)
 }
 
-type SubsriptionNotification struct {
+type SubscriptionNotification struct {
 	SubscriptionID SubscriptionID
 	Subject        SubscriptionSubject
 	ChannelID      string
@@ -115,7 +115,7 @@ func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acti
 func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject) {
 	expander := NewExpander(s.Mattermost, s.Configurator)
 	// TODO rectify the case where IDs exist from multiple function param inputs
-	var msg SubsriptionNotification
+	var msg SubscriptionNotification
 	msg.Subject = subject
 	msg.ChannelID = cm.ChannelId
 	msg.ParentID = post.ParentId
