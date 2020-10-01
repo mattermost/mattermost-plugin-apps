@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
 type Plugin struct {
@@ -57,6 +58,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
+		restapi.Init,
 	)
 
 	p.command, err = command.MakeService(p.apps)
@@ -83,6 +85,22 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 	p.http.ServeHTTP(c, w, req)
 }
 
+func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
+	p.apps.OnUserHasBeenCreated(pluginContext, user)
+}
+
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Hooks.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+	p.apps.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+}
+
+func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
+	p.apps.OnUserLeftChannel(pluginContext, channelMember, actingUser)
+}
+
+func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
+	p.apps.OnUserJoinedTeam(pluginContext, teamMember, actingUser)
+}
+
+func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
+	p.apps.OnUserLeftTeam(pluginContext, teamMember, actingUser)
 }
