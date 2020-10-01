@@ -38,7 +38,6 @@ func (s *Service) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 		return
 	}
 	s.SendNotifications(subs, nil, nil, nil, post, SubjectPostCreated)
-
 }
 
 // OnChannelHasBeenCreated sends a notification when a new channel has been created

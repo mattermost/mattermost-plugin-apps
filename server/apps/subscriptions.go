@@ -61,7 +61,6 @@ func (s *subscriptions) GetAppSubs(app string, subj SubscriptionSubject, channel
 // StoreSub stores a subscription for a change notification
 // TODO move this to store package or file
 func (s *subscriptions) StoreSub(sub Subscription) error {
-
 	if sub.Subject == "" {
 		return errors.New("failed to get subscription subject")
 	}
@@ -76,7 +75,8 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
-	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
+	err = s.mm.KV.Get(key, &savedSubs)
+	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions")
 	}
 
@@ -121,7 +121,8 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 
 	// get all subscriptions for the subject
 	var savedSubs []*Subscription
-	if err := s.mm.KV.Get(key, &savedSubs); err != nil {
+	err = s.mm.KV.Get(key, &savedSubs)
+	if err != nil {
 		return errors.Wrap(err, "failed to get saved subscriptions")
 	}
 
@@ -153,7 +154,6 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 // TODO what to do if the app wants to delete a subscription for a channel that
 // was deleted?
 func (s *subscriptions) getAndValidateSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) (string, error) {
-
 	// verify valid subject request and create the key
 	key := SubsPrefixKey + string(subj)
 	switch subj {
@@ -163,7 +163,7 @@ func (s *subscriptions) getAndValidateSubsKVkey(subj SubscriptionSubject, teamOr
 		SubjectUserLeftTeam:
 
 		if teamOrChannelID == "" {
-			return "", errors.New("failed to specifiy a teamOrChannelID")
+			return "", errors.New("failed to specify a teamOrChannelID")
 		}
 
 		_, errChan := s.mm.Channel.Get(teamOrChannelID)
