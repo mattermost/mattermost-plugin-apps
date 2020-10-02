@@ -180,6 +180,6 @@ func (s *subscriptions) getAndValidateSubsKVkey(subj SubscriptionSubject, teamOr
 		SubjectUserUpdated:
 		return key, nil
 	default:
-		return "", errors.New(fmt.Sprintf("subj %s does is not a valid subject", subj))
+		return "", errors.New(fmt.Sprintf("subj %s is not a valid subject", subj))
 	}
 }
