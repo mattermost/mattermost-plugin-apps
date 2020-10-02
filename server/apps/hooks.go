@@ -14,7 +14,17 @@ type Hooks interface {
 	OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User)
 	OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User)
 	OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, actingUser *model.User)
-	SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject)
+	OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Channel)
+	OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post)
+	SendNotifications(
+		subject SubscriptionSubject,
+		subs []*Subscription,
+		tm *model.TeamMember,
+		cm *model.ChannelMember,
+		actingUser *model.User,
+		channel *model.Channel,
+		post *model.Post,
+	)
 }
 
 type SubscriptionNotification struct {
@@ -37,7 +47,7 @@ func (s *Service) OnPostHasBeenCreated(ctx *plugin.Context, post *model.Post) {
 		// 	SubjectPostCreated, user.UserId, err)
 		return
 	}
-	s.SendNotifications(subs, nil, nil, nil, post, SubjectPostCreated)
+	s.SendNotifications(SubjectPostCreated, subs, nil, nil, nil, nil, post)
 }
 
 // OnChannelHasBeenCreated sends a notification when a new channel has been created
@@ -48,7 +58,7 @@ func (s *Service) OnChannelHasBeenCreated(ctx *plugin.Context, channel *model.Ch
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
-	s.SendNotifications(subs, nil, nil, channel, nil, SubjectChannelCreated)
+	s.SendNotifications(SubjectChannelCreated, subs, nil, nil, nil, channel, nil)
 }
 
 // OnUserHasBeenCreated sends a notification when a new user has been created
@@ -59,18 +69,20 @@ func (s *Service) OnUserHasBeenCreated(ctx *plugin.Context, user *model.User) {
 		// 	SubjectUserCreated, user.UserId, err)
 		return
 	}
-	s.SendNotifications(subs, nil, user, nil, nil, SubjectUserCreated)
+	s.SendNotifications(SubjectUserCreated, subs, nil, nil, user, nil, nil)
 }
 
 // OnUserJoinedChannel sends a notification when a new user has joined a channel
 func (s *Service) OnUserJoinedChannel(ctx *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	actingUserD, _ := json.MarshalIndent(actingUser, "", "    ")
+	fmt.Printf("actingUser = %+v\n", string(actingUserD))
 	subs, err := s.Subscriptions.GetChannelOrTeamSubs(SubjectUserJoinedChannel, cm.ChannelId)
 	if err != nil {
 		// p.Logger.Debugf("OnUserHasJoinedChannel: failed to get subscriptions: %s %s: ",
 		// 	SubjectUserJoinedChannel, channelMember.ChannelId, err)
 		return
 	}
-	s.SendNotifications(subs, cm, actingUser, nil, nil, SubjectUserJoinedChannel)
+	s.SendNotifications(SubjectUserJoinedChannel, subs, nil, cm, actingUser, nil, nil)
 }
 
 // OnUserLeftChannel sends a notification when a new user has left a channel
@@ -81,7 +93,7 @@ func (s *Service) OnUserLeftChannel(ctx *plugin.Context, cm *model.ChannelMember
 		// 	SubjectUserLeftChannel, channelMember.ChannelId, err)
 		return
 	}
-	s.SendNotifications(subs, cm, actingUser, nil, nil, SubjectUserLeftChannel)
+	s.SendNotifications(SubjectUserLeftChannel, subs, nil, cm, actingUser, nil, nil)
 }
 
 // OnUserJoinedTeam sends a notification when a new user has joined a team
@@ -92,7 +104,7 @@ func (s *Service) OnUserJoinedTeam(ctx *plugin.Context, tm *model.TeamMember, ac
 		// 	SubjectUserJoinedTeam, tm.TeamId, err)
 		return
 	}
-	s.SendNotifications(subs, nil, actingUser, nil, nil, SubjectUserJoinedTeam)
+	s.SendNotifications(SubjectUserJoinedTeam, subs, tm, nil, actingUser, nil, nil)
 }
 
 // OnUserLeftTeam sends a notification when a new user has left a team
@@ -103,28 +115,53 @@ func (s *Service) OnUserLeftTeam(ctx *plugin.Context, tm *model.TeamMember, acti
 		// 	SubjectUserLeftTeam, tm.TeamId, err)
 		return
 	}
-	s.SendNotifications(subs, nil, actingUser, nil, nil, SubjectUserLeftTeam)
+	s.SendNotifications(SubjectUserLeftTeam, subs, tm, nil, actingUser, nil, nil)
 }
 
 // SendNotifications sends a POST change notifiation for a set of subscriptions
-func (s *Service) SendNotifications(subs []*Subscription, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post, subject SubscriptionSubject) {
-	expander := NewExpander(s.Mattermost, s.Configurator)
+func (s *Service) SendNotifications(subject SubscriptionSubject, subs []*Subscription, tm *model.TeamMember, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post) {
+
+	fmt.Printf("Subject = %+v\n", subject)
+
 	// TODO rectify the case where IDs exist from multiple function param inputs
+	actingUserID := ""
+	if actingUser != nil && actingUser.Id != "" {
+		actingUserID = actingUser.Id
+	}
+
+	cmUserID := ""
+	cmChannelID := ""
+	if cm != nil {
+		if cm.UserId != "" {
+			cmUserID = cm.UserId
+		}
+		if cm.ChannelId != "" {
+			cmChannelID = cm.ChannelId
+		}
+	}
 	msg := &SubscriptionNotification{
 		Subject:   subject,
-		ChannelID: cm.ChannelId,
+		ChannelID: cmChannelID,
 		ParentID:  post.ParentId,
 		PostID:    post.Id,
 		RootID:    post.RootId,
-		TeamID:    channel.TeamId,
-		UserID:    actingUser.Id,
+		// TeamID:    channel.TeamId,
+		UserID: actingUserID,
 	}
 
+	expander := NewExpander(s.Mattermost, s.Configurator)
 	for _, sub := range subs {
-		expanded, err := expander.Expand(sub.Expand, actingUser.Id, cm.UserId, cm.ChannelId)
-		if err != nil {
-			// <><> TODO log
-			return
+		subD, _ := json.MarshalIndent(sub, "", "    ")
+		fmt.Printf("sub = %+v\n", string(subD))
+
+		// only expand if sub requests it
+		if sub.Expand != nil {
+			expanded, err := expander.Expand(sub.Expand, actingUserID, cmUserID, cmChannelID)
+			if err != nil {
+				// <><> TODO log
+				return
+			}
+			msg.Expanded = expanded
 		}
 		msg.SubscriptionID = sub.SubscriptionID
 		msg.Expanded = expanded

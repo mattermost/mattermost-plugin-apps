@@ -104,3 +104,11 @@ func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *mo
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
 	p.apps.OnUserLeftTeam(pluginContext, teamMember, actingUser)
 }
+
+func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
+	p.apps.OnPostHasBeenCreated(pluginContext, post)
+}
+
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel) {
+	p.apps.OnChannelHasBeenCreated(pluginContext, channel)
+}
