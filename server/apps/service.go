@@ -16,7 +16,6 @@ type Service struct {
 	Registry      Registry
 	Subscriptions Subscriptions
 	Client        Client
-	Hooks         Hooks
 	API           API
 }
 
@@ -32,7 +31,6 @@ func NewService(mm *pluginapi.Client, configurator configurator.Service) *Servic
 		Registry:      registry,
 		Subscriptions: subs,
 	}
-	s.Hooks = s
 	s.Client = s
 	s.API = s
 

@@ -3,7 +3,20 @@
 
 package apps
 
+import (
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-server/v5/model"
+)
+
 type API interface {
 	Call(Call) (*CallResponse, error)
 	InstallApp(InInstallApp) (*OutInstallApp, error)
+	Notify(
+		subject constants.SubscriptionSubject,
+		tm *model.TeamMember,
+		cm *model.ChannelMember,
+		actingUser *model.User,
+		channel *model.Channel,
+		post *model.Post,
+	) error
 }
