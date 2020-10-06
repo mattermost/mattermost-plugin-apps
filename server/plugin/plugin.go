@@ -86,23 +86,38 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	p.apps.Notify(constants.SubjectUserCreated, nil, nil, user, nil, nil)
+	err := p.apps.Notify(constants.SubjectUserCreated, nil, nil, user, nil, nil)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Notify(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
+	err := p.apps.Notify(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Notify(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
+	err := p.apps.Notify(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.Notify(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
+	err := p.apps.Notify(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.Notify(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
+	err := p.apps.Notify(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
@@ -113,5 +128,8 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel) {
-	p.apps.Notify(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
+	err := p.apps.Notify(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
+	if err != nil {
+		return
+	}
 }
