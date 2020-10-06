@@ -86,29 +86,32 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	p.apps.OnUserHasBeenCreated(pluginContext, user)
+	p.apps.SendNotifications(constants.SubjectUserCreated, nil, nil, user, nil, nil)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+	p.apps.SendNotifications(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.OnUserLeftChannel(pluginContext, channelMember, actingUser)
+	p.apps.SendNotifications(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.OnUserJoinedTeam(pluginContext, teamMember, actingUser)
+	p.apps.SendNotifications(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.OnUserLeftTeam(pluginContext, teamMember, actingUser)
+	p.apps.SendNotifications(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	p.apps.OnPostHasBeenCreated(pluginContext, post)
+	err := p.apps.SendNotifications(constants.SubjectPostCreated, nil, nil, nil, nil, post)
+	if err != nil {
+		return
+	}
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel) {
-	p.apps.OnChannelHasBeenCreated(pluginContext, channel)
+	p.apps.SendNotifications(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
 }

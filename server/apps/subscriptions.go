@@ -8,6 +8,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 )
@@ -15,8 +16,8 @@ import (
 const SubsPrefixKey = "sub_"
 
 type Subscriptions interface {
-	GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
-	GetAppSubs(appID string, subj SubscriptionSubject, teamID string) ([]*Subscription, error)
+	GetChannelOrTeamSubs(subj constants.SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
+	GetAppSubs(appID string, subj constants.SubscriptionSubject, teamID string) ([]*Subscription, error)
 	StoreSub(sub Subscription) error
 	DeleteSub(sub Subscription) error
 }
@@ -37,7 +38,7 @@ func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) S
 
 // GetSubsForChannelOrTeam returns subscriptions for a given subject and
 // channelID or teamID from the store
-func (s *subscriptions) GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
+func (s *subscriptions) GetChannelOrTeamSubs(subj constants.SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
 	key, err := s.getAndValidateSubsKVkey(nil, subj, channelOrTeamID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subscriptions key")
@@ -53,7 +54,7 @@ func (s *subscriptions) GetChannelOrTeamSubs(subj SubscriptionSubject, channelOr
 	return savedSubs, nil
 }
 
-func (s *subscriptions) GetAppSubs(app string, subj SubscriptionSubject, channelID string) ([]*Subscription, error) {
+func (s *subscriptions) GetAppSubs(app string, subj constants.SubscriptionSubject, channelID string) ([]*Subscription, error) {
 	// if subj is nil, grab all subjects for the
 	return nil, nil
 }
@@ -148,7 +149,7 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 // channelID or teamID. Also validates the team or channel ID exists
 // TODO what to do if the app wants to delete a subscription for a channel that
 // was deleted?
-func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject SubscriptionSubject, teamOrChannelID string) (string, error) {
+func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject constants.SubscriptionSubject, teamOrChannelID string) (string, error) {
 	if sub != nil {
 		subject = sub.Subject
 	}
@@ -156,8 +157,8 @@ func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject Subsc
 	// verify valid subject request and create the key
 	key := SubsPrefixKey + string(subject)
 	switch subject {
-	case SubjectUserJoinedChannel,
-		SubjectUserLeftChannel:
+	case constants.SubjectUserJoinedChannel,
+		constants.SubjectUserLeftChannel:
 		if sub != nil {
 			teamOrChannelID = sub.ChannelID
 		}
@@ -166,8 +167,8 @@ func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject Subsc
 			return "", errors.New(fmt.Sprintf("ChannelID %s does not exist", teamOrChannelID))
 		}
 		key += "_" + teamOrChannelID
-	case SubjectUserJoinedTeam,
-		SubjectUserLeftTeam:
+	case constants.SubjectUserJoinedTeam,
+		constants.SubjectUserLeftTeam:
 		if sub != nil {
 			teamOrChannelID = sub.TeamID
 		}
@@ -176,10 +177,10 @@ func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject Subsc
 			return "", errors.New(fmt.Sprintf("TeamID %s does not exist", teamOrChannelID))
 		}
 		key += "_" + teamOrChannelID
-	case SubjectChannelCreated,
-		SubjectPostCreated,
-		SubjectUserCreated,
-		SubjectUserUpdated:
+	case constants.SubjectChannelCreated,
+		constants.SubjectPostCreated,
+		constants.SubjectUserCreated,
+		constants.SubjectUserUpdated:
 	default:
 		return "", errors.New(fmt.Sprintf("subject %s is not a valid subject", subject))
 	}
