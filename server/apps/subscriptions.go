@@ -84,14 +84,13 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 		// modify the sub to the latest request
 		if s.SubscriptionID == sub.SubscriptionID {
 			foundSub++
-			newSubs = append(newSubs, &sub)
+			newSubs = append(savedSubs[:i], &sub)
 			newSubs = append(newSubs, savedSubs[i+1:]...)
 			break
 		}
-		newSubs = append(newSubs, s)
 	}
 	if foundSub == 0 {
-		newSubs = append(newSubs, &sub)
+		newSubs = append(savedSubs, &sub)
 	}
 
 	// sub exists. update and save updated subs
