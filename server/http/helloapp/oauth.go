@@ -30,14 +30,14 @@ func (h *helloapp) InitOAuther() error {
 func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 	conf := h.apps.Configurator.GetConfig()
 
-	id, secret, err := h.getOAuth2AppCredentials()
+	creds, err := h.getAppCredentials()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve App OAuth2 credentials")
 	}
 
 	return &oauth2.Config{
-		ClientID:     id,
-		ClientSecret: secret,
+		ClientID:     creds.OAuth2AppID,
+		ClientSecret: creds.OAuth2AppSecret,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  conf.MattermostSiteURL + "/oauth/authorize",
 			TokenURL: conf.MattermostSiteURL + "/oauth/access_token",
@@ -103,26 +103,42 @@ func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
 	return f(mmClient)
 }
 
-const OAuth2AppCredentialsKey = "key_oauth2_app_credentials"
+func (h *helloapp) asBot(f func(mmclient *model.Client4, botUserID string) error) error {
+	creds, err := h.getAppCredentials()
+	if err != nil {
+		return errors.Wrap(err, "failed to retrieve app bot credentials")
+	}
 
-type OAuth2AppCredentials struct {
-	ID     string
-	Secret string
+	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
+	mmClient.SetToken(creds.BotToken)
+
+	return f(mmClient, creds.BotUserID)
 }
 
-func (h *helloapp) storeOAuth2AppCredentials(id, secret string) error {
-	_, err := h.apps.Mattermost.KV.Set(OAuth2AppCredentialsKey, OAuth2AppCredentials{
-		ID:     id,
-		Secret: secret,
+const AppCredentialsKey = "key_oauth2_app_credentials"
+
+type AppCredentials struct {
+	OAuth2AppID     string
+	OAuth2AppSecret string
+	BotUserID       string
+	BotToken        string
+}
+
+func (h *helloapp) storeAppCredentials(id, secret, botUserID, botToken string) error {
+	_, err := h.apps.Mattermost.KV.Set(AppCredentialsKey, AppCredentials{
+		OAuth2AppID:     id,
+		OAuth2AppSecret: secret,
+		BotUserID:       botUserID,
+		BotToken:        botToken,
 	})
 	return err
 }
 
-func (h *helloapp) getOAuth2AppCredentials() (id, secret string, err error) {
-	creds := OAuth2AppCredentials{}
-	err = h.apps.Mattermost.KV.Get(OAuth2AppCredentialsKey, &creds)
+func (h *helloapp) getAppCredentials() (*AppCredentials, error) {
+	creds := AppCredentials{}
+	err := h.apps.Mattermost.KV.Get(AppCredentialsKey, &creds)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	return creds.ID, creds.Secret, nil
+	return &creds, nil
 }
