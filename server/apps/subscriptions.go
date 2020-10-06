@@ -38,7 +38,7 @@ func NewSubscriptions(mm *pluginapi.Client, configurator configurator.Service) S
 // GetSubsForChannelOrTeam returns subscriptions for a given subject and
 // channelID or teamID from the store
 func (s *subscriptions) GetChannelOrTeamSubs(subj SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error) {
-	key, err := s.getAndValidateSubsKVkey(subj, channelOrTeamID)
+	key, err := s.getAndValidateSubsKVkey(nil, subj, channelOrTeamID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subscriptions key")
 	}
@@ -65,10 +65,7 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 		return errors.New("failed to get subscription subject")
 	}
 	// TODO check that channelID exists
-	if sub.ChannelID == "" {
-		return errors.New("failed to get subscription channelID")
-	}
-	key, err := s.getAndValidateSubsKVkey(sub.Subject, sub.ChannelID)
+	key, err := s.getAndValidateSubsKVkey(&sub, "", "")
 	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions key")
 	}
@@ -113,7 +110,7 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 		return errors.New("failed to get subscription channelID")
 	}
 
-	key, err := s.getAndValidateSubsKVkey(sub.Subject, sub.ChannelID)
+	key, err := s.getAndValidateSubsKVkey(&sub, sub.Subject, sub.ChannelID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions key")
 	}
@@ -151,33 +148,40 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 // channelID or teamID. Also validates the team or channel ID exists
 // TODO what to do if the app wants to delete a subscription for a channel that
 // was deleted?
-func (s *subscriptions) getAndValidateSubsKVkey(subj SubscriptionSubject, teamOrChannelID string) (string, error) {
+func (s *subscriptions) getAndValidateSubsKVkey(sub *Subscription, subject SubscriptionSubject, teamOrChannelID string) (string, error) {
+	if sub != nil {
+		subject = sub.Subject
+	}
+
 	// verify valid subject request and create the key
-	key := SubsPrefixKey + string(subj)
-	switch subj {
+	key := SubsPrefixKey + string(subject)
+	switch subject {
 	case SubjectUserJoinedChannel,
-		SubjectUserLeftChannel,
-		SubjectUserJoinedTeam,
-		SubjectUserLeftTeam:
-
-		if teamOrChannelID == "" {
-			return "", errors.New("failed to specify a teamOrChannelID")
+		SubjectUserLeftChannel:
+		if sub != nil {
+			teamOrChannelID = sub.ChannelID
 		}
-
 		_, errChan := s.mm.Channel.Get(teamOrChannelID)
-		_, errTeam := s.mm.Team.Get(teamOrChannelID)
-		if (errChan != nil) && (errTeam != nil) {
-			return "", errors.New(fmt.Sprintf("teamOrChannelID %s does not exist", teamOrChannelID))
+		if errChan != nil {
+			return "", errors.New(fmt.Sprintf("ChannelID %s does not exist", teamOrChannelID))
 		}
-
 		key += "_" + teamOrChannelID
-		return key, nil
+	case SubjectUserJoinedTeam,
+		SubjectUserLeftTeam:
+		if sub != nil {
+			teamOrChannelID = sub.TeamID
+		}
+		_, errTeam := s.mm.Team.Get(teamOrChannelID)
+		if errTeam != nil {
+			return "", errors.New(fmt.Sprintf("TeamID %s does not exist", teamOrChannelID))
+		}
+		key += "_" + teamOrChannelID
 	case SubjectChannelCreated,
 		SubjectPostCreated,
 		SubjectUserCreated,
 		SubjectUserUpdated:
-		return key, nil
 	default:
-		return "", errors.New(fmt.Sprintf("subj %s is not a valid subject", subj))
+		return "", errors.New(fmt.Sprintf("subject %s is not a valid subject", subject))
 	}
+	return key, nil
 }
