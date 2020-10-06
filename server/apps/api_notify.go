@@ -4,9 +4,6 @@
 package apps
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -62,8 +59,6 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 
 	expander := NewExpander(s.Mattermost, s.Configurator)
 	for _, sub := range subs {
-		subD, _ := json.MarshalIndent(sub, "", "    ")
-		fmt.Printf("sub = %+v\n", string(subD))
 		// only expand if sub requests it
 		if sub.Expand != nil {
 			expanded, err := expander.Expand(sub.Expand, actingUserID, msg.UserID, msg.ChannelID)
@@ -73,9 +68,6 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 			}
 			msg.Expanded = expanded
 		}
-
-		msgD, _ := json.MarshalIndent(msg, "", "    ")
-		fmt.Printf("msg = %+v\n", string(msgD))
 		go s.PostChangeNotification(*sub, msg)
 	}
 	return nil
