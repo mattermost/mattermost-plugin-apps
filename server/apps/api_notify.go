@@ -38,9 +38,11 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 	}
 	if cm != nil {
 		msg.ChannelID = cm.ChannelId
+		channelOrTeamID = cm.ChannelId
 	}
 	if tm != nil {
 		msg.TeamID = tm.TeamId
+		msg.UserID = tm.UserId
 		channelOrTeamID = tm.TeamId
 	}
 	if post != nil {
@@ -61,7 +63,7 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 	for _, sub := range subs {
 		// only expand if sub requests it
 		if sub.Expand != nil {
-			expanded, err := expander.Expand(sub.Expand, actingUserID, msg.UserID, msg.ChannelID)
+			expanded, err := expander.Expand(sub.Expand, actingUserID, msg.UserID, msg.ChannelID, msg.TeamID)
 			if err != nil {
 				// <><> TODO log
 				return nil

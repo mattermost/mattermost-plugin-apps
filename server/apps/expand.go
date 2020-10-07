@@ -11,7 +11,7 @@ import (
 )
 
 type Expander interface {
-	Expand(expand *Expand, actingUserID, userID, channelID string) (*Expanded, error)
+	Expand(expand *Expand, actingUserID, userID, channelID, teamID string) (*Expanded, error)
 }
 
 type ExpandEntity string
@@ -77,12 +77,13 @@ func NewExpander(mm *pluginapi.Client, configurator configurator.Service) Expand
 	}
 }
 
-func (e *expander) Expand(expand *Expand, actingUserID, userID, channelID string) (expanded *Expanded, err error) {
+func (e *expander) Expand(expand *Expand, actingUserID, userID, channelID, teamID string) (expanded *Expanded, err error) {
 	for _, f := range []func(*Expand) error{
 		e.collectConfig,
 		e.collectUser(userID, &e.User),
 		e.collectUser(actingUserID, &e.ActingUser),
 		e.collectChannelAndTeam(channelID),
+		e.collectTeam(teamID),
 	} {
 		err = f(expand)
 		if err != nil {
@@ -100,6 +101,22 @@ func (e *expander) collectConfig(expand *Expand) error {
 	}
 	e.Config = e.configurator.GetMattermostConfig()
 	return nil
+}
+
+func (e *expander) collectTeam(teamID string) func(*Expand) error {
+	return func(expand *Expand) error {
+		if teamID == "" || !isValidExpandLevel(expand.Team) {
+			return nil
+		}
+
+		mmteam, err := e.mm.Team.Get(teamID)
+		if err != nil {
+			return err
+		}
+
+		e.Team = mmteam
+		return nil
+	}
 }
 
 func (e *expander) collectChannelAndTeam(channelID string) func(*Expand) error {
@@ -155,6 +172,8 @@ func (e *expander) produce(expand *Expand) *Expanded {
 
 	expanded.User = produceUser(e.User, expand)
 	expanded.ActingUser = produceUser(e.ActingUser, expand)
+	expanded.Team = produceTeam(e.Team, expand)
+	expanded.Channel = produceChannel(e.Channel, expand)
 	return expanded
 }
 
@@ -181,6 +200,64 @@ func produceUser(user *model.User, expand *Expand) *model.User {
 
 	case ExpandAll:
 		return user
+	}
+
+	return nil
+}
+
+func produceChannel(channel *model.Channel, expand *Expand) *model.Channel {
+	if expand.User == "" || !isValidExpandLevel(expand.User) {
+		return nil
+	}
+
+	switch expand.Channel {
+	case ExpandSummary:
+		// TODO; define and fill out
+		return &model.Channel{
+			// Id:             user.Id,
+			// Username:       user.Username,
+			// Email:          user.Email,
+			// Nickname:       user.Nickname,
+			// FirstName:      user.FirstName,
+			// LastName:       user.LastName,
+			// Roles:          user.Roles,
+			// Locale:         user.Locale,
+			// Timezone:       user.Timezone,
+			// IsBot:          user.IsBot,
+			// BotDescription: user.BotDescription,
+		}
+
+	case ExpandAll:
+		return channel
+	}
+
+	return nil
+}
+
+func produceTeam(team *model.Team, expand *Expand) *model.Team {
+	if expand.User == "" || !isValidExpandLevel(expand.User) {
+		return nil
+	}
+
+	switch expand.Team {
+	case ExpandSummary:
+		// TODO; define and fill out
+		return &model.Team{
+			// Id:             user.Id,
+			// Username:       user.Username,
+			// Email:          user.Email,
+			// Nickname:       user.Nickname,
+			// FirstName:      user.FirstName,
+			// LastName:       user.LastName,
+			// Roles:          user.Roles,
+			// Locale:         user.Locale,
+			// Timezone:       user.Timezone,
+			// IsBot:          user.IsBot,
+			// BotDescription: user.BotDescription,
+		}
+
+	case ExpandAll:
+		return team
 	}
 
 	return nil

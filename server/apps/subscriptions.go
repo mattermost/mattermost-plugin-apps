@@ -65,7 +65,6 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 	if sub.Subject == "" {
 		return errors.New("failed to get subscription subject")
 	}
-	// TODO check that channelID exists
 	key, err := s.getAndValidateSubsKVkey(&sub, "", "")
 	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions key")
