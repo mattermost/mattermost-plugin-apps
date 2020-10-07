@@ -88,6 +88,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
 	err := p.apps.Notify(constants.SubjectUserCreated, nil, nil, user, nil, nil)
 	if err != nil {
+		// TODO Error handling
 		return
 	}
 }
