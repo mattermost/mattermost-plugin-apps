@@ -44,7 +44,7 @@ func (p *Plugin) OnActivate() error {
 	p.mattermost = pluginapi.NewClient(p.API)
 
 	botUserID, err := p.mattermost.Bot.EnsureBot(&model.Bot{
-		Username:    constants.BotUserName,
+		Username:    constants.BotUsername,
 		DisplayName: constants.BotDisplayName,
 		Description: constants.BotDescription,
 	}, pluginapi.ProfileImagePath("assets/profile.png"))

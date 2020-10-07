@@ -20,7 +20,7 @@ type installDialogState struct {
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -35,6 +35,7 @@ func NewInstallAppDialog(manifest *apps.Manifest, pluginURL string, commandArgs 
 			Type:        "text",
 			SubType:     "password",
 			HelpText:    "TODO: How to obtain the App Secret",
+			Default:     secret,
 		},
 	}
 	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
@@ -114,11 +115,6 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	session, err := d.apps.Mattermost.Session.Get(sessionID)
-	if err != nil {
-		return
-	}
-
 	var dialogRequest model.SubmitDialogRequest
 	err = json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -152,7 +148,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	out, err := d.apps.API.InstallApp(apps.InInstallApp{
+	_, out, err := d.apps.API.InstallApp(&apps.InInstallApp{
 		Context: apps.CallContext{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
@@ -167,7 +163,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 			NoUserConsentForOAuth2: noUserConsentForOAuth2,
 			Secret:                 secret,
 		},
-		SessionToken: session.Token,
+		GrantedPermissions: stateData.Manifest.RequestedPermissions,
 	})
 	if err != nil {
 		return
