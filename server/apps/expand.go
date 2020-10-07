@@ -146,7 +146,7 @@ func (e *expander) produce(expand *Expand) *Expanded {
 
 	expanded.User = produceUser(e.User, expand)
 	expanded.ActingUser = produceUser(e.ActingUser, expand)
-	return nil
+	return expanded
 }
 
 func produceUser(user *model.User, expand *Expand) *model.User {
