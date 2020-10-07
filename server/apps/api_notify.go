@@ -27,7 +27,6 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 
 	msg := &SubscriptionNotification{
 		Subject: subject,
-		UserID:  actingUserID,
 	}
 
 	if actingUser != nil && actingUser.Id != "" {
@@ -46,6 +45,7 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 		channelOrTeamID = tm.TeamId
 	}
 	if post != nil {
+		msg.UserID = post.UserId
 		msg.PostID = post.Id
 		msg.ParentID = post.ParentId
 		msg.RootID = post.RootId
