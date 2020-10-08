@@ -49,6 +49,9 @@ func LocationFromMap(m map[string]interface{}) (LocationInt, error) {
 	var bareLocation Location
 
 	err = json.Unmarshal(buf, &bareLocation)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshaling bare location")
+	}
 	switch bareLocation.GetType() {
 	case LocationChannelHeaderIcon:
 		var specificLocation ChannelHeaderIconLocation

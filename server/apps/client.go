@@ -173,6 +173,7 @@ func (s *Service) GetLocationsFromApp(appID AppID, userID, channelID string) ([]
 	if err != nil {
 		return nil, errors.Wrap(err, "error fetching the location")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("returned with status %s", resp.Status)

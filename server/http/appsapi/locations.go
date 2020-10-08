@@ -1,4 +1,4 @@
-package appsAPI
+package appsapi
 
 import (
 	"errors"
