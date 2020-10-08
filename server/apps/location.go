@@ -13,11 +13,6 @@ const (
 	LocationChannelHeaderIcon LocationType = "channel_header_icon"
 )
 
-type LocationRegistry struct {
-	FetchURL string
-	AppID    AppID
-}
-
 type LocationInt interface {
 	GetType() LocationType
 }
