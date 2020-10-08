@@ -25,6 +25,8 @@ const (
 	PathWishConnectedInstall = "/wish/connected_install"
 	PathOAuth2               = "/oauth2"
 	PathOAuth2Complete       = "/oauth2/complete" // /complete comes from OAuther
+
+	PathWishSample = "/wish/sample"
 )
 
 type helloapp struct {
@@ -44,6 +46,8 @@ func Init(router *mux.Router, apps *apps.Service) {
 	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
 
 	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
+
+	h.InitWidgets(subrouter)
 
 	_ = h.InitOAuther()
 }

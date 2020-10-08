@@ -4,6 +4,8 @@
 package command
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -20,9 +22,10 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":        s.executeInfo,
-		"install":     s.executeInstall,
-		"debug-clean": s.executeDebugClean,
+		"info":            s.executeInfo,
+		"install":         s.executeInstall,
+		"debug-clean":     s.executeDebugClean,
+		"debug-locations": s.executeDebugLocations,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -53,4 +56,13 @@ func runSubcommand(
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
 	return normalOut(params, md.MD("<><> TODO"), nil)
+}
+
+func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
+	locations, err := s.apps.API.GetWidgets(params.commandArgs.UserId, params.commandArgs.ChannelId)
+	if err != nil {
+		return normalOut(params, md.MD("error"), err)
+	}
+	bytes, _ := json.Marshal(locations)
+	return normalOut(params, md.MD(string(bytes)), nil)
 }

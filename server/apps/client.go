@@ -4,19 +4,25 @@
 package apps
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 )
 
 type Client interface {
 	PostWish(Call) (*CallResponse, error)
 	PostChangeNotification(Subscription, interface{})
 	GetManifest(manifestURL string) (*Manifest, error)
+	GetLocation(lr *LocationRegistry, userID, channelID string) (LocationInt, error)
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
@@ -89,6 +95,31 @@ func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg 
 	return resp, nil
 }
 
+func (s *Service) get(toApp *App, fromMattermostUserID string, url string) (*http.Response, error) {
+	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating the client")
+	}
+	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating token")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating request")
+	}
+	req.Header.Set(OutgoingAuthHeader, "Bearer "+jwtoken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		// TODO ticket: progressive backoff on errors
+		return nil, errors.Wrap(err, "error performing the request")
+	}
+
+	return resp, nil
+}
+
 func (s *Service) getAppHTTPClient(appID AppID) (*http.Client, error) {
 	// <><> TODO cache the client per app
 	return &http.Client{}, nil
@@ -123,4 +154,59 @@ func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
 	}
 
 	return &manifest, nil
+}
+
+func (s *Service) GetLocation(lr *LocationRegistry, userID, channelID string) (LocationInt, error) {
+	url, err := url.Parse(lr.FetchURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing the url")
+	}
+	q := url.Query()
+	q.Add("userID", userID)
+	q.Add("channelID", channelID)
+	url.RawQuery = q.Encode()
+
+	app, err := s.Registry.Get(lr.AppID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting app")
+	}
+
+	resp, err := s.get(app, userID, url.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "error fetching the location")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("returned with status %s", resp.Status)
+	}
+
+	var bareLocation Location
+	buf, _ := ioutil.ReadAll(resp.Body)
+	decoder := json.NewDecoder(bytes.NewReader(buf))
+	err = decoder.Decode(&bareLocation)
+	if err != nil {
+		return nil, errors.Wrap(err, "error decoding the bare location")
+	}
+
+	var location LocationInt
+	decoder = json.NewDecoder(bytes.NewReader(buf))
+	switch bareLocation.GetType() {
+	case LocationChannelHeaderIcon:
+		var specificLocation ChannelHeaderIconLocation
+		err = decoder.Decode(&specificLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error decoding channel header icon location")
+		}
+		location = &specificLocation
+	case LocationPostMenuItem:
+		var specificLocation PostMenuItemLocation
+		err = decoder.Decode(&specificLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error decoding post menu item location")
+		}
+		location = &specificLocation
+	default:
+		return nil, errors.New("location not recognized")
+	}
+	return location, nil
 }

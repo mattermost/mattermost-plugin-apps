@@ -18,6 +18,7 @@ type Manifest struct {
 	Install              *Wish
 	RequestedPermissions Permissions
 	RootURL              string
+	Locations            []*LocationRegistry
 }
 
 type App struct {
