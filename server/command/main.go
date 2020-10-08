@@ -59,7 +59,7 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
-	locations, err := s.apps.API.GetWidgets(params.commandArgs.UserId, params.commandArgs.ChannelId)
+	locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}

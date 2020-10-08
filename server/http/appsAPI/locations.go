@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *api) handleWidgets(w http.ResponseWriter, req *http.Request, actingUserID string) {
+func (a *api) handleLocations(w http.ResponseWriter, req *http.Request, actingUserID string) {
 	userID := req.URL.Query().Get("userID")
 	if userID == "" {
 		httputils.WriteBadRequestError(w, errors.New("no user id"))
@@ -25,7 +25,7 @@ func (a *api) handleWidgets(w http.ResponseWriter, req *http.Request, actingUser
 		return
 	}
 
-	locations, err := a.apps.API.GetWidgets(userID, channelID)
+	locations, err := a.apps.API.GetLocations(userID, channelID)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return

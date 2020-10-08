@@ -25,22 +25,9 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionActAsUser,
 				apps.PermissionActAsBot,
 			},
-			Install:     apps.NewWish(h.AppURL(PathWishInstall)),
-			CallbackURL: h.AppURL(PathOAuth2Complete),
-			Homepage:    h.AppURL("/"),
-			Locations: []*apps.LocationRegistry{
-				{
-					AppID:    AppID,
-					FetchURL: h.AppURL(PathWidgets + WidgetChannelHeader),
-				},
-				{
-					AppID:    AppID,
-					FetchURL: h.AppURL(PathWidgets + WidgetPostMenuItemAdd),
-				},
-				{
-					AppID:    AppID,
-					FetchURL: h.AppURL(PathWidgets + WidgetPostMenuItemRemove),
-				},
-			},
+			Install:      apps.NewWish(h.AppURL(PathWishInstall)),
+			CallbackURL:  h.AppURL(PathOAuth2Complete),
+			LocationsURL: h.AppURL(PathLocations),
+			Homepage:     h.AppURL("/"),
 		})
 }

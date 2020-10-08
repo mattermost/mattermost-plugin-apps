@@ -4,11 +4,9 @@
 package apps
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -22,7 +20,7 @@ type Client interface {
 	PostWish(Call) (*CallResponse, error)
 	PostChangeNotification(Subscription, interface{})
 	GetManifest(manifestURL string) (*Manifest, error)
-	GetLocation(lr *LocationRegistry, userID, channelID string) (LocationInt, error)
+	GetLocationsFromApp(appID AppID, userID, channelID string) ([]LocationInt, error)
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
@@ -156,8 +154,13 @@ func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
 	return &manifest, nil
 }
 
-func (s *Service) GetLocation(lr *LocationRegistry, userID, channelID string) (LocationInt, error) {
-	url, err := url.Parse(lr.FetchURL)
+func (s *Service) GetLocationsFromApp(appID AppID, userID, channelID string) ([]LocationInt, error) {
+	app, err := s.Registry.Get(appID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting app")
+	}
+
+	url, err := url.Parse(app.Manifest.LocationsURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "error parsing the url")
 	}
@@ -165,11 +168,6 @@ func (s *Service) GetLocation(lr *LocationRegistry, userID, channelID string) (L
 	q.Add("userID", userID)
 	q.Add("channelID", channelID)
 	url.RawQuery = q.Encode()
-
-	app, err := s.Registry.Get(lr.AppID)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting app")
-	}
 
 	resp, err := s.get(app, userID, url.String())
 	if err != nil {
@@ -180,33 +178,19 @@ func (s *Service) GetLocation(lr *LocationRegistry, userID, channelID string) (L
 		return nil, fmt.Errorf("returned with status %s", resp.Status)
 	}
 
-	var bareLocation Location
-	buf, _ := ioutil.ReadAll(resp.Body)
-	decoder := json.NewDecoder(bytes.NewReader(buf))
-	err = decoder.Decode(&bareLocation)
+	var bareLocations []map[string]interface{}
+	locations := []LocationInt{}
+	err = json.NewDecoder(resp.Body).Decode(&bareLocations)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding the bare location")
+		return nil, errors.Wrap(err, "error unmarshalling bare location list")
+	}
+	for _, bareLocation := range bareLocations {
+		location, err := LocationFromMap(bareLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error passing from map to location")
+		}
+		locations = append(locations, location)
 	}
 
-	var location LocationInt
-	decoder = json.NewDecoder(bytes.NewReader(buf))
-	switch bareLocation.GetType() {
-	case LocationChannelHeaderIcon:
-		var specificLocation ChannelHeaderIconLocation
-		err = decoder.Decode(&specificLocation)
-		if err != nil {
-			return nil, errors.Wrap(err, "error decoding channel header icon location")
-		}
-		location = &specificLocation
-	case LocationPostMenuItem:
-		var specificLocation PostMenuItemLocation
-		err = decoder.Decode(&specificLocation)
-		if err != nil {
-			return nil, errors.Wrap(err, "error decoding post menu item location")
-		}
-		location = &specificLocation
-	default:
-		return nil, errors.New("location not recognized")
-	}
-	return location, nil
+	return locations, nil
 }

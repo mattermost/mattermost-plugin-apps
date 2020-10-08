@@ -25,6 +25,7 @@ const (
 	PathWishConnectedInstall = "/wish/connected_install"
 	PathOAuth2               = "/oauth2"
 	PathOAuth2Complete       = "/oauth2/complete" // /complete comes from OAuther
+	PathLocations            = "/locations"
 
 	PathWishSample = "/wish/sample"
 )
@@ -47,7 +48,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
-	h.InitWidgets(subrouter)
+	subrouter.HandleFunc(PathLocations, CheckAuthentication(ExtractUserAndChannelID(h.HandleLocations))).Methods("GET")
 
 	_ = h.InitOAuther()
 }

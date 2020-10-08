@@ -6,14 +6,12 @@ package apps
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/pkg/errors"
 )
 
 type Registry interface {
 	Store(*App) error
 	Get(AppID) (*App, error)
-	GetLocations(appID AppID) ([]*LocationRegistry, error)
-	GetAllLocations() ([]*LocationRegistry, error)
+	GetAllAppIDs() ([]AppID, error)
 }
 
 type registry struct {
@@ -46,23 +44,10 @@ func (r *registry) Get(appID AppID) (*App, error) {
 	return app, nil
 }
 
-func (r *registry) GetLocations(appID AppID) ([]*LocationRegistry, error) {
-	app, err := r.Get(appID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get app")
+func (r *registry) GetAllAppIDs() ([]AppID, error) {
+	list := []AppID{}
+	for id := range r.apps {
+		list = append(list, id)
 	}
-
-	return app.Manifest.Locations, nil
-}
-
-func (r *registry) GetAllLocations() ([]*LocationRegistry, error) {
-	locations := []*LocationRegistry{}
-	for appID := range r.apps {
-		loc, err := r.GetLocations(appID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get single app location registers")
-		}
-		locations = append(locations, loc...)
-	}
-	return locations, nil
+	return list, nil
 }

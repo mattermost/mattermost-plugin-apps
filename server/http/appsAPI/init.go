@@ -20,7 +20,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	subrouter := router.PathPrefix(constants.APIPath).Subrouter()
-	subrouter.HandleFunc("/widgets", checkAuthorized(a.handleWidgets)).Methods("GET")
+	subrouter.HandleFunc("/locations", checkAuthorized(a.handleLocations)).Methods("GET")
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) func(http.ResponseWriter, *http.Request) {

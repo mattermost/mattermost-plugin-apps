@@ -1,5 +1,11 @@
 package apps
 
+import (
+	"encoding/json"
+
+	"github.com/pkg/errors"
+)
+
 type LocationType string
 
 const (
@@ -37,6 +43,35 @@ type ChannelHeaderIconLocation struct {
 	DropdownText string
 	AriaText     string
 	Icon         string
+}
+
+func LocationFromMap(m map[string]interface{}) (LocationInt, error) {
+	buf, err := json.Marshal(m)
+	if err != nil {
+		return nil, errors.Wrap(err, "error marshaling map")
+	}
+
+	var bareLocation Location
+
+	err = json.Unmarshal(buf, &bareLocation)
+	switch bareLocation.GetType() {
+	case LocationChannelHeaderIcon:
+		var specificLocation ChannelHeaderIconLocation
+		err = json.Unmarshal(buf, &specificLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error decoding channel header icon location")
+		}
+		return &specificLocation, nil
+	case LocationPostMenuItem:
+		var specificLocation PostMenuItemLocation
+		err = json.Unmarshal(buf, &specificLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error decoding post menu item location")
+		}
+		return &specificLocation, nil
+	}
+
+	return nil, errors.New("location not recognized")
 }
 
 // Alternative
