@@ -4,9 +4,6 @@
 package apps
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -31,7 +28,6 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 
 	msg := &SubscriptionNotification{
 		Subject: subject,
-		UserID:  actingUserID,
 	}
 
 	if actingUser != nil && actingUser.Id != "" {
@@ -42,12 +38,15 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 	}
 	if cm != nil {
 		msg.ChannelID = cm.ChannelId
+		channelOrTeamID = cm.ChannelId
 	}
 	if tm != nil {
 		msg.TeamID = tm.TeamId
+		msg.UserID = tm.UserId
 		channelOrTeamID = tm.TeamId
 	}
 	if post != nil {
+		msg.UserID = post.UserId
 		msg.PostID = post.Id
 		msg.ParentID = post.ParentId
 		msg.RootID = post.RootId
@@ -63,18 +62,15 @@ func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMe
 
 	expander := NewExpander(s.Mattermost, s.Configurator)
 	for _, sub := range subs {
-		subD, _ := json.MarshalIndent(sub, "", "    ")
-		fmt.Printf("sub = %+v\n", string(subD))
 		// only expand if sub requests it
 		if sub.Expand != nil {
-			expanded, err := expander.Expand(sub.Expand, actingUserID, msg.UserID, msg.ChannelID)
+			expanded, err := expander.Expand(sub.Expand, actingUserID, msg.UserID, msg.ChannelID, msg.TeamID)
 			if err != nil {
 				// <><> TODO log
 				return nil
 			}
 			msg.Expanded = expanded
 		}
-
 		go s.PostChangeNotification(*sub, msg)
 	}
 	return nil
