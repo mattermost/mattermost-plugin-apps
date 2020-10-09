@@ -31,8 +31,6 @@ func (s *Service) Notify(subject constants.SubscriptionSubject,
 	channel *model.Channel,
 	post *model.Post) error {
 
-	fmt.Printf("Subject = %+v\n", subject)
-
 	actingUserID := ""
 	channelOrTeamID := ""
 

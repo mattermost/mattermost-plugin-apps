@@ -2,6 +2,7 @@ package helloapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
@@ -30,14 +31,14 @@ func (h *helloapp) InitOAuther() error {
 func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 	conf := h.apps.Configurator.GetConfig()
 
-	id, secret, err := h.getOAuth2AppCredentials()
+	ac, err := h.getAppCredentials()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve App OAuth2 credentials")
 	}
 
 	return &oauth2.Config{
-		ClientID:     id,
-		ClientSecret: secret,
+		ClientID:     ac.OAuth2ClientID,
+		ClientSecret: ac.OAuth2ClientSecret,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  conf.MattermostSiteURL + "/oauth/authorize",
 			TokenURL: conf.MattermostSiteURL + "/oauth/access_token",
@@ -92,6 +93,29 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	})
 }
 
+const AppCredentialsKey = "key_oauth2_app_credentials"
+
+type AppCredentials struct {
+	BotAccessToken     string
+	BotUserID          string
+	OAuth2ClientID     string
+	OAuth2ClientSecret string
+}
+
+func (h *helloapp) storeAppCredentials(ac *AppCredentials) error {
+	_, err := h.apps.Mattermost.KV.Set(AppCredentialsKey, ac)
+	return err
+}
+
+func (h *helloapp) getAppCredentials() (*AppCredentials, error) {
+	creds := AppCredentials{}
+	err := h.apps.Mattermost.KV.Get(AppCredentialsKey, &creds)
+	if err != nil {
+		return nil, err
+	}
+	return &creds, nil
+}
+
 func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
 	t, err := h.OAuther.GetToken(userID)
 	if err != nil {
@@ -99,30 +123,37 @@ func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
 	}
 	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
 	mmClient.SetOAuthToken(t.AccessToken)
-
 	return f(mmClient)
 }
 
-const OAuth2AppCredentialsKey = "key_oauth2_app_credentials"
-
-type OAuth2AppCredentials struct {
-	ID     string
-	Secret string
-}
-
-func (h *helloapp) storeOAuth2AppCredentials(id, secret string) error {
-	_, err := h.apps.Mattermost.KV.Set(OAuth2AppCredentialsKey, OAuth2AppCredentials{
-		ID:     id,
-		Secret: secret,
-	})
-	return err
-}
-
-func (h *helloapp) getOAuth2AppCredentials() (id, secret string, err error) {
-	creds := OAuth2AppCredentials{}
-	err = h.apps.Mattermost.KV.Get(OAuth2AppCredentialsKey, &creds)
+func (h *helloapp) asBot(f func(*model.Client4) error) error {
+	ac, err := h.getAppCredentials()
 	if err != nil {
-		return "", "", err
+		return err
 	}
-	return creds.ID, creds.Secret, nil
+	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
+	mmClient.SetOAuthToken(ac.BotAccessToken)
+	return f(mmClient)
+}
+
+func (h *helloapp) DM(userID string, format string, args ...interface{}) {
+	ac, err := h.getAppCredentials()
+	if err != nil {
+		return
+	}
+
+	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
+	mmClient.SetOAuthToken(ac.BotAccessToken)
+
+	// TODO: Is this the right way to send a Bot DM?
+	channel, _ := mmClient.CreateDirectChannel(ac.BotUserID, userID)
+	if channel == nil {
+		fmt.Println("<><> failed to create a DM channel")
+		return
+	}
+
+	mmClient.CreatePost(&model.Post{
+		ChannelId: channel.Id,
+		Message:   fmt.Sprintf(format, args...),
+	})
 }

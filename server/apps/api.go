@@ -9,10 +9,12 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+type SessionToken string
+
 type API interface {
 	Call(Call) (*CallResponse, error)
-	InstallApp(*InInstallApp) (*App, md.MD, error)
-	ProvisionApp(*InProvisionApp) (*App, md.MD, error)
+	InstallApp(*InInstallApp, *CallContext, SessionToken) (*App, md.MD, error)
+	ProvisionApp(*InProvisionApp, *CallContext, SessionToken) (*App, md.MD, error)
 	Notify(
 		subject constants.SubscriptionSubject,
 		tm *model.TeamMember,

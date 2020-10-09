@@ -16,14 +16,12 @@ import (
 )
 
 type InProvisionApp struct {
-	ManifestURL  string
-	Context      CallContext
-	SessionToken string
-	AppSecret    string
-	Force        bool
+	ManifestURL string
+	AppSecret   string
+	Force       bool
 }
 
-func (s *Service) ProvisionApp(in *InProvisionApp) (*App, md.MD, error) {
+func (s *Service) ProvisionApp(in *InProvisionApp, cc *CallContext, sessionToken SessionToken) (*App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
@@ -38,16 +36,7 @@ func (s *Service) ProvisionApp(in *InProvisionApp) (*App, md.MD, error) {
 
 	// TODO check if acting user is a sysadmin
 
-	conf := s.Configurator.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
-	client.SetToken(in.SessionToken)
-
-	bot, token, err := s.ensureBot(client, manifest, in.Context.ActingUserID)
-	if err != nil {
-		return nil, "", err
-	}
-
-	oAuthApp, err := s.ensureOAuthApp(client, manifest, in.Context.ActingUserID)
+	bot, token, err := s.ensureBot(manifest, cc.ActingUserID, string(sessionToken))
 	if err != nil {
 		return nil, "", err
 	}
@@ -57,8 +46,6 @@ func (s *Service) ProvisionApp(in *InProvisionApp) (*App, md.MD, error) {
 		BotUserID:              bot.UserId,
 		BotUsername:            bot.Username,
 		BotPersonalAccessToken: token.Token,
-		OAuthAppID:             oAuthApp.Id,
-		OAuthSecret:            oAuthApp.ClientSecret,
 		Secret:                 in.AppSecret,
 	}
 	err = s.Registry.Store(app)
@@ -71,7 +58,11 @@ func (s *Service) ProvisionApp(in *InProvisionApp) (*App, md.MD, error) {
 	return app, md, nil
 }
 
-func (s *Service) ensureBot(client *model.Client4, manifest *Manifest, actingUserID string) (*model.Bot, *model.UserAccessToken, error) {
+func (s *Service) ensureBot(manifest *Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+	conf := s.Configurator.GetConfig()
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(sessionToken)
+
 	bot := &model.Bot{
 		Username:    string(manifest.AppID),
 		DisplayName: manifest.DisplayName,
@@ -121,36 +112,4 @@ func (s *Service) ensureBot(client *model.Client4, manifest *Manifest, actingUse
 	})
 
 	return fullBot, token, nil
-}
-
-func (s *Service) ensureOAuthApp(client *model.Client4, manifest *Manifest, actingUserID string) (*model.OAuthApp, error) {
-	storedApp, err := s.Registry.Get(manifest.AppID)
-	if err != nil && err != utils.ErrNotFound {
-		return nil, err
-	}
-
-	if storedApp != nil && storedApp.OAuthAppID != "" {
-		oauthApp, response := client.GetOAuthApp(storedApp.OAuthAppID)
-		if response.StatusCode == http.StatusOK && response.Error == nil {
-			return oauthApp, nil
-		}
-	}
-
-	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
-	oauthApp, response := client.CreateOAuthApp(&model.OAuthApp{
-		CreatorId:    actingUserID,
-		Name:         manifest.DisplayName,
-		Description:  manifest.Description,
-		CallbackUrls: []string{manifest.CallbackURL},
-		Homepage:     manifest.Homepage,
-		IsTrusted:    true,
-	})
-	if response.StatusCode != http.StatusCreated {
-		if response.Error != nil {
-			return nil, errors.Wrap(response.Error, "failed to create OAuth2 App")
-		}
-		return nil, errors.Errorf("failed to create OAuth2 App: received status code %v", response.StatusCode)
-	}
-
-	return oauthApp, nil
 }

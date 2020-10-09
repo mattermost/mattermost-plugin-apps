@@ -78,57 +78,31 @@ func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, comm
 }
 
 func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
-	var err error
-	stateData := installDialogState{}
-	logMessage := ""
-	actingUserID := ""
-	status := http.StatusInternalServerError
-
-	defer func() {
-		resp := model.SubmitDialogResponse{}
-		if err != nil {
-			resp.Error = errors.Wrap(err, "failed to install").Error()
-			logMessage = "Error: " + resp.Error
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_ = json.NewEncoder(w).Encode(resp)
-
-		conf := d.apps.Configurator.GetConfig()
-		_ = d.apps.Mattermost.Post.DM(conf.BotUserID, actingUserID, &model.Post{
-			Message: logMessage,
-		})
-	}()
-
-	actingUserID = req.Header.Get("Mattermost-User-Id")
+	actingUserID := req.Header.Get("Mattermost-User-Id")
 	if actingUserID == "" {
-		err = errors.New("user not logged in")
-		status = http.StatusUnauthorized
+		respondWithError(w, http.StatusUnauthorized, errors.New("user not logged in"))
 		return
 	}
 	// <><> TODO check for sysadmin
 
 	sessionID := req.Header.Get("MM_SESSION_ID")
 	if sessionID == "" {
-		err = errors.New("no session")
-		status = http.StatusUnauthorized
+		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
 		return
 	}
 
 	var dialogRequest model.SubmitDialogRequest
-	err = json.NewDecoder(req.Body).Decode(&dialogRequest)
+	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
-		status = http.StatusBadRequest
+		respondWithError(w, http.StatusBadRequest, err)
 		return
 	}
 	if dialogRequest.Type != "dialog_submission" {
-		err = errors.New("expected dialog_submission, got " + dialogRequest.Type)
-		status = http.StatusBadRequest
+		respondWithError(w, http.StatusBadRequest,
+			errors.New("expected dialog_submission, got "+dialogRequest.Type))
 		return
 	}
-
 	if dialogRequest.Cancelled {
-		logMessage = "Installation was canceled by the user"
 		return
 	}
 
@@ -142,13 +116,14 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
+	stateData := installDialogState{}
 	err = json.Unmarshal([]byte(dialogRequest.State), &stateData)
 	if err != nil {
-		status = http.StatusBadRequest
+		respondWithError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	_, out, err := d.apps.API.InstallApp(&apps.InInstallApp{
+	app, out, err := d.apps.API.InstallApp(&apps.InInstallApp{
 		Context: apps.CallContext{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
@@ -158,17 +133,16 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 				RootPostID: stateData.LogRootPostID,
 			},
 		},
-		App: apps.App{
-			Manifest:               stateData.Manifest,
-			NoUserConsentForOAuth2: noUserConsentForOAuth2,
-			Secret:                 secret,
-		},
-		GrantedPermissions: stateData.Manifest.RequestedPermissions,
+		NoUserConsentForOAuth2: noUserConsentForOAuth2,
+		AppSecret:              secret,
+		GrantedPermissions:     stateData.Manifest.RequestedPermissions,
 	})
 	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	status = http.StatusOK
-	logMessage = out.String()
+	_ = d.apps.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
+		Message: out.String(),
+	})
 }
