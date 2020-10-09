@@ -1,9 +1,6 @@
 package apps
 
 import (
-	"fmt"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -31,6 +28,7 @@ type App struct {
 	OAuthSecret string
 
 	BotUserID              string
+	BotUsername            string
 	BotPersonalAccessToken string
 
 	// Grants should be scopable in the future, per team, channel, post with regexp
@@ -60,7 +58,7 @@ func (p PermissionType) String() string {
 	case PermissionActAsUser:
 		m = "Use Mattermost REST API as connected users"
 	case PermissionActAsBot:
-		m = fmt.Sprintf("Use Mattermost REST API as @%s bot", constants.BotUserName)
+		m = "Use Mattermost REST API as the app's bot user"
 	default:
 		m = "unknown permission: " + string(p)
 	}

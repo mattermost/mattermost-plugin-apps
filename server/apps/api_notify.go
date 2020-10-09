@@ -11,17 +11,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-type Hooks interface {
-	SendNotifications(
-		subject constants.SubscriptionSubject,
-		tm *model.TeamMember,
-		cm *model.ChannelMember,
-		actingUser *model.User,
-		channel *model.Channel,
-		post *model.Post,
-	) error
-}
-
 type SubscriptionNotification struct {
 	SubscriptionID SubscriptionID
 	Subject        constants.SubscriptionSubject
@@ -34,16 +23,9 @@ type SubscriptionNotification struct {
 	Expanded       *Expanded
 }
 
-// SendNotifications sends a POST change notifiation for a set of subscriptions
-func (s *Service) SendNotifications(subject constants.SubscriptionSubject,
-	tm *model.TeamMember,
-	cm *model.ChannelMember,
-	actingUser *model.User,
-	channel *model.Channel,
-	post *model.Post) error {
-
-	fmt.Printf("Subject = %+v\n", subject)
-
+// Notify sends a POST change notification for a set of subscriptions
+func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMember,
+	cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post) error {
 	actingUserID := ""
 	channelOrTeamID := ""
 

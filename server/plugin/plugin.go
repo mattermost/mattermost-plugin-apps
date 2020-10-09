@@ -44,7 +44,7 @@ func (p *Plugin) OnActivate() error {
 	p.mattermost = pluginapi.NewClient(p.API)
 
 	botUserID, err := p.mattermost.Bot.EnsureBot(&model.Bot{
-		Username:    constants.BotUserName,
+		Username:    constants.BotUsername,
 		DisplayName: constants.BotDisplayName,
 		Description: constants.BotDescription,
 	}, pluginapi.ProfileImagePath("assets/profile.png"))
@@ -86,32 +86,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	p.apps.SendNotifications(constants.SubjectUserCreated, nil, nil, user, nil, nil)
+	_ = p.apps.Notify(constants.SubjectUserCreated, nil, nil, user, nil, nil)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.SendNotifications(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
+	_ = p.apps.Notify(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.SendNotifications(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
+	_ = p.apps.Notify(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.SendNotifications(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
+	_ = p.apps.Notify(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	p.apps.SendNotifications(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
+	_ = p.apps.Notify(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	err := p.apps.SendNotifications(constants.SubjectPostCreated, nil, nil, nil, nil, post)
-	if err != nil {
-		return
-	}
+	_ = p.apps.Notify(constants.SubjectPostCreated, nil, nil, nil, nil, post)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel) {
-	p.apps.SendNotifications(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
+	_ = p.apps.Notify(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
 }

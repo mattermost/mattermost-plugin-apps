@@ -33,8 +33,6 @@ type CallContext struct {
 	ChannelID string `json:"channel_id,omitempty"`
 	PostID    string `json:"post_id,omitempty"`
 
-	LogTo *Thread `json:"log_to,omitempty"`
-
 	Props map[string]string `json:"props,omitempty"`
 }
 

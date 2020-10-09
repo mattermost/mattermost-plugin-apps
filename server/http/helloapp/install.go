@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
@@ -14,11 +15,12 @@ import (
 )
 
 func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error) {
-	err := h.storeAppCredentials(
-		data.Expanded.App.OAuthAppID,
-		data.Expanded.App.OAuthSecret,
-		data.Expanded.App.BotUserID,
-		data.Expanded.App.BotPersonalAccessToken)
+	err := h.storeAppCredentials(&AppCredentials{
+		BotAccessToken:     data.Expanded.App.BotPersonalAccessToken,
+		BotUserID:          data.Expanded.App.BotUserID,
+		OAuth2ClientID:     data.Expanded.App.OAuthAppID,
+		OAuth2ClientSecret: data.Expanded.App.OAuthSecret,
+	})
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -111,7 +113,22 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", AppDisplayName),
 			})
 
-			// TODO Create a Subscription to UserJoinedChannel, handler
+			// TODO this should be done using the REST Subs API, for now mock with direct use
+			err = h.apps.Subscriptions.StoreSub(&apps.Subscription{
+				SubscriptionID: apps.SubscriptionID(model.NewId()),
+				AppID:          AppID,
+				Subject:        constants.SubjectUserJoinedChannel,
+				ChannelID:      channel.Id,
+				TeamID:         channel.TeamId,
+				Expand: &apps.Expand{
+					Channel: apps.ExpandAll,
+					Team:    apps.ExpandAll,
+					User:    apps.ExpandAll,
+				},
+			})
+			if err != nil {
+				return err
+			}
 			return nil
 		})
 	if err != nil {
@@ -125,7 +142,9 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 	httputils.WriteJSON(w,
 		apps.CallResponse{
 			Type:     apps.ResponseTypeOK,
-			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2AppID, AppDisplayName),
+			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2ClientID, AppDisplayName),
 		})
+	h.DM(data.Context.ActingUserID, "OK!")
+
 	return http.StatusOK, nil
 }
