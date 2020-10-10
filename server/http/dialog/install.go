@@ -113,7 +113,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v := dialogRequest.Submission["consent"]
 	consentValue, _ := v.(string)
 	noUserConsentForOAuth2 := false
-	if consentValue == "require" {
+	if consentValue == "notrequire" {
 		noUserConsentForOAuth2 = true
 	}
 
