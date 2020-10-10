@@ -18,8 +18,8 @@ const SubsPrefixKey = "sub_"
 type Subscriptions interface {
 	GetChannelOrTeamSubs(subj constants.SubscriptionSubject, channelOrTeamID string) ([]*Subscription, error)
 	GetAppSubs(appID string, subj constants.SubscriptionSubject, teamID string) ([]*Subscription, error)
-	StoreSub(sub Subscription) error
-	DeleteSub(sub Subscription) error
+	StoreSub(sub *Subscription) error
+	DeleteSub(sub *Subscription) error
 }
 
 type subscriptions struct {
@@ -61,39 +61,34 @@ func (s *subscriptions) GetAppSubs(app string, subj constants.SubscriptionSubjec
 
 // StoreSub stores a subscription for a change notification
 // TODO move this to store package or file
-func (s *subscriptions) StoreSub(sub Subscription) error {
+func (s *subscriptions) StoreSub(sub *Subscription) error {
 	if sub.Subject == "" {
 		return errors.New("failed to get subscription subject")
 	}
-	key, err := s.getAndValidateSubsKVkey(&sub, "", "")
+	key, err := s.getAndValidateSubsKVkey(sub, "", "")
 	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions key")
 	}
 
 	// get all subscriptions for the subject
-	var savedSubs []*Subscription
-	if err = s.mm.KV.Get(key, &savedSubs); err != nil {
+	var subs []*Subscription
+	if err = s.mm.KV.Get(key, &subs); err != nil {
 		return errors.Wrap(err, "failed to get subscriptions")
 	}
 
-	// check if sub exists
-	var newSubs []*Subscription
-	foundSub := 0
-	for _, s := range savedSubs {
-		// modify the sub to the latest request
+	add := true
+	for i, s := range subs {
 		if s.SubscriptionID == sub.SubscriptionID {
-			foundSub++
-			newSubs = append(newSubs, &sub)
+			subs[i] = sub
+			add = false
 			break
 		}
-		newSubs = append(newSubs, s)
 	}
-	if foundSub == 0 {
-		newSubs = append(newSubs, &sub)
+	if add {
+		subs = append(subs, sub)
 	}
 
-	// sub exists. update and save updated subs
-	_, err = s.mm.KV.Set(key, newSubs)
+	_, err = s.mm.KV.Set(key, subs)
 	if err != nil {
 		return errors.Wrap(err, "failed to save subscriptions")
 	}
@@ -101,7 +96,7 @@ func (s *subscriptions) StoreSub(sub Subscription) error {
 }
 
 // DeleteSubs deletes a subscription
-func (s *subscriptions) DeleteSub(sub Subscription) error {
+func (s *subscriptions) DeleteSub(sub *Subscription) error {
 	if sub.Subject == "" {
 		return errors.New("failed to get subscription subject")
 	}
@@ -109,37 +104,37 @@ func (s *subscriptions) DeleteSub(sub Subscription) error {
 		return errors.New("failed to get subscription channelID")
 	}
 
-	key, err := s.getAndValidateSubsKVkey(&sub, sub.Subject, sub.ChannelID)
+	key, err := s.getAndValidateSubsKVkey(sub, sub.Subject, sub.ChannelID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get subscriptions key")
 	}
 
 	// get all subscriptions for the subject
-	var savedSubs []*Subscription
-	if err = s.mm.KV.Get(key, &savedSubs); err != nil {
+	var subs []*Subscription
+	if err = s.mm.KV.Get(key, &subs); err != nil {
 		return errors.Wrap(err, "failed to get saved subscriptions")
 	}
 
-	// check if sub exists
-	var newSubs []*Subscription
-	for i, s := range savedSubs {
-		if s.SubscriptionID == sub.SubscriptionID {
-			newSubs = append(newSubs, savedSubs[i+1:]...)
-			break
+	for i, current := range subs {
+		if current.SubscriptionID != sub.SubscriptionID {
+			continue
 		}
-		newSubs = append(newSubs, s)
+
+		// sub exists and dees to be deleted
+		updated := subs[:i]
+		if i < len(subs) {
+			updated = append(updated, subs[i+1:]...)
+		}
+
+		_, err = s.mm.KV.Set(key, updated)
+		if err != nil {
+			return errors.Wrap(err, "failed to save subscriptions")
+		}
+
+		return nil
 	}
 
-	// sub was deleted. update and save updated subs
-	// TODO check for following:
-	//   - don't need to save if sub was not deleted?
-	//   - if delete the last subscription for the channel, delete the key also
-	_, err = s.mm.KV.Set(key, newSubs)
-	if err != nil {
-		return errors.Wrap(err, "failed to save subscriptions")
-	}
-
-	return nil
+	return utils.ErrNotFound
 }
 
 // GetSubsKey returns the KVstore Key for a subject. If teamOrChannelID

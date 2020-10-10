@@ -21,7 +21,8 @@ type SubscriptionNotification struct {
 }
 
 // Notify sends a POST change notification for a set of subscriptions
-func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMember, cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post) error {
+func (s *Service) Notify(subject constants.SubscriptionSubject, tm *model.TeamMember,
+	cm *model.ChannelMember, actingUser *model.User, channel *model.Channel, post *model.Post) error {
 	actingUserID := ""
 	channelOrTeamID := ""
 

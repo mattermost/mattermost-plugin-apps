@@ -66,8 +66,8 @@ func (a *api) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	}
 	// <><> TODO check for sysadmin
 
-	var subRequest apps.Subscription
-	if err = json.NewDecoder(r.Body).Decode(&subRequest); err != nil {
+	var sub apps.Subscription
+	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return
 	}
@@ -75,9 +75,9 @@ func (a *api) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		err = subs.StoreSub(subRequest)
+		err = subs.StoreSub(&sub)
 	case http.MethodDelete:
-		err = subs.DeleteSub(subRequest)
+		err = subs.DeleteSub(&sub)
 	default:
 	}
 	if err != nil {
