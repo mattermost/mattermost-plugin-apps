@@ -1,268 +1,221 @@
-// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
-// See License for license information.
-
 package apps
 
 import (
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"fmt"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-server/v5/model"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/pkg/errors"
 )
-
-type Expander interface {
-	Expand(expand *Expand, actingUserID, userID, channelID, teamID string) (*Expanded, error)
-}
-
-type ExpandEntity string
-
-const (
-	ExpandActingUser = ExpandEntity("ActingUser")
-	ExpandUser       = ExpandEntity("User")
-	ExpandChannel    = ExpandEntity("Channel")
-	ExpandConfig     = ExpandEntity("Config")
-)
-
-type ExpandLevel string
-
-const (
-	ExpandAll     = ExpandLevel("All")
-	ExpandSummary = ExpandLevel("Summary")
-)
-
-type Expand struct {
-	ActingUser ExpandLevel `json:"acting_user"`
-	Channel    ExpandLevel `json:"channel,omitempty"`
-	Config     bool        `json:"config,omitempty"`
-	Mentioned  ExpandLevel `json:"mentioned,omitempty"`
-	ParentPost ExpandLevel `json:"parent_post,omitempty"`
-	Post       ExpandLevel `json:"post,omitempty"`
-	RootPost   ExpandLevel `json:"root_post,omitempty"`
-	Team       ExpandLevel `json:"team,omitempty"`
-	User       ExpandLevel `json:"user,omitempty"`
-}
-
-type Expanded struct {
-	ActingUser *model.User       `json:"acting_user"`
-	App        *App              `json:"app,omitempty"`
-	Channel    *model.Channel    `json:"channel,omitempty"`
-	Config     *MattermostConfig `json:"config,omitempty"`
-	Mentioned  []*model.User     `json:"mentioned,omitempty"`
-	ParentPost *model.Post       `json:"parent_post,omitempty"`
-	Post       *model.Post       `json:"post,omitempty"`
-	RootPost   *model.Post       `json:"root_post,omitempty"`
-	Team       *model.Team       `json:"team,omitempty"`
-	User       *model.User       `json:"user,omitempty"`
-}
-
-type MattermostConfig struct {
-	SiteURL string `json:"site_url"`
-}
 
 type expander struct {
-	mm           *pluginapi.Client
-	configurator configurator.Service
-
-	ActingUser *model.User
-	Team       *model.Team
-	Channel    *model.Channel
-	Config     *model.Config
-	User       *model.User
+	*Context
+	s *Service
 }
 
-func NewExpander(mm *pluginapi.Client, configurator configurator.Service) Expander {
-	return &expander{
-		mm:           mm,
-		configurator: configurator,
+func (s *Service) newExpander(cc *Context) *expander {
+	e := &expander{
+		s:       s,
+		Context: cc,
 	}
+	if e.expandedContext == nil {
+		e.expandedContext = &expandedContext{}
+	}
+	return e
 }
 
-func (e *expander) Expand(expand *Expand, actingUserID, userID, channelID, teamID string) (expanded *Expanded, err error) {
-	for _, f := range []func(*Expand) error{
-		e.collectConfig,
-		e.collectUser(userID, &e.User),
-		e.collectUser(actingUserID, &e.ActingUser),
-		e.collectChannelAndTeam(channelID),
-		e.collectTeam(teamID),
-	} {
-		err = f(expand)
+// Expand collects the data that is requested in the expand argument, and is not
+// yet collected. It then returns a new Context, filtered down to what is
+// specified in expand.
+func (e *expander) Expand(expand *store.Expand) (*Context, error) {
+	if expand == nil {
+		return &Context{
+			context: e.context,
+		}, nil
+	}
+
+	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
+		actingUser, err := e.s.Mattermost.User.Get(e.ActingUserID)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to expand acting user %s", e.ActingUserID)
 		}
+		e.ActingUser = actingUser
 	}
 
-	expanded = e.produce(expand)
-	return expanded, nil
-}
-
-func (e *expander) collectConfig(expand *Expand) error {
-	if e.Config != nil || !expand.Config {
-		return nil
-	}
-	e.Config = e.configurator.GetMattermostConfig()
-	return nil
-}
-
-func (e *expander) collectTeam(teamID string) func(*Expand) error {
-	return func(expand *Expand) error {
-		if teamID == "" || !isValidExpandLevel(expand.Team) {
-			return nil
-		}
-
-		mmteam, err := e.mm.Team.Get(teamID)
+	fmt.Printf("<><> Expand 1: %q %q %v\n", expand.App, e.AppID, e.App)
+	if expand.App != "" && e.AppID != "" && e.App == nil {
+		app, err := e.s.Store.GetApp(e.AppID)
 		if err != nil {
-			return err
+			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
 		}
-
-		e.Team = mmteam
-		return nil
+		e.App = app
+		fmt.Printf("<><> Expand 2: %+v\n", e.App)
 	}
-}
 
-func (e *expander) collectChannelAndTeam(channelID string) func(*Expand) error {
-	return func(expand *Expand) error {
-		if channelID == "" || !isValidExpandLevel(expand.Channel) {
-			return nil
-		}
-
-		mmchannel, err := e.mm.Channel.Get(channelID)
+	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
+		ch, err := e.s.Mattermost.Channel.Get(e.ChannelID)
 		if err != nil {
-			return err
+			return nil, errors.Wrapf(err, "failed to expand channel %s", e.ChannelID)
 		}
+		e.Channel = ch
+	}
 
-		mmteam, err := e.mm.Team.Get(mmchannel.TeamId)
+	// Config is cached pre-sanitized
+	if expand.Config && e.Config == nil {
+		mmconf := e.s.Configurator.GetMattermostConfig()
+		e.Config = &MattermostConfig{}
+		if mmconf.ServiceSettings.SiteURL != nil {
+			e.Config.SiteURL = *mmconf.ServiceSettings.SiteURL
+		}
+	}
+
+	// TODO expand Mentioned
+
+	if expand.Post != "" && e.PostID != "" && e.Post == nil {
+		post, err := e.s.Mattermost.Post.GetPost(e.PostID)
 		if err != nil {
-			return err
+			return nil, errors.Wrapf(err, "failed to expand post %s", e.PostID)
 		}
-
-		e.Channel = mmchannel
-		if e.Team == nil {
-			e.Team = mmteam
-		}
-		return nil
+		e.Post = post
 	}
-}
 
-func (e *expander) collectUser(userID string, userref **model.User) func(*Expand) error {
-	return func(expand *Expand) error {
-		if *userref != nil || userID == "" || !isValidExpandLevel(expand.User) {
-			return nil
-		}
-
-		mmuser, err := e.mm.User.Get(userID)
+	if expand.RootPost != "" && e.RootPostID != "" && e.RootPost == nil {
+		post, err := e.s.Mattermost.Post.GetPost(e.RootPostID)
 		if err != nil {
-			return err
+			return nil, errors.Wrapf(err, "failed to expand root post %s", e.RootPostID)
 		}
-		mmuser.SanitizeProfile(nil)
-
-		*userref = mmuser
-		return nil
+		e.RootPost = post
 	}
+
+	if expand.Team != "" && e.TeamID != "" && e.Team == nil {
+		team, err := e.s.Mattermost.Team.Get(e.TeamID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to expand team %s", e.TeamID)
+		}
+		e.Team = team
+	}
+
+	if expand.User != "" && e.UserID != "" && e.User == nil {
+		user, err := e.s.Mattermost.User.Get(e.UserID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to expand user %s", e.UserID)
+		}
+		e.User = user
+	}
+
+	fmt.Printf("<><> Expand 3: %v %+v\n", expand.App, e.App)
+
+	return &Context{
+		context: e.context,
+		expandedContext: &expandedContext{
+			ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
+			App:        e.stripApp(expand.App),
+			Channel:    e.stripChannel(expand.Channel),
+			Config:     e.stripConfig(expand.Config),
+			Post:       e.stripPost(e.Post, expand.Post),
+			RootPost:   e.stripPost(e.RootPost, expand.RootPost),
+			Team:       e.stripTeam(expand.Team),
+			User:       e.stripUser(e.User, expand.User),
+			// TODO Mentioned
+		},
+	}, nil
 }
 
-func (e *expander) produce(expand *Expand) *Expanded {
-	expanded := &Expanded{}
-
-	if expand.Config {
-		expanded.Config = &MattermostConfig{}
-		if e.Config.ServiceSettings.SiteURL != nil {
-			expanded.Config.SiteURL = *e.Config.ServiceSettings.SiteURL
-		}
-	}
-
-	expanded.User = produceUser(e.User, expand)
-	expanded.ActingUser = produceUser(e.ActingUser, expand)
-	expanded.Team = produceTeam(e.Team, expand)
-	expanded.Channel = produceChannel(e.Channel, expand)
-	return expanded
-}
-
-func produceUser(user *model.User, expand *Expand) *model.User {
-	if expand.User == "" || !isValidExpandLevel(expand.User) {
-		return nil
-	}
-
-	switch expand.User {
-	case ExpandSummary:
-		return &model.User{
-			Id:             user.Id,
-			Username:       user.Username,
-			Email:          user.Email,
-			Nickname:       user.Nickname,
-			FirstName:      user.FirstName,
-			LastName:       user.LastName,
-			Roles:          user.Roles,
-			Locale:         user.Locale,
-			Timezone:       user.Timezone,
-			IsBot:          user.IsBot,
-			BotDescription: user.BotDescription,
-		}
-
-	case ExpandAll:
+func (e *expander) stripUser(user *model.User, level store.ExpandLevel) *model.User {
+	if user == nil || level == store.ExpandAll {
 		return user
 	}
-
-	return nil
+	if level != store.ExpandSummary {
+		return nil
+	}
+	return &model.User{
+		BotDescription: user.BotDescription,
+		DeleteAt:       user.DeleteAt,
+		Email:          user.Email,
+		FirstName:      user.FirstName,
+		Id:             user.Id,
+		IsBot:          user.IsBot,
+		LastName:       user.LastName,
+		Locale:         user.Locale,
+		Nickname:       user.Nickname,
+		Roles:          user.Roles,
+		Timezone:       user.Timezone,
+		Username:       user.Username,
+	}
 }
 
-func produceChannel(channel *model.Channel, expand *Expand) *model.Channel {
-	if expand.User == "" || !isValidExpandLevel(expand.User) {
+func (e *expander) stripChannel(level store.ExpandLevel) *model.Channel {
+	if e.Channel == nil || level == store.ExpandAll {
+		return e.Channel
+	}
+	if level != store.ExpandSummary {
+		return nil
+	}
+	return &model.Channel{
+		Id:          e.Channel.Id,
+		DeleteAt:    e.Channel.DeleteAt,
+		TeamId:      e.Channel.TeamId,
+		Type:        e.Channel.Type,
+		DisplayName: e.Channel.DisplayName,
+		Name:        e.Channel.Name,
+	}
+}
+
+func (e *expander) stripTeam(level store.ExpandLevel) *model.Team {
+	if e.Team == nil || level == store.ExpandAll {
+		return e.Team
+	}
+	if level != store.ExpandSummary {
+		return nil
+	}
+	return &model.Team{
+		Id:          e.Team.Id,
+		DisplayName: e.Team.DisplayName,
+		Name:        e.Team.Name,
+		Description: e.Team.Description,
+		Email:       e.Team.Email,
+		Type:        e.Team.Type,
+	}
+}
+
+func (e *expander) stripPost(post *model.Post, level store.ExpandLevel) *model.Post {
+	if post == nil || level == store.ExpandAll {
+		return post
+	}
+	if level != store.ExpandSummary {
+		return nil
+	}
+	return &model.Post{
+		Id:        e.Post.Id,
+		Type:      e.Post.Type,
+		UserId:    e.Post.UserId,
+		ChannelId: e.Post.ChannelId,
+		RootId:    e.Post.RootId,
+		Message:   e.Post.Message,
+	}
+}
+
+func (e *expander) stripApp(level store.ExpandLevel) *store.App {
+	if e.App == nil {
 		return nil
 	}
 
-	switch expand.Channel {
-	case ExpandSummary:
-		// TODO; define and fill out
-		return &model.Channel{
-			// Id:             user.Id,
-			// Username:       user.Username,
-			// Email:          user.Email,
-			// Nickname:       user.Nickname,
-			// FirstName:      user.FirstName,
-			// LastName:       user.LastName,
-			// Roles:          user.Roles,
-			// Locale:         user.Locale,
-			// Timezone:       user.Timezone,
-			// IsBot:          user.IsBot,
-			// BotDescription: user.BotDescription,
-		}
+	app := *e.App
+	app.Secret = ""
+	app.OAuth2ClientSecret = ""
+	app.BotAccessToken = ""
+	fmt.Printf("<><> Strip App: %q %+v\n", level, app)
 
-	case ExpandAll:
-		return channel
+	switch level {
+	case store.ExpandAll, store.ExpandSummary:
+		return &app
 	}
-
 	return nil
 }
 
-func produceTeam(team *model.Team, expand *Expand) *model.Team {
-	if expand.User == "" || !isValidExpandLevel(expand.User) {
+func (e *expander) stripConfig(do bool) *MattermostConfig {
+	if e.Config == nil || !do {
 		return nil
 	}
-
-	switch expand.Team {
-	case ExpandSummary:
-		// TODO; define and fill out
-		return &model.Team{
-			// Id:             user.Id,
-			// Username:       user.Username,
-			// Email:          user.Email,
-			// Nickname:       user.Nickname,
-			// FirstName:      user.FirstName,
-			// LastName:       user.LastName,
-			// Roles:          user.Roles,
-			// Locale:         user.Locale,
-			// Timezone:       user.Timezone,
-			// IsBot:          user.IsBot,
-			// BotDescription: user.BotDescription,
-		}
-
-	case ExpandAll:
-		return team
-	}
-
-	return nil
-}
-
-func isValidExpandLevel(l ExpandLevel) bool {
-	return l == ExpandAll || l == ExpandSummary
+	return e.Config
 }

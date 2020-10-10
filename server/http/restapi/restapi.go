@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-
-	"github.com/gorilla/mux"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 const (
@@ -27,8 +26,6 @@ type SubscribeResponse struct {
 type api struct {
 	mm   *pluginapi.Client
 	apps *apps.Service
-	// subs         *apps.Subscriptions
-	configurator configurator.Service
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
@@ -64,20 +61,21 @@ func (a *api) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusUnauthorized
 		return
 	}
-	// <><> TODO check for sysadmin
+	// TODO check for sysadmin
 
-	var sub apps.Subscription
+	var sub store.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return
 	}
-	subs := apps.NewSubscriptions(a.mm, a.configurator)
 
+	// TODO replace with an appropriate API-level call that would validate,
+	// deduplicate, etc.
 	switch r.Method {
 	case http.MethodPost:
-		err = subs.StoreSub(&sub)
+		err = a.apps.Store.StoreSub(&sub)
 	case http.MethodDelete:
-		err = subs.DeleteSub(&sub)
+		err = a.apps.Store.DeleteSub(&sub)
 	default:
 	}
 	if err != nil {

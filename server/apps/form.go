@@ -11,8 +11,15 @@ type Form struct {
 }
 
 type FormValues struct {
-	Data interface{}
+	Data map[string]interface{}
 	Raw  string
+}
+
+func (fv *FormValues) Get(name string) string {
+	if fv == nil || fv.Data == nil {
+		return ""
+	}
+	return fv.Data[name].(string)
 }
 
 type ElementType string

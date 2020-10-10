@@ -1,4 +1,4 @@
-package apps
+package store
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
@@ -7,33 +7,33 @@ import (
 type AppID string
 
 type Manifest struct {
-	AppID                AppID
-	CallbackURL          string
-	Description          string
-	DisplayName          string
-	Homepage             string
-	Install              *Wish
-	RequestedPermissions Permissions
-	RootURL              string
+	AppID                AppID       `json:"app_id"`
+	OAuth2CallbackURL    string      `json:"oauth2_callback_url,omitempty"`
+	Description          string      `json:"description,omitempty"`
+	DisplayName          string      `json:"display_name,omitempty"`
+	HomepageURL          string      `json:"homepage_url,omitempty"`
+	Install              *Wish       `json:"install,omitempty"`
+	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
+	RootURL              string      `json:"root_url"`
 }
 
 type App struct {
-	Manifest *Manifest
+	Manifest *Manifest `json:"manifest"`
 
 	// Secret is used to issue JWT
-	Secret string
+	Secret string `json:",omitempty"`
 
-	OAuthAppID string
+	OAuth2ClientID string `json:",omitempty"`
 	// Should secret be here? Or should we just fetch it using the ID?
-	OAuthSecret string
+	OAuth2ClientSecret string `json:",omitempty"`
 
-	BotUserID              string
-	BotUsername            string
-	BotPersonalAccessToken string
+	BotUserID      string `json:",omitempty"`
+	BotUsername    string `json:",omitempty"`
+	BotAccessToken string `json:",omitempty"`
 
 	// Grants should be scopable in the future, per team, channel, post with regexp
-	GrantedPermissions     Permissions
-	NoUserConsentForOAuth2 bool
+	GrantedPermissions     Permissions `json:",omitempty"`
+	NoUserConsentForOAuth2 bool        `json:",omitempty"`
 }
 
 type PermissionType string

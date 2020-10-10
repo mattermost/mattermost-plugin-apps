@@ -33,16 +33,16 @@ func runSubcommand(
 	params *params,
 ) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
-		return normalOut(params, md.MD("<><> TODO usage"),
+		return normalOut(params, md.MD("TODO usage"),
 			errors.New("expected a (sub-)command"))
 	}
 	if params.current[0] == "help" {
-		return normalOut(params, md.MD("<><> TODO usage"), nil)
+		return normalOut(params, md.MD("TODO usage"), nil)
 	}
 
 	f := subcommands[params.current[0]]
 	if f == nil {
-		return normalOut(params, md.MD("<><> TODO usage"),
+		return normalOut(params, md.MD("TODO usage"),
 			errors.Errorf("unknown command: %s", params.current[0]))
 	}
 
@@ -52,5 +52,5 @@ func runSubcommand(
 }
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
-	return normalOut(params, md.MD("<><> TODO"), nil)
+	return normalOut(params, md.MD("TODO"), nil)
 }

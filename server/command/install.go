@@ -34,15 +34,16 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
+	cc := apps.Context{}
+	cc.ActingUserID = params.commandArgs.UserId
+
 	app, _, err := s.apps.ProvisionApp(
 		&apps.InProvisionApp{
 			ManifestURL: manifestURL,
 			AppSecret:   appSecret,
 			Force:       force,
 		},
-		&apps.CallContext{
-			ActingUserID: params.commandArgs.UserId,
-		},
+		&cc,
 		apps.SessionToken(params.commandArgs.Session.Token),
 	)
 	if err != nil {

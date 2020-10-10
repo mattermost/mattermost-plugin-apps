@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -21,7 +22,7 @@ type InProvisionApp struct {
 	Force       bool
 }
 
-func (s *Service) ProvisionApp(in *InProvisionApp, cc *CallContext, sessionToken SessionToken) (*App, md.MD, error) {
+func (s *Service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
@@ -29,7 +30,7 @@ func (s *Service) ProvisionApp(in *InProvisionApp, cc *CallContext, sessionToken
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
-	_, err = s.Registry.Get(manifest.AppID)
+	_, err = s.Store.GetApp(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
@@ -41,25 +42,25 @@ func (s *Service) ProvisionApp(in *InProvisionApp, cc *CallContext, sessionToken
 		return nil, "", err
 	}
 
-	app := &App{
-		Manifest:               manifest,
-		BotUserID:              bot.UserId,
-		BotUsername:            bot.Username,
-		BotPersonalAccessToken: token.Token,
-		Secret:                 in.AppSecret,
+	app := &store.App{
+		Manifest:       manifest,
+		BotUserID:      bot.UserId,
+		BotUsername:    bot.Username,
+		BotAccessToken: token.Token,
+		Secret:         in.AppSecret,
 	}
-	err = s.Registry.Store(app)
+	err = s.Store.StoreApp(app)
 	if err != nil {
 		return nil, "", err
 	}
 
 	md := md.Markdownf("Provisioned App %s [%s](%s). Bot user @%s.",
-		app.Manifest.AppID, app.Manifest.DisplayName, app.Manifest.Homepage, app.BotUsername)
+		app.Manifest.AppID, app.Manifest.DisplayName, app.Manifest.HomepageURL, app.BotUsername)
 
 	return app, md, nil
 }
 
-func (s *Service) ensureBot(manifest *Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (s *Service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := s.Configurator.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
@@ -109,7 +110,7 @@ func (s *Service) ensureBot(manifest *Manifest, actingUserID, sessionToken strin
 	}
 
 	_ = s.Mattermost.Post.DM(fullBot.UserId, actingUserID, &model.Post{
-		Message: fmt.Sprintf("Mattermost bot account @%s (`%s`) has been provisioned.",
+		Message: fmt.Sprintf("Provisioned bot account @%s (`%s`).",
 			fullBot.Username, fullBot.UserId),
 	})
 

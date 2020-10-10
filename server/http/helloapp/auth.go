@@ -70,6 +70,7 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete apps.Call) (
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
+	fmt.Printf("<><>  hello finishOAuth2Connect 2:\n")
 	call := apps.Call{}
 	err := json.Unmarshal(payload, &call)
 	if err != nil {
@@ -84,11 +85,11 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// for now hacking access to apps object and issuing the call from within
 	// the app.
 
-	call.Data.Context.AppID = AppID
-	cr, _ := h.apps.API.Call(call)
+	call.Request.Context.AppID = AppID
+	cr, _ := h.apps.API.Call(&call)
 
 	conf := h.apps.Configurator.GetConfig()
-	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Data.Context.ActingUserID, &model.Post{
+	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Request.Context.ActingUserID, &model.Post{
 		Message: cr.Markdown.String(),
 	})
 }
@@ -150,7 +151,6 @@ func (h *helloapp) DM(userID string, format string, args ...interface{}) {
 	// TODO: Is this the right way to send a Bot DM?
 	channel, _ := mmClient.CreateDirectChannel(ac.BotUserID, userID)
 	if channel == nil {
-		fmt.Println("<><> failed to create a DM channel")
 		return
 	}
 

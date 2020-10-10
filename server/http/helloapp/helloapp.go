@@ -53,7 +53,7 @@ func (h *helloapp) AppURL(path string) string {
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
-type WishHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallData) (int, error)
+type WishHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallRequest) (int, error)
 
 func wish(wishHandler WishHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -76,14 +76,15 @@ func wish(wishHandler WishHandler) http.HandlerFunc {
 			return
 		}
 
-		data := apps.CallData{}
-		err = json.NewDecoder(req.Body).Decode(&data)
+		data := apps.NewCallRequest(nil)
+		err = json.NewDecoder(req.Body).Decode(data)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return
 		}
 
-		statusCode, err := wishHandler(w, req, &claims, &data)
+		fmt.Printf("<><> wish 4: %+v\n", data)
+		statusCode, err := wishHandler(w, req, &claims, data)
 		if err != nil {
 			httputils.WriteJSONError(w, statusCode, "", err)
 			return

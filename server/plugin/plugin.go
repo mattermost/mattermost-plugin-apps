@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type Plugin struct {
@@ -86,29 +87,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.apps.Notify(constants.SubjectUserCreated, nil, nil, user, nil, nil)
+	_ = p.apps.Notify(store.SubjectUserCreated, apps.NewUserContext(user))
 }
 
-func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.Notify(constants.SubjectUserJoinedChannel, nil, channelMember, actingUser, nil, nil)
+func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	_ = p.apps.Notify(store.SubjectUserJoinedChannel, apps.NewChannelMemberContext(cm, actingUser))
 }
 
-func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.Notify(constants.SubjectUserLeftChannel, nil, channelMember, actingUser, nil, nil)
+func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	_ = p.apps.Notify(store.SubjectUserLeftChannel, apps.NewChannelMemberContext(cm, actingUser))
 }
 
-func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.Notify(constants.SubjectUserJoinedTeam, teamMember, nil, actingUser, nil, nil)
+func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+	_ = p.apps.Notify(store.SubjectUserJoinedTeam, apps.NewTeamMemberContext(tm, actingUser))
 }
 
-func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, teamMember *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.Notify(constants.SubjectUserLeftTeam, teamMember, nil, actingUser, nil, nil)
+func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+	_ = p.apps.Notify(store.SubjectUserLeftTeam, apps.NewTeamMemberContext(tm, actingUser))
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.apps.Notify(constants.SubjectPostCreated, nil, nil, nil, nil, post)
+	_ = p.apps.Notify(store.SubjectPostCreated, apps.NewPostContext(post))
 }
 
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, channel *model.Channel) {
-	_ = p.apps.Notify(constants.SubjectChannelCreated, nil, nil, nil, channel, nil)
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	_ = p.apps.Notify(store.SubjectChannelCreated, apps.NewChannelContext(ch))
 }

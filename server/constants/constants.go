@@ -17,16 +17,3 @@ const (
 	InteractiveDialogPath = "/dialog"
 	HelloAppPath          = "/hello"
 )
-
-type SubscriptionSubject string
-
-const (
-	SubjectUserCreated       = SubscriptionSubject("user_created")
-	SubjectUserJoinedChannel = SubscriptionSubject("user_joined_channel")
-	SubjectUserLeftChannel   = SubscriptionSubject("user_left_channel")
-	SubjectUserJoinedTeam    = SubscriptionSubject("user_joined_team")
-	SubjectUserLeftTeam      = SubscriptionSubject("user_left_team")
-	SubjectUserUpdated       = SubscriptionSubject("user_updated")
-	SubjectChannelCreated    = SubscriptionSubject("channel_created")
-	SubjectPostCreated       = SubscriptionSubject("post_created")
-)
