@@ -32,4 +32,8 @@ func TestUnmarshalCallRequest(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)
+	require.Equal(t, "9pu8hstcpigm5x4dboe6hz9ddw", data.Context.TeamID)
+	require.Equal(t, "https://levb.ngrok.io", data.Context.Config.SiteURL)
+	require.Equal(t, "b3snp6tk6pbh9fxjpbhqn5hzgh", data.Values.Get("bot_access_token"))
+	require.Equal(t, "cywc3e8nebyujrpuip98t69a3h", data.Values.Get("oauth2_client_secret"))
 }
