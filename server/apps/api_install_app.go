@@ -4,6 +4,7 @@
 package apps
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ func (s *Service) InstallApp(in *InInstallApp, cc *CallContext, sessionToken Ses
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	oAuthApp, err := s.ensureOAuthApp(app.Manifest, cc.ActingUserID, string(sessionToken))
+	oAuthApp, err := s.ensureOAuthApp(app.Manifest, in.NoUserConsentForOAuth2, cc.ActingUserID, string(sessionToken))
 	if err != nil {
 		return nil, "", err
 	}
@@ -72,8 +73,8 @@ func (s *Service) InstallApp(in *InInstallApp, cc *CallContext, sessionToken Ses
 	return app, resp.Markdown, nil
 }
 
-func (s *Service) ensureOAuthApp(manifest *Manifest, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	storedApp, err := s.Registry.Get(manifest.AppID)
+func (s *Service) ensureOAuthApp(manifest *Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+	app, err := s.Registry.Get(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
 	}
@@ -82,9 +83,13 @@ func (s *Service) ensureOAuthApp(manifest *Manifest, actingUserID, sessionToken 
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
 
-	if storedApp != nil && storedApp.OAuthAppID != "" {
-		oauthApp, response := client.GetOAuthApp(storedApp.OAuthAppID)
+	if app.OAuthAppID != "" {
+		oauthApp, response := client.GetOAuthApp(app.OAuthAppID)
 		if response.StatusCode == http.StatusOK && response.Error == nil {
+			_ = s.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
+				Message: fmt.Sprintf("Using existing OAuth2 App `%s`.", oauthApp.Id),
+			})
+
 			return oauthApp, nil
 		}
 	}
@@ -96,7 +101,7 @@ func (s *Service) ensureOAuthApp(manifest *Manifest, actingUserID, sessionToken 
 		Description:  manifest.Description,
 		CallbackUrls: []string{manifest.CallbackURL},
 		Homepage:     manifest.Homepage,
-		IsTrusted:    true,
+		IsTrusted:    noUserConsent,
 	})
 	if response.StatusCode != http.StatusCreated {
 		if response.Error != nil {
@@ -104,6 +109,10 @@ func (s *Service) ensureOAuthApp(manifest *Manifest, actingUserID, sessionToken 
 		}
 		return nil, errors.Errorf("failed to create OAuth2 App: received status code %v", response.StatusCode)
 	}
+
+	_ = s.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
+		Message: fmt.Sprintf("Created OAuth2 App `%s`.", oauthApp.Id),
+	})
 
 	return oauthApp, nil
 }

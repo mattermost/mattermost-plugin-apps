@@ -109,7 +109,8 @@ func (s *Service) ensureBot(manifest *Manifest, actingUserID, sessionToken strin
 	}
 
 	_ = s.Mattermost.Post.DM(fullBot.UserId, actingUserID, &model.Post{
-		Message: "Mattermost bot account has been provisioned. Welcome!",
+		Message: fmt.Sprintf("Mattermost bot account @%s (`%s`) has been provisioned.",
+			fullBot.Username, fullBot.UserId),
 	})
 
 	return fullBot, token, nil
