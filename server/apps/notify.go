@@ -12,7 +12,7 @@ type NotificationRequest struct {
 	Context *Context
 }
 
-func (s *Service) Notify(subj store.Subject, cc *Context) error {
+func (s *service) Notify(subj store.Subject, cc *Context) error {
 	subs, err := s.Store.GetSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err

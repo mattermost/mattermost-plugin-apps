@@ -14,7 +14,7 @@ import (
 type SessionToken string
 
 type API interface {
-	Call(*Call) (*CallResponse, error)
+	// Call(*Call) (*CallResponse, error)
 	InstallApp(*InInstallApp, *Context, SessionToken) (*store.App, md.MD, error)
 	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*store.App, md.MD, error)
 	Notify(store.Subject, *Context) error
@@ -24,18 +24,24 @@ type Service struct {
 	Configurator configurator.Service
 	Mattermost   *pluginapi.Client
 	Store        store.Service
+	API          API
+	Client       Client
+}
 
-	API    API
-	Client Client
+type service struct {
+	Service
 }
 
 func NewService(mm *pluginapi.Client, configurator configurator.Service) *Service {
-	s := &Service{
-		Store:        store.NewService(mm, configurator),
-		Configurator: configurator,
-		Mattermost:   mm,
+	s := &service{
+		Service: Service{
+			Store:        store.NewService(mm, configurator),
+			Configurator: configurator,
+			Mattermost:   mm,
+		},
 	}
 	s.Client = s
 	s.API = s
-	return s
+
+	return &s.Service
 }

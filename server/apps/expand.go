@@ -13,9 +13,9 @@ type expander struct {
 	s *Service
 }
 
-func (s *Service) newExpander(cc *Context) *expander {
+func (s *service) newExpander(cc *Context) *expander {
 	e := &expander{
-		s:       s,
+		s:       &s.Service,
 		Context: cc,
 	}
 	if e.expandedContext == nil {

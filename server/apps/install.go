@@ -21,7 +21,7 @@ type InInstallApp struct {
 	NoUserConsentForOAuth2 bool
 }
 
-func (s *Service) InstallApp(in *InInstallApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
+func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
 	// TODO check if acting user is a sysadmin
 	app, err := s.Store.GetApp(cc.AppID)
 	if err != nil {
@@ -80,7 +80,7 @@ func (s *Service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 	return app, resp.Markdown, nil
 }
 
-func (s *Service) ensureOAuthApp(manifest *store.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+func (s *service) ensureOAuthApp(manifest *store.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	app, err := s.Store.GetApp(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err

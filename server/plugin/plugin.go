@@ -87,29 +87,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.apps.Notify(store.SubjectUserCreated, apps.NewUserContext(user))
+	_ = p.apps.API.Notify(store.SubjectUserCreated, apps.NewUserContext(user))
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.Notify(store.SubjectUserJoinedChannel, apps.NewChannelMemberContext(cm, actingUser))
+	_ = p.apps.API.Notify(store.SubjectUserJoinedChannel, apps.NewChannelMemberContext(cm, actingUser))
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.Notify(store.SubjectUserLeftChannel, apps.NewChannelMemberContext(cm, actingUser))
+	_ = p.apps.API.Notify(store.SubjectUserLeftChannel, apps.NewChannelMemberContext(cm, actingUser))
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.Notify(store.SubjectUserJoinedTeam, apps.NewTeamMemberContext(tm, actingUser))
+	_ = p.apps.API.Notify(store.SubjectUserJoinedTeam, apps.NewTeamMemberContext(tm, actingUser))
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.Notify(store.SubjectUserLeftTeam, apps.NewTeamMemberContext(tm, actingUser))
+	_ = p.apps.API.Notify(store.SubjectUserLeftTeam, apps.NewTeamMemberContext(tm, actingUser))
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.apps.Notify(store.SubjectPostCreated, apps.NewPostContext(post))
+	_ = p.apps.API.Notify(store.SubjectPostCreated, apps.NewPostContext(post))
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.apps.Notify(store.SubjectChannelCreated, apps.NewChannelContext(ch))
+	_ = p.apps.API.Notify(store.SubjectChannelCreated, apps.NewChannelContext(ch))
 }

@@ -25,7 +25,7 @@ type Client interface {
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
-func (s *Service) PostNotification(n *NotificationRequest) error {
+func (s *service) PostNotification(n *NotificationRequest) error {
 	app, err := s.Store.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (s *Service) PostNotification(n *NotificationRequest) error {
 	return nil
 }
 
-func (s *Service) PostWish(call *Call) (*CallResponse, error) {
+func (s *service) PostWish(call *Call) (*CallResponse, error) {
 	app, err := s.Store.GetApp(call.Request.Context.AppID)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (s *Service) PostWish(call *Call) (*CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (s *Service) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (s *service) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *Service) post(toApp *store.App, fromMattermostUserID string, url string
 	return resp, nil
 }
 
-func (s *Service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
+func (s *service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
 	// TODO cache the client, manage the connections
 	return &http.Client{}, nil
 }
@@ -119,7 +119,7 @@ type JWTClaims struct {
 	ActingUserID string `json:"acting_user_id,omitempty"`
 }
 
-func (s *Service) GetManifest(manifestURL string) (*store.Manifest, error) {
+func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
 	var manifest store.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {

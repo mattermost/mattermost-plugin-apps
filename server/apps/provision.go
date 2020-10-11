@@ -22,7 +22,7 @@ type InProvisionApp struct {
 	Force       bool
 }
 
-func (s *Service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
+func (s *service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
@@ -60,7 +60,7 @@ func (s *Service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken Ses
 	return app, md, nil
 }
 
-func (s *Service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (s *service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := s.Configurator.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

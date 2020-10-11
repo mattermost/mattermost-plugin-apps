@@ -38,6 +38,6 @@ type ModalBoolElement modalProps
 type ModalUserElement modalProps
 type ModalChannelElement modalProps
 
-func (s *Service) CallModal(call *Call) (*CallResponse, error) {
+func (s *service) CallModal(call *Call) (*CallResponse, error) {
 	return nil, nil
 }

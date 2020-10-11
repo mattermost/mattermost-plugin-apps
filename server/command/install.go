@@ -37,7 +37,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	cc := apps.Context{}
 	cc.ActingUserID = params.commandArgs.UserId
 
-	app, _, err := s.apps.ProvisionApp(
+	app, _, err := s.apps.API.ProvisionApp(
 		&apps.InProvisionApp{
 			ManifestURL: manifestURL,
 			AppSecret:   appSecret,

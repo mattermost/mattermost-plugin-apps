@@ -86,7 +86,7 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// the app.
 
 	call.Request.Context.AppID = AppID
-	cr, _ := h.apps.API.Call(&call)
+	cr, _ := h.apps.Client.PostWish(&call)
 
 	conf := h.apps.Configurator.GetConfig()
 	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Request.Context.ActingUserID, &model.Post{
