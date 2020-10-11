@@ -27,8 +27,8 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	}
 	`
 
-	data := NewCallRequest(nil)
-	err := json.Unmarshal([]byte(payload), data)
+	data := CallRequest{}
+	err := json.Unmarshal([]byte(payload), &data)
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)

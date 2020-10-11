@@ -25,6 +25,7 @@ const (
 	PathNotifyUserJoinedChannel = "/notify/" + string(store.SubjectUserJoinedChannel)
 	PathWishInstall             = "/wish/install"
 	PathWishConnectedInstall    = "/wish/connected_install"
+	PathWishPing                = "/wish/ping"
 	PathOAuth2                  = "/oauth2"
 	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
 )
@@ -48,6 +49,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter.HandleFunc(PathWishInstall, wish(h.handleInstall)).Methods("POST")
 	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
+	subrouter.HandleFunc(PathWishPing, wish(h.handlePing)).Methods("POST")
 
 	_ = h.InitOAuther()
 }

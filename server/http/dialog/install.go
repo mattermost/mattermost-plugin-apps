@@ -128,18 +128,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cc := apps.Context{}
-	cc.ActingUserID = actingUserID
-	cc.AppID = stateData.Manifest.AppID
-	cc.TeamID = stateData.TeamID
-
 	app, out, err := d.apps.API.InstallApp(
 		&apps.InInstallApp{
 			NoUserConsentForOAuth2: noUserConsentForOAuth2,
 			AppSecret:              secret,
 			GrantedPermissions:     stateData.Manifest.RequestedPermissions,
 		},
-		&cc,
+		&apps.Context{
+			ActingUserID: actingUserID,
+			AppID:        stateData.Manifest.AppID,
+			TeamID:       stateData.TeamID,
+		},
 		apps.SessionToken(session.Token),
 	)
 	if err != nil {

@@ -23,10 +23,10 @@ func (s *service) newExpander(cc *Context) *expander {
 // yet collected. It then returns a new Context, filtered down to what is
 // specified in expand.
 func (e *expander) Expand(expand *store.Expand) (*Context, error) {
-	clone := &(*e.Context)
+	clone := *e.Context
 	if expand == nil {
 		clone.expandedContext = expandedContext{}
-		return clone, nil
+		return &clone, nil
 	}
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
@@ -107,7 +107,7 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 		User:       e.stripUser(e.User, expand.User),
 		// TODO Mentioned
 	}
-	return clone, nil
+	return &clone, nil
 }
 
 func (e *expander) stripUser(user *model.User, level store.ExpandLevel) *model.User {
