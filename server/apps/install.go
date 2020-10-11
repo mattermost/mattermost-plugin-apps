@@ -59,8 +59,6 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 		return nil, "", err
 	}
 
-	fmt.Printf("<><> InstallApp: %#v\n", expandedContext.App)
-
 	resp, err := s.PostWish(
 		&Call{
 			Wish: app.Manifest.Install,

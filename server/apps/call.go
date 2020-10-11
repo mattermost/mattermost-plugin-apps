@@ -20,23 +20,6 @@ type CallRequest struct {
 	Values  FormValues  `json:"values,omitempty"`
 }
 
-func NewCallRequest(cc *Context) *CallRequest {
-	clone := Context{}
-	if cc != nil {
-		clone = *cc
-	}
-	if clone.expandedContext == nil {
-		clone.expandedContext = &expandedContext{}
-	}
-
-	return &CallRequest{
-		Context: &clone,
-		Values: FormValues{
-			Data: map[string]interface{}{},
-		},
-	}
-}
-
 type CallResponseType string
 
 const (

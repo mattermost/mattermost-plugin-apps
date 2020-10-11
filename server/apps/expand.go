@@ -1,8 +1,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -18,9 +16,6 @@ func (s *service) newExpander(cc *Context) *expander {
 		s:       &s.Service,
 		Context: cc,
 	}
-	if e.expandedContext == nil {
-		e.expandedContext = &expandedContext{}
-	}
 	return e
 }
 
@@ -28,10 +23,10 @@ func (s *service) newExpander(cc *Context) *expander {
 // yet collected. It then returns a new Context, filtered down to what is
 // specified in expand.
 func (e *expander) Expand(expand *store.Expand) (*Context, error) {
+	clone := &(*e.Context)
 	if expand == nil {
-		return &Context{
-			context: e.context,
-		}, nil
+		clone.expandedContext = expandedContext{}
+		return clone, nil
 	}
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
@@ -42,14 +37,12 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 		e.ActingUser = actingUser
 	}
 
-	fmt.Printf("<><> Expand 1: %q %q %v\n", expand.App, e.AppID, e.App)
 	if expand.App != "" && e.AppID != "" && e.App == nil {
 		app, err := e.s.Store.GetApp(e.AppID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
 		}
 		e.App = app
-		fmt.Printf("<><> Expand 2: %+v\n", e.App)
 	}
 
 	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
@@ -103,22 +96,18 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 		e.User = user
 	}
 
-	fmt.Printf("<><> Expand 3: %v %+v\n", expand.App, e.App)
-
-	return &Context{
-		context: e.context,
-		expandedContext: &expandedContext{
-			ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
-			App:        e.stripApp(expand.App),
-			Channel:    e.stripChannel(expand.Channel),
-			Config:     e.stripConfig(expand.Config),
-			Post:       e.stripPost(e.Post, expand.Post),
-			RootPost:   e.stripPost(e.RootPost, expand.RootPost),
-			Team:       e.stripTeam(expand.Team),
-			User:       e.stripUser(e.User, expand.User),
-			// TODO Mentioned
-		},
-	}, nil
+	clone.expandedContext = expandedContext{
+		ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
+		App:        e.stripApp(expand.App),
+		Channel:    e.stripChannel(expand.Channel),
+		Config:     e.stripConfig(expand.Config),
+		Post:       e.stripPost(e.Post, expand.Post),
+		RootPost:   e.stripPost(e.RootPost, expand.RootPost),
+		Team:       e.stripTeam(expand.Team),
+		User:       e.stripUser(e.User, expand.User),
+		// TODO Mentioned
+	}
+	return clone, nil
 }
 
 func (e *expander) stripUser(user *model.User, level store.ExpandLevel) *model.User {
@@ -204,7 +193,6 @@ func (e *expander) stripApp(level store.ExpandLevel) *store.App {
 	app.Secret = ""
 	app.OAuth2ClientSecret = ""
 	app.BotAccessToken = ""
-	fmt.Printf("<><> Strip App: %q %+v\n", level, app)
 
 	switch level {
 	case store.ExpandAll, store.ExpandSummary:

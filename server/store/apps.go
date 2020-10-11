@@ -3,18 +3,25 @@
 
 package store
 
+import (
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+)
+
 func (s *store) StoreApp(app *App) error {
 	_, err := s.Mattermost.KV.Set(prefixApp+string(app.Manifest.AppID), app)
 	return err
 }
 
 func (s *store) GetApp(appID AppID) (*App, error) {
-	app := App{}
+	var app *App
 	err := s.Mattermost.KV.Get(prefixApp+string(appID), &app)
 	if err != nil {
 		return nil, err
 	}
-	return &app, nil
+	if app == nil {
+		return nil, utils.ErrNotFound
+	}
+	return app, nil
 }
 
 func (s *store) DeleteApp(appID AppID) error {

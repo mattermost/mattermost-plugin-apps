@@ -22,11 +22,16 @@ func (s *service) Notify(subj store.Subject, cc *Context) error {
 	for _, sub := range subs {
 		req := NotificationRequest{
 			Subject: subj,
+			Context: &Context{},
 		}
 		req.Context, err = expander.Expand(sub.Expand)
 		if err != nil {
 			return err
 		}
+
+		// Always set the AppID for routing the request to the App
+		req.Context.AppID = sub.AppID
+
 		go func() {
 			_ = s.Client.PostNotification(&req)
 		}()

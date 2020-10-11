@@ -46,7 +46,7 @@ const (
 	PermissionActAsBot                      = PermissionType("act_as_bot")
 )
 
-func (p PermissionType) String() string {
+func (p PermissionType) Markdown() md.MD {
 	m := ""
 	switch p {
 	case PermissionAddToPostMenu:
@@ -62,11 +62,7 @@ func (p PermissionType) String() string {
 	default:
 		m = "unknown permission: " + string(p)
 	}
-	return m
-}
-
-func (p PermissionType) Markdown() md.MD {
-	return md.MD(p.String())
+	return md.MD(m)
 }
 
 type Permissions []PermissionType

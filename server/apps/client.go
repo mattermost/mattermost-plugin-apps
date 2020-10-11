@@ -5,10 +5,8 @@ package apps
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
@@ -30,9 +28,8 @@ func (s *service) PostNotification(n *NotificationRequest) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("<><> PostChangeNotification: %+v\n", app)
 
-	resp, err := s.post(app, "", path.Join(app.Manifest.RootURL, "notify", string(n.Subject)), n)
+	resp, err := s.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
 		return err
 	}
@@ -69,9 +66,6 @@ func (s *service) post(toApp *store.App, fromMattermostUserID string, url string
 	if err != nil {
 		return nil, err
 	}
-
-	bb, _ := json.MarshalIndent(msg, "", "  ")
-	fmt.Printf("<><> POSTED:\n\n%s\n\n", string(bb))
 
 	piper, pipew := io.Pipe()
 	go func() {

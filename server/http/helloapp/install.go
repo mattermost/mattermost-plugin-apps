@@ -56,7 +56,6 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 	var teams []*model.Team
 	var team *model.Team
 	var channel *model.Channel
-	fmt.Printf("<><> ================ hello handleConnectedInstall 1:\n")
 
 	err := h.asUser(data.Context.ActingUserID,
 		func(mmclient *model.Client4) error {
@@ -68,7 +67,6 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 			if len(teams) == 0 {
 				return errors.New("no team found to create the Hallo სამყარო channel")
 			}
-			fmt.Printf("<><> ================ hello handleConnectedInstall 2:\n")
 
 			// TODO call a Modal to select a team
 			team = teams[0]
@@ -80,6 +78,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
+				h.DM(data.Context.ActingUserID, "Found eisting ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
@@ -92,7 +91,8 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				if api4Resp.Error != nil {
 					return api4Resp.Error
 				}
-				// TODO DM to user that the channel has been created
+
+				h.DM(data.Context.ActingUserID, "Created ~%s channel.", AppID)
 			}
 
 			// Add the Bot user to the team and the channel.
@@ -105,6 +105,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				return api4Resp.Error
 			}
 
+			h.DM(data.Context.ActingUserID, "Added bot to channel.")
 			return nil
 		})
 	if err != nil {
@@ -117,6 +118,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				ChannelId: channel.Id,
 				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", AppDisplayName),
 			})
+			h.DM(data.Context.ActingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
 			err = h.apps.Store.StoreSub(&store.Subscription{
@@ -133,6 +135,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 			if err != nil {
 				return err
 			}
+			h.DM(data.Context.ActingUserID, "Subscribed to %s in channel.", store.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {

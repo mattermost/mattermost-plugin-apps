@@ -6,11 +6,6 @@ import (
 )
 
 type Context struct {
-	context
-	*expandedContext
-}
-
-type context struct {
 	AppID        store.AppID       `json:"-"`
 	ActingUserID string            `json:"acting_user_id,omitempty"`
 	UserID       string            `json:"user_id,omitempty"`
@@ -19,6 +14,7 @@ type context struct {
 	PostID       string            `json:"post_id,omitempty"`
 	RootPostID   string            `json:"root_post_id,omitempty"`
 	Props        map[string]string `json:"props,omitempty"`
+	expandedContext
 }
 
 type expandedContext struct {
@@ -44,12 +40,10 @@ type Thread struct {
 
 func NewChannelContext(ch *model.Channel) *Context {
 	return &Context{
-		context: context{
-			UserID:    ch.CreatorId,
-			ChannelID: ch.Id,
-			TeamID:    ch.TeamId,
-		},
-		expandedContext: &expandedContext{
+		UserID:    ch.CreatorId,
+		ChannelID: ch.Id,
+		TeamID:    ch.TeamId,
+		expandedContext: expandedContext{
 			Channel: ch,
 		},
 	}
@@ -57,13 +51,11 @@ func NewChannelContext(ch *model.Channel) *Context {
 
 func NewPostContext(p *model.Post) *Context {
 	return &Context{
-		context: context{
-			UserID:     p.UserId,
-			PostID:     p.Id,
-			RootPostID: p.RootId,
-			ChannelID:  p.ChannelId,
-		},
-		expandedContext: &expandedContext{
+		UserID:     p.UserId,
+		PostID:     p.Id,
+		RootPostID: p.RootId,
+		ChannelID:  p.ChannelId,
+		expandedContext: expandedContext{
 			Post: p,
 		},
 	}
@@ -71,36 +63,38 @@ func NewPostContext(p *model.Post) *Context {
 
 func NewUserContext(user *model.User) *Context {
 	return &Context{
-		context: context{
-			UserID: user.Id,
-		},
-		expandedContext: &expandedContext{
+		UserID: user.Id,
+		expandedContext: expandedContext{
 			User: user,
 		},
 	}
 }
 
 func NewTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *Context {
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
 	return &Context{
-		context: context{
-			ActingUserID: actingUser.Id,
-			UserID:       tm.UserId,
-			TeamID:       tm.TeamId,
-		},
-		expandedContext: &expandedContext{
+		ActingUserID: actingUserID,
+		UserID:       tm.UserId,
+		TeamID:       tm.TeamId,
+		expandedContext: expandedContext{
 			ActingUser: actingUser,
 		},
 	}
 }
 
 func NewChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *Context {
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
 	return &Context{
-		context: context{
-			ActingUserID: actingUser.Id,
-			UserID:       cm.UserId,
-			ChannelID:    cm.ChannelId,
-		},
-		expandedContext: &expandedContext{
+		ActingUserID: actingUserID,
+		UserID:       cm.UserId,
+		ChannelID:    cm.ChannelId,
+		expandedContext: expandedContext{
 			ActingUser: actingUser,
 		},
 	}
