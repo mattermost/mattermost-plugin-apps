@@ -11,8 +11,8 @@ type Form struct {
 }
 
 type FormValues struct {
-	Data interface{}
-	Raw  string
+	Data interface{} `json:"data"`
+	Raw  string      `json:"raw"`
 }
 
 type ElementType string

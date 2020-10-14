@@ -21,7 +21,7 @@ type CallData struct {
 
 type CallContext struct {
 	// For convenience, to use in go-land to pass the AppID around
-	AppID AppID `json:"-"`
+	AppID AppID `json:"app_id"`
 
 	// ActingUserID is the Mattermost User ID of the acting user
 	ActingUserID string `json:"acting_user_id"`

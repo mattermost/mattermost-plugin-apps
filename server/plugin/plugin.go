@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/wish"
 )
 
 type Plugin struct {
@@ -57,6 +58,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
+		wish.Init,
 	)
 
 	p.command, err = command.MakeService(p.apps)

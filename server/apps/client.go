@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -41,7 +42,16 @@ func (s *Service) PostWish(call Call) (*CallResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.post(app, call.Data.Context.ActingUserID, call.Wish.URL, call.Data)
+
+	url := call.Wish.URL
+	if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
+		if !strings.HasPrefix(url, "/") {
+			url += "/"
+		}
+		url = app.Manifest.RootURL + url
+	}
+
+	resp, err := s.post(app, call.Data.Context.ActingUserID, url, call.Data)
 	if err != nil {
 		return nil, err
 	}

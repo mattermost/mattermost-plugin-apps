@@ -15,5 +15,6 @@ const (
 
 	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
+	WishPath              = "/wish"
 	HelloAppPath          = "/hello"
 )
