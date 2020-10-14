@@ -22,7 +22,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	connectURL, err := h.startOAuth2Connect(
 		data.Context.ActingUserID,
 		apps.Call{
-			Wish: apps.NewWish(h.AppURL(PathWishConnectedInstall)),
+			Wish: apps.NewWish(AppID, h.AppURL(PathWishConnectedInstall)),
 			Data: data,
 		})
 	if err != nil {

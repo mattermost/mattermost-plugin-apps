@@ -1,11 +1,13 @@
 package apps
 
 type Wish struct {
-	URL string
+	AppID string `json:"app_id"`
+	URL   string `json:"url"`
 }
 
-func NewWish(url string) *Wish {
+func NewWish(appID, url string) *Wish {
 	return &Wish{
-		URL: url,
+		AppID: appID,
+		URL:   url,
 	}
 }

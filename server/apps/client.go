@@ -165,8 +165,8 @@ func (s *Service) GetLocationsFromApp(appID AppID, userID, channelID string) ([]
 		return nil, errors.Wrap(err, "error parsing the url")
 	}
 	q := url.Query()
-	q.Add("userID", userID)
-	q.Add("channelID", channelID)
+	q.Add("user_id", userID)
+	q.Add("channel_id", channelID)
 	url.RawQuery = q.Encode()
 
 	resp, err := s.get(app, userID, url.String())

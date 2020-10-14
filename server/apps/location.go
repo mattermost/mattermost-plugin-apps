@@ -18,9 +18,9 @@ type LocationInt interface {
 }
 
 type Location struct {
-	LocationType LocationType
-	LocationID   string
-	Wish         Wish
+	LocationType LocationType `json:"location_type"`
+	LocationID   string       `json:"location_id"`
+	Wish         Wish         `json:"wish"`
 }
 
 func (l *Location) GetType() LocationType {
@@ -29,15 +29,15 @@ func (l *Location) GetType() LocationType {
 
 type PostMenuItemLocation struct {
 	Location
-	Icon string
-	Text string
+	Icon string `json:"icon"`
+	Text string `json:"text"`
 }
 
 type ChannelHeaderIconLocation struct {
 	Location
-	DropdownText string
-	AriaText     string
-	Icon         string
+	DropdownText string `json:"dropdown_text"`
+	AriaText     string `json:"aria_text"`
+	Icon         string `json:"icon"`
 }
 
 func LocationFromMap(m map[string]interface{}) (LocationInt, error) {

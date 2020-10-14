@@ -64,5 +64,5 @@ func (s *service) executeDebugLocations(params *params) (*model.CommandResponse,
 		return normalOut(params, md.MD("error"), err)
 	}
 	bytes, _ := json.Marshal(locations)
-	return normalOut(params, md.MD(string(bytes)), nil)
+	return normalOut(params, md.JSONBlock(string(bytes)), nil)
 }
