@@ -130,9 +130,9 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	app, out, err := d.apps.API.InstallApp(
 		&apps.InInstallApp{
-			NoUserConsentForOAuth2: noUserConsentForOAuth2,
-			AppSecret:              secret,
-			GrantedPermissions:     stateData.Manifest.RequestedPermissions,
+			OAuth2TrustedApp:   noUserConsentForOAuth2,
+			AppSecret:          secret,
+			GrantedPermissions: stateData.Manifest.RequestedPermissions,
 		},
 		&apps.Context{
 			ActingUserID: actingUserID,

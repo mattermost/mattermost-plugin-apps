@@ -21,19 +21,18 @@ type App struct {
 	Manifest *Manifest `json:"manifest"`
 
 	// Secret is used to issue JWT
-	Secret string `json:",omitempty"`
+	Secret string `json:"secret,omitempty"`
 
-	OAuth2ClientID string `json:",omitempty"`
-	// Should secret be here? Or should we just fetch it using the ID?
-	OAuth2ClientSecret string `json:",omitempty"`
+	OAuth2ClientID     string `json:"oauth2_client_id,omitempty"`
+	OAuth2ClientSecret string `json:"oauth2_client_secret,omitempty"`
+	OAuth2TrustedApp   bool   `json:"oauth2_trusted_app,omitempty"`
 
-	BotUserID      string `json:",omitempty"`
-	BotUsername    string `json:",omitempty"`
-	BotAccessToken string `json:",omitempty"`
+	BotUserID      string `json:"bot_user_id,omitempty"`
+	BotUsername    string `json:"bot_username,omitempty"`
+	BotAccessToken string `json:"bot_access_token,omitempty"`
 
 	// Grants should be scopable in the future, per team, channel, post with regexp
-	GrantedPermissions     Permissions `json:",omitempty"`
-	NoUserConsentForOAuth2 bool        `json:",omitempty"`
+	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
 }
 
 type PermissionType string

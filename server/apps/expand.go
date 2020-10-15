@@ -54,7 +54,7 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 	}
 
 	// Config is cached pre-sanitized
-	if expand.Config && e.Config == nil {
+	if expand.Config != "" && e.Config == nil {
 		mmconf := e.s.Configurator.GetMattermostConfig()
 		e.Config = &MattermostConfig{}
 		if mmconf.ServiceSettings.SiteURL != nil {
@@ -201,9 +201,13 @@ func (e *expander) stripApp(level store.ExpandLevel) *store.App {
 	return nil
 }
 
-func (e *expander) stripConfig(do bool) *MattermostConfig {
-	if e.Config == nil || !do {
+func (e *expander) stripConfig(level store.ExpandLevel) *MattermostConfig {
+	if e.Config == nil {
 		return nil
 	}
-	return e.Config
+	switch level {
+	case store.ExpandAll, store.ExpandSummary:
+		return e.Config
+	}
+	return nil
 }

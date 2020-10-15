@@ -16,9 +16,9 @@ import (
 )
 
 type InInstallApp struct {
-	GrantedPermissions     store.Permissions
-	AppSecret              string
-	NoUserConsentForOAuth2 bool
+	GrantedPermissions store.Permissions
+	AppSecret          string
+	OAuth2TrustedApp   bool
 }
 
 func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
@@ -37,12 +37,13 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	oAuthApp, err := s.ensureOAuthApp(app.Manifest, in.NoUserConsentForOAuth2, cc.ActingUserID, string(sessionToken))
+	oAuthApp, err := s.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 	if err != nil {
 		return nil, "", err
 	}
 	app.OAuth2ClientID = oAuthApp.Id
 	app.OAuth2ClientSecret = oAuthApp.ClientSecret
+	app.OAuth2TrustedApp = in.OAuth2TrustedApp
 
 	err = s.Store.StoreApp(app)
 	if err != nil {
@@ -52,7 +53,7 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 	expandedContext, err := s.newExpander(cc).Expand(
 		&store.Expand{
 			App:    store.ExpandAll,
-			Config: true,
+			Config: store.ExpandSummary,
 		},
 	)
 	if err != nil {

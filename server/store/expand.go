@@ -14,7 +14,7 @@ type Expand struct {
 	App        ExpandLevel `json:"app"`
 	ActingUser ExpandLevel `json:"acting_user"`
 	Channel    ExpandLevel `json:"channel,omitempty"`
-	Config     bool        `json:"config,omitempty"`
+	Config     ExpandLevel `json:"config,omitempty"`
 	Mentioned  ExpandLevel `json:"mentioned,omitempty"`
 	ParentPost ExpandLevel `json:"parent_post,omitempty"`
 	Post       ExpandLevel `json:"post,omitempty"`
@@ -23,6 +23,3 @@ type Expand struct {
 	User       ExpandLevel `json:"user,omitempty"`
 }
 
-// func ValidExpandLevel(l ExpandLevel) bool {
-// 	return l == ExpandAll || l == ExpandSummary
-// }
