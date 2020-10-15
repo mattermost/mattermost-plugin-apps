@@ -22,4 +22,3 @@ type Expand struct {
 	Team       ExpandLevel `json:"team,omitempty"`
 	User       ExpandLevel `json:"user,omitempty"`
 }
-
