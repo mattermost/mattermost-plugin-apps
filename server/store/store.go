@@ -15,7 +15,7 @@ type Service interface {
 	DeleteApp(AppID) error
 	DeleteSub(*Subscription) error
 	GetApp(AppID) (*App, error)
-	GetSubs(subject Subject, teamID, chanelID string) ([]*Subscription, error)
+	GetSubs(subject Subject, teamID, channelID string) ([]*Subscription, error)
 	StoreApp(*App) error
 	StoreSub(sub *Subscription) error
 }
