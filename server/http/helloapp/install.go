@@ -78,7 +78,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
-				h.DM(data.Context.ActingUserID, "Found eisting ~%s channel.", AppID)
+				h.DM(data.Context.ActingUserID, "Found existing ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
