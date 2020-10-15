@@ -36,7 +36,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 			},
 			DropdownText: user.Username,
 			AriaText:     user.Username,
-			Icon:         icon.String(),
+			Icon:         "https://www.wizcase.com/wp-content/uploads/2020/06/Zoom-Logo.jpg",
 		},
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
@@ -44,7 +44,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 				Wish:         *apps.NewWish(AppID, h.AppURL(PathWishSample)),
 			},
 			Text: user.Username,
-			Icon: icon.String(),
+			Icon: "https://www.wizcase.com/wp-content/uploads/2020/06/Zoom-Logo.jpg",
 		},
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
@@ -52,7 +52,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 				Wish:         *apps.NewWish(AppID, h.AppURL(PathWishSample)),
 			},
 			Text: "Remove " + user.Username,
-			Icon: icon.String(),
+			Icon: "https://www.wizcase.com/wp-content/uploads/2020/06/Zoom-Logo.jpg",
 		},
 	}
 

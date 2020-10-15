@@ -8,7 +8,7 @@ import (
 )
 
 func (a *api) handleLocations(w http.ResponseWriter, req *http.Request, actingUserID string) {
-	userID := req.URL.Query().Get("userID")
+	userID := req.URL.Query().Get("user_id")
 	if userID == "" {
 		httputils.WriteBadRequestError(w, errors.New("no user id"))
 		return
@@ -19,7 +19,7 @@ func (a *api) handleLocations(w http.ResponseWriter, req *http.Request, actingUs
 		return
 	}
 
-	channelID := req.URL.Query().Get("channelID")
+	channelID := req.URL.Query().Get("channel_id")
 	if channelID == "" {
 		httputils.WriteBadRequestError(w, errors.New("no channel id"))
 		return
