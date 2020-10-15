@@ -20,6 +20,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type Plugin struct {
@@ -43,7 +45,7 @@ func (p *Plugin) OnActivate() error {
 	p.mattermost = pluginapi.NewClient(p.API)
 
 	botUserID, err := p.mattermost.Bot.EnsureBot(&model.Bot{
-		Username:    constants.BotUserName,
+		Username:    constants.BotUsername,
 		DisplayName: constants.BotDisplayName,
 		Description: constants.BotDescription,
 	}, pluginapi.ProfileImagePath("assets/profile.png"))
@@ -57,6 +59,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
+		restapi.Init,
 	)
 
 	p.command, err = command.MakeService(p.apps)
@@ -83,6 +86,30 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 	p.http.ServeHTTP(c, w, req)
 }
 
-func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, channelMember *model.ChannelMember, actingUser *model.User) {
-	p.apps.Hooks.OnUserJoinedChannel(pluginContext, channelMember, actingUser)
+func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
+	_ = p.apps.API.Notify(store.SubjectUserCreated, apps.NewUserContext(user))
+}
+
+func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	_ = p.apps.API.Notify(store.SubjectUserJoinedChannel, apps.NewChannelMemberContext(cm, actingUser))
+}
+
+func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+	_ = p.apps.API.Notify(store.SubjectUserLeftChannel, apps.NewChannelMemberContext(cm, actingUser))
+}
+
+func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+	_ = p.apps.API.Notify(store.SubjectUserJoinedTeam, apps.NewTeamMemberContext(tm, actingUser))
+}
+
+func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+	_ = p.apps.API.Notify(store.SubjectUserLeftTeam, apps.NewTeamMemberContext(tm, actingUser))
+}
+
+func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
+	_ = p.apps.API.Notify(store.SubjectPostCreated, apps.NewPostContext(post))
+}
+
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	_ = p.apps.API.Notify(store.SubjectChannelCreated, apps.NewChannelContext(ch))
 }

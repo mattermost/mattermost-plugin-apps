@@ -1,41 +1,38 @@
-package apps
+package store
 
 import (
-	"fmt"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type AppID string
 
 type Manifest struct {
-	AppID                AppID
-	CallbackURL          string
-	Description          string
-	DisplayName          string
-	Homepage             string
-	Install              *Wish
-	RequestedPermissions Permissions
-	RootURL              string
+	AppID                AppID       `json:"app_id"`
+	OAuth2CallbackURL    string      `json:"oauth2_callback_url,omitempty"`
+	Description          string      `json:"description,omitempty"`
+	DisplayName          string      `json:"display_name,omitempty"`
+	HomepageURL          string      `json:"homepage_url,omitempty"`
+	Install              *Wish       `json:"install,omitempty"`
+	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
+	RootURL              string      `json:"root_url"`
 }
 
 type App struct {
-	Manifest *Manifest
+	Manifest *Manifest `json:"manifest"`
 
 	// Secret is used to issue JWT
-	Secret string
+	Secret string `json:"secret,omitempty"`
 
-	OAuthAppID string
-	// Should secret be here? Or should we just fetch it using the ID?
-	OAuthSecret string
+	OAuth2ClientID     string `json:"oauth2_client_id,omitempty"`
+	OAuth2ClientSecret string `json:"oauth2_client_secret,omitempty"`
+	OAuth2TrustedApp   bool   `json:"oauth2_trusted_app,omitempty"`
 
-	BotUserID              string
-	BotPersonalAccessToken string
+	BotUserID      string `json:"bot_user_id,omitempty"`
+	BotUsername    string `json:"bot_username,omitempty"`
+	BotAccessToken string `json:"bot_access_token,omitempty"`
 
 	// Grants should be scopable in the future, per team, channel, post with regexp
-	GrantedPermissions     Permissions
-	NoUserConsentForOAuth2 bool
+	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
 }
 
 type PermissionType string
@@ -48,7 +45,7 @@ const (
 	PermissionActAsBot                      = PermissionType("act_as_bot")
 )
 
-func (p PermissionType) String() string {
+func (p PermissionType) Markdown() md.MD {
 	m := ""
 	switch p {
 	case PermissionAddToPostMenu:
@@ -60,15 +57,11 @@ func (p PermissionType) String() string {
 	case PermissionActAsUser:
 		m = "Use Mattermost REST API as connected users"
 	case PermissionActAsBot:
-		m = fmt.Sprintf("Use Mattermost REST API as @%s bot", constants.BotUserName)
+		m = "Use Mattermost REST API as the app's bot user"
 	default:
 		m = "unknown permission: " + string(p)
 	}
-	return m
-}
-
-func (p PermissionType) Markdown() md.MD {
-	return md.MD(p.String())
+	return md.MD(m)
 }
 
 type Permissions []PermissionType
