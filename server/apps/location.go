@@ -21,7 +21,7 @@ type LocationInt interface {
 type Location struct {
 	LocationType LocationType `json:"location_type"`
 	LocationID   string       `json:"location_id"`
-	Wish         store.Wish   `json:"wish"`
+	Wish         *store.Wish  `json:"wish"`
 }
 
 func (l *Location) GetType() LocationType {

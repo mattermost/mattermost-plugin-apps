@@ -4,8 +4,6 @@
 package command
 
 import (
-	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -63,6 +61,5 @@ func (s *service) executeDebugLocations(params *params) (*model.CommandResponse,
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}
-	bytes, _ := json.Marshal(locations)
-	return normalOut(params, md.JSONBlock(string(bytes)), nil)
+	return normalOut(params, md.JSONBlock(locations), nil)
 }
