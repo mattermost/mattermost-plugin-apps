@@ -33,10 +33,10 @@ const (
 type CallResponse struct {
 	Type CallResponseType
 
-	Markdown md.MD       `json:"markdown,omitempty"`
-	Data     interface{} `json:"data,omitempty"`
+	Markdown md.MD                  `json:"markdown,omitempty"`
+	Data     map[string]interface{} `json:"data,omitempty"`
 
-	Error error `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 
 	URL                string `json:"url,omitempty"`
 	UseExternalBrowser bool   `json:"use_external_browser,omitempty"`

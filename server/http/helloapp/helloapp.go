@@ -26,6 +26,8 @@ const (
 	PathWishInstall             = "/wish/install"
 	PathWishConnectedInstall    = "/wish/connected_install"
 	PathWishPing                = "/wish/ping"
+	PathWishSubmitEmbedded      = "/wish/submit_embedded"
+	PathWishCreateEmbedded      = "/wish/create_embedded"
 	PathOAuth2                  = "/oauth2"
 	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
 	PathLocations               = "/locations"
@@ -51,6 +53,8 @@ func Init(router *mux.Router, apps *apps.Service) {
 	subrouter.HandleFunc(PathWishInstall, wish(h.handleInstall)).Methods("POST")
 	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
 	subrouter.HandleFunc(PathWishPing, wish(h.handlePing)).Methods("POST")
+	subrouter.HandleFunc(PathWishSubmitEmbedded, wish(h.handleSubmitEmbedded)).Methods("POST")
+	subrouter.HandleFunc(PathWishCreateEmbedded, wish(h.handleCreateEmbedded)).Methods("POST")
 
 	subrouter.HandleFunc(PathLocations, CheckAuthentication(ExtractUserAndChannelID(h.HandleLocations))).Methods("GET")
 
