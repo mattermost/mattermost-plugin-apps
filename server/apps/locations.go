@@ -4,7 +4,7 @@ import "github.com/pkg/errors"
 
 // This and registry related calls should be RPC calls so they can be reused by other plugins
 func (s *service) GetLocations(userID, channelID string) ([]LocationInt, error) {
-	ids, err := s.Store.GetAllAppIDs()
+	ids, err := s.Store.ListApps()
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting all app IDs")
 	}
