@@ -3,7 +3,7 @@ package helloapp
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -15,19 +15,19 @@ const (
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
-		apps.Manifest{
+		store.Manifest{
 			AppID:       AppID,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			RootURL:     h.AppURL(""),
-			RequestedPermissions: []apps.PermissionType{
-				apps.PermissionUserJoinedChannelNotification,
-				apps.PermissionActAsUser,
-				apps.PermissionActAsBot,
+			RequestedPermissions: []store.PermissionType{
+				store.PermissionUserJoinedChannelNotification,
+				store.PermissionActAsUser,
+				store.PermissionActAsBot,
 			},
-			Install:      apps.NewWish(AppID, h.AppURL(PathWishInstall)),
-			CallbackURL:  h.AppURL(PathOAuth2Complete),
-			LocationsURL: h.AppURL(PathLocations),
-			Homepage:     h.AppURL("/"),
+			Install:           store.NewWish(AppID, h.AppURL(PathWishInstall)),
+			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
+			LocationsURL:      h.AppURL(PathLocations),
+			HomepageURL:       h.AppURL("/"),
 		})
 }

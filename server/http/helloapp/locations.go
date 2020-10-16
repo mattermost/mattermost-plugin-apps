@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -32,7 +33,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.ChannelHeaderIconLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationChannelHeaderIcon,
-				Wish:         *apps.NewWish(AppID, h.AppURL(PathWishSample)),
+				Wish:         *store.NewWish(AppID, h.AppURL(PathWishPing)),
 			},
 			DropdownText: user.Username,
 			AriaText:     user.Username,
@@ -41,7 +42,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationPostMenuItem,
-				Wish:         *apps.NewWish(AppID, h.AppURL(PathWishSample)),
+				Wish:         *store.NewWish(AppID, h.AppURL(PathWishPing)),
 			},
 			Text: user.Username,
 			Icon: "https://www.wizcase.com/wp-content/uploads/2020/06/Zoom-Logo.jpg",
@@ -49,7 +50,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationPostMenuItem,
-				Wish:         *apps.NewWish(AppID, h.AppURL(PathWishSample)),
+				Wish:         *store.NewWish(AppID, h.AppURL(PathWishPing)),
 			},
 			Text: "Remove " + user.Username,
 			Icon: "https://www.wizcase.com/wp-content/uploads/2020/06/Zoom-Logo.jpg",

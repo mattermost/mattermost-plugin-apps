@@ -9,7 +9,7 @@ const (
 )
 
 const (
-	BotUserName    = "appsbot"
+	BotUsername    = "appsbot"
 	BotDisplayName = "Mattermost Apps"
 	BotDescription = "Mattermost Apps Registry and API proxy."
 

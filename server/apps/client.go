@@ -9,43 +9,44 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/pkg/errors"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type Client interface {
-	PostWish(Call) (*CallResponse, error)
-	PostChangeNotification(Subscription, interface{})
-	GetManifest(manifestURL string) (*Manifest, error)
-	GetLocationsFromApp(appID AppID, userID, channelID string) ([]LocationInt, error)
+	PostWish(*Call) (*CallResponse, error)
+	PostNotification(*NotificationRequest) error
+	GetManifest(manifestURL string) (*store.Manifest, error)
+	GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error)
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
-func (s *Service) PostChangeNotification(sub Subscription, msg interface{}) {
-	app, err := s.Registry.Get(sub.AppID)
+func (s *service) PostNotification(n *NotificationRequest) error {
+	app, err := s.Store.GetApp(n.Context.AppID)
 	if err != nil {
-		// <><> TODO log
-		return
+		return err
 	}
 
-	resp, err := s.post(app, "", path.Join(app.Manifest.RootURL, "notify", string(sub.Subject)), msg)
+	resp, err := s.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
-		// <><> TODO log
-		return
+		return err
 	}
 	defer resp.Body.Close()
+	return nil
 }
 
-func (s *Service) PostWish(call Call) (*CallResponse, error) {
-	app, err := s.Registry.Get(call.Data.Context.AppID)
+func (s *service) PostWish(call *Call) (*CallResponse, error) {
+	app, err := s.Store.GetApp(call.Request.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.post(app, call.Data.Context.ActingUserID, call.Wish.URL, call.Data)
+	resp, err := s.post(app, call.Request.Context.ActingUserID, call.Wish.URL, call.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,8 @@ func (s *Service) PostWish(call Call) (*CallResponse, error) {
 	return &cr, nil
 }
 
-func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+// post does not close resp.Body, it's the caller's responsibility
+func (s *service) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
 	if err != nil {
 		return nil, err
@@ -86,14 +88,16 @@ func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		// TODO ticket: progressive backoff on errors
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, httputils.DecodeJSONError(resp.Body)
 	}
 
 	return resp, nil
 }
 
-func (s *Service) get(toApp *App, fromMattermostUserID string, url string) (*http.Response, error) {
+func (s *service) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
 	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating the client")
@@ -118,8 +122,8 @@ func (s *Service) get(toApp *App, fromMattermostUserID string, url string) (*htt
 	return resp, nil
 }
 
-func (s *Service) getAppHTTPClient(appID AppID) (*http.Client, error) {
-	// <><> TODO cache the client per app
+func (s *service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
+	// TODO cache the client, manage the connections
 	return &http.Client{}, nil
 }
 
@@ -138,8 +142,8 @@ type JWTClaims struct {
 	ActingUserID string `json:"acting_user_id,omitempty"`
 }
 
-func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
-	var manifest Manifest
+func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
+	var manifest store.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
@@ -154,8 +158,8 @@ func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
 	return &manifest, nil
 }
 
-func (s *Service) GetLocationsFromApp(appID AppID, userID, channelID string) ([]LocationInt, error) {
-	app, err := s.Registry.Get(appID)
+func (s *service) GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
+	app, err := s.Store.GetApp(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting app")
 	}

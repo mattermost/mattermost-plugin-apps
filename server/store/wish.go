@@ -1,4 +1,4 @@
-package apps
+package store
 
 type Wish struct {
 	AppID string `json:"app_id"`
