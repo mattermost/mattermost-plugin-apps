@@ -18,6 +18,7 @@ type API interface {
 	InstallApp(*InInstallApp, *Context, SessionToken) (*store.App, md.MD, error)
 	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*store.App, md.MD, error)
 	Notify(store.Subject, *Context) error
+	GetLocations(userID, channelID string) ([]LocationInt, error)
 }
 
 type Service struct {

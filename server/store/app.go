@@ -15,6 +15,7 @@ type Manifest struct {
 	Install              *Wish       `json:"install,omitempty"`
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 	RootURL              string      `json:"root_url"`
+	LocationsURL         string      `json:"location_url"`
 }
 
 type App struct {

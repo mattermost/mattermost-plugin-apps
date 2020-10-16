@@ -33,9 +33,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	connectURL, err := h.startOAuth2Connect(
 		data.Context.ActingUserID,
 		apps.Call{
-			Wish: &store.Wish{
-				URL: h.AppURL(PathWishConnectedInstall),
-			},
+			Wish:    store.NewWish(AppID, h.AppURL(PathWishConnectedInstall)),
 			Request: data,
 		})
 	if err != nil {

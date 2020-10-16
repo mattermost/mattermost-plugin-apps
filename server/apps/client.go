@@ -5,11 +5,14 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/pkg/errors"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -19,6 +22,7 @@ type Client interface {
 	PostWish(*Call) (*CallResponse, error)
 	PostNotification(*NotificationRequest) error
 	GetManifest(manifestURL string) (*store.Manifest, error)
+	GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error)
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
@@ -93,6 +97,31 @@ func (s *service) post(toApp *store.App, fromMattermostUserID string, url string
 	return resp, nil
 }
 
+func (s *service) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
+	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating the client")
+	}
+	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating token")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating request")
+	}
+	req.Header.Set(OutgoingAuthHeader, "Bearer "+jwtoken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		// TODO ticket: progressive backoff on errors
+		return nil, errors.Wrap(err, "error performing the request")
+	}
+
+	return resp, nil
+}
+
 func (s *service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
 	// TODO cache the client, manage the connections
 	return &http.Client{}, nil
@@ -127,4 +156,46 @@ func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
 	}
 
 	return &manifest, nil
+}
+
+func (s *service) GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
+	app, err := s.Store.GetApp(appID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting app")
+	}
+
+	url, err := url.Parse(app.Manifest.LocationsURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing the url")
+	}
+	q := url.Query()
+	q.Add("user_id", userID)
+	q.Add("channel_id", channelID)
+	url.RawQuery = q.Encode()
+
+	resp, err := s.get(app, userID, url.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "error fetching the location")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("returned with status %s", resp.Status)
+	}
+
+	var bareLocations []map[string]interface{}
+	locations := []LocationInt{}
+	err = json.NewDecoder(resp.Body).Decode(&bareLocations)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling bare location list")
+	}
+	for _, bareLocation := range bareLocations {
+		location, err := LocationFromMap(bareLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error passing from map to location")
+		}
+		locations = append(locations, location)
+	}
+
+	return locations, nil
 }
