@@ -7,51 +7,43 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"path"
-	"strings"
 	"time"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type Client interface {
-	PostWish(Call) (*CallResponse, error)
-	PostChangeNotification(Subscription, interface{})
-	GetManifest(manifestURL string) (*Manifest, error)
+	PostNotification(n *Notification) error
+	PostCall(call *Call) (*CallResponse, error)
+	GetManifest(manifestURL string) (*store.Manifest, error)
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
-func (s *Service) PostChangeNotification(sub Subscription, msg interface{}) {
-	app, err := s.Registry.Get(sub.AppID)
+func (s *service) PostNotification(n *Notification) error {
+	app, err := s.Store.GetApp(n.Context.AppID)
 	if err != nil {
-		// <><> TODO log
-		return
+		return err
 	}
 
-	resp, err := s.post(app, "", path.Join(app.Manifest.RootURL, "notify", string(sub.Subject)), msg)
+	resp, err := s.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
-		// <><> TODO log
-		return
+		return err
 	}
 	defer resp.Body.Close()
+	return nil
 }
 
-func (s *Service) PostWish(call Call) (*CallResponse, error) {
-	app, err := s.Registry.Get(call.Data.Context.AppID)
+func (s *service) PostCall(call *Call) (*CallResponse, error) {
+	app, err := s.Store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
 
-	url := call.Wish.URL
-	if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
-		if !strings.HasPrefix(url, "/") {
-			url += "/"
-		}
-		url = app.Manifest.RootURL + url
-	}
-
-	resp, err := s.post(app, call.Data.Context.ActingUserID, url, call.Data)
+	resp, err := s.post(app, call.Context.ActingUserID, call.FormURL, call)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +57,8 @@ func (s *Service) PostWish(call Call) (*CallResponse, error) {
 	return &cr, nil
 }
 
-func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+// post does not close resp.Body, it's the caller's responsibility
+func (s *service) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
 	if err != nil {
 		return nil, err
@@ -92,15 +85,17 @@ func (s *Service) post(toApp *App, fromMattermostUserID string, url string, msg 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		// TODO ticket: progressive backoff on errors
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, httputils.DecodeJSONError(resp.Body)
 	}
 
 	return resp, nil
 }
 
-func (s *Service) getAppHTTPClient(appID AppID) (*http.Client, error) {
-	// <><> TODO cache the client per app
+func (s *service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
+	// TODO cache the client, manage the connections
 	return &http.Client{}, nil
 }
 
@@ -119,8 +114,8 @@ type JWTClaims struct {
 	ActingUserID string `json:"acting_user_id,omitempty"`
 }
 
-func (s *Service) GetManifest(manifestURL string) (*Manifest, error) {
-	var manifest Manifest
+func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
+	var manifest store.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err

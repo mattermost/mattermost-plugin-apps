@@ -5,12 +5,19 @@ package httputils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
 )
+
+type JSONError struct {
+	Error   string `json:"error"`
+	Summary string `json:"details"`
+}
 
 func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error) {
 	u, err := url.Parse(remoteURL)
@@ -46,13 +53,20 @@ func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error)
 func WriteJSONError(w http.ResponseWriter, statusCode int, summary string, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(struct {
-		Error   string `json:"error"`
-		Summary string `json:"details"`
-	}{
+	_ = json.NewEncoder(w).Encode(JSONError{
 		Summary: summary,
 		Error:   err.Error(),
 	})
+}
+
+func DecodeJSONError(body io.ReadCloser) error {
+	defer body.Close()
+	e := JSONError{}
+	err := json.NewDecoder(body).Decode(&e)
+	if err != nil {
+		return err
+	}
+	return errors.New(e.Error)
 }
 
 func WriteJSON(w http.ResponseWriter, v interface{}) {

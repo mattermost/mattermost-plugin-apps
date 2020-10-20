@@ -9,12 +9,12 @@ const (
 )
 
 const (
-	BotUserName    = "appsbot"
+	BotUsername    = "appsbot"
 	BotDisplayName = "Mattermost Apps"
 	BotDescription = "Mattermost Apps Registry and API proxy."
 
 	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
-	WishPath              = "/wish"
+	ProxyPath             = "/proxy"
 	HelloAppPath          = "/hello"
 )

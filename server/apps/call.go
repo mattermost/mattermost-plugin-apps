@@ -1,70 +1,29 @@
 package apps
 
 import (
+	"encoding/json"
+	"io"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type Call struct {
-	// Only one of Wish or Modal can be set
-	Wish  *Wish  `json:"wish,omitempty"`
-	Modal *Modal `json:"modal,omitempty"`
-
-	Data *CallData `json:"data"`
-}
-
-type CallData struct {
-	Context  CallContext `json:"context"`
-	Values   FormValues  `json:"values,omitempty"`
-	Expanded *Expanded   `json:"expanded,omitempty"`
-	From     []*Location `json:"from,omitempty"`
-}
-
-type CallContext struct {
-	// For convenience, to use in go-land to pass the AppID around
-	AppID AppID `json:"app_id"`
-
-	// ActingUserID is the Mattermost User ID of the acting user
-	ActingUserID string `json:"acting_user_id"`
-
-	// TeamID, ChannelID, PostID represent the "location" in Mattermost that the
-	// call is associated with. TeamID is usually set, ChannelID and PostID are
-	// optional.
-	TeamID    string `json:"team_id"`
-	ChannelID string `json:"channel_id,omitempty"`
-	PostID    string `json:"post_id,omitempty"`
-
-	LogTo *Thread `json:"log_to,omitempty"`
-
-	Props map[string]string `json:"props,omitempty"`
-}
-
-type Thread struct {
-	ChannelID  string `json:"channel_id"`
-	RootPostID string `json:"root_post_id"`
-}
-
-func (c *CallContext) Get(n string) string {
-	if len(c.Props) == 0 {
-		return ""
-	}
-	return c.Props[n]
-}
-
-func (c *CallContext) Set(n, v string) {
-	if len(c.Props) == 0 {
-		c.Props = map[string]string{}
-	}
-	c.Props[n] = v
+	FormURL string        `json:"form_url,omitempty"`
+	Values  FormValues    `json:"values,omitempty"`
+	Context *Context      `json:"context,omitempty"`
+	Expand  *store.Expand `json:"expand,omitempty"`
+	AsModal bool          `json:"as_modal,omitempty"`
+	From    []*Location   `json:"from,omitempty"`
 }
 
 type CallResponseType string
 
 const (
-	ResponseTypeCallWish  = CallResponseType("call_wish")
-	ResponseTypeCallModal = CallResponseType("call_modal")
-	ResponseTypeOK        = CallResponseType("ok")
-	ResponseTypeNavigate  = CallResponseType("navigate")
-	ResponseTypeError     = CallResponseType("error")
+	CallResponseTypeCall     = CallResponseType("call")
+	CallResponseTypeOK       = CallResponseType("ok")
+	CallResponseTypeNavigate = CallResponseType("navigate")
+	CallResponseTypeError    = CallResponseType("error")
 )
 
 type CallResponse struct {
@@ -79,4 +38,52 @@ type CallResponse struct {
 	UseExternalBrowser bool   `json:"use_external_browser,omitempty"`
 
 	Call *Call `json:"call,omitempty"`
+}
+
+type FormValues struct {
+	Data map[string]interface{} `json:"data"`
+	Raw  string                 `json:"raw"`
+}
+
+func (s *service) Call(call *Call) (*CallResponse, error) {
+	var err error
+	req := *call
+	// TODO Expand using the App's bot credentials!
+	req.Context, err = s.newExpander(call.Context).Expand(call.Expand)
+	if err != nil {
+		return nil, err
+	}
+	req.Expand = nil
+	req.FormURL = ""
+
+	return s.Client.PostCall(call)
+}
+
+func (fv *FormValues) Get(name string) string {
+	if fv == nil || fv.Data == nil {
+		return ""
+	}
+	return fv.Data[name].(string)
+}
+
+func UnmarshalCall(data []byte) (*Call, error) {
+	call := Call{
+		Context: &Context{},
+	}
+	err := json.Unmarshal(data, &call)
+	if err != nil {
+		return nil, err
+	}
+	return &call, nil
+}
+
+func DecodeCall(in io.Reader) (*Call, error) {
+	call := Call{
+		Context: &Context{},
+	}
+	err := json.NewDecoder(in).Decode(&call)
+	if err != nil {
+		return nil, err
+	}
+	return &call, nil
 }
