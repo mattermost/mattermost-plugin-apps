@@ -30,7 +30,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	}
 
 	connectURL, err := h.startOAuth2Connect(call.Context.ActingUserID, &apps.Call{
-		FormURL: h.AppURL(PathFormConnectedInstall),
+		FormURL: h.AppURL(PathConnectedInstall),
 		Context: call.Context,
 	})
 	if err != nil {

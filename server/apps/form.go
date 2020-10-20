@@ -1,15 +1,13 @@
 package apps
 
-import "github.com/mattermost/mattermost-plugin-apps/server/store"
-
 type Form struct {
 	// RefreshOnChangeTo indicates that changes to the listed fields must reload
-	// the form. Values of the fields that are not included in the
+	// the form. Values of the fields with values that are not included in the
 	// refreshed form are lost. Values that no longer apply are reset.
 	RefreshOnChangeTo []string `json:"refresh_on_change_to,omitempty"`
+	RefreshURL        string
 
-	Elements []interface{} `json:"elements,omitempty"`
-	Expand   *store.Expand `json:"expand,omitempty"`
+	Elements []interface{} // of *XXXElement
 }
 
 type ElementType string

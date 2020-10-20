@@ -18,6 +18,7 @@ type API interface {
 	InstallApp(*InInstallApp, *Context, SessionToken) (*store.App, md.MD, error)
 	NotifySubscribedApps(subj store.Subject, cc *Context) error
 	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*store.App, md.MD, error)
+	GetLocations(userID, channelID string) ([]LocationInt, error)
 }
 
 type Service struct {
@@ -40,7 +41,7 @@ func NewService(mm *pluginapi.Client, configurator configurator.Service) *Servic
 			Mattermost:   mm,
 		},
 	}
-	s.Client = s
+	s.Client = newClient(s.Store)
 	s.API = s
 
 	return &s.Service

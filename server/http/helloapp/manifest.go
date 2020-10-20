@@ -25,8 +25,9 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				store.PermissionActAsUser,
 				store.PermissionActAsBot,
 			},
-			InstallFormURL:    h.AppURL(PathFormInstall),
+			InstallFormURL:    h.AppURL(PathInstall),
 			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
+			LocationsURL:      h.AppURL(PathLocations),
 			HomepageURL:       h.AppURL("/"),
 		})
 }

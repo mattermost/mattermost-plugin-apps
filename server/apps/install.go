@@ -60,7 +60,7 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 		return nil, "", err
 	}
 
-	resp, err := s.PostCall(
+	resp, err := s.Client.PostCall(
 		&Call{
 			FormURL: app.Manifest.InstallFormURL,
 			Values: FormValues{
