@@ -9,16 +9,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-
 	"github.com/dgrijalva/jwt-go"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 type Client interface {
-	PostNotification(n *Notification) error
-	PostCall(call *Call) (*CallResponse, error)
 	GetManifest(manifestURL string) (*store.Manifest, error)
+	PostCall(call *Call) (*CallResponse, error)
+	PostNotification(n *Notification) error
 }
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
