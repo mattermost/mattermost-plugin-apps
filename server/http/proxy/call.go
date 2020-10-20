@@ -10,7 +10,7 @@ import (
 )
 
 func (p *proxy) handleCall(w http.ResponseWriter, req *http.Request) {
-	call, err := apps.DecodeCall(req.Body)
+	call, err := apps.UnmarshalCallReader(req.Body)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to unmarshal Call struct")
 		httputils.WriteBadRequestError(w, err)

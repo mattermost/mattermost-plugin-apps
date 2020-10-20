@@ -72,7 +72,7 @@ func call(h CallHandler) http.HandlerFunc {
 			return
 		}
 
-		data, err := apps.DecodeCall(req.Body)
+		data, err := apps.UnmarshalCallReader(req.Body)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return

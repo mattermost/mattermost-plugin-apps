@@ -26,7 +26,7 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	}
 	`
 
-	data, err := UnmarshalCall([]byte(payload))
+	data, err := UnmarshalCallData([]byte(payload))
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)

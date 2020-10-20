@@ -66,7 +66,7 @@ func (fv *FormValues) Get(name string) string {
 	return fv.Data[name].(string)
 }
 
-func UnmarshalCall(data []byte) (*Call, error) {
+func UnmarshalCallData(data []byte) (*Call, error) {
 	call := Call{
 		Context: &Context{},
 	}
@@ -77,7 +77,7 @@ func UnmarshalCall(data []byte) (*Call, error) {
 	return &call, nil
 }
 
-func DecodeCall(in io.Reader) (*Call, error) {
+func UnmarshalCallReader(in io.Reader) (*Call, error) {
 	call := Call{
 		Context: &Context{},
 	}

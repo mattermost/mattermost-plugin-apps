@@ -70,7 +70,7 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) 
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
-	call, err := apps.UnmarshalCall(payload)
+	call, err := apps.UnmarshalCallData(payload)
 	if err != nil {
 		return
 	}
