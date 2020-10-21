@@ -11,7 +11,7 @@ func (s *service) GetLocations(userID, channelID string) ([]LocationInt, error) 
 
 	allLocations := []LocationInt{}
 	for _, id := range ids {
-		locations, err := s.Client.GetLocationsFromApp(id, userID, channelID)
+		locations, err := s.Client.GetLocations(id, userID, channelID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get single location")
 		}

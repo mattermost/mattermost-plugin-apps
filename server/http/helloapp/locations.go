@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -37,7 +36,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.ChannelHeaderIconLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationChannelHeaderIcon,
-				Wish:         store.NewWish(AppID, h.AppURL(PathWishPing)),
+				FormURL:      h.AppURL(PathPing),
 			},
 			DropdownText: user.Username,
 			AriaText:     user.Username,
@@ -46,7 +45,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationPostMenuItem,
-				Wish:         store.NewWish(AppID, h.AppURL(PathWishPing)),
+				FormURL:      h.AppURL(PathPing),
 			},
 			Text: user.Username,
 			Icon: sampleIcon,
@@ -54,7 +53,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
 				LocationType: apps.LocationPostMenuItem,
-				Wish:         store.NewWish(AppID, h.AppURL(PathWishPing)),
+				FormURL:      h.AppURL(PathPing),
 			},
 			Text: "Remove " + user.Username,
 			Icon: sampleIcon,

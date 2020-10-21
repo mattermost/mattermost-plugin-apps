@@ -14,10 +14,10 @@ import (
 type SessionToken string
 
 type API interface {
-	// Call(*Call) (*CallResponse, error)
+	Call(*Call) (*CallResponse, error)
 	InstallApp(*InInstallApp, *Context, SessionToken) (*store.App, md.MD, error)
+	NotifySubscribedApps(subj store.Subject, cc *Context) error
 	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*store.App, md.MD, error)
-	Notify(store.Subject, *Context) error
 	GetLocations(userID, channelID string) ([]LocationInt, error)
 }
 
@@ -41,7 +41,7 @@ func NewService(mm *pluginapi.Client, configurator configurator.Service) *Servic
 			Mattermost:   mm,
 		},
 	}
-	s.Client = s
+	s.Client = newClient(s.Store)
 	s.API = s
 
 	return &s.Service

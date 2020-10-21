@@ -15,5 +15,6 @@ const (
 
 	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
+	ProxyPath             = "/proxy"
 	HelloAppPath          = "/hello"
 )
