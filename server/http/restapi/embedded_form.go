@@ -17,15 +17,11 @@ const (
 )
 
 func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
+	defer req.Body.Close()
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
 		writeDialogError(w, "Could not decode request.")
-		return
-	}
-
-	if dialogRequest.Submission[embeddedSubmissionPostIDKey] == nil {
-		writeDialogError(w, "No Post ID provided.")
 		return
 	}
 
@@ -36,11 +32,6 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 	}
 
 	delete(dialogRequest.Submission, embeddedSubmissionPostIDKey)
-
-	if dialogRequest.Submission[embeddedSubmissionAppIDKey] == nil {
-		writeDialogError(w, "No App ID provided")
-		return
-	}
 
 	appID, ok := dialogRequest.Submission[embeddedSubmissionAppIDKey].(string)
 	if !ok {
@@ -77,7 +68,6 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 		if resp.Data["errors"] != nil {
 			dialogResponse.Errors = make(map[string]string)
 			if errors, ok := resp.Data["errors"].(map[string]interface{}); ok {
-
 				for key, value := range errors {
 					if svalue, ok := value.(string); ok {
 						dialogResponse.Errors[key] = svalue
@@ -86,16 +76,14 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 			}
 		}
 		dialogResponse.Error = resp.Error
-	} else {
-		if resp.Data["post"] != nil {
-			if updatePost, parseErr := postFromInterface(resp.Data["post"]); parseErr == nil {
-				updateErr := a.UpdatePost(postID, updatePost)
-				if updateErr != nil {
-					a.mm.Log.Debug("could not update post", "error", updateErr)
-				}
-			} else {
-				a.mm.Log.Debug("could not transform post", "error", parseErr)
+	} else if resp.Data["post"] != nil {
+		if updatedPost, parseErr := postFromInterface(resp.Data["post"]); parseErr == nil {
+			updateErr := a.UpdatePost(postID, updatedPost)
+			if updateErr != nil {
+				a.mm.Log.Debug("could not update post", "error", updateErr)
 			}
+		} else {
+			a.mm.Log.Debug("could not transform post", "error", parseErr)
 		}
 	}
 	httputils.WriteJSON(w, dialogResponse)
@@ -126,6 +114,7 @@ func (a *api) UpdatePost(postID string, post *model.Post) error {
 	// If the updated post does contain a replacement Props set, we still
 	// need to preserve some original values, as listed in
 	// model.PostActionRetainPropKeys. remove and retain track these.
+	// Copied from: https://github.com/mattermost/mattermost-server/blob/20491c2585475c2218f964e0a882c65deac570a5/app/integration_action.go#L57
 	remove := []string{}
 	retain := map[string]interface{}{}
 
@@ -158,7 +147,11 @@ func (a *api) UpdatePost(postID string, post *model.Post) error {
 	post.IsPinned = originalPost.IsPinned
 	post.HasReactions = originalPost.HasReactions
 
-	a.mm.Post.UpdatePost(post)
+	err = a.mm.Post.UpdatePost(post)
+
+	if err != nil {
+		return errors.Wrap(err, "error updating the post")
+	}
 
 	return nil
 }
