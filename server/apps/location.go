@@ -3,6 +3,7 @@ package apps
 import (
 	"encoding/json"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +22,7 @@ type Location struct {
 	LocationType LocationType `json:"location_type"`
 	LocationID   string       `json:"location_id"`
 	FormURL      string       `json:"form_url"`
+	AppID        store.AppID  `json:"app_id"`
 }
 
 func (l *Location) GetType() LocationType {

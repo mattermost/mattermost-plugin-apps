@@ -194,6 +194,7 @@ func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]Lo
 		return nil, errors.Wrap(err, "error unmarshalling bare location list")
 	}
 	for _, bareLocation := range bareLocations {
+		bareLocation["app_id"] = appID
 		location, err := LocationFromMap(bareLocation)
 		if err != nil {
 			return nil, errors.Wrap(err, "error passing from map to location")
