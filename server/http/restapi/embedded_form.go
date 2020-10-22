@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	embeddedSubmissionPostIDKey = "mm_postID"
-	embeddedSubmissionAppIDKey  = "mm_appID"
+	embeddedSubmissionPostIDKey = "mm_post_id"
+	embeddedSubmissionAppIDKey  = "mm_app_id"
 )
 
 func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
