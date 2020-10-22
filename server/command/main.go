@@ -10,7 +10,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -68,16 +67,14 @@ func (s *service) executeDebugLocations(params *params) (*model.CommandResponse,
 }
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
-	_, err := s.apps.Client.PostWish(&apps.Call{
-		Wish: store.NewWish("hello", s.apps.Configurator.GetConfig().PluginURL+"/hello/wish/create_embedded"),
-		Request: &apps.CallRequest{
-			Context: &apps.Context{
-				AppID:        "hello",
-				ActingUserID: params.commandArgs.UserId,
-				ChannelID:    params.commandArgs.ChannelId,
-				TeamID:       params.commandArgs.TeamId,
-				UserID:       params.commandArgs.UserId,
-			},
+	_, err := s.apps.Client.PostCall(&apps.Call{
+		FormURL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
+		Context: &apps.Context{
+			AppID:        "hello",
+			ActingUserID: params.commandArgs.UserId,
+			ChannelID:    params.commandArgs.ChannelId,
+			TeamID:       params.commandArgs.TeamId,
+			UserID:       params.commandArgs.UserId,
 		},
 	})
 

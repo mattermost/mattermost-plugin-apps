@@ -60,17 +60,15 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 		return nil, "", err
 	}
 
-	resp, err := s.PostWish(
+	resp, err := s.Client.PostCall(
 		&Call{
-			Wish: app.Manifest.Install,
-			Request: &CallRequest{
-				Values: FormValues{
-					Data: map[string]interface{}{
-						"bot_access_token":     app.BotAccessToken,
-						"oauth2_client_secret": app.OAuth2ClientSecret},
-				},
-				Context: expandedContext,
+			FormURL: app.Manifest.InstallFormURL,
+			Values: FormValues{
+				Data: map[string]interface{}{
+					"bot_access_token":     app.BotAccessToken,
+					"oauth2_client_secret": app.OAuth2ClientSecret},
 			},
+			Context: expandedContext,
 		})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")

@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallRequest) (int, error) {
+func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
 	err := h.asBot(func(mmclient *model.Client4, botUserID string) error {
 		post := &model.Post{
 			Message:   "Debug form",
@@ -33,9 +33,9 @@ func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallRequest) (int, error) {
+func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
 	response := apps.CallResponse{
-		Type: apps.ResponseTypeOK,
+		Type: apps.CallResponseTypeOK,
 		Data: make(map[string]interface{}),
 	}
 	post := &model.Post{
@@ -61,7 +61,7 @@ func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request
 
 func (h *helloapp) getDialogSmallSample() model.OpenDialogRequest {
 	return model.OpenDialogRequest{
-		URL: h.AppURL(PathWishSubmitEmbedded),
+		URL: h.AppURL(PathSubmitEmbedded),
 		Dialog: model.Dialog{
 			Title:   "Title for Small Dialog Test",
 			IconURL: "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",
@@ -81,7 +81,7 @@ func (h *helloapp) getDialogSmallSample() model.OpenDialogRequest {
 
 func (h *helloapp) getDialogFullSample() model.OpenDialogRequest {
 	return model.OpenDialogRequest{
-		URL: h.AppURL(PathWishSubmitEmbedded),
+		URL: h.AppURL(PathSubmitEmbedded),
 		Dialog: model.Dialog{
 			Title:   "Title for Full Dialog Test",
 			IconURL: "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",

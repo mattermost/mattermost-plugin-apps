@@ -12,7 +12,7 @@ type Manifest struct {
 	Description          string      `json:"description,omitempty"`
 	DisplayName          string      `json:"display_name,omitempty"`
 	HomepageURL          string      `json:"homepage_url,omitempty"`
-	Install              *Wish       `json:"install,omitempty"`
+	InstallFormURL       string      `json:"install_form_url,omitempty"`
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 	RootURL              string      `json:"root_url"`
 	LocationsURL         string      `json:"location_url"`

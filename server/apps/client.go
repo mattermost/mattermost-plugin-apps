@@ -11,29 +11,44 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
-
-type Client interface {
-	PostWish(*Call) (*CallResponse, error)
-	PostNotification(*NotificationRequest) error
-	GetManifest(manifestURL string) (*store.Manifest, error)
-	GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error)
-}
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
-func (s *service) PostNotification(n *NotificationRequest) error {
-	app, err := s.Store.GetApp(n.Context.AppID)
+type Client interface {
+	GetManifest(manifestURL string) (*store.Manifest, error)
+	PostCall(call *Call) (*CallResponse, error)
+	PostNotification(n *Notification) error
+	GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error)
+}
+
+type JWTClaims struct {
+	jwt.StandardClaims
+	ActingUserID string `json:"acting_user_id,omitempty"`
+}
+
+type client struct {
+	store store.Service
+}
+
+func newClient(store store.Service) *client {
+	return &client{
+		store: store,
+	}
+}
+
+func (c *client) PostNotification(n *Notification) error {
+	app, err := c.store.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
 	}
 
-	resp, err := s.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
+	resp, err := c.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
 		return err
 	}
@@ -41,12 +56,13 @@ func (s *service) PostNotification(n *NotificationRequest) error {
 	return nil
 }
 
-func (s *service) PostWish(call *Call) (*CallResponse, error) {
-	app, err := s.Store.GetApp(call.Request.Context.AppID)
+func (c *client) PostCall(call *Call) (*CallResponse, error) {
+	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.post(app, call.Request.Context.ActingUserID, call.Wish.URL, call.Request)
+
+	resp, err := c.post(app, call.Context.ActingUserID, call.FormURL, call)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +77,8 @@ func (s *service) PostWish(call *Call) (*CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (s *service) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
-	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
-	if err != nil {
-		return nil, err
-	}
+func (c *client) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
 		return nil, err
@@ -97,11 +110,8 @@ func (s *service) post(toApp *store.App, fromMattermostUserID string, url string
 	return resp, nil
 }
 
-func (s *service) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
-	client, err := s.getAppHTTPClient(toApp.Manifest.AppID)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating the client")
-	}
+func (c *client) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
+	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating token")
@@ -122,9 +132,8 @@ func (s *service) get(toApp *store.App, fromMattermostUserID string, url string)
 	return resp, nil
 }
 
-func (s *service) getAppHTTPClient(appID store.AppID) (*http.Client, error) {
-	// TODO cache the client, manage the connections
-	return &http.Client{}, nil
+func (c *client) getClient(appID store.AppID) *http.Client {
+	return &http.Client{}
 }
 
 func createJWT(actingUserID, secret string) (string, error) {
@@ -137,12 +146,7 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-type JWTClaims struct {
-	jwt.StandardClaims
-	ActingUserID string `json:"acting_user_id,omitempty"`
-}
-
-func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
+func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
 	var manifest store.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
@@ -158,8 +162,8 @@ func (s *service) GetManifest(manifestURL string) (*store.Manifest, error) {
 	return &manifest, nil
 }
 
-func (s *service) GetLocationsFromApp(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
-	app, err := s.Store.GetApp(appID)
+func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
+	app, err := c.store.GetApp(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting app")
 	}
@@ -173,7 +177,7 @@ func (s *service) GetLocationsFromApp(appID store.AppID, userID, channelID strin
 	q.Add("channel_id", channelID)
 	url.RawQuery = q.Encode()
 
-	resp, err := s.get(app, userID, url.String())
+	resp, err := c.get(app, userID, url.String())
 	if err != nil {
 		return nil, errors.Wrap(err, "error fetching the location")
 	}

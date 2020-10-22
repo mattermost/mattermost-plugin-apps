@@ -7,12 +7,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-type NotificationRequest struct {
+type Notification struct {
 	Subject store.Subject
 	Context *Context
 }
 
-func (s *service) Notify(subj store.Subject, cc *Context) error {
+func (s *service) NotifySubscribedApps(subj store.Subject, cc *Context) error {
 	subs, err := s.Store.GetSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func (s *service) Notify(subj store.Subject, cc *Context) error {
 
 	expander := s.newExpander(cc)
 	for _, sub := range subs {
-		req := NotificationRequest{
+		req := Notification{
 			Subject: subj,
 			Context: &Context{},
 		}

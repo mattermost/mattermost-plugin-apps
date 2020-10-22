@@ -23,11 +23,11 @@ const AppSecret = "1234"
 const (
 	PathManifest                = "/mattermost-app.json"
 	PathNotifyUserJoinedChannel = "/notify/" + string(store.SubjectUserJoinedChannel)
-	PathWishInstall             = "/wish/install"
-	PathWishConnectedInstall    = "/wish/connected_install"
-	PathWishPing                = "/wish/ping"
-	PathWishSubmitEmbedded      = "/wish/submit_embedded"
-	PathWishCreateEmbedded      = "/wish/create_embedded"
+	PathInstall                 = "/form/install"
+	PathConnectedInstall        = "/form/connected_install"
+	PathPing                    = "/form/ping"
+	PathSubmitEmbedded          = "/form/submit_embedded"
+	PathCreateEmbedded          = "/form/create_embedded"
 	PathOAuth2                  = "/oauth2"
 	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
 	PathLocations               = "/locations"
@@ -50,11 +50,11 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter.HandleFunc(PathNotifyUserJoinedChannel, notify(h.handleUserJoinedChannel)).Methods("POST")
 
-	subrouter.HandleFunc(PathWishInstall, wish(h.handleInstall)).Methods("POST")
-	subrouter.HandleFunc(PathWishConnectedInstall, wish(h.handleConnectedInstall)).Methods("POST")
-	subrouter.HandleFunc(PathWishPing, wish(h.handlePing)).Methods("POST")
-	subrouter.HandleFunc(PathWishSubmitEmbedded, wish(h.handleSubmitEmbedded)).Methods("POST")
-	subrouter.HandleFunc(PathWishCreateEmbedded, wish(h.handleCreateEmbedded)).Methods("POST")
+	subrouter.HandleFunc(PathInstall, call(h.handleInstall)).Methods("POST")
+	subrouter.HandleFunc(PathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
+	subrouter.HandleFunc(PathPing, call(h.handlePing)).Methods("POST")
+	subrouter.HandleFunc(PathSubmitEmbedded, call(h.handleSubmitEmbedded)).Methods("POST")
+	subrouter.HandleFunc(PathCreateEmbedded, call(h.handleCreateEmbedded)).Methods("POST")
 
 	subrouter.HandleFunc(PathLocations, CheckAuthentication(ExtractUserAndChannelID(h.HandleLocations))).Methods("GET")
 
@@ -66,9 +66,9 @@ func (h *helloapp) AppURL(path string) string {
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
-type WishHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallRequest) (int, error)
+type CallHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error)
 
-func wish(h WishHandler) http.HandlerFunc {
+func call(h CallHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		claims, err := checkJWT(req)
 		if err != nil {
@@ -76,14 +76,13 @@ func wish(h WishHandler) http.HandlerFunc {
 			return
 		}
 
-		data := apps.CallRequest{}
-		err = json.NewDecoder(req.Body).Decode(&data)
+		data, err := apps.UnmarshalCallReader(req.Body)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return
 		}
 
-		statusCode, err := h(w, req, claims, &data)
+		statusCode, err := h(w, req, claims, data)
 		if err != nil {
 			httputils.WriteJSONError(w, statusCode, "", err)
 			return
@@ -91,7 +90,7 @@ func wish(h WishHandler) http.HandlerFunc {
 	}
 }
 
-type notifyHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.NotificationRequest) (int, error)
+type notifyHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Notification) (int, error)
 
 func notify(h notifyHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -101,7 +100,7 @@ func notify(h notifyHandler) http.HandlerFunc {
 			return
 		}
 
-		data := apps.NotificationRequest{}
+		data := apps.Notification{}
 		err = json.NewDecoder(req.Body).Decode(&data)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)

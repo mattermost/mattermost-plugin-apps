@@ -51,23 +51,21 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 	delete(dialogRequest.Submission, embeddedSubmissionAppIDKey)
 
 	c := &apps.Call{
-		Wish: store.NewWish(appID, dialogRequest.URL),
-		Request: &apps.CallRequest{
-			Context: &apps.Context{
-				AppID:        store.AppID(appID),
-				ActingUserID: dialogRequest.UserId,
-				ChannelID:    dialogRequest.ChannelId,
-				TeamID:       dialogRequest.TeamId,
-				UserID:       dialogRequest.UserId,
-				PostID:       postID,
-			},
-			Values: apps.FormValues{
-				Data: dialogRequest.Submission,
-			},
+		FormURL: dialogRequest.URL,
+		Context: &apps.Context{
+			AppID:        store.AppID(appID),
+			ActingUserID: dialogRequest.UserId,
+			ChannelID:    dialogRequest.ChannelId,
+			TeamID:       dialogRequest.TeamId,
+			UserID:       dialogRequest.UserId,
+			PostID:       postID,
+		},
+		Values: apps.FormValues{
+			Data: dialogRequest.Submission,
 		},
 	}
 
-	resp, err := a.apps.Client.PostWish(c)
+	resp, err := a.apps.Client.PostCall(c)
 	if err != nil {
 		writeDialogError(w, "Error contacting the app: "+err.Error())
 		return
@@ -75,7 +73,7 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 
 	var dialogResponse model.SubmitDialogResponse
 
-	if resp.Type == apps.ResponseTypeError {
+	if resp.Type == apps.CallResponseTypeError {
 		if resp.Data["errors"] != nil {
 			dialogResponse.Errors = make(map[string]string)
 			if errors, ok := resp.Data["errors"].(map[string]interface{}); ok {

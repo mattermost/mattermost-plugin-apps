@@ -14,13 +14,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims,
-	data *apps.CallRequest) (int, error) {
+func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
 	err := h.storeAppCredentials(&AppCredentials{
-		BotAccessToken:     data.Values.Get("bot_access_token"),
-		BotUserID:          data.Context.App.BotUserID,
-		OAuth2ClientID:     data.Context.App.OAuth2ClientID,
-		OAuth2ClientSecret: data.Values.Get("oauth2_client_secret"),
+		BotAccessToken:     call.Values.Get("bot_access_token"),
+		BotUserID:          call.Context.App.BotUserID,
+		OAuth2ClientID:     call.Context.App.OAuth2ClientID,
+		OAuth2ClientSecret: call.Values.Get("oauth2_client_secret"),
 	})
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -30,19 +29,17 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 		return http.StatusInternalServerError, err
 	}
 
-	connectURL, err := h.startOAuth2Connect(
-		data.Context.ActingUserID,
-		apps.Call{
-			Wish:    store.NewWish(AppID, h.AppURL(PathWishConnectedInstall)),
-			Request: data,
-		})
+	connectURL, err := h.startOAuth2Connect(call.Context.ActingUserID, &apps.Call{
+		FormURL: h.AppURL(PathConnectedInstall),
+		Context: call.Context,
+	})
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
 	httputils.WriteJSON(w,
 		apps.CallResponse{
-			Type: apps.ResponseTypeOK,
+			Type: apps.CallResponseTypeOK,
 			Markdown: md.Markdownf(
 				"**Hallo სამყარო** needs to continue its installation using your system administrator's credentials. Please [connect](%s) the application to your Mattermost account.",
 				connectURL),
@@ -50,12 +47,12 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.CallRequest) (int, error) {
+func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
 	var teams []*model.Team
 	var team *model.Team
 	var channel *model.Channel
 
-	err := h.asUser(data.Context.ActingUserID,
+	err := h.asUser(call.Context.ActingUserID,
 		func(mmclient *model.Client4) error {
 			var api4Resp *model.Response
 			teams, api4Resp = mmclient.GetAllTeams("", 0, 1)
@@ -76,7 +73,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
-				h.DM(data.Context.ActingUserID, "Found existing ~%s channel.", AppID)
+				h.DM(call.Context.ActingUserID, "Found existing ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
@@ -90,20 +87,20 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 					return api4Resp.Error
 				}
 
-				h.DM(data.Context.ActingUserID, "Created ~%s channel.", AppID)
+				h.DM(call.Context.ActingUserID, "Created ~%s channel.", AppID)
 			}
 
 			// Add the Bot user to the team and the channel.
-			_, api4Resp = mmclient.AddTeamMember(team.Id, data.Context.App.BotUserID)
+			_, api4Resp = mmclient.AddTeamMember(team.Id, call.Context.App.BotUserID)
 			if api4Resp.Error != nil {
 				return api4Resp.Error
 			}
-			_, api4Resp = mmclient.AddChannelMember(channel.Id, data.Context.App.BotUserID)
+			_, api4Resp = mmclient.AddChannelMember(channel.Id, call.Context.App.BotUserID)
 			if api4Resp.Error != nil {
 				return api4Resp.Error
 			}
 
-			h.DM(data.Context.ActingUserID, "Added bot to channel.")
+			h.DM(call.Context.ActingUserID, "Added bot to channel.")
 			return nil
 		})
 	if err != nil {
@@ -116,7 +113,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 				ChannelId: channel.Id,
 				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", AppDisplayName),
 			})
-			h.DM(data.Context.ActingUserID, "Posted welcome message to channel.")
+			h.DM(call.Context.ActingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
 			err = h.apps.Store.StoreSub(&store.Subscription{
@@ -133,7 +130,7 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 			if err != nil {
 				return err
 			}
-			h.DM(data.Context.ActingUserID, "Subscribed to %s in channel.", store.SubjectUserJoinedChannel)
+			h.DM(call.Context.ActingUserID, "Subscribed to %s in channel.", store.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {
@@ -146,10 +143,10 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 	}
 	httputils.WriteJSON(w,
 		apps.CallResponse{
-			Type:     apps.ResponseTypeOK,
+			Type:     apps.CallResponseTypeOK,
 			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2ClientID, AppDisplayName),
 		})
-	h.DM(data.Context.ActingUserID, "OK!")
+	h.DM(call.Context.ActingUserID, "OK!")
 
 	return http.StatusOK, nil
 }

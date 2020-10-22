@@ -6,7 +6,7 @@ import (
 )
 
 type Context struct {
-	AppID        store.AppID       `json:"-"`
+	AppID        store.AppID       `json:"app_id"`
 	ActingUserID string            `json:"acting_user_id,omitempty"`
 	UserID       string            `json:"user_id,omitempty"`
 	TeamID       string            `json:"team_id"`

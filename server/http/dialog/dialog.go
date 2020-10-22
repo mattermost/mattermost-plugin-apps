@@ -26,7 +26,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	subrouter := router.PathPrefix(constants.InteractiveDialogPath).Subrouter()
-	subrouter.HandleFunc("/install", d.handleInstall).Methods("POST")
+	subrouter.HandleFunc(InstallPath, d.handleInstall).Methods("POST")
 }
 
 func respondWithError(w http.ResponseWriter, status int, err error) {

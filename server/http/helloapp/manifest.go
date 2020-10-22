@@ -25,7 +25,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				store.PermissionActAsUser,
 				store.PermissionActAsBot,
 			},
-			Install:           store.NewWish(AppID, h.AppURL(PathWishInstall)),
+			InstallFormURL:    h.AppURL(PathInstall),
 			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
 			LocationsURL:      h.AppURL(PathLocations),
 			HomepageURL:       h.AppURL("/"),
