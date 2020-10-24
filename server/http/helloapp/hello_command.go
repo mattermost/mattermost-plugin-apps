@@ -37,7 +37,7 @@ func (h *helloapp) handleHelloCommandSubmission(w http.ResponseWriter, req *http
 		return e(err, "get by username "+username)
 	}
 
-	fullMessage := md.Markdownf("Hey there! Your teammate %s sent you a message: \"%s\"", call.Context.ActingUserID, message)
+	fullMessage := md.Markdownf("Hallo! Your teammate %s sent you a message: \"%s\"", call.Context.ActingUserID, message)
 	h.DM(u.Id, fullMessage.String())
 	h.Ephemeral(call.Context.ActingUserID, call.Context.ChannelID, fmt.Sprintf("Sent \"%s\" to @%s", message, username))
 	httputils.WriteJSON(w,
