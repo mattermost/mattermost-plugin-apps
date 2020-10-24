@@ -65,7 +65,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 			Location: apps.Location{
 				AppID:        AppID,
 				LocationType: apps.LocationSlashCommand,
-				FormURL:      h.AppURL("/form/command_definition"),
+				FormURL:      h.AppURL(PathCommandDefinition),
 			},
 			Trigger: "hello",
 			Text:    "Say hello!",
