@@ -22,13 +22,13 @@ type SubscribeResponse struct {
 	Errors map[string]string `json:"errors,omitempty"`
 }
 
-type api struct {
+type restapi struct {
 	mm   *pluginapi.Client
 	apps *apps.Service
 }
 
 func Init(router *mux.Router, apps *apps.Service) {
-	a := api{
+	a := &restapi{
 		mm:   apps.Mattermost,
 		apps: apps,
 	}

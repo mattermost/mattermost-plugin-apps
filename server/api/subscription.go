@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package store
+package api
 
 type Subject string
 
@@ -27,7 +27,12 @@ type Subscription struct {
 	Expand *Expand `json:"expand,omitempty"`
 }
 
-func equalScope(sub, other *Subscription) bool {
+type Notification struct {
+	Subject Subject
+	Context *Context
+}
+
+func (sub *Subscription) EqualScope(other *Subscription) bool {
 	s1, s2 := *sub, *other
 	s1.Expand, s2.Expand = nil, nil
 	return s1 == s2

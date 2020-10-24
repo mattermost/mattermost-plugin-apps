@@ -12,9 +12,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -22,7 +22,7 @@ const AppSecret = "1234"
 
 const (
 	PathManifest                = "/mattermost-app.json"
-	PathNotifyUserJoinedChannel = "/notify/" + string(store.SubjectUserJoinedChannel)
+	PathNotifyUserJoinedChannel = "/notify/" + string(api.SubjectUserJoinedChannel)
 	PathInstall                 = "/form/install"
 	PathConnectedInstall        = "/form/connected_install"
 	PathPing                    = "/form/ping"
@@ -62,7 +62,7 @@ func (h *helloapp) AppURL(path string) string {
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
-type CallHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error)
+type CallHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error)
 
 func call(h CallHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -72,7 +72,7 @@ func call(h CallHandler) http.HandlerFunc {
 			return
 		}
 
-		data, err := apps.UnmarshalCallReader(req.Body)
+		data, err := api.UnmarshalCallFromReader(req.Body)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return
@@ -86,7 +86,7 @@ func call(h CallHandler) http.HandlerFunc {
 	}
 }
 
-type notifyHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Notification) (int, error)
+type notifyHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Notification) (int, error)
 
 func notify(h notifyHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -96,7 +96,7 @@ func notify(h notifyHandler) http.HandlerFunc {
 			return
 		}
 
-		data := apps.Notification{}
+		data := api.Notification{}
 		err = json.NewDecoder(req.Body).Decode(&data)
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)

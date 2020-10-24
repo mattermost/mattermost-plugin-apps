@@ -8,20 +8,19 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
-	Manifest      *store.Manifest
+	Manifest      *api.Manifest
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *store.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -39,7 +38,7 @@ func NewInstallAppDialog(manifest *store.Manifest, secret, pluginURL string, com
 			Default:     secret,
 		},
 	}
-	if manifest.RequestedPermissions.Contains(store.PermissionActAsUser) {
+	if manifest.RequestedPermissions.Contains(api.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -129,17 +128,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	app, out, err := d.apps.API.InstallApp(
-		&apps.InInstallApp{
+		&api.InInstallApp{
 			OAuth2TrustedApp:   noUserConsentForOAuth2,
 			AppSecret:          secret,
 			GrantedPermissions: stateData.Manifest.RequestedPermissions,
 		},
-		&apps.Context{
+		&api.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
 			TeamID:       stateData.TeamID,
 		},
-		apps.SessionToken(session.Token),
+		api.SessionToken(session.Token),
 	)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)

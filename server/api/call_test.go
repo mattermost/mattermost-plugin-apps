@@ -1,4 +1,4 @@
-package apps
+package api
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	}
 	`
 
-	data, err := UnmarshalCallData([]byte(payload))
+	data, err := UnmarshalCallFromData([]byte(payload))
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)

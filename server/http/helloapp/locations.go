@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -32,27 +32,27 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		return
 	}
 
-	locations := []apps.LocationInt{
-		&apps.ChannelHeaderIconLocation{
-			Location: apps.Location{
-				LocationType: apps.LocationChannelHeaderIcon,
+	locations := []api.LocationInt{
+		&api.ChannelHeaderIconLocation{
+			Location: api.Location{
+				LocationType: api.LocationChannelHeaderIcon,
 				FormURL:      h.AppURL(PathPing),
 			},
 			DropdownText: user.Username,
 			AriaText:     user.Username,
 			Icon:         sampleIcon,
 		},
-		&apps.PostMenuItemLocation{
-			Location: apps.Location{
-				LocationType: apps.LocationPostMenuItem,
+		&api.PostMenuItemLocation{
+			Location: api.Location{
+				LocationType: api.LocationPostMenuItem,
 				FormURL:      h.AppURL(PathPing),
 			},
 			Text: user.Username,
 			Icon: sampleIcon,
 		},
-		&apps.PostMenuItemLocation{
-			Location: apps.Location{
-				LocationType: apps.LocationPostMenuItem,
+		&api.PostMenuItemLocation{
+			Location: api.Location{
+				LocationType: api.LocationPostMenuItem,
 				FormURL:      h.AppURL(PathPing),
 			},
 			Text: "Remove " + user.Username,
