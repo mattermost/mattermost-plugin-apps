@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -24,6 +25,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"install":         s.executeInstall,
 		"debug-clean":     s.executeDebugClean,
 		"debug-locations": s.executeDebugLocations,
+		"debug-embedded":  s.executeDebugEmbedded,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -62,4 +64,23 @@ func (s *service) executeDebugLocations(params *params) (*model.CommandResponse,
 		return normalOut(params, md.MD("error"), err)
 	}
 	return normalOut(params, md.JSONBlock(locations), nil)
+}
+
+func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
+	_, err := s.apps.Client.PostCall(&apps.Call{
+		FormURL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
+		Context: &apps.Context{
+			AppID:        "hello",
+			ActingUserID: params.commandArgs.UserId,
+			ChannelID:    params.commandArgs.ChannelId,
+			TeamID:       params.commandArgs.TeamId,
+			UserID:       params.commandArgs.UserId,
+		},
+	})
+
+	if err != nil {
+		return normalOut(params, nil, err)
+	}
+
+	return normalOut(params, md.MD("The app will send you the form"), nil)
 }
