@@ -23,7 +23,7 @@ const (
 	ElementTypeChannel = ElementType("channel")
 )
 
-type elementProps struct {
+type ElementProps struct {
 	Type ElementType `json:"type"`
 
 	// Name is the name of the JSON field to use when submitting
@@ -33,21 +33,21 @@ type elementProps struct {
 	// Label, and in Autocomplete as Help
 	Description string `json:"description,omitempty"`
 
-	IsRequired bool `json:"is_required,omitempty"`
+	IsRequired        bool     `json:"is_required,omitempty"`
+	RefreshOnChangeTo []string `json:"refresh_on_change_to,omitempty"`
 }
 
-type staticSelectElementProps struct {
+type StaticSelectElementProps struct {
 	Options []SelectOption `json:"options,omitempty"`
 }
 
-type dynamicSelectElementProps struct {
+type DynamicSelectElementProps struct {
 	// RefreshOnChangeTo indicates that changes to the listed fields must reload
 	// the list (and reset the current value if the old one is not available).
-	RefreshOnChangeTo []string `json:"refresh_on_change_to,omitempty"`
-	RefreshURL        string   `json:"url,omitempty"`
+	RefreshURL string `json:"refresh_url,omitempty"`
 }
 
-type textElementProps struct {
+type TextElementProps struct {
 	Subtype   string `json:"subtype,omitempty"`
 	MinLength int    `json:"min_length,omitempty"`
 	MaxLength int    `json:"max_length,omitempty"`
@@ -55,8 +55,9 @@ type textElementProps struct {
 }
 
 type SelectOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	IconData string `json:"icon_data"`
 }
 
 // type unmarshalledElement struct {

@@ -11,6 +11,7 @@ type LocationType string
 const (
 	LocationPostMenuItem      LocationType = "post_menu_item"
 	LocationChannelHeaderIcon LocationType = "channel_header_icon"
+	LocationSlashCommand      LocationType = "slash_command"
 )
 
 type LocationInt interface {
@@ -18,6 +19,7 @@ type LocationInt interface {
 }
 
 type Location struct {
+	AppID        string       `json:"app_id"`
 	LocationType LocationType `json:"location_type"`
 	LocationID   string       `json:"location_id"`
 	FormURL      string       `json:"form_url"`
@@ -38,6 +40,13 @@ type ChannelHeaderIconLocation struct {
 	DropdownText string `json:"dropdown_text"`
 	AriaText     string `json:"aria_text"`
 	Icon         string `json:"icon"`
+}
+
+type SlashCommandLocation struct {
+	Location
+	Trigger string `json:"trigger"`
+	Icon    string `json:"icon"`
+	Text    string `json:"text"`
 }
 
 func LocationFromMap(m map[string]interface{}) (LocationInt, error) {
@@ -62,6 +71,13 @@ func LocationFromMap(m map[string]interface{}) (LocationInt, error) {
 		return &specificLocation, nil
 	case LocationPostMenuItem:
 		var specificLocation PostMenuItemLocation
+		err = json.Unmarshal(buf, &specificLocation)
+		if err != nil {
+			return nil, errors.Wrap(err, "error decoding post menu item location")
+		}
+		return &specificLocation, nil
+	case LocationSlashCommand:
+		var specificLocation SlashCommandLocation
 		err = json.Unmarshal(buf, &specificLocation)
 		if err != nil {
 			return nil, errors.Wrap(err, "error decoding post menu item location")

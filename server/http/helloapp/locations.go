@@ -35,6 +35,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 	locations := []apps.LocationInt{
 		&apps.ChannelHeaderIconLocation{
 			Location: apps.Location{
+				AppID:        AppID,
 				LocationType: apps.LocationChannelHeaderIcon,
 				FormURL:      h.AppURL(PathPing),
 			},
@@ -44,6 +45,7 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		},
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
+				AppID:        AppID,
 				LocationType: apps.LocationPostMenuItem,
 				FormURL:      h.AppURL(PathPing),
 			},
@@ -52,11 +54,22 @@ func (h *helloapp) HandleLocations(w http.ResponseWriter, req *http.Request, use
 		},
 		&apps.PostMenuItemLocation{
 			Location: apps.Location{
+				AppID:        AppID,
 				LocationType: apps.LocationPostMenuItem,
 				FormURL:      h.AppURL(PathPing),
 			},
 			Text: "Remove " + user.Username,
 			Icon: sampleIcon,
+		},
+		&apps.SlashCommandLocation{
+			Location: apps.Location{
+				AppID:        AppID,
+				LocationType: apps.LocationSlashCommand,
+				FormURL:      h.AppURL("/form/command_definition"),
+			},
+			Trigger: "hello",
+			Text:    "Say hello!",
+			Icon:    sampleIcon,
 		},
 	}
 

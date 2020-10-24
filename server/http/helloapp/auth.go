@@ -157,3 +157,21 @@ func (h *helloapp) DM(userID string, format string, args ...interface{}) {
 		Message:   fmt.Sprintf(format, args...),
 	})
 }
+
+func (h *helloapp) Ephemeral(userID, channelID string, format string, args ...interface{}) {
+	ac, err := h.getAppCredentials()
+	if err != nil {
+		return
+	}
+
+	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
+	mmClient.SetOAuthToken(ac.BotAccessToken)
+
+	mmClient.CreatePostEphemeral(&model.PostEphemeral{
+		UserID: userID,
+		Post: &model.Post{
+			ChannelId: channelID,
+			Message:   fmt.Sprintf(format, args...),
+		},
+	})
+}

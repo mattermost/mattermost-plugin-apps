@@ -4,35 +4,36 @@ type Autocomplete struct {
 	Form
 }
 
-type autocompleteElementProps struct {
+type AutocompleteElementProps struct {
 	FlagName string `json:"flag_name"`
 
 	// Hint describes what choices may come after selecting this choice
-	Hint string `json:"label"`
+	Hint string `json:"hint"`
 
-	RoleID string `json:"role_id"`
+	RoleID     string `json:"role_id"`
+	Positional bool   `json:"positional"`
 }
 
-type autocompleteProps struct {
-	elementProps
-	autocompleteElementProps
+type AutocompleteProps struct {
+	*ElementProps
+	*AutocompleteElementProps
 }
 
 type AutocompleteText struct {
-	autocompleteProps
-	textElementProps
+	AutocompleteProps
+	TextElementProps
 }
 
 type AutocompleteStaticSelect struct {
-	autocompleteProps
-	staticSelectElementProps
+	*AutocompleteProps
+	*StaticSelectElementProps
 }
 
 type AutocompleteDynamicSelect struct {
-	autocompleteProps
-	dynamicSelectElementProps
+	AutocompleteProps
+	DynamicSelectElementProps
 }
 
-type AutocompleteBool autocompleteProps
-type AutocompleteUser autocompleteProps
-type AutocompleteChannel autocompleteProps
+type AutocompleteBool AutocompleteProps
+type AutocompleteUser AutocompleteProps
+type AutocompleteChannel AutocompleteProps

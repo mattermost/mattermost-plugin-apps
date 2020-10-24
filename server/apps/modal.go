@@ -10,33 +10,33 @@ type Modal struct {
 	Form
 }
 
-type modalElementProps struct {
+type ModalElementProps struct {
 	Label string // Autocomplete:
 }
 
-type modalProps struct {
-	elementProps
-	modalElementProps
+type ModalProps struct {
+	ElementProps
+	ModalElementProps
 }
 
 type ModalTextElement struct {
-	modalProps
-	textElementProps
+	ModalProps
+	TextElementProps
 }
 
 type ModalStaticSelectElement struct {
-	modalProps
-	staticSelectElementProps
+	ModalProps
+	StaticSelectElementProps
 }
 
 type ModalDynamicSelectElement struct {
-	modalProps
-	dynamicSelectElementProps
+	ModalProps
+	DynamicSelectElementProps
 }
 
-type ModalBoolElement modalProps
-type ModalUserElement modalProps
-type ModalChannelElement modalProps
+type ModalBoolElement ModalProps
+type ModalUserElement ModalProps
+type ModalChannelElement ModalProps
 
 func (s *service) CallModal(call *Call) (*CallResponse, error) {
 	return nil, nil

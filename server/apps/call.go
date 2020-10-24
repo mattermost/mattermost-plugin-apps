@@ -27,7 +27,7 @@ const (
 )
 
 type CallResponse struct {
-	Type CallResponseType
+	Type CallResponseType `json:"type,omitempty"`
 
 	Markdown md.MD       `json:"markdown,omitempty"`
 	Data     interface{} `json:"data,omitempty"`
@@ -63,7 +63,12 @@ func (fv *FormValues) Get(name string) string {
 	if fv == nil || fv.Data == nil {
 		return ""
 	}
-	return fv.Data[name].(string)
+
+	v, ok := fv.Data[name].(string)
+	if !ok {
+		return ""
+	}
+	return v
 }
 
 func UnmarshalCallData(data []byte) (*Call, error) {
