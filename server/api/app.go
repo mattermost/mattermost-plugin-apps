@@ -7,15 +7,18 @@ import (
 type AppID string
 
 type Manifest struct {
-	AppID                AppID       `json:"app_id"`
-	OAuth2CallbackURL    string      `json:"oauth2_callback_url,omitempty"`
-	Description          string      `json:"description,omitempty"`
-	DisplayName          string      `json:"display_name,omitempty"`
-	HomepageURL          string      `json:"homepage_url,omitempty"`
-	InstallFormURL       string      `json:"install_form_url,omitempty"`
+	AppID       AppID  `json:"app_id"`
+	DisplayName string `json:"display_name,omitempty"`
+	Description string `json:"description,omitempty"`
+
+	OAuth2CallbackURL string `json:"oauth2_callback_url,omitempty"`
+	HomepageURL       string `json:"homepage_url,omitempty"`
+	RootURL           string `json:"root_url"`
+
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
-	RootURL              string      `json:"root_url"`
-	LocationsURL         string      `json:"location_url"`
+
+	Install   string `json:"install,omitempty"`
+	Functions string `json:"functions"`
 }
 
 type App struct {

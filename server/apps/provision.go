@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (s *service) ProvisionApp(in *api.InProvisionApp, cc *api.Context, sessionToken api.SessionToken) (*api.App, md.MD, error) {
+func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err

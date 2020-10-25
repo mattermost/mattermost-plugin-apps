@@ -10,13 +10,13 @@ import (
 type SessionToken string
 
 type API interface {
-	GetLocations(userID, channelID string) ([]LocationInt, error)
+	GetBindings(*Context) ([]*Binding, error)
 
-	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*App, md.MD, error)
-	InstallApp(*InInstallApp, *Context, SessionToken) (*App, md.MD, error)
+	ProvisionApp(*Context, SessionToken, *InProvisionApp) (*App, md.MD, error)
+	InstallApp(*Context, SessionToken, *InInstallApp) (*App, md.MD, error)
 
 	Call(*Call) (*CallResponse, error)
-	NotifySubscribedApps(subj Subject, cc *Context) error
+	Notify(cc *Context, subj Subject) error
 }
 
 type InInstallApp struct {

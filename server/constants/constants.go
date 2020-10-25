@@ -12,9 +12,21 @@ const (
 	BotUsername    = "appsbot"
 	BotDisplayName = "Mattermost Apps"
 	BotDescription = "Mattermost Apps Registry and API proxy."
+)
 
+const (
 	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
 	ProxyPath             = "/proxy"
 	HelloAppPath          = "/hello"
+)
+
+const (
+	AppID              = "app_id"
+	TeamID             = "team_id"
+	ChannelID          = "channel_id"
+	ActingUserID       = "acting_user_id"
+	PostID             = "post_id"
+	BotAccessToken     = "bot_access_token"
+	OAuth2ClientSecret = "oauth2_client_secret" // nolint:gosec
 )

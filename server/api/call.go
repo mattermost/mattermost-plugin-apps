@@ -8,12 +8,11 @@ import (
 )
 
 type Call struct {
-	FormURL string      `json:"form_url,omitempty"`
-	Values  FormValues  `json:"values,omitempty"`
-	Context *Context    `json:"context,omitempty"`
-	Expand  *Expand     `json:"expand,omitempty"`
-	AsModal bool        `json:"as_modal,omitempty"`
-	From    []*Location `json:"from,omitempty"`
+	URL        string            `json:"url,omitempty"`
+	Values     map[string]string `json:"values,omitempty"`
+	Context    *Context          `json:"context,omitempty"`
+	AsModal    bool              `json:"as_modal,omitempty"`
+	RawCommand string            `json:"raw_command,omitempty"`
 }
 
 type CallResponseType string
@@ -39,22 +38,8 @@ type CallResponse struct {
 	Call *Call `json:"call,omitempty"`
 }
 
-type FormValues struct {
-	Data map[string]interface{} `json:"data"`
-	Raw  string                 `json:"raw"`
-}
-
-func (fv *FormValues) Get(name string) string {
-	if fv == nil || fv.Data == nil {
-		return ""
-	}
-	return fv.Data[name].(string)
-}
-
 func UnmarshalCallFromData(data []byte) (*Call, error) {
-	call := Call{
-		Context: &Context{},
-	}
+	call := Call{}
 	err := json.Unmarshal(data, &call)
 	if err != nil {
 		return nil, err
@@ -63,9 +48,7 @@ func UnmarshalCallFromData(data []byte) (*Call, error) {
 }
 
 func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
-	call := Call{
-		Context: &Context{},
-	}
+	call := Call{}
 	err := json.NewDecoder(in).Decode(&call)
 	if err != nil {
 		return nil, err

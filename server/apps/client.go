@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -23,9 +24,9 @@ const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
 	GetManifest(manifestURL string) (*api.Manifest, error)
-	PostCall(call *api.Call) (*api.CallResponse, error)
+	PostFunction(call *api.Call) (*api.CallResponse, error)
 	PostNotification(n *api.Notification) error
-	GetLocations(appID api.AppID, userID, channelID string) ([]api.LocationInt, error)
+	GetFunction(call *api.Call) (*api.Function, error)
 }
 
 type JWTClaims struct {
@@ -57,13 +58,13 @@ func (c *client) PostNotification(n *api.Notification) error {
 	return nil
 }
 
-func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
+func (c *client) PostFunction(call *api.Call) (*api.CallResponse, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.post(app, call.Context.ActingUserID, call.FormURL, call)
+	resp, err := c.post(app, call.Context.ActingUserID, call.URL, call)
 	if err != nil {
 		return nil, err
 	}
@@ -163,45 +164,50 @@ func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetLocations(appID api.AppID, userID, channelID string) ([]api.LocationInt, error) {
-	app, err := c.store.GetApp(appID)
+func (c *client) GetFunction(call *api.Call) (*api.Function, error) {
+	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting app")
+		return nil, errors.Wrap(err, "failed to get app")
 	}
 
-	url, err := url.Parse(app.Manifest.LocationsURL)
+	resp, err := c.get(app, call.Context.ActingUserID, appendGetContext(call.URL, call.Context))
 	if err != nil {
-		return nil, errors.Wrap(err, "error parsing the url")
-	}
-	q := url.Query()
-	q.Add("user_id", userID)
-	q.Add("channel_id", channelID)
-	url.RawQuery = q.Encode()
-
-	resp, err := c.get(app, userID, url.String())
-	if err != nil {
-		return nil, errors.Wrap(err, "error fetching the location")
+		return nil, errors.Wrap(err, "failed to get function")
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("returned with status %s", resp.Status)
 	}
 
-	var bareLocations []map[string]interface{}
-	locations := []api.LocationInt{}
-	err = json.NewDecoder(resp.Body).Decode(&bareLocations)
+	f := api.Function{}
+	err = json.NewDecoder(resp.Body).Decode(&f)
 	if err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling bare location list")
+		return nil, errors.Wrap(err, "error unmarshalling function")
 	}
-	for _, bareLocation := range bareLocations {
-		bareLocation["app_id"] = appID
-		location, err := api.LocationFromMap(bareLocation)
-		if err != nil {
-			return nil, errors.Wrap(err, "error passing from map to location")
-		}
-		locations = append(locations, location)
-	}
+	return &f, nil
+}
 
-	return locations, nil
+func appendGetContext(inURL string, cc *api.Context) string {
+	if cc == nil {
+		return inURL
+	}
+	out, err := url.Parse(inURL)
+	if err != nil {
+		return inURL
+	}
+	q := out.Query()
+	if cc.TeamID != "" {
+		q.Add(constants.TeamID, cc.TeamID)
+	}
+	if cc.ChannelID != "" {
+		q.Add(constants.ChannelID, cc.ChannelID)
+	}
+	if cc.ActingUserID != "" {
+		q.Add(constants.ActingUserID, cc.ActingUserID)
+	}
+	if cc.PostID != "" {
+		q.Add(constants.PostID, cc.PostID)
+	}
+	out.RawQuery = q.Encode()
+	return out.String()
 }

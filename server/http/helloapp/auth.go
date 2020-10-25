@@ -84,7 +84,7 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// for now hacking access to apps object and issuing the call from within
 	// the app.
 
-	cr, _ := h.apps.Client.PostCall(call)
+	cr, _ := h.apps.Client.PostFunction(call)
 
 	conf := h.apps.Configurator.GetConfig()
 	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Context.ActingUserID, &model.Post{

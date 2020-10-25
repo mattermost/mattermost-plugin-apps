@@ -14,40 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
-	err := h.storeAppCredentials(&AppCredentials{
-		BotAccessToken:     call.Values.Get("bot_access_token"),
-		BotUserID:          call.Context.App.BotUserID,
-		OAuth2ClientID:     call.Context.App.OAuth2ClientID,
-		OAuth2ClientSecret: call.Values.Get("oauth2_client_secret"),
-	})
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	err = h.InitOAuther()
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	connectURL, err := h.startOAuth2Connect(call.Context.ActingUserID, &api.Call{
-		FormURL: h.AppURL(PathConnectedInstall),
-		Context: call.Context,
-	})
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	httputils.WriteJSON(w,
-		api.CallResponse{
-			Type: api.CallResponseTypeOK,
-			Markdown: md.Markdownf(
-				"**Hallo სამყარო** needs to continue its installation using your system administrator's credentials. Please [connect](%s) the application to your Mattermost account.",
-				connectURL),
-		})
-	return http.StatusOK, nil
-}
-
-func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
+func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
 	var teams []*model.Team
 	var team *model.Team
 	var channel *model.Channel

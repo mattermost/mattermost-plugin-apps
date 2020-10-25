@@ -57,9 +57,10 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
-	locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
-	if err != nil {
-		return normalOut(params, md.MD("error"), err)
-	}
-	return normalOut(params, md.JSONBlock(locations), nil)
+	// locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
+	// if err != nil {
+	// 	return normalOut(params, md.MD("error"), err)
+	// }
+	// return normalOut(params, md.JSONBlock(locations), nil)
+	return normalOut(params, md.MD("debug"), nil)
 }
