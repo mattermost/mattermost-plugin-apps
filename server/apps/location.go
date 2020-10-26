@@ -12,6 +12,7 @@ type LocationType string
 const (
 	LocationPostMenuItem      LocationType = "post_menu_item"
 	LocationChannelHeaderIcon LocationType = "channel_header_icon"
+	LocationEmbeddedForm      LocationType = "embedded_form"
 )
 
 type LocationInt interface {

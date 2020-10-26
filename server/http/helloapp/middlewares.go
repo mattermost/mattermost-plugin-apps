@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CheckAuthentication(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func checkAuthentication(f func(http.ResponseWriter, *http.Request, apps.JWTClaims)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		authValue := req.Header.Get(apps.OutgoingAuthHeader)
 		if !strings.HasPrefix(authValue, "Bearer ") {
@@ -25,19 +25,19 @@ func CheckAuthentication(f func(http.ResponseWriter, *http.Request)) func(http.R
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
-			return []byte(AppSecret), nil
+			return []byte(appSecret), nil
 		})
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return
 		}
 
-		f(w, req)
+		f(w, req, claims)
 	}
 }
 
-func ExtractUserAndChannelID(f func(http.ResponseWriter, *http.Request, string, string)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
+func extractUserAndChannelID(f func(http.ResponseWriter, *http.Request, string, string)) func(http.ResponseWriter, *http.Request, apps.JWTClaims) {
+	return func(w http.ResponseWriter, req *http.Request, _ apps.JWTClaims) {
 		userID := req.URL.Query().Get("user_id")
 		if userID == "" {
 			httputils.WriteBadRequestError(w, errors.New("missing user ID"))

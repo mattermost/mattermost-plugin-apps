@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -21,11 +22,14 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":            s.executeInfo,
-		"install":         s.executeInstall,
+		"info":    s.executeInfo,
+		"install": s.executeInstall,
+		// For Debug
 		"debug-clean":     s.executeDebugClean,
 		"debug-locations": s.executeDebugLocations,
 		"debug-embedded":  s.executeDebugEmbedded,
+		// For internal use only
+		"openDialog": s.openDialog,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -83,4 +87,26 @@ func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, 
 	}
 
 	return normalOut(params, md.MD("The app will send you the form"), nil)
+}
+
+func (s *service) openDialog(params *params) (*model.CommandResponse, error) {
+	if len(params.current) != 3 {
+		return normalOut(params, nil, errors.New("not enough parameters"))
+	}
+	appID := params.current[0]
+	url := params.current[1]
+	dialogID := params.current[2]
+	dialog, err := s.apps.Client.GetDialog(store.AppID(appID), url, params.commandArgs.UserId, dialogID)
+	if err != nil {
+		return normalOut(params, nil, err)
+	}
+
+	dialog.TriggerId = params.commandArgs.TriggerId
+
+	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(*dialog)
+	if err != nil {
+		return normalOut(params, nil, err)
+	}
+
+	return normalOut(params, md.MD(""), nil)
 }

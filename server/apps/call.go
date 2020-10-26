@@ -24,10 +24,11 @@ const (
 	CallResponseTypeOK       = CallResponseType("ok")
 	CallResponseTypeNavigate = CallResponseType("navigate")
 	CallResponseTypeError    = CallResponseType("error")
+	CallResponseTypeCommand  = CallResponseType("command")
 )
 
 type CallResponse struct {
-	Type CallResponseType
+	Type CallResponseType `json:"type,omitempty"`
 
 	Markdown md.MD                  `json:"markdown,omitempty"`
 	Data     map[string]interface{} `json:"data,omitempty"`
@@ -63,7 +64,12 @@ func (fv *FormValues) Get(name string) string {
 	if fv == nil || fv.Data == nil {
 		return ""
 	}
-	return fv.Data[name].(string)
+	value, ok := fv.Data[name].(string)
+	if !ok {
+		return ""
+	}
+
+	return value
 }
 
 func UnmarshalCallData(data []byte) (*Call, error) {

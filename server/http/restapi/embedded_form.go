@@ -54,6 +54,13 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 		Values: apps.FormValues{
 			Data: dialogRequest.Submission,
 		},
+		From: []*apps.Location{
+			{
+				LocationType: apps.LocationEmbeddedForm,
+				AppID:        store.AppID(appID),
+				FormURL:      dialogRequest.URL,
+			},
+		},
 	}
 
 	resp, err := a.apps.Client.PostCall(c)

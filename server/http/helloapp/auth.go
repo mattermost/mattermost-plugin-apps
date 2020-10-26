@@ -2,7 +2,6 @@ package helloapp
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
@@ -14,8 +13,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (h *helloapp) InitOAuther() error {
-	oauth2Config, err := h.GetOAuthConfig()
+func (h *helloapp) initOAuther() error {
+	oauth2Config, err := h.getOAuthConfig()
 	if err != nil {
 		return err
 	}
@@ -23,12 +22,12 @@ func (h *helloapp) InitOAuther() error {
 		*oauth2Config,
 		h.finishOAuth2Connect,
 		logger.NewNilLogger(), // TODO replace with a real logger
-		oauther.OAuthURL(constants.HelloAppPath+PathOAuth2),
+		oauther.OAuthURL(constants.HelloAppPath+pathOAuth2),
 		oauther.StorePrefix("hello_oauth_"))
 	return nil
 }
 
-func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
+func (h *helloapp) getOAuthConfig() (*oauth2.Config, error) {
 	conf := h.apps.Configurator.GetConfig()
 
 	creds, err := h.getAppCredentials()
@@ -74,7 +73,7 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	if err != nil {
 		return
 	}
-	call.Context.AppID = AppID
+	call.Context.AppID = appID
 
 	// TODO 2/5 we should wrap the OAuther for the users as a "service" so that
 	//  - startOAuth2Connect is a Call
@@ -89,71 +88,5 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	conf := h.apps.Configurator.GetConfig()
 	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Context.ActingUserID, &model.Post{
 		Message: cr.Markdown.String(),
-	})
-}
-
-const AppCredentialsKey = "key_app_credentials"
-
-type AppCredentials struct {
-	BotAccessToken     string
-	BotUserID          string
-	OAuth2ClientID     string
-	OAuth2ClientSecret string
-}
-
-func (h *helloapp) storeAppCredentials(ac *AppCredentials) error {
-	_, err := h.apps.Mattermost.KV.Set(AppCredentialsKey, ac)
-	return err
-}
-
-func (h *helloapp) getAppCredentials() (*AppCredentials, error) {
-	creds := AppCredentials{}
-	err := h.apps.Mattermost.KV.Get(AppCredentialsKey, &creds)
-	if err != nil {
-		return nil, err
-	}
-	return &creds, nil
-}
-
-func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
-	t, err := h.OAuther.GetToken(userID)
-	if err != nil {
-		return err
-	}
-	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
-	mmClient.SetOAuthToken(t.AccessToken)
-	return f(mmClient)
-}
-
-func (h *helloapp) asBot(f func(mmclient *model.Client4, botUserID string) error) error {
-	creds, err := h.getAppCredentials()
-	if err != nil {
-		return errors.Wrap(err, "failed to retrieve app bot credentials")
-	}
-
-	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
-	mmClient.SetToken(creds.BotAccessToken)
-
-	return f(mmClient, creds.BotUserID)
-}
-
-func (h *helloapp) DM(userID string, format string, args ...interface{}) {
-	ac, err := h.getAppCredentials()
-	if err != nil {
-		return
-	}
-
-	mmClient := model.NewAPIv4Client(h.apps.Configurator.GetConfig().MattermostSiteURL)
-	mmClient.SetOAuthToken(ac.BotAccessToken)
-
-	// TODO: Is this the right way to send a Bot DM?
-	channel, _ := mmClient.CreateDirectChannel(ac.BotUserID, userID)
-	if channel == nil {
-		return
-	}
-
-	mmClient.CreatePost(&model.Post{
-		ChannelId: channel.Id,
-		Message:   fmt.Sprintf(format, args...),
 	})
 }

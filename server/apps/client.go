@@ -16,6 +16,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
@@ -25,6 +26,7 @@ type Client interface {
 	PostCall(call *Call) (*CallResponse, error)
 	PostNotification(n *Notification) error
 	GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error)
+	GetDialog(appID store.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
 }
 
 type JWTClaims struct {
@@ -203,4 +205,37 @@ func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]Lo
 	}
 
 	return locations, nil
+}
+
+func (c *client) GetDialog(appID store.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
+	app, err := c.store.GetApp(appID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting app")
+	}
+
+	url, err := url.Parse(dialogURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing the url")
+	}
+	q := url.Query()
+	q.Add("dialogID", dialogID)
+	url.RawQuery = q.Encode()
+
+	resp, err := c.get(app, userID, url.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "error fetching the location")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("returned with status %s", resp.Status)
+	}
+
+	var dialog model.OpenDialogRequest
+	err = json.NewDecoder(resp.Body).Decode(&dialog)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot decode dialog")
+	}
+
+	return &dialog, nil
 }

@@ -18,19 +18,29 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-const AppSecret = "1234"
+const appSecret = "1234"
 
 const (
-	PathManifest                = "/mattermost-app.json"
-	PathNotifyUserJoinedChannel = "/notify/" + string(store.SubjectUserJoinedChannel)
-	PathInstall                 = "/form/install"
-	PathConnectedInstall        = "/form/connected_install"
-	PathPing                    = "/form/ping"
-	PathSubmitEmbedded          = "/form/submit_embedded"
-	PathCreateEmbedded          = "/form/create_embedded"
-	PathOAuth2                  = "/oauth2"
-	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
-	PathLocations               = "/locations"
+	pathManifest                = "/mattermost-app.json"
+	pathNotifyUserJoinedChannel = "/notify/" + string(store.SubjectUserJoinedChannel)
+
+	pathInstall            = "/form/install"
+	pathConnectedInstall   = "/form/connected_install"
+	pathPing               = "/form/ping"
+	pathCreateEmbeddedPing = "/form/embedded/ping"
+
+	pathOAuth2         = "/oauth2"
+	pathOAuth2Complete = "/oauth2/complete" // /complete comes from OAuther
+
+	pathLocations = "/locations"
+
+	pathDialogs          = "/dialog"
+	pathOpenPingDialog   = pathDialogs + "/open/ping"
+	pathSubmitPingDialog = pathDialogs + "/submit/ping"
+
+	// DEBUG
+	pathSubmitEmbedded = "/form/submit_embedded"
+	pathCreateEmbedded = "/form/create_embedded"
 )
 
 type helloapp struct {
@@ -38,6 +48,7 @@ type helloapp struct {
 	OAuther oauther.OAuther
 }
 
+// Init hello app router
 func Init(router *mux.Router, apps *apps.Service) {
 	h := helloapp{
 		apps: apps,
@@ -45,30 +56,37 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
 
-	subrouter.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
-	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
+	subrouter.HandleFunc(pathManifest, h.handleManifest).Methods("GET")
+	subrouter.PathPrefix(pathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
-	subrouter.HandleFunc(PathNotifyUserJoinedChannel, notify(h.handleUserJoinedChannel)).Methods("POST")
+	subrouter.HandleFunc(pathNotifyUserJoinedChannel, notify(h.handleUserJoinedChannel)).Methods("POST")
 
-	subrouter.HandleFunc(PathInstall, call(h.handleInstall)).Methods("POST")
-	subrouter.HandleFunc(PathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
-	subrouter.HandleFunc(PathPing, call(h.handlePing)).Methods("POST")
-	subrouter.HandleFunc(PathSubmitEmbedded, call(h.handleSubmitEmbedded)).Methods("POST")
-	subrouter.HandleFunc(PathCreateEmbedded, call(h.handleCreateEmbedded)).Methods("POST")
+	subrouter.HandleFunc(pathInstall, call(h.handleInstall)).Methods("POST")
+	subrouter.HandleFunc(pathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
 
-	subrouter.HandleFunc(PathLocations, CheckAuthentication(ExtractUserAndChannelID(h.HandleLocations))).Methods("GET")
+	subrouter.HandleFunc(pathPing, call(h.handlePing)).Methods("POST")
+	subrouter.HandleFunc(pathCreateEmbeddedPing, call(h.handleCreatePingEmbedded)).Methods("POST")
+	subrouter.HandleFunc(pathOpenPingDialog, call(h.handleOpenPingDialog)).Methods("POST")
+	subrouter.HandleFunc(pathSubmitPingDialog, h.handleSubmitPingDialog).Methods("POST")
 
-	_ = h.InitOAuther()
+	subrouter.HandleFunc(pathLocations, checkAuthentication(extractUserAndChannelID(h.handleLocations))).Methods("GET")
+	subrouter.HandleFunc(pathDialogs, checkAuthentication(h.handleDialog)).Methods("GET")
+
+	// DEBUG
+	subrouter.HandleFunc(pathSubmitEmbedded, call(h.handleSubmitEmbedded)).Methods("POST")
+	subrouter.HandleFunc(pathCreateEmbedded, call(h.handleCreateEmbedded)).Methods("POST")
+
+	_ = h.initOAuther()
 }
 
-func (h *helloapp) AppURL(path string) string {
+func (h *helloapp) appURL(path string) string {
 	conf := h.apps.Configurator.GetConfig()
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
-type CallHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error)
+type callHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error)
 
-func call(h CallHandler) http.HandlerFunc {
+func call(h callHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		claims, err := checkJWT(req)
 		if err != nil {
@@ -127,11 +145,27 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(AppSecret), nil
+		return []byte(appSecret), nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &claims, nil
+}
+
+func (h *helloapp) handleDialog(w http.ResponseWriter, req *http.Request, _ apps.JWTClaims) {
+	dialogID := req.URL.Query().Get("dialogID")
+	if dialogID == "" {
+		httputils.WriteBadRequestError(w, errors.New("dialog id not provided"))
+		return
+	}
+
+	dialog, err := h.getDialog(dialogID)
+	if err != nil {
+		httputils.WriteInternalServerError(w, errors.Wrap(err, "error while getting dialog"))
+		return
+	}
+
+	httputils.WriteJSON(w, dialog)
 }

@@ -8,22 +8,20 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
-	err := h.asBot(func(mmclient *model.Client4, botUserID string) error {
-		post := &model.Post{
-			Message:   "Debug form",
-			ChannelId: data.Context.ChannelID,
-			UserId:    botUserID,
-		}
-		post.AddProp("appID", AppID)
-		post.AddProp("dialog", h.getDialogSmallSample())
+const (
+	dialogFieldMessage = "message"
+	dialogFieldUserID  = "user_id"
+)
 
-		_, resp := mmclient.CreatePost(post)
-		if resp.Error != nil {
-			return resp.Error
-		}
-		return nil
-	})
+func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
+	post := &model.Post{
+		Message:   "Debug form",
+		ChannelId: data.Context.ChannelID,
+	}
+	post.AddProp("appID", appID)
+	post.AddProp("dialog", h.getDialogSmallSample())
+
+	_, err := h.postAsBot(post)
 
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -59,9 +57,38 @@ func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) getDialogSmallSample() model.OpenDialogRequest {
-	return model.OpenDialogRequest{
-		URL: h.AppURL(PathSubmitEmbedded),
+func (h *helloapp) getDialogPing(isEmbedded bool, defaultMessage string) *model.OpenDialogRequest {
+	url := pathSubmitPingDialog
+	if isEmbedded {
+		url = pathPing
+	}
+
+	return &model.OpenDialogRequest{
+		TriggerId: appID,
+		URL:       h.appURL(url),
+		Dialog: model.Dialog{
+			IconURL: "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",
+			Elements: []model.DialogElement{
+				{
+					DisplayName: "Who do you want to ping?",
+					Name:        dialogFieldUserID,
+					Type:        "select",
+					DataSource:  "users",
+				},
+				{
+					DisplayName: "What do you want to say?",
+					Name:        dialogFieldMessage,
+					Type:        "text",
+					Default:     defaultMessage,
+				},
+			},
+		},
+	}
+}
+
+func (h *helloapp) getDialogSmallSample() *model.OpenDialogRequest {
+	return &model.OpenDialogRequest{
+		URL: h.appURL(pathSubmitEmbedded),
 		Dialog: model.Dialog{
 			Title:   "Title for Small Dialog Test",
 			IconURL: "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",
@@ -79,9 +106,9 @@ func (h *helloapp) getDialogSmallSample() model.OpenDialogRequest {
 	}
 }
 
-func (h *helloapp) getDialogFullSample() model.OpenDialogRequest {
-	return model.OpenDialogRequest{
-		URL: h.AppURL(PathSubmitEmbedded),
+func (h *helloapp) getDialogFullSample() *model.OpenDialogRequest {
+	return &model.OpenDialogRequest{
+		URL: h.appURL(pathSubmitEmbedded),
 		Dialog: model.Dialog{
 			Title:   "Title for Full Dialog Test",
 			IconURL: "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",

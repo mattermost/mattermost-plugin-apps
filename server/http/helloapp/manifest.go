@@ -8,26 +8,26 @@ import (
 )
 
 const (
-	AppID          = "hello"
-	AppDisplayName = "Hallo სამყარო"
-	AppDescription = "Hallo სამყარო test app"
+	appID          = "hello"
+	appDisplayName = "Hallo სამყარო"
+	appDescription = "Hallo სამყარო test app"
 )
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		store.Manifest{
-			AppID:       AppID,
-			DisplayName: AppDisplayName,
-			Description: AppDescription,
-			RootURL:     h.AppURL(""),
+			AppID:       appID,
+			DisplayName: appDisplayName,
+			Description: appDescription,
+			RootURL:     h.appURL(""),
 			RequestedPermissions: []store.PermissionType{
 				store.PermissionUserJoinedChannelNotification,
 				store.PermissionActAsUser,
 				store.PermissionActAsBot,
 			},
-			InstallFormURL:    h.AppURL(PathInstall),
-			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
-			LocationsURL:      h.AppURL(PathLocations),
-			HomepageURL:       h.AppURL("/"),
+			InstallFormURL:    h.appURL(pathInstall),
+			OAuth2CallbackURL: h.appURL(pathOAuth2Complete),
+			LocationsURL:      h.appURL(pathLocations),
+			HomepageURL:       h.appURL("/"),
 		})
 }
