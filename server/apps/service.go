@@ -6,26 +6,18 @@ package apps
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type SessionToken string
-
-type API interface {
-	Call(*Call) (*CallResponse, error)
-	InstallApp(*InInstallApp, *Context, SessionToken) (*store.App, md.MD, error)
-	NotifySubscribedApps(subj store.Subject, cc *Context) error
-	ProvisionApp(*InProvisionApp, *Context, SessionToken) (*store.App, md.MD, error)
-	GetLocations(userID, channelID string) ([]LocationInt, error)
-}
 
 type Service struct {
 	Configurator configurator.Service
 	Mattermost   *pluginapi.Client
 	Store        store.Service
-	API          API
+	API          api.API
 	Client       Client
 }
 

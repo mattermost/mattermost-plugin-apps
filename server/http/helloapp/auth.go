@@ -7,7 +7,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -56,7 +56,7 @@ func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
 	h.OAuther.ServeHTTP(w, req)
 }
 
-func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) (string, error) {
+func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *api.Call) (string, error) {
 	state, err := json.Marshal(callOnComplete)
 	if err != nil {
 		return "", err
@@ -70,7 +70,7 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) 
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
-	call, err := apps.UnmarshalCallData(payload)
+	call, err := api.UnmarshalCallFromData(payload)
 	if err != nil {
 		return
 	}

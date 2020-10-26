@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/pkg/errors"
 )
 
-func (a *api) handleSubscribe(w http.ResponseWriter, r *http.Request) {
+func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	var err error
 	actingUserID := ""
 	// logMessage := ""
@@ -33,7 +33,7 @@ func (a *api) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO check for sysadmin
 
-	var sub store.Subscription
+	var sub api.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return

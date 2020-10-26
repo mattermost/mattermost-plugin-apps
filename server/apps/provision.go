@@ -11,18 +11,12 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type InProvisionApp struct {
-	ManifestURL string
-	AppSecret   string
-	Force       bool
-}
-
-func (s *service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
+func (s *service) ProvisionApp(in *api.InProvisionApp, cc *api.Context, sessionToken api.SessionToken) (*api.App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
@@ -42,7 +36,7 @@ func (s *service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken Ses
 		return nil, "", err
 	}
 
-	app := &store.App{
+	app := &api.App{
 		Manifest:       manifest,
 		BotUserID:      bot.UserId,
 		BotUsername:    bot.Username,
@@ -60,7 +54,7 @@ func (s *service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken Ses
 	return app, md, nil
 }
 
-func (s *service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (s *service) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := s.Configurator.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

@@ -1,4 +1,4 @@
-package store
+package api
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"

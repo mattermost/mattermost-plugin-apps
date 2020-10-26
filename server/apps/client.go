@@ -14,6 +14,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -21,10 +22,10 @@ import (
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
-	GetManifest(manifestURL string) (*store.Manifest, error)
-	PostCall(call *Call) (*CallResponse, error)
-	PostNotification(n *Notification) error
-	GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error)
+	GetManifest(manifestURL string) (*api.Manifest, error)
+	PostCall(call *api.Call) (*api.CallResponse, error)
+	PostNotification(n *api.Notification) error
+	GetLocations(appID api.AppID, userID, channelID string) ([]api.LocationInt, error)
 }
 
 type JWTClaims struct {
@@ -42,7 +43,7 @@ func newClient(store store.Service) *client {
 	}
 }
 
-func (c *client) PostNotification(n *Notification) error {
+func (c *client) PostNotification(n *api.Notification) error {
 	app, err := c.store.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (c *client) PostNotification(n *Notification) error {
 	return nil
 }
 
-func (c *client) PostCall(call *Call) (*CallResponse, error) {
+func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (c *client) PostCall(call *Call) (*CallResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	cr := CallResponse{}
+	cr := api.CallResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	if err != nil {
 		return nil, err
@@ -77,7 +78,7 @@ func (c *client) PostCall(call *Call) (*CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (c *client) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (c *client) post(toApp *api.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -110,7 +111,7 @@ func (c *client) post(toApp *store.App, fromMattermostUserID string, url string,
 	return resp, nil
 }
 
-func (c *client) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
+func (c *client) get(toApp *api.App, fromMattermostUserID string, url string) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -132,7 +133,7 @@ func (c *client) get(toApp *store.App, fromMattermostUserID string, url string) 
 	return resp, nil
 }
 
-func (c *client) getClient(appID store.AppID) *http.Client {
+func (c *client) getClient(appID api.AppID) *http.Client {
 	return &http.Client{}
 }
 
@@ -146,8 +147,8 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
-	var manifest store.Manifest
+func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
+	var manifest api.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
@@ -162,7 +163,7 @@ func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
+func (c *client) GetLocations(appID api.AppID, userID, channelID string) ([]api.LocationInt, error) {
 	app, err := c.store.GetApp(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting app")
@@ -188,14 +189,14 @@ func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]Lo
 	}
 
 	var bareLocations []map[string]interface{}
-	locations := []LocationInt{}
+	locations := []api.LocationInt{}
 	err = json.NewDecoder(resp.Body).Decode(&bareLocations)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling bare location list")
 	}
 	for _, bareLocation := range bareLocations {
 		bareLocation["app_id"] = appID
-		location, err := LocationFromMap(bareLocation)
+		location, err := api.LocationFromMap(bareLocation)
 		if err != nil {
 			return nil, errors.Wrap(err, "error passing from map to location")
 		}

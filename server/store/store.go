@@ -5,6 +5,7 @@ package store
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
@@ -12,13 +13,13 @@ const prefixApp = "app_"
 const prefixSubs = "sub_"
 
 type Service interface {
-	DeleteApp(AppID) error
-	DeleteSub(*Subscription) error
-	GetApp(AppID) (*App, error)
-	ListApps() ([]AppID, error)
-	GetSubs(subject Subject, teamID, channelID string) ([]*Subscription, error)
-	StoreApp(*App) error
-	StoreSub(sub *Subscription) error
+	DeleteApp(api.AppID) error
+	DeleteSub(*api.Subscription) error
+	GetApp(api.AppID) (*api.App, error)
+	ListApps() ([]api.AppID, error)
+	GetSubs(subject api.Subject, teamID, channelID string) ([]*api.Subscription, error)
+	StoreApp(*api.App) error
+	StoreSub(sub *api.Subscription) error
 }
 
 type store struct {

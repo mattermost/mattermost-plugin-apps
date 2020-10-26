@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (a *api) handleLocations(w http.ResponseWriter, req *http.Request, actingUserID string) {
+func (a *restapi) handleLocations(w http.ResponseWriter, req *http.Request, actingUserID string) {
 	userID := req.URL.Query().Get("user_id")
 	if userID == "" {
 		httputils.WriteBadRequestError(w, errors.New("no user id"))
