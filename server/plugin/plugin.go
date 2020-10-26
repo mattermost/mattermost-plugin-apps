@@ -21,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
@@ -60,7 +59,6 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
 		helloapp.Init,
-		proxy.Init,
 		restapi.Init,
 	)
 

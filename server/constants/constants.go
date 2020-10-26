@@ -15,10 +15,14 @@ const (
 )
 
 const (
-	APIPath               = "/api/v1"
 	InteractiveDialogPath = "/dialog"
-	ProxyPath             = "/proxy"
 	HelloAppPath          = "/hello"
+)
+
+const (
+	APIPath       = "/api/v1"
+	SubscribePath = "/subscribe"
+	BindingsPath  = "/bindings"
 )
 
 const (

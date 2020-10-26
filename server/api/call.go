@@ -69,7 +69,7 @@ func MakeCall(url string, namevalues ...string) *Call {
 			namevalues = namevalues[1:]
 
 		default:
-			values[namevalues[0]] = values[namevalues[1]]
+			values[namevalues[0]] = namevalues[1]
 			namevalues = namevalues[2:]
 		}
 	}

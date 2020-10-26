@@ -1,4 +1,4 @@
-package proxy
+package restapi
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (p *proxy) handleCall(w http.ResponseWriter, req *http.Request) {
+func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 	call, err := api.UnmarshalCallFromReader(req.Body)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to unmarshal Call struct")
@@ -25,7 +25,7 @@ func (p *proxy) handleCall(w http.ResponseWriter, req *http.Request) {
 	}
 	call.Context.ActingUserID = actingUserID
 
-	res, err := p.apps.API.Call(call)
+	res, err := a.apps.API.Call(call)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return

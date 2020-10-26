@@ -12,6 +12,10 @@ import (
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
 func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
+	call := h.makeCall(PathMessage)
+	modal := *call
+	modal.AsModal = true
+
 	httputils.WriteJSON(w,
 		[]*api.Binding{
 			{
@@ -21,7 +25,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 						LocationID:  "message",
 						Hint:        "[--user] message",
 						Description: "send a message to a user",
-						Call:        h.makeCall(PathMessage),
+						Call:        call,
 					}, {
 						LocationID:  "manage",
 						Hint:        "subscribe | unsubscribe ",
@@ -47,7 +51,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 					{
 						LocationID:  "message",
 						Description: "message a user",
-						Call:        h.makeCall(PathMessage),
+						Call:        &modal,
 					},
 				},
 			},
