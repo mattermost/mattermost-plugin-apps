@@ -45,7 +45,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 		return nil, "", err
 	}
 
-	exp, err := s.newExpander(cc).Expand(
+	ecc, err := s.newExpander(cc).Expand(
 		&api.Expand{
 			App:    api.ExpandAll,
 			Config: api.ExpandSummary,
@@ -62,7 +62,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 				constants.BotAccessToken:     app.BotAccessToken,
 				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,
 			},
-			Context: exp,
+			Context: ecc,
 		})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")
