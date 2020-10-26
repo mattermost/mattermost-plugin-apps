@@ -21,6 +21,7 @@ const (
 
 const (
 	APIPath       = "/api/v1"
+	CallPath      = "/call"
 	SubscribePath = "/subscribe"
 	BindingsPath  = "/bindings"
 )

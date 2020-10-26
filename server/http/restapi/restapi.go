@@ -31,6 +31,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter := router.PathPrefix(constants.APIPath).Subrouter()
 	subrouter.HandleFunc(constants.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
+	subrouter.HandleFunc(constants.CallPath, a.handleCall).Methods("POST")
 	subrouter.HandleFunc(constants.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
 }
 
