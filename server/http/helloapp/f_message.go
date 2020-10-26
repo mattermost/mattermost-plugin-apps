@@ -12,20 +12,6 @@ const FieldUserID = "userID"
 const FieldMessage = "message"
 
 func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
-	b := &api.Binding{
-		// also used as (sub-)command.
-		LocationID: "message",
-
-		// Modal only.
-		Label: "Message user",
-
-		// Autocomplete only.
-		Hint: "[--user] message",
-
-		Description: "message a user",
-		Call:        h.makeCall(PathMessage),
-	}
-
 	httputils.WriteJSON(w, api.Function{
 		Form: &api.Form{
 			Title:  "Message to user",
@@ -50,15 +36,6 @@ func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims
 					TextMinLength:     2,
 					TextMaxLength:     1024,
 				},
-			},
-		},
-		Bindings: []*api.Binding{
-			{
-				LocationID: api.LocationCommand,
-				Bindings:   []*api.Binding{b},
-			}, {
-				LocationID: api.LocationPostMenu,
-				Bindings:   []*api.Binding{b},
 			},
 		},
 		Expand: &api.Expand{},

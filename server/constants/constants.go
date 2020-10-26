@@ -22,6 +22,11 @@ const (
 )
 
 const (
+	AppInstallPath  = "/install"
+	AppBindingsPath = "/bindings"
+)
+
+const (
 	AppID              = "app_id"
 	TeamID             = "team_id"
 	ChannelID          = "channel_id"

@@ -24,9 +24,10 @@ const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
 	GetManifest(manifestURL string) (*api.Manifest, error)
-	PostFunction(call *api.Call) (*api.CallResponse, error)
-	PostNotification(n *api.Notification) error
-	GetFunction(call *api.Call) (*api.Function, error)
+	PostFunction(*api.Call) (*api.CallResponse, error)
+	PostNotification(*api.Notification) error
+	GetFunctionMeta(*api.Call) (*api.Function, error)
+	GetBindings(*api.Context) ([]*api.Binding, error)
 }
 
 type JWTClaims struct {
@@ -164,7 +165,7 @@ func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetFunction(call *api.Call) (*api.Function, error) {
+func (c *client) GetFunctionMeta(call *api.Call) (*api.Function, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
@@ -185,6 +186,29 @@ func (c *client) GetFunction(call *api.Call) (*api.Function, error) {
 		return nil, errors.Wrap(err, "error unmarshalling function")
 	}
 	return &f, nil
+}
+
+func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+	app, err := c.store.GetApp(cc.AppID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get app")
+	}
+
+	resp, err := c.get(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+constants.AppBindingsPath, cc))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get bindings")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("returned with status %s", resp.Status)
+	}
+
+	out := []*api.Binding{}
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling function")
+	}
+	return out, nil
 }
 
 func appendGetContext(inURL string, cc *api.Context) string {

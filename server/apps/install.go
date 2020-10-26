@@ -57,7 +57,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 
 	resp, err := s.Client.PostFunction(
 		&api.Call{
-			URL: app.Manifest.Install,
+			URL: app.Manifest.RootURL + constants.AppInstallPath,
 			Values: map[string]string{
 				constants.BotAccessToken:     app.BotAccessToken,
 				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,

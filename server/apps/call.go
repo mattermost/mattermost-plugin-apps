@@ -4,7 +4,7 @@ import "github.com/mattermost/mattermost-plugin-apps/server/api"
 
 func (s *service) Call(call *api.Call) (*api.CallResponse, error) {
 	// TODO <><> get a cached function
-	f, err := s.Client.GetFunction(call)
+	f, err := s.Client.GetFunctionMeta(call)
 	if err != nil {
 		return nil, err
 	}

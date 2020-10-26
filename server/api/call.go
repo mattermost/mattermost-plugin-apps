@@ -55,3 +55,26 @@ func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
 	}
 	return &call, nil
 }
+
+func MakeCall(url string, namevalues ...string) *Call {
+	c := &Call{
+		URL: url,
+	}
+
+	values := map[string]string{}
+	for len(namevalues) > 0 {
+		switch len(namevalues) {
+		case 1:
+			values[namevalues[0]] = ""
+			namevalues = namevalues[1:]
+
+		default:
+			values[namevalues[0]] = values[namevalues[1]]
+			namevalues = namevalues[2:]
+		}
+	}
+	if len(values) > 0 {
+		c.Values = values
+	}
+	return c
+}

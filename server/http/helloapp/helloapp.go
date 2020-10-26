@@ -27,14 +27,16 @@ const (
 
 const (
 	PathManifest                = "/mattermost-app.json"
-	PathNotifyUserJoinedChannel = "/notify/" + string(api.SubjectUserJoinedChannel)
-	PathInstall                 = "/f/install"
-	PathConnectedInstall        = "/f/connected_install"
-	PathSubscribe               = "/f/subscribe"
-	PathMessage                 = "/f/message"
-	PathHello                   = "/f/hello"
-	PathOAuth2                  = "/oauth2"
-	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
+	PathNotifyUserJoinedChannel = "/notify/" + string(api.SubjectUserJoinedChannel) // convention for Mattermost Apps
+	PathInstall                 = constants.AppInstallPath                          // convention for Mattermost Apps
+	PathBindings                = constants.AppBindingsPath                         // convention for Mattermost Apps
+	PathOAuth2                  = "/oauth2"                                         // convention for Mattermost Apps, comes from OAuther
+	PathOAuth2Complete          = "/oauth2/complete"                                // convention for Mattermost Apps, comes from OAuther
+
+	PathConnectedInstall = "/connected_install"
+	PathSubscribe        = "/subscribe"
+	PathMessage          = "/message"
+	PathHello            = "/hello"
 )
 
 type helloapp struct {
@@ -49,6 +51,8 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
 	subrouter.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
+	subrouter.HandleFunc(PathBindings, fget(h.handleBindings)).Methods("GET")
+
 	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
 	handleFunction(subrouter, PathInstall, h.fInstall, h.fInstallMeta)
@@ -72,7 +76,6 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				api.PermissionActAsUser,
 				api.PermissionActAsBot,
 			},
-			Install:           h.AppURL(PathInstall),
 			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
 			HomepageURL:       h.AppURL("/"),
 		})
@@ -186,24 +189,5 @@ func (h *helloapp) AppURL(path string) string {
 }
 
 func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
-	c := &api.Call{
-		URL: h.AppURL(path),
-	}
-
-	values := map[string]string{}
-	for len(namevalues) > 0 {
-		switch len(namevalues) {
-		case 1:
-			values[namevalues[0]] = ""
-			namevalues = namevalues[1:]
-
-		default:
-			values[namevalues[0]] = values[namevalues[1]]
-			namevalues = namevalues[2:]
-		}
-	}
-	if len(values) > 0 {
-		c.Values = values
-	}
-	return c
+	return api.MakeCall(h.AppURL(path), namevalues...)
 }

@@ -32,6 +32,12 @@ type Binding struct {
 	// Description is the (optional) extended help text, used in modals and autocomplete
 	Description string `json:"description,omitempty"`
 
+	RoleID           string `json:"role_id,omitempty"`
+	DependsOnTeam    bool   `json:"depends_on_team,omitempty"`
+	DependsOnChannel bool   `json:"depends_on_channel,omitempty"`
+	DependsOnUser    bool   `json:"depends_on_user,omitempty"`
+	DependsOnPost    bool   `json:"depends_on_post,omitempty"`
+
 	// A Binding is either to a Call, or is a "container" for other locations -
 	// i.e. menu sub-items or subcommands.
 	Call     *Call      `json:"call,omitempty"`

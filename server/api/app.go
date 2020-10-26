@@ -16,9 +16,6 @@ type Manifest struct {
 	RootURL           string `json:"root_url"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
-
-	Install   string `json:"install,omitempty"`
-	Functions string `json:"functions"`
 }
 
 type App struct {
