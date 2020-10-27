@@ -18,17 +18,25 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-const AppSecret = "1234"
+const (
+	AppID          = "hello"
+	AppSecret      = "1234"
+	AppDisplayName = "Hallo სამყარო"
+	AppDescription = "Hallo სამყარო test app"
+)
 
 const (
 	PathManifest                = "/mattermost-app.json"
-	PathNotifyUserJoinedChannel = "/notify/" + string(api.SubjectUserJoinedChannel)
-	PathInstall                 = "/form/install"
-	PathConnectedInstall        = "/form/connected_install"
-	PathPing                    = "/form/ping"
-	PathOAuth2                  = "/oauth2"
-	PathOAuth2Complete          = "/oauth2/complete" // /complete comes from OAuther
-	PathLocations               = "/locations"
+	PathNotifyUserJoinedChannel = "/notify/" + string(api.SubjectUserJoinedChannel) // convention for Mattermost Apps
+	PathInstall                 = constants.AppInstallPath                          // convention for Mattermost Apps
+	PathBindings                = constants.AppBindingsPath                         // convention for Mattermost Apps
+	PathOAuth2                  = "/oauth2"                                         // convention for Mattermost Apps, comes from OAuther
+	PathOAuth2Complete          = "/oauth2/complete"                                // convention for Mattermost Apps, comes from OAuther
+
+	PathConnectedInstall = "/connected_install"
+	PathSubscribe        = "/subscribe"
+	PathMessage          = "/message"
+	PathHello            = "/hello"
 )
 
 type helloapp struct {
@@ -42,29 +50,53 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	subrouter := router.PathPrefix(constants.HelloAppPath).Subrouter()
-
 	subrouter.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
+	subrouter.HandleFunc(PathBindings, fget(h.handleBindings)).Methods("GET")
+
 	subrouter.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
-	subrouter.HandleFunc(PathNotifyUserJoinedChannel, notify(h.handleUserJoinedChannel)).Methods("POST")
+	handleFunction(subrouter, PathInstall, h.fInstall, h.fInstallMeta)
+	handleFunction(subrouter, PathConnectedInstall, h.fConnectedInstall, nil)
+	handleFunction(subrouter, PathMessage, h.fMessage, h.fMessageMeta)
 
-	subrouter.HandleFunc(PathInstall, call(h.handleInstall)).Methods("POST")
-	subrouter.HandleFunc(PathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
-	subrouter.HandleFunc(PathPing, call(h.handlePing)).Methods("POST")
-
-	subrouter.HandleFunc(PathLocations, CheckAuthentication(ExtractUserAndChannelID(h.HandleLocations))).Methods("GET")
+	handleNotify(subrouter, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
 	_ = h.InitOAuther()
 }
 
-func (h *helloapp) AppURL(path string) string {
-	conf := h.apps.Configurator.GetConfig()
-	return conf.PluginURL + constants.HelloAppPath + path
+func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
+	httputils.WriteJSON(w,
+		api.Manifest{
+			AppID:       AppID,
+			DisplayName: AppDisplayName,
+			Description: AppDescription,
+			RootURL:     h.AppURL(""),
+			RequestedPermissions: []api.PermissionType{
+				api.PermissionUserJoinedChannelNotification,
+				api.PermissionActAsUser,
+				api.PermissionActAsBot,
+			},
+			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
+			HomepageURL:       h.AppURL("/"),
+		})
 }
 
-type CallHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error)
+type fPostHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Call) (int, error)
+type fGetHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
+type nHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Notification) (int, error)
 
-func call(h CallHandler) http.HandlerFunc {
+func handleFunction(r *mux.Router, path string, ph fPostHandler, gh fGetHandler) {
+	r.HandleFunc(path, fpost(ph)).Methods("POST")
+	if gh != nil {
+		r.HandleFunc(path, fget(gh)).Methods("GET")
+	}
+}
+
+func handleNotify(r *mux.Router, path string, h nHandler) {
+	r.HandleFunc(path, notify(h)).Methods("POST")
+}
+
+func fpost(h fPostHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		claims, err := checkJWT(req)
 		if err != nil {
@@ -86,9 +118,28 @@ func call(h CallHandler) http.HandlerFunc {
 	}
 }
 
-type notifyHandler func(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Notification) (int, error)
+func fget(h fGetHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		claims, err := checkJWT(req)
+		if err != nil {
+			httputils.WriteBadRequestError(w, err)
+			return
+		}
 
-func notify(h notifyHandler) http.HandlerFunc {
+		statusCode, err := h(w, req, claims, &api.Context{
+			TeamID:       req.Form.Get(constants.TeamID),
+			ChannelID:    req.Form.Get(constants.ChannelID),
+			ActingUserID: req.Form.Get(constants.ActingUserID),
+			PostID:       req.Form.Get(constants.PostID),
+		})
+		if err != nil {
+			httputils.WriteJSONError(w, statusCode, "", err)
+			return
+		}
+	}
+}
+
+func notify(h nHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		claims, err := checkJWT(req)
 		if err != nil {
@@ -130,4 +181,13 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 	}
 
 	return &claims, nil
+}
+
+func (h *helloapp) AppURL(path string) string {
+	conf := h.apps.Configurator.GetConfig()
+	return conf.PluginURL + constants.HelloAppPath + path
+}
+
+func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
+	return api.MakeCall(h.AppURL(path), namevalues...)
 }

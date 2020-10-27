@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (s *service) NotifySubscribedApps(subj api.Subject, cc *api.Context) error {
+func (s *service) Notify(cc *api.Context, subj api.Subject) error {
 	subs, err := s.Store.GetSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err

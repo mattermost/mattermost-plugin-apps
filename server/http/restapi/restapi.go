@@ -13,10 +13,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-const (
-	SubscribePath = "/subscribe"
-)
-
 type SubscribeResponse struct {
 	Error  string            `json:"error,omitempty"`
 	Errors map[string]string `json:"errors,omitempty"`
@@ -34,8 +30,9 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	subrouter := router.PathPrefix(constants.APIPath).Subrouter()
-	subrouter.HandleFunc("/locations", checkAuthorized(a.handleLocations)).Methods("GET")
-	subrouter.HandleFunc(SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
+	subrouter.HandleFunc(constants.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
+	subrouter.HandleFunc(constants.CallPath, a.handleCall).Methods("POST")
+	subrouter.HandleFunc(constants.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) func(http.ResponseWriter, *http.Request) {

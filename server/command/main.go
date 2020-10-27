@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -20,10 +21,10 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":            s.executeInfo,
-		"install":         s.executeInstall,
-		"debug-clean":     s.executeDebugClean,
-		"debug-locations": s.executeDebugLocations,
+		"info":           s.executeInfo,
+		"install":        s.executeInstall,
+		"debug-clean":    s.executeDebugClean,
+		"debug-bindings": s.executeDebugBindings,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -56,10 +57,15 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 	return normalOut(params, md.MD("TODO"), nil)
 }
 
-func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
-	locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
+func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
+	bindings, err := s.apps.API.GetBindings(&api.Context{
+		ActingUserID: params.commandArgs.UserId,
+		UserID:       params.commandArgs.UserId,
+		TeamID:       params.commandArgs.TeamId,
+		ChannelID:    params.commandArgs.ChannelId,
+	})
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}
-	return normalOut(params, md.JSONBlock(locations), nil)
+	return normalOut(params, md.JSONBlock(bindings), nil)
 }

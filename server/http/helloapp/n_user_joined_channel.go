@@ -8,7 +8,7 @@ import (
 )
 
 func (h *helloapp) handleUserJoinedChannel(w http.ResponseWriter, req *http.Request,
-	claims *apps.JWTClaims, data *api.Notification) (int, error) {
-	go h.ping(data.Context.UserID)
+	claims *apps.JWTClaims, n *api.Notification) (int, error) {
+	go h.message(n.Context.UserID, "welcome to channel")
 	return http.StatusOK, nil
 }
