@@ -16,7 +16,6 @@ const (
 )
 
 func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
-	defer req.Body.Close()
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -64,9 +63,9 @@ func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, u
 	var dialogResponse model.SubmitDialogResponse
 
 	if resp.Type == api.CallResponseTypeError {
-		if resp.Data["errors"] != nil {
+		if resp.Data[api.EmbeddedResponseDataErrors] != nil {
 			dialogResponse.Errors = make(map[string]string)
-			if errors, ok := resp.Data["errors"].(map[string]interface{}); ok {
+			if errors, ok := resp.Data[api.EmbeddedResponseDataErrors].(map[string]interface{}); ok {
 				for key, value := range errors {
 					if svalue, ok := value.(string); ok {
 						dialogResponse.Errors[key] = svalue
@@ -75,8 +74,8 @@ func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, u
 			}
 		}
 		dialogResponse.Error = resp.Error
-	} else if resp.Data["post"] != nil {
-		if updatedPost, parseErr := postFromInterface(resp.Data["post"]); parseErr == nil {
+	} else if resp.Data[api.EmbeddedResponseDataPost] != nil {
+		if updatedPost, parseErr := postFromInterface(resp.Data[api.EmbeddedResponseDataPost]); parseErr == nil {
 			updateErr := a.UpdatePost(postID, updatedPost)
 			if updateErr != nil {
 				a.mm.Log.Debug("could not update post", "error", updateErr)
