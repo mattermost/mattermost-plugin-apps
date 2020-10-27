@@ -128,17 +128,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	app, out, err := d.apps.API.InstallApp(
-		&api.InInstallApp{
-			OAuth2TrustedApp:   noUserConsentForOAuth2,
-			AppSecret:          secret,
-			GrantedPermissions: stateData.Manifest.RequestedPermissions,
-		},
 		&api.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
 			TeamID:       stateData.TeamID,
 		},
 		api.SessionToken(session.Token),
+		&api.InInstallApp{
+			OAuth2TrustedApp:   noUserConsentForOAuth2,
+			AppSecret:          secret,
+			GrantedPermissions: stateData.Manifest.RequestedPermissions,
+		},
 	)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)

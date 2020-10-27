@@ -40,8 +40,10 @@ func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, u
 
 	delete(dialogRequest.Submission, embeddedSubmissionAppIDKey)
 
+	values := mapInterfaceToMapString(dialogRequest.Submission)
+
 	c := &api.Call{
-		FormURL: dialogRequest.URL,
+		URL: dialogRequest.URL,
 		Context: &api.Context{
 			AppID:        api.AppID(appID),
 			ActingUserID: dialogRequest.UserId,
@@ -50,12 +52,10 @@ func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, u
 			UserID:       dialogRequest.UserId,
 			PostID:       postID,
 		},
-		Values: api.FormValues{
-			Data: dialogRequest.Submission,
-		},
+		Values: values,
 	}
 
-	resp, err := a.apps.Client.PostCall(c)
+	resp, err := a.apps.Client.PostFunction(c)
 	if err != nil {
 		writeDialogError(w, "Error contacting the app: "+err.Error())
 		return
@@ -153,4 +153,22 @@ func (a *restapi) UpdatePost(postID string, post *model.Post) error {
 	}
 
 	return nil
+}
+
+func mapInterfaceToMapString(in map[string]interface{}) map[string]string {
+	out := make(map[string]string)
+	for k, v := range in {
+		if sv, ok := v.(string); ok {
+			out[k] = sv
+			continue
+		}
+		rv, err := json.Marshal(v)
+		if err != nil {
+			out[k] = ""
+			continue
+		}
+		out[k] = string(rv)
+	}
+
+	return out
 }

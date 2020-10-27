@@ -10,12 +10,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (s *service) InstallApp(in *api.InInstallApp, cc *api.Context, sessionToken api.SessionToken) (*api.App, md.MD, error) {
+func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *api.InInstallApp) (*api.App, md.MD, error) {
 	// TODO check if acting user is a sysadmin
 	app, err := s.Store.GetApp(cc.AppID)
 	if err != nil {
@@ -44,7 +45,7 @@ func (s *service) InstallApp(in *api.InInstallApp, cc *api.Context, sessionToken
 		return nil, "", err
 	}
 
-	ExpandedContext, err := s.newExpander(cc).Expand(
+	ecc, err := s.newExpander(cc).Expand(
 		&api.Expand{
 			App:    api.ExpandAll,
 			Config: api.ExpandSummary,
@@ -54,15 +55,14 @@ func (s *service) InstallApp(in *api.InInstallApp, cc *api.Context, sessionToken
 		return nil, "", err
 	}
 
-	resp, err := s.Client.PostCall(
+	resp, err := s.Client.PostFunction(
 		&api.Call{
-			FormURL: app.Manifest.InstallFormURL,
-			Values: api.FormValues{
-				Data: map[string]interface{}{
-					"bot_access_token":     app.BotAccessToken,
-					"oauth2_client_secret": app.OAuth2ClientSecret},
+			URL: app.Manifest.RootURL + constants.AppInstallPath,
+			Values: map[string]string{
+				constants.BotAccessToken:     app.BotAccessToken,
+				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,
 			},
-			Context: ExpandedContext,
+			Context: ecc,
 		})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")

@@ -21,11 +21,11 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":            s.executeInfo,
-		"install":         s.executeInstall,
-		"debug-clean":     s.executeDebugClean,
-		"debug-locations": s.executeDebugLocations,
-		"debug-embedded":  s.executeDebugEmbedded,
+		"info":           s.executeInfo,
+		"install":        s.executeInstall,
+		"debug-clean":    s.executeDebugClean,
+		"debug-bindings": s.executeDebugBindings,
+		"debug-embedded": s.executeDebugEmbedded,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -58,17 +58,22 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 	return normalOut(params, md.MD("TODO"), nil)
 }
 
-func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
-	locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
+func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
+	bindings, err := s.apps.API.GetBindings(&api.Context{
+		ActingUserID: params.commandArgs.UserId,
+		UserID:       params.commandArgs.UserId,
+		TeamID:       params.commandArgs.TeamId,
+		ChannelID:    params.commandArgs.ChannelId,
+	})
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}
-	return normalOut(params, md.JSONBlock(locations), nil)
+	return normalOut(params, md.JSONBlock(bindings), nil)
 }
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
-	_, err := s.apps.Client.PostCall(&api.Call{
-		FormURL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
+	_, err := s.apps.Client.PostFunction(&api.Call{
+		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
 		Context: &api.Context{
 			AppID:        "hello",
 			ActingUserID: params.commandArgs.UserId,
