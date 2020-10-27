@@ -30,7 +30,10 @@ func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request
 		return http.StatusInternalServerError, err
 	}
 
-	httputils.WriteJSONStatus(w, http.StatusOK, nil)
+	response := api.CallResponse{
+		Type: api.CallResponseTypeOK,
+	}
+	httputils.WriteJSON(w, response)
 	return http.StatusOK, nil
 }
 

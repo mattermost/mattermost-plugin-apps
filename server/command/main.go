@@ -73,7 +73,7 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
 	_, err := s.apps.Client.PostFunction(&api.Call{
-		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
+		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/form/create_embedded",
 		Context: &api.Context{
 			AppID:        "hello",
 			ActingUserID: params.commandArgs.UserId,
