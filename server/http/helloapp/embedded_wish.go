@@ -3,12 +3,13 @@ package helloapp
 import (
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
+func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error) {
 	err := h.asBot(func(mmclient *model.Client4, botUserID string) error {
 		post := &model.Post{
 			Message:   "Debug form",
@@ -33,9 +34,9 @@ func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
-	response := apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
+func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error) {
+	response := api.CallResponse{
+		Type: api.CallResponseTypeOK,
 		Data: make(map[string]interface{}),
 	}
 	post := &model.Post{

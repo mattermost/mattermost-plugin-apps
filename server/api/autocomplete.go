@@ -1,4 +1,4 @@
-package apps
+package api
 
 type Autocomplete struct {
 	Form

@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -16,7 +15,7 @@ const (
 	embeddedSubmissionAppIDKey  = "mm_app_id"
 )
 
-func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
+func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
 	defer req.Body.Close()
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
@@ -41,17 +40,17 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 
 	delete(dialogRequest.Submission, embeddedSubmissionAppIDKey)
 
-	c := &apps.Call{
+	c := &api.Call{
 		FormURL: dialogRequest.URL,
-		Context: &apps.Context{
-			AppID:        store.AppID(appID),
+		Context: &api.Context{
+			AppID:        api.AppID(appID),
 			ActingUserID: dialogRequest.UserId,
 			ChannelID:    dialogRequest.ChannelId,
 			TeamID:       dialogRequest.TeamId,
 			UserID:       dialogRequest.UserId,
 			PostID:       postID,
 		},
-		Values: apps.FormValues{
+		Values: api.FormValues{
 			Data: dialogRequest.Submission,
 		},
 	}
@@ -64,7 +63,7 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 
 	var dialogResponse model.SubmitDialogResponse
 
-	if resp.Type == apps.CallResponseTypeError {
+	if resp.Type == api.CallResponseTypeError {
 		if resp.Data["errors"] != nil {
 			dialogResponse.Errors = make(map[string]string)
 			if errors, ok := resp.Data["errors"].(map[string]interface{}); ok {
@@ -110,7 +109,7 @@ func postFromInterface(v interface{}) (*model.Post, error) {
 	return &post, nil
 }
 
-func (a *api) UpdatePost(postID string, post *model.Post) error {
+func (a *restapi) UpdatePost(postID string, post *model.Post) error {
 	// If the updated post does contain a replacement Props set, we still
 	// need to preserve some original values, as listed in
 	// model.PostActionRetainPropKeys. remove and retain track these.

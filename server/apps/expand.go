@@ -1,17 +1,17 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
 
 type expander struct {
-	*Context
+	*api.Context
 	s *Service
 }
 
-func (s *service) newExpander(cc *Context) *expander {
+func (s *service) newExpander(cc *api.Context) *expander {
 	e := &expander{
 		s:       &s.Service,
 		Context: cc,
@@ -22,10 +22,10 @@ func (s *service) newExpander(cc *Context) *expander {
 // Expand collects the data that is requested in the expand argument, and is not
 // yet collected. It then returns a new Context, filtered down to what is
 // specified in expand.
-func (e *expander) Expand(expand *store.Expand) (*Context, error) {
+func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	clone := *e.Context
 	if expand == nil {
-		clone.expandedContext = expandedContext{}
+		clone.ExpandedContext = api.ExpandedContext{}
 		return &clone, nil
 	}
 
@@ -56,7 +56,7 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 	// Config is cached pre-sanitized
 	if expand.Config != "" && e.Config == nil {
 		mmconf := e.s.Configurator.GetMattermostConfig()
-		e.Config = &MattermostConfig{}
+		e.Config = &api.MattermostConfig{}
 		if mmconf.ServiceSettings.SiteURL != nil {
 			e.Config.SiteURL = *mmconf.ServiceSettings.SiteURL
 		}
@@ -96,7 +96,7 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 		e.User = user
 	}
 
-	clone.expandedContext = expandedContext{
+	clone.ExpandedContext = api.ExpandedContext{
 		ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
 		App:        e.stripApp(expand.App),
 		Channel:    e.stripChannel(expand.Channel),
@@ -110,11 +110,11 @@ func (e *expander) Expand(expand *store.Expand) (*Context, error) {
 	return &clone, nil
 }
 
-func (e *expander) stripUser(user *model.User, level store.ExpandLevel) *model.User {
-	if user == nil || level == store.ExpandAll {
+func (e *expander) stripUser(user *model.User, level api.ExpandLevel) *model.User {
+	if user == nil || level == api.ExpandAll {
 		return user
 	}
-	if level != store.ExpandSummary {
+	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.User{
@@ -133,11 +133,11 @@ func (e *expander) stripUser(user *model.User, level store.ExpandLevel) *model.U
 	}
 }
 
-func (e *expander) stripChannel(level store.ExpandLevel) *model.Channel {
-	if e.Channel == nil || level == store.ExpandAll {
+func (e *expander) stripChannel(level api.ExpandLevel) *model.Channel {
+	if e.Channel == nil || level == api.ExpandAll {
 		return e.Channel
 	}
-	if level != store.ExpandSummary {
+	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.Channel{
@@ -150,11 +150,11 @@ func (e *expander) stripChannel(level store.ExpandLevel) *model.Channel {
 	}
 }
 
-func (e *expander) stripTeam(level store.ExpandLevel) *model.Team {
-	if e.Team == nil || level == store.ExpandAll {
+func (e *expander) stripTeam(level api.ExpandLevel) *model.Team {
+	if e.Team == nil || level == api.ExpandAll {
 		return e.Team
 	}
-	if level != store.ExpandSummary {
+	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.Team{
@@ -167,11 +167,11 @@ func (e *expander) stripTeam(level store.ExpandLevel) *model.Team {
 	}
 }
 
-func (e *expander) stripPost(post *model.Post, level store.ExpandLevel) *model.Post {
-	if post == nil || level == store.ExpandAll {
+func (e *expander) stripPost(post *model.Post, level api.ExpandLevel) *model.Post {
+	if post == nil || level == api.ExpandAll {
 		return post
 	}
-	if level != store.ExpandSummary {
+	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.Post{
@@ -184,7 +184,7 @@ func (e *expander) stripPost(post *model.Post, level store.ExpandLevel) *model.P
 	}
 }
 
-func (e *expander) stripApp(level store.ExpandLevel) *store.App {
+func (e *expander) stripApp(level api.ExpandLevel) *api.App {
 	if e.App == nil {
 		return nil
 	}
@@ -195,18 +195,18 @@ func (e *expander) stripApp(level store.ExpandLevel) *store.App {
 	app.BotAccessToken = ""
 
 	switch level {
-	case store.ExpandAll, store.ExpandSummary:
+	case api.ExpandAll, api.ExpandSummary:
 		return &app
 	}
 	return nil
 }
 
-func (e *expander) stripConfig(level store.ExpandLevel) *MattermostConfig {
+func (e *expander) stripConfig(level api.ExpandLevel) *api.MattermostConfig {
 	if e.Config == nil {
 		return nil
 	}
 	switch level {
-	case store.ExpandAll, store.ExpandSummary:
+	case api.ExpandAll, api.ExpandSummary:
 		return e.Config
 	}
 	return nil

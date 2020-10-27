@@ -1,4 +1,4 @@
-package apps
+package api
 
 type Form struct {
 	// RefreshOnChangeTo indicates that changes to the listed fields must reload

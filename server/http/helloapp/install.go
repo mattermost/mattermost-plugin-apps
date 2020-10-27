@@ -8,13 +8,13 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
+func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
 	err := h.storeAppCredentials(&AppCredentials{
 		BotAccessToken:     call.Values.Get("bot_access_token"),
 		BotUserID:          call.Context.App.BotUserID,
@@ -29,7 +29,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 		return http.StatusInternalServerError, err
 	}
 
-	connectURL, err := h.startOAuth2Connect(call.Context.ActingUserID, &apps.Call{
+	connectURL, err := h.startOAuth2Connect(call.Context.ActingUserID, &api.Call{
 		FormURL: h.AppURL(PathConnectedInstall),
 		Context: call.Context,
 	})
@@ -38,8 +38,8 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	}
 
 	httputils.WriteJSON(w,
-		apps.CallResponse{
-			Type: apps.CallResponseTypeOK,
+		api.CallResponse{
+			Type: api.CallResponseTypeOK,
 			Markdown: md.Markdownf(
 				"**Hallo სამყარო** needs to continue its installation using your system administrator's credentials. Please [connect](%s) the application to your Mattermost account.",
 				connectURL),
@@ -47,7 +47,7 @@ func (h *helloapp) handleInstall(w http.ResponseWriter, req *http.Request, claim
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
+func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
 	var teams []*model.Team
 	var team *model.Team
 	var channel *model.Channel
@@ -116,21 +116,21 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 			h.DM(call.Context.ActingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
-			err = h.apps.Store.StoreSub(&store.Subscription{
+			err = h.apps.Store.StoreSub(&api.Subscription{
 				AppID:     AppID,
-				Subject:   store.SubjectUserJoinedChannel,
+				Subject:   api.SubjectUserJoinedChannel,
 				ChannelID: channel.Id,
 				TeamID:    channel.TeamId,
-				Expand: &store.Expand{
-					Channel: store.ExpandAll,
-					Team:    store.ExpandAll,
-					User:    store.ExpandAll,
+				Expand: &api.Expand{
+					Channel: api.ExpandAll,
+					Team:    api.ExpandAll,
+					User:    api.ExpandAll,
 				},
 			})
 			if err != nil {
 				return err
 			}
-			h.DM(call.Context.ActingUserID, "Subscribed to %s in channel.", store.SubjectUserJoinedChannel)
+			h.DM(call.Context.ActingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {
@@ -142,8 +142,8 @@ func (h *helloapp) handleConnectedInstall(w http.ResponseWriter, req *http.Reque
 		return http.StatusInternalServerError, err
 	}
 	httputils.WriteJSON(w,
-		apps.CallResponse{
-			Type:     apps.CallResponseTypeOK,
+		api.CallResponse{
+			Type:     api.CallResponseTypeOK,
 			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2ClientID, AppDisplayName),
 		})
 	h.DM(call.Context.ActingUserID, "OK!")

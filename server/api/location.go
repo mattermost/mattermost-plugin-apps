@@ -1,4 +1,4 @@
-package apps
+package api
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ type LocationType string
 const (
 	LocationPostMenuItem      LocationType = "post_menu_item"
 	LocationChannelHeaderIcon LocationType = "channel_header_icon"
+	LocationEmbeddedForm      LocationType = "embedded_form"
 )
 
 type LocationInt interface {
@@ -21,6 +22,7 @@ type Location struct {
 	LocationType LocationType `json:"location_type"`
 	LocationID   string       `json:"location_id"`
 	FormURL      string       `json:"form_url"`
+	AppID        AppID        `json:"app_id"`
 }
 
 func (l *Location) GetType() LocationType {

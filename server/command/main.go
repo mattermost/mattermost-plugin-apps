@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -67,9 +67,9 @@ func (s *service) executeDebugLocations(params *params) (*model.CommandResponse,
 }
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
-	_, err := s.apps.Client.PostCall(&apps.Call{
+	_, err := s.apps.Client.PostCall(&api.Call{
 		FormURL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
-		Context: &apps.Context{
+		Context: &api.Context{
 			AppID:        "hello",
 			ActingUserID: params.commandArgs.UserId,
 			ChannelID:    params.commandArgs.ChannelId,
