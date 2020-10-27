@@ -53,7 +53,7 @@ func (fv *FormValues) Get(name string) string {
 		return ""
 	}
 
-	return fv.Data[name].(string)
+	return value
 }
 
 func UnmarshalCallFromData(data []byte) (*Call, error) {
