@@ -37,6 +37,9 @@ const (
 	PathSubscribe        = "/subscribe"
 	PathMessage          = "/message"
 	PathHello            = "/hello"
+
+	PathSubmitEmbedded = "/form/submit_embedded"
+	PathCreateEmbedded = "/form/create_embedded"
 )
 
 type helloapp struct {
@@ -58,6 +61,8 @@ func Init(router *mux.Router, apps *apps.Service) {
 	handleFunction(subrouter, PathInstall, h.fInstall, h.fInstallMeta)
 	handleFunction(subrouter, PathConnectedInstall, h.fConnectedInstall, nil)
 	handleFunction(subrouter, PathMessage, h.fMessage, h.fMessageMeta)
+	handleFunction(subrouter, PathSubmitEmbedded, h.handleSubmitEmbedded, nil)
+	handleFunction(subrouter, PathCreateEmbedded, h.handleCreateEmbedded, nil)
 
 	handleNotify(subrouter, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
