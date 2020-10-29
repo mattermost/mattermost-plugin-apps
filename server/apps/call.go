@@ -9,13 +9,19 @@ func (s *service) Call(call *api.Call) (*api.CallResponse, error) {
 		return nil, err
 	}
 
+	if call.AsModal {
+		return &api.CallResponse{
+			Type: api.CallResponseTypeOK,
+			Data: f,
+		}, nil
+	}
+
 	req := *call
 	// TODO Expand using the App's bot credentials!
 	req.Context, err = s.newExpander(call.Context).Expand(f.Expand)
 	if err != nil {
 		return nil, err
 	}
-	req.URL = ""
 
 	return s.Client.PostFunction(&req)
 }

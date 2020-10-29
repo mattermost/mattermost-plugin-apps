@@ -17,11 +17,11 @@ type Binding struct {
 	// For PostMenu, ChannelHeader locations specifies the icon.
 	Icon string `json:"icon,omitempty"`
 
-	// Label is the (usually short) primary text to display at the location.
+	// Name is the (usually short) primary text to display at the location.
 	// - For LocationPostMenu is the menu item text.
 	// - For LocationChannelHeader is the dropdown text.
 	// - For LocationCommand is the name of the command
-	Label string `json:"text,omitempty"`
+	Name string `json:"name,omitempty"`
 
 	// Hint is the secondary text to display
 	// - LocationPostMenu: not used
