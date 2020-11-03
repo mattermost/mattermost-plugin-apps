@@ -8,52 +8,56 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-const FieldUserID = "userID"
-const FieldMessage = "message"
+const fieldUserID = "userID"
+const fieldMessage = "message"
 
-func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
-	httputils.WriteJSON(w, api.Function{
-		Form: &api.Form{
-			Title:  "Message to user",
-			Header: "Message modal form header",
-			Footer: "Message modal form footer",
-			Fields: []*api.Field{
-				{
-					Name:              FieldUserID,
-					Type:              api.FieldTypeUser,
-					Description:       "User to send the message to",
-					AutocompleteLabel: "user",
-					AutocompleteHint:  "enter user ID or @user",
-					ModalLabel:        "User",
-				}, {
-					Name:              FieldMessage,
-					Type:              api.FieldTypeText,
-					IsRequired:        true,
-					Description:       "Message that will be sent to the user",
-					AutocompleteLabel: "$1",
-					AutocompleteHint:  "Anything you want to say",
-					ModalLabel:        "Message to send",
-					TextMinLength:     2,
-					TextMaxLength:     1024,
+func (h *helloapp) Message(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
+	userID := c.Values[fieldUserID]
+	message := c.Values[fieldMessage]
+	var out *api.CallResponse
+
+	switch c.Type {
+	case api.CallTypeForm:
+		out = &api.CallResponse{
+			Type: api.CallResponseTypeForm,
+			Form: &api.Form{
+				Title:  "Send a message to user",
+				Header: "Message modal form header",
+				Footer: "Message modal form footer",
+				Fields: []*api.Field{
+					{
+						Name:              fieldUserID,
+						Type:              api.FieldTypeUser,
+						Description:       "User to send the message to",
+						AutocompleteLabel: "user",
+						AutocompleteHint:  "enter user ID or @user",
+						ModalLabel:        "User",
+					}, {
+						Name:              fieldMessage,
+						Type:              api.FieldTypeText,
+						IsRequired:        true,
+						Description:       "Message that will be sent to the user",
+						AutocompleteLabel: "$1",
+						AutocompleteHint:  "Anything you want to say",
+						ModalLabel:        "Message to send",
+						TextMinLength:     2,
+						TextMaxLength:     1024,
+					},
 				},
 			},
-		},
-		Expand: &api.Expand{},
-	})
-	return http.StatusOK, nil
-}
+		}
 
-func (h *helloapp) fMessage(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
-	userID := call.Values[FieldUserID]
-	if userID == "" {
-		userID = call.Context.ActingUserID
+	case api.CallTypeSubmit:
+		if userID == "" {
+			userID = c.Context.ActingUserID
+		}
+		if message == "" {
+			message = "Hello"
+		}
+		h.message(userID, message)
+		out = &api.CallResponse{}
 	}
-
-	h.message(userID, call.Values[FieldMessage])
-
-	httputils.WriteJSON(w, api.CallResponse{
-		Type: api.CallResponseTypeOK,
-	})
+	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 

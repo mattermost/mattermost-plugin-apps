@@ -45,16 +45,6 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 		return nil, "", err
 	}
 
-	ecc, err := s.newExpander(cc).Expand(
-		&api.Expand{
-			App:    api.ExpandAll,
-			Config: api.ExpandSummary,
-		},
-	)
-	if err != nil {
-		return nil, "", err
-	}
-
 	resp, err := s.API.Call(
 		&api.Call{
 			URL: app.Manifest.RootURL + constants.AppInstallPath,
@@ -62,7 +52,11 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 				constants.BotAccessToken:     app.BotAccessToken,
 				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,
 			},
-			Context: ecc,
+			Context: cc,
+			Expand: &api.Expand{
+				App:    api.ExpandAll,
+				Config: api.ExpandSummary,
+			},
 		})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")

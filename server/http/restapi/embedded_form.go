@@ -151,20 +151,20 @@ func (a *restapi) UpdatePost(postID string, post *model.Post) error {
 	return nil
 }
 
-func mapInterfaceToMapString(in map[string]interface{}) map[string]string {
-	out := make(map[string]string)
-	for k, v := range in {
-		if sv, ok := v.(string); ok {
-			out[k] = sv
-			continue
-		}
-		rv, err := json.Marshal(v)
-		if err != nil {
-			out[k] = ""
-			continue
-		}
-		out[k] = string(rv)
-	}
+// func mapInterfaceToMapString(in map[string]interface{}) map[string]string {
+// 	out := make(map[string]string)
+// 	for k, v := range in {
+// 		if sv, ok := v.(string); ok {
+// 			out[k] = sv
+// 			continue
+// 		}
+// 		rv, err := json.Marshal(v)
+// 		if err != nil {
+// 			out[k] = ""
+// 			continue
+// 		}
+// 		out[k] = string(rv)
+// 	}
 
-	return out
-}
+// 	return out
+// }

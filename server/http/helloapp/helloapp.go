@@ -33,17 +33,18 @@ const (
 	pathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
 	pathDebugDialogs   = "/dialog"
 
-	pathConnectedInstall        = "/connected_install"
-	pathCreateEmbedded          = "/create_embedded"
-	pathCreateEmbeddedPing      = "/embedded/ping"
-	pathHello                   = "/hello"
-	pathMessage                 = "/message"
+	pathConnectedInstall = "/connected_install"
+	pathSendMessage      = "/message"
+
+	pathCreateEmbedded = "/create_embedded"
+	// pathCreateEmbeddedPing      = "/embedded/ping"
+	// pathHello                   = "/hello"
 	pathNotifyUserJoinedChannel = "/notify-user-joined-channel"
-	pathOpenPingDialog          = pathDebugDialogs + "/open/ping"
-	pathPing                    = "/ping"
-	pathSubmitEmbedded          = "/submit_embedded"
-	pathSubmitPingDialog        = pathDebugDialogs + "/submit/ping"
-	pathSubscribe               = "/subscribe"
+	// pathOpenPingDialog          = pathDebugDialogs + "/open/ping"
+	pathPing             = "/ping"
+	pathSubmitEmbedded   = "/submit_embedded"
+	pathSubmitPingDialog = pathDebugDialogs + "/submit/ping"
+	pathSubscribeChannel = "/subscribe"
 )
 
 type helloapp struct {
@@ -69,8 +70,6 @@ func Init(router *mux.Router, apps *apps.Service) {
 	// 	subrouter.HandleFunc(pathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
 
 	// 	subrouter.HandleFunc(pathPing, call(h.handlePing)).Methods("POST")
-	// 	subrouter.HandleFunc(pathCreateEmbeddedPing, call(h.handleCreatePingEmbedded)).Methods("POST")
-	// 	subrouter.HandleFunc(pathOpenPingDialog, call(h.handleOpenPingDialog)).Methods("POST")
 	// 	subrouter.HandleFunc(pathSubmitPingDialog, h.handleSubmitPingDialog).Methods("POST")
 
 	// 	subrouter.HandleFunc(pathLocations, checkAuthentication(extractUserAndChannelID(h.handleLocations))).Methods("GET")
@@ -85,11 +84,14 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	handleGetWithContext(r, pathBindings, (h.handleBindings))
 
-	handleCall(r, pathInstall, h.fInstall)
-	handleCall(r, pathConnectedInstall, h.fConnectedInstall)
-	handleCall(r, pathMessage, h.fMessage)
-	handleCall(r, pathSubmitEmbedded, h.handleSubmitEmbedded)
-	handleCall(r, pathCreateEmbedded, h.handleCreateEmbedded)
+	handleCall(r, pathInstall, h.Install)
+	handleCall(r, pathConnectedInstall, h.ConnectedInstall)
+	handleCall(r, pathSendMessage, h.Message)
+
+	// handleCall(r, pathSubmitEmbedded, h.handleSubmitEmbedded)
+	// handleCall(r, pathCreateEmbedded, h.handleCreateEmbedded)
+	// handleCall(r, pathCreateEmbeddedPing, h.handleCreatePingEmbedded)
+	// r.HandleFunc(pathOpenPingDialog, call(h.handleOpenPingDialog)).Methods("POST")
 
 	handleNotify(r, pathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
@@ -99,23 +101,6 @@ func Init(router *mux.Router, apps *apps.Service) {
 func (h *helloapp) appURL(path string) string {
 	conf := h.apps.Configurator.GetConfig()
 	return conf.PluginURL + constants.HelloAppPath + path
-}
-
-func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
-	httputils.WriteJSON(w,
-		api.Manifest{
-			AppID:       appID,
-			DisplayName: appDisplayName,
-			Description: appDescription,
-			RootURL:     h.appURL(""),
-			RequestedPermissions: []api.PermissionType{
-				api.PermissionUserJoinedChannelNotification,
-				api.PermissionActAsUser,
-				api.PermissionActAsBot,
-			},
-			OAuth2CallbackURL: h.appURL(pathOAuth2Complete),
-			HomepageURL:       h.appURL("/"),
-		})
 }
 
 type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)

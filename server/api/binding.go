@@ -46,7 +46,9 @@ type Binding struct {
 	DependsOnPost    bool   `json:"depends_on_post,omitempty"`
 
 	// A Binding is either to a Call, or is a "container" for other locations -
-	// i.e. menu sub-items or subcommands.
+	// i.e. menu sub-items or subcommands. An app-defined Modal can be displayed
+	// by setting AsModal.
 	Call     *Call      `json:"call,omitempty"`
+	AsModal  bool       `json:"as_modal,omitempty"`
 	Bindings []*Binding `json:"bindings,omitempty"`
 }

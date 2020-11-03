@@ -72,9 +72,10 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 }
 
 func (s *service) executeDebugInstallHello(params *params) (*model.CommandResponse, error) {
+	siteURL := s.apps.Configurator.GetConfig().MattermostSiteURL
 	params.current = []string{
-		"--secret", "1234",
-		"--url", "http://localhost:8065/plugin/com.mattermost.apps/hello/mattermost-app.json",
+		"--app-secret", "1234",
+		"--url", siteURL + "/plugins/com.mattermost.apps/hello/mattermost-app.json",
 		"--force",
 	}
 	return s.executeInstall(params)
