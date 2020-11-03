@@ -9,8 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -25,9 +24,9 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"info":    s.executeInfo,
 		"install": s.executeInstall,
 		// For Debug
-		"debug-clean":     s.executeDebugClean,
-		"debug-locations": s.executeDebugLocations,
-		"debug-embedded":  s.executeDebugEmbedded,
+		"debug-clean":    s.executeDebugClean,
+		"debug-bindings": s.executeDebugBindings,
+		"debug-embedded": s.executeDebugEmbedded,
 		// For internal use only
 		"openDialog": s.openDialog,
 	}
@@ -62,18 +61,23 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 	return normalOut(params, md.MD("TODO"), nil)
 }
 
-func (s *service) executeDebugLocations(params *params) (*model.CommandResponse, error) {
-	locations, err := s.apps.API.GetLocations(params.commandArgs.UserId, params.commandArgs.ChannelId)
+func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
+	bindings, err := s.apps.API.GetBindings(&api.Context{
+		ActingUserID: params.commandArgs.UserId,
+		UserID:       params.commandArgs.UserId,
+		TeamID:       params.commandArgs.TeamId,
+		ChannelID:    params.commandArgs.ChannelId,
+	})
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}
-	return normalOut(params, md.JSONBlock(locations), nil)
+	return normalOut(params, md.JSONBlock(bindings), nil)
 }
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
-	_, err := s.apps.Client.PostCall(&apps.Call{
-		FormURL: s.apps.Configurator.GetConfig().PluginURL + "/hello/wish/create_embedded",
-		Context: &apps.Context{
+	_, err := s.apps.API.Call(&api.Call{
+		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/form/create_embedded",
+		Context: &api.Context{
 			AppID:        "hello",
 			ActingUserID: params.commandArgs.UserId,
 			ChannelID:    params.commandArgs.ChannelId,
@@ -96,7 +100,7 @@ func (s *service) openDialog(params *params) (*model.CommandResponse, error) {
 	appID := params.current[0]
 	url := params.current[1]
 	dialogID := params.current[2]
-	dialog, err := s.apps.Client.GetDialog(store.AppID(appID), url, params.commandArgs.UserId, dialogID)
+	dialog, err := s.apps.Client.GetDialog(api.AppID(appID), url, params.commandArgs.UserId, dialogID)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}

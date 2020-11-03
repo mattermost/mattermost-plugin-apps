@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -16,8 +15,7 @@ const (
 	embeddedSubmissionAppIDKey  = "mm_app_id"
 )
 
-func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
-	defer req.Body.Close()
+func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userID string) {
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -41,29 +39,19 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 
 	delete(dialogRequest.Submission, embeddedSubmissionAppIDKey)
 
-	c := &apps.Call{
-		FormURL: dialogRequest.URL,
-		Context: &apps.Context{
-			AppID:        store.AppID(appID),
+	c := &api.Call{
+		URL: dialogRequest.URL,
+		Context: &api.Context{
+			AppID:        api.AppID(appID),
 			ActingUserID: dialogRequest.UserId,
 			ChannelID:    dialogRequest.ChannelId,
 			TeamID:       dialogRequest.TeamId,
 			UserID:       dialogRequest.UserId,
 			PostID:       postID,
 		},
-		Values: apps.FormValues{
-			Data: dialogRequest.Submission,
-		},
-		From: []*apps.Location{
-			{
-				LocationType: apps.LocationEmbeddedForm,
-				AppID:        store.AppID(appID),
-				FormURL:      dialogRequest.URL,
-			},
-		},
 	}
 
-	resp, err := a.apps.Client.PostCall(c)
+	resp, err := a.apps.Client.Call(c)
 	if err != nil {
 		writeDialogError(w, "Error contacting the app: "+err.Error())
 		return
@@ -71,10 +59,10 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 
 	var dialogResponse model.SubmitDialogResponse
 
-	if resp.Type == apps.CallResponseTypeError {
-		if resp.Data["errors"] != nil {
+	if resp.Type == api.CallResponseTypeError {
+		if resp.Data[api.EmbeddedResponseDataErrors] != nil {
 			dialogResponse.Errors = make(map[string]string)
-			if errors, ok := resp.Data["errors"].(map[string]interface{}); ok {
+			if errors, ok := resp.Data[api.EmbeddedResponseDataErrors].(map[string]interface{}); ok {
 				for key, value := range errors {
 					if svalue, ok := value.(string); ok {
 						dialogResponse.Errors[key] = svalue
@@ -83,8 +71,8 @@ func (a *api) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, userI
 			}
 		}
 		dialogResponse.Error = resp.Error
-	} else if resp.Data["post"] != nil {
-		if updatedPost, parseErr := postFromInterface(resp.Data["post"]); parseErr == nil {
+	} else if resp.Data[api.EmbeddedResponseDataPost] != nil {
+		if updatedPost, parseErr := postFromInterface(resp.Data[api.EmbeddedResponseDataPost]); parseErr == nil {
 			updateErr := a.UpdatePost(postID, updatedPost)
 			if updateErr != nil {
 				a.mm.Log.Debug("could not update post", "error", updateErr)
@@ -117,7 +105,7 @@ func postFromInterface(v interface{}) (*model.Post, error) {
 	return &post, nil
 }
 
-func (a *api) UpdatePost(postID string, post *model.Post) error {
+func (a *restapi) UpdatePost(postID string, post *model.Post) error {
 	// If the updated post does contain a replacement Props set, we still
 	// need to preserve some original values, as listed in
 	// model.PostActionRetainPropKeys. remove and retain track these.
@@ -161,4 +149,22 @@ func (a *api) UpdatePost(postID string, post *model.Post) error {
 	}
 
 	return nil
+}
+
+func mapInterfaceToMapString(in map[string]interface{}) map[string]string {
+	out := make(map[string]string)
+	for k, v := range in {
+		if sv, ok := v.(string); ok {
+			out[k] = sv
+			continue
+		}
+		rv, err := json.Marshal(v)
+		if err != nil {
+			out[k] = ""
+			continue
+		}
+		out[k] = string(rv)
+	}
+
+	return out
 }

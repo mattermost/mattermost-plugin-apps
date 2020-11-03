@@ -14,6 +14,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -22,11 +24,12 @@ import (
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
-	GetManifest(manifestURL string) (*store.Manifest, error)
-	PostCall(call *Call) (*CallResponse, error)
-	PostNotification(n *Notification) error
-	GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error)
-	GetDialog(appID store.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
+	GetManifest(manifestURL string) (*api.Manifest, error)
+	GetDialog(appID api.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
+	Call(*api.Call) (*api.CallResponse, error)
+	PostNotification(*api.Notification) error
+	// GetFunctionMeta(*api.Call) (*api.Function, error)
+	GetBindings(*api.Context) ([]*api.Binding, error)
 }
 
 type JWTClaims struct {
@@ -44,7 +47,7 @@ func newClient(store store.Service) *client {
 	}
 }
 
-func (c *client) PostNotification(n *Notification) error {
+func (c *client) PostNotification(n *api.Notification) error {
 	app, err := c.store.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
@@ -58,19 +61,19 @@ func (c *client) PostNotification(n *Notification) error {
 	return nil
 }
 
-func (c *client) PostCall(call *Call) (*CallResponse, error) {
+func (c *client) Call(call *api.Call) (*api.CallResponse, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.post(app, call.Context.ActingUserID, call.FormURL, call)
+	resp, err := c.post(app, call.Context.ActingUserID, call.URL, call)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	cr := CallResponse{}
+	cr := api.CallResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	if err != nil {
 		return nil, err
@@ -79,7 +82,7 @@ func (c *client) PostCall(call *Call) (*CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (c *client) post(toApp *store.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (c *client) post(toApp *api.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -112,7 +115,7 @@ func (c *client) post(toApp *store.App, fromMattermostUserID string, url string,
 	return resp, nil
 }
 
-func (c *client) get(toApp *store.App, fromMattermostUserID string, url string) (*http.Response, error) {
+func (c *client) get(toApp *api.App, fromMattermostUserID string, url string) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -134,7 +137,7 @@ func (c *client) get(toApp *store.App, fromMattermostUserID string, url string) 
 	return resp, nil
 }
 
-func (c *client) getClient(appID store.AppID) *http.Client {
+func (c *client) getClient(appID api.AppID) *http.Client {
 	return &http.Client{}
 }
 
@@ -148,8 +151,8 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
-	var manifest store.Manifest
+func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
+	var manifest api.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
@@ -164,50 +167,78 @@ func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetLocations(appID store.AppID, userID, channelID string) ([]LocationInt, error) {
-	app, err := c.store.GetApp(appID)
+func (c *client) GetFunctionMeta(call *api.Call) (*api.Function, error) {
+	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting app")
+		return nil, errors.Wrap(err, "failed to get app")
 	}
 
-	url, err := url.Parse(app.Manifest.LocationsURL)
+	resp, err := c.get(app, call.Context.ActingUserID, appendGetContext(call.URL, call.Context))
 	if err != nil {
-		return nil, errors.Wrap(err, "error parsing the url")
-	}
-	q := url.Query()
-	q.Add("user_id", userID)
-	q.Add("channel_id", channelID)
-	url.RawQuery = q.Encode()
-
-	resp, err := c.get(app, userID, url.String())
-	if err != nil {
-		return nil, errors.Wrap(err, "error fetching the location")
+		return nil, errors.Wrap(err, "failed to get function")
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("returned with status %s", resp.Status)
 	}
 
-	var bareLocations []map[string]interface{}
-	locations := []LocationInt{}
-	err = json.NewDecoder(resp.Body).Decode(&bareLocations)
+	f := api.Function{}
+	err = json.NewDecoder(resp.Body).Decode(&f)
 	if err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling bare location list")
+		return nil, errors.Wrap(err, "error unmarshalling function")
 	}
-	for _, bareLocation := range bareLocations {
-		bareLocation["app_id"] = appID
-		location, err := LocationFromMap(bareLocation)
-		if err != nil {
-			return nil, errors.Wrap(err, "error passing from map to location")
-		}
-		locations = append(locations, location)
-	}
-
-	return locations, nil
+	return &f, nil
 }
 
-func (c *client) GetDialog(appID store.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
+func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+	app, err := c.store.GetApp(cc.AppID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get app")
+	}
+
+	resp, err := c.get(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+constants.AppBindingsPath, cc))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get bindings")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("returned with status %s", resp.Status)
+	}
+
+	out := []*api.Binding{}
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling function")
+	}
+	return out, nil
+}
+
+func appendGetContext(inURL string, cc *api.Context) string {
+	if cc == nil {
+		return inURL
+	}
+	out, err := url.Parse(inURL)
+	if err != nil {
+		return inURL
+	}
+	q := out.Query()
+	if cc.TeamID != "" {
+		q.Add(constants.TeamID, cc.TeamID)
+	}
+	if cc.ChannelID != "" {
+		q.Add(constants.ChannelID, cc.ChannelID)
+	}
+	if cc.ActingUserID != "" {
+		q.Add(constants.ActingUserID, cc.ActingUserID)
+	}
+	if cc.PostID != "" {
+		q.Add(constants.PostID, cc.PostID)
+	}
+	out.RawQuery = q.Encode()
+	return out.String()
+}
+
+func (c *client) GetDialog(appID api.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
 	app, err := c.store.GetApp(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting app")

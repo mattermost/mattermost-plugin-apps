@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -18,8 +19,8 @@ const (
 	callValuePostID    = "post_id"
 )
 
-func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
-	userID := call.Values.Get(callValueUserID)
+func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
+	userID := call.Values[callValueUserID]
 	if userID == "" {
 		userID = call.Context.ActingUserID
 	}
@@ -29,8 +30,8 @@ func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *
 		fromUserID = call.Context.ActingUserID
 	}
 
-	postID := call.Values.Get(callValuePostID)
-	if postID == "" && call.From[0].LocationType == apps.LocationPostMenuItem {
+	postID := call.Values[callValuePostID]
+	if postID == "" && call.Context.LocationID.In(api.LocationPostMenu) {
 		postID = call.Context.PostID
 	}
 
@@ -43,7 +44,7 @@ func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *
 		finalMessage = post.Message
 	}
 
-	message := call.Values.Get(callValueMessage)
+	message := call.Values[callValueMessage]
 
 	if message == "" && finalMessage == "" {
 		message = defaultPingMessage
@@ -53,12 +54,12 @@ func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *
 
 	h.ping(userID, fromUserID, finalMessage)
 
-	response := apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
+	response := api.CallResponse{
+		Type: api.CallResponseTypeOK,
 		Data: make(map[string]interface{}),
 	}
 
-	if call.From[0].LocationType == apps.LocationEmbeddedForm {
+	if call.Context.LocationID == api.LocationEmbeddedForm {
 		u, err := h.getUser(userID)
 		toText := ""
 		if err == nil {
@@ -75,8 +76,8 @@ func (h *helloapp) handlePing(w http.ResponseWriter, req *http.Request, claims *
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleOpenPingDialog(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
-	postID := call.Values.Get(callValuePostID)
+func (h *helloapp) handleOpenPingDialog(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
+	postID := call.Values[callValuePostID]
 	if postID == "" {
 		postID = call.Context.PostID
 	}
@@ -95,10 +96,10 @@ func (h *helloapp) handleOpenPingDialog(w http.ResponseWriter, req *http.Request
 		return http.StatusInternalServerError, err
 	}
 
-	httputils.WriteJSON(w, apps.CallResponse{
-		Type: apps.CallResponseTypeCommand,
+	httputils.WriteJSON(w, api.CallResponse{
+		Type: api.CallResponseTypeCommand,
 		Data: map[string]interface{}{
-			"command": fmt.Sprintf("/apps openDialog %s %s %s", appID, h.appURL(pathDialogs), dialogID),
+			"command": fmt.Sprintf("/apps openDialog %s %s %s", appID, h.appURL(pathDebugDialogs), dialogID),
 			"args": model.CommandArgs{
 				ChannelId: call.Context.ChannelID,
 				TeamId:    call.Context.TeamID,
@@ -108,8 +109,8 @@ func (h *helloapp) handleOpenPingDialog(w http.ResponseWriter, req *http.Request
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleCreatePingEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *apps.Call) (int, error) {
-	postID := call.Values.Get(callValuePostID)
+func (h *helloapp) handleCreatePingEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
+	postID := call.Values[callValuePostID]
 	if postID == "" {
 		postID = call.Context.PostID
 	}

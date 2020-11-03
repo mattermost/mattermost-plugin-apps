@@ -3,9 +3,11 @@ package helloapp
 import (
 	"net/http"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const (
@@ -13,7 +15,8 @@ const (
 	dialogFieldUserID  = "user_id"
 )
 
-func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
+//<><>
+func (h *helloapp) handle_CreateEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error) {
 	post := &model.Post{
 		Message:   "Debug form",
 		ChannelId: data.Context.ChannelID,
@@ -31,9 +34,9 @@ func (h *helloapp) handleCreateEmbedded(w http.ResponseWriter, req *http.Request
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) handleSubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *apps.Call) (int, error) {
-	response := apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
+func (h *helloapp) handle_SubmitEmbedded(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, data *api.Call) (int, error) {
+	response := api.CallResponse{
+		Type: api.CallResponseTypeOK,
 		Data: make(map[string]interface{}),
 	}
 	post := &model.Post{
@@ -86,7 +89,7 @@ func (h *helloapp) getDialogPing(isEmbedded bool, defaultMessage string) *model.
 	}
 }
 
-func (h *helloapp) getDialogSmallSample() *model.OpenDialogRequest {
+func (h *helloapp) get_DialogSmallSample() *model.OpenDialogRequest {
 	return &model.OpenDialogRequest{
 		URL: h.appURL(pathSubmitEmbedded),
 		Dialog: model.Dialog{
@@ -106,7 +109,7 @@ func (h *helloapp) getDialogSmallSample() *model.OpenDialogRequest {
 	}
 }
 
-func (h *helloapp) getDialogFullSample() *model.OpenDialogRequest {
+func (h *helloapp) get_DialogFullSample() *model.OpenDialogRequest {
 	return &model.OpenDialogRequest{
 		URL: h.appURL(pathSubmitEmbedded),
 		Dialog: model.Dialog{

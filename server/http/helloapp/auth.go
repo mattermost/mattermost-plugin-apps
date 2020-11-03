@@ -6,7 +6,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -55,7 +55,7 @@ func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
 	h.OAuther.ServeHTTP(w, req)
 }
 
-func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) (string, error) {
+func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *api.Call) (string, error) {
 	state, err := json.Marshal(callOnComplete)
 	if err != nil {
 		return "", err
@@ -69,11 +69,11 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) 
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
-	call, err := apps.UnmarshalCallData(payload)
+	c, err := api.UnmarshalCallFromData(payload)
 	if err != nil {
 		return
 	}
-	call.Context.AppID = appID
+	c.Context.AppID = appID
 
 	// TODO 2/5 we should wrap the OAuther for the users as a "service" so that
 	//  - startOAuth2Connect is a Call
@@ -83,10 +83,10 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// for now hacking access to apps object and issuing the call from within
 	// the app.
 
-	cr, _ := h.apps.Client.PostCall(call)
+	cr, _ := h.apps.Client.Call(c)
 
 	conf := h.apps.Configurator.GetConfig()
-	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Context.ActingUserID, &model.Post{
+	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, c.Context.ActingUserID, &model.Post{
 		Message: cr.Markdown.String(),
 	})
 }

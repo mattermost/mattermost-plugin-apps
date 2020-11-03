@@ -9,19 +9,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-type InInstallApp struct {
-	GrantedPermissions store.Permissions
-	AppSecret          string
-	OAuth2TrustedApp   bool
-}
-
-func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken SessionToken) (*store.App, md.MD, error) {
+func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *api.InInstallApp) (*api.App, md.MD, error) {
 	// TODO check if acting user is a sysadmin
 	app, err := s.Store.GetApp(cc.AppID)
 	if err != nil {
@@ -50,25 +45,24 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 		return nil, "", err
 	}
 
-	expandedContext, err := s.newExpander(cc).Expand(
-		&store.Expand{
-			App:    store.ExpandAll,
-			Config: store.ExpandSummary,
+	ecc, err := s.newExpander(cc).Expand(
+		&api.Expand{
+			App:    api.ExpandAll,
+			Config: api.ExpandSummary,
 		},
 	)
 	if err != nil {
 		return nil, "", err
 	}
 
-	resp, err := s.Client.PostCall(
-		&Call{
-			FormURL: app.Manifest.InstallFormURL,
-			Values: FormValues{
-				Data: map[string]interface{}{
-					"bot_access_token":     app.BotAccessToken,
-					"oauth2_client_secret": app.OAuth2ClientSecret},
+	resp, err := s.Client.Call(
+		&api.Call{
+			URL: app.Manifest.RootURL + constants.AppInstallPath,
+			Values: map[string]string{
+				constants.BotAccessToken:     app.BotAccessToken,
+				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,
 			},
-			Context: expandedContext,
+			Context: ecc,
 		})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")
@@ -77,7 +71,7 @@ func (s *service) InstallApp(in *InInstallApp, cc *Context, sessionToken Session
 	return app, resp.Markdown, nil
 }
 
-func (s *service) ensureOAuthApp(manifest *store.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+func (s *service) ensureOAuthApp(manifest *api.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	app, err := s.Store.GetApp(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
