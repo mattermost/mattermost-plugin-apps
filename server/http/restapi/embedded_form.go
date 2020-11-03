@@ -51,7 +51,7 @@ func (a *restapi) handleEmbeddedForm(w http.ResponseWriter, req *http.Request, u
 		},
 	}
 
-	resp, err := a.apps.Client.Call(c)
+	resp, err := a.apps.API.Call(c)
 	if err != nil {
 		writeDialogError(w, "Error contacting the app: "+err.Error())
 		return

@@ -14,21 +14,21 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
 	GetManifest(manifestURL string) (*api.Manifest, error)
-	GetDialog(appID api.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
-	Call(*api.Call) (*api.CallResponse, error)
+	GetDebugDialog(appID api.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
+	PostCall(*api.Call) (*api.CallResponse, error)
 	PostNotification(*api.Notification) error
-	// GetFunctionMeta(*api.Call) (*api.Function, error)
 	GetBindings(*api.Context) ([]*api.Binding, error)
 }
 
@@ -61,7 +61,7 @@ func (c *client) PostNotification(n *api.Notification) error {
 	return nil
 }
 
-func (c *client) Call(call *api.Call) (*api.CallResponse, error) {
+func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func appendGetContext(inURL string, cc *api.Context) string {
 	return out.String()
 }
 
-func (c *client) GetDialog(appID api.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
+func (c *client) GetDebugDialog(appID api.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
 	app, err := c.store.GetApp(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting app")

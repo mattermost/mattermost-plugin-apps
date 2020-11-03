@@ -21,14 +21,13 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":    s.executeInfo,
-		"install": s.executeInstall,
-		// For Debug
-		"debug-clean":    s.executeDebugClean,
-		"debug-bindings": s.executeDebugBindings,
-		"debug-embedded": s.executeDebugEmbedded,
-		// For internal use only
-		"openDialog": s.openDialog,
+		"info":                s.executeInfo,
+		"install":             s.executeInstall,
+		"debug-install-hello": s.executeDebugInstallHello,
+		"debug-clean":         s.executeDebugClean,
+		"debug-bindings":      s.executeDebugBindings,
+		"debug-embedded":      s.executeDebugEmbedded,
+		"debug-open-dialog":   s.executeDebugDialog,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -93,14 +92,14 @@ func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, 
 	return normalOut(params, md.MD("The app will send you the form"), nil)
 }
 
-func (s *service) openDialog(params *params) (*model.CommandResponse, error) {
+func (s *service) executeDebugDialog(params *params) (*model.CommandResponse, error) {
 	if len(params.current) != 3 {
 		return normalOut(params, nil, errors.New("not enough parameters"))
 	}
 	appID := params.current[0]
 	url := params.current[1]
 	dialogID := params.current[2]
-	dialog, err := s.apps.Client.GetDialog(api.AppID(appID), url, params.commandArgs.UserId, dialogID)
+	dialog, err := s.apps.Client.GetDebugDialog(api.AppID(appID), url, params.commandArgs.UserId, dialogID)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}

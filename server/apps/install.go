@@ -55,7 +55,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 		return nil, "", err
 	}
 
-	resp, err := s.Client.Call(
+	resp, err := s.API.Call(
 		&api.Call{
 			URL: app.Manifest.RootURL + constants.AppInstallPath,
 			Values: map[string]string{

@@ -70,3 +70,12 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
+
+func (s *service) executeDebugInstallHello(params *params) (*model.CommandResponse, error) {
+	params.current = []string{
+		"--secret", "1234",
+		"--url", "http://localhost:8065/plugin/com.mattermost.apps/hello/mattermost-app.json",
+		"--force",
+	}
+	return s.executeInstall(params)
+}

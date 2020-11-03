@@ -16,7 +16,7 @@ func (s *service) Call(c *api.Call) (*api.CallResponse, error) {
 
 	clone := *c
 	clone.Context = cc
-	return s.Client.Call(&clone)
+	return s.Client.PostCall(&clone)
 }
 
 func (s *service) Notify(cc *api.Context, subj api.Subject) error {
