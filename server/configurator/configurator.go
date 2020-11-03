@@ -80,6 +80,7 @@ func (s *service) Refresh() error {
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
 	}
+	println("MattermostSiteURL = ", *mattermostSiteURL)
 	mattermostURL, err := url.Parse(*mattermostSiteURL)
 	if err != nil {
 		return err

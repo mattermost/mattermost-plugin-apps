@@ -1,0 +1,14 @@
+{
+    "name": "mattermost-hello-app",
+    "description": "Mattermost Hello App",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+    },
+    "devDependencies": {
+        "jest": "^25.4.0"
+    },
+    "scripts": {
+        "test": "jest"
+    }
+}

@@ -49,6 +49,7 @@ func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 }
 
 func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
+	println("handleOAuth", req.URL)
 	if h.OAuther == nil {
 		http.Error(w, "OAuth not initialized", http.StatusInternalServerError)
 		return
@@ -88,8 +89,9 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 
 	conf := h.apps.Configurator.GetConfig()
 	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Context.ActingUserID, &model.Post{
-		Message: cr.Markdown.String(),
+		Message: cr.Markdown.String() + " token = " + token.AccessToken,
 	})
+	println(fmt.Sprintf("my token - %v", token))
 }
 
 const AppCredentialsKey = "key_app_credentials"

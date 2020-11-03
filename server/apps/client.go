@@ -93,6 +93,8 @@ func (c *client) post(toApp *store.App, fromMattermostUserID string, url string,
 		pipew.Close()
 	}()
 
+	println(fmt.Sprintf("called url: %v", url))
+	println(fmt.Sprintf("http.MethodPost: %v", http.MethodPost))
 	req, err := http.NewRequest(http.MethodPost, url, piper)
 	if err != nil {
 		return nil, err
@@ -147,8 +149,11 @@ func createJWT(actingUserID, secret string) (string, error) {
 }
 
 func (c *client) GetManifest(manifestURL string) (*store.Manifest, error) {
+	println(fmt.Sprintf("manifestURL = %v", manifestURL))
 	var manifest store.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
+	println(fmt.Sprintf("resp = %v", resp))
+	println(fmt.Sprintf("err = %v", err))
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ import (
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
+	println("executeInstall")
 	manifestURL := ""
 	appSecret := ""
 	force := false
@@ -36,6 +37,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 	cc := apps.Context{}
 	cc.ActingUserID = params.commandArgs.UserId
+	println("before ProvisionApp")
 
 	app, _, err := s.apps.API.ProvisionApp(
 		&apps.InProvisionApp{
@@ -49,6 +51,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
+	println("after ProvisionApp")
 
 	conf := s.apps.Configurator.GetConfig()
 
@@ -59,6 +62,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
+	println("after OpenInteractiveDialog")
 
 	team, err := s.apps.Mattermost.Team.Get(params.commandArgs.TeamId)
 	if err != nil {

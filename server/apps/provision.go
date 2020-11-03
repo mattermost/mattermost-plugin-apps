@@ -62,20 +62,30 @@ func (s *service) ProvisionApp(in *InProvisionApp, cc *Context, sessionToken Ses
 
 func (s *service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := s.Configurator.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	println(fmt.Sprintf("conf.MattermostSiteURL = %v", conf.MattermostSiteURL))
+
+	client := model.NewAPIv4Client("http://localhost:8065")
+
 	client.SetToken(sessionToken)
+	println(fmt.Sprintf("token = %v", sessionToken))
+	println(fmt.Sprintf("client.ApiUrl = %v", client.ApiUrl))
 
 	bot := &model.Bot{
 		Username:    string(manifest.AppID),
 		DisplayName: manifest.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
 	}
+	println(fmt.Sprintf("bot = %v", bot))
 
 	var fullBot *model.Bot
 	user, _ := client.GetUserByUsername(bot.Username, "")
+	println(fmt.Sprintf("user = %v", user))
+
 	if user == nil {
 		var response *model.Response
 		fullBot, response = client.CreateBot(bot)
+		println(fmt.Sprintf("fullBot = %v", fullBot))
+		println(fmt.Sprintf("response = %v", response))
 
 		if response.StatusCode != http.StatusCreated {
 			if response.Error != nil {
@@ -102,6 +112,9 @@ func (s *service) ensureBot(manifest *store.Manifest, actingUserID, sessionToken
 	}
 
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
+	println(fmt.Sprintf("Mattermost App Token = %v", token))
+	println(fmt.Sprintf("response = %v", response))
+
 	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {
 			return nil, nil, response.Error
