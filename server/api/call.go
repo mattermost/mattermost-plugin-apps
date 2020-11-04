@@ -10,9 +10,11 @@ import (
 type CallType string
 
 const (
-	CallTypeSubmit = CallType("")
-	CallTypeCancel = CallType("cancel")
-	CallTypeForm   = CallType("form")
+	CallTypeSubmit            = CallType("")
+	CallTypeCancel            = CallType("cancel")
+	CallTypeForm              = CallType("form")
+	// CallTypeDebugDialog       = CallType("debug_dialog")
+	// CallTypeDebugDialogSubmit = CallType("debug_dialog_submit")
 )
 
 type Call struct {
@@ -27,7 +29,8 @@ type Call struct {
 
 type CallResponseType string
 
-// TODO <><> ticket: Call and Command should be scoped and retricted, TBD
+// TODO <><> ticket: Call and Command should be scoped and retricted, TBD.
+// Currently Command is used as a workaround to open legacy Interactive Dialogs
 const (
 	CallResponseTypeOK        = CallResponseType("")
 	CallResponseTypeError     = CallResponseType("error")
@@ -92,4 +95,11 @@ func MakeCall(url string, namevalues ...string) *Call {
 		c.Values = values
 	}
 	return c
+}
+
+func (c *Call) GetValue(name, defaultValue string) string {
+	if len(c.Values) == 0 || c.Values[name] == "" {
+		return defaultValue
+	}
+	return c.Values[name]
 }

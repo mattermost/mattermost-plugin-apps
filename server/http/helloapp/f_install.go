@@ -17,8 +17,8 @@ func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *app
 		return http.StatusBadRequest, errors.New("Not supported")
 	}
 
-	botAccessToken := c.Values[constants.BotAccessToken]
-	oauth2ClientSecret := c.Values[constants.OAuth2ClientSecret]
+	botAccessToken := c.GetValue(constants.BotAccessToken, "")
+	oauth2ClientSecret := c.GetValue(constants.OAuth2ClientSecret, "")
 
 	err := h.storeAppCredentials(&appCredentials{
 		BotAccessToken:     botAccessToken,

@@ -12,7 +12,7 @@ import (
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
 func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
-	sayhello := h.makeCall(pathSendMessage)
+	sendSurvey := h.makeCall(pathSendSurvey)
 
 	out := []*api.Binding{
 		{
@@ -20,9 +20,9 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 			LocationID: api.LocationChannelHeader,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "sayhello",
+					LocationID:  "send",
 					Description: "say hello to a user",
-					Call:        sayhello,
+					Call:        sendSurvey,
 					AsModal:     true,
 				},
 			},
@@ -30,14 +30,14 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 			LocationID: api.LocationPostMenu,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "sayhello-me",
+					LocationID:  "sendSurvey-me",
 					Description: "say hello to myself",
-					Call:        sayhello,
+					Call:        sendSurvey,
 				},
 				{
-					LocationID:  "sayhello",
+					LocationID:  "send",
 					Description: "say hello to a user",
-					Call:        sayhello,
+					Call:        sendSurvey,
 				},
 			},
 		}, {
@@ -47,7 +47,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 					LocationID:  "message",
 					Hint:        "[--user] message",
 					Description: "send a message to a user",
-					Call:        sayhello,
+					Call:        sendSurvey,
 				}, {
 					LocationID:  "manage",
 					Hint:        "subscribe | unsubscribe ",

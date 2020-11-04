@@ -40,3 +40,8 @@ const (
 	BotAccessToken     = "bot_access_token"
 	OAuth2ClientSecret = "oauth2_client_secret" // nolint:gosec
 )
+
+const (
+	PostPropAppID       = "appID"
+	PostPropDebugDialog = "dialog"
+)

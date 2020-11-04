@@ -8,7 +8,7 @@ const (
 	LocationPostMenu      LocationID = "/post_menu"
 	LocationChannelHeader LocationID = "/channel_header"
 	LocationCommand       LocationID = "/command"
-	LocationEmbeddedForm  LocationID = "/embedded_form"
+	LocationInPost        LocationID = "/in_post"
 )
 
 func (lid LocationID) In(other LocationID) bool {

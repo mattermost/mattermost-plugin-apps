@@ -26,25 +26,28 @@ const (
 )
 
 const (
+	fieldUserID   = "userID"
+	fieldMessage  = "message"
+	fieldPostID   = "post_id"
+	fieldResponse = "response"
+)
+
+const (
 	pathManifest       = "/mattermost-app.json"
 	pathInstall        = constants.AppInstallPath  // convention for Mattermost Apps
 	pathBindings       = constants.AppBindingsPath // convention for Mattermost Apps
 	pathOAuth2         = "/oauth2"                 // convention for Mattermost Apps, comes from OAuther
 	pathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
-	pathDebugDialogs   = "/dialog"
 
-	pathConnectedInstall = "/connected_install"
-	pathSendMessage      = "/message"
+	pathConnectedInstall            = "/connected_install"
+	pathSendSurvey                  = "/send"
+	pathSendSurveyDebugDialogOpen   = "/send_dialog_open"
+	pathSendSurveyDebugDialogSubmit = "/send_dialog_submit"
+	pathSubscribeChannel            = "/subscribe"
+	pathSurvey                      = "/survey"
+	pathSurveyDebugDialogSubmit     = "/survey_dialog_submit"
 
-	pathCreateEmbedded = "/create_embedded"
-	// pathCreateEmbeddedPing      = "/embedded/ping"
-	// pathHello                   = "/hello"
 	pathNotifyUserJoinedChannel = "/notify-user-joined-channel"
-	// pathOpenPingDialog          = pathDebugDialogs + "/open/ping"
-	pathPing             = "/ping"
-	pathSubmitEmbedded   = "/submit_embedded"
-	pathSubmitPingDialog = pathDebugDialogs + "/submit/ping"
-	pathSubscribeChannel = "/subscribe"
 )
 
 type helloapp struct {
@@ -59,39 +62,17 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	r := router.PathPrefix(constants.HelloAppPath).Subrouter()
-	// <<<<<<< HEAD
-
-	// 	subrouter.HandleFunc(pathManifest, h.handleManifest).Methods("GET")
-	// 	subrouter.PathPrefix(pathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
-
-	// 	subrouter.HandleFunc(pathNotifyUserJoinedChannel, notify(h.handleUserJoinedChannel)).Methods("POST")
-
-	// 	subrouter.HandleFunc(pathInstall, call(h.handleInstall)).Methods("POST")
-	// 	subrouter.HandleFunc(pathConnectedInstall, call(h.handleConnectedInstall)).Methods("POST")
-
-	// 	subrouter.HandleFunc(pathPing, call(h.handlePing)).Methods("POST")
-	// 	subrouter.HandleFunc(pathSubmitPingDialog, h.handleSubmitPingDialog).Methods("POST")
-
-	// 	subrouter.HandleFunc(pathLocations, checkAuthentication(extractUserAndChannelID(h.handleLocations))).Methods("GET")
-	// 	subrouter.HandleFunc(pathDialogs, checkAuthentication(h.handleDialog)).Methods("GET")
-
-	// 	// DEBUG
-	// 	subrouter.HandleFunc(pathSubmitEmbedded, call(h.handleSubmitEmbedded)).Methods("POST")
-	// 	subrouter.HandleFunc(pathCreateEmbedded, call(h.handleCreateEmbedded)).Methods("POST")
-	// =======
 	r.HandleFunc(pathManifest, h.handleManifest).Methods("GET")
 	r.PathPrefix(pathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
-	handleGetWithContext(r, pathBindings, (h.handleBindings))
+	handleGetWithContext(r, pathBindings, h.handleBindings)
 
 	handleCall(r, pathInstall, h.Install)
 	handleCall(r, pathConnectedInstall, h.ConnectedInstall)
-	handleCall(r, pathSendMessage, h.Message)
+	handleCall(r, pathSendSurvey, h.SendSurvey)
+	handleCall(r, pathSurvey, h.Survey)
 
-	// handleCall(r, pathSubmitEmbedded, h.handleSubmitEmbedded)
-	// handleCall(r, pathCreateEmbedded, h.handleCreateEmbedded)
-	// handleCall(r, pathCreateEmbeddedPing, h.handleCreatePingEmbedded)
-	// r.HandleFunc(pathOpenPingDialog, call(h.handleOpenPingDialog)).Methods("POST")
+	handlePostWithClaims(r, pathSendSurveyDebugDialogSubmit, h.handleSendSurveyDebugDialogSubmit)
 
 	handleNotify(r, pathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
@@ -103,6 +84,7 @@ func (h *helloapp) appURL(path string) string {
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
+type jwtHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims) (int, error)
 type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
 type callHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Call) (int, error)
 type notifyHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Notification) (int, error)
@@ -177,6 +159,24 @@ func handleGetWithContext(r *mux.Router, path string, h contextHandler) {
 			}
 		},
 	).Methods("GET")
+}
+
+func handlePostWithClaims(r *mux.Router, path string, h jwtHandler) {
+	r.HandleFunc(path,
+		func(w http.ResponseWriter, req *http.Request) {
+			claims, err := checkJWT(req)
+			if err != nil {
+				httputils.WriteBadRequestError(w, err)
+				return
+			}
+
+			statusCode, err := h(w, req, claims)
+			if err != nil {
+				httputils.WriteJSONError(w, statusCode, "", err)
+				return
+			}
+		},
+	).Methods("POST")
 }
 
 func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
