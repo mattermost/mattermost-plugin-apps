@@ -25,6 +25,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"install":        s.executeInstall,
 		"debug-clean":    s.executeDebugClean,
 		"debug-bindings": s.executeDebugBindings,
+		"debug-embedded": s.executeDebugEmbedded,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -68,4 +69,23 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 		return normalOut(params, md.MD("error"), err)
 	}
 	return normalOut(params, md.JSONBlock(bindings), nil)
+}
+
+func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
+	_, err := s.apps.Client.PostFunction(&api.Call{
+		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/form/create_embedded",
+		Context: &api.Context{
+			AppID:        "hello",
+			ActingUserID: params.commandArgs.UserId,
+			ChannelID:    params.commandArgs.ChannelId,
+			TeamID:       params.commandArgs.TeamId,
+			UserID:       params.commandArgs.UserId,
+		},
+	})
+
+	if err != nil {
+		return normalOut(params, nil, err)
+	}
+
+	return normalOut(params, md.MD("The app will send you the form"), nil)
 }
