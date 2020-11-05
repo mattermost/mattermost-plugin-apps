@@ -12,7 +12,7 @@ func (s *service) Call(call *api.Call) (*api.CallResponse, error) {
 	if call.AsModal {
 		return &api.CallResponse{
 			Type: api.CallResponseTypeOK,
-			Data: f,
+			Form: f.Form,
 		}, nil
 	}
 

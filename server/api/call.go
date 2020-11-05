@@ -29,6 +29,7 @@ type CallResponse struct {
 
 	Markdown md.MD                  `json:"markdown,omitempty"`
 	Data     map[string]interface{} `json:"data,omitempty"`
+	Form     *Form                  `json:"form,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
