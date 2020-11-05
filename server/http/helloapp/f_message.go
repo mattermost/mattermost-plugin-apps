@@ -28,7 +28,7 @@ func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims
 					AutocompleteLabel: "user",
 					AutocompleteHint:  "enter user ID or @user",
 					ModalLabel:        "User",
-					Positional:        true,
+					Position:          1,
 				}, {
 					Name:              FieldMessage,
 					Type:              api.FieldTypeText,

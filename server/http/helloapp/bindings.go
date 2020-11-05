@@ -20,25 +20,25 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 		[]*api.Binding{
 			{
 				LocationID: api.LocationCommand,
-				Name:       "hello",
+				Label:      "hello",
 				Bindings: []*api.Binding{
 					{
-						Name:        "message",
+						Label:       "message",
 						Hint:        "[--user] message",
 						Description: "send a message to a user",
 						Call:        call,
 					}, {
-						Name:        "manage",
+						Label:       "manage",
 						Hint:        "subscribe | unsubscribe ",
 						Description: "manage channel subscriptions to greet new users",
 						Bindings: []*api.Binding{
 							{
-								Name:        "subscribe",
+								Label:       "subscribe",
 								Hint:        "[--channel]",
 								Description: "subscribes a channel to greet new users",
 								Call:        h.makeCall(PathMessage, "mode", "on"),
 							}, {
-								Name:        "unsubscribe",
+								Label:       "unsubscribe",
 								Hint:        "[--channel]",
 								Description: "unsubscribes a channel from greeting new users",
 								Call:        h.makeCall(PathMessage, "mode", "off"),
@@ -51,7 +51,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 				Bindings: []*api.Binding{
 					{
 						LocationID:  "message",
-						Name:        "message",
+						Label:       "message",
 						Description: "message a user",
 						Call:        &modal,
 					},

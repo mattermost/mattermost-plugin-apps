@@ -25,7 +25,7 @@ const (
 )
 
 type CallResponse struct {
-	Type CallResponseType
+	Type CallResponseType `json:"type"`
 
 	Markdown md.MD       `json:"markdown,omitempty"`
 	Data     interface{} `json:"data,omitempty"`

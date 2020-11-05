@@ -33,7 +33,7 @@ type Field struct {
 	// number.
 	AutocompleteLabel string `json:"autocomplete_label"`
 	AutocompleteHint  string `json:"hint"`
-	Positional        bool   `json:"positional"`
+	Position          int    `json:"position"`
 
 	ModalLabel string `json:"modal_label"`
 
