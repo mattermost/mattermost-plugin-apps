@@ -26,9 +26,10 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 				{
 					LocationID:  "send",
 					Label:       "Survey a user",
+					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurveyModal,
+					Call:        sendSurvey, // should be Modal eventually
 				},
 			},
 		}, {
