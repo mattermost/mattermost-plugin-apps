@@ -11,7 +11,7 @@ import (
 // Install function metadata is not necessary, but fillint it out (minimally)
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
-func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
+func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
 	sendSurvey := h.makeCall(PathSendSurvey)
 
 	c := *sendSurvey

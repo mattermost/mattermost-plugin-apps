@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 )
 
-func (h *helloapp) handleUserJoinedChannel(w http.ResponseWriter, req *http.Request,
+func (h *helloapp) nUserJoinedChannel(w http.ResponseWriter, req *http.Request,
 	claims *apps.JWTClaims, n *api.Notification) (int, error) {
 	go h.sendSurvey(n.Context.UserID, "welcome to channel")
 	return http.StatusOK, nil

@@ -13,8 +13,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (h *helloapp) InitOAuther() error {
-	oauth2Config, err := h.GetOAuthConfig()
+func (h *helloapp) initOAuther() error {
+	oauth2Config, err := h.getOAuthConfig()
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (h *helloapp) InitOAuther() error {
 	return nil
 }
 
-func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
+func (h *helloapp) getOAuthConfig() (*oauth2.Config, error) {
 	conf := h.apps.Configurator.GetConfig()
 
 	creds, err := h.getAppCredentials()
@@ -42,7 +42,7 @@ func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 			AuthURL:  conf.MattermostSiteURL + "/oauth/authorize",
 			TokenURL: conf.MattermostSiteURL + "/oauth/access_token",
 		},
-		// RedirectURL: h.AppURL(PathOAuth2Complete), - not needed, OAuther will configure
+		// RedirectURL: h.appURL(PathOAuth2Complete), - not needed, OAuther will configure
 		// TODO Scopes:
 	}, nil
 }

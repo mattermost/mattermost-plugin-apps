@@ -59,17 +59,17 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	r := router.PathPrefix(constants.HelloAppPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
+	handleGetWithContext(r, PathBindings, h.bindings)
 	r.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
-	handleGetWithContext(r, PathBindings, h.handleBindings)
 
 	handleCall(r, PathInstall, h.fInstall)
 	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
 	handleCall(r, PathSendSurvey, h.fSendSurvey)
 	handleCall(r, PathSurvey, h.fSurvey)
 
-	handleNotify(r, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
+	handleNotify(r, PathNotifyUserJoinedChannel, h.nUserJoinedChannel)
 
-	_ = h.InitOAuther()
+	_ = h.initOAuther()
 }
 
 type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
@@ -169,11 +169,11 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 	return &claims, nil
 }
 
-func (h *helloapp) AppURL(path string) string {
+func (h *helloapp) appURL(path string) string {
 	conf := h.apps.Configurator.GetConfig()
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
 func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
-	return api.MakeCall(h.AppURL(path), namevalues...)
+	return api.MakeCall(h.appURL(path), namevalues...)
 }
