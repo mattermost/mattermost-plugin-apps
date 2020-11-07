@@ -72,11 +72,6 @@ func Init(router *mux.Router, apps *apps.Service) {
 	_ = h.InitOAuther()
 }
 
-func (h *helloapp) AppURL(path string) string {
-	conf := h.apps.Configurator.GetConfig()
-	return conf.PluginURL + constants.HelloAppPath + path
-}
-
 type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
 type callHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Call) (int, error)
 type notifyHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Notification) (int, error)
@@ -172,6 +167,11 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 	}
 
 	return &claims, nil
+}
+
+func (h *helloapp) AppURL(path string) string {
+	conf := h.apps.Configurator.GetConfig()
+	return conf.PluginURL + constants.HelloAppPath + path
 }
 
 func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
