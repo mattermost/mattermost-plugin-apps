@@ -27,7 +27,7 @@ func (h *helloapp) newSurveyForm(message string) *api.Form {
 	}
 }
 
-func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
+func (h *helloapp) fSurvey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
 	var out *api.CallResponse
 
 	// userID := c.GetValue(fieldUserID, c.Context.ActingUserID)

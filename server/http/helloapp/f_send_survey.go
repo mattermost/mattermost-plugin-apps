@@ -42,7 +42,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 	}
 }
 
-func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
+func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
 	var out *api.CallResponse
 
 	switch c.Type {

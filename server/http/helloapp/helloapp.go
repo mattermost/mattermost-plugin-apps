@@ -62,10 +62,10 @@ func Init(router *mux.Router, apps *apps.Service) {
 	r.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 	handleGetWithContext(r, PathBindings, h.handleBindings)
 
-	handleCall(r, PathInstall, h.Install)
-	handleCall(r, PathConnectedInstall, h.ConnectedInstall)
-	handleCall(r, PathSendSurvey, h.SendSurvey)
-	handleCall(r, PathSurvey, h.Survey)
+	handleCall(r, PathInstall, h.fInstall)
+	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
+	handleCall(r, PathSendSurvey, h.fSendSurvey)
+	handleCall(r, PathSurvey, h.fSurvey)
 
 	handleNotify(r, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 

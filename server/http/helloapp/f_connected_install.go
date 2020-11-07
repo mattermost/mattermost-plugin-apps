@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
+func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
 	if call.Type != api.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}

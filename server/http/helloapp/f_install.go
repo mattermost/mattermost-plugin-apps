@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
+func (h *helloapp) fInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
 	if c.Type != api.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
