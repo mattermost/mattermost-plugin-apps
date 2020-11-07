@@ -45,7 +45,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
-				h.dm(actingUserID, "Found existing ~%s channel.", AppID)
+				h.DM(actingUserID, "Found existing ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
@@ -59,7 +59,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 					return api4Resp.Error
 				}
 
-				h.dm(actingUserID, "Created ~%s channel.", AppID)
+				h.DM(actingUserID, "Created ~%s channel.", AppID)
 			}
 
 			// Add the Bot user to the team and the channel.
@@ -72,7 +72,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 				return api4Resp.Error
 			}
 
-			h.dm(actingUserID, "Added bot to channel.")
+			h.DM(actingUserID, "Added bot to channel.")
 			return nil
 		})
 	if err != nil {
@@ -85,7 +85,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 				ChannelId: channel.Id,
 				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", appDisplayName),
 			})
-			h.dm(actingUserID, "Posted welcome message to channel.")
+			h.DM(actingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
 			err = h.apps.Store.StoreSub(&api.Subscription{
@@ -102,7 +102,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 			if err != nil {
 				return err
 			}
-			h.dm(actingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
+			h.DM(actingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {
@@ -118,7 +118,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 			Type:     api.CallResponseTypeOK,
 			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", appDisplayName, ac.OAuth2ClientID, appDisplayName),
 		})
-	h.dm(actingUserID, "OK!")
+	h.DM(actingUserID, "OK!")
 
 	return http.StatusOK, nil
 }

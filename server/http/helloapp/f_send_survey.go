@@ -73,5 +73,5 @@ func (h *helloapp) sendSurvey(userID, message string) {
 			Form:       h.newSurveyForm(message),
 		},
 	})
-	h.dmPost(userID, p)
+	h.DMPost(userID, p)
 }
