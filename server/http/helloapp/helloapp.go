@@ -72,7 +72,7 @@ func Init(router *mux.Router, apps *apps.Service) {
 	_ = h.InitOAuther()
 }
 
-func (h *helloapp) appURL(path string) string {
+func (h *helloapp) AppURL(path string) string {
 	conf := h.apps.Configurator.GetConfig()
 	return conf.PluginURL + constants.HelloAppPath + path
 }
@@ -175,5 +175,5 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 }
 
 func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
-	return api.MakeCall(h.appURL(path), namevalues...)
+	return api.MakeCall(h.AppURL(path), namevalues...)
 }

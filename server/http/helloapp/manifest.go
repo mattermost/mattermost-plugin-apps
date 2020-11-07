@@ -13,13 +13,13 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			AppID:       AppID,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
-			RootURL:     h.appURL(""),
+			RootURL:     h.AppURL(""),
 			RequestedPermissions: []api.PermissionType{
 				api.PermissionUserJoinedChannelNotification,
 				api.PermissionActAsUser,
 				api.PermissionActAsBot,
 			},
-			OAuth2CallbackURL: h.appURL(PathOAuth2Complete),
-			HomepageURL:       h.appURL("/"),
+			OAuth2CallbackURL: h.AppURL(PathOAuth2Complete),
+			HomepageURL:       h.AppURL("/"),
 		})
 }
