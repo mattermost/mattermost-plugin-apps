@@ -2,6 +2,7 @@ package helloapp
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
@@ -20,22 +21,23 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 			Footer: "Message modal form footer",
 			Fields: []*api.Field{
 				{
-					Name:              fieldUserID,
-					Type:              api.FieldTypeUser,
-					Description:       "User to send the survey to",
-					AutocompleteLabel: "user",
-					AutocompleteHint:  "enter user ID or @user",
-					ModalLabel:        "User",
+					Name:                 fieldUserID,
+					Type:                 api.FieldTypeUser,
+					Description:          "User to send the survey to",
+					Label:                "User",
+					AutocompleteHint:     "enter user ID or @user",
+					AutocompletePosition: 1,
+					ModalLabel:           "User",
 				}, {
-					Name:              fieldMessage,
-					Type:              api.FieldTypeText,
-					IsRequired:        true,
-					Description:       "Text to ask the user about",
-					AutocompleteLabel: "$1",
-					AutocompleteHint:  "Anything you want to say",
-					ModalLabel:        "Text",
-					TextMinLength:     2,
-					TextMaxLength:     1024,
+					Name:             fieldMessage,
+					Type:             api.FieldTypeText,
+					IsRequired:       true,
+					Description:      "Text to ask the user about",
+					Label:            "message",
+					AutocompleteHint: "Anything you want to say",
+					ModalLabel:       "Text",
+					TextMinLength:    2,
+					TextMaxLength:    1024,
 				},
 			},
 		},
@@ -51,6 +53,18 @@ func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims 
 
 	case api.CallTypeSubmit:
 		userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
+
+		// TODO this should be done with expanding mentions, make a ticket
+		if strings.HasPrefix(userID, "@") {
+			_ = h.asUser(c.Context.ActingUserID, func(c *model.Client4) error {
+				user, _ := c.GetUserByUsername(userID[1:], "")
+				if user != nil {
+					userID = user.Id
+				}
+				return nil
+			})
+		}
+
 		message := c.GetValue(fieldMessage, "Hello")
 		if c.Context.Post != nil {
 			message += "\n>>> " + c.Context.Post.Message

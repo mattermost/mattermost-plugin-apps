@@ -12,8 +12,9 @@ const (
 )
 
 type SelectOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	IconData string `json:"icon_data"`
 }
 
 type Field struct {
@@ -27,11 +28,9 @@ type Field struct {
 
 	Description string `json:"description,omitempty"`
 
-	// Autocomplete name should be set to either the name of the --flag for
-	// named fields, or to $X for positional arguments, where X is 1-based
-	// number.
-	AutocompleteLabel string `json:"autocomplete_label"`
-	AutocompleteHint  string `json:"hint"`
+	Label                string `json:"label,omitempty"`
+	AutocompleteHint     string `json:"hint,omitempty"`
+	AutocompletePosition int    `json:"position,omitempty"`
 
 	ModalLabel string `json:"modal_label"`
 
