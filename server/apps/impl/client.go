@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package apps
+package impl
 
 import (
 	"encoding/json"
@@ -14,25 +14,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
-
-const OutgoingAuthHeader = "Mattermost-App-Authorization"
-
-type Client interface {
-	GetManifest(manifestURL string) (*api.Manifest, error)
-	PostCall(*api.Call) (*api.CallResponse, error)
-	PostNotification(*api.Notification) error
-	GetBindings(*api.Context) ([]*api.Binding, error)
-}
-
-type JWTClaims struct {
-	jwt.StandardClaims
-	ActingUserID string `json:"acting_user_id,omitempty"`
-}
 
 type client struct {
 	store store.Service
@@ -44,7 +29,7 @@ func newClient(store store.Service) *client {
 	}
 }
 
-func (c *client) PostNotification(n *api.Notification) error {
+func (c *client) PostNotification(n *apps.Notification) error {
 	app, err := c.store.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
@@ -58,7 +43,7 @@ func (c *client) PostNotification(n *api.Notification) error {
 	return nil
 }
 
-func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
+func (c *client) PostCall(call *apps.Call) (*apps.CallResponse, error) {
 	app, err := c.store.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
@@ -70,7 +55,7 @@ func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	cr := api.CallResponse{}
+	cr := apps.CallResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	if err != nil {
 		return nil, err
@@ -79,7 +64,7 @@ func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (c *client) post(toApp *api.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (c *client) post(toApp *apps.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -99,7 +84,7 @@ func (c *client) post(toApp *api.App, fromMattermostUserID string, url string, m
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(OutgoingAuthHeader, "Bearer "+jwtoken)
+	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -112,7 +97,7 @@ func (c *client) post(toApp *api.App, fromMattermostUserID string, url string, m
 	return resp, nil
 }
 
-func (c *client) get(toApp *api.App, fromMattermostUserID string, url string) (*http.Response, error) {
+func (c *client) get(toApp *apps.App, fromMattermostUserID string, url string) (*http.Response, error) {
 	client := c.getClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
@@ -123,7 +108,7 @@ func (c *client) get(toApp *api.App, fromMattermostUserID string, url string) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating request")
 	}
-	req.Header.Set(OutgoingAuthHeader, "Bearer "+jwtoken)
+	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -134,12 +119,12 @@ func (c *client) get(toApp *api.App, fromMattermostUserID string, url string) (*
 	return resp, nil
 }
 
-func (c *client) getClient(appID api.AppID) *http.Client {
+func (c *client) getClient(appID apps.AppID) *http.Client {
 	return &http.Client{}
 }
 
 func createJWT(actingUserID, secret string) (string, error) {
-	claims := JWTClaims{
+	claims := apps.JWTClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 		},
@@ -148,8 +133,8 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
-	var manifest api.Manifest
+func (c *client) GetManifest(manifestURL string) (*apps.Manifest, error) {
+	var manifest apps.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
@@ -164,13 +149,13 @@ func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+func (c *client) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 	app, err := c.store.GetApp(cc.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
 	}
 
-	resp, err := c.get(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+constants.AppBindingsPath, cc))
+	resp, err := c.get(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+apps.AppBindingsPath, cc))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get bindings")
 	}
@@ -179,7 +164,7 @@ func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		return nil, fmt.Errorf("returned with status %s", resp.Status)
 	}
 
-	out := []*api.Binding{}
+	out := []*apps.Binding{}
 	err = json.NewDecoder(resp.Body).Decode(&out)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling function")
@@ -187,7 +172,7 @@ func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 	return out, nil
 }
 
-func appendGetContext(inURL string, cc *api.Context) string {
+func appendGetContext(inURL string, cc *apps.Context) string {
 	if cc == nil {
 		return inURL
 	}
@@ -197,16 +182,16 @@ func appendGetContext(inURL string, cc *api.Context) string {
 	}
 	q := out.Query()
 	if cc.TeamID != "" {
-		q.Add(constants.TeamID, cc.TeamID)
+		q.Add(apps.PropTeamID, cc.TeamID)
 	}
 	if cc.ChannelID != "" {
-		q.Add(constants.ChannelID, cc.ChannelID)
+		q.Add(apps.PropChannelID, cc.ChannelID)
 	}
 	if cc.ActingUserID != "" {
-		q.Add(constants.ActingUserID, cc.ActingUserID)
+		q.Add(apps.PropActingUserID, cc.ActingUserID)
 	}
 	if cc.PostID != "" {
-		q.Add(constants.PostID, cc.PostID)
+		q.Add(apps.PropPostID, cc.PostID)
 	}
 	out.RawQuery = q.Encode()
 	return out.String()

@@ -8,14 +8,13 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
-	if c.Type != api.CallTypeSubmit {
+func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *apps.Call) (int, error) {
+	if c.Type != apps.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
 
@@ -87,21 +86,21 @@ func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, c
 			h.dm(c.Context.ActingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
-			err = h.apps.Store.StoreSub(&api.Subscription{
+			err = h.apps.API.Subscribe(&apps.Subscription{
 				AppID:     AppID,
-				Subject:   api.SubjectUserJoinedChannel,
+				Subject:   apps.SubjectUserJoinedChannel,
 				ChannelID: channel.Id,
 				TeamID:    channel.TeamId,
-				Expand: &api.Expand{
-					Channel: api.ExpandAll,
-					Team:    api.ExpandAll,
-					User:    api.ExpandAll,
+				Expand: &apps.Expand{
+					Channel: apps.ExpandAll,
+					Team:    apps.ExpandAll,
+					User:    apps.ExpandAll,
 				},
 			})
 			if err != nil {
 				return err
 			}
-			h.dm(c.Context.ActingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
+			h.dm(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {
@@ -113,8 +112,8 @@ func (h *helloapp) fConnectedInstall(w http.ResponseWriter, req *http.Request, c
 		return http.StatusInternalServerError, err
 	}
 	httputils.WriteJSON(w,
-		api.CallResponse{
-			Type:     api.CallResponseTypeOK,
+		apps.CallResponse{
+			Type:     apps.CallResponseTypeOK,
 			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2ClientID, AppDisplayName),
 		})
 	h.dm(c.Context.ActingUserID, "OK!")

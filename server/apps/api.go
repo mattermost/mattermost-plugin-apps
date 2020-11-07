@@ -1,0 +1,55 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
+package apps
+
+import (
+	"github.com/dgrijalva/jwt-go"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+)
+
+const OutgoingAuthHeader = "Mattermost-App-Authorization"
+
+type Service struct {
+	Configurator configurator.Service
+	Mattermost   *pluginapi.Client
+	API          API
+	Client       Client
+}
+type SessionToken string
+
+type API interface {
+	Call(*Call) (*CallResponse, error)
+	GetBindings(*Context) ([]*Binding, error)
+	InstallApp(*Context, SessionToken, *InInstallApp) (*App, md.MD, error)
+	Notify(cc *Context, subj Subject) error
+	ProvisionApp(*Context, SessionToken, *InProvisionApp) (*App, md.MD, error)
+	Subscribe(*Subscription) error
+	Unsubscribe(*Subscription) error
+}
+
+type Client interface {
+	GetBindings(*Context) ([]*Binding, error)
+	GetManifest(manifestURL string) (*Manifest, error)
+	PostCall(*Call) (*CallResponse, error)
+	PostNotification(*Notification) error
+}
+
+type JWTClaims struct {
+	jwt.StandardClaims
+	ActingUserID string `json:"acting_user_id,omitempty"`
+}
+
+type InInstallApp struct {
+	GrantedPermissions Permissions
+	AppSecret          string
+	OAuth2TrustedApp   bool
+}
+
+type InProvisionApp struct {
+	ManifestURL string
+	AppSecret   string
+	Force       bool
+}

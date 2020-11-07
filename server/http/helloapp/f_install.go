@@ -3,22 +3,20 @@ package helloapp
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) fInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
-	if c.Type != api.CallTypeSubmit {
+func (h *helloapp) fInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *apps.Call) (int, error) {
+	if c.Type != apps.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
 
-	botAccessToken := c.GetValue(constants.BotAccessToken, "")
-	oauth2ClientSecret := c.GetValue(constants.OAuth2ClientSecret, "")
+	botAccessToken := c.GetValue(apps.PropBotAccessToken, "")
+	oauth2ClientSecret := c.GetValue(apps.PropOAuth2ClientSecret, "")
 
 	err := h.storeAppCredentials(&appCredentials{
 		BotAccessToken:     botAccessToken,
@@ -34,12 +32,12 @@ func (h *helloapp) fInstall(w http.ResponseWriter, req *http.Request, claims *ap
 		return http.StatusInternalServerError, err
 	}
 
-	connectURL, err := h.startOAuth2Connect(c.Context.ActingUserID, &api.Call{
+	connectURL, err := h.startOAuth2Connect(c.Context.ActingUserID, &apps.Call{
 		URL:     h.appURL(PathConnectedInstall),
 		Context: c.Context,
-		Expand: &api.Expand{
-			App:    api.ExpandAll,
-			Config: api.ExpandSummary,
+		Expand: &apps.Expand{
+			App:    apps.ExpandAll,
+			Config: apps.ExpandSummary,
 		},
 	})
 	if err != nil {
@@ -47,8 +45,8 @@ func (h *helloapp) fInstall(w http.ResponseWriter, req *http.Request, claims *ap
 	}
 
 	httputils.WriteJSON(w,
-		api.CallResponse{
-			Type: api.CallResponseTypeOK,
+		apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
 			Markdown: md.Markdownf(
 				"**Hallo სამყარო** needs to continue its installation using your system administrator's credentials. Please [connect](%s) the application to your Mattermost account.",
 				connectURL),

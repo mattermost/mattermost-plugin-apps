@@ -3,7 +3,6 @@ package helloapp
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -11,18 +10,18 @@ import (
 // Install function metadata is not necessary, but fillint it out (minimally)
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
-func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
+func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *apps.Context) (int, error) {
 	sendSurvey := h.makeCall(PathSendSurvey)
 
 	c := *sendSurvey
 	sendSurveyModal := &c
-	sendSurveyModal.Type = api.CallTypeForm
+	sendSurveyModal.Type = apps.CallTypeForm
 
-	out := []*api.Binding{
+	out := []*apps.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
-			LocationID: api.LocationChannelHeader,
-			Bindings: []*api.Binding{
+			LocationID: apps.LocationChannelHeader,
+			Bindings: []*apps.Binding{
 				{
 					LocationID:  "send",
 					Label:       "Survey a user",
@@ -32,8 +31,8 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 				},
 			},
 		}, {
-			LocationID: api.LocationPostMenu,
-			Bindings: []*api.Binding{
+			LocationID: apps.LocationPostMenu,
+			Bindings: []*apps.Binding{
 				{
 					LocationID:  "send-me",
 					Label:       "Survey myself",
@@ -52,8 +51,8 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 		},
 		// TODO /Command binding is a placeholder, may not be final, test!
 		{
-			LocationID: api.LocationCommand,
-			Bindings: []*api.Binding{
+			LocationID: apps.LocationCommand,
+			Bindings: []*apps.Binding{
 				{
 					Label:       "message",
 					Hint:        "[--user] message",
@@ -63,7 +62,7 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 					LocationID:  "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
-					Bindings: []*api.Binding{
+					Bindings: []*apps.Binding{
 						{
 							Label:       "subscribe",
 							Hint:        "[--channel]",

@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
-	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
+
+	"github.com/mattermost/mattermost-plugin-api/experimental/bot/logger"
+	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
+	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 )
 
 func (h *helloapp) initOAuther() error {
@@ -22,7 +23,7 @@ func (h *helloapp) initOAuther() error {
 		*oauth2Config,
 		h.finishOAuth2Connect,
 		logger.NewNilLogger(), // TODO replace with a real logger
-		oauther.OAuthURL(constants.HelloAppPath+PathOAuth2),
+		oauther.OAuthURL(apps.HelloAppPath+PathOAuth2),
 		oauther.StorePrefix("hello_oauth_"))
 	return nil
 }
@@ -55,7 +56,7 @@ func (h *helloapp) handleOAuth(w http.ResponseWriter, req *http.Request) {
 	h.OAuther.ServeHTTP(w, req)
 }
 
-func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *api.Call) (string, error) {
+func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *apps.Call) (string, error) {
 	state, err := json.Marshal(callOnComplete)
 	if err != nil {
 		return "", err
@@ -69,7 +70,7 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *api.Call) (
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
-	call, err := api.UnmarshalCallFromData(payload)
+	call, err := apps.UnmarshalCallFromData(payload)
 	if err != nil {
 		return
 	}

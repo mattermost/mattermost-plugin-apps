@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -20,12 +19,12 @@ type dialog struct {
 	apps *apps.Service
 }
 
-func Init(router *mux.Router, apps *apps.Service) {
+func Init(router *mux.Router, appsService *apps.Service) {
 	d := dialog{
-		apps: apps,
+		apps: appsService,
 	}
 
-	subrouter := router.PathPrefix(constants.InteractiveDialogPath).Subrouter()
+	subrouter := router.PathPrefix(apps.InteractiveDialogPath).Subrouter()
 	subrouter.HandleFunc(InstallPath, d.handleInstall).Methods("POST")
 }
 

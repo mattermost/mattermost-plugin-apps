@@ -4,30 +4,30 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 )
 
-func (s *store) subsKey(subject api.Subject, teamID, channelID string) string {
+func (s *store) subsKey(subject apps.Subject, teamID, channelID string) string {
 	idSuffix := ""
 	switch subject {
-	case api.SubjectUserJoinedChannel,
-		api.SubjectUserLeftChannel,
-		api.SubjectPostCreated:
+	case apps.SubjectUserJoinedChannel,
+		apps.SubjectUserLeftChannel,
+		apps.SubjectPostCreated:
 		idSuffix = "_" + channelID
-	case api.SubjectUserJoinedTeam,
-		api.SubjectUserLeftTeam,
-		api.SubjectChannelCreated:
+	case apps.SubjectUserJoinedTeam,
+		apps.SubjectUserLeftTeam,
+		apps.SubjectChannelCreated:
 		idSuffix = "_" + teamID
 	}
 	return prefixSubs + string(subject) + idSuffix
 }
 
-func (s *store) DeleteSub(sub *api.Subscription) error {
+func (s *store) DeleteSub(sub *apps.Subscription) error {
 	key := s.subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*api.Subscription
+	var subs []*apps.Subscription
 	err := s.Mattermost.KV.Get(key, &subs)
 	if err != nil {
 		return err
@@ -54,9 +54,9 @@ func (s *store) DeleteSub(sub *api.Subscription) error {
 	return utils.ErrNotFound
 }
 
-func (s *store) GetSubs(subject api.Subject, teamID, channelID string) ([]*api.Subscription, error) {
+func (s *store) GetSubs(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
 	key := s.subsKey(subject, teamID, channelID)
-	var subs []*api.Subscription
+	var subs []*apps.Subscription
 	err := s.Mattermost.KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
@@ -67,10 +67,10 @@ func (s *store) GetSubs(subject api.Subject, teamID, channelID string) ([]*api.S
 	return subs, nil
 }
 
-func (s *store) StoreSub(sub *api.Subscription) error {
+func (s *store) StoreSub(sub *apps.Subscription) error {
 	key := s.subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*api.Subscription
+	var subs []*apps.Subscription
 	err := s.Mattermost.KV.Get(key, &subs)
 	if err != nil {
 		return err
