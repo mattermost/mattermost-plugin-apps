@@ -2,8 +2,6 @@ package helloapp
 
 const (
 	appCredentialsKey = "key_app_credentials"
-
-	helloAppPrefix = "hello_"
 )
 
 type appCredentials struct {

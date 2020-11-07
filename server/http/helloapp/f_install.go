@@ -14,7 +14,7 @@ import (
 
 func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
 	if c.Type != api.CallTypeSubmit {
-		return http.StatusBadRequest, errors.New("Not supported")
+		return http.StatusBadRequest, errors.New("not supported")
 	}
 
 	botAccessToken := c.GetValue(constants.BotAccessToken, "")

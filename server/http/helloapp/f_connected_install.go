@@ -16,7 +16,7 @@ import (
 
 func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
 	if c.Type != api.CallTypeSubmit {
-		return http.StatusBadRequest, errors.New("Not supported")
+		return http.StatusBadRequest, errors.New("not supported")
 	}
 
 	var teams []*model.Team

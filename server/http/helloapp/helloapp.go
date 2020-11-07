@@ -28,7 +28,6 @@ const (
 const (
 	fieldUserID   = "userID"
 	fieldMessage  = "message"
-	fieldPostID   = "post_id"
 	fieldResponse = "response"
 )
 

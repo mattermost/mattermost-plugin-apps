@@ -70,4 +70,3 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
-

@@ -164,29 +164,6 @@ func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
 	return &manifest, nil
 }
 
-// func (c *client) GetFunctionMeta(call *api.Call) (*api.Function, error) {
-// 	app, err := c.store.GetApp(call.Context.AppID)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to get app")
-// 	}
-
-// 	resp, err := c.get(app, call.Context.ActingUserID, appendGetContext(call.URL, call.Context))
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to get function")
-// 	}
-// 	defer resp.Body.Close()
-// 	if resp.StatusCode != http.StatusOK {
-// 		return nil, fmt.Errorf("returned with status %s", resp.Status)
-// 	}
-
-// 	f := api.Function{}
-// 	err = json.NewDecoder(resp.Body).Decode(&f)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "error unmarshalling function")
-// 	}
-// 	return &f, nil
-// }
-
 func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 	app, err := c.store.GetApp(cc.AppID)
 	if err != nil {
