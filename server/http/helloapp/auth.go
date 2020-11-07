@@ -69,11 +69,11 @@ func (h *helloapp) startOAuth2Connect(userID string, callOnComplete *api.Call) (
 }
 
 func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payload []byte) {
-	c, err := api.UnmarshalCallFromData(payload)
+	call, err := api.UnmarshalCallFromData(payload)
 	if err != nil {
 		return
 	}
-	c.Context.AppID = AppID
+	call.Context.AppID = AppID
 
 	// TODO 2/5 we should wrap the OAuther for the users as a "service" so that
 	//  - startOAuth2Connect is a Call
@@ -83,10 +83,10 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	// for now hacking access to apps object and issuing the call from within
 	// the app.
 
-	cr, _ := h.apps.API.Call(c)
+	cr, _ := h.apps.API.Call(call)
 
 	conf := h.apps.Configurator.GetConfig()
-	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, c.Context.ActingUserID, &model.Post{
+	_ = h.apps.Mattermost.Post.DM(conf.BotUserID, call.Context.ActingUserID, &model.Post{
 		Message: cr.Markdown.String(),
 	})
 }
