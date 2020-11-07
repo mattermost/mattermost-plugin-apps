@@ -29,13 +29,13 @@ func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *app
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	err = h.initOAuther()
+	err = h.InitOAuther()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
 	connectURL, err := h.startOAuth2Connect(c.Context.ActingUserID, &api.Call{
-		URL:     h.appURL(pathConnectedInstall),
+		URL:     h.appURL(PathConnectedInstall),
 		Context: c.Context,
 		Expand: &api.Expand{
 			App:    api.ExpandAll,

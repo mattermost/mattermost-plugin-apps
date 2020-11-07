@@ -19,7 +19,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				api.PermissionActAsUser,
 				api.PermissionActAsBot,
 			},
-			OAuth2CallbackURL: h.appURL(pathOAuth2Complete),
+			OAuth2CallbackURL: h.appURL(PathOAuth2Complete),
 			HomepageURL:       h.appURL("/"),
 		})
 }

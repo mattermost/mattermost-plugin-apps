@@ -13,8 +13,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (h *helloapp) initOAuther() error {
-	oauth2Config, err := h.getOAuthConfig()
+func (h *helloapp) InitOAuther() error {
+	oauth2Config, err := h.GetOAuthConfig()
 	if err != nil {
 		return err
 	}
@@ -22,12 +22,12 @@ func (h *helloapp) initOAuther() error {
 		*oauth2Config,
 		h.finishOAuth2Connect,
 		logger.NewNilLogger(), // TODO replace with a real logger
-		oauther.OAuthURL(constants.HelloAppPath+pathOAuth2),
+		oauther.OAuthURL(constants.HelloAppPath+PathOAuth2),
 		oauther.StorePrefix("hello_oauth_"))
 	return nil
 }
 
-func (h *helloapp) getOAuthConfig() (*oauth2.Config, error) {
+func (h *helloapp) GetOAuthConfig() (*oauth2.Config, error) {
 	conf := h.apps.Configurator.GetConfig()
 
 	creds, err := h.getAppCredentials()

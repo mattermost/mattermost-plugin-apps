@@ -33,17 +33,17 @@ const (
 
 const (
 	PathManifest       = "/mattermost-app.json"
-	pathInstall        = constants.AppInstallPath  // convention for Mattermost Apps
-	pathBindings       = constants.AppBindingsPath // convention for Mattermost Apps
-	pathOAuth2         = "/oauth2"                 // convention for Mattermost Apps, comes from OAuther
-	pathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
+	PathInstall        = constants.AppInstallPath  // convention for Mattermost Apps
+	PathBindings       = constants.AppBindingsPath // convention for Mattermost Apps
+	PathOAuth2         = "/oauth2"                 // convention for Mattermost Apps, comes from OAuther
+	PathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
 
-	pathConnectedInstall = "/connected_install"
+	PathConnectedInstall = "/connected_install"
 	PathSendSurvey       = "/send"
-	pathSubscribeChannel = "/subscribe"
-	pathSurvey           = "/survey"
+	PathSubscribeChannel = "/subscribe"
+	PathSurvey           = "/survey"
 
-	pathNotifyUserJoinedChannel = "/notify-user-joined-channel"
+	PathNotifyUserJoinedChannel = "/notify-user-joined-channel"
 )
 
 type helloapp struct {
@@ -59,17 +59,17 @@ func Init(router *mux.Router, apps *apps.Service) {
 
 	r := router.PathPrefix(constants.HelloAppPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
-	r.PathPrefix(pathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
-	handleGetWithContext(r, pathBindings, h.handleBindings)
+	r.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
+	handleGetWithContext(r, PathBindings, h.handleBindings)
 
-	handleCall(r, pathInstall, h.Install)
-	handleCall(r, pathConnectedInstall, h.ConnectedInstall)
+	handleCall(r, PathInstall, h.Install)
+	handleCall(r, PathConnectedInstall, h.ConnectedInstall)
 	handleCall(r, PathSendSurvey, h.SendSurvey)
-	handleCall(r, pathSurvey, h.Survey)
+	handleCall(r, PathSurvey, h.Survey)
 
-	handleNotify(r, pathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
+	handleNotify(r, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
-	_ = h.initOAuther()
+	_ = h.InitOAuther()
 }
 
 func (h *helloapp) appURL(path string) string {
