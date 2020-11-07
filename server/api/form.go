@@ -11,5 +11,5 @@ type Form struct {
 	// refreshed form are lost.
 	DependsOn []string `json:"depends_on,omitempty"`
 
-	Fields []*Field
+	Fields []*Field `json:"fields,omitempty"`
 }

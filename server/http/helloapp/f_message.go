@@ -2,10 +2,13 @@ package helloapp
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const FieldUserID = "userID"
@@ -25,6 +28,7 @@ func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims
 					AutocompleteLabel: "user",
 					AutocompleteHint:  "enter user ID or @user",
 					ModalLabel:        "User",
+					Position:          1,
 				}, {
 					Name:              FieldMessage,
 					Type:              api.FieldTypeText,
@@ -45,6 +49,16 @@ func (h *helloapp) fMessageMeta(w http.ResponseWriter, req *http.Request, claims
 
 func (h *helloapp) fMessage(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, call *api.Call) (int, error) {
 	userID := call.Values[FieldUserID]
+	if strings.HasPrefix(userID, "@") {
+		_ = h.asUser(call.Context.ActingUserID, func(c *model.Client4) error {
+			user, _ := c.GetUserByUsername(userID[1:], "")
+			if user != nil {
+				userID = user.Id
+			}
+			return nil
+		})
+	}
+
 	if userID == "" {
 		userID = call.Context.ActingUserID
 	}
@@ -52,7 +66,8 @@ func (h *helloapp) fMessage(w http.ResponseWriter, req *http.Request, claims *ap
 	h.message(userID, call.Values[FieldMessage])
 
 	httputils.WriteJSON(w, api.CallResponse{
-		Type: api.CallResponseTypeOK,
+		Type:     api.CallResponseTypeOK,
+		Markdown: md.JSONBlock(call),
 	})
 	return http.StatusOK, nil
 }

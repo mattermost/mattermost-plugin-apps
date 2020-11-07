@@ -12,8 +12,9 @@ const (
 )
 
 type SelectOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	IconData string `json:"icon_data"`
 }
 
 type Field struct {
@@ -32,6 +33,7 @@ type Field struct {
 	// number.
 	AutocompleteLabel string `json:"autocomplete_label"`
 	AutocompleteHint  string `json:"hint"`
+	Position          int    `json:"position"`
 
 	ModalLabel string `json:"modal_label"`
 

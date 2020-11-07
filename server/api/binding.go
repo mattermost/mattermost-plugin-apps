@@ -21,7 +21,7 @@ type Binding struct {
 	// - For LocationPostMenu is the menu item text.
 	// - For LocationChannelHeader is the dropdown text.
 	// - For LocationCommand is the name of the command
-	Label string `json:"text,omitempty"`
+	Label string `json:"label,omitempty"`
 
 	// Hint is the secondary text to display
 	// - LocationPostMenu: not used
