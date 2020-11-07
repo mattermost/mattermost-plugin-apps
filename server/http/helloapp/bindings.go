@@ -12,7 +12,11 @@ import (
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
 func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
-	sendSurvey := h.makeCall(pathSendSurvey)
+	sendSurvey := h.makeCall(PathSendSurvey)
+
+	c := *sendSurvey
+	sendSurveyModal := &c
+	sendSurveyModal.Type = api.CallTypeForm
 
 	out := []*api.Binding{
 		{
@@ -21,30 +25,37 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 			Bindings: []*api.Binding{
 				{
 					LocationID:  "send",
-					Description: "say hello to a user",
-					Call:        sendSurvey,
-					AsModal:     true,
+					Label:       "Survey a user",
+					Hint:        "Send survey to a user",
+					Description: "Send a customized emotional response survey to a user",
+					Call:        sendSurveyModal,
 				},
 			},
 		}, {
 			LocationID: api.LocationPostMenu,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "sendSurvey-me",
-					Description: "say hello to myself",
-					Call:        sendSurvey,
+					LocationID:  "send-me",
+					Label:       "Survey myself",
+					Hint:        "Send survey to myself",
+					Description: "Send a customized emotional response survey to myself",
+					Call:        sendSurvey, // will use ActingUserID by default
 				},
 				{
 					LocationID:  "send",
-					Description: "say hello to a user",
-					Call:        sendSurvey,
+					Label:       "Survey a user",
+					Hint:        "Send survey to a user",
+					Description: "Send a customized emotional response survey to a user",
+					Call:        sendSurveyModal,
 				},
 			},
-		}, {
+		},
+		// TODO /Command binding is a placeholder, may not be final, test!
+		{
 			LocationID: api.LocationCommand,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "message",
+					Label:       "message",
 					Hint:        "[--user] message",
 					Description: "send a message to a user",
 					Call:        sendSurvey,
@@ -54,12 +65,12 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 					Description: "manage channel subscriptions to greet new users",
 					Bindings: []*api.Binding{
 						{
-							LocationID:  "subscribe",
+							Label:       "subscribe",
 							Hint:        "[--channel]",
 							Description: "subscribes a channel to greet new users",
 							Call:        h.makeCall(pathSubscribeChannel, "mode", "on"),
 						}, {
-							LocationID:  "unsubscribe",
+							Label:       "unsubscribe",
 							Hint:        "[--channel]",
 							Description: "unsubscribes a channel from greeting new users",
 							Call:        h.makeCall(pathSubscribeChannel, "mode", "off"),

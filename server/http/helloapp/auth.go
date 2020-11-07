@@ -73,7 +73,7 @@ func (h *helloapp) finishOAuth2Connect(userID string, token oauth2.Token, payloa
 	if err != nil {
 		return
 	}
-	c.Context.AppID = appID
+	c.Context.AppID = AppID
 
 	// TODO 2/5 we should wrap the OAuther for the users as a "service" so that
 	//  - startOAuth2Connect is a Call

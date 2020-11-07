@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	appID          = "hello"
-	appSecret      = "1234"
+	AppID          = "hello"
+	AppSecret      = "1234"
 	appDisplayName = "Hallo სამყარო"
 	appDescription = "Hallo სამყარო test app"
 )
@@ -33,19 +33,16 @@ const (
 )
 
 const (
-	pathManifest       = "/mattermost-app.json"
+	PathManifest       = "/mattermost-app.json"
 	pathInstall        = constants.AppInstallPath  // convention for Mattermost Apps
 	pathBindings       = constants.AppBindingsPath // convention for Mattermost Apps
 	pathOAuth2         = "/oauth2"                 // convention for Mattermost Apps, comes from OAuther
 	pathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
 
-	pathConnectedInstall            = "/connected_install"
-	pathSendSurvey                  = "/send"
-	pathSendSurveyDebugDialogOpen   = "/send_dialog_open"
-	pathSendSurveyDebugDialogSubmit = "/send_dialog_submit"
-	pathSubscribeChannel            = "/subscribe"
-	pathSurvey                      = "/survey"
-	pathSurveyDebugDialogSubmit     = "/survey_dialog_submit"
+	pathConnectedInstall = "/connected_install"
+	PathSendSurvey       = "/send"
+	pathSubscribeChannel = "/subscribe"
+	pathSurvey           = "/survey"
 
 	pathNotifyUserJoinedChannel = "/notify-user-joined-channel"
 )
@@ -62,17 +59,14 @@ func Init(router *mux.Router, apps *apps.Service) {
 	}
 
 	r := router.PathPrefix(constants.HelloAppPath).Subrouter()
-	r.HandleFunc(pathManifest, h.handleManifest).Methods("GET")
+	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 	r.PathPrefix(pathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
-
 	handleGetWithContext(r, pathBindings, h.handleBindings)
 
 	handleCall(r, pathInstall, h.Install)
 	handleCall(r, pathConnectedInstall, h.ConnectedInstall)
-	handleCall(r, pathSendSurvey, h.SendSurvey)
+	handleCall(r, PathSendSurvey, h.SendSurvey)
 	handleCall(r, pathSurvey, h.Survey)
-
-	handlePostWithClaims(r, pathSendSurveyDebugDialogSubmit, h.handleSendSurveyDebugDialogSubmit)
 
 	handleNotify(r, pathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
 
@@ -84,7 +78,6 @@ func (h *helloapp) appURL(path string) string {
 	return conf.PluginURL + constants.HelloAppPath + path
 }
 
-type jwtHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims) (int, error)
 type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
 type callHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Call) (int, error)
 type notifyHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Notification) (int, error)
@@ -161,24 +154,6 @@ func handleGetWithContext(r *mux.Router, path string, h contextHandler) {
 	).Methods("GET")
 }
 
-func handlePostWithClaims(r *mux.Router, path string, h jwtHandler) {
-	r.HandleFunc(path,
-		func(w http.ResponseWriter, req *http.Request) {
-			claims, err := checkJWT(req)
-			if err != nil {
-				httputils.WriteBadRequestError(w, err)
-				return
-			}
-
-			statusCode, err := h(w, req, claims)
-			if err != nil {
-				httputils.WriteJSONError(w, statusCode, "", err)
-				return
-			}
-		},
-	).Methods("POST")
-}
-
 func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 	authValue := req.Header.Get(apps.OutgoingAuthHeader)
 	if !strings.HasPrefix(authValue, "Bearer ") {
@@ -191,29 +166,13 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(appSecret), nil
+		return []byte(AppSecret), nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &claims, nil
-}
-
-func (h *helloapp) handleDialog(w http.ResponseWriter, req *http.Request, _ apps.JWTClaims) {
-	dialogID := req.URL.Query().Get("dialogID")
-	if dialogID == "" {
-		httputils.WriteBadRequestError(w, errors.New("dialog id not provided"))
-		return
-	}
-
-	dialog, err := h.getDialog(dialogID)
-	if err != nil {
-		httputils.WriteInternalServerError(w, errors.Wrap(err, "error while getting dialog"))
-		return
-	}
-
-	httputils.WriteJSON(w, dialog)
 }
 
 func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {

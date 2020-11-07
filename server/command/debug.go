@@ -4,16 +4,17 @@
 package command
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
-	return normalOut(params, md.MD("TODO"), nil)
+	_ = s.apps.Mattermost.KV.DeleteAll()
+	return normalOut(params, md.MD("Deleted all KV records"), nil)
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
@@ -31,9 +32,9 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
 	_, err := s.apps.API.Call(&api.Call{
-		URL: s.apps.Configurator.GetConfig().PluginURL + "/hello/form/create_embedded",
+		URL: s.apps.Configurator.GetConfig().PluginURL + constants.HelloAppPath + helloapp.PathSendSurvey,
 		Context: &api.Context{
-			AppID:        "hello",
+			AppID:        helloapp.AppID,
 			ActingUserID: params.commandArgs.UserId,
 			ChannelID:    params.commandArgs.ChannelId,
 			TeamID:       params.commandArgs.TeamId,
@@ -48,24 +49,11 @@ func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, 
 	return normalOut(params, md.MD("The app will send you the form"), nil)
 }
 
-func (s *service) executeDebugDialog(params *params) (*model.CommandResponse, error) {
-	if len(params.current) != 3 {
-		return normalOut(params, nil, errors.New("not enough parameters"))
+func (s *service) executeDebugInstallHello(params *params) (*model.CommandResponse, error) {
+	params.current = []string{
+		"--app-secret", helloapp.AppSecret,
+		"--url", s.apps.Configurator.GetConfig().PluginURL + constants.HelloAppPath + helloapp.PathManifest,
+		"--force",
 	}
-	appID := params.current[0]
-	url := params.current[1]
-	dialogID := params.current[2]
-	dialog, err := s.apps.Client.GetDebugDialog(api.AppID(appID), url, params.commandArgs.UserId, dialogID)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-
-	dialog.TriggerId = params.commandArgs.TriggerId
-
-	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(*dialog)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-
-	return normalOut(params, md.MD(""), nil)
+	return s.executeInstall(params)
 }

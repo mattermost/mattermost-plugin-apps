@@ -10,7 +10,7 @@ import (
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		api.Manifest{
-			AppID:       appID,
+			AppID:       AppID,
 			DisplayName: appDisplayName,
 			Description: appDescription,
 			RootURL:     h.appURL(""),

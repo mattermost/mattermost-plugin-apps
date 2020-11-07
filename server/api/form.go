@@ -18,7 +18,8 @@ type Form struct {
 	SubmitButtons string `json:"submit_buttons,omitempty"`
 
 	// Adds a default "Cancel" button in the modal view
-	CancelButton bool `json:"cancel_button,omitempty"`
+	CancelButton  bool `json:"cancel_button,omitempty"`
+	SubmitOnCanel bool `json:"submit_on_cancel,omitempty"`
 
 	// DependsOn is the list of field names that when changed force reloading
 	// the form. Values of the fields with values that are not included in the

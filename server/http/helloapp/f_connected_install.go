@@ -39,19 +39,19 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 			team = teams[0]
 
 			// Ensure "Hallo სამყარო" channel
-			channel, _ = mmclient.GetChannelByName(appID, team.Id, "")
+			channel, _ = mmclient.GetChannelByName(AppID, team.Id, "")
 			if channel != nil {
 				// TODO DM to user that the channel has been found
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
-				h.dm(actingUserID, "Found existing ~%s channel.", appID)
+				h.dm(actingUserID, "Found existing ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
 					Type:        model.CHANNEL_OPEN,
 					DisplayName: appDisplayName,
-					Name:        appID,
+					Name:        AppID,
 					Header:      "TODO header",
 					Purpose:     `to say, "Hallo სამყარო!"`,
 				})
@@ -59,7 +59,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 					return api4Resp.Error
 				}
 
-				h.dm(actingUserID, "Created ~%s channel.", appID)
+				h.dm(actingUserID, "Created ~%s channel.", AppID)
 			}
 
 			// Add the Bot user to the team and the channel.
@@ -89,7 +89,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
 			err = h.apps.Store.StoreSub(&api.Subscription{
-				AppID:     appID,
+				AppID:     AppID,
 				Subject:   api.SubjectUserJoinedChannel,
 				ChannelID: channel.Id,
 				TeamID:    channel.TeamId,

@@ -14,8 +14,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -26,7 +24,6 @@ const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Client interface {
 	GetManifest(manifestURL string) (*api.Manifest, error)
-	GetDebugDialog(appID api.AppID, url, userID, dialogID string) (*model.OpenDialogRequest, error)
 	PostCall(*api.Call) (*api.CallResponse, error)
 	PostNotification(*api.Notification) error
 	GetBindings(*api.Context) ([]*api.Binding, error)
@@ -236,37 +233,4 @@ func appendGetContext(inURL string, cc *api.Context) string {
 	}
 	out.RawQuery = q.Encode()
 	return out.String()
-}
-
-func (c *client) GetDebugDialog(appID api.AppID, dialogURL, userID, dialogID string) (*model.OpenDialogRequest, error) {
-	app, err := c.store.GetApp(appID)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting app")
-	}
-
-	url, err := url.Parse(dialogURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "error parsing the url")
-	}
-	q := url.Query()
-	q.Add("dialogID", dialogID)
-	url.RawQuery = q.Encode()
-
-	resp, err := c.get(app, userID, url.String())
-	if err != nil {
-		return nil, errors.Wrap(err, "error fetching the location")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("returned with status %s", resp.Status)
-	}
-
-	var dialog model.OpenDialogRequest
-	err = json.NewDecoder(resp.Body).Decode(&dialog)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot decode dialog")
-	}
-
-	return &dialog, nil
 }

@@ -10,11 +10,14 @@ import (
 type CallType string
 
 const (
-	CallTypeSubmit            = CallType("")
-	CallTypeCancel            = CallType("cancel")
-	CallTypeForm              = CallType("form")
-	// CallTypeDebugDialog       = CallType("debug_dialog")
-	// CallTypeDebugDialogSubmit = CallType("debug_dialog_submit")
+	// CallTypeSubmit (default) indicates the intent to take action.
+	CallTypeSubmit = CallType("")
+	// CallTypeForm retrieves the form definition for the current set of falues,
+	// and the context.
+	CallTypeForm = CallType("form")
+	// CallTypeCancel is used for for the (rare?) case of when the form with
+	// SubmitOnCancel set is dismissed by the user.
+	CallTypeCancel = CallType("cancel")
 )
 
 type Call struct {
@@ -22,37 +25,38 @@ type Call struct {
 	Type       CallType          `json:"type,omitempty"`
 	Values     map[string]string `json:"values,omitempty"`
 	Context    *Context          `json:"context,omitempty"`
-	AsModal    bool              `json:"as_modal,omitempty"`
 	RawCommand string            `json:"raw_command,omitempty"`
 	Expand     *Expand           `json:"expand,omitempty"`
 }
 
 type CallResponseType string
 
-// TODO <><> ticket: Call and Command should be scoped and retricted, TBD.
-// Currently Command is used as a workaround to open legacy Interactive Dialogs
 const (
-	CallResponseTypeOK        = CallResponseType("")
-	CallResponseTypeError     = CallResponseType("error")
-	CallResponseTypeForm      = CallResponseType("form")
-	CallResponseTypeCall      = CallResponseType("call")
-	CallResponseTypeCommand   = CallResponseType("command")
-	CallResponseTypeNavigate  = CallResponseType("navigate")
-	CallResponseTypeOpenModal = CallResponseType("open_modal")
+	CallResponseTypeOK       = CallResponseType("")
+	CallResponseTypeError    = CallResponseType("error")
+	CallResponseTypeForm     = CallResponseType("form")
+	CallResponseTypeCall     = CallResponseType("call")
+	CallResponseTypeNavigate = CallResponseType("navigate")
 )
 
 type CallResponse struct {
 	Type CallResponseType `json:"type,omitempty"`
 
+	// Used in CallResponseTypeOK to return the displayble, and JSON results
 	Markdown md.MD                  `json:"markdown,omitempty"`
 	Data     map[string]interface{} `json:"data,omitempty"`
 
+	// Used in CallResponseTypeError
 	Error string `json:"error,omitempty"`
 
+	// Used in CallResponseTypeNavigate
 	NavigateToURL      string `json:"navigate_to_url,omitempty"`
 	UseExternalBrowser bool   `json:"use_external_browser,omitempty"`
 
+	// Used in CallResponseTypeCall
 	Call *Call `json:"call,omitempty"`
+
+	// Used in CallResponseTypeForm
 	Form *Form `json:"form,omitempty"`
 }
 
