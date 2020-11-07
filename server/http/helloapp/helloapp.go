@@ -21,8 +21,8 @@ import (
 const (
 	AppID          = "hello"
 	AppSecret      = "1234"
-	appDisplayName = "Hallo სამყარო"
-	appDescription = "Hallo სამყარო test app"
+	AppDisplayName = "Hallo სამყარო"
+	AppDescription = "Hallo სამყარო test app"
 )
 
 const (

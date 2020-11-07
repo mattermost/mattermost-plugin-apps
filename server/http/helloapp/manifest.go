@@ -11,8 +11,8 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		api.Manifest{
 			AppID:       AppID,
-			DisplayName: appDisplayName,
-			Description: appDescription,
+			DisplayName: AppDisplayName,
+			Description: AppDescription,
 			RootURL:     h.appURL(""),
 			RequestedPermissions: []api.PermissionType{
 				api.PermissionUserJoinedChannelNotification,

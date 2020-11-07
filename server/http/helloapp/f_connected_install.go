@@ -22,9 +22,8 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 	var teams []*model.Team
 	var team *model.Team
 	var channel *model.Channel
-	actingUserID := c.Context.ActingUserID
 
-	err := h.asUser(actingUserID,
+	err := h.asUser(c.Context.ActingUserID,
 		func(mmclient *model.Client4) error {
 			var api4Resp *model.Response
 			teams, api4Resp = mmclient.GetAllTeams("", 0, 1)
@@ -45,12 +44,12 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 				if channel.DeleteAt != 0 {
 					return errors.Errorf("TODO unarchive channel %s \n", channel.DisplayName)
 				}
-				h.DM(actingUserID, "Found existing ~%s channel.", AppID)
+				h.DM(c.Context.ActingUserID, "Found existing ~%s channel.", AppID)
 			} else {
 				channel, api4Resp = mmclient.CreateChannel(&model.Channel{
 					TeamId:      team.Id,
 					Type:        model.CHANNEL_OPEN,
-					DisplayName: appDisplayName,
+					DisplayName: AppDisplayName,
 					Name:        AppID,
 					Header:      "TODO header",
 					Purpose:     `to say, "Hallo სამყარო!"`,
@@ -59,7 +58,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 					return api4Resp.Error
 				}
 
-				h.DM(actingUserID, "Created ~%s channel.", AppID)
+				h.DM(c.Context.ActingUserID, "Created ~%s channel.", AppID)
 			}
 
 			// Add the Bot user to the team and the channel.
@@ -72,7 +71,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 				return api4Resp.Error
 			}
 
-			h.DM(actingUserID, "Added bot to channel.")
+			h.DM(c.Context.ActingUserID, "Added bot to channel.")
 			return nil
 		})
 	if err != nil {
@@ -83,9 +82,9 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 		func(mmclient *model.Client4, botUserID string) error {
 			_, _ = mmclient.CreatePost(&model.Post{
 				ChannelId: channel.Id,
-				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", appDisplayName),
+				Message:   fmt.Sprintf("%s has been installed into this channel and will now greet newly joining users", AppDisplayName),
 			})
-			h.DM(actingUserID, "Posted welcome message to channel.")
+			h.DM(c.Context.ActingUserID, "Posted welcome message to channel.")
 
 			// TODO this should be done using the REST Subs API, for now mock with direct use
 			err = h.apps.Store.StoreSub(&api.Subscription{
@@ -102,7 +101,7 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 			if err != nil {
 				return err
 			}
-			h.DM(actingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
+			h.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
 			return nil
 		})
 	if err != nil {
@@ -116,9 +115,9 @@ func (h *helloapp) ConnectedInstall(w http.ResponseWriter, req *http.Request, cl
 	httputils.WriteJSON(w,
 		api.CallResponse{
 			Type:     api.CallResponseTypeOK,
-			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", appDisplayName, ac.OAuth2ClientID, appDisplayName),
+			Markdown: md.Markdownf("installed %s (OAuth client ID: %s) to %s channel", AppDisplayName, ac.OAuth2ClientID, AppDisplayName),
 		})
-	h.DM(actingUserID, "OK!")
+	h.DM(c.Context.ActingUserID, "OK!")
 
 	return http.StatusOK, nil
 }
