@@ -29,11 +29,13 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-func setAppID(bb []*api.Binding, appID api.AppID) {
+func setAppID(bb []*api.Binding, appID api.AppID, excludeTopLevel bool) {
 	for _, b := range bb {
-		b.AppID = appID
+		if !excludeTopLevel {
+			b.AppID = appID
+		}
 		if len(b.Bindings) != 0 {
-			setAppID(b.Bindings, appID)
+			setAppID(b.Bindings, appID, false)
 		}
 	}
 }
@@ -56,7 +58,7 @@ func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 		// TODO eliminate redundant AppID, just need it at the top level? I.e.
 		// group by AppID instead of top-level LocationID
-		setAppID(bb, appID)
+		setAppID(bb, appID, true)
 
 		all = mergeBindings(all, bb)
 	}
