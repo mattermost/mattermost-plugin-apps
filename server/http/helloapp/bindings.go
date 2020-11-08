@@ -21,10 +21,10 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 	out := []*api.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
-			LocationID: api.LocationChannelHeader,
+			Location: api.LocationChannelHeader,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "send",
+					Location:    "send",
 					Label:       "Survey a user",
 					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
 					Hint:        "Send survey to a user",
@@ -33,17 +33,17 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 				},
 			},
 		}, {
-			LocationID: api.LocationPostMenu,
+			Location: api.LocationPostMenu,
 			Bindings: []*api.Binding{
 				{
-					LocationID:  "send-me",
+					Location:    "send-me",
 					Label:       "Survey myself",
 					Hint:        "Send survey to myself",
 					Description: "Send a customized emotional response survey to myself",
 					Call:        sendSurvey, // will use ActingUserID by default
 				},
 				{
-					LocationID:  "send",
+					Location:    "send",
 					Label:       "Survey a user",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
@@ -53,7 +53,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 		},
 		// TODO /Command binding is a placeholder, may not be final, test!
 		{
-			LocationID: api.LocationCommand,
+			Location: api.LocationCommand,
 			Bindings: []*api.Binding{
 				{
 					Label:       "message",
@@ -61,7 +61,7 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 					Description: "send a message to a user",
 					Call:        sendSurvey,
 				}, {
-					LocationID:  "manage",
+					Location:    "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
 					Bindings: []*api.Binding{

@@ -11,7 +11,7 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	for _, b2 := range bb2 {
 		found := false
 		for i, o := range out {
-			if b2.AppID == o.AppID && b2.LocationID == o.LocationID {
+			if b2.AppID == o.AppID && b2.Location == o.Location {
 				found = true
 
 				// b2 overrides b1, if b1 and b2 have Bindings, they are merged
@@ -27,15 +27,6 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 		}
 	}
 	return out
-}
-
-func setAppID(bb []*api.Binding, appID api.AppID) {
-	for _, b := range bb {
-		b.AppID = appID
-		if len(b.Bindings) != 0 {
-			setAppID(b.Bindings, appID)
-		}
-	}
 }
 
 // This and registry related calls should be RPC calls so they can be reused by other plugins
@@ -55,7 +46,7 @@ func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		}
 
 		// TODO eliminate redundant AppID, just need it at the top level? I.e.
-		// group by AppID instead of top-level LocationID
+		// group by AppID instead of top-level Location
 		setAppID(bb, appID)
 
 		all = mergeBindings(all, bb)
@@ -63,3 +54,25 @@ func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 	return all, nil
 }
+
+
+func (s *service) scanAppBindings(bindings []*api.Binding, appID api.AppID) {
+	for _, b := range bb {
+		b.AppID = appID
+		if len(b.Bindings) != 0 {
+			setAppID(b.Bindings, appID)
+		}
+	}
+}
+
+
+
+func setAppID(bb []*api.Binding, appID api.AppID) {
+	for _, b := range bb {
+		b.AppID = appID
+		if len(b.Bindings) != 0 {
+			setAppID(b.Bindings, appID)
+		}
+	}
+}
+

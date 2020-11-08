@@ -83,8 +83,8 @@ func (h *helloapp) sendSurvey(userID, message string) {
 	}
 	p.AddProp(constants.PostPropAppBindings, []*api.Binding{
 		{
-			LocationID: "survey",
-			Form:       h.newSurveyForm(message),
+			Location: "survey",
+			Form:     h.newSurveyForm(message),
 		},
 	})
 	h.DMPost(userID, p)

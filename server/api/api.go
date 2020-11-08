@@ -21,6 +21,7 @@ type API interface {
 
 type InInstallApp struct {
 	GrantedPermissions Permissions
+	GrantedLocations   []Location
 	AppSecret          string
 	OAuth2TrustedApp   bool
 }

@@ -24,6 +24,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	}
 
 	app.GrantedPermissions = in.GrantedPermissions
+	app.GrantedLocations = in.GrantedLocations
 	if in.AppSecret != "" {
 		app.Secret = in.AppSecret
 	}

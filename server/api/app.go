@@ -1,9 +1,5 @@
 package api
 
-import (
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
-)
-
 type AppID string
 
 type Manifest struct {
@@ -16,6 +12,11 @@ type Manifest struct {
 	RootURL           string `json:"root_url"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
+
+	// RequestedLocations is the list of top-level locations that the
+	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
+	// "/command/apptrigger"}``.
+	RequestedLocations []Location `json:"requested_locations,omitempty"`
 }
 
 type App struct {
@@ -32,46 +33,11 @@ type App struct {
 	BotUsername    string `json:"bot_username,omitempty"`
 	BotAccessToken string `json:"bot_access_token,omitempty"`
 
-	// Grants should be scopable in the future, per team, channel, post with regexp
+	// Grants should be scopable in the future, per team, channel, post with
+	// regexp.
 	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
-}
 
-type PermissionType string
-
-const (
-	PermissionUserJoinedChannelNotification = PermissionType("user_joined_channel_notification")
-	PermissionAddToPostMenu                 = PermissionType("add_to_post_menu")
-	PermissionAddGrants                     = PermissionType("add_grants")
-	PermissionActAsUser                     = PermissionType("act_as_user")
-	PermissionActAsBot                      = PermissionType("act_as_bot")
-)
-
-func (p PermissionType) Markdown() md.MD {
-	m := ""
-	switch p {
-	case PermissionAddToPostMenu:
-		m = "Add items to Post menu"
-	case PermissionUserJoinedChannelNotification:
-		m = "Be notified when users join channels"
-	case PermissionAddGrants:
-		m = "Add more grants (WITHOUT ADDITIONAL ADMIN CONSENT)"
-	case PermissionActAsUser:
-		m = "Use Mattermost REST API as connected users"
-	case PermissionActAsBot:
-		m = "Use Mattermost REST API as the app's bot user"
-	default:
-		m = "unknown permission: " + string(p)
-	}
-	return md.MD(m)
-}
-
-type Permissions []PermissionType
-
-func (p Permissions) Contains(permission PermissionType) bool {
-	for _, current := range p {
-		if current == permission {
-			return true
-		}
-	}
-	return false
+	// GrantedLocations contains the list of top locations that the
+	// application is allowed to bind to.
+	GrantedLocations []Location `json:"granted_top_locations,omitempty"`
 }

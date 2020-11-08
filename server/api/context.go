@@ -6,7 +6,7 @@ import (
 
 type Context struct {
 	AppID        AppID             `json:"app_id"`
-	LocationID   LocationID        `json:"location_id,omitempty"`
+	Location     Location          `json:"location,omitempty"`
 	ActingUserID string            `json:"acting_user_id,omitempty"`
 	UserID       string            `json:"user_id,omitempty"`
 	TeamID       string            `json:"team_id"`

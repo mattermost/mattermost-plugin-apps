@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testBinding(appID api.AppID, parent api.LocationID, n string) []*api.Binding {
+func testBinding(appID api.AppID, parent api.Location, n string) []*api.Binding {
 	return []*api.Binding{
 		{
-			AppID:      appID,
-			LocationID: parent,
+			AppID:    appID,
+			Location: parent,
 			Bindings: []*api.Binding{
 				{
-					AppID:      appID,
-					LocationID: api.LocationID(fmt.Sprintf("id-%s", n)),
-					Hint:       fmt.Sprintf("hint-%s", n),
+					AppID:    appID,
+					Location: api.Location(fmt.Sprintf("id-%s", n)),
+					Hint:     fmt.Sprintf("hint-%s", n),
 				},
 			},
 		},
@@ -35,20 +35,20 @@ func TestMergeBindings(t *testing.T) {
 			name: "happy simplest",
 			bb1: []*api.Binding{
 				{
-					LocationID: "1",
+					Location: "1",
 				},
 			},
 			bb2: []*api.Binding{
 				{
-					LocationID: "2",
+					Location: "2",
 				},
 			},
 			expected: []*api.Binding{
 				{
-					LocationID: "1",
+					Location: "1",
 				},
 				{
-					LocationID: "2",
+					Location: "2",
 				},
 			},
 		},
@@ -94,18 +94,18 @@ func TestMergeBindings(t *testing.T) {
 			bb2:  testBinding("app1", api.LocationCommand, "simple2"),
 			expected: []*api.Binding{
 				{
-					AppID:      "app1",
-					LocationID: "/command",
+					AppID:    "app1",
+					Location: "/command",
 					Bindings: []*api.Binding{
 						{
-							AppID:      "app1",
-							LocationID: "id-simple1",
-							Hint:       "hint-simple1",
+							AppID:    "app1",
+							Location: "id-simple1",
+							Hint:     "hint-simple1",
 						},
 						{
-							AppID:      "app1",
-							LocationID: "id-simple2",
-							Hint:       "hint-simple2",
+							AppID:    "app1",
+							Location: "id-simple2",
+							Hint:     "hint-simple2",
 						},
 					},
 				},
@@ -121,25 +121,25 @@ func TestMergeBindings(t *testing.T) {
 
 // []*api.Binding{
 // 	{
-// 		LocationID: api.LocationCommand,
+// 		Location: api.LocationCommand,
 // 		Bindings: []*api.Binding{
 // 			{
-// 				LocationID:  "message",
+// 				Location:  "message",
 // 				Hint:        "[--user] message",
 // 				Description: "send a message to a user",
 // 				Call:        h.makeCall(PathMessage),
 // 			}, {
-// 				LocationID:  "manage",
+// 				Location:  "manage",
 // 				Hint:        "subscribe | unsubscribe ",
 // 				Description: "manage channel subscriptions to greet new users",
 // 				Bindings: []*api.Binding{
 // 					{
-// 						LocationID:  "subscribe",
+// 						Location:  "subscribe",
 // 						Hint:        "[--channel]",
 // 						Description: "subscribes a channel to greet new users",
 // 						Call:        h.makeCall(PathMessage, "mode", "on"),
 // 					}, {
-// 						LocationID:  "unsubscribe",
+// 						Location:  "unsubscribe",
 // 						Hint:        "[--channel]",
 // 						Description: "unsubscribes a channel from greeting new users",
 // 						Call:        h.makeCall(PathMessage, "mode", "off"),
@@ -148,10 +148,10 @@ func TestMergeBindings(t *testing.T) {
 // 			},
 // 		},
 // 	}, {
-// 		LocationID: api.LocationPostMenu,
+// 		Location: api.LocationPostMenu,
 // 		Bindings: []*api.Binding{
 // 			{
-// 				LocationID:  "message",
+// 				Location:  "message",
 // 				Description: "message a user",
 // 				Call:        h.makeCall(PathMessage),
 // 			},
