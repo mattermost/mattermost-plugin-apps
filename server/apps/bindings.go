@@ -31,48 +31,60 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 
 // This and registry related calls should be RPC calls so they can be reused by other plugins
 func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
-	appIDs, err := s.Store.ListApps()
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting all app IDs")
-	}
+	apps := s.ListApps()
 
 	all := []*api.Binding{}
-	for _, appID := range appIDs {
+	for _, app := range apps {
 		appCC := *cc
-		appCC.AppID = appID
+		appCC.AppID = app.Manifest.AppID
 		bb, err := s.Client.GetBindings(&appCC)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get single location")
+			return nil, errors.Wrapf(err, "failed to get bindings for %s", app.Manifest.AppID)
 		}
 
-		// TODO eliminate redundant AppID, just need it at the top level? I.e.
-		// group by AppID instead of top-level Location
-		setAppID(bb, appID)
+		scanned, err := s.scanAppBindings(app, bb, "")
+		if err != nil {
+			// TODO log the error!
+			continue
+		}
 
-		all = mergeBindings(all, bb)
+		all = mergeBindings(all, scanned)
 	}
 
 	return all, nil
 }
 
+// scanAppBindings removes bindings to locations that have not been granted to
+// the App, and sets the AppID on the relevant elements.
+func (s *service) scanAppBindings(app *api.App, bindings []*api.Binding, locPrefix api.Location) ([]*api.Binding, error) {
+	out := []*api.Binding{}
+	for _, appB := range bindings {
+		// clone just in case
+		b := *appB
+		fql := locPrefix.Make(b.Location)
+		allowed := false
+		for _, grantedLoc := range app.GrantedLocations {
+			if fql.In(grantedLoc) || grantedLoc.In(fql) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return nil, errors.Errorf("location %s is not granted to app %s", fql, app.Manifest.AppID)
+		}
 
-func (s *service) scanAppBindings(bindings []*api.Binding, appID api.AppID) {
-	for _, b := range bb {
-		b.AppID = appID
+		if !fql.IsTop() {
+			b.AppID = app.Manifest.AppID
+		}
+
 		if len(b.Bindings) != 0 {
-			setAppID(b.Bindings, appID)
+			scanned, err := s.scanAppBindings(app, b.Bindings, fql)
+			if err != nil {
+				return nil, err
+			}
+			b.Bindings = scanned
 		}
 	}
+
+	return out, nil
 }
-
-
-
-func setAppID(bb []*api.Binding, appID api.AppID) {
-	for _, b := range bb {
-		b.AppID = appID
-		if len(b.Bindings) != 0 {
-			setAppID(b.Bindings, appID)
-		}
-	}
-}
-

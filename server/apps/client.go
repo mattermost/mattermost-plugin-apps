@@ -16,7 +16,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -35,17 +34,17 @@ type JWTClaims struct {
 }
 
 type client struct {
-	store store.Service
+	s *service
 }
 
-func newClient(store store.Service) *client {
+func (s *service) newClient() *client {
 	return &client{
-		store: store,
+		s: s,
 	}
 }
 
 func (c *client) PostNotification(n *api.Notification) error {
-	app, err := c.store.GetApp(n.Context.AppID)
+	app, err := c.s.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func (c *client) PostNotification(n *api.Notification) error {
 }
 
 func (c *client) PostCall(call *api.Call) (*api.CallResponse, error) {
-	app, err := c.store.GetApp(call.Context.AppID)
+	app, err := c.s.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +164,7 @@ func (c *client) GetManifest(manifestURL string) (*api.Manifest, error) {
 }
 
 func (c *client) GetBindings(cc *api.Context) ([]*api.Binding, error) {
-	app, err := c.store.GetApp(cc.AppID)
+	app, err := c.s.GetApp(cc.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
 	}

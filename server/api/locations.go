@@ -6,8 +6,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type Location string
-
 const (
 	LocationPostMenu      Location = "/post_menu"
 	LocationChannelHeader Location = "/channel_header"
@@ -15,8 +13,50 @@ const (
 	LocationInPost        Location = "/in_post"
 )
 
+type Location string
+
+type Locations []Location
+
+func (ll Locations) toStringArray() []string {
+	out := []string{}
+	for _, current := range ll {
+		out = append(out, string(current))
+	}
+	return out
+}
+
+func locationsFromConfigArray(in interface{}) Locations {
+	out := Locations{}
+	instr, _ := in.([]string)
+	if len(instr) == 0 {
+		return out
+	}
+	for _, current := range instr {
+		out = append(out, Location(current))
+	}
+	return out
+}
+
+func (l Location) IsTop() bool {
+	switch l {
+	case LocationChannelHeader,
+		LocationCommand,
+		LocationPostMenu:
+		return true
+	}
+	return false
+}
+
 func (l Location) In(other Location) bool {
 	return strings.HasPrefix(string(l), string(other))
+}
+
+func (l Location) Make(sub Location) Location {
+	out := l
+	if sub[0] != '/' {
+		out += "/"
+	}
+	return out + sub
 }
 
 func (l Location) Markdown() md.MD {

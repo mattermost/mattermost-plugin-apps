@@ -17,11 +17,15 @@ type API interface {
 
 	Call(*Call) (*CallResponse, error)
 	Notify(cc *Context, subj Subject) error
+
+	ListApps() []*App
+	GetApp(appID AppID) (*App, error)
+	StoreApp(app *App) error
 }
 
 type InInstallApp struct {
 	GrantedPermissions Permissions
-	GrantedLocations   []Location
+	GrantedLocations   Locations
 	AppSecret          string
 	OAuth2TrustedApp   bool
 }

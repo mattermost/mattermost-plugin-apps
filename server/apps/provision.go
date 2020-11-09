@@ -24,7 +24,7 @@ func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
-	_, err = s.Store.GetApp(manifest.AppID)
+	_, err = s.API.GetApp(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
@@ -43,7 +43,7 @@ func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 		BotAccessToken: token.Token,
 		Secret:         in.AppSecret,
 	}
-	err = s.Store.StoreApp(app)
+	err = s.API.StoreApp(app)
 	if err != nil {
 		return nil, "", err
 	}

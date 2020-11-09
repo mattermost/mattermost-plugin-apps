@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"sync"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
@@ -23,6 +25,8 @@ type Service struct {
 
 type service struct {
 	Service
+
+	appsCache *sync.Map
 }
 
 func NewService(mm *pluginapi.Client, configurator configurator.Service) *Service {
@@ -32,8 +36,9 @@ func NewService(mm *pluginapi.Client, configurator configurator.Service) *Servic
 			Configurator: configurator,
 			Mattermost:   mm,
 		},
+		appsCache: &sync.Map{},
 	}
-	s.Client = newClient(s.Store)
+	s.Client = s.newClient()
 	s.API = s
 
 	return &s.Service

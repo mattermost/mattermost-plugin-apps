@@ -11,15 +11,15 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-type Mapper interface {
-	MapOnto(onto map[string]interface{}) (result map[string]interface{})
+type ConfigMapper interface {
+	ConfigMap() (result map[string]interface{})
 }
 
 type Service interface {
 	GetConfig() Config
 	GetMattermostConfig() *model.Config
-	Refresh() error
-	Store(Mapper) error
+	Refresh(*StoredConfig) error
+	Store(ConfigMapper) error
 }
 
 var _ Service = (*service)(nil)
@@ -72,10 +72,7 @@ func (s *service) GetMattermostConfig() *model.Config {
 	return s.mattermostConfig
 }
 
-func (s *service) Refresh() error {
-	stored := StoredConfig{}
-	_ = s.mattermost.Configuration.LoadPluginConfiguration(&stored)
-
+func (s *service) Refresh(stored *StoredConfig) error {
 	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -88,7 +85,7 @@ func (s *service) Refresh() error {
 	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
 
 	newConfig := s.GetConfig()
-	newConfig.StoredConfig = &stored
+	newConfig.StoredConfig = stored
 	newConfig.MattermostSiteURL = *mattermostSiteURL
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
@@ -101,7 +98,7 @@ func (s *service) Refresh() error {
 	return nil
 }
 
-func (s *service) Store(newStored Mapper) error {
+func (s *service) Store(newStored ConfigMapper) error {
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
-	return s.mattermost.Configuration.SavePluginConfig(newStored.MapOnto(nil))
+	return s.mattermost.Configuration.SavePluginConfig(newStored.ConfigMap())
 }

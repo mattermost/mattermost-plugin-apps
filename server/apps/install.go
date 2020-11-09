@@ -18,7 +18,7 @@ import (
 
 func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *api.InInstallApp) (*api.App, md.MD, error) {
 	// TODO check if acting user is a sysadmin
-	app, err := s.Store.GetApp(cc.AppID)
+	app, err := s.API.GetApp(cc.AppID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -41,7 +41,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	app.OAuth2ClientSecret = oAuthApp.ClientSecret
 	app.OAuth2TrustedApp = in.OAuth2TrustedApp
 
-	err = s.Store.StoreApp(app)
+	err = s.API.StoreApp(app)
 	if err != nil {
 		return nil, "", err
 	}
@@ -67,7 +67,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 }
 
 func (s *service) ensureOAuthApp(manifest *api.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	app, err := s.Store.GetApp(manifest.AppID)
+	app, err := s.API.GetApp(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
 	}

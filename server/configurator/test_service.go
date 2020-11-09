@@ -22,10 +22,10 @@ func (c *testConfigurator) GetMattermostConfig() *model.Config {
 	return &model.Config{}
 }
 
-func (c *testConfigurator) Refresh() error {
+func (c *testConfigurator) Refresh(*StoredConfig) error {
 	return nil
 }
 
-func (c *testConfigurator) Store(newStored Mapper) error {
+func (c *testConfigurator) Store(newStored ConfigMapper) error {
 	return nil
 }

@@ -111,6 +111,62 @@ func TestMergeBindings(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "happy 2 apps",
+			bb1: []*api.Binding{
+				{
+					Location: "/post_menu",
+					Bindings: []*api.Binding{
+						{
+							AppID:       "zendesk",
+							Label:       "Create zendesk ticket",
+							Description: "Create ticket in zendesk",
+							Call: &api.Call{
+								URL: "http://localhost:4000/create",
+							},
+						},
+					},
+				},
+			},
+			bb2: []*api.Binding{
+				{
+					Location: "/post_menu",
+					Bindings: []*api.Binding{
+						{
+							AppID:       "hello",
+							Label:       "Create hello ticket",
+							Description: "Create ticket in hello",
+							Call: &api.Call{
+								URL: "http://localhost:4000/hello",
+							},
+						},
+					},
+				},
+			},
+			expected: []*api.Binding{
+				{
+					Location: "/post_menu",
+					Bindings: []*api.Binding{
+						{
+							AppID:       "zendesk",
+							Label:       "Create zendesk ticket",
+							Description: "Create ticket in zendesk",
+							Call: &api.Call{
+								URL: "http://localhost:4000/create",
+							},
+						},
+						{
+							AppID:       "hello",
+							Label:       "Create hello ticket",
+							Description: "Create ticket in hello",
+							Call: &api.Call{
+								URL: "http://localhost:4000/hello",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			out := mergeBindings(tc.bb1, tc.bb2)

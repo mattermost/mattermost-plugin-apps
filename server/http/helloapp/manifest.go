@@ -14,7 +14,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			RootURL:     h.AppURL(""),
-			RequestedPermissions: []api.PermissionType{
+			RequestedPermissions: api.Permissions{
 				api.PermissionUserJoinedChannelNotification,
 				api.PermissionActAsUser,
 				api.PermissionActAsBot,
