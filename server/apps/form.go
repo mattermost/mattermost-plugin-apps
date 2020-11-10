@@ -1,4 +1,4 @@
-package api
+package apps
 
 type Form struct {
 	Title  string `json:"title,omitempty"`

@@ -12,9 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/oauther"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -33,10 +31,10 @@ const (
 
 const (
 	PathManifest       = "/mattermost-app.json"
-	PathInstall        = constants.AppInstallPath  // convention for Mattermost Apps
-	PathBindings       = constants.AppBindingsPath // convention for Mattermost Apps
-	PathOAuth2         = "/oauth2"                 // convention for Mattermost Apps, comes from OAuther
-	PathOAuth2Complete = "/oauth2/complete"        // convention for Mattermost Apps, comes from OAuther
+	PathInstall        = apps.AppInstallPath  // convention for Mattermost Apps
+	PathBindings       = apps.AppBindingsPath // convention for Mattermost Apps
+	PathOAuth2         = "/oauth2"            // convention for Mattermost Apps, comes from OAuther
+	PathOAuth2Complete = "/oauth2/complete"   // convention for Mattermost Apps, comes from OAuther
 
 	PathConnectedInstall = "/connected_install"
 	PathSendSurvey       = "/send"
@@ -52,29 +50,31 @@ type helloapp struct {
 }
 
 // Init hello app router
-func Init(router *mux.Router, apps *apps.Service) {
+func Init(router *mux.Router, appsService *apps.Service) {
 	h := helloapp{
-		apps: apps,
+		apps: appsService,
 	}
 
-	r := router.PathPrefix(constants.HelloAppPath).Subrouter()
+	r := router.PathPrefix(apps.HelloAppPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
+	handleGetWithContext(r, PathBindings, h.bindings)
 	r.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
-	handleGetWithContext(r, PathBindings, h.handleBindings)
 
+	// Naming convention: fXXX are "Callable" functions, nXXX are notification
+	// handlers.
 	handleCall(r, PathInstall, h.fInstall)
 	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
 	handleCall(r, PathSendSurvey, h.fSendSurvey)
 	handleCall(r, PathSurvey, h.fSurvey)
 
-	handleNotify(r, PathNotifyUserJoinedChannel, h.handleUserJoinedChannel)
+	handleNotify(r, PathNotifyUserJoinedChannel, h.nUserJoinedChannel)
 
-	_ = h.InitOAuther()
+	_ = h.initOAuther()
 }
 
-type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Context) (int, error)
-type callHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Call) (int, error)
-type notifyHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *api.Notification) (int, error)
+type contextHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *apps.Context) (int, error)
+type callHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *apps.Call) (int, error)
+type notifyHandler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *apps.Notification) (int, error)
 
 func handleCall(r *mux.Router, path string, h callHandler) {
 	r.HandleFunc(path,
@@ -85,7 +85,7 @@ func handleCall(r *mux.Router, path string, h callHandler) {
 				return
 			}
 
-			data, err := api.UnmarshalCallFromReader(req.Body)
+			data, err := apps.UnmarshalCallFromReader(req.Body)
 			if err != nil {
 				httputils.WriteBadRequestError(w, err)
 				return
@@ -109,7 +109,7 @@ func handleNotify(r *mux.Router, path string, h notifyHandler) {
 				return
 			}
 
-			data := api.Notification{}
+			data := apps.Notification{}
 			err = json.NewDecoder(req.Body).Decode(&data)
 			if err != nil {
 				httputils.WriteBadRequestError(w, err)
@@ -134,11 +134,11 @@ func handleGetWithContext(r *mux.Router, path string, h contextHandler) {
 				return
 			}
 
-			statusCode, err := h(w, req, claims, &api.Context{
-				TeamID:       req.Form.Get(constants.TeamID),
-				ChannelID:    req.Form.Get(constants.ChannelID),
-				ActingUserID: req.Form.Get(constants.ActingUserID),
-				PostID:       req.Form.Get(constants.PostID),
+			statusCode, err := h(w, req, claims, &apps.Context{
+				TeamID:       req.Form.Get(apps.PropTeamID),
+				ChannelID:    req.Form.Get(apps.PropChannelID),
+				ActingUserID: req.Form.Get(apps.PropActingUserID),
+				PostID:       req.Form.Get(apps.PropPostID),
 			})
 			if err != nil {
 				httputils.WriteJSONError(w, statusCode, "", err)
@@ -169,11 +169,11 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 	return &claims, nil
 }
 
-func (h *helloapp) AppURL(path string) string {
+func (h *helloapp) appURL(path string) string {
 	conf := h.apps.Configurator.GetConfig()
-	return conf.PluginURL + constants.HelloAppPath + path
+	return conf.PluginURL + apps.HelloAppPath + path
 }
 
-func (h *helloapp) makeCall(path string, namevalues ...string) *api.Call {
-	return api.MakeCall(h.AppURL(path), namevalues...)
+func (h *helloapp) makeCall(path string, namevalues ...string) *apps.Call {
+	return apps.MakeCall(h.appURL(path), namevalues...)
 }

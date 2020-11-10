@@ -1,4 +1,4 @@
-package api
+package apps
 
 import (
 	"encoding/json"
@@ -61,21 +61,21 @@ type CallResponse struct {
 }
 
 func UnmarshalCallFromData(data []byte) (*Call, error) {
-	call := Call{}
-	err := json.Unmarshal(data, &call)
+	c := Call{}
+	err := json.Unmarshal(data, &c)
 	if err != nil {
 		return nil, err
 	}
-	return &call, nil
+	return &c, nil
 }
 
 func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
-	call := Call{}
-	err := json.NewDecoder(in).Decode(&call)
+	c := Call{}
+	err := json.NewDecoder(in).Decode(&c)
 	if err != nil {
 		return nil, err
 	}
-	return &call, nil
+	return &c, nil
 }
 
 func MakeCall(url string, namevalues ...string) *Call {
