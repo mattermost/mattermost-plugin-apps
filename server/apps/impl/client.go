@@ -85,6 +85,7 @@ func (c *client) post(toApp *apps.App, fromMattermostUserID string, url string, 
 		return nil, err
 	}
 	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {

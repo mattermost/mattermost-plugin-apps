@@ -12,7 +12,7 @@ type CallType string
 const (
 	// CallTypeSubmit (default) indicates the intent to take action.
 	CallTypeSubmit = CallType("")
-	// CallTypeForm retrieves the form definition for the current set of falues,
+	// CallTypeForm retrieves the form definition for the current set of values,
 	// and the context.
 	CallTypeForm = CallType("form")
 	// CallTypeCancel is used for for the (rare?) case of when the form with
