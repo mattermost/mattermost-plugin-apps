@@ -60,6 +60,8 @@ func Init(router *mux.Router, appsService *apps.Service) {
 	handleGetWithContext(r, PathBindings, h.bindings)
 	r.PathPrefix(PathOAuth2).HandlerFunc(h.handleOAuth).Methods("GET")
 
+	// Naming convention: fXXX are "Callable" functions, nXXX are notification
+	// handlers.
 	handleCall(r, PathInstall, h.fInstall)
 	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
 	handleCall(r, PathSendSurvey, h.fSendSurvey)

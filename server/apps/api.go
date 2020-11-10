@@ -43,13 +43,13 @@ type JWTClaims struct {
 }
 
 type InInstallApp struct {
-	GrantedPermissions Permissions
-	AppSecret          string
-	OAuth2TrustedApp   bool
+	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
+	AppSecret          string      `json:"app_secret,omitempty"`
+	OAuth2TrustedApp   bool        `json:"oauth2_trusted_app,omitempty"`
 }
 
 type InProvisionApp struct {
-	ManifestURL string
-	AppSecret   string
-	Force       bool
+	ManifestURL string `json:"manifest_url,omitempty"`
+	AppSecret   string `json:"app_secret,omitempty"`
+	Force       bool   `json:"force,omitempty"`
 }
