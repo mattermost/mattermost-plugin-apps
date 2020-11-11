@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
@@ -35,11 +35,11 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}
 
 	app, _, err := s.apps.API.ProvisionApp(
-		&api.Context{
+		&apps.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		api.SessionToken(params.commandArgs.Session.Token),
-		&api.InProvisionApp{
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
 			ManifestURL: manifestURL,
 			AppSecret:   appSecret,
 			Force:       force,

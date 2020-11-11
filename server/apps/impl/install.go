@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package apps
+package impl
 
 import (
 	"fmt"
@@ -9,14 +9,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *api.InInstallApp) (*api.App, md.MD, error) {
+func (s *service) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
 	// TODO check if acting user is a sysadmin
 	app, err := s.Store.GetApp(cc.AppID)
 	if err != nil {
@@ -46,16 +45,16 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	}
 
 	resp, err := s.API.Call(
-		&api.Call{
-			URL: app.Manifest.RootURL + constants.AppInstallPath,
+		&apps.Call{
+			URL: app.Manifest.RootURL + apps.AppInstallPath,
 			Values: map[string]string{
-				constants.BotAccessToken:     app.BotAccessToken,
-				constants.OAuth2ClientSecret: app.OAuth2ClientSecret,
+				apps.PropBotAccessToken:     app.BotAccessToken,
+				apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 			},
 			Context: cc,
-			Expand: &api.Expand{
-				App:    api.ExpandAll,
-				Config: api.ExpandSummary,
+			Expand: &apps.Expand{
+				App:    apps.ExpandAll,
+				Config: apps.ExpandSummary,
 			},
 		})
 	if err != nil {
@@ -65,7 +64,7 @@ func (s *service) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	return app, resp.Markdown, nil
 }
 
-func (s *service) ensureOAuthApp(manifest *api.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+func (s *service) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	app, err := s.Store.GetApp(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err

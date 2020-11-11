@@ -6,8 +6,7 @@ package command
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -18,7 +17,7 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.apps.API.GetBindings(&api.Context{
+	bindings, err := s.apps.API.GetBindings(&apps.Context{
 		ActingUserID: params.commandArgs.UserId,
 		UserID:       params.commandArgs.UserId,
 		TeamID:       params.commandArgs.TeamId,
@@ -31,9 +30,9 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 }
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
-	_, err := s.apps.API.Call(&api.Call{
-		URL: s.apps.Configurator.GetConfig().PluginURL + constants.HelloAppPath + helloapp.PathSendSurvey,
-		Context: &api.Context{
+	_, err := s.apps.API.Call(&apps.Call{
+		URL: s.apps.Configurator.GetConfig().PluginURL + apps.HelloAppPath + helloapp.PathSendSurvey,
+		Context: &apps.Context{
 			AppID:        helloapp.AppID,
 			ActingUserID: params.commandArgs.UserId,
 			ChannelID:    params.commandArgs.ChannelId,
@@ -52,7 +51,7 @@ func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, 
 func (s *service) executeDebugInstallHello(params *params) (*model.CommandResponse, error) {
 	params.current = []string{
 		"--app-secret", helloapp.AppSecret,
-		"--url", s.apps.Configurator.GetConfig().PluginURL + constants.HelloAppPath + helloapp.PathManifest,
+		"--url", s.apps.Configurator.GetConfig().PluginURL + apps.HelloAppPath + helloapp.PathManifest,
 		"--force",
 	}
 	return s.executeInstall(params)

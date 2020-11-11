@@ -1,4 +1,4 @@
-package api
+package apps
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type CallType string
 const (
 	// CallTypeSubmit (default) indicates the intent to take action.
 	CallTypeSubmit = CallType("")
-	// CallTypeForm retrieves the form definition for the current set of falues,
+	// CallTypeForm retrieves the form definition for the current set of values,
 	// and the context.
 	CallTypeForm = CallType("form")
 	// CallTypeCancel is used for for the (rare?) case of when the form with
@@ -61,21 +61,21 @@ type CallResponse struct {
 }
 
 func UnmarshalCallFromData(data []byte) (*Call, error) {
-	call := Call{}
-	err := json.Unmarshal(data, &call)
+	c := Call{}
+	err := json.Unmarshal(data, &c)
 	if err != nil {
 		return nil, err
 	}
-	return &call, nil
+	return &c, nil
 }
 
 func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
-	call := Call{}
-	err := json.NewDecoder(in).Decode(&call)
+	c := Call{}
+	err := json.NewDecoder(in).Decode(&c)
 	if err != nil {
 		return nil, err
 	}
-	return &call, nil
+	return &c, nil
 }
 
 func MakeCall(url string, namevalues ...string) *Call {

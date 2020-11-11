@@ -6,9 +6,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -25,10 +23,10 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 			Title:  "Send a survey to user",
 			Header: "Message modal form header",
 			Footer: "Message modal form footer",
-			Fields: []*api.Field{
+			Fields: []*apps.Field{
 				{
 					Name:                 fieldUserID,
-					Type:                 api.FieldTypeUser,
+					Type:                 apps.FieldTypeUser,
 					Description:          "User to send the survey to",
 					Label:                "User",
 					AutocompleteHint:     "enter user ID or @user",
@@ -52,14 +50,14 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 	}
 }
 
-func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *api.Call) (int, error) {
-	var out *api.CallResponse
+func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, c *apps.Call) (int, error) {
+	var out *apps.CallResponse
 
 	switch c.Type {
-	case api.CallTypeForm:
+	case apps.CallTypeForm:
 		out = h.newSendSurveyFormResponse(claims, c)
 
-	case api.CallTypeSubmit:
+	case apps.CallTypeSubmit:
 		userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
 
 		// TODO this should be done with expanding mentions, make a ticket
@@ -98,12 +96,12 @@ func (h *helloapp) sendSurvey(userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
-	p.AddProp(constants.PostPropAppBindings, []*api.Binding{
+	p.AddProp(apps.PropAppBindings, []*apps.Binding{
 		{
 			LocationID: "survey",
 			Form:       h.newSurveyForm(message),
 		},
 	})
-	_, err := h.DMPost(userID, p)
+	_, err := h.dmPost(userID, p)
 	return err
 }
