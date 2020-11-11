@@ -10,9 +10,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call) *api.CallResponse {
+	message := ""
+	if c.Context != nil && c.Context.Post != nil {
+		message = c.Context.Post.Message
+	}
+
 	return &api.CallResponse{
 		Type: api.CallResponseTypeForm,
 		Form: &api.Form{
@@ -31,6 +37,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 				}, {
 					Name:             fieldMessage,
 					Type:             api.FieldTypeText,
+					TextSubtype:      "textarea",
 					IsRequired:       true,
 					Description:      "Text to ask the user about",
 					Label:            "message",
@@ -38,6 +45,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 					ModalLabel:       "Text",
 					TextMinLength:    2,
 					TextMaxLength:    1024,
+					Value:            message,
 				},
 			},
 		},
@@ -70,16 +78,25 @@ func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims 
 			message += "\n>>> " + c.Context.Post.Message
 		}
 
-		h.sendSurvey(userID, message)
 		out = &api.CallResponse{}
+
+		err := h.sendSurvey(userID, message)
+		if err != nil {
+			out.Error = err.Error()
+			out.Type = api.CallResponseTypeError
+		} else {
+			out.Markdown = md.Markdownf(
+				"Successfully sent survey",
+			)
+		}
 	}
 	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) sendSurvey(userID, message string) {
+func (h *helloapp) sendSurvey(userID, message string) error {
 	p := &model.Post{
-		Message: "Please respond to this survey",
+		Message: "Please respond to this survey: " + message,
 	}
 	p.AddProp(constants.PostPropAppBindings, []*api.Binding{
 		{
@@ -87,5 +104,6 @@ func (h *helloapp) sendSurvey(userID, message string) {
 			Form:       h.newSurveyForm(message),
 		},
 	})
-	h.DMPost(userID, p)
+	_, err := h.DMPost(userID, p)
+	return err
 }

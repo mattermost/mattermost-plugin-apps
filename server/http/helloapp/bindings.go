@@ -15,6 +15,8 @@ func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, clai
 	sendSurvey := h.makeCall(PathSendSurvey)
 
 	c := *sendSurvey
+	c.Expand = &api.Expand{Post: api.ExpandAll}
+
 	sendSurveyModal := &c
 	sendSurveyModal.Type = api.CallTypeForm
 
