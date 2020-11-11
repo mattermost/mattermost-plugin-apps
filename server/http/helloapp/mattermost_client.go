@@ -64,7 +64,7 @@ func (h *helloapp) dm(userID string, format string, args ...interface{}) {
 	_, _ = h.postAsBot(post)
 }
 
-func (h *helloapp) dmPost(userID string, post *model.Post) {
+func (h *helloapp) dmPost(userID string, post *model.Post) (*model.Post, error) {
 	channel, err := h.getDirectChannelWithBot(userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "getDirectionChannel")

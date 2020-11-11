@@ -11,15 +11,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call) *api.CallResponse {
+func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Call) *apps.CallResponse {
 	message := ""
 	if c.Context != nil && c.Context.Post != nil {
 		message = c.Context.Post.Message
 	}
 
-	return &api.CallResponse{
-		Type: api.CallResponseTypeForm,
-		Form: &api.Form{
+	return &apps.CallResponse{
+		Type: apps.CallResponseTypeForm,
+		Form: &apps.Form{
 			Title:  "Send a survey to user",
 			Header: "Message modal form header",
 			Footer: "Message modal form footer",
@@ -34,7 +34,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *api.Call
 					ModalLabel:           "User",
 				}, {
 					Name:             fieldMessage,
-					Type:             api.FieldTypeText,
+					Type:             apps.FieldTypeText,
 					TextSubtype:      "textarea",
 					IsRequired:       true,
 					Description:      "Text to ask the user about",
@@ -76,12 +76,12 @@ func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims 
 			message += "\n>>> " + c.Context.Post.Message
 		}
 
-		out = &api.CallResponse{}
+		out = &apps.CallResponse{}
 
 		err := h.sendSurvey(userID, message)
 		if err != nil {
 			out.Error = err.Error()
-			out.Type = api.CallResponseTypeError
+			out.Type = apps.CallResponseTypeError
 		} else {
 			out.Markdown = md.Markdownf(
 				"Successfully sent survey",

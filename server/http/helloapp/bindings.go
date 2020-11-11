@@ -14,7 +14,7 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 	sendSurvey := h.makeCall(PathSendSurvey)
 
 	c := *sendSurvey
-	c.Expand = &api.Expand{Post: api.ExpandAll}
+	c.Expand = &apps.Expand{Post: apps.ExpandAll}
 
 	sendSurveyModal := &c
 	sendSurveyModal.Type = apps.CallTypeForm
