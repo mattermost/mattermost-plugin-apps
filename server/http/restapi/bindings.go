@@ -8,12 +8,13 @@ import (
 )
 
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID string) {
+	query := req.URL.Query()
 	bindings, err := a.apps.API.GetBindings(&apps.Context{
-		TeamID:       req.Form.Get(apps.PropTeamID),
-		ChannelID:    req.Form.Get(apps.PropChannelID),
+		TeamID:       query.Get(apps.PropTeamID),
+		ChannelID:    query.Get(apps.PropChannelID),
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		PostID:       req.Form.Get(apps.PropPostID),
+		PostID:       query.Get(apps.PropPostID),
 	})
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)

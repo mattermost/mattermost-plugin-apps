@@ -8,6 +8,11 @@ import (
 
 func (h *helloapp) nUserJoinedChannel(w http.ResponseWriter, req *http.Request,
 	claims *apps.JWTClaims, n *apps.Notification) (int, error) {
-	go h.sendSurvey(n.Context.UserID, "welcome to channel")
+	go func() {
+		err := h.sendSurvey(n.Context.UserID, "welcome to channel")
+		if err != nil {
+			h.apps.Mattermost.Log.Error("error sending survey", "err", err.Error())
+		}
+	}()
 	return http.StatusOK, nil
 }

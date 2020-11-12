@@ -8,9 +8,15 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Call) *apps.CallResponse {
+	message := ""
+	if c.Context != nil && c.Context.Post != nil {
+		message = c.Context.Post.Message
+	}
+
 	return &apps.CallResponse{
 		Type: apps.CallResponseTypeForm,
 		Form: &apps.Form{
@@ -29,6 +35,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 				}, {
 					Name:             fieldMessage,
 					Type:             apps.FieldTypeText,
+					TextSubtype:      "textarea",
 					IsRequired:       true,
 					Description:      "Text to ask the user about",
 					Label:            "message",
@@ -36,6 +43,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 					ModalLabel:       "Text",
 					TextMinLength:    2,
 					TextMaxLength:    1024,
+					Value:            message,
 				},
 			},
 		},
@@ -68,16 +76,25 @@ func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims 
 			message += "\n>>> " + c.Context.Post.Message
 		}
 
-		h.sendSurvey(userID, message)
 		out = &apps.CallResponse{}
+
+		err := h.sendSurvey(userID, message)
+		if err != nil {
+			out.Error = err.Error()
+			out.Type = apps.CallResponseTypeError
+		} else {
+			out.Markdown = md.Markdownf(
+				"Successfully sent survey",
+			)
+		}
 	}
 	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) sendSurvey(userID, message string) {
+func (h *helloapp) sendSurvey(userID, message string) error {
 	p := &model.Post{
-		Message: "Please respond to this survey",
+		Message: "Please respond to this survey: " + message,
 	}
 	p.AddProp(apps.PropAppBindings, []*apps.Binding{
 		{
@@ -85,5 +102,6 @@ func (h *helloapp) sendSurvey(userID, message string) {
 			Form:       h.newSurveyForm(message),
 		},
 	})
-	h.dmPost(userID, p)
+	_, err := h.dmPost(userID, p)
+	return err
 }

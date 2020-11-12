@@ -53,7 +53,8 @@ func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 		appCC.AppID = appID
 		bb, err := s.Client.GetBindings(&appCC)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get single location")
+			s.Mattermost.Log.Warn("Failed to get bindings", "app_id", appID)
+			continue
 		}
 
 		// TODO eliminate redundant AppID, just need it at the top level? I.e.
