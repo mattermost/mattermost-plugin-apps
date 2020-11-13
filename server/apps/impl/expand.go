@@ -38,7 +38,7 @@ func (e *expander) Expand(expand *apps.Expand) (*apps.Context, error) {
 	}
 
 	if expand.App != "" && e.AppID != "" && e.App == nil {
-		app, err := e.s.API.GetApp(e.AppID)
+		app, err := e.s.GetApp(e.AppID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
 		}
