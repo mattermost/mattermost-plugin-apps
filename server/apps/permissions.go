@@ -24,23 +24,6 @@ func (p Permissions) Contains(permission PermissionType) bool {
 	return false
 }
 
-func (p Permissions) toStringArray() []string {
-	out := []string{}
-	for _, current := range p {
-		out = append(out, string(current))
-	}
-	return out
-}
-
-func permissionsFromConfigArray(in interface{}) Permissions {
-	out := Permissions{}
-	instr, _ := in.([]string)
-	for _, current := range instr {
-		out = append(out, PermissionType(current))
-	}
-	return out
-}
-
 func (p PermissionType) Markdown() md.MD {
 	m := ""
 	switch p {

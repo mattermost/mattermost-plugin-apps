@@ -17,26 +17,6 @@ type Location string
 
 type Locations []Location
 
-func (ll Locations) toStringArray() []string {
-	out := []string{}
-	for _, current := range ll {
-		out = append(out, string(current))
-	}
-	return out
-}
-
-func locationsFromConfigArray(in interface{}) Locations {
-	out := Locations{}
-	instr, _ := in.([]string)
-	if len(instr) == 0 {
-		return out
-	}
-	for _, current := range instr {
-		out = append(out, Location(current))
-	}
-	return out
-}
-
 func (l Location) IsTop() bool {
 	switch l {
 	case LocationChannelHeader,
