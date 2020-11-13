@@ -19,6 +19,12 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionActAsUser,
 				apps.PermissionActAsBot,
 			},
+			RequestedLocations: apps.Locations{
+				apps.LocationChannelHeader,
+				apps.LocationPostMenu,
+				apps.LocationCommand,
+				apps.LocationInPost,
+			},
 			OAuth2CallbackURL: h.appURL(PathOAuth2Complete),
 			HomepageURL:       h.appURL("/"),
 		})

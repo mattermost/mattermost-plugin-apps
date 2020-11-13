@@ -31,14 +31,6 @@ func TestAppConfigMap(t *testing.T) {
 		GrantedLocations:   Locations{LocationChannelHeader, LocationCommand},
 	}
 
-	t.Run("Manifest", func(t *testing.T) {
-		map1 := m.ConfigMap()
-		manifest2 := ManifestFromConfigMap(map1)
-		require.EqualValues(t, m, manifest2)
-		map2 := manifest2.ConfigMap()
-		require.EqualValues(t, map1, map2)
-	})
-
 	t.Run("App", func(t *testing.T) {
 		map1 := a1.ConfigMap()
 		// require.EqualValues(t, nil, map1)
