@@ -65,9 +65,9 @@ func ManifestFromConfigMap(in interface{}) *Manifest {
 	m.AppID = AppID(appID)
 	m.DisplayName, _ = c["display_name"].(string)
 	m.Description, _ = c["description"].(string)
-	m.OAuth2CallbackURL = c["oauth2_callback_url"].(string)
-	m.HomepageURL = c["homepage_url"].(string)
-	m.RootURL = c["root_url"].(string)
+	m.OAuth2CallbackURL, _ = c["oauth2_callback_url"].(string)
+	m.HomepageURL, _ = c["homepage_url"].(string)
+	m.RootURL, _ = c["root_url"].(string)
 	m.RequestedPermissions = permissionsFromConfigArray(c["requested_permissions"])
 	m.RequestedLocations = locationsFromConfigArray(c["requested_locations"])
 	return m

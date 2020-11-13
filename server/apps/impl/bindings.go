@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/pkg/errors"
 )
@@ -42,13 +44,7 @@ func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 			return nil, errors.Wrapf(err, "failed to get bindings for %s", app.Manifest.AppID)
 		}
 
-		scanned, err := s.scanAppBindings(app, bb, "")
-		if err != nil {
-			// TODO log the error!
-			continue
-		}
-
-		all = mergeBindings(all, scanned)
+		all = mergeBindings(all, s.scanAppBindings(app, bb, ""))
 	}
 
 	return all, nil
@@ -56,7 +52,7 @@ func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) ([]*apps.Binding, error) {
+func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
 	out := []*apps.Binding{}
 	for _, appB := range bindings {
 		// clone just in case
@@ -70,7 +66,9 @@ func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPr
 			}
 		}
 		if !allowed {
-			return nil, errors.Errorf("location %s is not granted to app %s", fql, app.Manifest.AppID)
+			// TODO Log this somehow to the app?
+			s.Mattermost.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			continue
 		}
 
 		if !fql.IsTop() {
@@ -78,13 +76,16 @@ func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPr
 		}
 
 		if len(b.Bindings) != 0 {
-			scanned, err := s.scanAppBindings(app, b.Bindings, fql)
-			if err != nil {
-				return nil, err
+			scanned := s.scanAppBindings(app, b.Bindings, fql)
+			if len(scanned) == 0 {
+				// We do not add bindings without any valid sub-bindind
+				continue
 			}
 			b.Bindings = scanned
 		}
+
+		out = append(out, &b)
 	}
 
-	return out, nil
+	return out
 }

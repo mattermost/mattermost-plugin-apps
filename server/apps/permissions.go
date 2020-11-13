@@ -35,9 +35,6 @@ func (p Permissions) toStringArray() []string {
 func permissionsFromConfigArray(in interface{}) Permissions {
 	out := Permissions{}
 	instr, _ := in.([]string)
-	if len(instr) == 0 {
-		return out
-	}
 	for _, current := range instr {
 		out = append(out, PermissionType(current))
 	}
