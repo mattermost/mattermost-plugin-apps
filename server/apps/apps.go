@@ -4,21 +4,20 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *service) ListApps() []*api.App {
+func (s *Service) ListApps() []*App {
 	conf := s.Configurator.GetConfig()
-	out := []*api.App{}
+	out := []*App{}
 	for _, v := range conf.Apps {
-		app := api.AppFromConfigMap(v)
+		app := AppFromConfigMap(v)
 		out = append(out, app)
 	}
 	return out
 }
 
-func (s *service) GetApp(appID api.AppID) (*api.App, error) {
+func (s *Service) GetApp(appID AppID) (*App, error) {
 	conf := s.Configurator.GetConfig()
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
@@ -27,10 +26,10 @@ func (s *service) GetApp(appID api.AppID) (*api.App, error) {
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
-	return api.AppFromConfigMap(v), nil
+	return AppFromConfigMap(v), nil
 }
 
-func (s *service) StoreApp(app *api.App) error {
+func (s *Service) StoreApp(app *App) error {
 	conf := s.Configurator.GetConfig()
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}

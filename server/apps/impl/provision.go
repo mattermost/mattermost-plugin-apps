@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package apps
+package impl
 
 import (
 	"fmt"
@@ -11,12 +11,12 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
+func (s *service) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InProvisionApp) (*apps.App, md.MD, error) {
 	manifest, err := s.Client.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
@@ -36,7 +36,7 @@ func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 		return nil, "", err
 	}
 
-	app := &api.App{
+	app := &apps.App{
 		Manifest:       manifest,
 		BotUserID:      bot.UserId,
 		BotUsername:    bot.Username,
@@ -54,7 +54,7 @@ func (s *service) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 	return app, md, nil
 }
 
-func (s *service) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (s *service) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := s.Configurator.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

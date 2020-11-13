@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package constants
+package apps
 
-// Internal configuration constants of mattermost-plugin-apps
+// Internal configuration apps.of mattermost-plugin-apps
 const (
 	Repository     = "mattermost-plugin-apps"
 	CommandTrigger = "apps"
@@ -27,12 +27,12 @@ const (
 )
 
 const (
-	AppID               = "app_id"
-	TeamID              = "team_id"
-	ChannelID           = "channel_id"
-	ActingUserID        = "acting_user_id"
-	PostID              = "post_id"
-	BotAccessToken      = "bot_access_token"
-	OAuth2ClientSecret  = "oauth2_client_secret" // nolint:gosec
-	PostPropAppBindings = "app_bindings"
+	PropAppID              = "app_id"
+	PropTeamID             = "team_id"
+	PropChannelID          = "channel_id"
+	PropActingUserID       = "acting_user_id"
+	PropPostID             = "post_id"
+	PropBotAccessToken     = "bot_access_token"
+	PropOAuth2ClientSecret = "oauth2_client_secret" // nolint:gosec
+	PropAppBindings        = "app_bindings"
 )

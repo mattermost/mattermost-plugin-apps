@@ -1,12 +1,12 @@
-package apps
+package impl
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/pkg/errors"
 )
 
-func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
-	out := append([]*api.Binding(nil), bb1...)
+func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
+	out := append([]*apps.Binding(nil), bb1...)
 
 	for _, b2 := range bb2 {
 		found := false
@@ -30,11 +30,11 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 }
 
 // This and registry related calls should be RPC calls so they can be reused by other plugins
-func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
-	apps := s.ListApps()
+func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
+	allApps := s.ListApps()
 
-	all := []*api.Binding{}
-	for _, app := range apps {
+	all := []*apps.Binding{}
+	for _, app := range allApps {
 		appCC := *cc
 		appCC.AppID = app.Manifest.AppID
 		bb, err := s.Client.GetBindings(&appCC)
@@ -56,8 +56,8 @@ func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (s *service) scanAppBindings(app *api.App, bindings []*api.Binding, locPrefix api.Location) ([]*api.Binding, error) {
-	out := []*api.Binding{}
+func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) ([]*apps.Binding, error) {
+	out := []*apps.Binding{}
 	for _, appB := range bindings {
 		// clone just in case
 		b := *appB
