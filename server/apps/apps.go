@@ -10,6 +10,9 @@ import (
 func (s *Service) ListApps() []*App {
 	conf := s.Configurator.GetConfig()
 	out := []*App{}
+	if len(conf.Apps) == 0 {
+		return out
+	}
 	for _, v := range conf.Apps {
 		app := AppFromConfigMap(v)
 		out = append(out, app)

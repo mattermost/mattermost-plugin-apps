@@ -33,6 +33,9 @@ func (l Location) In(other Location) bool {
 
 func (l Location) Make(sub Location) Location {
 	out := l
+	if len(sub) == 0 {
+		return out
+	}
 	if sub[0] != '/' {
 		out += "/"
 	}
