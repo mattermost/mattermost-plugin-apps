@@ -78,7 +78,7 @@ func (s *service) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPr
 		if len(b.Bindings) != 0 {
 			scanned := s.scanAppBindings(app, b.Bindings, fql)
 			if len(scanned) == 0 {
-				// We do not add bindings without any valid sub-bindind
+				// We do not add bindings without any valid sub-bindings
 				continue
 			}
 			b.Bindings = scanned
