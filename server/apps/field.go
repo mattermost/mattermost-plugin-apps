@@ -1,4 +1,4 @@
-package api
+package apps
 
 type FieldType string
 
@@ -28,12 +28,9 @@ type Field struct {
 
 	Description string `json:"description,omitempty"`
 
-	// Autocomplete name should be set to either the name of the --flag for
-	// named fields, or to $X for positional arguments, where X is 1-based
-	// number.
-	AutocompleteLabel string `json:"autocomplete_label"`
-	AutocompleteHint  string `json:"hint"`
-	Position          int    `json:"position"`
+	Label                string `json:"label,omitempty"`
+	AutocompleteHint     string `json:"hint,omitempty"`
+	AutocompletePosition int    `json:"position,omitempty"`
 
 	ModalLabel string `json:"modal_label"`
 

@@ -1,12 +1,12 @@
-package apps
+package impl
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/pkg/errors"
 )
 
-func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
-	out := append([]*api.Binding(nil), bb1...)
+func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
+	out := append([]*apps.Binding(nil), bb1...)
 
 	for _, b2 := range bb2 {
 		found := false
@@ -29,34 +29,37 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-func setAppID(bb []*api.Binding, appID api.AppID) {
+func setAppID(bb []*apps.Binding, appID apps.AppID, excludeTopLevel bool) {
 	for _, b := range bb {
-		b.AppID = appID
+		if !excludeTopLevel {
+			b.AppID = appID
+		}
 		if len(b.Bindings) != 0 {
-			setAppID(b.Bindings, appID)
+			setAppID(b.Bindings, appID, false)
 		}
 	}
 }
 
 // This and registry related calls should be RPC calls so they can be reused by other plugins
-func (s *service) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 	appIDs, err := s.Store.ListApps()
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting all app IDs")
 	}
 
-	all := []*api.Binding{}
+	all := []*apps.Binding{}
 	for _, appID := range appIDs {
 		appCC := *cc
 		appCC.AppID = appID
 		bb, err := s.Client.GetBindings(&appCC)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get single location")
+			s.Mattermost.Log.Warn("Failed to get bindings", "app_id", appID)
+			continue
 		}
 
 		// TODO eliminate redundant AppID, just need it at the top level? I.e.
 		// group by AppID instead of top-level LocationID
-		setAppID(bb, appID)
+		setAppID(bb, appID, true)
 
 		all = mergeBindings(all, bb)
 	}

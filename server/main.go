@@ -1,10 +1,9 @@
 package main
 
 import (
-	mattermost "github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/plugin"
 )
 
 var BuildHash string
@@ -12,8 +11,8 @@ var BuildHashShort string
 var BuildDate string
 
 func main() {
-	mattermost.ClientMain(
-		plugin.NewPlugin(
+	plugin.ClientMain(
+		NewPlugin(
 			&configurator.BuildConfig{
 				Manifest:       manifest,
 				BuildHash:      BuildHash,

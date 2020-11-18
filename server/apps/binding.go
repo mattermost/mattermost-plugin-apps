@@ -1,4 +1,6 @@
-package api
+package apps
+
+import "strings"
 
 type LocationID string
 
@@ -6,12 +8,20 @@ const (
 	LocationPostMenu      LocationID = "/post_menu"
 	LocationChannelHeader LocationID = "/channel_header"
 	LocationCommand       LocationID = "/command"
+	LocationInPost        LocationID = "/in_post"
 )
 
+func (lid LocationID) In(other LocationID) bool {
+	return strings.HasPrefix(string(lid), string(other))
+}
+
 type Binding struct {
-	// For use by Mattermost only, not for apps
+	// For internal use by Mattermost, Apps do not need to set.
 	AppID AppID `json:"app_id,omitempty"`
 
+	// LocationID allows the App to identify where in the UX the Call request
+	// comes from. It is optional. For /command bindings, LocationID is
+	// defaulted to Label.
 	LocationID LocationID `json:"location_id,omitempty"`
 
 	// For PostMenu, ChannelHeader locations specifies the icon.
@@ -39,7 +49,14 @@ type Binding struct {
 	DependsOnPost    bool   `json:"depends_on_post,omitempty"`
 
 	// A Binding is either to a Call, or is a "container" for other locations -
-	// i.e. menu sub-items or subcommands.
+	// i.e. menu sub-items or subcommands. An app-defined Modal can be displayed
+	// by setting AsModal.
 	Call     *Call      `json:"call,omitempty"`
 	Bindings []*Binding `json:"bindings,omitempty"`
+
+	// Form allows to embed a form into a binding, and avoid the need to
+	// Call(type=Form). At the moment, the sole use case is in-post forms, but
+	// this may prove useful in other contexts.
+	// TODO: Can embedded forms be mutable, and what does it mean?
+	Form *Form `json:"form,omitempty"`
 }

@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package plugin
+package main
 
 import (
 	gohttp "net/http"
@@ -13,11 +13,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps/impl"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
@@ -45,16 +44,16 @@ func (p *Plugin) OnActivate() error {
 	p.mattermost = pluginapi.NewClient(p.API)
 
 	botUserID, err := p.mattermost.Bot.EnsureBot(&model.Bot{
-		Username:    constants.BotUsername,
-		DisplayName: constants.BotDisplayName,
-		Description: constants.BotDescription,
+		Username:    apps.BotUsername,
+		DisplayName: apps.BotDisplayName,
+		Description: apps.BotDescription,
 	}, pluginapi.ProfileImagePath("assets/profile.png"))
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
 	p.configurator = configurator.NewConfigurator(p.mattermost, p.BuildConfig, botUserID)
-	p.apps = apps.NewService(p.mattermost, p.configurator)
+	p.apps = impl.NewService(p.mattermost, p.configurator)
 
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
@@ -87,29 +86,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.apps.API.Notify(apps.NewUserContext(user), api.SubjectUserCreated)
+	_ = p.apps.API.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.API.Notify(apps.NewChannelMemberContext(cm, actingUser), api.SubjectUserJoinedChannel)
+	_ = p.apps.API.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.apps.API.Notify(apps.NewChannelMemberContext(cm, actingUser), api.SubjectUserLeftChannel)
+	_ = p.apps.API.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.API.Notify(apps.NewTeamMemberContext(tm, actingUser), api.SubjectUserJoinedTeam)
+	_ = p.apps.API.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.apps.API.Notify(apps.NewTeamMemberContext(tm, actingUser), api.SubjectUserLeftTeam)
+	_ = p.apps.API.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.apps.API.Notify(apps.NewPostContext(post), api.SubjectPostCreated)
+	_ = p.apps.API.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.apps.API.Notify(apps.NewChannelContext(ch), api.SubjectChannelCreated)
+	_ = p.apps.API.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
 }

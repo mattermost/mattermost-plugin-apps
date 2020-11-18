@@ -3,7 +3,6 @@ package helloapp
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -11,52 +10,79 @@ import (
 // Install function metadata is not necessary, but fillint it out (minimally)
 // for demo purposes. Install does not bind to any locations, it's Expand is
 // pre-determined by the server.
-func (h *helloapp) handleBindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *api.Context) (int, error) {
-	call := h.makeCall(PathMessage)
-	modal := *call
-	modal.AsModal = true
+func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *apps.JWTClaims, cc *apps.Context) (int, error) {
+	sendSurvey := h.makeCall(PathSendSurvey)
 
-	httputils.WriteJSON(w,
-		[]*api.Binding{
-			{
-				LocationID: api.LocationCommand,
-				Label:      "hello",
-				Bindings: []*api.Binding{
-					{
-						Label:       "message",
-						Hint:        "[--user] message",
-						Description: "send a message to a user",
-						Call:        call,
-					}, {
-						Label:       "manage",
-						Hint:        "subscribe | unsubscribe ",
-						Description: "manage channel subscriptions to greet new users",
-						Bindings: []*api.Binding{
-							{
-								Label:       "subscribe",
-								Hint:        "[--channel]",
-								Description: "subscribes a channel to greet new users",
-								Call:        h.makeCall(PathMessage, "mode", "on"),
-							}, {
-								Label:       "unsubscribe",
-								Hint:        "[--channel]",
-								Description: "unsubscribes a channel from greeting new users",
-								Call:        h.makeCall(PathMessage, "mode", "off"),
-							},
+	c := *sendSurvey
+	c.Expand = &apps.Expand{Post: apps.ExpandAll}
+
+	sendSurveyModal := &c
+	sendSurveyModal.Type = apps.CallTypeForm
+
+	out := []*apps.Binding{
+		{
+			// TODO make this a subscribe button, with a state (current subscription status)
+			LocationID: apps.LocationChannelHeader,
+			Bindings: []*apps.Binding{
+				{
+					LocationID:  "send",
+					Label:       "Survey a user",
+					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+					Hint:        "Send survey to a user",
+					Description: "Send a customized emotional response survey to a user",
+					Call:        sendSurvey, // should be Modal eventually
+				},
+			},
+		}, {
+			LocationID: apps.LocationPostMenu,
+			Bindings: []*apps.Binding{
+				{
+					LocationID:  "send-me",
+					Label:       "Survey myself",
+					Hint:        "Send survey to myself",
+					Description: "Send a customized emotional response survey to myself",
+					Call:        sendSurvey, // will use ActingUserID by default
+				},
+				{
+					LocationID:  "send",
+					Label:       "Survey a user",
+					Hint:        "Send survey to a user",
+					Description: "Send a customized emotional response survey to a user",
+					Call:        sendSurveyModal,
+				},
+			},
+		},
+		// TODO /Command binding is a placeholder, may not be final, test!
+		{
+			LocationID: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					Label:       "message",
+					Hint:        "[--user] message",
+					Description: "send a message to a user",
+					Call:        sendSurvey,
+				}, {
+					LocationID:  "manage",
+					Hint:        "subscribe | unsubscribe ",
+					Description: "manage channel subscriptions to greet new users",
+					Bindings: []*apps.Binding{
+						{
+							Label:       "subscribe",
+							Hint:        "[--channel]",
+							Description: "subscribes a channel to greet new users",
+							Call:        h.makeCall(PathSubscribeChannel, "mode", "on"),
+						}, {
+							Label:       "unsubscribe",
+							Hint:        "[--channel]",
+							Description: "unsubscribes a channel from greeting new users",
+							Call:        h.makeCall(PathSubscribeChannel, "mode", "off"),
 						},
 					},
 				},
-			}, {
-				LocationID: api.LocationPostMenu,
-				Bindings: []*api.Binding{
-					{
-						LocationID:  "message",
-						Label:       "message",
-						Description: "message a user",
-						Call:        &modal,
-					},
-				},
 			},
-		})
+		},
+	}
+
+	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }

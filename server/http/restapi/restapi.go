@@ -9,7 +9,6 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/constants"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -23,17 +22,16 @@ type restapi struct {
 	apps *apps.Service
 }
 
-func Init(router *mux.Router, apps *apps.Service) {
+func Init(router *mux.Router, appsService *apps.Service) {
 	a := &restapi{
-		mm:   apps.Mattermost,
-		apps: apps,
+		mm:   appsService.Mattermost,
+		apps: appsService,
 	}
 
-	subrouter := router.PathPrefix(constants.APIPath).Subrouter()
-	subrouter.HandleFunc(constants.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
-	subrouter.HandleFunc(constants.CallPath, a.handleCall).Methods("POST")
-	subrouter.HandleFunc(constants.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
-	subrouter.HandleFunc("/dialog", checkAuthorized(a.handleEmbeddedForm)).Methods("POST")
+	subrouter := router.PathPrefix(apps.APIPath).Subrouter()
+	subrouter.HandleFunc(apps.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
+	subrouter.HandleFunc(apps.CallPath, a.handleCall).Methods("POST")
+	subrouter.HandleFunc(apps.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) func(http.ResponseWriter, *http.Request) {
