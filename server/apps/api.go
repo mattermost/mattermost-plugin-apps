@@ -28,6 +28,10 @@ type API interface {
 	ProvisionApp(*Context, SessionToken, *InProvisionApp) (*App, md.MD, error)
 	Subscribe(*Subscription) error
 	Unsubscribe(*Subscription) error
+
+	ListApps() []*App
+	GetApp(appID AppID) (*App, error)
+	StoreApp(app *App) error
 }
 
 type Client interface {
@@ -44,6 +48,7 @@ type JWTClaims struct {
 
 type InInstallApp struct {
 	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
+	GrantedLocations   Locations   `json:"granted_locations,omitempty"`
 	AppSecret          string      `json:"app_secret,omitempty"`
 	OAuth2TrustedApp   bool        `json:"oauth2_trusted_app,omitempty"`
 }

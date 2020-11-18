@@ -25,6 +25,11 @@ func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, comm
 	for _, permission := range manifest.RequestedPermissions {
 		intro += md.Markdownf("- %s\n", permission.Markdown())
 	}
+	intro += md.Bold(
+		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", manifest.DisplayName)) + "\n"
+	for _, l := range manifest.RequestedLocations {
+		intro += md.Markdownf("- %s\n", l.Markdown())
+	}
 	intro += "\n---\n"
 
 	elements := []model.DialogElement{
@@ -137,6 +142,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 			OAuth2TrustedApp:   noUserConsentForOAuth2,
 			AppSecret:          secret,
 			GrantedPermissions: stateData.Manifest.RequestedPermissions,
+			GrantedLocations:   stateData.Manifest.RequestedLocations,
 		},
 	)
 	if err != nil {

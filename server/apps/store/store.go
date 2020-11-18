@@ -9,16 +9,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
-const prefixApp = "app_"
 const prefixSubs = "sub_"
 
 type Service interface {
-	DeleteApp(apps.AppID) error
 	DeleteSub(*apps.Subscription) error
-	GetApp(apps.AppID) (*apps.App, error)
-	ListApps() ([]apps.AppID, error)
 	GetSubs(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
-	StoreApp(*apps.App) error
 	StoreSub(sub *apps.Subscription) error
 }
 

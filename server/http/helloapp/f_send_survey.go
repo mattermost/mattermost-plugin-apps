@@ -98,8 +98,8 @@ func (h *helloapp) sendSurvey(userID, message string) error {
 	}
 	p.AddProp(apps.PropAppBindings, []*apps.Binding{
 		{
-			LocationID: "survey",
-			Form:       h.newSurveyForm(message),
+			Location: "survey",
+			Form:     h.newSurveyForm(message),
 		},
 	})
 	_, err := h.dmPost(userID, p)

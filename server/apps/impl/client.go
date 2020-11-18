@@ -15,22 +15,21 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/apps/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 type client struct {
-	store store.Service
+	s *service
 }
 
-func newClient(store store.Service) *client {
+func (s *service) newClient() *client {
 	return &client{
-		store: store,
+		s: s,
 	}
 }
 
 func (c *client) PostNotification(n *apps.Notification) error {
-	app, err := c.store.GetApp(n.Context.AppID)
+	app, err := c.s.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
 	}
@@ -44,7 +43,7 @@ func (c *client) PostNotification(n *apps.Notification) error {
 }
 
 func (c *client) PostCall(call *apps.Call) (*apps.CallResponse, error) {
-	app, err := c.store.GetApp(call.Context.AppID)
+	app, err := c.s.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +150,7 @@ func (c *client) GetManifest(manifestURL string) (*apps.Manifest, error) {
 }
 
 func (c *client) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
-	app, err := c.store.GetApp(cc.AppID)
+	app, err := c.s.GetApp(cc.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
 	}

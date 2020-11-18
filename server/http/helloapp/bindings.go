@@ -22,10 +22,10 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 	out := []*apps.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
-			LocationID: apps.LocationChannelHeader,
+			Location: apps.LocationChannelHeader,
 			Bindings: []*apps.Binding{
 				{
-					LocationID:  "send",
+					Location:    "send",
 					Label:       "Survey a user",
 					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
 					Hint:        "Send survey to a user",
@@ -34,17 +34,17 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 				},
 			},
 		}, {
-			LocationID: apps.LocationPostMenu,
+			Location: apps.LocationPostMenu,
 			Bindings: []*apps.Binding{
 				{
-					LocationID:  "send-me",
+					Location:    "send-me",
 					Label:       "Survey myself",
 					Hint:        "Send survey to myself",
 					Description: "Send a customized emotional response survey to myself",
 					Call:        sendSurvey, // will use ActingUserID by default
 				},
 				{
-					LocationID:  "send",
+					Location:    "send",
 					Label:       "Survey a user",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
@@ -54,7 +54,7 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 		},
 		// TODO /Command binding is a placeholder, may not be final, test!
 		{
-			LocationID: apps.LocationCommand,
+			Location: apps.LocationCommand,
 			Bindings: []*apps.Binding{
 				{
 					Label:       "message",
@@ -62,7 +62,7 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 					Description: "send a message to a user",
 					Call:        sendSurvey,
 				}, {
-					LocationID:  "manage",
+					Location:    "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
 					Bindings: []*apps.Binding{

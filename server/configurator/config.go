@@ -1,15 +1,19 @@
 package configurator
 
-import "github.com/mattermost/mattermost-server/v5/model"
+import (
+	"github.com/mattermost/mattermost-server/v5/model"
+)
 
 // StoredConfig represents the data stored in and managed with the Mattermost
 // config.
-type StoredConfig struct{}
+type StoredConfig struct {
+	Apps map[string]interface{}
+}
 
-var _ Mapper = (*StoredConfig)(nil)
-
-func (c StoredConfig) MapOnto(onto map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{}
+func (sc *StoredConfig) ConfigMap() map[string]interface{} {
+	return map[string]interface{}{
+		"Apps": sc.Apps,
+	}
 }
 
 type BuildConfig struct {

@@ -73,7 +73,10 @@ func (p *Plugin) OnConfigurationChange() error {
 		// pre-activate, nothing to do.
 		return nil
 	}
-	return p.configurator.Refresh()
+
+	stored := configurator.StoredConfig{}
+	_ = p.mattermost.Configuration.LoadPluginConfiguration(&stored)
+	return p.configurator.Refresh(&stored)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
