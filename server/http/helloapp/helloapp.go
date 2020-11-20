@@ -36,10 +36,12 @@ const (
 	PathOAuth2         = "/oauth2"            // convention for Mattermost Apps, comes from OAuther
 	PathOAuth2Complete = "/oauth2/complete"   // convention for Mattermost Apps, comes from OAuther
 
-	PathConnectedInstall = "/connected_install"
-	PathSendSurvey       = "/send"
-	PathSubscribeChannel = "/subscribe"
-	PathSurvey           = "/survey"
+	PathConnectedInstall  = "/connected_install"
+	PathSendSurvey        = "/send"
+	PathEmbedSurvey       = "/embedded_survey"
+	PathEmbedSurveySubmit = "/embedded_survey_submit"
+	PathSubscribeChannel  = "/subscribe"
+	PathSurvey            = "/survey"
 
 	PathNotifyUserJoinedChannel = "/notify-user-joined-channel"
 )
@@ -66,6 +68,8 @@ func Init(router *mux.Router, appsService *apps.Service) {
 	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
 	handleCall(r, PathSendSurvey, h.fSendSurvey)
 	handleCall(r, PathSurvey, h.fSurvey)
+	handleCall(r, PathEmbedSurvey, h.fSurveyEmbedded)
+	handleCall(r, PathEmbedSurveySubmit, h.fSurveyEmbeddedSubmit)
 
 	handleNotify(r, PathNotifyUserJoinedChannel, h.nUserJoinedChannel)
 

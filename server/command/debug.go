@@ -31,7 +31,7 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 
 func (s *service) executeDebugEmbedded(params *params) (*model.CommandResponse, error) {
 	_, err := s.apps.API.Call(&apps.Call{
-		URL: s.apps.Configurator.GetConfig().PluginURL + apps.HelloAppPath + helloapp.PathSendSurvey,
+		URL: s.apps.Configurator.GetConfig().PluginURL + apps.HelloAppPath + helloapp.PathEmbedSurvey,
 		Context: &apps.Context{
 			AppID:        helloapp.AppID,
 			ActingUserID: params.commandArgs.UserId,

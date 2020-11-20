@@ -32,11 +32,17 @@ type Call struct {
 type CallResponseType string
 
 const (
-	CallResponseTypeOK       = CallResponseType("")
-	CallResponseTypeError    = CallResponseType("error")
-	CallResponseTypeForm     = CallResponseType("form")
-	CallResponseTypeCall     = CallResponseType("call")
-	CallResponseTypeNavigate = CallResponseType("navigate")
+	CallResponseTypeOK             = CallResponseType("")
+	CallResponseTypeError          = CallResponseType("error")
+	CallResponseTypeForm           = CallResponseType("form")
+	CallResponseTypeCall           = CallResponseType("call")
+	CallResponseTypeNavigate       = CallResponseType("navigate")
+	CallResponseTypeUpdateEmbedded = CallResponseType("update_embedded")
+)
+
+const (
+	FormResponseDataErrors   = "errors"
+	EmbeddedResponseDataPost = "post"
 )
 
 type CallResponse struct {
