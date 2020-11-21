@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 const (

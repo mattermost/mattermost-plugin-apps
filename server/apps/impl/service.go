@@ -24,5 +24,6 @@ func NewService(mm *pluginapi.Client, conf apps.Configurator) *apps.Service {
 		store: store.NewStore(mm, conf),
 	}
 	s.Service.API = s
+	s.Service.Upstream = s
 	return &s.Service
 }
