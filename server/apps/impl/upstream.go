@@ -18,23 +18,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-type client struct {
-	s *service
-}
-
-func (s *service) newClient() *client {
-	return &client{
-		s: s,
-	}
-}
-
-func (c *client) PostNotification(n *apps.Notification) error {
-	app, err := c.s.GetApp(n.Context.AppID)
+func (s *service) PostUpstreamNotification(n *apps.Notification) error {
+	app, err := s.GetApp(n.Context.AppID)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.post(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
+	resp, err := s.postUpstream(app, "", app.Manifest.RootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
 		return err
 	}
@@ -42,13 +32,13 @@ func (c *client) PostNotification(n *apps.Notification) error {
 	return nil
 }
 
-func (c *client) PostCall(call *apps.Call) (*apps.CallResponse, error) {
-	app, err := c.s.GetApp(call.Context.AppID)
+func (s *service) PostUpstreamCall(call *apps.Call) (*apps.CallResponse, error) {
+	app, err := s.GetApp(call.Context.AppID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.post(app, call.Context.ActingUserID, call.URL, call)
+	resp, err := s.postUpstream(app, call.Context.ActingUserID, call.URL, call)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +53,8 @@ func (c *client) PostCall(call *apps.Call) (*apps.CallResponse, error) {
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (c *client) post(toApp *apps.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
-	client := c.getClient(toApp.Manifest.AppID)
+func (s *service) postUpstream(toApp *apps.App, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+	client := s.getAppClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
 		return nil, err
@@ -97,8 +87,8 @@ func (c *client) post(toApp *apps.App, fromMattermostUserID string, url string, 
 	return resp, nil
 }
 
-func (c *client) get(toApp *apps.App, fromMattermostUserID string, url string) (*http.Response, error) {
-	client := c.getClient(toApp.Manifest.AppID)
+func (s *service) getUpstream(toApp *apps.App, fromMattermostUserID string, url string) (*http.Response, error) {
+	client := s.getAppClient(toApp.Manifest.AppID)
 	jwtoken, err := createJWT(fromMattermostUserID, toApp.Secret)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating token")
@@ -119,7 +109,7 @@ func (c *client) get(toApp *apps.App, fromMattermostUserID string, url string) (
 	return resp, nil
 }
 
-func (c *client) getClient(appID apps.AppID) *http.Client {
+func (s *service) getAppClient(appID apps.AppID) *http.Client {
 	return &http.Client{}
 }
 
@@ -133,7 +123,7 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func (c *client) GetManifest(manifestURL string) (*apps.Manifest, error) {
+func (s *service) GetManifest(manifestURL string) (*apps.Manifest, error) {
 	var manifest apps.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
@@ -149,13 +139,13 @@ func (c *client) GetManifest(manifestURL string) (*apps.Manifest, error) {
 	return &manifest, nil
 }
 
-func (c *client) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
-	app, err := c.s.GetApp(cc.AppID)
+func (s *service) GetUpstreamBindings(cc *apps.Context) ([]*apps.Binding, error) {
+	app, err := s.GetApp(cc.AppID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
 	}
 
-	resp, err := c.get(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+apps.AppBindingsPath, cc))
+	resp, err := s.getUpstream(app, cc.ActingUserID, appendGetContext(app.Manifest.RootURL+apps.AppBindingsPath, cc))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get bindings")
 	}

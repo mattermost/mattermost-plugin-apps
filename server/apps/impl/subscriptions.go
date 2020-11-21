@@ -8,9 +8,9 @@ import (
 )
 
 func (s *service) Subscribe(sub *apps.Subscription) error {
-	return s.Store.StoreSub(sub)
+	return s.store.StoreSub(sub)
 }
 
 func (s *service) Unsubscribe(sub *apps.Subscription) error {
-	return s.Store.DeleteSub(sub)
+	return s.store.DeleteSub(sub)
 }

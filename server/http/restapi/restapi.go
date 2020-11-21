@@ -6,8 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -18,13 +16,11 @@ type SubscribeResponse struct {
 }
 
 type restapi struct {
-	mm   *pluginapi.Client
 	apps *apps.Service
 }
 
 func Init(router *mux.Router, appsService *apps.Service) {
 	a := &restapi{
-		mm:   appsService.Mattermost,
 		apps: appsService,
 	}
 
@@ -32,6 +28,12 @@ func Init(router *mux.Router, appsService *apps.Service) {
 	subrouter.HandleFunc(apps.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
 	subrouter.HandleFunc(apps.CallPath, a.handleCall).Methods("POST")
 	subrouter.HandleFunc(apps.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
+
+	subrouter.HandleFunc(apps.KVPath+"/{key}", a.handleKV(a.kvGet)).Methods("GET")
+	subrouter.HandleFunc(apps.KVPath+"/{key}", a.handleKV(a.kvPut)).Methods("PUT", "POST")
+	subrouter.HandleFunc(apps.KVPath+"/", a.handleKV(a.kvList)).Methods("GET")
+	subrouter.HandleFunc(apps.KVPath+"/{key}", a.handleKV(a.kvHead)).Methods("HEAD")
+	subrouter.HandleFunc(apps.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) func(http.ResponseWriter, *http.Request) {

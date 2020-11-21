@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/apps/configurator"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
@@ -20,8 +21,8 @@ func TestDeleteSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &configurator.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	conf := configurator.NewConfigurator(apiClient, &apps.BuildConfig{}, botID)
+	s := NewStore(apiClient, conf)
 
 	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -127,8 +128,8 @@ func TestGetSubs(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &configurator.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	conf := configurator.NewConfigurator(apiClient, &apps.BuildConfig{}, botID)
+	s := NewStore(apiClient, conf)
 
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
@@ -190,8 +191,8 @@ func TestStoreSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &configurator.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	conf := configurator.NewConfigurator(apiClient, &apps.BuildConfig{}, botID)
+	s := NewStore(apiClient, conf)
 
 	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",

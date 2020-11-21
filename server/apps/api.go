@@ -4,19 +4,20 @@
 package apps
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"errors"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-const OutgoingAuthHeader = "Mattermost-App-Authorization"
+var ErrNotABot = errors.New("not a bot")
 
 type Service struct {
-	Configurator configurator.Service
 	Mattermost   *pluginapi.Client
 	API          API
-	Client       Client
+	Configurator Configurator
+	Upstream     Upstream
 }
 type SessionToken string
 
@@ -32,18 +33,10 @@ type API interface {
 	ListApps() []*App
 	GetApp(appID AppID) (*App, error)
 	StoreApp(app *App) error
-}
 
-type Client interface {
-	GetBindings(*Context) ([]*Binding, error)
-	GetManifest(manifestURL string) (*Manifest, error)
-	PostCall(*Call) (*CallResponse, error)
-	PostNotification(*Notification) error
-}
-
-type JWTClaims struct {
-	jwt.StandardClaims
-	ActingUserID string `json:"acting_user_id,omitempty"`
+	KVGet(namespace, prefix, id string, ref interface{}) error
+	KVSet(namespace, prefix, id string, ref interface{}) (bool, error)
+	KVDelete(namespace, prefix, id string) error
 }
 
 type InInstallApp struct {

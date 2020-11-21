@@ -14,9 +14,9 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps/impl"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
@@ -25,16 +25,16 @@ import (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	*configurator.BuildConfig
+	*apps.BuildConfig
 	mattermost *pluginapi.Client
 
-	apps         *apps.Service
-	command      command.Service
-	configurator configurator.Service
-	http         http.Service
+	apps    *apps.Service
+	command command.Service
+	conf    apps.Configurator
+	http    http.Service
 }
 
-func NewPlugin(buildConfig *configurator.BuildConfig) *Plugin {
+func NewPlugin(buildConfig *apps.BuildConfig) *Plugin {
 	return &Plugin{
 		BuildConfig: buildConfig,
 	}
@@ -52,8 +52,8 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.configurator = configurator.NewConfigurator(p.mattermost, p.BuildConfig, botUserID)
-	p.apps = impl.NewService(p.mattermost, p.configurator)
+	p.conf = configurator.NewConfigurator(p.mattermost, p.BuildConfig, botUserID)
+	p.apps = impl.NewService(p.mattermost, p.conf)
 
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
@@ -69,14 +69,14 @@ func (p *Plugin) OnActivate() error {
 }
 
 func (p *Plugin) OnConfigurationChange() error {
-	if p.configurator == nil {
+	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
 	}
 
-	stored := configurator.StoredConfig{}
+	stored := apps.StoredConfig{}
 	_ = p.mattermost.Configuration.LoadPluginConfiguration(&stored)
-	return p.configurator.Refresh(&stored)
+	return p.conf.RefreshConfig(&stored)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {

@@ -1,4 +1,4 @@
-package configurator
+package apps
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -8,6 +8,10 @@ import (
 // config.
 type StoredConfig struct {
 	Apps map[string]interface{}
+}
+
+type ConfigMapper interface {
+	ConfigMap() (result map[string]interface{})
 }
 
 func (sc *StoredConfig) ConfigMap() map[string]interface{} {
@@ -34,4 +38,11 @@ type Config struct {
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
+}
+
+type Configurator interface {
+	GetConfig() Config
+	GetMattermostConfig() *model.Config
+	RefreshConfig(*StoredConfig) error
+	StoreConfig(ConfigMapper) error
 }

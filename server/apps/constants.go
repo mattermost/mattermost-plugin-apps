@@ -16,6 +16,7 @@ const (
 	HelloAppPath          = "/hello"
 	APIPath               = "/api/v1"
 	CallPath              = "/call"
+	KVPath                = "/kv"
 	SubscribePath         = "/subscribe"
 	BindingsPath          = "/bindings"
 )

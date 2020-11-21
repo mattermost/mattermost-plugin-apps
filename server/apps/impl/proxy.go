@@ -15,11 +15,11 @@ func (s *service) Call(c *apps.Call) (*apps.CallResponse, error) {
 
 	clone := *c
 	clone.Context = cc
-	return s.Client.PostCall(&clone)
+	return s.Upstream.PostUpstreamCall(&clone)
 }
 
 func (s *service) Notify(cc *apps.Context, subj apps.Subject) error {
-	subs, err := s.Store.GetSubs(subj, cc.TeamID, cc.ChannelID)
+	subs, err := s.store.GetSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (s *service) Notify(cc *apps.Context, subj apps.Subject) error {
 		req.Context.AppID = sub.AppID
 
 		go func() {
-			_ = s.Client.PostNotification(&req)
+			_ = s.Upstream.PostUpstreamNotification(&req)
 		}()
 	}
 	return nil

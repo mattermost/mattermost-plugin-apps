@@ -29,7 +29,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	manifest, err := s.apps.Client.GetManifest(manifestURL)
+	manifest, err := s.apps.Upstream.GetManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}

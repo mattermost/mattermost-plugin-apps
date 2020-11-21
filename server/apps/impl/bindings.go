@@ -39,7 +39,7 @@ func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 	for _, app := range allApps {
 		appCC := *cc
 		appCC.AppID = app.Manifest.AppID
-		bb, err := s.Client.GetBindings(&appCC)
+		bb, err := s.GetUpstreamBindings(&appCC)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get bindings for %s", app.Manifest.AppID)
 		}

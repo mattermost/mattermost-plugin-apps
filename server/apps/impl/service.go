@@ -4,33 +4,25 @@
 package impl
 
 import (
-	"sync"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 type service struct {
 	apps.Service
-	Store store.Service
-
-	appsCache *sync.Map
+	store apps.Store
 }
 
-func NewService(mm *pluginapi.Client, configurator configurator.Service) *apps.Service {
+func NewService(mm *pluginapi.Client, conf apps.Configurator) *apps.Service {
 	s := &service{
 		Service: apps.Service{
-			Configurator: configurator,
 			Mattermost:   mm,
+			Configurator: conf,
 		},
-		appsCache: &sync.Map{},
-		Store:     store.NewService(mm, configurator),
+		store: store.NewStore(mm, conf),
 	}
-	s.Client = s.newClient()
-	s.API = s
-
+	s.Service.API = s
 	return &s.Service
 }

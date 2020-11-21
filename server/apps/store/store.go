@@ -6,25 +6,18 @@ package store
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 const prefixSubs = "sub_"
 
-type Service interface {
-	DeleteSub(*apps.Subscription) error
-	GetSubs(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
-	StoreSub(sub *apps.Subscription) error
-}
-
 type store struct {
-	Mattermost   *pluginapi.Client
-	Configurator configurator.Service
+	mm   *pluginapi.Client
+	conf apps.Configurator
 }
 
-func NewService(mm *pluginapi.Client, conf configurator.Service) Service {
+func NewStore(mm *pluginapi.Client, conf apps.Configurator) apps.Store {
 	return &store{
-		Mattermost:   mm,
-		Configurator: conf,
+		mm:   mm,
+		conf: conf,
 	}
 }

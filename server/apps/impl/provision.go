@@ -17,7 +17,7 @@ import (
 )
 
 func (s *service) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InProvisionApp) (*apps.App, md.MD, error) {
-	manifest, err := s.Client.GetManifest(in.ManifestURL)
+	manifest, err := s.Upstream.GetManifest(in.ManifestURL)
 	if err != nil {
 		return nil, "", err
 	}
