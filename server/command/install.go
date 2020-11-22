@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
@@ -29,37 +29,37 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	manifest, err := s.apps.Upstream.GetManifest(manifestURL)
+	manifest, err := s.api.Proxy.GetManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
 
-	app, _, err := s.apps.API.ProvisionApp(
-		&apps.Context{
+	app, _, err := s.api.Admin.ProvisionApp(
+		&api.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		apps.SessionToken(params.commandArgs.Session.Token),
-		&apps.InProvisionApp{
-			ManifestURL: manifestURL,
-			AppSecret:   appSecret,
-			Force:       force,
+		api.SessionToken(params.commandArgs.Session.Token),
+		&api.InProvisionApp{
+			Manifest:  manifest,
+			AppSecret: appSecret,
+			Force:     force,
 		},
 	)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
 
-	conf := s.apps.Configurator.GetConfig()
+	conf := s.api.Configurator.GetConfig()
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
-	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
+	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(manifest, appSecret, conf.PluginURL, params.commandArgs))
 	if err != nil {
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
 
-	team, err := s.apps.Mattermost.Team.Get(params.commandArgs.TeamId)
+	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}

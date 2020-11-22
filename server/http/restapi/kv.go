@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-// TODO use raw byte API: for now all JSON is re-encoded to use apps.Mattermost API
+// TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
 
 func (a *restapi) kvList(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
 	// <><>TODO kvList
@@ -21,7 +21,7 @@ func (a *restapi) kvList(w http.ResponseWriter, req *http.Request, botUserID, pr
 func (a *restapi) kvGet(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
 	id := mux.Vars(req)["key"]
 	out := map[string]interface{}{}
-	err := a.apps.API.KVGet(botUserID, prefix, id, out)
+	err := a.api.AppServices.KVGet(botUserID, prefix, id, out)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -46,7 +46,7 @@ func (a *restapi) kvPut(w http.ResponseWriter, req *http.Request, botUserID, pre
 
 	// <><>TODO atomic support
 	// <><>TODO TTL support
-	changed, err := a.apps.API.KVSet(botUserID, prefix, id, in)
+	changed, err := a.api.AppServices.KVSet(botUserID, prefix, id, in)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -58,7 +58,7 @@ func (a *restapi) kvPut(w http.ResponseWriter, req *http.Request, botUserID, pre
 
 func (a *restapi) kvDelete(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
 	id := mux.Vars(req)["key"]
-	err := a.apps.API.KVDelete(botUserID, prefix, id)
+	err := a.api.AppServices.KVDelete(botUserID, prefix, id)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
