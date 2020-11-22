@@ -78,13 +78,13 @@ endif
 mock:
 ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen
-	mockgen -destination server/apps/appsmock/mock_api.go -package appsmock github.com/mattermost/mattermost-plugin-apps/server/apps API
+	mockgen -destination server/api/mockapi/mock_api.go github.com/mattermost/mattermost-plugin-apps/server/api API
 endif
 
 ## Generates mock golang interfaces for testing
 clean_mock:
 ifneq ($(HAS_SERVER),)
-	rm -rf ./server/apps/appsmock
+	rm -rf ./server/apps/mockapi
 endif
 
 

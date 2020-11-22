@@ -19,7 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/helloapp2"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
@@ -57,7 +57,7 @@ func (p *Plugin) OnActivate() error {
 
 	p.http = http.NewService(mux.NewRouter(), p.apps,
 		dialog.Init,
-		helloapp.Init,
+		helloapp2.Init,
 		restapi.Init,
 	)
 
