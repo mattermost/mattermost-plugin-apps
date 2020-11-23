@@ -20,12 +20,13 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":                     s.executeInfo,
-		"install":                  s.executeInstall,
-		"debug-install-http-hello": s.executeDebugInstallHTTPHello,
-		"debug-clean":              s.executeDebugClean,
-		"debug-bindings":           s.executeDebugBindings,
-		"debug-embedded-form":      s.executeDebugEmbeddedForm,
+		"info":                  s.executeInfo,
+		"install":               s.executeInstall,
+		"debug-install-http":    s.executeDebugInstallHTTPHello,
+		"debug-install-builtin": s.executeDebugInstallBuiltinHello,
+		"debug-clean":           s.executeDebugClean,
+		"debug-bindings":        s.executeDebugBindings,
+		"debug-embedded-form":   s.executeDebugEmbeddedForm,
 	}
 
 	return runSubcommand(subcommands, in)

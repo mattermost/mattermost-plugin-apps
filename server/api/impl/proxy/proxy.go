@@ -27,12 +27,16 @@ func NewProxy(mm *pluginapi.Client, conf api.Configurator, store api.Store) *Pro
 }
 
 func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
-	up, _ := p.builtIn[app.Manifest.AppID]
-	if up != nil {
-		return up, nil
+	var up api.Upstream
+
+	if len(p.builtIn) > 0 {
+		up = p.builtIn[app.Manifest.AppID]
+		if up != nil {
+			return up, nil
+		}
 	}
 	if app.Manifest.RemoteRootURL == "" {
-		return nil, errors.New("only built-in and remote http upstreams are supported. Hosted AWS Lambda coming.")
+		return nil, errors.New("only built-in and remote http upstreams are supported, hosted AWS Lambda coming soon")
 	}
 
 	// TODO: support AWS Lambda upstream

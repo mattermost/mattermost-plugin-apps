@@ -8,14 +8,14 @@ import (
 
 func TestAppConfigMap(t *testing.T) {
 	m := &Manifest{
-		AppID:                "app-id",
-		DisplayName:          "display-name",
-		Description:          "description",
-		OAuth2CallbackURL:    "oauth2-callback-url",
-		HomepageURL:          "homepage-url",
-		RootURL:              "root_url",
-		RequestedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
-		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
+		AppID:                   "app-id",
+		DisplayName:             "display-name",
+		Description:             "description",
+		RemoteOAuth2CallbackURL: "oauth2-callback-url",
+		HomepageURL:             "homepage-url",
+		RemoteRootURL:           "root_url",
+		RequestedPermissions:    Permissions{PermissionActAsUser, PermissionActAsBot},
+		RequestedLocations:      Locations{LocationChannelHeader, LocationCommand},
 	}
 
 	a1 := &App{

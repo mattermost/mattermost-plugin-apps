@@ -62,7 +62,7 @@ func (s *service) executeDebugInstallHTTPHello(params *params) (*model.CommandRe
 	return s.executeInstall(params)
 }
 
-func (s *service) executeDebugInstallEmbeddedHello(params *params) (*model.CommandResponse, error) {
+func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.CommandResponse, error) {
 	manifest := builtin_hello.GetManifest()
 
 	app, _, err := s.api.Admin.ProvisionApp(

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (s *Store) subsKey(subject api.Subject, teamID, channelID string) string {
+func subsKey(subject api.Subject, teamID, channelID string) string {
 	idSuffix := ""
 	switch subject {
 	case api.SubjectUserJoinedChannel,
@@ -25,7 +25,7 @@ func (s *Store) subsKey(subject api.Subject, teamID, channelID string) string {
 }
 
 func (s *Store) DeleteSub(sub *api.Subscription) error {
-	key := s.subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []*api.Subscription
 	err := s.mm.KV.Get(key, &subs)
@@ -55,7 +55,7 @@ func (s *Store) DeleteSub(sub *api.Subscription) error {
 }
 
 func (s *Store) LoadSubs(subject api.Subject, teamID, channelID string) ([]*api.Subscription, error) {
-	key := s.subsKey(subject, teamID, channelID)
+	key := subsKey(subject, teamID, channelID)
 	var subs []*api.Subscription
 	err := s.mm.KV.Get(key, &subs)
 	if err != nil {
@@ -68,7 +68,7 @@ func (s *Store) LoadSubs(subject api.Subject, teamID, channelID string) ([]*api.
 }
 
 func (s *Store) StoreSub(sub *api.Subscription) error {
-	key := s.subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []*api.Subscription
 	err := s.mm.KV.Get(key, &subs)

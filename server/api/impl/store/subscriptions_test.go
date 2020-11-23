@@ -159,28 +159,28 @@ func TestGetSubs(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		_, err := s.GetSubs("user_joined_channel", "team-id", "channel-id")
+		_, err := s.LoadSubs("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
 
 	t.Run("no value for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, nil).Times(1)
-		_, err := s.GetSubs("user_joined_channel", "team-id", "channel-id")
+		_, err := s.LoadSubs("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
-		_, err := s.GetSubs("user_joined_channel", "team-id", "channel-id")
+		_, err := s.LoadSubs("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("subscription list got", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
-		subs, err := s.GetSubs("user_joined_channel", "team-id", "channel-id")
+		subs, err := s.LoadSubs("user_joined_channel", "team-id", "channel-id")
 		require.NoError(t, err)
 		require.Equal(t, storedSubs, subs)
 	})
@@ -291,7 +291,6 @@ func TestStoreSub(t *testing.T) {
 }
 
 func TestSubsKey(t *testing.T) {
-	s := store{}
 	for name, testcase := range map[string]struct {
 		Subject   api.Subject
 		TeamID    string
@@ -348,7 +347,7 @@ func TestSubsKey(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			r := s.subsKey(testcase.Subject, testcase.TeamID, testcase.ChannelID)
+			r := subsKey(testcase.Subject, testcase.TeamID, testcase.ChannelID)
 			require.Equal(t, testcase.Expected, r)
 		})
 	}
