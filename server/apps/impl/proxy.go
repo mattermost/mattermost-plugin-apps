@@ -5,9 +5,44 @@ package impl
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/pkg/errors"
 )
 
+func (s *service) filterContext(c *apps.Call) error {
+	checkTeam := true
+	if c.Context.ChannelID != "" {
+		_, err := s.Mattermost.Channel.GetMember(c.Context.ChannelID, c.Context.ActingUserID)
+		if err != nil {
+			return errors.Wrap(err, "user is not a member of channel specified in context")
+		}
+
+		ch, err := s.Mattermost.Channel.Get(c.Context.ChannelID)
+		if err != nil {
+			return errors.Wrap(err, "failed to fetch channel specified in context")
+		}
+
+		if ch.TeamId != "" {
+			checkTeam = false
+			c.Context.TeamID = ch.TeamId
+		}
+	}
+
+	if checkTeam && c.Context.TeamID != "" {
+		_, err := s.Mattermost.Team.GetMember(c.Context.TeamID, c.Context.ActingUserID)
+		if err != nil {
+			return errors.Wrap(err, "user is not a member of team specified in context")
+		}
+	}
+
+	return nil
+}
+
 func (s *service) Call(c *apps.Call) (*apps.CallResponse, error) {
+	err := s.filterContext(c)
+	if err != nil {
+		return nil, err
+	}
+
 	cc, err := s.newExpander(c.Context).Expand(c.Expand)
 	if err != nil {
 		return nil, err
