@@ -31,6 +31,17 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 	return out
 }
 
+func addAppID(bb []*apps.Binding, appID apps.AppID) []*apps.Binding {
+	for _, b := range bb {
+		b.AppID = appID
+		if len(b.Bindings) > 0 {
+			b.Bindings = addAppID(b.Bindings, appID)
+		}
+	}
+
+	return bb
+}
+
 // This and registry related calls should be RPC calls so they can be reused by other plugins
 func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := s.ListApps()
@@ -44,6 +55,7 @@ func (s *service) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 			return nil, errors.Wrapf(err, "failed to get bindings for %s", app.Manifest.AppID)
 		}
 
+		bb = addAppID(bb, app.Manifest.AppID)
 		all = mergeBindings(all, s.scanAppBindings(app, bb, ""))
 	}
 
