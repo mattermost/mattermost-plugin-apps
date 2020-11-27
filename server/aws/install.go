@@ -125,7 +125,7 @@ func downloadFile(url string) ([]byte, error) {
 
 // TODO filter out nonvalid URLs. Maybe create black list to prevent SSRF attack.
 // For now we will be using only urls from github.
-// Note that this url is comming from Marketplace and should be verified,
+// Note that this url is coming from Marketplace and should be verified,
 // but still it's good practice to validate here too.
 func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
