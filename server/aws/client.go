@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -105,7 +104,7 @@ func NewAWSSessionWithLogger(config *aws.Config, logger log.FieldLogger) (*sessi
 				logger = logger.WithField("params", string(paramBytes))
 			}
 
-			logger = logger.WithFields(logrus.Fields{
+			logger = logger.WithFields(log.Fields{
 				"aws-service-id":     r.ClientInfo.ServiceID,
 				"aws-operation-name": r.Operation.Name,
 			})

@@ -5,10 +5,8 @@ package aws
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -17,22 +15,17 @@ import (
 )
 
 // CreateFunction method creates lambda function
-func (a *Client) CreateFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
+func (c *Client) CreateFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
 	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
 		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %s %s %s %s %s", zipFile, function, handler, resource, runtime)
 	}
-
-	s := ""
-	s += fmt.Sprintf("func = %s\nhandler = %s\nresource = %s\nruntime = %s\n", function, handler, resource, runtime)
 
 	contents, err := ioutil.ReadAll(zipFile)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
-	s += "content = " + strconv.Itoa(len(contents)) + "\n"
 
 	createCode := &lambda.FunctionCode{
-		// S3ObjectVersion: aws.String(""), //TODO
 		ZipFile: contents,
 	}
 
@@ -44,24 +37,23 @@ func (a *Client) CreateFunction(zipFile io.Reader, function, handler, runtime, r
 		Runtime:      &runtime,
 	}
 
-	result, err := a.Service().lambda.CreateFunction(createArgs)
+	result, err := c.Service().lambda.CreateFunction(createArgs)
 	if err != nil {
-		return errors.Wrapf(err, "Can't create function res = %v\n additional = \n%v", result, s)
-		// return errors.Wrapf(err, "Can't create function additional")
+		return errors.Wrapf(err, "Can't create function res = %v\n", result)
 	}
-	a.logger.Infof("function named %s was created with result - %v", function, result)
+	c.logger.Infof("function named %s was created with result - %v", function, result)
 
 	return nil
 }
 
 // InvokeFunction runs a lambda function with specified name and returns a payload
-func (a *Client) InvokeFunction(functionName string, request interface{}) ([]byte, error) {
+func (c *Client) InvokeFunction(functionName string, request interface{}) ([]byte, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error marshalling request payload")
+		return nil, errors.Wrap(err, "Error marshaling request payload")
 	}
 
-	result, err := a.Service().lambda.Invoke(&lambda.InvokeInput{FunctionName: aws.String(functionName), Payload: payload})
+	result, err := c.Service().lambda.Invoke(&lambda.InvokeInput{FunctionName: aws.String(functionName), Payload: payload})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error calling function %s", functionName)
 	}

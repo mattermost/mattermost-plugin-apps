@@ -21,7 +21,7 @@ const lambdaFunctionFileNameMaxSize = 64
 type function struct {
 	Name    string `json:"name"`
 	Handler string `json:"handler"`
-	Runtime string `json:"runtime"` //runtime can be detected automatically from reading the lambda function
+	Runtime string `json:"runtime"` // runtime can be detected automatically from reading the lambda function
 }
 
 type functionInstallData struct {
@@ -101,6 +101,10 @@ func (c *Client) InstallApp(releaseURL string) error {
 }
 
 func downloadFile(url string) ([]byte, error) {
+	if !isValid(url) {
+		return nil, errors.Errorf("url %s is not valid", url)
+	}
+	/* #nosec G107 */
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't download file %s", url)
@@ -117,7 +121,14 @@ func downloadFile(url string) ([]byte, error) {
 	}
 
 	return body, nil
+}
 
+// TODO filter out nonvalid URLs. Maybe create black list to prevent SSRF attack.
+// For now we will be using only urls from github.
+// Note that this url is comming from Marketplace and should be verified,
+// but still it's good practice to validate here too.
+func isValid(url string) bool {
+	return strings.HasPrefix(url, "https://github.com/")
 }
 
 func (c *Client) installApp(appName string, functions []functionInstallData) error {
