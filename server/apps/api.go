@@ -6,6 +6,7 @@ package apps
 import (
 	"github.com/dgrijalva/jwt-go"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/server/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -17,6 +18,7 @@ type Service struct {
 	Mattermost   *pluginapi.Client
 	API          API
 	Client       Client
+	AWSProxy     aws.Proxy
 }
 type SessionToken string
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/apps/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
@@ -31,6 +32,7 @@ func NewService(mm *pluginapi.Client, configurator configurator.Service) *apps.S
 	}
 	s.Client = s.newClient()
 	s.API = s
+	s.AWSProxy = aws.NewAWSProxy(mm)
 
 	return &s.Service
 }

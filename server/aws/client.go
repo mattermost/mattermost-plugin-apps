@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -49,8 +50,23 @@ type Service struct {
 	iam    *iam.IAM
 }
 
+// NewAWSClientWithConfigWithLogger returns a new instance of Client with a custom configuration.
+func NewAWSClientWithConfigWithLogger(config *aws.Config, logger log.FieldLogger) *Client {
+	return &Client{
+		logger: logger,
+		config: config,
+		mux:    &sync.Mutex{},
+	}
+}
+
 // NewAWSClientWithConfig returns a new instance of Client with a custom configuration.
-func NewAWSClientWithConfig(config *aws.Config, logger log.FieldLogger) *Client {
+func NewAWSClientWithConfig(config *aws.Config) *Client {
+	logger := log.New()
+	logger.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	// Output to stdout instead of the default stderr.
+	logger.SetOutput(os.Stdout)
 	return &Client{
 		logger: logger,
 		config: config,

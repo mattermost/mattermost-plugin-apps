@@ -139,15 +139,20 @@ func (c *Client) installApp(appName string, functions []functionInstallData) err
 
 	// check function name lengths
 	for _, function := range functions {
-		if len(function.name)+len(appName)+1 > lambdaFunctionFileNameMaxSize {
-			return errors.Errorf("function file name %s should be less than %d", appName+"_"+function.name, lambdaFunctionFileNameMaxSize)
+		name := createFunctionName(appName, function.name)
+		if len(name) > lambdaFunctionFileNameMaxSize {
+			return errors.Errorf("function file name %s should be less than %d", name, lambdaFunctionFileNameMaxSize)
 		}
 	}
 	for _, function := range functions {
-		name := fmt.Sprintf("%s_%s", appName, function.name)
+		name := createFunctionName(appName, function.name)
 		if err := c.CreateFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
 			return errors.Wrapf(err, "can't install function for %s", appName)
 		}
 	}
 	return nil
+}
+
+func createFunctionName(appName, function string) string {
+	return fmt.Sprintf("%s_%s", appName, function)
 }
