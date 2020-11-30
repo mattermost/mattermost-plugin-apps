@@ -40,7 +40,7 @@ func (s *store) initStore() error {
 	if err != nil {
 		return errors.Wrap(err, "can't get apps list from KV store")
 	}
-	if value == nil || len(value) == 0 {
+	if len(value) == 0 {
 		ok, err := s.Mattermost.KV.Set(appsKey, &value)
 		if err != nil {
 			return errors.Wrapf(err, "can't set app list in KV store")
@@ -77,7 +77,7 @@ func (s *store) StoreAWSCredential(appID, keyID, secret string) error {
 
 	appsKey := getAppsKey()
 	var appsList []string
-	if err := s.Mattermost.KV.Get(appsKey, &appsList); err != nil {
+	if err = s.Mattermost.KV.Get(appsKey, &appsList); err != nil {
 		return errors.Wrap(err, "can't get apps list from KV store")
 	}
 	appsList = append(appsList, appID)
@@ -103,15 +103,14 @@ func (s *store) DeleteAWSCredential(appID string) error {
 	if err := s.Mattermost.KV.Get(appsKey, &appsList); err != nil {
 		return errors.Wrap(err, "can't get apps list from KV store")
 	}
-	var newList []string
 	for i, app := range appsList {
 		if app == appID {
-			newList = append(appsList[:i], appsList[i+1:]...)
+			appsList = append(appsList[:i], appsList[i+1:]...)
 			break
 		}
 	}
 
-	ok, err := s.Mattermost.KV.Set(appsKey, &newList)
+	ok, err := s.Mattermost.KV.Set(appsKey, &appsList)
 	if err != nil {
 		return errors.Wrap(err, "can't set apps list in KV store")
 	}
@@ -125,7 +124,7 @@ func (s *store) GetAppList() ([]string, error) {
 	key := getAppsKey()
 	var apps []string
 	if err := s.Mattermost.KV.Get(key, &apps); err != nil {
-		return nil, errors.Wrap(err, "can't retreive credential list from KV store")
+		return nil, errors.Wrap(err, "can't retrieve credential list from KV store")
 	}
 	return apps, nil
 }

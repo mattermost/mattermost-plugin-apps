@@ -36,8 +36,8 @@ func NewAWSProxy(mm *pluginapi.Client) Proxy {
 }
 
 func (p *proxy) IsAppInstalled(appID string) bool {
-	_, ok := p.cc.cache[appID]
-	return ok
+	_, err := p.cc.get(appID)
+	return err != nil
 }
 
 func (p *proxy) InstallApp(appID, releaseURL, keyID, secret string) error {
@@ -61,7 +61,7 @@ func (p *proxy) InvokeFunction(appID, functionName string, request interface{}) 
 	if !p.IsAppInstalled(appID) {
 		return nil, errors.New("app is not installed")
 	}
-	client, _ := p.cc.cache[appID]
+	client, _ := p.cc.get(appID)
 	name := createFunctionName(appID, functionName)
 	return client.InvokeFunction(name, request)
 }
