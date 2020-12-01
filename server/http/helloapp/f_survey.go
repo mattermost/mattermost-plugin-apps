@@ -9,13 +9,14 @@ import (
 
 func (h *helloapp) newSurveyForm(message string) *apps.Form {
 	return &apps.Form{
-		Title:  "Emotional response survey",
-		Header: message,
+		Title:         "Emotional response survey",
+		Header:        message,
+		SubmitButtons: fieldResponse,
 		Fields: []*apps.Field{
 			{
 				Label: "What is your vote for today?",
 				Name:  "vote",
-				Type:  apps.FieldTypeButton,
+				Type:  apps.FieldTypeStaticSelect,
 				SelectStaticOptions: []apps.SelectOption{
 					{Label: "1", Value: "1"},
 					{Label: "2", Value: "2"},
@@ -23,16 +24,17 @@ func (h *helloapp) newSurveyForm(message string) *apps.Form {
 					{Label: "4", Value: "4"},
 					{Label: "5", Value: "5"},
 				},
+				TextSubtype: "button",
 			},
 			{
 				Label: "Have you liked it?",
 				Name:  fieldResponse,
-				Type:  apps.FieldTypeButton,
+				Type:  apps.FieldTypeStaticSelect,
 				SelectStaticOptions: []apps.SelectOption{
 					{Label: "Like", Value: "like"},
 					{Label: "Dislike", Value: "dislike"},
 				},
-				TextSubtype: "submit",
+				TextSubtype: "button",
 			},
 		},
 	}
