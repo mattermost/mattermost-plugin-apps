@@ -66,6 +66,7 @@ func Init(router *mux.Router, appsService *api.Service) {
 	handleCall(r, PathConnectedInstall, h.fConnectedInstall)
 	handleCall(r, PathSendSurvey, h.fSendSurvey)
 	handleCall(r, PathSurvey, h.fSurvey)
+	// handleCall(r, PathSubscribeChannel, h.fSubscribe)
 
 	handleNotify(r, PathNotifyUserJoinedChannel, h.nUserJoinedChannel)
 

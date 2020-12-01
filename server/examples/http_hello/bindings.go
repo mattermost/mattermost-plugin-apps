@@ -30,7 +30,7 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurvey, // should be Modal eventually
+					Call:        sendSurveyModal,
 				},
 			},
 		}, {
@@ -58,21 +58,25 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 			Bindings: []*api.Binding{
 				{
 					Label:       "message",
+					Location:    "message",
 					Hint:        "[--user] message",
 					Description: "send a message to a user",
 					Call:        sendSurvey,
 				}, {
+					Label:       "manage",
 					Location:    "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
 					Bindings: []*api.Binding{
 						{
 							Label:       "subscribe",
+							Location:    "subscribe",
 							Hint:        "[--channel]",
 							Description: "subscribes a channel to greet new users",
 							Call:        h.makeCall(PathSubscribeChannel, "mode", "on"),
 						}, {
 							Label:       "unsubscribe",
+							Location:    "unsubscribe",
 							Hint:        "[--channel]",
 							Description: "unsubscribes a channel from greeting new users",
 							Call:        h.makeCall(PathSubscribeChannel, "mode", "off"),

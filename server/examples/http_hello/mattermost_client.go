@@ -13,6 +13,9 @@ func (h *helloapp) asUser(userID string, f func(*model.Client4) error) error {
 	if err != nil {
 		return err
 	}
+	if t == nil {
+		return errors.Errorf("OAuth token not found for user %s", userID)
+	}
 	mmClient := model.NewAPIv4Client(h.api.Configurator.GetConfig().MattermostSiteURL)
 	mmClient.SetOAuthToken(t.AccessToken)
 	return f(mmClient)
@@ -67,7 +70,7 @@ func (h *helloapp) dm(userID string, format string, args ...interface{}) {
 func (h *helloapp) dmPost(userID string, post *model.Post) (*model.Post, error) {
 	channel, err := h.getDirectChannelWithBot(userID)
 	if err != nil {
-		return nil, errors.Wrap(err, "getDirectionChannel")
+		return nil, errors.Wrap(err, "getDirectChannel")
 	}
 
 	post.ChannelId = channel.Id
