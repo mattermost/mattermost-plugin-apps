@@ -13,7 +13,7 @@ func TestAppConfigMap(t *testing.T) {
 		Description:             "description",
 		RemoteOAuth2CallbackURL: "oauth2-callback-url",
 		HomepageURL:             "homepage-url",
-		RemoteRootURL:           "root_url",
+		RootURL:                 "root_url",
 		RequestedPermissions:    Permissions{PermissionActAsUser, PermissionActAsBot},
 		RequestedLocations:      Locations{LocationChannelHeader, LocationCommand},
 	}

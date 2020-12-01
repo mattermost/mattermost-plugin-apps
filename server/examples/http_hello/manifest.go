@@ -13,7 +13,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 			AppID:         AppID,
 			DisplayName:   AppDisplayName,
 			Description:   AppDescription,
-			RemoteRootURL: h.appURL(""),
+			RootURL: h.appURL(""),
 			RequestedPermissions: api.Permissions{
 				api.PermissionUserJoinedChannelNotification,
 				api.PermissionActAsUser,

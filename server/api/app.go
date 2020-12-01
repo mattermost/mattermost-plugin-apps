@@ -11,7 +11,7 @@ type Manifest struct {
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
-	RemoteRootURL           string `json:"remote_root_url,omitempty"`
+	RootURL                 string `json:"root_url,omitempty"`
 	RemoteOAuth2CallbackURL string `json:"remote_oauth2_callback_url,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`

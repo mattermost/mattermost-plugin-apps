@@ -35,12 +35,12 @@ func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
 			return up, nil
 		}
 	}
-	if app.Manifest.RemoteRootURL == "" {
+	if app.Manifest.RootURL == "" {
 		return nil, errors.New("only built-in and remote http upstreams are supported, hosted AWS Lambda coming soon")
 	}
 
 	// TODO: support AWS Lambda upstream
-	up = uphttp.NewHTTPUpstream(app.Manifest.AppID, app.Manifest.RemoteRootURL, app.Secret)
+	up = uphttp.NewHTTPUpstream(app.Manifest.AppID, app.Manifest.RootURL, app.Secret)
 
 	return up, nil
 }
