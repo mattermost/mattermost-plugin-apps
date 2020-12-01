@@ -9,18 +9,30 @@ import (
 
 func (h *helloapp) newSurveyForm(message string) *apps.Form {
 	return &apps.Form{
-		Title:         "Emotional response survey",
-		Header:        message,
-		Footer:        "Let the world know!",
-		SubmitButtons: fieldResponse,
+		Title:  "Emotional response survey",
+		Header: message,
 		Fields: []*apps.Field{
 			{
-				Name: fieldResponse,
-				Type: apps.FieldTypeStaticSelect,
+				Label: "What is your vote for today?",
+				Name:  "vote",
+				Type:  apps.FieldTypeButton,
+				SelectStaticOptions: []apps.SelectOption{
+					{Label: "1", Value: "1"},
+					{Label: "2", Value: "2"},
+					{Label: "3", Value: "3"},
+					{Label: "4", Value: "4"},
+					{Label: "5", Value: "5"},
+				},
+			},
+			{
+				Label: "Have you liked it?",
+				Name:  fieldResponse,
+				Type:  apps.FieldTypeButton,
 				SelectStaticOptions: []apps.SelectOption{
 					{Label: "Like", Value: "like"},
 					{Label: "Dislike", Value: "dislike"},
 				},
+				TextSubtype: "submit",
 			},
 		},
 	}

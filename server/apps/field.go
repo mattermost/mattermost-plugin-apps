@@ -9,6 +9,7 @@ const (
 	FieldTypeBool          = FieldType("bool")
 	FieldTypeUser          = FieldType("user")
 	FieldTypeChannel       = FieldType("channel")
+	FieldTypeButton        = FieldType("button")
 )
 
 type SelectOption struct {

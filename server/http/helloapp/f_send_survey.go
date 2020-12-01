@@ -22,7 +22,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 		Form: &apps.Form{
 			Title:  "Send a survey to user",
 			Header: "Message modal form header",
-			Footer: "Message modal form footer",
+			// Footer: "Message modal form footer",
 			Fields: []*apps.Field{
 				{
 					Name:             fieldUserID,
