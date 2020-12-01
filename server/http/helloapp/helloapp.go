@@ -70,6 +70,7 @@ func Init(router *mux.Router, appsService *apps.Service) {
 	handleCall(r, PathSurvey, h.fSurvey)
 	handleCall(r, PathEmbedSurvey, h.fSurveyEmbedded)
 	handleCall(r, PathEmbedSurveySubmit, h.fSurveyEmbeddedSubmit)
+	handleCall(r, PathSubscribeChannel, h.fSubscribe)
 
 	handleNotify(r, PathNotifyUserJoinedChannel, h.nUserJoinedChannel)
 

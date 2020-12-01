@@ -25,13 +25,12 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 			Footer: "Message modal form footer",
 			Fields: []*apps.Field{
 				{
-					Name:                 fieldUserID,
-					Type:                 apps.FieldTypeUser,
-					Description:          "User to send the survey to",
-					Label:                "User",
-					AutocompleteHint:     "enter user ID or @user",
-					AutocompletePosition: 1,
-					ModalLabel:           "User",
+					Name:             fieldUserID,
+					Type:             apps.FieldTypeUser,
+					Description:      "User to send the survey to",
+					Label:            "user",
+					AutocompleteHint: "enter user ID or @user",
+					ModalLabel:       "User",
 				}, {
 					Name:             fieldMessage,
 					Type:             apps.FieldTypeText,

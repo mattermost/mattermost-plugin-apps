@@ -26,6 +26,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"debug-clean":         s.executeDebugClean,
 		"debug-bindings":      s.executeDebugBindings,
 		"debug-embedded":      s.executeDebugEmbedded,
+		"experimental":        s.executeExperimentalInstall,
 	}
 
 	return runSubcommand(subcommands, in)
