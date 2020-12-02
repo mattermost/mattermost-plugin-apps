@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/store"
@@ -59,15 +60,17 @@ func (p *Plugin) OnActivate() error {
 	conf := configurator.NewConfigurator(mm, p.BuildConfig, botUserID)
 	store := store.NewStore(mm, conf)
 	proxy := proxy.NewProxy(mm, conf, store)
+
 	p.api = &api.Service{
 		Mattermost:   mm,
 		Configurator: conf,
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
 		Admin:        admin.NewAdmin(mm, conf, store, proxy),
+		AWS:          aws.MakeService(conf),
 	}
 
-	p.api.Proxy.DebugBuiltInApp(builtin_hello.AppID, &builtin_hello.App{})
+	p.api.Proxy.ProvisionBuiltIn(builtin_hello.AppID, &builtin_hello.App{})
 
 	p.http = http.NewService(mux.NewRouter(), p.api,
 		dialog.Init,

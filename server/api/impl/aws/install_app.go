@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
 )
 
@@ -39,7 +40,19 @@ type manifest struct {
 }
 
 // InstallApp gets a release URL parses the release and installs an App in AWS
-func (c *Client) InstallApp(releaseURL string) error {
+// releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
+// ~/my_app.zip
+//  |-- manifest.json
+//  |-- my_nodejs_function.zip
+//      |-- index.js
+//      |-- node-modules
+//          |-- async
+//          |-- aws-sdk
+//  |-- my_python_function.zip
+//      |-- lambda_function.py
+//      |-- __pycache__
+//      |-- certifi/
+func (s *Service) InstallApp(releaseURL string) error {
 	zipFile, err := downloadFile(releaseURL)
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
@@ -97,7 +110,7 @@ func (c *Client) InstallApp(releaseURL string) error {
 			}
 		}
 	}
-	return c.installApp(mani.Name, resFunctions)
+	return s.installApp(mani.Name, resFunctions)
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -131,8 +144,8 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) installApp(appName string, functions []functionInstallData) error {
-	policyName, err := c.makeLambdaFunctionDefaultPolicy()
+func (s *Service) installApp(appName string, functions []functionInstallData) error {
+	policyName, err := s.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrapf(err, "can't install app %s", appName)
 	}
@@ -145,9 +158,41 @@ func (c *Client) installApp(appName string, functions []functionInstallData) err
 	}
 	for _, function := range functions {
 		name := fmt.Sprintf("%s_%s", appName, function.name)
-		if err := c.CreateFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
+		if err := s.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
 			return errors.Wrapf(err, "can't install function for %s", appName)
 		}
 	}
+	return nil
+}
+
+// CreateFunction method creates lambda function
+func (s *Service) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
+	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
+		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %s %s %s %s %s", zipFile, function, handler, resource, runtime)
+	}
+
+	contents, err := ioutil.ReadAll(zipFile)
+	if err != nil {
+		return errors.Wrap(err, "could not read zip file")
+	}
+
+	createCode := &lambda.FunctionCode{
+		ZipFile: contents,
+	}
+
+	createArgs := &lambda.CreateFunctionInput{
+		Code:         createCode,
+		FunctionName: &function,
+		Handler:      &handler,
+		Role:         &resource,
+		Runtime:      &runtime,
+	}
+
+	result, err := s.lambda().CreateFunction(createArgs)
+	if err != nil {
+		return errors.Wrapf(err, "Can't create function res = %v\n", result)
+	}
+	s.logger.Infof("function named %s was created with result - %v", function, result)
+
 	return nil
 }

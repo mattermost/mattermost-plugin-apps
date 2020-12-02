@@ -11,4 +11,5 @@ type Service struct {
 	Proxy        Proxy
 	Admin        Admin
 	AppServices  AppServices
+	AWS          AWS
 }

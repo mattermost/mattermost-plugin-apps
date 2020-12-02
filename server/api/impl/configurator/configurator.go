@@ -5,6 +5,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 
 	"github.com/pkg/errors"
@@ -76,11 +79,23 @@ func (c *config) RefreshConfig(stored *api.StoredConfig) error {
 	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
 
 	newConfig := c.GetConfig()
+	prevStored := newConfig.StoredConfig
 	newConfig.StoredConfig = stored
 	newConfig.MattermostSiteURL = *mattermostSiteURL
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
+
+	if prevStored.AWSSecretAccessKey != stored.AWSSecretAccessKey ||
+		prevStored.AWSAccessKeyID != stored.AWSAccessKeyID {
+		newConfig.AWSSession, err = session.NewSession(&aws.Config{
+			Region:      aws.String("us-east-2"),
+			Credentials: credentials.NewStaticCredentials(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, ""),
+		})
+		if err != nil {
+			return err
+		}
+	}
 
 	c.lock.Lock()
 	c.conf = &newConfig

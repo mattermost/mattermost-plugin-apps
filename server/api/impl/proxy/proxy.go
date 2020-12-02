@@ -40,12 +40,12 @@ func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
 	}
 
 	// TODO: support AWS Lambda upstream
-	up = uphttp.NewHTTPUpstream(app.Manifest.AppID, app.Manifest.RootURL, app.Secret)
+	up = uphttp.NewUpstream(app)
 
 	return up, nil
 }
 
-func (p *Proxy) DebugBuiltInApp(appID api.AppID, up api.Upstream) {
+func (p *Proxy) ProvisionBuiltIn(appID api.AppID, up api.Upstream) {
 	if p.builtIn == nil {
 		p.builtIn = map[api.AppID]api.Upstream{}
 	}

@@ -17,20 +17,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-type HTTPUpstream struct {
-	AppID     api.AppID
-	RootURL   string
-	AppSecret string
+type Upstream struct {
+	rootURL   string
+	appSecret string
 }
 
-func NewHTTPUpstream(appID api.AppID, rootURL, appSecret string) *HTTPUpstream {
-	return &HTTPUpstream{appID, rootURL, appSecret}
+func NewUpstream(app *api.App) *Upstream {
+	return &Upstream{app.Manifest.RootURL, app.Secret}
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (u *HTTPUpstream) post(fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client := u.getClient()
-	jwtoken, err := createJWT(fromMattermostUserID, u.AppSecret)
+	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +61,9 @@ func (u *HTTPUpstream) post(fromMattermostUserID string, url string, msg interfa
 	return resp, nil
 }
 
-func (u *HTTPUpstream) get(fromMattermostUserID string, url string) (*http.Response, error) {
+func (u *Upstream) get(fromMattermostUserID string, url string) (*http.Response, error) {
 	client := u.getClient()
-	jwtoken, err := createJWT(fromMattermostUserID, u.AppSecret)
+	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating token")
 	}
@@ -84,7 +83,7 @@ func (u *HTTPUpstream) get(fromMattermostUserID string, url string) (*http.Respo
 	return resp, nil
 }
 
-func (u *HTTPUpstream) getClient() *http.Client {
+func (u *Upstream) getClient() *http.Client {
 	return &http.Client{}
 }
 

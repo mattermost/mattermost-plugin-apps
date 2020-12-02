@@ -13,8 +13,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func (u *HTTPUpstream) InvokeNotification(n *api.Notification) error {
-	resp, err := u.post("", u.RootURL+"/notify/"+string(n.Subject), n)
+func (u *Upstream) InvokeNotification(n *api.Notification) error {
+	resp, err := u.post("", u.rootURL+"/notify/"+string(n.Subject), n)
 	if err != nil {
 		return err
 	}
@@ -22,8 +22,8 @@ func (u *HTTPUpstream) InvokeNotification(n *api.Notification) error {
 	return nil
 }
 
-func (u *HTTPUpstream) InvokeCall(call *api.Call) (*api.CallResponse, error) {
-	resp, err := u.post(call.Context.ActingUserID, u.RootURL+call.URL, call)
+func (u *Upstream) InvokeCall(call *api.Call) (*api.CallResponse, error) {
+	resp, err := u.post(call.Context.ActingUserID, u.rootURL+call.URL, call)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func (u *HTTPUpstream) InvokeCall(call *api.Call) (*api.CallResponse, error) {
 	return &cr, nil
 }
 
-func (u *HTTPUpstream) GetBindings(cc *api.Context) ([]*api.Binding, error) {
-	resp, err := u.get(cc.ActingUserID, appendGetContext(u.RootURL+api.AppBindingsPath, cc))
+func (u *Upstream) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+	resp, err := u.get(cc.ActingUserID, appendGetContext(u.rootURL+api.AppBindingsPath, cc))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get bindings")
 	}

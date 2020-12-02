@@ -1,13 +1,17 @@
 package api
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
 // config.
 type StoredConfig struct {
-	Apps map[string]interface{}
+	Apps               map[string]interface{}
+	AWSAccessKeyID     string
+	AWSSecretAccessKey string
 }
 
 type ConfigMapper interface {
@@ -16,7 +20,9 @@ type ConfigMapper interface {
 
 func (sc *StoredConfig) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{
-		"Apps": sc.Apps,
+		"Apps":               sc.Apps,
+		"AWSAccessKeyID":     sc.AWSAccessKeyID,
+		"AWSSecretAccessKey": sc.AWSSecretAccessKey,
 	}
 }
 
@@ -38,6 +44,7 @@ type Config struct {
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
+	AWSSession             *session.Session
 }
 
 type Configurator interface {
