@@ -48,18 +48,6 @@ func (mr *MockProxyMockRecorder) Call(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockProxy)(nil).Call), arg0)
 }
 
-// DebugBuiltInApp mocks base method
-func (m *MockProxy) DebugBuiltInApp(arg0 api.AppID, arg1 api.Upstream) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DebugBuiltInApp", arg0, arg1)
-}
-
-// DebugBuiltInApp indicates an expected call of DebugBuiltInApp
-func (mr *MockProxyMockRecorder) DebugBuiltInApp(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebugBuiltInApp", reflect.TypeOf((*MockProxy)(nil).DebugBuiltInApp), arg0, arg1)
-}
-
 // GetBindings mocks base method
 func (m *MockProxy) GetBindings(arg0 *api.Context) ([]*api.Binding, error) {
 	m.ctrl.T.Helper()
@@ -102,4 +90,16 @@ func (m *MockProxy) Notify(arg0 *api.Context, arg1 api.Subject) error {
 func (mr *MockProxyMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockProxy)(nil).Notify), arg0, arg1)
+}
+
+// ProvisionBuiltIn mocks base method
+func (m *MockProxy) ProvisionBuiltIn(arg0 api.AppID, arg1 api.Upstream) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ProvisionBuiltIn", arg0, arg1)
+}
+
+// ProvisionBuiltIn indicates an expected call of ProvisionBuiltIn
+func (mr *MockProxyMockRecorder) ProvisionBuiltIn(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProvisionBuiltIn", reflect.TypeOf((*MockProxy)(nil).ProvisionBuiltIn), arg0, arg1)
 }

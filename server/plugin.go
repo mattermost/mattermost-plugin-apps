@@ -60,6 +60,7 @@ func (p *Plugin) OnActivate() error {
 	conf := configurator.NewConfigurator(mm, p.BuildConfig, botUserID)
 	store := store.NewStore(mm, conf)
 	proxy := proxy.NewProxy(mm, conf, store)
+	proxy.ProvisionBuiltIn(builtin_hello.AppID, &builtin_hello.App{})
 
 	p.api = &api.Service{
 		Mattermost:   mm,
@@ -67,10 +68,8 @@ func (p *Plugin) OnActivate() error {
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
 		Admin:        admin.NewAdmin(mm, conf, store, proxy),
-		AWS:          aws.MakeService(conf),
+		AWS:          aws.NewAWS(conf),
 	}
-
-	p.api.Proxy.ProvisionBuiltIn(builtin_hello.AppID, &builtin_hello.App{})
 
 	p.http = http.NewService(mux.NewRouter(), p.api,
 		dialog.Init,

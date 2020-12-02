@@ -24,7 +24,7 @@ type Service struct {
 	logger log.FieldLogger
 }
 
-func MakeService(conf api.Configurator) *Service {
+func NewAWS(conf api.Configurator) *Service {
 	logger := log.New()
 	logger.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
