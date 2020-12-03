@@ -25,7 +25,19 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 	}
 	call.Context.ActingUserID = actingUserID
 
-	res, err := a.api.Proxy.Call(call)
+	sessionID := req.Header.Get("MM_SESSION_ID")
+	if sessionID == "" {
+		err = errors.New("no user session")
+		httputils.WriteUnauthorizedError(w, err)
+		return
+	}
+	session, err := a.api.Mattermost.Session.Get(sessionID)
+	if err != nil {
+		httputils.WriteUnauthorizedError(w, err)
+		return
+	}
+
+	res, err := a.api.Proxy.Call(api.SessionToken(session.Token), call)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return

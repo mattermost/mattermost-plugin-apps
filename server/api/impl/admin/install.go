@@ -55,7 +55,7 @@ func (a *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *a
 	}
 	install.Context = cc
 
-	resp, err := a.proxy.Call(install)
+	resp, err := a.proxy.Call(sessionToken, install)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Install failed")
 	}

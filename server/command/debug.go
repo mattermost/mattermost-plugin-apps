@@ -35,7 +35,7 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 }
 
 func (s *service) executeDebugEmbeddedForm(params *params) (*model.CommandResponse, error) {
-	_, err := s.api.Proxy.Call(&api.Call{
+	_, err := s.api.Proxy.Call(api.SessionToken(params.commandArgs.Session.Token), &api.Call{
 		URL: http_hello.PathSendSurvey,
 		Context: &api.Context{
 			AppID:        http_hello.AppID,

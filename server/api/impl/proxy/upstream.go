@@ -5,7 +5,7 @@ package proxy
 
 import "github.com/mattermost/mattermost-plugin-apps/server/api"
 
-func (p *Proxy) Call(c *api.Call) (*api.CallResponse, error) {
+func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) (*api.CallResponse, error) {
 	app, err := p.store.LoadApp(c.Context.AppID)
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func (p *Proxy) Call(c *api.Call) (*api.CallResponse, error) {
 		return nil, err
 	}
 
-	expander := p.newExpander(c.Context, p.mm, p.conf, p.store)
+	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
 	expander.App = app
 	cc, err := expander.Expand(c.Expand)
 	if err != nil {
@@ -42,7 +42,7 @@ func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {
 		return err
 	}
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store)
+	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
 	expander.App = app
 	for _, sub := range subs {
 		req := api.Notification{

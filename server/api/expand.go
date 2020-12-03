@@ -39,6 +39,7 @@ type Expand struct {
 }
 
 type ExpandedContext struct {
+	BotAccessToken        string            `json:"bot_access_token,omitempty"`
 	AdminAccessToken      string            `json:"admin_access_token,omitempty"`
 	ActingUserAccessToken string            `json:"acting_user_access_token,omitempty"`
 	ActingUser            *model.User       `json:"acting_user,omitempty"`

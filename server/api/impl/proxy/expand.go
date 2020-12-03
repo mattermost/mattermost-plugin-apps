@@ -13,17 +13,19 @@ type expander struct {
 	// Context to expand (can be expanded multiple times on the same expander)
 	*api.Context
 
-	mm    *pluginapi.Client
-	conf  api.Configurator
-	store api.Store
+	mm           *pluginapi.Client
+	conf         api.Configurator
+	store        api.Store
+	sessionToken api.SessionToken
 }
 
-func (p *Proxy) newExpander(cc *api.Context, mm *pluginapi.Client, conf api.Configurator, store api.Store) *expander {
+func (p *Proxy) newExpander(cc *api.Context, mm *pluginapi.Client, conf api.Configurator, store api.Store, debugSessionToken api.SessionToken) *expander {
 	e := &expander{
-		Context: cc,
-		mm:      mm,
-		conf:    conf,
-		store:   store,
+		Context:      cc,
+		mm:           mm,
+		conf:         conf,
+		store:        store,
+		sessionToken: debugSessionToken,
 	}
 	return e
 }
@@ -38,20 +40,23 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 		return &clone, nil
 	}
 
+	if e.AppID == "" {
+		return nil, errors.New("must provide AppID")
+	}
+	if e.App == nil {
+		app, err := e.store.LoadApp(e.AppID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
+		}
+		e.App = app
+	}
+
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
 		actingUser, err := e.mm.User.Get(e.ActingUserID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand acting user %s", e.ActingUserID)
 		}
 		e.ActingUser = actingUser
-	}
-
-	if expand.App != "" && e.AppID != "" && e.App == nil {
-		app, err := e.store.LoadApp(e.AppID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
-		}
-		e.App = app
 	}
 
 	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
@@ -105,9 +110,6 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 		e.User = user
 	}
 
-	// Insert the access tokens
-	// <><>TODO insert user OAuth token if applicable
-
 	clone.ExpandedContext = api.ExpandedContext{
 		ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
 		App:        e.stripApp(expand.App),
@@ -119,6 +121,17 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 		User:       e.stripUser(e.User, expand.User),
 		// TODO Mentioned
 	}
+
+	clone.ExpandedContext.BotAccessToken = e.App.BotAccessToken
+	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
+	// now pass in the session token to make things work.
+	if expand.AdminAccessToken != "" {
+		clone.ExpandedContext.AdminAccessToken = string(e.sessionToken)
+	}
+	if expand.ActingUserAccessToken != "" {
+		clone.ExpandedContext.ActingUserAccessToken = string(e.sessionToken)
+	}
+
 	return &clone, nil
 }
 

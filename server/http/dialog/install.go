@@ -97,6 +97,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	session, err := d.api.Mattermost.Session.Get(sessionID)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err)
+		return
 	}
 
 	var dialogRequest model.SubmitDialogRequest
