@@ -70,7 +70,9 @@ func (s *service) updatePostIfNeeded(c *apps.Call, resp *apps.CallResponse) {
 				updatedPost.Id = c.Context.PostID
 				// TODO More checks on the post to use for Update
 				err := s.Mattermost.Post.UpdatePost(updatedPost)
-				s.Mattermost.Log.Debug("error updating", "error", err)
+				if err != nil {
+					s.Mattermost.Log.Debug("error updating", "error", err.Error())
+				}
 				// TODO Log error?
 			}
 		}
