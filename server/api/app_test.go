@@ -12,7 +12,7 @@ func TestAppConfigMap(t *testing.T) {
 		DisplayName:          "display-name",
 		Description:          "description",
 		HomepageURL:          "homepage-url",
-		RootURL:              "root_url",
+		HTTPRootURL:          "root_url",
 		RequestedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
 		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
 	}

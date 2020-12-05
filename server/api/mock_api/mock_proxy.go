@@ -62,21 +62,6 @@ func (mr *MockProxyMockRecorder) GetBindings(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockProxy)(nil).GetBindings), arg0)
 }
 
-// GetManifest mocks base method
-func (m *MockProxy) GetManifest(arg0 string) (*api.Manifest, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManifest", arg0)
-	ret0, _ := ret[0].(*api.Manifest)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetManifest indicates an expected call of GetManifest
-func (mr *MockProxyMockRecorder) GetManifest(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockProxy)(nil).GetManifest), arg0)
-}
-
 // Notify mocks base method
 func (m *MockProxy) Notify(arg0 *api.Context, arg1 api.Subject) error {
 	m.ctrl.T.Helper()

@@ -5,12 +5,13 @@ package proxy
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/uphttp"
 )
 
@@ -28,23 +29,86 @@ func NewProxy(mm *pluginapi.Client, conf api.Configurator, store api.Store) *Pro
 	return &Proxy{nil, mm, conf, store}
 }
 
-func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
-	var up api.Upstream
+func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallResponse {
+	app, err := p.store.LoadApp(c.Context.AppID)
+	if err != nil {
+		return api.NewErrorCallResponse(err)
+	}
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return api.NewErrorCallResponse(err)
+	}
 
-	if len(p.builtIn) > 0 {
-		up = p.builtIn[app.Manifest.AppID]
-		if up != nil {
-			return up, nil
+	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
+	expander.App = app
+	cc, err := expander.Expand(c.Expand)
+	if err != nil {
+		return api.NewErrorCallResponse(err)
+	}
+	clone := *c
+	clone.Context = cc
+
+	return up.InvokeCall(&clone)
+}
+
+func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {
+	app, err := p.store.LoadApp(cc.AppID)
+	if err != nil {
+		return err
+	}
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+
+	subs, err := p.store.LoadSubs(subj, cc.TeamID, cc.ChannelID)
+	if err != nil {
+		return err
+	}
+
+	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
+	expander.App = app
+	for _, sub := range subs {
+		req := api.Notification{
+			Subject: subj,
+			Context: &api.Context{},
 		}
-	}
-	if app.Manifest.RootURL == "" {
-		return nil, errors.New("only built-in and remote http upstreams are supported, hosted AWS Lambda coming soon")
-	}
+		req.Context, err = expander.Expand(sub.Expand)
+		if err != nil {
+			return err
+		}
 
-	// TODO: support AWS Lambda upstream
-	up = uphttp.NewUpstream(app)
+		// Always set the AppID for routing the request to the App
+		req.Context.AppID = sub.AppID
 
-	return up, nil
+		go func() {
+			_ = up.InvokeNotification(&req)
+		}()
+	}
+	return nil
+}
+
+func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
+	switch app.Manifest.Type {
+	case api.AppTypeHTTP:
+		return uphttp.NewUpstream(app), nil
+
+	case api.AppTypeAWSLambda:
+		return upawslambda.NewUpstream(app), nil
+
+	case api.AppTypeBuiltin:
+		if len(p.builtIn) == 0 {
+			return nil, errors.Errorf("builtin app not found: %s", app.Manifest.AppID)
+		}
+		up := p.builtIn[app.Manifest.AppID]
+		if up == nil {
+			return nil, errors.Errorf("builtin app not found: %s", app.Manifest.AppID)
+		}
+		return up, nil
+
+	default:
+		return nil, errors.Errorf("not a valid app type: %s", app.Manifest.Type)
+	}
 }
 
 func (p *Proxy) ProvisionBuiltIn(appID api.AppID, up api.Upstream) {

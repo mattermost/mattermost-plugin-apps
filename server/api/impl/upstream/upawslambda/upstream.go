@@ -9,6 +9,10 @@ import (
 
 type Upstream struct{}
 
+func NewUpstream(app *api.App) *Upstream {
+	return &Upstream{}
+}
+
 func (u *Upstream) InvokeNotification(n *api.Notification) error {
 	return nil
 }
@@ -20,4 +24,8 @@ func (u *Upstream) InvokeCall(call *api.Call) *api.CallResponse {
 	// 	return nil, err
 	// }
 	return &cr
+}
+
+func (u *Upstream) GetBindings(call *api.Call) ([]*api.Binding, error) {
+	return []*api.Binding{}, nil
 }

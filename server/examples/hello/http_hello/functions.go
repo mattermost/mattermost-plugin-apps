@@ -2,6 +2,7 @@ package http_hello
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
@@ -10,6 +11,7 @@ import (
 )
 
 func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *api.Call) (int, error) {
+	fmt.Printf("<><> helloapp.GetBindings: 1\n")
 	httputils.WriteJSON(w, api.CallResponse{
 		Type: api.CallResponseTypeOK,
 		Data: hello.Bindings(),

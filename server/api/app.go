@@ -3,15 +3,34 @@ package api
 import "encoding/json"
 
 type AppID string
+type AppType string
+
+// default is HTTP
+const (
+	AppTypeHTTP      = "http"
+	AppTypeAWSLambda = "aws_lambda"
+	AppTypeBuiltin   = "builtin"
+)
+
+func (at AppType) IsValid() bool {
+	return at == AppTypeHTTP ||
+		at == AppTypeAWSLambda ||
+		at == AppTypeBuiltin
+}
 
 type Manifest struct {
-	AppID       AppID  `json:"app_id"`
-	DisplayName string `json:"display_name,omitempty"`
-	Description string `json:"description,omitempty"`
+	AppID       AppID   `json:"app_id"`
+	Type        AppType `json:"app_type"`
+	DisplayName string  `json:"display_name,omitempty"`
+	Description string  `json:"description,omitempty"`
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
-	RootURL string `json:"root_url,omitempty"`
+	// HTTPRootURL applicable For AppTypeHTTP.
+	//
+	// TODO: check if it is used in the // user-agent, consider naming
+	// consistently.
+	HTTPRootURL string `json:"root_url,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 

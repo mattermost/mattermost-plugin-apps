@@ -34,20 +34,20 @@ func AsAdmin(cc *api.Context) Client {
 }
 
 func newClient(userID, token, mattermostSiteURL string) Client {
-	i := Client{
+	client := Client{
 		userID:  userID,
 		Client4: model.NewAPIv4Client(mattermostSiteURL),
 	}
-	i.Client4.SetOAuthToken(token)
-	return i
+	client.Client4.SetOAuthToken(token)
+	return client
 }
 
-func (i *Client) CreatePost(post *model.Post) (*model.Post, error) {
+func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	var createdPost *model.Post
 	var res *model.Response
-	post.UserId = i.userID
+	post.UserId = client.userID
 
-	createdPost, res = i.Client4.CreatePost(post)
+	createdPost, res = client.Client4.CreatePost(post)
 	if res.StatusCode != http.StatusCreated {
 		if res.Error != nil {
 			return nil, res.Error
@@ -57,8 +57,8 @@ func (i *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	return createdPost, nil
 }
 
-func (i *Client) DM(userID string, format string, args ...interface{}) {
-	channel, err := i.getDirectChannelWith(userID)
+func (client *Client) DM(userID string, format string, args ...interface{}) {
+	channel, err := client.getDirectChannelWith(userID)
 	if err != nil {
 		return
 	}
@@ -66,23 +66,23 @@ func (i *Client) DM(userID string, format string, args ...interface{}) {
 		ChannelId: channel.Id,
 		Message:   fmt.Sprintf(format, args...),
 	}
-	_, _ = i.CreatePost(post)
+	_, _ = client.CreatePost(post)
 }
 
-func (i *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
-	channel, err := i.getDirectChannelWith(userID)
+func (client *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
+	channel, err := client.getDirectChannelWith(userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "getDirectionChannel")
 	}
 	post.ChannelId = channel.Id
-	return i.CreatePost(post)
+	return client.CreatePost(post)
 }
 
-func (i *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
+func (client *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
 	var channel *model.Channel
 	var res *model.Response
 
-	channel, res = i.CreateDirectChannel(i.userID, userID)
+	channel, res = client.CreateDirectChannel(client.userID, userID)
 	if res.StatusCode != http.StatusCreated {
 		if res.Error != nil {
 			return nil, res.Error

@@ -19,16 +19,12 @@ import (
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
 	_ = s.api.Mattermost.KV.DeleteAll()
-	return normalOut(params, md.MD("Deleted all KV records"), nil)
+	_ = s.api.Configurator.StoreConfig(&api.StoredConfig{})
+	return normalOut(params, md.MD("Deleted all KV records and emptied the config."), nil)
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.api.Proxy.GetBindings(&api.Context{
-		ActingUserID: params.commandArgs.UserId,
-		UserID:       params.commandArgs.UserId,
-		TeamID:       params.commandArgs.TeamId,
-		ChannelID:    params.commandArgs.ChannelId,
-	})
+	bindings, err := s.api.Proxy.GetBindings(api.NewCommandContext(params.commandArgs))
 	if err != nil {
 		return normalOut(params, md.MD("error"), err)
 	}
@@ -36,16 +32,15 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 }
 
 func (s *service) executeDebugEmbeddedForm(params *params) (*model.CommandResponse, error) {
-	cr := s.api.Proxy.Call(api.SessionToken(params.commandArgs.Session.Token), &api.Call{
-		URL: hello.PathSendSurvey,
-		Context: &api.Context{
-			AppID:        http_hello.AppID,
-			ActingUserID: params.commandArgs.UserId,
-			ChannelID:    params.commandArgs.ChannelId,
-			TeamID:       params.commandArgs.TeamId,
-			UserID:       params.commandArgs.UserId,
-		},
-	})
+	cc := api.NewCommandContext(params.commandArgs)
+	cc.AppID = http_hello.AppID
+
+	cr := s.api.Proxy.Call(
+		api.SessionToken(params.commandArgs.Session.Token),
+		&api.Call{
+			URL:     hello.PathSendSurvey,
+			Context: cc,
+		})
 
 	if cr.Type == api.CallResponseTypeError {
 		return normalOut(params, md.MD("error"), cr)
@@ -64,7 +59,7 @@ func (s *service) executeDebugInstallHTTPHello(params *params) (*model.CommandRe
 }
 
 func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.CommandResponse, error) {
-	manifest := builtin_hello.GetManifest()
+	manifest := builtin_hello.Manifest()
 
 	app, _, err := s.api.Admin.ProvisionApp(
 		&api.Context{

@@ -123,6 +123,8 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	}
 
 	clone.BotAccessToken = e.App.BotAccessToken
+	clone.BotUserID = e.App.BotUserID
+
 	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
 	// now pass in the session token to make things work.
 	if expand.AdminAccessToken != "" {

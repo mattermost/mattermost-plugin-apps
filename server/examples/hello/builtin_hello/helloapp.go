@@ -26,9 +26,10 @@ func New(appService *api.Service) *helloapp {
 	}
 }
 
-func GetManifest() *api.Manifest {
+func Manifest() *api.Manifest {
 	return &api.Manifest{
 		AppID:       AppID,
+		Type:        api.AppTypeBuiltin,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		RequestedPermissions: api.Permissions{

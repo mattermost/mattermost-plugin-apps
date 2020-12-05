@@ -31,7 +31,6 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-// This and registry related calls should be RPC calls so they can be reused by other plugins
 func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 	allApps := p.store.ListApps()
 
@@ -55,8 +54,9 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		bindingsCall.Context = cc
 
 		bindings, err := up.GetBindings(bindingsCall)
+		fmt.Printf("<><> proxy.GetBindings: appID:%s, err:%v, bindings:%+v\n", appID, err, bindings)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get bindings for %s", appID)
+			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
 		}
 		all = mergeBindings(all, p.scanAppBindings(app, bindings, ""))
 	}

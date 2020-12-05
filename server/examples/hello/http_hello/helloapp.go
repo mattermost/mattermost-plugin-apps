@@ -48,6 +48,29 @@ func Init(router *mux.Router, appsService *api.Service) {
 	handleNotify(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
 }
 
+func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
+	httputils.WriteJSON(w,
+		api.Manifest{
+			AppID:       AppID,
+			Type:        api.AppTypeHTTP,
+			DisplayName: AppDisplayName,
+			Description: AppDescription,
+			HTTPRootURL: h.appURL(""),
+			RequestedPermissions: api.Permissions{
+				api.PermissionUserJoinedChannelNotification,
+				api.PermissionActAsUser,
+				api.PermissionActAsBot,
+			},
+			RequestedLocations: api.Locations{
+				api.LocationChannelHeader,
+				api.LocationPostMenu,
+				api.LocationCommand,
+				api.LocationInPost,
+			},
+			HomepageURL: h.appURL("/"),
+		})
+}
+
 type callHandler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *api.Call) (int, error)
 type notifyHandler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *api.Notification)
 

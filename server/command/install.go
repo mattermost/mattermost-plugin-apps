@@ -12,9 +12,12 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
+// Manifest is loaded from a URL for convenience, it really should be provided
+// as text/JSON or as a file.
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
 	manifestURL := ""
 	appSecret := ""
@@ -29,7 +32,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return normalOut(params, nil, err)
 	}
 
-	manifest, err := s.api.Proxy.GetManifest(manifestURL)
+	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
