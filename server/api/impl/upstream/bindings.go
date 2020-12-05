@@ -14,15 +14,16 @@ import (
 
 func DecodeBindingsResponse(in io.Reader) ([]*api.Binding, error) {
 	cr := api.CallResponse{
-		Data: []*api.Binding{},
+		Data: &[]*api.Binding{},
 	}
 	err := json.NewDecoder(in).Decode(&cr)
 	if err != nil {
 		return nil, err
 	}
-	bindings, ok := cr.Data.([]*api.Binding)
+
+	bindings, ok := cr.Data.(*[]*api.Binding)
 	if !ok {
 		return nil, errors.New("failed to decode bindings")
 	}
-	return bindings, nil
+	return *bindings, nil
 }

@@ -77,7 +77,6 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 		pipew.Close()
 	}()
 
-	// fmt.Printf("<><> post: %s\n", url)
 	req, err := http.NewRequest(http.MethodPost, url, piper)
 	if err != nil {
 		return nil, err

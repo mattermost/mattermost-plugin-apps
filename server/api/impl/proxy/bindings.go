@@ -54,7 +54,6 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		bindingsCall.Context = cc
 
 		bindings, err := up.GetBindings(bindingsCall)
-		fmt.Printf("<><> proxy.GetBindings: appID:%s, err:%v, bindings:%+v\n", appID, err, bindings)
 		if err != nil {
 			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
 		}
