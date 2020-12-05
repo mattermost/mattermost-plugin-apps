@@ -35,10 +35,6 @@ func (p *Proxy) newExpander(cc *api.Context, mm *pluginapi.Client, conf api.Conf
 // specified in expand.
 func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	clone := *e.Context
-	if expand == nil {
-		clone.ExpandedContext = api.ExpandedContext{}
-		return &clone, nil
-	}
 
 	if e.AppID == "" {
 		return nil, errors.New("must provide AppID")
@@ -49,6 +45,21 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
 		}
 		e.App = app
+	}
+	if e.MattermostSiteURL == "" {
+		mmconf := e.conf.GetMattermostConfig()
+		if mmconf.ServiceSettings.SiteURL != nil {
+			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
+		}
+	}
+
+	clone.MattermostSiteURL = e.MattermostSiteURL
+	clone.BotUserID = e.App.BotUserID
+	if expand == nil {
+		clone.ExpandedContext = api.ExpandedContext{
+			BotAccessToken: e.App.BotAccessToken,
+		}
+		return &clone, nil
 	}
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
@@ -65,14 +76,6 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 			return nil, errors.Wrapf(err, "failed to expand channel %s", e.ChannelID)
 		}
 		e.Channel = ch
-	}
-
-	// Config is cached pre-sanitized
-	if e.MattermostSiteURL == "" {
-		mmconf := e.conf.GetMattermostConfig()
-		if mmconf.ServiceSettings.SiteURL != nil {
-			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
-		}
 	}
 
 	// TODO expand Mentioned
@@ -121,9 +124,6 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 		User:       e.stripUser(e.User, expand.User),
 		// TODO Mentioned
 	}
-
-	clone.MattermostSiteURL = e.MattermostSiteURL
-	clone.BotUserID = e.App.BotUserID
 
 	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
 	// now pass in the session token to make things work.
