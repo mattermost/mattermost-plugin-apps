@@ -25,7 +25,6 @@ type Expand struct {
 	AdminAccessToken ExpandLevel `json:"admin_access_token"`
 
 	Channel    ExpandLevel `json:"channel,omitempty"`
-	Config     ExpandLevel `json:"config,omitempty"`
 	Mentioned  ExpandLevel `json:"mentioned,omitempty"`
 	ParentPost ExpandLevel `json:"parent_post,omitempty"`
 	Post       ExpandLevel `json:"post,omitempty"`

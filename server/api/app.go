@@ -60,7 +60,6 @@ var DefaultInstallCall = &Call{
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
-		Config:           ExpandAll,
 	},
 }
 

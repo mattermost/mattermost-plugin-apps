@@ -15,10 +15,7 @@ type Client struct {
 }
 
 func as(id, token string, cc *api.Context) Client {
-	if cc.Config == nil {
-		return Client{}
-	}
-	return newClient(id, token, cc.Config.SiteURL)
+	return newClient(id, token, cc.MattermostSiteURL)
 }
 
 func AsBot(cc *api.Context) Client {

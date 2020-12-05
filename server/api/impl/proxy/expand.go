@@ -68,11 +68,10 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	}
 
 	// Config is cached pre-sanitized
-	if expand.Config != "" && e.Config == nil {
+	if e.MattermostSiteURL == "" {
 		mmconf := e.conf.GetMattermostConfig()
-		e.Config = &api.MattermostConfig{}
 		if mmconf.ServiceSettings.SiteURL != nil {
-			e.Config.SiteURL = *mmconf.ServiceSettings.SiteURL
+			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
 		}
 	}
 
@@ -111,10 +110,11 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	}
 
 	clone.ExpandedContext = api.ExpandedContext{
+		BotAccessToken: e.App.BotAccessToken,
+
 		ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
 		App:        e.stripApp(expand.App),
 		Channel:    e.stripChannel(expand.Channel),
-		Config:     e.stripConfig(expand.Config),
 		Post:       e.stripPost(e.Post, expand.Post),
 		RootPost:   e.stripPost(e.RootPost, expand.RootPost),
 		Team:       e.stripTeam(expand.Team),
@@ -122,7 +122,7 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 		// TODO Mentioned
 	}
 
-	clone.BotAccessToken = e.App.BotAccessToken
+	clone.MattermostSiteURL = e.MattermostSiteURL
 	clone.BotUserID = e.App.BotUserID
 
 	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
@@ -223,17 +223,6 @@ func (e *expander) stripApp(level api.ExpandLevel) *api.App {
 	switch level {
 	case api.ExpandAll, api.ExpandSummary:
 		return &app
-	}
-	return nil
-}
-
-func (e *expander) stripConfig(level api.ExpandLevel) *api.MattermostConfig {
-	if e.Config == nil {
-		return nil
-	}
-	switch level {
-	case api.ExpandAll, api.ExpandSummary:
-		return e.Config
 	}
 	return nil
 }
