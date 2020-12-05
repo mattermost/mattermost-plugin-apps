@@ -34,18 +34,17 @@ func (m *MockProxy) EXPECT() *MockProxyMockRecorder {
 }
 
 // Call mocks base method
-func (m *MockProxy) Call(arg0 *api.Call) (*api.CallResponse, error) {
+func (m *MockProxy) Call(arg0 api.SessionToken, arg1 *api.Call) *api.CallResponse {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Call", arg0)
+	ret := m.ctrl.Call(m, "Call", arg0, arg1)
 	ret0, _ := ret[0].(*api.CallResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // Call indicates an expected call of Call
-func (mr *MockProxyMockRecorder) Call(arg0 interface{}) *gomock.Call {
+func (mr *MockProxyMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockProxy)(nil).Call), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockProxy)(nil).Call), arg0, arg1)
 }
 
 // GetBindings mocks base method

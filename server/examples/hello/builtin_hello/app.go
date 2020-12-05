@@ -82,7 +82,7 @@ func (h *helloapp) Install(c *api.Call) *api.CallResponse {
 }
 
 func (h *helloapp) GetBindings(c *api.Call) ([]*api.Binding, error) {
-	return hello.GetBindings(), nil
+	return hello.Bindings(), nil
 }
 
 func (h *helloapp) SendSurvey(c *api.Call) *api.CallResponse {

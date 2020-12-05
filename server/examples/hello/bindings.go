@@ -4,7 +4,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func GetBindings() []*api.Binding {
+func Bindings() []*api.Binding {
 	sendSurvey := api.MakeCall(PathSendSurvey)
 
 	clone := *sendSurvey

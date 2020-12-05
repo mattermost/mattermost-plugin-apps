@@ -12,7 +12,7 @@ import (
 func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *api.Call) (int, error) {
 	httputils.WriteJSON(w, api.CallResponse{
 		Type: api.CallResponseTypeOK,
-		Data: hello.GetBindings(),
+		Data: hello.Bindings(),
 	})
 	return http.StatusOK, nil
 }

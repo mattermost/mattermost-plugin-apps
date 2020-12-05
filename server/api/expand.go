@@ -5,7 +5,6 @@ package api
 
 type ExpandLevel string
 
-// <><> TODO update ExpandLevels in redux
 const (
 	ExpandDefault = ExpandLevel("")
 	ExpandNone    = ExpandLevel("none")

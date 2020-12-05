@@ -8,13 +8,13 @@ import (
 
 func TestAppConfigMap(t *testing.T) {
 	m := &Manifest{
-		AppID:                   "app-id",
-		DisplayName:             "display-name",
-		Description:             "description",
-		HomepageURL:             "homepage-url",
-		RootURL:                 "root_url",
-		RequestedPermissions:    Permissions{PermissionActAsUser, PermissionActAsBot},
-		RequestedLocations:      Locations{LocationChannelHeader, LocationCommand},
+		AppID:                "app-id",
+		DisplayName:          "display-name",
+		Description:          "description",
+		HomepageURL:          "homepage-url",
+		RootURL:              "root_url",
+		RequestedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
+		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
 	}
 
 	a1 := &App{

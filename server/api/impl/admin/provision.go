@@ -16,19 +16,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (a *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
+func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
 	manifest := in.Manifest
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
-	_, err := a.store.LoadApp(manifest.AppID)
+	_, err := adm.store.LoadApp(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
 
 	// TODO check if acting user is a sysadmin
 
-	bot, token, err := a.ensureBot(manifest, cc.ActingUserID, string(sessionToken))
+	bot, token, err := adm.ensureBot(manifest, cc.ActingUserID, string(sessionToken))
 	if err != nil {
 		return nil, "", err
 	}
@@ -40,7 +40,7 @@ func (a *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in 
 		BotAccessToken: token.Token,
 		Secret:         in.AppSecret,
 	}
-	err = a.store.StoreApp(app)
+	err = adm.store.StoreApp(app)
 	if err != nil {
 		return nil, "", err
 	}
@@ -51,8 +51,8 @@ func (a *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in 
 	return app, md, nil
 }
 
-func (a *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
-	conf := a.conf.GetConfig()
+func (adm *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
 
@@ -100,7 +100,7 @@ func (a *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken str
 		return nil, nil, fmt.Errorf("could not create token, status code = %v", response.StatusCode)
 	}
 
-	_ = a.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
+	_ = adm.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
 		Message: fmt.Sprintf("Provisioned bot account @%s (`%s`).",
 			fullBot.Username, fullBot.UserId),
 	})
