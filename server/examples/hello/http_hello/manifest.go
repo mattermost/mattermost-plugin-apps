@@ -25,7 +25,6 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				api.LocationCommand,
 				api.LocationInPost,
 			},
-			RemoteOAuth2CallbackURL: h.appURL("/?remove-me=<><>"),
-			HomepageURL:             h.appURL("/"),
+			HomepageURL: h.appURL("/"),
 		})
 }

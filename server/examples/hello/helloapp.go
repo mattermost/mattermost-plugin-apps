@@ -11,8 +11,6 @@ const (
 )
 
 const (
-	PathBindings          = api.AppBindingsPath // convention for Mattermost Apps
-	PathInstall           = api.AppInstallPath  // convention for Mattermost Apps
 	PathSendSurvey        = "/send"
 	PathSubscribeChannel  = "/subscribe"
 	PathSurvey            = "/survey"

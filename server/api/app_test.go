@@ -11,7 +11,6 @@ func TestAppConfigMap(t *testing.T) {
 		AppID:                   "app-id",
 		DisplayName:             "display-name",
 		Description:             "description",
-		RemoteOAuth2CallbackURL: "oauth2-callback-url",
 		HomepageURL:             "homepage-url",
 		RootURL:                 "root_url",
 		RequestedPermissions:    Permissions{PermissionActAsUser, PermissionActAsBot},

@@ -17,7 +17,6 @@ func TestUnmarshalCallRequest(t *testing.T) {
 			}
 		},
 		"values": {
-			"bot_access_token": "b3snp6tk6pbh9fxjpbhqn5hzgh",
 			"oauth2_client_secret": "cywc3e8nebyujrpuip98t69a3h"
 		}
 	}
@@ -29,6 +28,5 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)
 	require.Equal(t, "9pu8hstcpigm5x4dboe6hz9ddw", data.Context.TeamID)
 	require.Equal(t, "https://levb.ngrok.io", data.Context.Config.SiteURL)
-	require.Equal(t, "b3snp6tk6pbh9fxjpbhqn5hzgh", data.Values[PropBotAccessToken])
 	require.Equal(t, "cywc3e8nebyujrpuip98t69a3h", data.Values[PropOAuth2ClientSecret])
 }

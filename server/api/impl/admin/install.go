@@ -50,7 +50,6 @@ func (a *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *a
 		install = api.DefaultInstallCall
 	}
 	install.Values = map[string]string{
-		api.PropBotAccessToken:     app.BotAccessToken,
 		api.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
 	install.Context = cc
@@ -84,12 +83,14 @@ func (a *Admin) ensureOAuthApp(manifest *api.Manifest, noUserConsent bool, actin
 		}
 	}
 
+	oauth2CallbackURL := a.conf.GetConfig().PluginURL + api.AppsPath + "/" + string(manifest.AppID) + api.PathOAuth2Complete
+
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
 	oauthApp, response := client.CreateOAuthApp(&model.OAuthApp{
 		CreatorId:    actingUserID,
 		Name:         manifest.DisplayName,
 		Description:  manifest.Description,
-		CallbackUrls: []string{manifest.RemoteOAuth2CallbackURL},
+		CallbackUrls: []string{oauth2CallbackURL},
 		Homepage:     manifest.HomepageURL,
 		IsTrusted:    noUserConsent,
 	})

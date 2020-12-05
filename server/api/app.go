@@ -11,8 +11,7 @@ type Manifest struct {
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
-	RootURL                 string `json:"root_url,omitempty"`
-	RemoteOAuth2CallbackURL string `json:"remote_oauth2_callback_url,omitempty"`
+	RootURL string `json:"root_url,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
@@ -31,8 +30,14 @@ type Manifest struct {
 	// Deployment manifest for hostable apps will include path->invoke mappings
 }
 
+// Conventions for Apps paths, and field names
+const (
+	DefaultInstallCallPath  = "/install"
+	DefaultBindingsCallPath = "/bindings"
+)
+
 var DefaultInstallCall = &Call{
-	URL: AppInstallPath,
+	URL: DefaultInstallCallPath,
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
@@ -41,7 +46,7 @@ var DefaultInstallCall = &Call{
 }
 
 var DefaultBindingsCall = &Call{
-	URL: AppBindingsPath,
+	URL: DefaultBindingsCallPath,
 }
 
 type App struct {

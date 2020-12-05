@@ -94,28 +94,3 @@ func createJWT(actingUserID, secret string) (string, error) {
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
-
-// func appendGetContext(inURL string, cc *api.Context) string {
-// 	if cc == nil {
-// 		return inURL
-// 	}
-// 	out, err := url.Parse(inURL)
-// 	if err != nil {
-// 		return inURL
-// 	}
-// 	q := out.Query()
-// 	if cc.TeamID != "" {
-// 		q.Add(api.PropTeamID, cc.TeamID)
-// 	}
-// 	if cc.ChannelID != "" {
-// 		q.Add(api.PropChannelID, cc.ChannelID)
-// 	}
-// 	if cc.ActingUserID != "" {
-// 		q.Add(api.PropActingUserID, cc.ActingUserID)
-// 	}
-// 	if cc.PostID != "" {
-// 		q.Add(api.PropPostID, cc.PostID)
-// 	}
-// 	out.RawQuery = q.Encode()
-// 	return out.String()
-// }

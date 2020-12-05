@@ -73,6 +73,7 @@ func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.Comman
 		api.SessionToken(params.commandArgs.Session.Token),
 		&api.InProvisionApp{
 			Manifest: manifest,
+			Force:    true,
 		},
 	)
 	if err != nil {

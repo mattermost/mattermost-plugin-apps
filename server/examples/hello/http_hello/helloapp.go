@@ -40,11 +40,11 @@ func Init(router *mux.Router, appsService *api.Service) {
 	r := router.PathPrefix(api.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	handleCall(r, hello.PathInstall, h.Install)
-	handleCall(r, hello.PathBindings, h.GetBindings)
+	handleCall(r, api.DefaultInstallCallPath, h.Install)
+	handleCall(r, api.DefaultBindingsCallPath, h.GetBindings)
+
 	handleCall(r, hello.PathSendSurvey, h.SendSurvey)
 	handleCall(r, hello.PathSurvey, h.Survey)
-
 	handleNotify(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
 }
 

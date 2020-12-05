@@ -48,7 +48,7 @@ func GetManifest() *api.Manifest {
 
 func (h *helloapp) InvokeCall(c *api.Call) *api.CallResponse {
 	switch c.URL {
-	case hello.PathInstall:
+	case api.DefaultInstallCallPath:
 		return h.Install(c)
 	case hello.PathSendSurvey:
 		return h.SendSurvey(c)
