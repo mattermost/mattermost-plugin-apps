@@ -69,11 +69,11 @@ type CallResponse struct {
 	Type CallResponseType `json:"type,omitempty"`
 
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
-	Markdown md.MD                  `json:"markdown,omitempty"`
-	Data     map[string]interface{} `json:"data,omitempty"`
+	Markdown md.MD       `json:"markdown,omitempty"`
+	Data     interface{} `json:"data,omitempty"`
 
 	// Used in CallResponseTypeError
-	Error string `json:"error,omitempty"`
+	ErrorText string `json:"error,omitempty"`
 
 	// Used in CallResponseTypeNavigate
 	NavigateToURL      string `json:"navigate_to_url,omitempty"`
@@ -84,6 +84,22 @@ type CallResponse struct {
 
 	// Used in CallResponseTypeForm
 	Form *Form `json:"form,omitempty"`
+}
+
+func NewErrorCallResponse(err error) *CallResponse {
+	return &CallResponse{
+		Type: CallResponseTypeError,
+		// TODO <><> ticket use MD and Data, remove Error
+		ErrorText: err.Error(),
+	}
+}
+
+// Error() makes CallResponse a valid error, for convenience
+func (cr *CallResponse) Error() string {
+	if cr.Type == CallResponseTypeError {
+		return cr.ErrorText
+	}
+	return ""
 }
 
 func UnmarshalCallFromData(data []byte) (*Call, error) {

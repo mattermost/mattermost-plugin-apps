@@ -37,11 +37,6 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res, err := a.api.Proxy.Call(api.SessionToken(session.Token), call)
-	if err != nil {
-		httputils.WriteInternalServerError(w, err)
-		return
-	}
-
+	res := a.api.Proxy.Call(api.SessionToken(session.Token), call)
 	httputils.WriteJSON(w, res)
 }

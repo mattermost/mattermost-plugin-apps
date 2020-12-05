@@ -5,21 +5,21 @@ package proxy
 
 import "github.com/mattermost/mattermost-plugin-apps/server/api"
 
-func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) (*api.CallResponse, error) {
+func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallResponse {
 	app, err := p.store.LoadApp(c.Context.AppID)
 	if err != nil {
-		return nil, err
+		return api.NewErrorCallResponse(err)
 	}
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return nil, err
+		return api.NewErrorCallResponse(err)
 	}
 
 	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
 	expander.App = app
 	cc, err := expander.Expand(c.Expand)
 	if err != nil {
-		return nil, err
+		return api.NewErrorCallResponse(err)
 	}
 	clone := *c
 	clone.Context = cc

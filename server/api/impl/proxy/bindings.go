@@ -31,17 +31,6 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-func addAppID(bb []*api.Binding, appID api.AppID) []*api.Binding {
-	for _, b := range bb {
-		b.AppID = appID
-		if len(b.Bindings) > 0 {
-			b.Bindings = addAppID(b.Bindings, appID)
-		}
-	}
-
-	return bb
-}
-
 // This and registry related calls should be RPC calls so they can be reused by other plugins
 func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 	allApps := p.store.ListApps()
@@ -59,13 +48,17 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
-		bb, err := up.GetBindings(&appCC)
+		bindingsCall := app.Manifest.Bindings
+		if bindingsCall == nil {
+			bindingsCall = api.DefaultBindingsCall
+		}
+		bindingsCall.Context = cc
+
+		bindings, err := up.GetBindings(bindingsCall)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get bindings for %s", appID)
 		}
-
-		bb = addAppID(bb, app.Manifest.AppID)
-		all = mergeBindings(all, p.scanAppBindings(app, bb, ""))
+		all = mergeBindings(all, p.scanAppBindings(app, bindings, ""))
 	}
 
 	return all, nil

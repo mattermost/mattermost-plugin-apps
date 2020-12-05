@@ -1,4 +1,4 @@
-package builtin_hello
+package hello
 
 import (
 	"strings"
@@ -10,45 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func SendSurvey(c *api.Call) *api.CallResponse {
-	var out *api.CallResponse
-
-	switch c.Type {
-	case api.CallTypeForm:
-		out = newSendSurveyFormResponse(c)
-
-	case api.CallTypeSubmit:
-		userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
-		asBot := examples.AsBot(c.Context)
-
-		// TODO this should be done with expanding mentions, make a ticket
-		if strings.HasPrefix(userID, "@") {
-			user, _ := asBot.GetUserByUsername(userID[1:], "")
-			if user != nil {
-				userID = user.Id
-			}
-		}
-
-		message := c.GetValue(fieldMessage, "Hello")
-		if c.Context.Post != nil {
-			message += "\n>>> " + c.Context.Post.Message
-		}
-
-		out = &api.CallResponse{}
-		err := sendSurvey(asBot, userID, message)
-		if err != nil {
-			out.Error = err.Error()
-			out.Type = api.CallResponseTypeError
-		} else {
-			out.Markdown = md.Markdownf(
-				"Successfully sent survey",
-			)
-		}
-	}
-	return out
-}
-
-func newSendSurveyFormResponse(c *api.Call) *api.CallResponse {
+func NewSendSurveyFormResponse(c *api.Call) *api.CallResponse {
 	message := ""
 	if c.Context != nil && c.Context.Post != nil {
 		message = c.Context.Post.Message
@@ -65,19 +27,19 @@ func newSendSurveyFormResponse(c *api.Call) *api.CallResponse {
 					Name:                 fieldUserID,
 					Type:                 api.FieldTypeUser,
 					Description:          "User to send the survey to",
-					Label:                "User",
+					Label:                "user",
+					ModalLabel:           "User",
 					AutocompleteHint:     "enter user ID or @user",
 					AutocompletePosition: 1,
-					ModalLabel:           "User",
 				}, {
 					Name:             fieldMessage,
 					Type:             api.FieldTypeText,
-					TextSubtype:      "textarea",
-					IsRequired:       true,
 					Description:      "Text to ask the user about",
+					IsRequired:       true,
 					Label:            "message",
-					AutocompleteHint: "Anything you want to say",
 					ModalLabel:       "Text",
+					AutocompleteHint: "Anything you want to say",
+					TextSubtype:      "textarea",
 					TextMinLength:    2,
 					TextMaxLength:    1024,
 					Value:            message,
@@ -87,16 +49,41 @@ func newSendSurveyFormResponse(c *api.Call) *api.CallResponse {
 	}
 }
 
-func sendSurvey(as examples.Client, userID, message string) error {
+func (h *HelloApp) SendSurvey(c *api.Call) (md.MD, error) {
+	bot := examples.AsBot(c.Context)
+	userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
+
+	// TODO this should be done with expanding mentions, make a ticket
+	if strings.HasPrefix(userID, "@") {
+		user, _ := bot.GetUserByUsername(userID[1:], "")
+		if user != nil {
+			userID = user.Id
+		}
+	}
+
+	message := c.GetValue(fieldMessage, "Hello")
+	if c.Context.Post != nil {
+		message += "\n>>> " + c.Context.Post.Message
+	}
+
+	err := sendSurvey(bot, userID, message)
+	if err != nil {
+		return "", err
+	}
+
+	return "Successfully sent survey", nil
+}
+
+func sendSurvey(bot examples.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
 	p.AddProp(api.PropAppBindings, []*api.Binding{
 		{
 			Location: "survey",
-			Form:     newSurveyForm(message),
+			Form:     NewSurveyForm(message),
 		},
 	})
-	_, err := as.DMPost(userID, p)
+	_, err := bot.DMPost(userID, p)
 	return err
 }

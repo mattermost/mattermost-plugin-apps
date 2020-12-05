@@ -10,10 +10,10 @@ import (
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		api.Manifest{
-			AppID:         AppID,
-			DisplayName:   AppDisplayName,
-			Description:   AppDescription,
-			RootURL: h.appURL(""),
+			AppID:       AppID,
+			DisplayName: AppDisplayName,
+			Description: AppDescription,
+			RootURL:     h.appURL(""),
 			RequestedPermissions: api.Permissions{
 				api.PermissionUserJoinedChannelNotification,
 				api.PermissionActAsUser,
@@ -25,6 +25,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				api.LocationCommand,
 				api.LocationInPost,
 			},
-			HomepageURL: h.appURL("/"),
+			RemoteOAuth2CallbackURL: h.appURL("/?remove-me=<><>"),
+			HomepageURL:             h.appURL("/"),
 		})
 }

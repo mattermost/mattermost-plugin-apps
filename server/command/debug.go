@@ -10,8 +10,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/builtin_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/http_hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello/builtin_hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -35,8 +36,8 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 }
 
 func (s *service) executeDebugEmbeddedForm(params *params) (*model.CommandResponse, error) {
-	_, err := s.api.Proxy.Call(api.SessionToken(params.commandArgs.Session.Token), &api.Call{
-		URL: http_hello.PathSendSurvey,
+	cr := s.api.Proxy.Call(api.SessionToken(params.commandArgs.Session.Token), &api.Call{
+		URL: hello.PathSendSurvey,
 		Context: &api.Context{
 			AppID:        http_hello.AppID,
 			ActingUserID: params.commandArgs.UserId,
@@ -46,8 +47,8 @@ func (s *service) executeDebugEmbeddedForm(params *params) (*model.CommandRespon
 		},
 	})
 
-	if err != nil {
-		return normalOut(params, nil, err)
+	if cr.Type == api.CallResponseTypeError {
+		return normalOut(params, md.MD("error"), cr)
 	}
 
 	return normalOut(params, md.MD("The app will send you the form"), nil)

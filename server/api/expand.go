@@ -3,8 +3,6 @@
 
 package api
 
-import "github.com/mattermost/mattermost-server/v5/model"
-
 type ExpandLevel string
 
 // <><> TODO update ExpandLevels in redux
@@ -16,7 +14,6 @@ const (
 )
 
 type Expand struct {
-	// Expanded App contains
 	App        ExpandLevel `json:"app"`
 	ActingUser ExpandLevel `json:"acting_user"`
 
@@ -36,20 +33,4 @@ type Expand struct {
 	RootPost   ExpandLevel `json:"root_post,omitempty"`
 	Team       ExpandLevel `json:"team,omitempty"`
 	User       ExpandLevel `json:"user,omitempty"`
-}
-
-type ExpandedContext struct {
-	BotAccessToken        string            `json:"bot_access_token,omitempty"`
-	AdminAccessToken      string            `json:"admin_access_token,omitempty"`
-	ActingUserAccessToken string            `json:"acting_user_access_token,omitempty"`
-	ActingUser            *model.User       `json:"acting_user,omitempty"`
-	App                   *App              `json:"app,omitempty"`
-	Channel               *model.Channel    `json:"channel,omitempty"`
-	Config                *MattermostConfig `json:"config,omitempty"`
-	Mentioned             []*model.User     `json:"mentioned,omitempty"`
-	Post                  *model.Post       `json:"post,omitempty"`
-	RootPost              *model.Post       `json:"root_post,omitempty"`
-	Team                  *model.Team       `json:"team,omitempty"`
-	// TODO replace User with mentions
-	User *model.User `json:"user,omitempty"`
 }

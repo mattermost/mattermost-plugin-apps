@@ -4,7 +4,9 @@
 package proxy
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
@@ -50,4 +52,13 @@ func (p *Proxy) ProvisionBuiltIn(appID api.AppID, up api.Upstream) {
 		p.builtIn = map[api.AppID]api.Upstream{}
 	}
 	p.builtIn[appID] = up
+}
+
+func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(api.CallResponse{
+		Type:      api.CallResponseTypeError,
+		ErrorText: err.Error(),
+	})
 }

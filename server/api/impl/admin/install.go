@@ -47,7 +47,7 @@ func (a *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *a
 
 	install := app.Manifest.Install
 	if install == nil {
-		install = api.DefaultInstall
+		install = api.DefaultInstallCall
 	}
 	install.Values = map[string]string{
 		api.PropBotAccessToken:     app.BotAccessToken,
@@ -55,12 +55,9 @@ func (a *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *a
 	}
 	install.Context = cc
 
-	resp, err := a.proxy.Call(sessionToken, install)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "Install failed")
-	}
-	if resp.Error != "" {
-		return nil, "", errors.New("Install failed: " + resp.Error)
+	resp := a.proxy.Call(sessionToken, install)
+	if resp.Type == api.CallResponseTypeError {
+		return nil, "", errors.Wrap(resp, "install failed")
 	}
 
 	return app, resp.Markdown, nil

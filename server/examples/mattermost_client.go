@@ -12,34 +12,30 @@ import (
 type Client struct {
 	*model.Client4
 	userID string
-	token  string
+}
+
+func as(id, token string, cc *api.Context) Client {
+	if cc.Config == nil {
+		return Client{}
+	}
+	return newClient(id, token, cc.Config.SiteURL)
 }
 
 func AsBot(cc *api.Context) Client {
-	if cc.App == nil || cc.Config == nil {
-		return Client{}
-	}
-	return newClient(cc.App.BotUserID, cc.App.BotAccessToken, cc.Config.SiteURL)
+	return as(cc.BotUserID, cc.BotAccessToken, cc)
 }
 
 func AsActingUser(cc *api.Context) Client {
-	if cc.App == nil || cc.Config == nil {
-		return Client{}
-	}
-	return newClient(cc.ActingUserID, cc.ActingUserAccessToken, cc.Config.SiteURL)
+	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
 }
 
 func AsAdmin(cc *api.Context) Client {
-	if cc.App == nil || cc.Config == nil {
-		return Client{}
-	}
-	return newClient(cc.ActingUserID, cc.AdminAccessToken, cc.Config.SiteURL)
+	return as(cc.ActingUserID, cc.AdminAccessToken, cc)
 }
 
 func newClient(userID, token, mattermostSiteURL string) Client {
 	i := Client{
 		userID:  userID,
-		token:   token,
 		Client4: model.NewAPIv4Client(mattermostSiteURL),
 	}
 	i.Client4.SetOAuthToken(token)

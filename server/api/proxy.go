@@ -6,7 +6,7 @@ package api
 type Proxy interface {
 	GetManifest(manifestURL string) (*Manifest, error)
 	GetBindings(*Context) ([]*Binding, error)
-	Call(SessionToken, *Call) (*CallResponse, error)
+	Call(SessionToken, *Call) *CallResponse
 	Notify(cc *Context, subj Subject) error
 
 	ProvisionBuiltIn(AppID, Upstream)

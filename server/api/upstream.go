@@ -10,8 +10,8 @@ import (
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Upstream interface {
-	GetBindings(*Context) ([]*Binding, error)
-	InvokeCall(*Call) (*CallResponse, error)
+	GetBindings(*Call) ([]*Binding, error)
+	InvokeCall(*Call) *CallResponse
 	InvokeNotification(*Notification) error
 }
 

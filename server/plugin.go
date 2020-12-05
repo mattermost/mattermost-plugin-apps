@@ -21,8 +21,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/builtin_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/http_hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello/builtin_hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
@@ -60,7 +60,6 @@ func (p *Plugin) OnActivate() error {
 	conf := configurator.NewConfigurator(mm, p.BuildConfig, botUserID)
 	store := store.NewStore(mm, conf)
 	proxy := proxy.NewProxy(mm, conf, store)
-	proxy.ProvisionBuiltIn(builtin_hello.AppID, &builtin_hello.App{})
 
 	p.api = &api.Service{
 		Mattermost:   mm,
@@ -70,6 +69,7 @@ func (p *Plugin) OnActivate() error {
 		Admin:        admin.NewAdmin(mm, conf, store, proxy),
 		AWS:          aws.NewAWS(conf),
 	}
+	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
 
 	p.http = http.NewService(mux.NewRouter(), p.api,
 		dialog.Init,

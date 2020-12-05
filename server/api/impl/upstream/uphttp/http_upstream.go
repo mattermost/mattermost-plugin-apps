@@ -7,11 +7,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
@@ -61,27 +59,27 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	return resp, nil
 }
 
-func (u *Upstream) get(fromMattermostUserID string, url string) (*http.Response, error) {
-	client := u.getClient()
-	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating token")
-	}
+// func (u *Upstream) get(fromMattermostUserID string, url string) (*http.Response, error) {
+// 	client := u.getClient()
+// 	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "error creating token")
+// 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating request")
-	}
-	req.Header.Set(api.OutgoingAuthHeader, "Bearer "+jwtoken)
+// 	req, err := http.NewRequest(http.MethodGet, url, nil)
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "error creating request")
+// 	}
+// 	req.Header.Set(api.OutgoingAuthHeader, "Bearer "+jwtoken)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		// TODO ticket: progressive backoff on errors
-		return nil, errors.Wrap(err, "error performing the request")
-	}
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		// TODO ticket: progressive backoff on errors
+// 		return nil, errors.Wrap(err, "error performing the request")
+// 	}
 
-	return resp, nil
-}
+// 	return resp, nil
+// }
 
 func (u *Upstream) getClient() *http.Client {
 	return &http.Client{}
@@ -97,27 +95,27 @@ func createJWT(actingUserID, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func appendGetContext(inURL string, cc *api.Context) string {
-	if cc == nil {
-		return inURL
-	}
-	out, err := url.Parse(inURL)
-	if err != nil {
-		return inURL
-	}
-	q := out.Query()
-	if cc.TeamID != "" {
-		q.Add(api.PropTeamID, cc.TeamID)
-	}
-	if cc.ChannelID != "" {
-		q.Add(api.PropChannelID, cc.ChannelID)
-	}
-	if cc.ActingUserID != "" {
-		q.Add(api.PropActingUserID, cc.ActingUserID)
-	}
-	if cc.PostID != "" {
-		q.Add(api.PropPostID, cc.PostID)
-	}
-	out.RawQuery = q.Encode()
-	return out.String()
-}
+// func appendGetContext(inURL string, cc *api.Context) string {
+// 	if cc == nil {
+// 		return inURL
+// 	}
+// 	out, err := url.Parse(inURL)
+// 	if err != nil {
+// 		return inURL
+// 	}
+// 	q := out.Query()
+// 	if cc.TeamID != "" {
+// 		q.Add(api.PropTeamID, cc.TeamID)
+// 	}
+// 	if cc.ChannelID != "" {
+// 		q.Add(api.PropChannelID, cc.ChannelID)
+// 	}
+// 	if cc.ActingUserID != "" {
+// 		q.Add(api.PropActingUserID, cc.ActingUserID)
+// 	}
+// 	if cc.PostID != "" {
+// 		q.Add(api.PropPostID, cc.PostID)
+// 	}
+// 	out.RawQuery = q.Encode()
+// 	return out.String()
+// }

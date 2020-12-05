@@ -21,19 +21,27 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// By default invoke "/install", expanding App, AdminAccessToken, and Config
+	// By default invoke "/install", expanding App, AdminAccessToken, and
+	// Config.
 	Install *Call `json:"install,omitempty"`
+
+	// By default invoke "/bindings".
+	Bindings *Call `json:"bindings,omitempty"`
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
 }
 
-var DefaultInstall = &Call{
+var DefaultInstallCall = &Call{
 	URL: AppInstallPath,
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
 		Config:           ExpandAll,
 	},
+}
+
+var DefaultBindingsCall = &Call{
+	URL: AppBindingsPath,
 }
 
 type App struct {

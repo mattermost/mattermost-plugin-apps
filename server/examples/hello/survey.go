@@ -1,24 +1,10 @@
-package builtin_hello
+package hello
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func Survey(c *api.Call) *api.CallResponse {
-	message := c.GetValue(fieldMessage, "default hello message")
-	switch c.Type {
-	case api.CallTypeForm:
-		return newSurveyFormResponse(message)
-
-	case api.CallTypeSubmit:
-		// TODO post something somewhere; for embedded form - what do we do?
-		return &api.CallResponse{}
-	}
-
-	return nil
-}
-
-func newSurveyForm(message string) *api.Form {
+func NewSurveyForm(message string) *api.Form {
 	return &api.Form{
 		Title:         "Emotional response survey",
 		Header:        message,
@@ -37,9 +23,15 @@ func newSurveyForm(message string) *api.Form {
 	}
 }
 
-func newSurveyFormResponse(message string) *api.CallResponse {
+func NewSurveyFormResponse(c *api.Call) *api.CallResponse {
+	message := c.GetValue(fieldMessage, "default hello message")
 	return &api.CallResponse{
 		Type: api.CallResponseTypeForm,
-		Form: newSurveyForm(message),
+		Form: NewSurveyForm(message),
 	}
+}
+
+func (h *HelloApp) ProcessSurvey(c *api.Call) error {
+	// TODO post something; for embedded form - what do we do?
+	return nil
 }

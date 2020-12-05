@@ -7,6 +7,7 @@ import (
 type Context struct {
 	AppID        AppID             `json:"app_id"`
 	Location     Location          `json:"location,omitempty"`
+	BotUserID    string            `json:"bot_user_id,omitempty"`
 	ActingUserID string            `json:"acting_user_id,omitempty"`
 	UserID       string            `json:"user_id,omitempty"`
 	TeamID       string            `json:"team_id"`
@@ -15,6 +16,25 @@ type Context struct {
 	RootPostID   string            `json:"root_post_id,omitempty"`
 	Props        map[string]string `json:"props,omitempty"`
 	ExpandedContext
+}
+
+type ExpandedContext struct {
+	//  BotAccessToken is always provided in expanded context
+	BotAccessToken string `json:"bot_access_token,omitempty"`
+
+	ActingUser            *model.User       `json:"acting_user,omitempty"`
+	ActingUserAccessToken string            `json:"acting_user_access_token,omitempty"`
+	AdminAccessToken      string            `json:"admin_access_token,omitempty"`
+	App                   *App              `json:"app,omitempty"`
+	Channel               *model.Channel    `json:"channel,omitempty"`
+	Config                *MattermostConfig `json:"config,omitempty"`
+	Mentioned             []*model.User     `json:"mentioned,omitempty"`
+	Post                  *model.Post       `json:"post,omitempty"`
+	RootPost              *model.Post       `json:"root_post,omitempty"`
+	Team                  *model.Team       `json:"team,omitempty"`
+
+	// TODO replace User with mentions
+	User *model.User `json:"user,omitempty"`
 }
 
 type MattermostConfig struct {
