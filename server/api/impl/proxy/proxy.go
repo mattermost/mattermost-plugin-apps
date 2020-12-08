@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/uphttp"
 )
@@ -94,7 +95,7 @@ func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
 		return uphttp.NewUpstream(app), nil
 
 	case api.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app), nil
+		return upawslambda.NewUpstream(app, aws.NewAWS(p.conf)), nil
 
 	case api.AppTypeBuiltin:
 		if len(p.builtIn) == 0 {

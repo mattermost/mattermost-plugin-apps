@@ -5,5 +5,5 @@ package api
 
 type AWS interface {
 	InstallApp(releaseURL string) error
-	InvokeLambda(functionName string, request interface{}) ([]byte, error)
+	InvokeLambda(appName, functionName, invocationType string, request interface{}) ([]byte, error)
 }

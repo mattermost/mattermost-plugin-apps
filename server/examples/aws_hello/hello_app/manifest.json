@@ -1,0 +1,9 @@
+{
+	"app_id": "hello_app",
+	"name": "hello_app",
+	"lambda_functions": [{
+		"name": "on_activate",
+		"handler": "index.handler",
+		"runtime": "nodejs12.x"
+	}]
+}

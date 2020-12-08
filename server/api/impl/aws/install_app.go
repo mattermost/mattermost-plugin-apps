@@ -152,12 +152,13 @@ func (s *Service) installApp(appName string, functions []functionInstallData) er
 
 	// check function name lengths
 	for _, function := range functions {
-		if len(function.name)+len(appName)+1 > lambdaFunctionFileNameMaxSize {
-			return errors.Errorf("function file name %s should be less than %d", appName+"_"+function.name, lambdaFunctionFileNameMaxSize)
+		name := getFunctionName(appName, function.name)
+		if len(name) > lambdaFunctionFileNameMaxSize {
+			return errors.Errorf("function file name %s should be less than %d", name, lambdaFunctionFileNameMaxSize)
 		}
 	}
 	for _, function := range functions {
-		name := fmt.Sprintf("%s_%s", appName, function.name)
+		name := getFunctionName(appName, function.name)
 		if err := s.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
 			return errors.Wrapf(err, "can't install function for %s", appName)
 		}
@@ -195,4 +196,9 @@ func (s *Service) createFunction(zipFile io.Reader, function, handler, runtime, 
 	s.logger.Infof("function named %s was created with result - %v", function, result)
 
 	return nil
+}
+
+// getFunctionName generates function name for a specific app
+func getFunctionName(appName, function string) string {
+	return fmt.Sprintf("%s_%s", appName, function)
 }

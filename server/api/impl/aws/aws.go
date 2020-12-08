@@ -18,6 +18,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// DefaultRegion describes default region in aws
+const DefaultRegion = "us-east-2"
+
 // Service hold AWS clients for each service.
 type Service struct {
 	conf   api.Configurator

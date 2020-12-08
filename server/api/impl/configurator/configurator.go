@@ -5,10 +5,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
+	sdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 
 	"github.com/pkg/errors"
 
@@ -81,14 +82,22 @@ func (c *config) RefreshConfig(stored *api.StoredConfig) error {
 	newConfig := c.GetConfig()
 
 	prevStored := newConfig.StoredConfig
+
 	if prevStored != nil {
 		if prevStored.AWSSecretAccessKey != stored.AWSSecretAccessKey ||
 			prevStored.AWSAccessKeyID != stored.AWSAccessKeyID {
-			newConfig.AWSSession, err = session.NewSession(&aws.Config{
-				Region:      aws.String("us-east-2"),
-				Credentials: credentials.NewStaticCredentials(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, ""),
-			})
-			if err != nil {
+
+			var creds *credentials.Credentials
+			if stored.AWSAccessKeyID == "" && stored.AWSAccessKeyID == "" {
+				creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
+			} else {
+				creds = credentials.NewStaticCredentials(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, "")
+			}
+
+			if newConfig.AWSSession, err = session.NewSession(&sdk.Config{
+				Region:      sdk.String(aws.DefaultRegion),
+				Credentials: creds,
+			}); err != nil {
 				return err
 			}
 		}
