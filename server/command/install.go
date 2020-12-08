@@ -92,7 +92,10 @@ func (s *service) executeExperimentalInstall(params *params) (*model.CommandResp
 		return normalOut(params, nil, err)
 	}
 
-	s.api.AWS.InvokeLambda(name, "_on_activate", lambda.InvocationTypeEvent, "some input")
+	_, err = s.api.AWS.InvokeLambda(name, "_on_activate", lambda.InvocationTypeEvent, "some input")
+	if err != nil {
+		return normalOut(params, nil, err)
+	}
 
 	return &model.CommandResponse{
 		Text:         fmt.Sprintf("installed lambda functions from url %s.", releaseURL),

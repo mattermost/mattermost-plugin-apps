@@ -86,9 +86,8 @@ func (c *config) RefreshConfig(stored *api.StoredConfig) error {
 	if prevStored != nil {
 		if prevStored.AWSSecretAccessKey != stored.AWSSecretAccessKey ||
 			prevStored.AWSAccessKeyID != stored.AWSAccessKeyID {
-
 			var creds *credentials.Credentials
-			if stored.AWSAccessKeyID == "" && stored.AWSAccessKeyID == "" {
+			if stored.AWSSecretAccessKey == "" && stored.AWSAccessKeyID == "" {
 				creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
 			} else {
 				creds = credentials.NewStaticCredentials(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, "")
