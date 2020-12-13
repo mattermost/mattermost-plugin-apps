@@ -5,9 +5,9 @@ package aws
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
 )
@@ -68,9 +68,11 @@ func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
 		PolicyName:     &policyName,
 	})
 	if err != nil {
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+		awsErr, ok := err.(awserr.Error)
+		if !ok || awsErr.Code() != iam.ErrCodeEntityAlreadyExistsException {
 			return "", errors.Wrap(err, "can't create default lambda function policy")
 		}
+
 		if err = iamService.ListPoliciesPages(&iam.ListPoliciesInput{},
 			func(page *iam.ListPoliciesOutput, lastPage bool) bool {
 				for _, pol := range page.Policies {
@@ -120,9 +122,11 @@ func (s *Service) createRole(policyARN string) (string, error) {
 		RoleName:                 &roleName,
 	})
 	if err != nil {
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+		awsErr, ok := err.(awserr.Error)
+		if !ok || awsErr.Code() != iam.ErrCodeEntityAlreadyExistsException {
 			return "", errors.Wrap(err, "can't create default lambda function role")
 		}
+
 		if err = iamService.ListRolesPages(&iam.ListRolesInput{},
 			func(page *iam.ListRolesOutput, lastPage bool) bool {
 				for _, r := range page.Roles {
@@ -145,8 +149,5 @@ func (s *Service) createRole(policyARN string) (string, error) {
 			return "", errors.Wrap(err, "can't attach role policy")
 		}
 	}
-	// return "arn:aws:iam::471983363333:role/service-role/install-role-b6frb83t", nil
-	// time.Sleep(2 * time.Second)
-	// return *out.Role.Arn, nil
 	return roleARN, nil
 }

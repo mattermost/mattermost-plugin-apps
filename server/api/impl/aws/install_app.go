@@ -191,7 +191,9 @@ func (s *Service) createFunction(zipFile io.Reader, function, handler, runtime, 
 
 	result, err := s.lambda().CreateFunction(createArgs)
 	if err != nil {
-		return errors.Wrapf(err, "Can't create function res = %v\n", result)
+		if _, ok := err.(*lambda.ResourceConflictException); !ok {
+			return errors.Wrapf(err, "Can't create function res = %v\n", result)
+		}
 	}
 	s.logger.Infof("function named %s was created with result - %v", function, result)
 

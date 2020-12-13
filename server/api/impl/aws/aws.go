@@ -43,7 +43,10 @@ func NewAWS(conf api.Configurator) *Service {
 
 func (s *Service) newSession() *session.Session {
 	// Make a copy of the cached session for logging
-	sess := s.conf.GetConfig().AWSSession.Copy()
+	if s.conf.GetConfig().AWSSession == nil {
+		s.logger.Error("AWS Session is null")
+	}
+	sess := s.conf.GetConfig().AWSSession
 	sess.Handlers.Complete.PushFront(func(r *request.Request) {
 		if r.HTTPResponse != nil && r.HTTPRequest != nil {
 			var buffer bytes.Buffer
