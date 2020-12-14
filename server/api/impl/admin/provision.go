@@ -6,6 +6,7 @@ package admin
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -57,7 +58,7 @@ func (adm *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken s
 	client.SetToken(sessionToken)
 
 	bot := &model.Bot{
-		Username:    string(manifest.AppID),
+		Username:    strings.ToLower(string(manifest.AppID)),
 		DisplayName: manifest.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
 	}

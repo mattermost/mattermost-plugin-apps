@@ -19,15 +19,16 @@ import (
 type Proxy struct {
 	builtIn map[api.AppID]api.Upstream
 
-	mm    *pluginapi.Client
-	conf  api.Configurator
-	store api.Store
+	mm        *pluginapi.Client
+	conf      api.Configurator
+	store     api.Store
+	awsClient *aws.Client
 }
 
 var _ api.Proxy = (*Proxy)(nil)
 
-func NewProxy(mm *pluginapi.Client, conf api.Configurator, store api.Store) *Proxy {
-	return &Proxy{nil, mm, conf, store}
+func NewProxy(mm *pluginapi.Client, awsClient *aws.Client, conf api.Configurator, store api.Store) *Proxy {
+	return &Proxy{nil, mm, conf, store, awsClient}
 }
 
 func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallResponse {
@@ -95,7 +96,7 @@ func (p *Proxy) upstreamForApp(app *api.App) (api.Upstream, error) {
 		return uphttp.NewUpstream(app), nil
 
 	case api.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app, aws.NewAWS(p.conf)), nil
+		return upawslambda.NewUpstream(app, p.awsClient), nil
 
 	case api.AppTypeBuiltin:
 		if len(p.builtIn) == 0 {

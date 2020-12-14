@@ -38,7 +38,7 @@ type rolePrincipal struct {
 	Service string
 }
 
-func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
+func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
 	// Builds our policy document for IAM.
 	policy := policyDocument{
 		Version: "2012-10-17",
@@ -62,7 +62,7 @@ func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
 	policyName := "my_cool_policy_name"
 
 	arn := ""
-	iamService := s.iam()
+	iamService := c.Service().iam
 	out, err := iamService.CreatePolicy(&iam.CreatePolicyInput{
 		PolicyDocument: aws.String(string(b)),
 		PolicyName:     &policyName,
@@ -90,14 +90,14 @@ func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
 		arn = *out.Policy.Arn
 	}
 
-	role, err := s.createRole(arn)
+	role, err := c.createRole(arn)
 	if err != nil {
 		return "", errors.Wrap(err, "can't create role")
 	}
 	return role, nil
 }
 
-func (s *Service) createRole(policyARN string) (string, error) {
+func (c *Client) createRole(policyARN string) (string, error) {
 	rolePolicy := rolePolicyDocument{
 		Version: "2012-10-17",
 		Statement: []rolePolicyStatementEntry{
@@ -116,7 +116,7 @@ func (s *Service) createRole(policyARN string) (string, error) {
 	}
 	roleName := "my_cool_role_name1"
 	roleARN := ""
-	iamService := s.iam()
+	iamService := c.Service().iam
 	out, err := iamService.CreateRole(&iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(string(b)),
 		RoleName:                 &roleName,

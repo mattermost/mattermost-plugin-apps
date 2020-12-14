@@ -3,7 +3,7 @@ package aws_hello
 import "github.com/mattermost/mattermost-plugin-apps/server/api"
 
 const (
-	AppID          = "my_app"
+	AppID          = "awsHello"
 	AppDisplayName = "AWS Hello App display name"
 	AppDescription = "AWS Hello App description"
 )
@@ -27,7 +27,7 @@ func Manifest() *api.Manifest {
 		},
 		HomepageURL: ("https://github.com/mattermost"),
 		Install: &api.Call{
-			URL: "my_func",
+			URL: "on_activate",
 			Expand: &api.Expand{
 				App:              api.ExpandAll,
 				AdminAccessToken: api.ExpandAll,

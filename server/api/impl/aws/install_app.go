@@ -52,7 +52,7 @@ type manifest struct {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func (s *Service) InstallApp(releaseURL string) error {
+func (c *Client) InstallApp(releaseURL string) error {
 	zipFile, err := downloadFile(releaseURL)
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
@@ -66,7 +66,7 @@ func (s *Service) InstallApp(releaseURL string) error {
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
-		if file.Name == "manifest.json" {
+		if strings.HasSuffix(file.Name, "manifest.json") {
 			manifestFile, err := file.Open()
 			if err != nil {
 				return errors.Wrap(err, "can't open manifest.json file")
@@ -99,10 +99,10 @@ func (s *Service) InstallApp(releaseURL string) error {
 	// O(n^2) code for simplicity
 	for _, f := range functions {
 		for _, manifestFunction := range mani.LambdaFunctions {
-			if f.name == manifestFunction.Name {
+			if strings.HasSuffix(f.name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, functionInstallData{
 					zipFile: f.zipFile,
-					name:    f.name,
+					name:    manifestFunction.Name,
 					handler: manifestFunction.Handler,
 					runtime: manifestFunction.Runtime,
 				})
@@ -110,7 +110,7 @@ func (s *Service) InstallApp(releaseURL string) error {
 			}
 		}
 	}
-	return s.installApp(mani.Name, resFunctions)
+	return c.installApp(mani.Name, resFunctions)
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -144,8 +144,8 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (s *Service) installApp(appName string, functions []functionInstallData) error {
-	policyName, err := s.makeLambdaFunctionDefaultPolicy()
+func (c *Client) installApp(appName string, functions []functionInstallData) error {
+	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrapf(err, "can't install app %s", appName)
 	}
@@ -159,7 +159,7 @@ func (s *Service) installApp(appName string, functions []functionInstallData) er
 	}
 	for _, function := range functions {
 		name := getFunctionName(appName, function.name)
-		if err := s.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
+		if err := c.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
 			return errors.Wrapf(err, "can't install function for %s", appName)
 		}
 	}
@@ -167,7 +167,7 @@ func (s *Service) installApp(appName string, functions []functionInstallData) er
 }
 
 // CreateFunction method creates lambda function
-func (s *Service) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
+func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
 	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
 		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %s %s %s %s %s", zipFile, function, handler, resource, runtime)
 	}
@@ -189,13 +189,13 @@ func (s *Service) createFunction(zipFile io.Reader, function, handler, runtime, 
 		Runtime:      &runtime,
 	}
 
-	result, err := s.lambda().CreateFunction(createArgs)
+	result, err := c.Service().lambda.CreateFunction(createArgs)
 	if err != nil {
 		if _, ok := err.(*lambda.ResourceConflictException); !ok {
 			return errors.Wrapf(err, "Can't create function res = %v\n", result)
 		}
 	}
-	s.logger.Infof("function named %s was created with result - %v", function, result)
+	c.logger.Info(fmt.Sprintf("function named %s was created with result - %v", function, result))
 
 	return nil
 }

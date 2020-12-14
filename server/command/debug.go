@@ -101,6 +101,7 @@ func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.Comman
 func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandResponse, error) {
 	manifest := aws_hello.Manifest()
 
+	s.api.Mattermost.Log.Error(fmt.Sprintf("manifest = %v", manifest))
 	app, _, err := s.api.Admin.ProvisionApp(
 		&api.Context{
 			ActingUserID: params.commandArgs.UserId,
@@ -111,6 +112,8 @@ func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandRes
 			Force:    true,
 		},
 	)
+	s.api.Mattermost.Log.Error(fmt.Sprintf("app = %v", app))
+
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
@@ -125,10 +128,13 @@ func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandRes
 		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
 
+	s.api.Mattermost.Log.Error(fmt.Sprintf("before get team = %v", params.commandArgs.TeamId))
+
 	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
 	if err != nil {
 		return normalOut(params, nil, err)
 	}
+	s.api.Mattermost.Log.Error(fmt.Sprintf("after get team = %v", team))
 
 	return &model.CommandResponse{
 		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + app.BotUsername,
