@@ -1,10 +1,11 @@
 const util = require('util');
 
 exports.handler = async (event) => {
-    console.log(util.inspect(event, {showHidden: false, depth: null}));
+    requestText = util.inspect(event, {showHidden: false, depth: null});
+    console.log(requestText);
 
     return {
         'Type': 'ok',
-        'Markdown': 'hello world',
+        'Markdown': '```\n' + requestText + '```\n',
     };;
 };

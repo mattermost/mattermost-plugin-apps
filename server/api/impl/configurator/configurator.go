@@ -5,9 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	sdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 
@@ -27,15 +24,17 @@ type config struct {
 
 	lock             *sync.RWMutex
 	mm               *pluginapi.Client
+	awsClient        *aws.Client
 	mattermostConfig *model.Config
 }
 
-func NewConfigurator(mattermost *pluginapi.Client, buildConfig *api.BuildConfig, botUserID string) api.Configurator {
+func NewConfigurator(mattermost *pluginapi.Client, awsClient *aws.Client, buildConfig *api.BuildConfig, botUserID string) api.Configurator {
 	return &config{
 		lock:        &sync.RWMutex{},
 		mm:          mattermost,
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
+		awsClient:   awsClient,
 	}
 }
 
@@ -86,19 +85,7 @@ func (c *config) RefreshConfig(stored *api.StoredConfig) error {
 	if prevStored != nil {
 		if prevStored.AWSSecretAccessKey != stored.AWSSecretAccessKey ||
 			prevStored.AWSAccessKeyID != stored.AWSAccessKeyID {
-			var creds *credentials.Credentials
-			if stored.AWSSecretAccessKey == "" && stored.AWSAccessKeyID == "" {
-				creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
-			} else {
-				creds = credentials.NewStaticCredentials(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, "")
-			}
-
-			if newConfig.AWSSession, err = session.NewSession(&sdk.Config{
-				Region:      sdk.String(aws.DefaultRegion),
-				Credentials: creds,
-			}); err != nil {
-				return err
-			}
+			c.awsClient.RefreshService(stored.AWSAccessKeyID, stored.AWSSecretAccessKey)
 		}
 	}
 

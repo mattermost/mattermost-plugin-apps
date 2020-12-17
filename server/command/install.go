@@ -6,7 +6,6 @@ package command
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
@@ -77,10 +76,8 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 func (s *service) executeExperimentalInstall(params *params) (*model.CommandResponse, error) {
 	releaseURL := ""
-	name := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&releaseURL, "url", "", "release URL")
-	fs.StringVar(&name, "name", "", "app name")
 
 	err := fs.Parse(params.current)
 	if err != nil {
@@ -88,11 +85,6 @@ func (s *service) executeExperimentalInstall(params *params) (*model.CommandResp
 	}
 
 	err = s.api.AWS.InstallApp(releaseURL)
-	if err != nil {
-		return normalOut(params, nil, err)
-	}
-
-	_, err = s.api.AWS.InvokeLambda(name, "_on_activate", lambda.InvocationTypeEvent, "some input")
 	if err != nil {
 		return normalOut(params, nil, err)
 	}

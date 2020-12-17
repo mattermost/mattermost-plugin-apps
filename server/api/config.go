@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -44,7 +42,6 @@ type Config struct {
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
-	AWSSession             *session.Session
 }
 
 type Configurator interface {

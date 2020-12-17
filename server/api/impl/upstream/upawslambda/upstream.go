@@ -14,10 +14,10 @@ import (
 
 type Upstream struct {
 	app *api.App
-	aws *aws.Service
+	aws *aws.Client
 }
 
-func NewUpstream(app *api.App, aws *aws.Service) *Upstream {
+func NewUpstream(app *api.App, aws *aws.Client) *Upstream {
 	return &Upstream{
 		app: app,
 		aws: aws,

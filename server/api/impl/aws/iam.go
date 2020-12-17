@@ -5,9 +5,9 @@ package aws
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
 )
@@ -38,7 +38,7 @@ type rolePrincipal struct {
 	Service string
 }
 
-func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
+func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
 	// Builds our policy document for IAM.
 	policy := policyDocument{
 		Version: "2012-10-17",
@@ -62,15 +62,17 @@ func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
 	policyName := "my_cool_policy_name"
 
 	arn := ""
-	iamService := s.iam()
+	iamService := c.Service().iam
 	out, err := iamService.CreatePolicy(&iam.CreatePolicyInput{
 		PolicyDocument: aws.String(string(b)),
 		PolicyName:     &policyName,
 	})
 	if err != nil {
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+		awsErr, ok := err.(awserr.Error)
+		if !ok || awsErr.Code() != iam.ErrCodeEntityAlreadyExistsException {
 			return "", errors.Wrap(err, "can't create default lambda function policy")
 		}
+
 		if err = iamService.ListPoliciesPages(&iam.ListPoliciesInput{},
 			func(page *iam.ListPoliciesOutput, lastPage bool) bool {
 				for _, pol := range page.Policies {
@@ -88,14 +90,14 @@ func (s *Service) makeLambdaFunctionDefaultPolicy() (string, error) {
 		arn = *out.Policy.Arn
 	}
 
-	role, err := s.createRole(arn)
+	role, err := c.createRole(arn)
 	if err != nil {
 		return "", errors.Wrap(err, "can't create role")
 	}
 	return role, nil
 }
 
-func (s *Service) createRole(policyARN string) (string, error) {
+func (c *Client) createRole(policyARN string) (string, error) {
 	rolePolicy := rolePolicyDocument{
 		Version: "2012-10-17",
 		Statement: []rolePolicyStatementEntry{
@@ -114,15 +116,17 @@ func (s *Service) createRole(policyARN string) (string, error) {
 	}
 	roleName := "my_cool_role_name1"
 	roleARN := ""
-	iamService := s.iam()
+	iamService := c.Service().iam
 	out, err := iamService.CreateRole(&iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(string(b)),
 		RoleName:                 &roleName,
 	})
 	if err != nil {
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+		awsErr, ok := err.(awserr.Error)
+		if !ok || awsErr.Code() != iam.ErrCodeEntityAlreadyExistsException {
 			return "", errors.Wrap(err, "can't create default lambda function role")
 		}
+
 		if err = iamService.ListRolesPages(&iam.ListRolesInput{},
 			func(page *iam.ListRolesOutput, lastPage bool) bool {
 				for _, r := range page.Roles {
@@ -145,8 +149,5 @@ func (s *Service) createRole(policyARN string) (string, error) {
 			return "", errors.Wrap(err, "can't attach role policy")
 		}
 	}
-	// return "arn:aws:iam::471983363333:role/service-role/install-role-b6frb83t", nil
-	// time.Sleep(2 * time.Second)
-	// return *out.Role.Arn, nil
 	return roleARN, nil
 }

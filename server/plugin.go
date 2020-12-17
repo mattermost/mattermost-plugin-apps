@@ -57,9 +57,14 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	conf := configurator.NewConfigurator(mm, p.BuildConfig, botUserID)
+	stored := api.StoredConfig{}
+	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+
+	awsClient := aws.NewAWSClient(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, &mm.Log)
+
+	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
 	store := store.NewStore(mm, conf)
-	proxy := proxy.NewProxy(mm, conf, store)
+	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
 	p.api = &api.Service{
 		Mattermost:   mm,
@@ -67,7 +72,7 @@ func (p *Plugin) OnActivate() error {
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
 		Admin:        admin.NewAdmin(mm, conf, store, proxy),
-		AWS:          aws.NewAWS(conf),
+		AWS:          awsClient,
 	}
 	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
 

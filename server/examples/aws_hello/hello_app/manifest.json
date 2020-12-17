@@ -1,6 +1,6 @@
 {
-	"app_id": "hello_app",
-	"name": "hello_app",
+	"app_id": "awsHello",
+	"name": "awsHello",
 	"lambda_functions": [{
 		"name": "on_activate",
 		"handler": "index.handler",
