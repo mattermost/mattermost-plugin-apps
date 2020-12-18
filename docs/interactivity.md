@@ -746,6 +746,7 @@ This page shows the payloads for browser request/responses, and App server reque
     "context": {
         "app_id": "hello",
         "location": "send",
+        "post_id": "jgbzgehjqirkb8mn38axjktufw",
         "team_id": "qe5ken7k9f8rdp5bqnfhhs5nzy",
         "channel_id": "zanqhwfdtjfi8yqyapd5qh6udh"
     },
