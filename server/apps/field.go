@@ -36,8 +36,6 @@ type Field struct {
 
 	// Select props
 	SelectRefresh       bool           `json:"refresh,omitempty"`
-	SelectOnChangeURL   string         `json:"on_change_url,omitempty"`
-	SelectSourceURL     string         `json:"source_url,omitempty"`
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 	Multiselect         bool           `json:"multiselect,omitempty"`
 
