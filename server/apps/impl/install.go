@@ -32,10 +32,10 @@ func (s *service) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	oAuthApp, err := s.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
-	if err != nil {
-		return nil, "", err
-	}
+		oAuthApp, err := s.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		if err != nil {
+			return nil, "", err
+		}
 	app.OAuth2ClientID = oAuthApp.Id
 	app.OAuth2ClientSecret = oAuthApp.ClientSecret
 	app.OAuth2TrustedApp = in.OAuth2TrustedApp
@@ -48,7 +48,7 @@ func (s *service) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	resp, err := s.API.Call(
 		&apps.Call{
 			URL: app.Manifest.RootURL + apps.AppInstallPath,
-			Values: map[string]string{
+			Values: map[string]interface{}{
 				apps.PropBotAccessToken:     app.BotAccessToken,
 				apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 			},

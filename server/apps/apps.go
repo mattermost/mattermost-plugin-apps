@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -34,6 +36,10 @@ func (s *Service) GetApp(appID AppID) (*App, error) {
 
 func (s *Service) StoreApp(app *App) error {
 	conf := s.Configurator.GetConfig()
+	if conf.StoredConfig == nil {
+		return errors.New("conf is nil")
+	}
+
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
 	}

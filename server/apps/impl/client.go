@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -48,7 +49,15 @@ func (c *client) PostCall(call *apps.Call) (*apps.CallResponse, error) {
 		return nil, err
 	}
 
-	resp, err := c.post(app, call.Context.ActingUserID, call.URL, call)
+	u := call.URL
+	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+		if !strings.HasPrefix(u, "/") {
+			u = "/" + u
+		}
+		u = app.Manifest.RootURL + u
+	}
+
+	resp, err := c.post(app, call.Context.ActingUserID, u, call)
 	if err != nil {
 		return nil, err
 	}

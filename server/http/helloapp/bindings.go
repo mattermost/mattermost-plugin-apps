@@ -25,12 +25,13 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 			Location: apps.LocationChannelHeader,
 			Bindings: []*apps.Binding{
 				{
-					Location:    "send",
-					Label:       "Survey a user",
-					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
-					Hint:        "Send survey to a user",
-					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurveyModal,
+					Location:     "send",
+					Label:        "Survey a user",
+					Icon:         "https://www.clipartmax.com/png/middle/243-2431175_hello-hello-icon-png.png",
+					Hint:         "Send survey to a user",
+					Description:  "Send a customized emotional response survey to a user",
+					Call:         sendSurveyModal,
+					Presentation: "modal",
 				},
 			},
 		}, {
@@ -44,11 +45,12 @@ func (h *helloapp) bindings(w http.ResponseWriter, req *http.Request, claims *ap
 					Call:        sendSurvey, // will use ActingUserID by default
 				},
 				{
-					Location:    "send",
-					Label:       "Survey a user",
-					Hint:        "Send survey to a user",
-					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurveyModal,
+					Location:     "send",
+					Label:        "Survey a user",
+					Hint:         "Send survey to a user",
+					Description:  "Send a customized emotional response survey to a user",
+					Call:         sendSurveyModal,
+					Presentation: "modal",
 				},
 			},
 		},

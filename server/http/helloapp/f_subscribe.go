@@ -37,7 +37,7 @@ func (h *helloapp) fSubscribe(w http.ResponseWriter, req *http.Request, claims *
 		return http.StatusOK, nil
 	}
 
-	channelName := c.Values["channel"]
+	channelName := c.GetValue("channel", "")
 	if channelName == "" {
 		out := apps.CallResponse{
 			Type:  apps.CallResponseTypeError,

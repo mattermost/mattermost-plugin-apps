@@ -6,6 +6,8 @@ type Form struct {
 	Footer string `json:"footer,omitempty"`
 	Icon   string `json:"icon,omitempty"`
 
+	Call *Call `json:"call,omitempty"`
+
 	// SubmitButtons refers to a field name that must be a FieldTypeStaticSelect
 	// or FieldTypeDynamicSelect.
 	//

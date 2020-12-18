@@ -23,6 +23,10 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
+
+	if call.Context == nil {
+		call.Context = &apps.Context{}
+	}
 	call.Context.ActingUserID = actingUserID
 
 	res, err := a.apps.API.Call(call)

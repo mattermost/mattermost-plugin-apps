@@ -1,6 +1,7 @@
 package helloapp
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -11,10 +12,47 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Call) *apps.CallResponse {
+type SurveyFormSubmission struct {
+	UserID  string                 `json:"userID"`
+	Message string                 `json:"message"`
+	Other   map[string]interface{} `json:"other"`
+}
+
+func extractSurveyFormValues(c *apps.Call) SurveyFormSubmission {
 	message := ""
+	userID := ""
+	var other map[string]interface{} = nil
 	if c.Context != nil && c.Context.Post != nil {
 		message = c.Context.Post.Message
+	}
+
+	topValues := c.Values
+	if topValues != nil && topValues["values"] != nil {
+		if values, ok := topValues["values"].(map[string]interface{}); ok {
+			userID, _ = values["userID"].(string)
+			message, _ = values["message"].(string)
+			otherTemp, ok2 := values["other"].(map[string]interface{})
+			if ok2 {
+				other = otherTemp
+			} else {
+				other = nil
+			}
+		}
+	}
+
+	return SurveyFormSubmission{
+		UserID:  userID,
+		Message: message,
+		Other:   other,
+	}
+}
+
+func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Call) *apps.CallResponse {
+	submission := extractSurveyFormValues(c)
+	name, _ := c.Values["name"].(string)
+
+	if name == "userID" {
+		submission.Message = fmt.Sprintf("%s Now sending to %s.", submission.Message, submission.UserID)
 	}
 
 	return &apps.CallResponse{
@@ -31,6 +69,17 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 					Label:            "user",
 					AutocompleteHint: "enter user ID or @user",
 					ModalLabel:       "User",
+					SelectRefresh:    true,
+					Value:            submission.UserID,
+				}, {
+					Name:             "other",
+					Type:             apps.FieldTypeDynamicSelect,
+					Description:      "Some values",
+					Label:            "other",
+					AutocompleteHint: "Pick one",
+					ModalLabel:       "Other",
+					SelectRefresh:    true,
+					Value:            submission.Other,
 				}, {
 					Name:             fieldMessage,
 					Type:             apps.FieldTypeText,
@@ -42,7 +91,7 @@ func (h *helloapp) newSendSurveyFormResponse(claims *apps.JWTClaims, c *apps.Cal
 					ModalLabel:       "Text",
 					TextMinLength:    2,
 					TextMaxLength:    1024,
-					Value:            message,
+					Value:            submission.Message,
 				},
 			},
 		},
@@ -55,6 +104,17 @@ func (h *helloapp) fSendSurvey(w http.ResponseWriter, req *http.Request, claims 
 	switch c.Type {
 	case apps.CallTypeForm:
 		out = h.newSendSurveyFormResponse(claims, c)
+	case apps.CallTypeLookup:
+		out = &apps.CallResponse{
+			Data: map[string]interface{}{
+				"items": []*apps.SelectOption{
+					{
+						Label: "Option 1",
+						Value: "option1",
+					},
+				},
+			},
+		}
 
 	case apps.CallTypeSubmit:
 		userID := c.GetValue(fieldUserID, c.Context.ActingUserID)

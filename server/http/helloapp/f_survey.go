@@ -13,6 +13,7 @@ func (h *helloapp) newSurveyForm(message string) *apps.Form {
 		Header:        message,
 		Footer:        "Let the world know!",
 		SubmitButtons: fieldResponse,
+		Call:          h.makeCall(PathSendSurvey),
 		Fields: []*apps.Field{
 			{
 				Name: fieldResponse,
