@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -26,37 +25,22 @@ func NewUpstream(app *api.App) *Upstream {
 	return &Upstream{app.Manifest.HTTPRootURL, app.Secret}
 }
 
-func (u *Upstream) Notify(call *api.Call) error {
-	resp, err := u.invoke(call.Context.BotUserID, call)
-	if resp != nil {
-		resp.Body.Close()
-	}
-	return err
+func (u *Upstream) OneWay(call *api.Call) error {
+	go func() {
+		resp, _ := u.invoke(call.Context.BotUserID, call)
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+	return nil
 }
 
-func (u *Upstream) Call(call *api.Call) *api.CallResponse {
-	resp, err := u.invoke(call.Context.ActingUserID, call)
-	if err != nil {
-		return api.NewErrorCallResponse(err)
-	}
-	defer resp.Body.Close()
-
-	cr := api.CallResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&cr)
-	if err != nil {
-		return api.NewErrorCallResponse(err)
-	}
-	return &cr
-}
-
-func (u *Upstream) GetBindings(call *api.Call) ([]*api.Binding, error) {
-	resp, err := u.invoke(call.Context.BotUserID, call)
+func (u *Upstream) Roundtrip(call *api.Call) (io.ReadCloser, error) {
+	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	return upstream.DecodeBindingsResponse(resp.Body)
+	return resp.Body, nil
 }
 
 func (u *Upstream) invoke(fromMattermostUserID string, call *api.Call) (*http.Response, error) {

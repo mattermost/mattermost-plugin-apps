@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/pkg/errors"
 )
 
@@ -53,7 +54,7 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		}
 		bindingsCall.Context = cc
 
-		bindings, err := up.GetBindings(bindingsCall)
+		bindings, err := upstream.GetBindings(up, bindingsCall)
 		if err != nil {
 			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
 		}

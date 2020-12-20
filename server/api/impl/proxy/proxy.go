@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/uphttp"
 )
@@ -49,7 +50,7 @@ func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallR
 	clone := *c
 	clone.Context = cc
 
-	return up.Call(&clone)
+	return upstream.Call(up, &clone)
 }
 
 func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {
@@ -79,16 +80,14 @@ func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {
 		if err != nil {
 			return err
 		}
-		go func() {
-			_ = up.Notify(call)
-		}()
-		return nil
+		return upstream.Notify(up, call)
 	}
 
 	for _, sub := range subs {
 		err := notify(sub)
 		if err != nil {
-			return err
+			// TODO log err
+			continue
 		}
 	}
 	return nil

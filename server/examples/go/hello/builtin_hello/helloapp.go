@@ -1,6 +1,11 @@
 package builtin_hello
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/pkg/errors"
@@ -47,20 +52,33 @@ func Manifest() *api.Manifest {
 	}
 }
 
-func (h *helloapp) Call(c *api.Call) *api.CallResponse {
+func (h *helloapp) Roundtrip(c *api.Call) (io.ReadCloser, error) {
+	cr := &api.CallResponse{}
 	switch c.URL {
+	case api.BindingsPath:
+		cr = &api.CallResponse{
+			Type: api.CallResponseTypeOK,
+			Data: hello.Bindings(),
+		}
+
 	case api.DefaultInstallCallPath:
-		return h.Install(c)
+		cr = h.Install(c)
 	case hello.PathSendSurvey:
-		return h.SendSurvey(c)
+		cr = h.SendSurvey(c)
 	case hello.PathSurvey:
-		return h.Survey(c)
+		cr = h.Survey(c)
 	default:
-		return api.NewErrorCallResponse(errors.Errorf("%s is not found", c.URL))
+		return nil, errors.Errorf("%s is not found", c.URL)
 	}
+
+	bb, err := json.Marshal(cr)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) Notify(call *api.Call) error {
+func (h *helloapp) OneWay(call *api.Call) error {
 	switch call.Context.Subject {
 	case api.SubjectUserJoinedChannel:
 		h.HelloApp.UserJoinedChannel(call)
@@ -82,10 +100,6 @@ func (h *helloapp) Install(c *api.Call) *api.CallResponse {
 		Type:     api.CallResponseTypeOK,
 		Markdown: out,
 	}
-}
-
-func (h *helloapp) GetBindings(c *api.Call) ([]*api.Binding, error) {
-	return hello.Bindings(), nil
 }
 
 func (h *helloapp) SendSurvey(c *api.Call) *api.CallResponse {

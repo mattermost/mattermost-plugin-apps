@@ -4,15 +4,16 @@
 package api
 
 import (
+	"io"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Upstream interface {
-	GetBindings(*Call) ([]*Binding, error)
-	Call(*Call) *CallResponse
-	Notify(*Call) error
+	Roundtrip(call *Call) (io.ReadCloser, error)
+	OneWay(call *Call) error
 }
 
 type JWTClaims struct {
