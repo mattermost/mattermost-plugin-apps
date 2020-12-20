@@ -13,16 +13,16 @@ const (
 )
 
 type Expand struct {
-	App        ExpandLevel `json:"app"`
-	ActingUser ExpandLevel `json:"acting_user"`
+	App        ExpandLevel `json:"app,omitempty"`
+	ActingUser ExpandLevel `json:"acting_user,omitempty"`
 
 	// ActingUserAccessToken instruct the proxy to include OAuth2 access token
 	// in the request. If the token is not available or is invalid, the user is
 	// directed to the OAuth2 flow, and the Call is executed upon completion.
-	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token"`
+	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 
 	// AdminAccessToken instructs the proxy to include an admin access token.
-	AdminAccessToken ExpandLevel `json:"admin_access_token"`
+	AdminAccessToken ExpandLevel `json:"admin_access_token,omitempty"`
 
 	Channel    ExpandLevel `json:"channel,omitempty"`
 	Mentioned  ExpandLevel `json:"mentioned,omitempty"`

@@ -5,14 +5,14 @@ import (
 )
 
 func Bindings() []*api.Binding {
-	sendSurvey := api.MakeCall(PathSendSurvey)
+	justSend := api.MakeCall(PathSendSurvey)
 
-	clone := *sendSurvey
-	clone.Expand = &api.Expand{Post: api.ExpandAll}
+	modal := api.MakeCall(PathSendSurvey)
+	modal.Type = api.CallTypeForm
 
-	sendSurveyModal := &clone
-	sendSurveyModal.Type = api.CallTypeForm
-
+	modalFromPost := api.MakeCall(PathSendSurvey)
+	modalFromPost.Type = api.CallTypeForm
+	modalFromPost.Expand = &api.Expand{Post: api.ExpandAll}
 	return []*api.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
@@ -24,7 +24,7 @@ func Bindings() []*api.Binding {
 					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurveyModal,
+					Call:        modal,
 				},
 			},
 		}, {
@@ -35,14 +35,14 @@ func Bindings() []*api.Binding {
 					Label:       "Survey myself",
 					Hint:        "Send survey to myself",
 					Description: "Send a customized emotional response survey to myself",
-					Call:        sendSurvey, // will use ActingUserID by default
+					Call:        justSend, // will use ActingUserID by default
 				},
 				{
 					Location:    "send",
 					Label:       "Survey a user",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
-					Call:        sendSurveyModal,
+					Call:        modalFromPost,
 				},
 			},
 		},
@@ -55,7 +55,7 @@ func Bindings() []*api.Binding {
 					Location:    "message",
 					Hint:        "[--user] message",
 					Description: "send a message to a user",
-					Call:        sendSurvey,
+					Call:        justSend,
 				}, {
 					Label:       "manage",
 					Location:    "manage",
