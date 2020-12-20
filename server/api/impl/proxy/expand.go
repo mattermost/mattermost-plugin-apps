@@ -30,22 +30,10 @@ func (p *Proxy) newExpander(cc *api.Context, mm *pluginapi.Client, conf api.Conf
 	return e
 }
 
-// Expand collects the data that is requested in the expand argument, and is not
-// yet collected. It then returns a new Context, filtered down to what is
-// specified in expand.
-func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
+func (e *expander) ExpandForApp(app *api.App, expand *api.Expand) (*api.Context, error) {
 	clone := *e.Context
+	clone.AppID = app.Manifest.AppID
 
-	if e.AppID == "" {
-		return nil, errors.New("must provide AppID")
-	}
-	if e.App == nil {
-		app, err := e.store.LoadApp(e.AppID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to expand app %s", e.AppID)
-		}
-		e.App = app
-	}
 	if e.MattermostSiteURL == "" {
 		mmconf := e.conf.GetMattermostConfig()
 		if mmconf.ServiceSettings.SiteURL != nil {
@@ -54,10 +42,10 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	}
 
 	clone.MattermostSiteURL = e.MattermostSiteURL
-	clone.BotUserID = e.App.BotUserID
+	clone.BotUserID = app.BotUserID
 	if expand == nil {
 		clone.ExpandedContext = api.ExpandedContext{
-			BotAccessToken: e.App.BotAccessToken,
+			BotAccessToken: app.BotAccessToken,
 		}
 		return &clone, nil
 	}
@@ -113,15 +101,15 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	}
 
 	clone.ExpandedContext = api.ExpandedContext{
-		BotAccessToken: e.App.BotAccessToken,
+		BotAccessToken: app.BotAccessToken,
 
-		ActingUser: e.stripUser(e.ActingUser, expand.ActingUser),
-		App:        e.stripApp(expand.App),
-		Channel:    e.stripChannel(expand.Channel),
-		Post:       e.stripPost(e.Post, expand.Post),
-		RootPost:   e.stripPost(e.RootPost, expand.RootPost),
-		Team:       e.stripTeam(expand.Team),
-		User:       e.stripUser(e.User, expand.User),
+		ActingUser: stripUser(e.ActingUser, expand.ActingUser),
+		App:        stripApp(app, expand.App),
+		Channel:    stripChannel(e.Channel, expand.Channel),
+		Post:       stripPost(e.Post, expand.Post),
+		RootPost:   stripPost(e.RootPost, expand.RootPost),
+		Team:       stripTeam(e.Team, expand.Team),
+		User:       stripUser(e.User, expand.User),
 		// TODO Mentioned
 	}
 
@@ -137,7 +125,7 @@ func (e *expander) Expand(expand *api.Expand) (*api.Context, error) {
 	return &clone, nil
 }
 
-func (e *expander) stripUser(user *model.User, level api.ExpandLevel) *model.User {
+func stripUser(user *model.User, level api.ExpandLevel) *model.User {
 	if user == nil || level == api.ExpandAll {
 		return user
 	}
@@ -160,41 +148,41 @@ func (e *expander) stripUser(user *model.User, level api.ExpandLevel) *model.Use
 	}
 }
 
-func (e *expander) stripChannel(level api.ExpandLevel) *model.Channel {
-	if e.Channel == nil || level == api.ExpandAll {
-		return e.Channel
+func stripChannel(channel *model.Channel, level api.ExpandLevel) *model.Channel {
+	if channel == nil || level == api.ExpandAll {
+		return channel
 	}
 	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.Channel{
-		Id:          e.Channel.Id,
-		DeleteAt:    e.Channel.DeleteAt,
-		TeamId:      e.Channel.TeamId,
-		Type:        e.Channel.Type,
-		DisplayName: e.Channel.DisplayName,
-		Name:        e.Channel.Name,
+		Id:          channel.Id,
+		DeleteAt:    channel.DeleteAt,
+		TeamId:      channel.TeamId,
+		Type:        channel.Type,
+		DisplayName: channel.DisplayName,
+		Name:        channel.Name,
 	}
 }
 
-func (e *expander) stripTeam(level api.ExpandLevel) *model.Team {
-	if e.Team == nil || level == api.ExpandAll {
-		return e.Team
+func stripTeam(team *model.Team, level api.ExpandLevel) *model.Team {
+	if team == nil || level == api.ExpandAll {
+		return team
 	}
 	if level != api.ExpandSummary {
 		return nil
 	}
 	return &model.Team{
-		Id:          e.Team.Id,
-		DisplayName: e.Team.DisplayName,
-		Name:        e.Team.Name,
-		Description: e.Team.Description,
-		Email:       e.Team.Email,
-		Type:        e.Team.Type,
+		Id:          team.Id,
+		DisplayName: team.DisplayName,
+		Name:        team.Name,
+		Description: team.Description,
+		Email:       team.Email,
+		Type:        team.Type,
 	}
 }
 
-func (e *expander) stripPost(post *model.Post, level api.ExpandLevel) *model.Post {
+func stripPost(post *model.Post, level api.ExpandLevel) *model.Post {
 	if post == nil || level == api.ExpandAll {
 		return post
 	}
@@ -202,27 +190,27 @@ func (e *expander) stripPost(post *model.Post, level api.ExpandLevel) *model.Pos
 		return nil
 	}
 	return &model.Post{
-		Id:        e.Post.Id,
-		Type:      e.Post.Type,
-		UserId:    e.Post.UserId,
-		ChannelId: e.Post.ChannelId,
-		RootId:    e.Post.RootId,
-		Message:   e.Post.Message,
+		Id:        post.Id,
+		Type:      post.Type,
+		UserId:    post.UserId,
+		ChannelId: post.ChannelId,
+		RootId:    post.RootId,
+		Message:   post.Message,
 	}
 }
 
-func (e *expander) stripApp(level api.ExpandLevel) *api.App {
-	if e.App == nil {
+func stripApp(app *api.App, level api.ExpandLevel) *api.App {
+	if app == nil {
 		return nil
 	}
 
-	app := *e.App
-	app.Secret = ""
-	app.OAuth2ClientSecret = ""
+	clone := *app
+	clone.Secret = ""
+	clone.OAuth2ClientSecret = ""
 
 	switch level {
 	case api.ExpandAll, api.ExpandSummary:
-		return &app
+		return &clone
 	}
 	return nil
 }

@@ -42,50 +42,54 @@ func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallR
 	}
 
 	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
-	expander.App = app
-	cc, err := expander.Expand(c.Expand)
+	cc, err := expander.ExpandForApp(app, c.Expand)
 	if err != nil {
 		return api.NewErrorCallResponse(err)
 	}
 	clone := *c
 	clone.Context = cc
 
-	return up.InvokeCall(&clone)
+	return up.Call(&clone)
 }
 
 func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {
-	app, err := p.store.LoadApp(cc.AppID)
-	if err != nil {
-		return err
-	}
-	up, err := p.upstreamForApp(app)
-	if err != nil {
-		return err
-	}
-
 	subs, err := p.store.LoadSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err
 	}
 
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
-	expander.App = app
-	for _, sub := range subs {
-		req := api.Notification{
-			Subject: subj,
-			Context: &api.Context{},
+
+	notify := func(sub *api.Subscription) error {
+		call := sub.Call
+		if call == nil {
+			return errors.New("nothing to call")
 		}
-		req.Context, err = expander.Expand(sub.Expand)
+		app, err := p.store.LoadApp(sub.AppID)
 		if err != nil {
 			return err
 		}
+		call.Context, err = expander.ExpandForApp(app, call.Expand)
+		if err != nil {
+			return err
+		}
+		call.Context.Subject = subj
 
-		// Always set the AppID for routing the request to the App
-		req.Context.AppID = sub.AppID
-
+		up, err := p.upstreamForApp(app)
+		if err != nil {
+			return err
+		}
 		go func() {
-			_ = up.InvokeNotification(&req)
+			_ = up.Notify(call)
 		}()
+		return nil
+	}
+
+	for _, sub := range subs {
+		err := notify(sub)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

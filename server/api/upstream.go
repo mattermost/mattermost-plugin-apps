@@ -11,8 +11,8 @@ const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Upstream interface {
 	GetBindings(*Call) ([]*Binding, error)
-	InvokeCall(*Call) *CallResponse
-	InvokeNotification(*Notification) error
+	Call(*Call) *CallResponse
+	Notify(*Call) error
 }
 
 type JWTClaims struct {

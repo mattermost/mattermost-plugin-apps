@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -75,6 +75,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, n *api.Notification) {
-	h.HelloApp.UserJoinedChannel(n)
+func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, call *api.Call) (int, error) {
+	h.HelloApp.UserJoinedChannel(call)
+	return http.StatusOK, nil
 }

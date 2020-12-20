@@ -83,10 +83,13 @@ func (h *HelloApp) Install(appID api.AppID, channelDisplayName string, c *api.Ca
 		Subject:   api.SubjectUserJoinedChannel,
 		ChannelID: channel.Id,
 		TeamID:    channel.TeamId,
-		Expand: &api.Expand{
-			Channel: api.ExpandAll,
-			Team:    api.ExpandAll,
-			User:    api.ExpandAll,
+		Call: &api.Call{
+			URL: PathUserJoinedChannel,
+			Expand: &api.Expand{
+				Channel: api.ExpandAll,
+				Team:    api.ExpandAll,
+				User:    api.ExpandAll,
+			},
 		},
 	})
 	if err != nil {

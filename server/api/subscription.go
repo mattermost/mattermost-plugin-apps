@@ -24,16 +24,11 @@ type Subscription struct {
 	ChannelID string `json:"channel_id,omitempty"`
 	TeamID    string `json:"team_id,omitempty"`
 
-	Expand *Expand `json:"expand,omitempty"`
-}
-
-type Notification struct {
-	Subject Subject
-	Context *Context
+	Call *Call
 }
 
 func (sub *Subscription) EqualScope(other *Subscription) bool {
 	s1, s2 := *sub, *other
-	s1.Expand, s2.Expand = nil, nil
+	s1.Call, s2.Call = nil, nil
 	return s1 == s2
 }

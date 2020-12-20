@@ -169,7 +169,7 @@ func (c *Client) installApp(appName string, functions []functionInstallData) err
 // CreateFunction method creates lambda function
 func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
 	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
-		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %s %s %s %s %s", zipFile, function, handler, resource, runtime)
+		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", zipFile, function, handler, resource, runtime)
 	}
 
 	contents, err := ioutil.ReadAll(zipFile)

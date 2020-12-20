@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
@@ -25,18 +26,16 @@ func NewUpstream(app *api.App) *Upstream {
 	return &Upstream{app.Manifest.HTTPRootURL, app.Secret}
 }
 
-func (u *Upstream) InvokeNotification(n *api.Notification) error {
-	// TODO
-	resp, err := u.post("", u.rootURL+"/notify/"+string(n.Subject), n)
-	if err != nil {
-		return err
+func (u *Upstream) Notify(call *api.Call) error {
+	resp, err := u.invoke(call.Context.BotUserID, call)
+	if resp != nil {
+		resp.Body.Close()
 	}
-	defer resp.Body.Close()
-	return nil
+	return err
 }
 
-func (u *Upstream) InvokeCall(call *api.Call) *api.CallResponse {
-	resp, err := u.post(call.Context.ActingUserID, u.rootURL+call.URL, call)
+func (u *Upstream) Call(call *api.Call) *api.CallResponse {
+	resp, err := u.invoke(call.Context.ActingUserID, call)
 	if err != nil {
 		return api.NewErrorCallResponse(err)
 	}
@@ -51,13 +50,23 @@ func (u *Upstream) InvokeCall(call *api.Call) *api.CallResponse {
 }
 
 func (u *Upstream) GetBindings(call *api.Call) ([]*api.Binding, error) {
-	resp, err := u.post(call.Context.ActingUserID, u.rootURL+call.URL, call)
+	resp, err := u.invoke(call.Context.BotUserID, call)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	return upstream.DecodeBindingsResponse(resp.Body)
+}
+
+func (u *Upstream) invoke(fromMattermostUserID string, call *api.Call) (*http.Response, error) {
+	if call == nil {
+		return nil, errors.New("empty call is not valid")
+	}
+	if len(call.URL) == 0 || call.URL[0] != '/' {
+		return nil, errors.Errorf("not a valid call path: %q", call.URL)
+	}
+	return u.post(call.Context.ActingUserID, u.rootURL+call.URL, call)
 }
 
 // post does not close resp.Body, it's the caller's responsibility

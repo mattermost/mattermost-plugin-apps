@@ -5,11 +5,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/examples"
 )
 
-func (h *HelloApp) UserJoinedChannel(n *api.Notification) {
+func (h *HelloApp) UserJoinedChannel(call *api.Call) {
 	go func() {
-		bot := examples.AsBot(n.Context)
+		bot := examples.AsBot(call.Context)
 
-		err := sendSurvey(bot, n.Context.UserID, "welcome to channel")
+		err := sendSurvey(bot, call.Context.UserID, "welcome to channel")
 		if err != nil {
 			h.API.Mattermost.Log.Error("error sending survey", "err", err.Error())
 		}

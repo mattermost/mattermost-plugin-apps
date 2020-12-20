@@ -1,7 +1,6 @@
 package http_hello
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -40,12 +39,11 @@ func Init(router *mux.Router, appsService *api.Service) {
 	r := router.PathPrefix(api.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	handleCall(r, api.DefaultInstallCallPath, h.Install)
-	handleCall(r, api.DefaultBindingsCallPath, h.GetBindings)
-
-	handleCall(r, hello.PathSendSurvey, h.SendSurvey)
-	handleCall(r, hello.PathSurvey, h.Survey)
-	handleNotify(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
+	handle(r, api.DefaultInstallCallPath, h.Install)
+	handle(r, api.DefaultBindingsCallPath, h.GetBindings)
+	handle(r, hello.PathSendSurvey, h.SendSurvey)
+	handle(r, hello.PathSurvey, h.Survey)
+	handle(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
@@ -71,10 +69,9 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 		})
 }
 
-type callHandler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *api.Call) (int, error)
-type notifyHandler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *api.Notification)
+type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *api.Call) (int, error)
 
-func handleCall(r *mux.Router, path string, h callHandler) {
+func handle(r *mux.Router, path string, h handler) {
 	r.HandleFunc(path,
 		func(w http.ResponseWriter, req *http.Request) {
 			claims, err := checkJWT(req)
@@ -93,27 +90,6 @@ func handleCall(r *mux.Router, path string, h callHandler) {
 			if err != nil && status != 0 && status != http.StatusOK {
 				httputils.WriteJSONStatus(w, status, err)
 			}
-		},
-	).Methods("POST")
-}
-
-func handleNotify(r *mux.Router, path string, h notifyHandler) {
-	r.HandleFunc(path,
-		func(w http.ResponseWriter, req *http.Request) {
-			claims, err := checkJWT(req)
-			if err != nil {
-				httputils.WriteBadRequestError(w, err)
-				return
-			}
-
-			data := api.Notification{}
-			err = json.NewDecoder(req.Body).Decode(&data)
-			if err != nil {
-				httputils.WriteBadRequestError(w, err)
-				return
-			}
-
-			h(w, req, claims, &data)
 		},
 	).Methods("POST")
 }

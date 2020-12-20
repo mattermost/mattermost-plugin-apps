@@ -2,7 +2,7 @@ package builtin_hello
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/pkg/errors"
 )
 
@@ -47,7 +47,7 @@ func Manifest() *api.Manifest {
 	}
 }
 
-func (h *helloapp) InvokeCall(c *api.Call) *api.CallResponse {
+func (h *helloapp) Call(c *api.Call) *api.CallResponse {
 	switch c.URL {
 	case api.DefaultInstallCallPath:
 		return h.Install(c)
@@ -60,11 +60,13 @@ func (h *helloapp) InvokeCall(c *api.Call) *api.CallResponse {
 	}
 }
 
-func (h *helloapp) InvokeNotification(n *api.Notification) error {
-	if n.Subject != api.SubjectUserJoinedChannel {
-		return errors.Errorf("%s is supported", n.Subject)
+func (h *helloapp) Notify(call *api.Call) error {
+	switch call.Context.Subject {
+	case api.SubjectUserJoinedChannel:
+		h.HelloApp.UserJoinedChannel(call)
+	default:
+		return errors.Errorf("%s is not supported", call.Context.Subject)
 	}
-	h.HelloApp.UserJoinedChannel(n)
 	return nil
 }
 

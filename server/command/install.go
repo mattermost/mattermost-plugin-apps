@@ -29,12 +29,12 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 	err := fs.Parse(params.current)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	app, _, err := s.api.Admin.ProvisionApp(
@@ -49,7 +49,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		},
 	)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	conf := s.api.Configurator.GetConfig()
@@ -59,12 +59,12 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(manifest, appSecret, conf.PluginURL, params.commandArgs))
 	if err != nil {
-		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
+		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
 
 	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	return &model.CommandResponse{
@@ -81,12 +81,12 @@ func (s *service) executeExperimentalInstall(params *params) (*model.CommandResp
 
 	err := fs.Parse(params.current)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	err = s.api.AWS.InstallApp(releaseURL)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	return &model.CommandResponse{

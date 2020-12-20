@@ -20,5 +20,5 @@ func (s *service) executeInfo(params *params) (*model.CommandResponse, error) {
 		conf.BuildHash,
 		conf.BuildDate)
 
-	return normalOut(params, resp, nil)
+	return out(params, resp)
 }
