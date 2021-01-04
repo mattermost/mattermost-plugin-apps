@@ -73,6 +73,22 @@ ifneq ($(HAS_SERVER),)
 	golangci-lint run ./...
 endif
 
+## Generates mock golang interfaces for testing
+.PHONY: mock clean_mock
+mock:
+ifneq ($(HAS_SERVER),)
+	go install github.com/golang/mock/mockgen
+	mockgen -destination server/api/mock_api/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/api AppServices
+	mockgen -destination server/api/mock_api/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/api Proxy
+endif
+
+## Generates mock golang interfaces for testing
+clean_mock:
+ifneq ($(HAS_SERVER),)
+	rm -rf ./server/apps/mockapi
+endif
+
+
 ## Builds the server, if it exists, for all supported architectures.
 .PHONY: server
 server:

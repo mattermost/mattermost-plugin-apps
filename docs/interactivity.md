@@ -6,7 +6,8 @@ This page shows the payloads for browser request/responses, and App server reque
 
 <details><summary>Request from Browser</summary>
 
-`GET` http://localhost:8065/plugins/com.mattermost.apps/api/v1/bindings?user_id=mum5qskypidf3x3enkindgajrh&channel_id=zanqhwfdtjfi8yqyapd5qh6udh&scope=webapp
+`GET` /plugins/com.mattermost.apps/api/v1/bindings?user_id=ws4o4macctyn5ko8uhkkxmgfur&channel_id=qphz13bzbf8c7j778tdnaw3huc&scope=webapp
+
 </details>
 
 <details><summary>Response to Browser</summary>
@@ -14,100 +15,173 @@ This page shows the payloads for browser request/responses, and App server reque
 ```json
 [
     {
-        "app_id": "hello",
         "location": "/channel_header",
         "bindings": [
             {
-                "app_id": "hello",
+                "app_id": "builtin",
                 "location": "send",
-                "presentation": "modal",
-                "icon": "https://www.clipartmax.com/png/middle/243-2431175_hello-hello-icon-png.png",
+                "icon": "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
                 "label": "Survey a user",
                 "hint": "Send survey to a user",
                 "description": "Send a customized emotional response survey to a user",
                 "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send",
-                    "type": "form",
-                    "expand": {
-                        "post": "All"
-                    }
+                    "url": "/send",
+                    "type": "form"
+                }
+            },
+            {
+                "app_id": "http-hello",
+                "location": "send",
+                "icon": "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+                "label": "Survey a user",
+                "hint": "Send survey to a user",
+                "description": "Send a customized emotional response survey to a user",
+                "call": {
+                    "url": "/send",
+                    "type": "form"
                 }
             }
         ]
     },
     {
-        "app_id": "hello",
         "location": "/post_menu",
         "bindings": [
             {
-                "app_id": "hello",
+                "app_id": "builtin",
                 "location": "send-me",
                 "label": "Survey myself",
                 "hint": "Send survey to myself",
                 "description": "Send a customized emotional response survey to myself",
                 "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send"
+                    "url": "/send"
                 }
             },
             {
-                "app_id": "hello",
+                "app_id": "builtin",
                 "location": "send",
-                "presentation": "modal",
                 "label": "Survey a user",
                 "hint": "Send survey to a user",
                 "description": "Send a customized emotional response survey to a user",
                 "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send",
+                    "url": "/send",
                     "type": "form",
                     "expand": {
-                        "post": "All"
+                        "post": "all"
+                    }
+                }
+            },
+            {
+                "app_id": "http-hello",
+                "location": "send-me",
+                "label": "Survey myself",
+                "hint": "Send survey to myself",
+                "description": "Send a customized emotional response survey to myself",
+                "call": {
+                    "url": "/send"
+                }
+            },
+            {
+                "app_id": "http-hello",
+                "location": "send",
+                "label": "Survey a user",
+                "hint": "Send survey to a user",
+                "description": "Send a customized emotional response survey to a user",
+                "call": {
+                    "url": "/send",
+                    "type": "form",
+                    "expand": {
+                        "post": "all"
                     }
                 }
             }
         ]
     },
     {
-        "app_id": "hello",
         "location": "/command",
         "bindings": [
             {
-                "app_id": "hello",
+                "app_id": "builtin",
                 "location": "message",
                 "label": "message",
                 "hint": "[--user] message",
                 "description": "send a message to a user",
                 "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send"
+                    "url": "/send"
                 }
             },
             {
-                "app_id": "hello",
+                "app_id": "builtin",
                 "location": "manage",
                 "label": "manage",
                 "hint": "subscribe | unsubscribe ",
                 "description": "manage channel subscriptions to greet new users",
                 "bindings": [
                     {
-                        "app_id": "hello",
+                        "app_id": "builtin",
                         "location": "subscribe",
                         "label": "subscribe",
                         "hint": "[--channel]",
                         "description": "subscribes a channel to greet new users",
                         "call": {
-                            "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/subscribe",
+                            "url": "/subscribe",
                             "values": {
                                 "mode": "on"
                             }
                         }
                     },
                     {
-                        "app_id": "hello",
+                        "app_id": "builtin",
                         "location": "unsubscribe",
                         "label": "unsubscribe",
                         "hint": "[--channel]",
                         "description": "unsubscribes a channel from greeting new users",
                         "call": {
-                            "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/subscribe",
+                            "url": "/subscribe",
+                            "values": {
+                                "mode": "off"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "app_id": "http-hello",
+                "location": "message",
+                "label": "message",
+                "hint": "[--user] message",
+                "description": "send a message to a user",
+                "call": {
+                    "url": "/send"
+                }
+            },
+            {
+                "app_id": "http-hello",
+                "location": "manage",
+                "label": "manage",
+                "hint": "subscribe | unsubscribe ",
+                "description": "manage channel subscriptions to greet new users",
+                "bindings": [
+                    {
+                        "app_id": "http-hello",
+                        "location": "subscribe",
+                        "label": "subscribe",
+                        "hint": "[--channel]",
+                        "description": "subscribes a channel to greet new users",
+                        "call": {
+                            "url": "/subscribe",
+                            "values": {
+                                "mode": "on"
+                            }
+                        }
+                    },
+                    {
+                        "app_id": "http-hello",
+                        "location": "unsubscribe",
+                        "label": "unsubscribe",
+                        "hint": "[--channel]",
+                        "description": "unsubscribes a channel from greeting new users",
+                        "call": {
+                            "url": "/subscribe",
                             "values": {
                                 "mode": "off"
                             }
@@ -123,111 +197,119 @@ This page shows the payloads for browser request/responses, and App server reque
 </details>
 
 <details><summary>Request to App server</summary>
+`POST` /plugins/com.mattermost.apps/example/hello/bindings
 
-`GET` http://localhost:8065/plugins/com.mattermost.apps/hello/bindings?acting_user_id=mum5qskypidf3x3enkindgajrh&channel_id=zanqhwfdtjfi8yqyapd5qh6udh
-
+```json
+{
+    "url":"/bindings",
+    "context":{
+        "app_id":"",
+        "acting_user_id":"ws4o4macctyn5ko8uhkkxmgfur",
+        "user_id":"ws4o4macctyn5ko8uhkkxmgfur",
+        "team_id":"",
+        "channel_id":"qphz13bzbf8c7j778tdnaw3huc",
+        "mattermost_site_url":""
+    }
+}
+```
 </details>
 
 <details><summary>Response from App server</summary>
 
 ```json
-[
-    {
-        "location": "/channel_header",
-        "bindings": [
-            {
-                "location": "send",
-                "icon": "https://www.clipartmax.com/png/middle/243-2431175_hello-hello-icon-png.png",
-                "presentation": "modal",
-                "label": "Survey a user",
-                "hint": "Send survey to a user",
-                "description": "Send a customized emotional response survey to a user",
-                "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send",
-                    "type": "form",
-                    "expand": {
-                        "post": "All"
+{
+    "data": [
+        {
+            "location": "/channel_header",
+            "bindings": [
+                {
+                    "location": "send",
+                    "icon": "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+                    "label": "Survey a user",
+                    "hint": "Send survey to a user",
+                    "description": "Send a customized emotional response survey to a user",
+                    "call": {
+                        "url": "/send",
+                        "type": "form"
                     }
                 }
-            }
-        ]
-    },
-    {
-        "location": "/post_menu",
-        "bindings": [
-            {
-                "location": "send-me",
-                "label": "Survey myself",
-                "hint": "Send survey to myself",
-                "description": "Send a customized emotional response survey to myself",
-                "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send"
-                }
-            },
-            {
-                "location": "send",
-                "label": "Survey a user",
-                "presentation": "modal",
-                "hint": "Send survey to a user",
-                "description": "Send a customized emotional response survey to a user",
-                "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send",
-                    "type": "form",
-                    "expand": {
-                        "post": "All"
+            ]
+        },
+        {
+            "location": "/post_menu",
+            "bindings": [
+                {
+                    "location": "send-me",
+                    "label": "Survey myself",
+                    "hint": "Send survey to myself",
+                    "description": "Send a customized emotional response survey to myself",
+                    "call": {
+                        "url": "/send"
                     }
-                }
-            }
-        ]
-    },
-    {
-        "location": "/command",
-        "bindings": [
-            {
-                "location": "message",
-                "label": "message",
-                "hint": "[--user] message",
-                "description": "send a message to a user",
-                "call": {
-                    "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/send"
-                }
-            },
-            {
-                "location": "manage",
-                "label": "manage",
-                "hint": "subscribe | unsubscribe ",
-                "description": "manage channel subscriptions to greet new users",
-                "bindings": [
-                    {
-                        "location": "subscribe",
-                        "label": "subscribe",
-                        "hint": "[--channel]",
-                        "description": "subscribes a channel to greet new users",
-                        "call": {
-                            "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/subscribe",
-                            "values": {
-                                "mode": "on"
-                            }
-                        }
-                    },
-                    {
-                        "location": "unsubscribe",
-                        "label": "unsubscribe",
-                        "hint": "[--channel]",
-                        "description": "unsubscribes a channel from greeting new users",
-                        "call": {
-                            "url": "https://mickmister.ngrok.io/plugins/com.mattermost.apps/hello/subscribe",
-                            "values": {
-                                "mode": "off"
-                            }
+                },
+                {
+                    "location": "send",
+                    "label": "Survey a user",
+                    "hint": "Send survey to a user",
+                    "description": "Send a customized emotional response survey to a user",
+                    "call": {
+                        "url": "/send",
+                        "type": "form",
+                        "expand": {
+                            "post": "all"
                         }
                     }
-                ]
-            }
-        ]
-    }
-]
-```
+                }
+            ]
+        },
+        {
+            "location": "/command",
+            "bindings": [
+                {
+                    "location": "message",
+                    "label": "message",
+                    "hint": "[--user] message",
+                    "description": "send a message to a user",
+                    "call": {
+                        "url": "/send"
+                    }
+                },
+                {
+                    "location": "manage",
+                    "label": "manage",
+                    "hint": "subscribe | unsubscribe ",
+                    "description": "manage channel subscriptions to greet new users",
+                    "bindings": [
+                        {
+                            "location": "subscribe",
+                            "label": "subscribe",
+                            "hint": "[--channel]",
+                            "description": "subscribes a channel to greet new users",
+                            "call": {
+                                "url": "/subscribe",
+                                "values": {
+                                    "mode": "on"
+                                }
+                            }
+                        },
+                        {
+                            "location": "unsubscribe",
+                            "label": "unsubscribe",
+                            "hint": "[--channel]",
+                            "description": "unsubscribes a channel from greeting new users",
+                            "call": {
+                                "url": "/subscribe",
+                                "values": {
+                                    "mode": "off"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}            ```
 </details>
 
 ## Clicked Post Dropdown
