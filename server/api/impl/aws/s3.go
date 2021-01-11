@@ -12,7 +12,7 @@ import (
 // S3FileDownload is used to download files from the S3
 func (c *Client) S3FileDownload(bucket, item string) ([]byte, error) {
 	var buffer aws.WriteAtBuffer
-	_, err := a.Service().s3Downloader.Download(&buffer, &s3.GetObjectInput{
+	_, err := c.Service().s3Downloader.Download(&buffer, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(item),
 	})
