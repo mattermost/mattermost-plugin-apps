@@ -24,7 +24,7 @@ type FunctionType string
 
 const (
 	awsLambdaFunction FunctionType = "aws_lambda"
-	httpFunction                   = "http"
+	httpFunction      FunctionType = "http"
 )
 
 func (ft FunctionType) IsValid() bool {
@@ -39,7 +39,7 @@ type AssetType string
 
 const (
 	s3Asset   AssetType = "s3_asset"
-	httpAsset           = "http_asset"
+	httpAsset AssetType = "http_asset"
 )
 
 func (at AssetType) IsValid() bool {
