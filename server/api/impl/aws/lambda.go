@@ -13,13 +13,16 @@ import (
 )
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
-func (c *Client) InvokeLambda(appName, functionName, invocationType string, request interface{}) ([]byte, error) {
+func (c *Client) InvokeLambda(appID, appVersion, functionName, invocationType string, request interface{}) ([]byte, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error marshaling request payload")
 	}
 
-	name := getFunctionName(appName, functionName)
+	name, err := getFunctionName(appID, appVersion, functionName)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get function name")
+	}
 
 	result, err := c.Service().lambda.Invoke(&lambda.InvokeInput{
 		FunctionName:   aws.String(name),

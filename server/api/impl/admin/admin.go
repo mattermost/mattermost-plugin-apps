@@ -6,17 +6,19 @@ package admin
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 )
 
 type Admin struct {
-	mm    *pluginapi.Client
-	conf  api.Configurator
-	store api.Store
-	proxy api.Proxy
+	mm        *pluginapi.Client
+	conf      api.Configurator
+	store     api.Store
+	proxy     api.Proxy
+	awsClient *aws.Client
 }
 
 var _ api.Admin = (*Admin)(nil)
 
-func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy) *Admin {
-	return &Admin{mm, conf, store, proxy}
+func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy, awsClient *aws.Client) *Admin {
+	return &Admin{mm, conf, store, proxy, awsClient}
 }

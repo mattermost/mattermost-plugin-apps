@@ -6,11 +6,13 @@ const (
 	AppID          = "awsHello"
 	AppDisplayName = "AWS Hello App display name"
 	AppDescription = "AWS Hello App description"
+	AppVersion     = "v0.0.1"
 )
 
 func Manifest() *api.Manifest {
 	return &api.Manifest{
 		AppID:       AppID,
+		Version:     AppVersion,
 		Type:        api.AppTypeAWSLambda,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,

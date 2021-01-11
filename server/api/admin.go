@@ -13,6 +13,7 @@ type Admin interface {
 	ListApps() ([]*App, md.MD, error)
 	InstallApp(*Context, SessionToken, *InInstallApp) (*App, md.MD, error)
 	ProvisionApp(*Context, SessionToken, *InProvisionApp) (*App, md.MD, error)
+	SynchronizeApps() error
 }
 
 type InInstallApp struct {

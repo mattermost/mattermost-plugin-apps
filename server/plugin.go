@@ -71,7 +71,7 @@ func (p *Plugin) OnActivate() error {
 		Configurator: conf,
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
-		Admin:        admin.NewAdmin(mm, conf, store, proxy),
+		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient),
 		AWS:          awsClient,
 	}
 	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
@@ -86,6 +86,11 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
+
+	if err := p.api.Admin.SynchronizeApps(); err != nil {
+		return errors.Wrap(err, "can't synchronize apps")
+	}
+
 	return nil
 }
 

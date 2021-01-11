@@ -14,7 +14,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
 // DefaultRegion describes default region in aws
@@ -30,8 +34,9 @@ type Client struct {
 
 // Service hold AWS clients for each service.
 type Service struct {
-	lambda *lambda.Lambda
-	iam    *iam.IAM
+	lambda       lambdaiface.LambdaAPI
+	iam          iamiface.IAMAPI
+	s3Downloader s3manageriface.DownloaderAPI
 }
 
 type log interface {
@@ -72,8 +77,9 @@ func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
 // NewService creates a new instance of Service.
 func NewService(sess *session.Session) *Service {
 	return &Service{
-		lambda: lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
-		iam:    iam.New(sess),
+		lambda:       lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		iam:          iam.New(sess),
+		s3Downloader: s3manager.NewDownloader(sess),
 	}
 }
 
