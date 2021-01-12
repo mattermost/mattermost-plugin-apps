@@ -20,13 +20,15 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"info":                s.executeInfo,
-		"install":             s.executeInstall,
-		"debug-install-hello": s.executeDebugInstallHello,
-		"debug-clean":         s.executeDebugClean,
-		"debug-bindings":      s.executeDebugBindings,
-		"debug-embedded":      s.executeDebugEmbedded,
-		"experimental":        s.executeExperimentalInstall,
+		"debug-bindings":        s.executeDebugBindings,
+		"debug-clean":           s.executeDebugClean,
+		"debug-install-builtin": s.executeDebugInstallBuiltinHello,
+		"debug-install-http":    s.executeDebugInstallHTTPHello,
+		"debug-install-aws":     s.executeDebugInstallAWSHello,
+		"experimental":          s.executeExperimentalInstall,
+		"info":                  s.executeInfo,
+		"list":                  s.executeList,
+		"install":               s.executeInstall,
 	}
 
 	return runSubcommand(subcommands, in)
@@ -37,17 +39,15 @@ func runSubcommand(
 	params *params,
 ) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
-		return normalOut(params, md.MD("TODO usage"),
-			errors.New("expected a (sub-)command"))
+		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
 	if params.current[0] == "help" {
-		return normalOut(params, md.MD("TODO usage"), nil)
+		return out(params, md.MD("TODO usage"))
 	}
 
 	f := subcommands[params.current[0]]
 	if f == nil {
-		return normalOut(params, md.MD("TODO usage"),
-			errors.Errorf("unknown command: %s", params.current[0]))
+		return errorOut(params, errors.Errorf("unknown command: %s", params.current[0]))
 	}
 
 	p := *params
