@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/configurator"
 )
 
 var BuildHash string
@@ -13,7 +13,7 @@ var BuildDate string
 func main() {
 	plugin.ClientMain(
 		NewPlugin(
-			&api.BuildConfig{
+			&configurator.BuildConfig{
 				Manifest:       manifest,
 				BuildHash:      BuildHash,
 				BuildHashShort: BuildHashShort,

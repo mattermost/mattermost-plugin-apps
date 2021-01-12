@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +33,7 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO check for sysadmin
 
-	var sub api.Subscription
+	var sub apps.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return
@@ -43,9 +43,9 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	// deduplicate, etc.
 	switch r.Method {
 	case http.MethodPost:
-		err = a.api.AppServices.Subscribe(&sub)
+		err = a.apps.API.Subscribe(&sub)
 	case http.MethodDelete:
-		err = a.api.AppServices.Unsubscribe(&sub)
+		err = a.apps.API.Unsubscribe(&sub)
 	default:
 	}
 	if err != nil {

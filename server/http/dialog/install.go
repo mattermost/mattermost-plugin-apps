@@ -8,18 +8,18 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
-	Manifest      *api.Manifest
+	Manifest      *apps.Manifest
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -42,7 +42,7 @@ func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, comma
 			Default:     secret,
 		},
 	}
-	if manifest.RequestedPermissions.Contains(api.PermissionActAsUser) {
+	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -69,7 +69,7 @@ func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, comma
 
 	return model.OpenDialogRequest{
 		TriggerId: commandArgs.TriggerId,
-		URL:       pluginURL + api.InteractiveDialogPath + InstallPath,
+		URL:       pluginURL + apps.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
 			Title:            "Install App - " + manifest.DisplayName,
 			IntroductionText: intro.String(),
@@ -94,10 +94,9 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
 		return
 	}
-	session, err := d.api.Mattermost.Session.Get(sessionID)
+	session, err := d.apps.Mattermost.Session.Get(sessionID)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err)
-		return
 	}
 
 	var dialogRequest model.SubmitDialogRequest
@@ -132,14 +131,14 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app, out, err := d.api.Admin.InstallApp(
-		&api.Context{
+	app, out, err := d.apps.API.InstallApp(
+		&apps.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
 			TeamID:       stateData.TeamID,
 		},
-		api.SessionToken(session.Token),
-		&api.InInstallApp{
+		apps.SessionToken(session.Token),
+		&apps.InInstallApp{
 			OAuth2TrustedApp:   noUserConsentForOAuth2,
 			AppSecret:          secret,
 			GrantedPermissions: stateData.Manifest.RequestedPermissions,
@@ -151,7 +150,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_ = d.api.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
+	_ = d.apps.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
 		Message: out.String(),
 	})
 }
