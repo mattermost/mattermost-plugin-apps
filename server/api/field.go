@@ -24,7 +24,7 @@ type Field struct {
 	IsRequired bool      `json:"is_required,omitempty"`
 
 	// Present (default) value of the field
-	Value string `json:"value,omitempty"`
+	Value interface{} `json:"value,omitempty"`
 
 	Description string `json:"description,omitempty"`
 
@@ -35,9 +35,8 @@ type Field struct {
 	ModalLabel string `json:"modal_label"`
 
 	// Select props
-	SelectRefreshOnChangeTo []string       `json:"refresh_on_change_to,omitempty"`
-	SelectSourceURL         string         `json:"source_url,omitempty"`
-	SelectStaticOptions     []SelectOption `json:"options,omitempty"`
+	SelectRefresh       bool           `json:"refresh,omitempty"`
+	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
 	// Text props
 	TextSubtype   string `json:"subtype,omitempty"`
