@@ -62,5 +62,4 @@ func (s *Store) DeleteApp(app *api.App) error {
 		return err
 	}
 	return s.conf.StoreConfig(conf.StoredConfig)
-
 }
