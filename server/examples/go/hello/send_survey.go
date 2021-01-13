@@ -74,6 +74,7 @@ func NewSendSurveyFormResponse(c *api.Call) *api.CallResponse {
 					AutocompleteHint:     "enter user ID or @user",
 					AutocompletePosition: 1,
 					Value:                submission.UserID,
+					SelectRefresh:        true,
 				}, {
 					Name:             "other",
 					Type:             api.FieldTypeDynamicSelect,
@@ -81,7 +82,6 @@ func NewSendSurveyFormResponse(c *api.Call) *api.CallResponse {
 					Label:            "other",
 					AutocompleteHint: "Pick one",
 					ModalLabel:       "Other",
-					SelectRefresh:    true,
 					Value:            submission.Other,
 				}, {
 					Name:             fieldMessage,
