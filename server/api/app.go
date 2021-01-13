@@ -95,6 +95,10 @@ type Manifest struct {
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`
 
+	Delete    *Call `json:"delete,omitempty"`
+	Upgrade   *Call `json:"upgrade,omitempty"`
+	Downgrade *Call `json:"downgrade,omitempty"`
+
 	// Deployment manifest for hostable apps will include path->invoke mappings
 	Functions []Function
 	Assets    []Asset
