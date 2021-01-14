@@ -5,22 +5,19 @@ package command
 
 import (
 	"fmt"
-	"os"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	sdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/aws"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
+// Manifest is loaded from a URL for convenience, it really should be provided
+// as text/JSON or as a file.
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
 	manifestURL := ""
 	appSecret := ""
@@ -32,42 +29,42 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 	err := fs.Parse(params.current)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
-	manifest, err := s.apps.Client.GetManifest(manifestURL)
+	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
-	app, _, err := s.apps.API.ProvisionApp(
-		&apps.Context{
+	app, _, err := s.api.Admin.ProvisionApp(
+		&api.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		apps.SessionToken(params.commandArgs.Session.Token),
-		&apps.InProvisionApp{
-			ManifestURL: manifestURL,
-			AppSecret:   appSecret,
-			Force:       force,
+		api.SessionToken(params.commandArgs.Session.Token),
+		&api.InProvisionApp{
+			Manifest:  manifest,
+			AppSecret: appSecret,
+			Force:     force,
 		},
 	)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
-	conf := s.apps.Configurator.GetConfig()
+	conf := s.api.Configurator.GetConfig()
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
-	err = s.apps.Mattermost.Frontend.OpenInteractiveDialog(
+	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(manifest, appSecret, conf.PluginURL, params.commandArgs))
 	if err != nil {
-		return normalOut(params, nil, errors.Wrap(err, "couldn't open an interactive dialog"))
+		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
 
-	team, err := s.apps.Mattermost.Team.Get(params.commandArgs.TeamId)
+	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
 	return &model.CommandResponse{
@@ -79,38 +76,18 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 
 func (s *service) executeExperimentalInstall(params *params) (*model.CommandResponse, error) {
 	releaseURL := ""
-	secret := ""
-	id := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&releaseURL, "url", "", "release URL")
-	fs.StringVar(&id, "id", "", "AWS Access Key ID")
-	fs.StringVar(&secret, "secret", "", "AWS Secret access key")
 
 	err := fs.Parse(params.current)
 	if err != nil {
-		return normalOut(params, nil, err)
+		return errorOut(params, err)
 	}
 
-	config := &sdk.Config{
-		Region:      sdk.String("us-east-2"),
-		Credentials: credentials.NewStaticCredentials(id, secret, ""),
+	err = s.api.AWS.InstallApp(releaseURL)
+	if err != nil {
+		return errorOut(params, err)
 	}
-	logger := log.New()
-	logger.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
-	// Output to stdout instead of the default stderr.
-	logger.SetOutput(os.Stdout)
-
-	client := aws.NewAWSClientWithConfig(config, logger)
-	if err = client.InstallApp(releaseURL); err != nil {
-		return normalOut(params, nil, err)
-	}
-	// An example of the function Invoke
-	// res, err := client.InvokeFunction("my_app_my_func", "blabla")
-	// if err != nil {
-	// 	return normalOut(params, nil, err)
-	// }
 
 	return &model.CommandResponse{
 		Text:         fmt.Sprintf("installed lambda functions from url %s.", releaseURL),

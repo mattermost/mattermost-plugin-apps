@@ -7,7 +7,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
 type Service interface {
@@ -20,7 +20,7 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(router *mux.Router, apps *apps.Service, initf ...func(*mux.Router, *apps.Service)) Service {
+func NewService(router *mux.Router, apps *api.Service, initf ...func(*mux.Router, *api.Service)) Service {
 	for _, f := range initf {
 		f(router, apps)
 	}
