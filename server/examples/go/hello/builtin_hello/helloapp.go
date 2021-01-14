@@ -65,6 +65,10 @@ func (h *helloapp) Roundtrip(c *api.Call) (io.ReadCloser, error) {
 		cr = h.Install(c)
 	case hello.PathSendSurvey:
 		cr = h.SendSurvey(c)
+	case hello.PathSendSurveyModal:
+		cr = h.SendSurveyModal(c)
+	case hello.PathSendSurveyCommandToModal:
+		cr = h.SendSurveyCommandToModal(c)
 	case hello.PathSurvey:
 		cr = h.Survey(c)
 	default:
@@ -116,9 +120,28 @@ func (h *helloapp) SendSurvey(c *api.Call) *api.CallResponse {
 			Type:     api.CallResponseTypeOK,
 			Markdown: txt,
 		}
+	case api.CallTypeLookup:
+		return &api.CallResponse{
+			Data: map[string]interface{}{
+				"items": []*api.SelectOption{
+					{
+						Label: "Option 1",
+						Value: "option1",
+					},
+				},
+			},
+		}
 	}
 
 	return nil
+}
+
+func (h *helloapp) SendSurveyModal(c *api.Call) *api.CallResponse {
+	return hello.NewSendSurveyFormResponse(c)
+}
+
+func (h *helloapp) SendSurveyCommandToModal(c *api.Call) *api.CallResponse {
+	return hello.NewSendSurveyPartialFormResponse(c)
 }
 
 func (h *helloapp) Survey(c *api.Call) *api.CallResponse {
