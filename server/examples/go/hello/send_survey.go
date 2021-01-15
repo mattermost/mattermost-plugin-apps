@@ -78,10 +78,17 @@ func sendSurvey(bot examples.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
+
+	call := api.MakeCall(PathSurvey)
+	call.Context = &api.Context{
+		AppID: "http-hello",
+	}
+
 	p.AddProp(api.PropAppBindings, []*api.Binding{
 		{
 			Location: "survey",
 			Form:     NewSurveyForm(message),
+			Call:     call,
 		},
 	})
 	_, err := bot.DMPost(userID, p)

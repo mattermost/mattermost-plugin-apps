@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
@@ -50,7 +51,42 @@ func (p *Proxy) Call(debugSessionToken api.SessionToken, c *api.Call) *api.CallR
 	clone := *c
 	clone.Context = cc
 
-	return upstream.Call(up, &clone)
+	resp := upstream.Call(up, &clone)
+
+	p.updatePostIfNeeded(c, resp)
+
+	return resp
+}
+
+func (p *Proxy) updatePostIfNeeded(c *api.Call, resp *api.CallResponse) {
+	if api.LocationInPost.In(c.Context.Location) && resp.Type == api.CallResponseTypeUpdateEmbedded {
+		if resp.Data != nil {
+			if updatedPost, parseErr := postFromInterface(resp.Data); parseErr == nil {
+				updatedPost.Id = c.Context.PostID
+				// TODO More checks on the post to use for Update
+				err := p.mm.Post.UpdatePost(updatedPost)
+				if err != nil {
+					p.mm.Log.Debug("error updating", "error", err.Error())
+				}
+				// TODO Log error?
+			}
+		}
+	}
+}
+
+func postFromInterface(v interface{}) (*model.Post, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+
+	var post model.Post
+	err = json.Unmarshal(b, &post)
+	if err != nil {
+		return nil, err
+	}
+
+	return &post, nil
 }
 
 func (p *Proxy) Notify(cc *api.Context, subj api.Subject) error {

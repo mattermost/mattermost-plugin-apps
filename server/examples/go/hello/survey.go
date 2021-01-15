@@ -2,6 +2,7 @@ package hello
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func NewSurveyForm(message string) *api.Form {
@@ -31,7 +32,17 @@ func NewSurveyFormResponse(c *api.Call) *api.CallResponse {
 	}
 }
 
-func (h *HelloApp) ProcessSurvey(c *api.Call) error {
-	// TODO post something; for embedded form - what do we do?
-	return nil
+func (h *HelloApp) ProcessSurvey(c *api.Call) *api.CallResponse {
+	if api.LocationInPost.In(c.Context.Location) {
+		return &api.CallResponse{
+			Type: api.CallResponseTypeUpdateEmbedded,
+			Data: &model.Post{
+				Message: "Survey submitted. Thanks!",
+			},
+		}
+	}
+	return &api.CallResponse{
+		Type:     api.CallResponseTypeOK,
+		Markdown: "Survey submitted. Thanks!",
+	}
 }

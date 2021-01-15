@@ -127,14 +127,7 @@ func (h *helloapp) Survey(c *api.Call) *api.CallResponse {
 		return hello.NewSurveyFormResponse(c)
 
 	case api.CallTypeSubmit:
-		err := h.ProcessSurvey(c)
-		if err != nil {
-			return api.NewErrorCallResponse(err)
-		}
-		return &api.CallResponse{
-			Type:     api.CallResponseTypeOK,
-			Markdown: "<><> TODO",
-		}
+		return h.ProcessSurvey(c)
 	}
 	return nil
 }

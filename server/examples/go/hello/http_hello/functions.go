@@ -61,14 +61,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 		out = hello.NewSurveyFormResponse(c)
 
 	case api.CallTypeSubmit:
-		err := h.ProcessSurvey(c)
-		if err != nil {
-			return http.StatusInternalServerError, err
-		}
-		out = &api.CallResponse{
-			Type:     api.CallResponseTypeOK,
-			Markdown: "<><> TODO",
-		}
+		out = h.ProcessSurvey(c)
 	}
 
 	httputils.WriteJSON(w, out)
