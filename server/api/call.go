@@ -65,7 +65,8 @@ const (
 	CallResponseTypeNavigate = CallResponseType("navigate")
 
 	// CallResponseTypeUpdateEmbedded indicates that the embedded form that triggered
-	// the call should be updated with the information withing.
+	// the call should be updated with the information within. It expects a Post
+	// in the Data attribute.
 	CallResponseTypeUpdateEmbedded = CallResponseType("update_embedded")
 )
 
