@@ -49,7 +49,7 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	if install == nil {
 		install = api.DefaultInstallCall
 	}
-	install.Values = map[string]string{
+	install.Values = map[string]interface{}{
 		api.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
 	install.Context = cc

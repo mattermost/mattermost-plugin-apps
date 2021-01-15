@@ -18,6 +18,8 @@ const (
 	// CallTypeCancel is used for for the (rare?) case of when the form with
 	// SubmitOnCancel set is dismissed by the user.
 	CallTypeCancel = CallType("cancel")
+	// CallTypeLookup is used to fetch items for dynamic select elements
+	CallTypeLookup = CallType("lookup")
 )
 
 // A Call invocation is supplied a BotAccessToken as part of the context. If a
@@ -31,12 +33,12 @@ const (
 // TODO: what if a call needs a token and it was not provided? Return a call to
 // itself with Expand.
 type Call struct {
-	URL        string            `json:"url,omitempty"`
-	Type       CallType          `json:"type,omitempty"`
-	Values     map[string]string `json:"values,omitempty"`
-	Context    *Context          `json:"context,omitempty"`
-	RawCommand string            `json:"raw_command,omitempty"`
-	Expand     *Expand           `json:"expand,omitempty"`
+	URL        string                 `json:"url,omitempty"`
+	Type       CallType               `json:"type,omitempty"`
+	Values     map[string]interface{} `json:"values,omitempty"`
+	Context    *Context               `json:"context,omitempty"`
+	RawCommand string                 `json:"raw_command,omitempty"`
+	Expand     *Expand                `json:"expand,omitempty"`
 }
 
 type CallResponseType string
@@ -130,7 +132,7 @@ func MakeCall(url string, namevalues ...string) *Call {
 		URL: url,
 	}
 
-	values := map[string]string{}
+	values := map[string]interface{}{}
 	for len(namevalues) > 0 {
 		switch len(namevalues) {
 		case 1:
@@ -149,8 +151,21 @@ func MakeCall(url string, namevalues ...string) *Call {
 }
 
 func (c *Call) GetValue(name, defaultValue string) string {
-	if len(c.Values) == 0 || c.Values[name] == "" {
+	if len(c.Values) == 0 {
 		return defaultValue
 	}
-	return c.Values[name]
+
+	s, ok := c.Values[name].(string)
+	if ok && s != "" {
+		return s
+	}
+
+	opt, ok := c.Values[name].(map[string]interface{})
+	if ok {
+		if v, ok2 := opt["value"].(string); ok2 {
+			return v
+		}
+	}
+
+	return defaultValue
 }
