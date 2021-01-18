@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -18,25 +17,16 @@ import (
 // appsMappingsEnvVarName determines an environment variable.
 // Variable saves address of installation's app mapping's file.
 // File is given by a bucket name and key delimited by a `/`
-// example: export APPS_MAPPINGS = "apps/latest_mappings"
-const appsMappingsEnvVarName = "APPS_MAPPINGS"
+// example: export MM_APPS_MAPPINGS = "apps/latest_mappings"
+const appsMappingsEnvVarName = "MM_APPS_MAPPINGS"
 
-const oldVersionKey = "old_version"
-const newVersionKey = "new_version"
+const oldVersionKey = "update_from_version"
 
 // Mappings describes mappings for all the apps in this installation
 // for now it supports lambda functions and static assets
-// appID -> app mapping
+// appID -> app manifest
 type Mappings struct {
-	Apps map[string]Mapping
-}
-
-// Mapping describes a mapping for a specific app in an installation
-type Mapping struct {
-	AppID      string
-	AppVersion string
-	Functions  []api.Function
-	Assets     []api.Asset
+	Apps map[api.AppID]*api.Manifest
 }
 
 // MappingsFromJSON deserializes a list of app mappings from json.
@@ -55,7 +45,6 @@ func (m *Mappings) ToJSON() []byte {
 }
 
 // SynchronizeApps synchronizes apps upgrading, downgrading and deleting apps
-// TODO support install as well? for force installs?
 func (adm *Admin) SynchronizeApps() error {
 	mappingsFile := os.Getenv(appsMappingsEnvVarName)
 	if mappingsFile == "" {
@@ -78,30 +67,53 @@ func (adm *Admin) SynchronizeApps() error {
 		return errors.Wrap(err, "can't deserialize mappings file")
 	}
 
-	apps, _, err := adm.ListApps()
-	if err != nil {
-		return errors.Wrap(err, "can't get apps list")
+	listedApps := adm.store.ListApps()
+
+	listedAppsMap := map[api.AppID]*api.App{}
+	updatedAppVersionsMap := map[api.AppID]string{}
+	// Update apps
+	for _, listedApp := range listedApps {
+		listedAppsMap[listedApp.Manifest.AppID] = listedApp
+		manifest, ok := mappings.Apps[listedApp.Manifest.AppID]
+		if !ok {
+			// TODO should deleting the app be that easy?
+			if err := adm.DeleteApp(listedApp); err != nil {
+				return errors.Wrapf(err, "can't delete an app")
+			}
+		}
+		if manifest.Version != listedApp.Manifest.Version {
+			// update app in proxy plugin
+			oldVersion := listedApp.Manifest.Version
+			listedApp.Manifest.Version = manifest.Version
+			if err := adm.store.StoreApp(listedApp); err != nil {
+				return errors.Wrap(err, "can't store app")
+			}
+			updatedAppVersionsMap[listedApp.Manifest.AppID] = oldVersion
+		}
 	}
 
-	for _, app := range apps {
-		mapping, ok := mappings.Apps[string(app.Manifest.AppID)]
-		if !ok {
-			return adm.DeleteApp(app)
+	// Add new apps as listed
+	for appID, manifest := range mappings.Apps {
+		if _, ok := listedAppsMap[appID]; !ok {
+			if err := adm.AddApp(manifest); err != nil {
+				return errors.Wrap(err, "can't add new app as listed")
+			}
 		}
-		incomingVersion, err := semver.Make(mapping.AppVersion)
-		if err != nil {
-			return errors.Wrapf(err, "can't parse incoming app version from the mappings file - %s", mapping.AppVersion)
-		}
+	}
 
-		currentVersion, err := semver.Make(app.Manifest.Version)
-		if err != nil {
-			return errors.Wrapf(err, "can't parse current app version - %s", app.Manifest.Version)
-		}
-		if incomingVersion.Compare(currentVersion) > 0 {
-			return adm.UpgradeApp(app, mapping.AppVersion)
-		}
-		if incomingVersion.Compare(currentVersion) < 0 {
-			return adm.DowngradeApp(app, mapping.AppVersion)
+	listedAppsUpgraded := adm.store.ListApps()
+
+	// call onInstanceStartup. App migration happens here
+	for _, listedApp := range listedAppsUpgraded {
+		if listedApp.Status == api.AppStatusEnabled {
+			values := map[string]string{}
+			if _, ok := updatedAppVersionsMap[listedApp.Manifest.AppID]; ok {
+				values[oldVersionKey] = updatedAppVersionsMap[listedApp.Manifest.AppID]
+			}
+			// Call onStartup the function of the app
+			if err := adm.call(listedApp, listedApp.Manifest.OnStartup, values); err != nil {
+				adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", listedApp.Manifest.AppID, "err", err.Error())
+			}
 		}
 	}
 
@@ -110,23 +122,8 @@ func (adm *Admin) SynchronizeApps() error {
 
 func (adm *Admin) DeleteApp(app *api.App) error {
 	// Call delete the function of the app
-	delete := app.Manifest.Delete
-	if delete != nil {
-		if delete.Values == nil {
-			delete.Values = map[string]string{}
-		}
-		delete.Values[api.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
-
-		if delete.Expand == nil {
-			delete.Expand = &api.Expand{}
-		}
-		delete.Expand.App = api.ExpandAll
-		delete.Expand.AdminAccessToken = api.ExpandAll
-
-		resp := adm.proxy.Call(adm.adminToken, delete)
-		if resp.Type == api.CallResponseTypeError {
-			return errors.Wrap(resp, "delete failed")
-		}
+	if err := adm.call(app, app.Manifest.Delete, nil); err != nil {
+		return errors.Wrap(err, "delete failed")
 	}
 
 	// delete oauth app
@@ -151,13 +148,29 @@ func (adm *Admin) DeleteApp(app *api.App) error {
 	return nil
 }
 
-func expandCall(call *api.Call, app *api.App, newVersion string) *api.Call {
+func (adm *Admin) AddApp(manifest *api.Manifest) error {
+	newApp := &api.App{}
+	newApp.Manifest = manifest
+	newApp.Status = api.AppStatusListed
+	if err := adm.store.StoreApp(newApp); err != nil {
+		return errors.Wrap(err, "can't store app")
+	}
+	adm.mm.Log.Info("App is listed", "app_id", manifest.AppID)
+	return nil
+}
+
+func (adm *Admin) call(app *api.App, call *api.Call, values map[string]string) error {
+	if call == nil {
+		return nil
+	}
+
 	if call.Values == nil {
 		call.Values = map[string]string{}
 	}
 	call.Values[api.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
-	call.Values[oldVersionKey] = app.Manifest.Version
-	call.Values[newVersionKey] = newVersion
+	for k, v := range values {
+		call.Values[k] = v
+	}
 
 	if call.Expand == nil {
 		call.Expand = &api.Expand{}
@@ -165,43 +178,9 @@ func expandCall(call *api.Call, app *api.App, newVersion string) *api.Call {
 	call.Expand.App = api.ExpandAll
 	call.Expand.AdminAccessToken = api.ExpandAll
 
-	return call
-}
-
-func (adm *Admin) migrateApp(app *api.App, newVersion string, call *api.Call) error {
-	// call the function of the app
-	if call != nil {
-		call = expandCall(call, app, newVersion)
-
-		resp := adm.proxy.Call(adm.adminToken, call)
-		if resp.Type == api.CallResponseTypeError {
-			return errors.Wrap(resp, "migration failed")
-		}
+	resp := adm.proxy.Call(adm.adminToken, call)
+	if resp.Type == api.CallResponseTypeError {
+		return errors.Wrapf(resp, "call %s failed", call.URL)
 	}
-
-	// update app in proxy plugin
-	app.Manifest.Version = newVersion
-	if err := adm.store.StoreApp(app); err != nil {
-		return errors.Wrap(err, "can't store app")
-	}
-
-	return nil
-}
-
-func (adm *Admin) UpgradeApp(app *api.App, newVersion string) error {
-	oldVersion := app.Manifest.Version
-	if err := adm.migrateApp(app, newVersion, app.Manifest.Upgrade); err != nil {
-		return errors.Wrap(err, "can't upgrade app")
-	}
-	adm.mm.Log.Info("App is Upgraded", "app_id", app.Manifest.AppID, "from", oldVersion, "to", newVersion)
-	return nil
-}
-
-func (adm *Admin) DowngradeApp(app *api.App, newVersion string) error {
-	oldVersion := app.Manifest.Version
-	if err := adm.migrateApp(app, newVersion, app.Manifest.Downgrade); err != nil {
-		return errors.Wrap(err, "can't downgrade app")
-	}
-	adm.mm.Log.Info("App is Downgraded", "app_id", app.Manifest.AppID, "from", oldVersion, "to", newVersion)
 	return nil
 }

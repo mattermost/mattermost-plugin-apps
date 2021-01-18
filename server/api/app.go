@@ -47,6 +47,15 @@ func (at AssetType) IsValid() bool {
 		at == httpAsset
 }
 
+// AppStatus describes status of the app
+type AppStatus string
+
+const (
+	AppStatusListed   AppStatus = "listed"
+	AppStatusEnabled  AppStatus = "enabled"
+	AppStatusDisabled AppStatus = "disabled"
+)
+
 // Function describes app's function mapping
 // For now Function can be either AWS Lambda or HTTP function
 type Function struct {
@@ -90,14 +99,12 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	Install *Call `json:"install,omitempty"`
+	Install   *Call `json:"install,omitempty"`
+	Delete    *Call `json:"delete,omitempty"`
+	OnStartup *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`
-
-	Delete    *Call `json:"delete,omitempty"`
-	Upgrade   *Call `json:"upgrade,omitempty"`
-	Downgrade *Call `json:"downgrade,omitempty"`
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
 	Functions []Function
@@ -124,6 +131,7 @@ var DefaultBindingsCall = &Call{
 
 type App struct {
 	Manifest *Manifest `json:"manifest"`
+	Status   AppStatus `json:"app_status"`
 
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`
