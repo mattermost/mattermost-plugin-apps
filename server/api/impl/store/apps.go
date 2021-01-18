@@ -50,3 +50,16 @@ func (s *Store) StoreApp(app *api.App) error {
 
 	return s.conf.StoreConfig(conf.StoredConfig)
 }
+
+func (s *Store) DeleteApp(app *api.App) error {
+	conf := s.conf.GetConfig()
+	delete(conf.Apps, string(app.Manifest.AppID))
+
+	// Refresh the local config immediately, do not wait for the
+	// OnConfigurationChange.
+	err := s.conf.RefreshConfig(conf.StoredConfig)
+	if err != nil {
+		return err
+	}
+	return s.conf.StoreConfig(conf.StoredConfig)
+}

@@ -39,6 +39,9 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	app.OAuth2ClientID = oAuthApp.Id
 	app.OAuth2ClientSecret = oAuthApp.ClientSecret
 	app.OAuth2TrustedApp = in.OAuth2TrustedApp
+	if app.Status == "" || app.Status == api.AppStatusListed {
+		app.Status = api.AppStatusDisabled
+	}
 
 	err = adm.store.StoreApp(app)
 	if err != nil {

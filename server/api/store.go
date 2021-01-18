@@ -9,5 +9,6 @@ type Store interface {
 	LoadSubs(subject Subject, teamID, channelID string) ([]*Subscription, error)
 	ListApps() []*App
 	StoreApp(app *App) error
+	DeleteApp(app *App) error
 	StoreSub(sub *Subscription) error
 }
