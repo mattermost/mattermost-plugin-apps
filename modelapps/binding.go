@@ -1,4 +1,4 @@
-package api
+package modelapps
 
 type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.

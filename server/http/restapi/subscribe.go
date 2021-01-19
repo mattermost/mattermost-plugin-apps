@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
 
@@ -31,21 +33,43 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusUnauthorized
 		return
 	}
-	// TODO check for sysadmin
 
-	var sub api.Subscription
+	// TODO check for sysadmin
+	if !a.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
+        return
+    }
+
+	var sub modelapps.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return
 	}
 
+	sessionID := r.Header.Get("MM_SESSION_ID")
+	if sessionID == "" {
+		err = errors.New("no user session")
+		httputils.WriteUnauthorizedError(w, err)
+		return
+	}
+
+	session, err := a.api.Mattermost.Session.Get(sessionID)
+	if err != nil {
+		httputils.WriteUnauthorizedError(w, err)
+		return
+	}
+
+	conf := a.api.Configurator.GetConfig()
+	token := string(modelapps.SessionToken(session.Token))
+	client := modelapps.NewClient(actingUserID, token, conf.MattermostSiteURL)
+
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	switch r.Method {
 	case http.MethodPost:
-		err = a.api.AppServices.Subscribe(&sub)
+		_, err = client.Subscribe(&sub)
 	case http.MethodDelete:
-		err = a.api.AppServices.Unsubscribe(&sub)
+		_, err = client.Unsubscribe(&sub)
 	default:
 	}
 	if err != nil {

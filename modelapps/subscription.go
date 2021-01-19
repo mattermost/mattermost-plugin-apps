@@ -1,7 +1,9 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package api
+package modelapps
+
+import "encoding/json"
 
 type Subject string
 
@@ -31,4 +33,9 @@ func (sub *Subscription) EqualScope(other *Subscription) bool {
 	s1, s2 := *sub, *other
 	s1.Call, s2.Call = nil, nil
 	return s1 == s2
+}
+
+func (o *Subscription) ToJson() string {
+	b, _ := json.Marshal(o)
+	return string(b)
 }

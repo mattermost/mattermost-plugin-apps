@@ -1,4 +1,4 @@
-package api
+package modelapps
 
 import (
 	"testing"

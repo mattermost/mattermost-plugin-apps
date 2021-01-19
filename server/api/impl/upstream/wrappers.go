@@ -7,44 +7,45 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func Notify(u api.Upstream, call *api.Call) error {
+func Notify(u api.Upstream, call *modelapps.Call) error {
 	return u.OneWay(call)
 }
 
-func Call(u api.Upstream, call *api.Call) *api.CallResponse {
+func Call(u api.Upstream, call *modelapps.Call) *modelapps.CallResponse {
 	r, err := u.Roundtrip(call)
 	if err != nil {
-		return api.NewErrorCallResponse(err)
+		return modelapps.NewErrorCallResponse(err)
 	}
 	defer r.Close()
 
-	cr := api.CallResponse{}
+	cr := modelapps.CallResponse{}
 	err = json.NewDecoder(r).Decode(&cr)
 	if err != nil {
-		return api.NewErrorCallResponse(err)
+		return modelapps.NewErrorCallResponse(err)
 	}
 	return &cr
 }
 
-func GetBindings(u api.Upstream, call *api.Call) ([]*api.Binding, error) {
+func GetBindings(u api.Upstream, call *modelapps.Call) ([]*modelapps.Binding, error) {
 	r, err := u.Roundtrip(call)
 	if err != nil {
 		return nil, err
 	}
 	defer r.Close()
 
-	cr := api.CallResponse{
-		Data: &[]*api.Binding{},
+	cr := modelapps.CallResponse{
+		Data: &[]*modelapps.Binding{},
 	}
 	err = json.NewDecoder(r).Decode(&cr)
 	if err != nil {
 		return nil, err
 	}
 
-	bindings, ok := cr.Data.(*[]*api.Binding)
+	bindings, ok := cr.Data.(*[]*modelapps.Binding)
 	if !ok {
 		return nil, errors.New("failed to decode bindings")
 	}

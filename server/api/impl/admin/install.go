@@ -9,14 +9,17 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in *api.InInstallApp) (*api.App, md.MD, error) {
+func (adm *Admin) InstallApp(cc *modelapps.Context, sessionToken modelapps.SessionToken, in *modelapps.InInstallApp) (*modelapps.App, md.MD, error) {
+
 	// TODO <><> check if acting user is a sysadmin
+
 	app, err := adm.store.LoadApp(cc.AppID)
 	if err != nil {
 		return nil, "", err
@@ -47,7 +50,7 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 
 	install := app.Manifest.Install
 	if install == nil {
-		install = api.DefaultInstallCall
+		install = modelapps.DefaultInstallCall
 	}
 	install.Values = map[string]interface{}{
 		api.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
@@ -55,14 +58,14 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	install.Context = cc
 
 	resp := adm.proxy.Call(sessionToken, install)
-	if resp.Type == api.CallResponseTypeError {
+	if resp.Type == modelapps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
 
 	return app, resp.Markdown, nil
 }
 
-func (adm *Admin) ensureOAuthApp(manifest *api.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+func (adm *Admin) ensureOAuthApp(manifest *modelapps.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	app, err := adm.store.LoadApp(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err

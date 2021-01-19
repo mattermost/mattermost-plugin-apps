@@ -1,23 +1,23 @@
 package hello
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 )
 
-func Bindings() []*api.Binding {
-	justSend := api.MakeCall(PathSendSurvey)
+func Bindings() []*modelapps.Binding {
+	justSend := modelapps.MakeCall(PathSendSurvey)
 
-	modal := api.MakeCall(PathSendSurveyModal)
+	modal := modelapps.MakeCall(PathSendSurveyModal)
 
-	modalFromPost := api.MakeCall(PathSendSurveyModal)
-	modalFromPost.Expand = &api.Expand{Post: api.ExpandAll}
+	modalFromPost := modelapps.MakeCall(PathSendSurveyModal)
+	modalFromPost.Expand = &modelapps.Expand{Post: modelapps.ExpandAll}
 
-	commandToModal := api.MakeCall(PathSendSurveyCommandToModal)
-	return []*api.Binding{
+	commandToModal := modelapps.MakeCall(PathSendSurveyCommandToModal)
+	return []*modelapps.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
-			Location: api.LocationChannelHeader,
-			Bindings: []*api.Binding{
+			Location: modelapps.LocationChannelHeader,
+			Bindings: []*modelapps.Binding{
 				{
 					Location:    "send",
 					Label:       "Survey a user",
@@ -28,8 +28,8 @@ func Bindings() []*api.Binding {
 				},
 			},
 		}, {
-			Location: api.LocationPostMenu,
-			Bindings: []*api.Binding{
+			Location: modelapps.LocationPostMenu,
+			Bindings: []*modelapps.Binding{
 				{
 					Location:    "send-me",
 					Label:       "Survey myself",
@@ -48,8 +48,8 @@ func Bindings() []*api.Binding {
 		},
 		// TODO /Command binding is a placeholder, may not be final, test!
 		{
-			Location: api.LocationCommand,
-			Bindings: []*api.Binding{
+			Location: modelapps.LocationCommand,
+			Bindings: []*modelapps.Binding{
 				{
 					Label:       "message",
 					Location:    "message",
@@ -67,19 +67,19 @@ func Bindings() []*api.Binding {
 					Location:    "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
-					Bindings: []*api.Binding{
+					Bindings: []*modelapps.Binding{
 						{
 							Label:       "subscribe",
 							Location:    "subscribe",
 							Hint:        "[--channel]",
 							Description: "subscribes a channel to greet new users",
-							Call:        api.MakeCall(PathSubscribeChannel, "mode", "on"),
+							Call:        modelapps.MakeCall(PathSubscribeChannel, "mode", "on"),
 						}, {
 							Label:       "unsubscribe",
 							Location:    "unsubscribe",
 							Hint:        "[--channel]",
 							Description: "unsubscribes a channel from greeting new users",
-							Call:        api.MakeCall(PathSubscribeChannel, "mode", "off"),
+							Call:        modelapps.MakeCall(PathSubscribeChannel, "mode", "off"),
 						},
 					},
 				},

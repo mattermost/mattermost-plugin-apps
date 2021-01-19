@@ -1,4 +1,4 @@
-package api
+package modelapps
 
 type FieldType string
 

@@ -1,4 +1,4 @@
-package api
+package modelapps
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"

@@ -1,42 +1,71 @@
-package examples
+package modelapps
 
 import (
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
 
 type Client struct {
 	*model.Client4
+	*ClientPP
 	userID string
 }
 
-func as(id, token string, cc *api.Context) Client {
-	return newClient(id, token, cc.MattermostSiteURL)
+func as(id, token string, cc *Context) Client {
+	return NewClient(id, token, cc.MattermostSiteURL)
 }
 
-func AsBot(cc *api.Context) Client {
+func AsBot(cc *Context) Client {
 	return as(cc.BotUserID, cc.BotAccessToken, cc)
 }
 
-func AsActingUser(cc *api.Context) Client {
+func AsActingUser(cc *Context) Client {
 	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
 }
 
-func AsAdmin(cc *api.Context) Client {
+func AsAdmin(cc *Context) Client {
 	return as(cc.ActingUserID, cc.AdminAccessToken, cc)
 }
 
-func newClient(userID, token, mattermostSiteURL string) Client {
+func NewClient(userID, token, mattermostSiteURL string) Client {
 	client := Client{
 		userID:  userID,
+		ClientPP: NewAPIClientPP(mattermostSiteURL),
 		Client4: model.NewAPIv4Client(mattermostSiteURL),
 	}
 	client.Client4.SetOAuthToken(token)
 	return client
+}
+
+func (client *Client) Subscribe(sub *Subscription) (*model.PluginsResponse, error) {
+	var pluginsRes *model.PluginsResponse
+	var res *model.Response
+
+	pluginsRes, res = client.ClientPP.Subscribe(sub)
+	if res.StatusCode != http.StatusCreated {
+		if res.Error != nil {
+			return nil, res.Error
+		}
+		return nil, fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return pluginsRes, nil
+}
+
+func (client *Client) Unsubscribe(sub *Subscription) (bool, error) {
+	var pluginsRes bool
+	var res *model.Response
+
+	pluginsRes, res = client.ClientPP.Unsubscribe(sub)
+	if res.StatusCode != http.StatusCreated {
+		if res.Error != nil {
+			return false, res.Error
+		}
+		return false, fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return pluginsRes, nil
 }
 
 func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {

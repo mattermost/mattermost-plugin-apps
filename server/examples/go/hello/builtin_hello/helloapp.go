@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/pkg/errors"
@@ -31,37 +32,37 @@ func New(appService *api.Service) *helloapp {
 	}
 }
 
-func Manifest() *api.Manifest {
-	return &api.Manifest{
+func Manifest() *modelapps.Manifest {
+	return &modelapps.Manifest{
 		AppID:       AppID,
-		Type:        api.AppTypeBuiltin,
+		Type:        modelapps.AppTypeBuiltin,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
-		RequestedPermissions: api.Permissions{
-			api.PermissionUserJoinedChannelNotification,
-			api.PermissionActAsUser,
-			api.PermissionActAsBot,
+		RequestedPermissions: modelapps.Permissions{
+			modelapps.PermissionUserJoinedChannelNotification,
+			modelapps.PermissionActAsUser,
+			modelapps.PermissionActAsBot,
 		},
-		RequestedLocations: api.Locations{
-			api.LocationChannelHeader,
-			api.LocationPostMenu,
-			api.LocationCommand,
-			api.LocationInPost,
+		RequestedLocations: modelapps.Locations{
+			modelapps.LocationChannelHeader,
+			modelapps.LocationPostMenu,
+			modelapps.LocationCommand,
+			modelapps.LocationInPost,
 		},
 		HomepageURL: ("https://github.com/mattermost"),
 	}
 }
 
-func (h *helloapp) Roundtrip(c *api.Call) (io.ReadCloser, error) {
-	cr := &api.CallResponse{}
+func (h *helloapp) Roundtrip(c *modelapps.Call) (io.ReadCloser, error) {
+	cr := &modelapps.CallResponse{}
 	switch c.URL {
 	case api.BindingsPath:
-		cr = &api.CallResponse{
-			Type: api.CallResponseTypeOK,
+		cr = &modelapps.CallResponse{
+			Type: modelapps.CallResponseTypeOK,
 			Data: hello.Bindings(),
 		}
 
-	case api.DefaultInstallCallPath:
+	case modelapps.DefaultInstallCallPath:
 		cr = h.Install(c)
 	case hello.PathSendSurvey:
 		cr = h.SendSurvey(c)
@@ -82,9 +83,9 @@ func (h *helloapp) Roundtrip(c *api.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) OneWay(call *api.Call) error {
+func (h *helloapp) OneWay(call *modelapps.Call) error {
 	switch call.Context.Subject {
-	case api.SubjectUserJoinedChannel:
+	case modelapps.SubjectUserJoinedChannel:
 		h.HelloApp.UserJoinedChannel(call)
 	default:
 		return errors.Errorf("%s is not supported", call.Context.Subject)
@@ -92,38 +93,38 @@ func (h *helloapp) OneWay(call *api.Call) error {
 	return nil
 }
 
-func (h *helloapp) Install(c *api.Call) *api.CallResponse {
-	if c.Type != api.CallTypeSubmit {
-		return api.NewErrorCallResponse(errors.New("not supported"))
+func (h *helloapp) Install(c *modelapps.Call) *modelapps.CallResponse {
+	if c.Type != modelapps.CallTypeSubmit {
+		return modelapps.NewErrorCallResponse(errors.New("not supported"))
 	}
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
 	if err != nil {
-		return api.NewErrorCallResponse(err)
+		return modelapps.NewErrorCallResponse(err)
 	}
-	return &api.CallResponse{
-		Type:     api.CallResponseTypeOK,
+	return &modelapps.CallResponse{
+		Type:     modelapps.CallResponseTypeOK,
 		Markdown: out,
 	}
 }
 
-func (h *helloapp) SendSurvey(c *api.Call) *api.CallResponse {
+func (h *helloapp) SendSurvey(c *modelapps.Call) *modelapps.CallResponse {
 	switch c.Type {
-	case api.CallTypeForm:
+	case modelapps.CallTypeForm:
 		return hello.NewSendSurveyFormResponse(c)
 
-	case api.CallTypeSubmit:
+	case modelapps.CallTypeSubmit:
 		txt, err := h.HelloApp.SendSurvey(c)
 		if err != nil {
-			return api.NewErrorCallResponse(err)
+			return modelapps.NewErrorCallResponse(err)
 		}
-		return &api.CallResponse{
-			Type:     api.CallResponseTypeOK,
+		return &modelapps.CallResponse{
+			Type:     modelapps.CallResponseTypeOK,
 			Markdown: txt,
 		}
-	case api.CallTypeLookup:
-		return &api.CallResponse{
+	case modelapps.CallTypeLookup:
+		return &modelapps.CallResponse{
 			Data: map[string]interface{}{
-				"items": []*api.SelectOption{
+				"items": []*modelapps.SelectOption{
 					{
 						Label: "Option 1",
 						Value: "option1",
@@ -136,26 +137,26 @@ func (h *helloapp) SendSurvey(c *api.Call) *api.CallResponse {
 	return nil
 }
 
-func (h *helloapp) SendSurveyModal(c *api.Call) *api.CallResponse {
+func (h *helloapp) SendSurveyModal(c *modelapps.Call) *modelapps.CallResponse {
 	return hello.NewSendSurveyFormResponse(c)
 }
 
-func (h *helloapp) SendSurveyCommandToModal(c *api.Call) *api.CallResponse {
+func (h *helloapp) SendSurveyCommandToModal(c *modelapps.Call) *modelapps.CallResponse {
 	return hello.NewSendSurveyPartialFormResponse(c)
 }
 
-func (h *helloapp) Survey(c *api.Call) *api.CallResponse {
+func (h *helloapp) Survey(c *modelapps.Call) *modelapps.CallResponse {
 	switch c.Type {
-	case api.CallTypeForm:
+	case modelapps.CallTypeForm:
 		return hello.NewSurveyFormResponse(c)
 
-	case api.CallTypeSubmit:
+	case modelapps.CallTypeSubmit:
 		err := h.ProcessSurvey(c)
 		if err != nil {
-			return api.NewErrorCallResponse(err)
+			return modelapps.NewErrorCallResponse(err)
 		}
-		return &api.CallResponse{
-			Type:     api.CallResponseTypeOK,
+		return &modelapps.CallResponse{
+			Type:     modelapps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
 	}

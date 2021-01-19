@@ -12,12 +12,12 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
+func (adm *Admin) ProvisionApp(cc *modelapps.Context, sessionToken modelapps.SessionToken, in *modelapps.InProvisionApp) (*modelapps.App, md.MD, error) {
 	manifest := in.Manifest
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
@@ -34,7 +34,7 @@ func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 		return nil, "", err
 	}
 
-	app := &api.App{
+	app := &modelapps.App{
 		Manifest:       manifest,
 		BotUserID:      bot.UserId,
 		BotUsername:    bot.Username,
@@ -52,7 +52,7 @@ func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 	return app, md, nil
 }
 
-func (adm *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (adm *Admin) ensureBot(manifest *modelapps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

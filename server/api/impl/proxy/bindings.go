@@ -3,13 +3,13 @@ package proxy
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/pkg/errors"
 )
 
-func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
-	out := append([]*api.Binding(nil), bb1...)
+func mergeBindings(bb1, bb2 []*modelapps.Binding) []*modelapps.Binding {
+	out := append([]*modelapps.Binding(nil), bb1...)
 
 	for _, b2 := range bb2 {
 		found := false
@@ -32,10 +32,10 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
+func (p *Proxy) GetBindings(cc *modelapps.Context) ([]*modelapps.Binding, error) {
 	allApps := p.store.ListApps()
 
-	all := []*api.Binding{}
+	all := []*modelapps.Binding{}
 	for _, app := range allApps {
 		appID := app.Manifest.AppID
 		appCC := *cc
@@ -50,7 +50,7 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		// TODO PERF: Fan out the calls, wait for all to complete
 		bindingsCall := app.Manifest.Bindings
 		if bindingsCall == nil {
-			bindingsCall = api.DefaultBindingsCall
+			bindingsCall = modelapps.DefaultBindingsCall
 		}
 		bindingsCall.Context = cc
 
@@ -66,8 +66,8 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *api.App, bindings []*api.Binding, locPrefix api.Location) []*api.Binding {
-	out := []*api.Binding{}
+func (p *Proxy) scanAppBindings(app *modelapps.App, bindings []*modelapps.Binding, locPrefix modelapps.Location) []*modelapps.Binding {
+	out := []*modelapps.Binding{}
 	for _, appB := range bindings {
 		// clone just in case
 		b := *appB

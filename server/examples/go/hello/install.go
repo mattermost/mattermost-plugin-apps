@@ -5,19 +5,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples"
+	"github.com/mattermost/mattermost-plugin-apps/modelapps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (h *HelloApp) Install(appID api.AppID, channelDisplayName string, c *api.Call) (md.MD, error) {
-	if c.Type != api.CallTypeSubmit {
+func (h *HelloApp) Install(appID modelapps.AppID, channelDisplayName string, c *modelapps.Call) (md.MD, error) {
+	if c.Type != modelapps.CallTypeSubmit {
 		return "", errors.New("not supported")
 	}
 
-	bot := examples.AsBot(c.Context)
-	adminClient := examples.AsAdmin(c.Context)
+	bot := modelapps.AsBot(c.Context)
+	adminClient := modelapps.AsAdmin(c.Context)
 
 	var teams []*model.Team
 	var team *model.Team
@@ -78,24 +77,24 @@ func (h *HelloApp) Install(appID api.AppID, channelDisplayName string, c *api.Ca
 	bot.DM(c.Context.ActingUserID, "Posted welcome message to channel.")
 
 	// TODO this should be done using the REST Subs API, for now mock with direct use
-	err := h.API.AppServices.Subscribe(&api.Subscription{
+	_,err := adminClient.Subscribe(&modelapps.Subscription{
 		AppID:     appID,
-		Subject:   api.SubjectUserJoinedChannel,
+		Subject:   modelapps.SubjectUserJoinedChannel,
 		ChannelID: channel.Id,
 		TeamID:    channel.TeamId,
-		Call: &api.Call{
+		Call: &modelapps.Call{
 			URL: PathUserJoinedChannel,
-			Expand: &api.Expand{
-				Channel: api.ExpandAll,
-				Team:    api.ExpandAll,
-				User:    api.ExpandAll,
+			Expand: &modelapps.Expand{
+				Channel: modelapps.ExpandAll,
+				Team:    modelapps.ExpandAll,
+				User:    modelapps.ExpandAll,
 			},
 		},
 	})
 	if err != nil {
 		return "", err
 	}
-	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
+	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", modelapps.SubjectUserJoinedChannel)
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")
 
