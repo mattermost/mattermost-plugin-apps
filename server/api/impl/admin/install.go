@@ -33,7 +33,8 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	client.SetToken(string(sessionToken))
 
 	if in.GrantedPermissions.Contains(api.PermissionActAsUser) {
-		oAuthApp, err := adm.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		var oAuthApp *model.OAuthApp
+		oAuthApp, err = adm.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 		if err != nil {
 			return nil, "", err
 		}
