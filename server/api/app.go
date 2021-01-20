@@ -51,9 +51,9 @@ func (at AssetType) IsValid() bool {
 type AppStatus string
 
 const (
-	AppStatusListed   AppStatus = "listed"
-	AppStatusEnabled  AppStatus = "enabled"
-	AppStatusDisabled AppStatus = "disabled"
+	AppStatusRegistered AppStatus = "registered"
+	AppStatusEnabled    AppStatus = "enabled"
+	AppStatusDisabled   AppStatus = "disabled"
 )
 
 // Function describes app's function mapping
@@ -99,8 +99,8 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	Install   *Call `json:"install,omitempty"`
-	Delete    *Call `json:"delete,omitempty"`
+	OnInstall *Call `json:"install,omitempty"`
+	OnDelete  *Call `json:"delete,omitempty"`
 	OnStartup *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".

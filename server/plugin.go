@@ -89,8 +89,6 @@ func (p *Plugin) OnActivate() error {
 
 	if err := p.api.Admin.SynchronizeApps(); err != nil {
 		mm.Log.Error("Can't synchronize", "err", err.Error())
-		// TODO should we fail or continue?
-		return errors.Wrap(err, "can't synchronize apps")
 	}
 
 	return nil

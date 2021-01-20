@@ -64,55 +64,55 @@ func (adm *Admin) SynchronizeApps() error {
 
 	mappings, err := MappingsFromJSON(resp)
 	if err != nil {
-		return errors.Wrap(err, "can't deserialize mappings file")
+		return errors.Wrapf(err, "can't deserialize mappings file %s/%s", bucket, key)
 	}
 
-	listedApps := adm.store.ListApps()
+	registeredApps := adm.store.ListApps()
 
-	listedAppsMap := map[api.AppID]*api.App{}
+	registeredAppsMap := map[api.AppID]*api.App{}
 	updatedAppVersionsMap := map[api.AppID]string{}
 	// Update apps
-	for _, listedApp := range listedApps {
-		listedAppsMap[listedApp.Manifest.AppID] = listedApp
-		manifest, ok := mappings.Apps[listedApp.Manifest.AppID]
+	for _, registeredApp := range registeredApps {
+		registeredAppsMap[registeredApp.Manifest.AppID] = registeredApp
+		manifest, ok := mappings.Apps[registeredApp.Manifest.AppID]
 		if !ok {
 			// TODO should deleting the app be that easy?
-			if err := adm.DeleteApp(listedApp); err != nil {
+			if err := adm.DeleteApp(registeredApp); err != nil {
 				return errors.Wrapf(err, "can't delete an app")
 			}
 		}
-		if manifest.Version != listedApp.Manifest.Version {
+		if manifest.Version != registeredApp.Manifest.Version {
 			// update app in proxy plugin
-			oldVersion := listedApp.Manifest.Version
-			listedApp.Manifest.Version = manifest.Version
-			if err := adm.store.StoreApp(listedApp); err != nil {
-				return errors.Wrap(err, "can't store app")
+			oldVersion := registeredApp.Manifest.Version
+			registeredApp.Manifest.Version = manifest.Version
+			if err := adm.store.StoreApp(registeredApp); err != nil {
+				return errors.Wrapf(err, "can't store app - %s", registeredApp.Manifest.AppID)
 			}
-			updatedAppVersionsMap[listedApp.Manifest.AppID] = oldVersion
+			updatedAppVersionsMap[registeredApp.Manifest.AppID] = oldVersion
 		}
 	}
 
-	// Add new apps as listed
+	// Add new apps as registered
 	for appID, manifest := range mappings.Apps {
-		if _, ok := listedAppsMap[appID]; !ok {
+		if _, ok := registeredAppsMap[appID]; !ok {
 			if err := adm.AddApp(manifest); err != nil {
-				return errors.Wrap(err, "can't add new app as listed")
+				return errors.Wrapf(err, "can't add new app as registered")
 			}
 		}
 	}
 
-	listedAppsUpgraded := adm.store.ListApps()
+	registeredAppsUpgraded := adm.store.ListApps()
 
 	// call onInstanceStartup. App migration happens here
-	for _, listedApp := range listedAppsUpgraded {
-		if listedApp.Status == api.AppStatusEnabled {
+	for _, registeredApp := range registeredAppsUpgraded {
+		if registeredApp.Status == api.AppStatusEnabled {
 			values := map[string]string{}
-			if _, ok := updatedAppVersionsMap[listedApp.Manifest.AppID]; ok {
-				values[oldVersionKey] = updatedAppVersionsMap[listedApp.Manifest.AppID]
+			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
+				values[oldVersionKey] = updatedAppVersionsMap[registeredApp.Manifest.AppID]
 			}
 			// Call onStartup the function of the app
-			if err := adm.call(listedApp, listedApp.Manifest.OnStartup, values); err != nil {
-				adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", listedApp.Manifest.AppID, "err", err.Error())
+			if err := adm.call(registeredApp, registeredApp.Manifest.OnStartup, values); err != nil {
+				adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
 			}
 		}
 	}
@@ -122,8 +122,8 @@ func (adm *Admin) SynchronizeApps() error {
 
 func (adm *Admin) DeleteApp(app *api.App) error {
 	// Call delete the function of the app
-	if err := adm.call(app, app.Manifest.Delete, nil); err != nil {
-		return errors.Wrap(err, "delete failed")
+	if err := adm.call(app, app.Manifest.OnDelete, nil); err != nil {
+		return errors.Wrapf(err, "delete failed. appID - %s", app.Manifest.AppID)
 	}
 
 	// delete oauth app
@@ -134,13 +134,13 @@ func (adm *Admin) DeleteApp(app *api.App) error {
 	if app.OAuth2ClientID != "" {
 		success, response := client.DeleteOAuthApp(app.OAuth2ClientID)
 		if !success || response.StatusCode != http.StatusNoContent {
-			return errors.Wrap(response.Error, "failed to delete OAuth2 App")
+			return errors.Wrapf(response.Error, "failed to delete OAuth2 App - %s", app.Manifest.AppID)
 		}
 	}
 
 	// delete app from proxy plugin, not removing the data
 	if err := adm.store.DeleteApp(app); err != nil {
-		return errors.Wrap(err, "can't delete app")
+		return errors.Wrapf(err, "can't delete app - %s", app.Manifest.AppID)
 	}
 
 	adm.mm.Log.Info("Deleted the app", "app_id", app.Manifest.AppID)
@@ -151,11 +151,11 @@ func (adm *Admin) DeleteApp(app *api.App) error {
 func (adm *Admin) AddApp(manifest *api.Manifest) error {
 	newApp := &api.App{}
 	newApp.Manifest = manifest
-	newApp.Status = api.AppStatusListed
+	newApp.Status = api.AppStatusRegistered
 	if err := adm.store.StoreApp(newApp); err != nil {
-		return errors.Wrap(err, "can't store app")
+		return errors.Wrapf(err, "can't store app - %s", manifest.AppID)
 	}
-	adm.mm.Log.Info("App is listed", "app_id", manifest.AppID)
+	adm.mm.Log.Info("App is registered", "app_id", manifest.AppID)
 	return nil
 }
 

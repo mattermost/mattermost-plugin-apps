@@ -28,7 +28,7 @@ func Manifest() *api.Manifest {
 			api.LocationInPost,
 		},
 		HomepageURL: ("https://github.com/mattermost"),
-		Install: &api.Call{
+		OnInstall: &api.Call{
 			URL: "on_activate",
 			Expand: &api.Expand{
 				App:              api.ExpandAll,

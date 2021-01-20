@@ -39,7 +39,7 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	app.OAuth2ClientID = oAuthApp.Id
 	app.OAuth2ClientSecret = oAuthApp.ClientSecret
 	app.OAuth2TrustedApp = in.OAuth2TrustedApp
-	if app.Status == "" || app.Status == api.AppStatusListed {
+	if app.Status == "" || app.Status == api.AppStatusRegistered {
 		app.Status = api.AppStatusDisabled
 	}
 
@@ -48,7 +48,7 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 		return nil, "", err
 	}
 
-	install := app.Manifest.Install
+	install := app.Manifest.OnInstall
 	if install == nil {
 		install = api.DefaultInstallCall
 	}
