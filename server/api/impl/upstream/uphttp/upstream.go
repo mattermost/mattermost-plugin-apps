@@ -12,7 +12,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -22,11 +22,11 @@ type Upstream struct {
 	appSecret string
 }
 
-func NewUpstream(app *modelapps.App) *Upstream {
+func NewUpstream(app *apps.App) *Upstream {
 	return &Upstream{app.Manifest.HTTPRootURL, app.Secret}
 }
 
-func (u *Upstream) OneWay(call *modelapps.Call) error {
+func (u *Upstream) OneWay(call *apps.Call) error {
 	go func() {
 		resp, _ := u.invoke(call.Context.BotUserID, call)
 		if resp != nil {
@@ -36,7 +36,7 @@ func (u *Upstream) OneWay(call *modelapps.Call) error {
 	return nil
 }
 
-func (u *Upstream) Roundtrip(call *modelapps.Call) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (u *Upstream) Roundtrip(call *modelapps.Call) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, call *modelapps.Call) (*http.Response, error) {
+func (u *Upstream) invoke(fromMattermostUserID string, call *apps.Call) (*http.Response, error) {
 	if call == nil {
 		return nil, errors.New("empty call is not valid")
 	}

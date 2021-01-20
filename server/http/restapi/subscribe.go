@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
@@ -40,7 +41,7 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-	var sub modelapps.Subscription
+	var sub apps.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
 		return
@@ -60,8 +61,8 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conf := a.api.Configurator.GetConfig()
-	token := string(modelapps.SessionToken(session.Token))
-	client := modelapps.NewClient(actingUserID, token, conf.MattermostSiteURL)
+	token := string(apps.SessionToken(session.Token))
+	client := mmclient.NewClient(actingUserID, token, conf.MattermostSiteURL)
 
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.

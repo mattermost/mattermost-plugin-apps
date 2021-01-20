@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
@@ -25,7 +25,7 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.api.Proxy.GetBindings(modelapps.NewCommandContext(params.commandArgs))
+	bindings, err := s.api.Proxy.GetBindings(apps.NewCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -49,11 +49,11 @@ func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.Comman
     }
 
 	app, _, err := s.api.Admin.ProvisionApp(
-		&modelapps.Context{
+		&apps.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		modelapps.SessionToken(params.commandArgs.Session.Token),
-		&modelapps.InProvisionApp{
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
 			Manifest: manifest,
 			Force:    true,
 		},
@@ -93,11 +93,11 @@ func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandRes
 
 	s.api.Mattermost.Log.Error(fmt.Sprintf("manifest = %v", manifest))
 	app, _, err := s.api.Admin.ProvisionApp(
-		&modelapps.Context{
+		&apps.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		modelapps.SessionToken(params.commandArgs.Session.Token),
-		&modelapps.InProvisionApp{
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
 			Manifest: manifest,
 			Force:    true,
 		},

@@ -10,7 +10,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
@@ -19,7 +19,7 @@ import (
 )
 
 type Proxy struct {
-	builtIn map[modelapps.AppID]api.Upstream
+	builtIn map[apps.AppID]api.Upstream
 
 	mm        *pluginapi.Client
 	conf      api.Configurator
@@ -33,20 +33,20 @@ func NewProxy(mm *pluginapi.Client, awsClient *aws.Client, conf api.Configurator
 	return &Proxy{nil, mm, conf, store, awsClient}
 }
 
-func (p *Proxy) Call(debugSessionToken modelapps.SessionToken, c *modelapps.Call) *modelapps.CallResponse {
+func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.Call) *apps.CallResponse {
 	app, err := p.store.LoadApp(c.Context.AppID)
 	if err != nil {
-		return modelapps.NewErrorCallResponse(err)
+		return apps.NewErrorCallResponse(err)
 	}
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return modelapps.NewErrorCallResponse(err)
+		return apps.NewErrorCallResponse(err)
 	}
 
 	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
 	cc, err := expander.ExpandForApp(app, c.Expand)
 	if err != nil {
-		return modelapps.NewErrorCallResponse(err)
+		return apps.NewErrorCallResponse(err)
 	}
 	clone := *c
 	clone.Context = cc
@@ -54,7 +54,7 @@ func (p *Proxy) Call(debugSessionToken modelapps.SessionToken, c *modelapps.Call
 	return upstream.Call(up, &clone)
 }
 
-func (p *Proxy) Notify(cc *modelapps.Context, subj modelapps.Subject) error {
+func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	subs, err := p.store.LoadSubs(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (p *Proxy) Notify(cc *modelapps.Context, subj modelapps.Subject) error {
 
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
 
-	notify := func(sub *modelapps.Subscription) error {
+	notify := func(sub *apps.Subscription) error {
 		call := sub.Call
 		if call == nil {
 			return errors.New("nothing to call")
@@ -94,15 +94,15 @@ func (p *Proxy) Notify(cc *modelapps.Context, subj modelapps.Subject) error {
 	return nil
 }
 
-func (p *Proxy) upstreamForApp(app *modelapps.App) (api.Upstream, error) {
+func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 	switch app.Manifest.Type {
-	case modelapps.AppTypeHTTP:
+	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil
 
-	case modelapps.AppTypeAWSLambda:
+	case apps.AppTypeAWSLambda:
 		return upawslambda.NewUpstream(app, p.awsClient), nil
 
-	case modelapps.AppTypeBuiltin:
+	case apps.AppTypeBuiltin:
 		if len(p.builtIn) == 0 {
 			return nil, errors.Errorf("builtin app not found: %s", app.Manifest.AppID)
 		}
@@ -117,9 +117,9 @@ func (p *Proxy) upstreamForApp(app *modelapps.App) (api.Upstream, error) {
 	}
 }
 
-func (p *Proxy) ProvisionBuiltIn(appID modelapps.AppID, up api.Upstream) {
+func (p *Proxy) ProvisionBuiltIn(appID apps.AppID, up api.Upstream) {
 	if p.builtIn == nil {
-		p.builtIn = map[modelapps.AppID]api.Upstream{}
+		p.builtIn = map[apps.AppID]api.Upstream{}
 	}
 	p.builtIn[appID] = up
 }
@@ -127,8 +127,8 @@ func (p *Proxy) ProvisionBuiltIn(appID modelapps.AppID, up api.Upstream) {
 func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(modelapps.CallResponse{
-		Type:      modelapps.CallResponseTypeError,
+	_ = json.NewEncoder(w).Encode(apps.CallResponse{
+		Type:      apps.CallResponseTypeError,
 		ErrorText: err.Error(),
 	})
 }

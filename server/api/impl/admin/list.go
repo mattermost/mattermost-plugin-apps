@@ -4,11 +4,11 @@
 package admin
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (adm *Admin) ListApps() ([]*modelapps.App, md.MD, error) {
+func (adm *Admin) ListApps() ([]*apps.App, md.MD, error) {
 	apps := adm.store.ListApps()
 	if len(apps) == 0 {
 		return nil, "no apps installed", nil

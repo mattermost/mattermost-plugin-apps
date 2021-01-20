@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
@@ -42,11 +42,11 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}
 
 	app, _, err := s.api.Admin.ProvisionApp(
-		&modelapps.Context{
+		&apps.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		modelapps.SessionToken(params.commandArgs.Session.Token),
-		&modelapps.InProvisionApp{
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
 			Manifest:  manifest,
 			AppSecret: appSecret,
 			Force:     force,

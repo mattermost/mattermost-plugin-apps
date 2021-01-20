@@ -1,4 +1,4 @@
-package modelapps
+package apps
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"

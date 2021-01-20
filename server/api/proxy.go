@@ -3,12 +3,12 @@
 
 package api
 
-import "github.com/mattermost/mattermost-plugin-apps/modelapps"
+import "github.com/mattermost/mattermost-plugin-apps/apps"
 
 type Proxy interface {
-	GetBindings(*modelapps.Context) ([]*modelapps.Binding, error)
-	Call(modelapps.SessionToken, *modelapps.Call) *modelapps.CallResponse
-	Notify(cc *modelapps.Context, subj modelapps.Subject) error
+	GetBindings(*apps.Context) ([]*apps.Binding, error)
+	Call(apps.SessionToken, *apps.Call) *apps.CallResponse
+	Notify(cc *apps.Context, subj apps.Subject) error
 
-	ProvisionBuiltIn(modelapps.AppID, Upstream)
+	ProvisionBuiltIn(apps.AppID, Upstream)
 }

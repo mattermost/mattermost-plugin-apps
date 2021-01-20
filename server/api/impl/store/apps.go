@@ -4,24 +4,24 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *Store) ListApps() []*modelapps.App {
+func (s *Store) ListApps() []*apps.App {
 	conf := s.conf.GetConfig()
-	out := []*modelapps.App{}
+	out := []*apps.App{}
 	if len(conf.Apps) == 0 {
 		return out
 	}
 	for _, v := range conf.Apps {
-		app := modelapps.AppFromConfigMap(v)
+		app := apps.AppFromConfigMap(v)
 		out = append(out, app)
 	}
 	return out
 }
 
-func (s *Store) LoadApp(appID modelapps.AppID) (*modelapps.App, error) {
+func (s *Store) LoadApp(appID apps.AppID) (*apps.App, error) {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
@@ -30,10 +30,10 @@ func (s *Store) LoadApp(appID modelapps.AppID) (*modelapps.App, error) {
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
-	return modelapps.AppFromConfigMap(v), nil
+	return apps.AppFromConfigMap(v), nil
 }
 
-func (s *Store) StoreApp(app *modelapps.App) error {
+func (s *Store) StoreApp(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}

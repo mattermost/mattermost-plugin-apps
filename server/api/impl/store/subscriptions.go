@@ -4,30 +4,30 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/pkg/errors"
 )
 
-func subsKey(subject modelapps.Subject, teamID, channelID string) string {
+func subsKey(subject apps.Subject, teamID, channelID string) string {
 	idSuffix := ""
 	switch subject {
-	case modelapps.SubjectUserJoinedChannel,
-		modelapps.SubjectUserLeftChannel,
-		modelapps.SubjectPostCreated:
+	case apps.SubjectUserJoinedChannel,
+		apps.SubjectUserLeftChannel,
+		apps.SubjectPostCreated:
 		idSuffix = "_" + channelID
-	case modelapps.SubjectUserJoinedTeam,
-		modelapps.SubjectUserLeftTeam,
-		modelapps.SubjectChannelCreated:
+	case apps.SubjectUserJoinedTeam,
+		apps.SubjectUserLeftTeam,
+		apps.SubjectChannelCreated:
 		idSuffix = "_" + teamID
 	}
 	return prefixSubs + string(subject) + idSuffix
 }
 
-func (s *Store) DeleteSub(sub *modelapps.Subscription) error {
+func (s *Store) DeleteSub(sub *apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*modelapps.Subscription
+	var subs []*apps.Subscription
 	err := s.mm.KV.Get(key, &subs)
 	if err != nil {
 		return err
@@ -54,9 +54,9 @@ func (s *Store) DeleteSub(sub *modelapps.Subscription) error {
 	return utils.ErrNotFound
 }
 
-func (s *Store) LoadSubs(subject modelapps.Subject, teamID, channelID string) ([]*modelapps.Subscription, error) {
+func (s *Store) LoadSubs(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
 	key := subsKey(subject, teamID, channelID)
-	var subs []*modelapps.Subscription
+	var subs []*apps.Subscription
 	err := s.mm.KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
@@ -67,10 +67,10 @@ func (s *Store) LoadSubs(subject modelapps.Subject, teamID, channelID string) ([
 	return subs, nil
 }
 
-func (s *Store) StoreSub(sub *modelapps.Subscription) error {
+func (s *Store) StoreSub(sub *apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*modelapps.Subscription
+	var subs []*apps.Subscription
 	err := s.mm.KV.Get(key, &subs)
 	if err != nil {
 		return err

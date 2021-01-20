@@ -1,20 +1,20 @@
 package hello
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func NewSurveyForm(message string) *modelapps.Form {
-	return &modelapps.Form{
+func NewSurveyForm(message string) *apps.Form {
+	return &apps.Form{
 		Title:         "Emotional response survey",
 		Header:        message,
 		Footer:        "Let the world know!",
 		SubmitButtons: fieldResponse,
-		Fields: []*modelapps.Field{
+		Fields: []*apps.Field{
 			{
 				Name: fieldResponse,
-				Type: modelapps.FieldTypeStaticSelect,
-				SelectStaticOptions: []modelapps.SelectOption{
+				Type: apps.FieldTypeStaticSelect,
+				SelectStaticOptions: []apps.SelectOption{
 					{Label: "Like", Value: "like"},
 					{Label: "Dislike", Value: "dislike"},
 				},
@@ -23,15 +23,15 @@ func NewSurveyForm(message string) *modelapps.Form {
 	}
 }
 
-func NewSurveyFormResponse(c *modelapps.Call) *modelapps.CallResponse {
+func NewSurveyFormResponse(c *apps.Call) *apps.CallResponse {
 	message := c.GetValue(fieldMessage, "default hello message")
-	return &modelapps.CallResponse{
-		Type: modelapps.CallResponseTypeForm,
+	return &apps.CallResponse{
+		Type: apps.CallResponseTypeForm,
 		Form: NewSurveyForm(message),
 	}
 }
 
-func (h *HelloApp) ProcessSurvey(c *modelapps.Call) error {
+func (h *HelloApp) ProcessSurvey(c *apps.Call) error {
 	// TODO post something; for embedded form - what do we do?
 	return nil
 }

@@ -5,22 +5,22 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type expander struct {
 	// Context to expand (can be expanded multiple times on the same expander)
-	*modelapps.Context
+	*apps.Context
 
 	mm           *pluginapi.Client
 	conf         api.Configurator
 	store        api.Store
-	sessionToken modelapps.SessionToken
+	sessionToken apps.SessionToken
 }
 
-func (p *Proxy) newExpander(cc *modelapps.Context, mm *pluginapi.Client, conf api.Configurator, store api.Store, debugSessionToken modelapps.SessionToken) *expander {
+func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf api.Configurator, store api.Store, debugSessionToken apps.SessionToken) *expander {
 	e := &expander{
 		Context:      cc,
 		mm:           mm,
@@ -31,7 +31,7 @@ func (p *Proxy) newExpander(cc *modelapps.Context, mm *pluginapi.Client, conf ap
 	return e
 }
 
-func (e *expander) ExpandForApp(app *modelapps.App, expand *modelapps.Expand) (*modelapps.Context, error) {
+func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Context, error) {
 	clone := *e.Context
 	clone.AppID = app.Manifest.AppID
 
@@ -45,7 +45,7 @@ func (e *expander) ExpandForApp(app *modelapps.App, expand *modelapps.Expand) (*
 	clone.MattermostSiteURL = e.MattermostSiteURL
 	clone.BotUserID = app.BotUserID
 	if expand == nil {
-		clone.ExpandedContext = modelapps.ExpandedContext{
+		clone.ExpandedContext = apps.ExpandedContext{
 			BotAccessToken: app.BotAccessToken,
 		}
 		return &clone, nil
@@ -101,7 +101,7 @@ func (e *expander) ExpandForApp(app *modelapps.App, expand *modelapps.Expand) (*
 		e.User = user
 	}
 
-	clone.ExpandedContext = modelapps.ExpandedContext{
+	clone.ExpandedContext = apps.ExpandedContext{
 		BotAccessToken: app.BotAccessToken,
 
 		ActingUser: stripUser(e.ActingUser, expand.ActingUser),
@@ -126,11 +126,11 @@ func (e *expander) ExpandForApp(app *modelapps.App, expand *modelapps.Expand) (*
 	return &clone, nil
 }
 
-func stripUser(user *model.User, level modelapps.ExpandLevel) *model.User {
-	if user == nil || level == modelapps.ExpandAll {
+func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
+	if user == nil || level == apps.ExpandAll {
 		return user
 	}
-	if level != modelapps.ExpandSummary {
+	if level != apps.ExpandSummary {
 		return nil
 	}
 	return &model.User{
@@ -149,11 +149,11 @@ func stripUser(user *model.User, level modelapps.ExpandLevel) *model.User {
 	}
 }
 
-func stripChannel(channel *model.Channel, level modelapps.ExpandLevel) *model.Channel {
-	if channel == nil || level == modelapps.ExpandAll {
+func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel {
+	if channel == nil || level == apps.ExpandAll {
 		return channel
 	}
-	if level != modelapps.ExpandSummary {
+	if level != apps.ExpandSummary {
 		return nil
 	}
 	return &model.Channel{
@@ -166,11 +166,11 @@ func stripChannel(channel *model.Channel, level modelapps.ExpandLevel) *model.Ch
 	}
 }
 
-func stripTeam(team *model.Team, level modelapps.ExpandLevel) *model.Team {
-	if team == nil || level == modelapps.ExpandAll {
+func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
+	if team == nil || level == apps.ExpandAll {
 		return team
 	}
-	if level != modelapps.ExpandSummary {
+	if level != apps.ExpandSummary {
 		return nil
 	}
 	return &model.Team{
@@ -183,11 +183,11 @@ func stripTeam(team *model.Team, level modelapps.ExpandLevel) *model.Team {
 	}
 }
 
-func stripPost(post *model.Post, level modelapps.ExpandLevel) *model.Post {
-	if post == nil || level == modelapps.ExpandAll {
+func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
+	if post == nil || level == apps.ExpandAll {
 		return post
 	}
-	if level != modelapps.ExpandSummary {
+	if level != apps.ExpandSummary {
 		return nil
 	}
 	return &model.Post{
@@ -200,7 +200,7 @@ func stripPost(post *model.Post, level modelapps.ExpandLevel) *model.Post {
 	}
 }
 
-func stripApp(app *modelapps.App, level modelapps.ExpandLevel) *modelapps.App {
+func stripApp(app *apps.App, level apps.ExpandLevel) *apps.App {
 	if app == nil {
 		return nil
 	}
@@ -210,7 +210,7 @@ func stripApp(app *modelapps.App, level modelapps.ExpandLevel) *modelapps.App {
 	clone.OAuth2ClientSecret = ""
 
 	switch level {
-	case modelapps.ExpandAll, modelapps.ExpandSummary:
+	case apps.ExpandAll, apps.ExpandSummary:
 		return &clone
 	}
 	return nil

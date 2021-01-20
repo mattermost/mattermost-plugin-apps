@@ -1,12 +1,12 @@
 package api
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type Admin interface {
-	ListApps() ([]*modelapps.App, md.MD, error)
-	InstallApp(*modelapps.Context, modelapps.SessionToken, *modelapps.InInstallApp) (*modelapps.App, md.MD, error)
-	ProvisionApp(*modelapps.Context, modelapps.SessionToken, *modelapps.InProvisionApp) (*modelapps.App, md.MD, error)
+	ListApps() ([]*apps.App, md.MD, error)
+	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
+	ProvisionApp(*apps.Context, apps.SessionToken, *apps.InProvisionApp) (*apps.App, md.MD, error)
 }

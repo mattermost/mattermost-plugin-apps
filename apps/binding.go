@@ -1,4 +1,4 @@
-package modelapps
+package apps
 
 type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.

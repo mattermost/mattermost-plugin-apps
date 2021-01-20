@@ -1,4 +1,4 @@
-package modelapps
+package mmclient
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -39,7 +40,7 @@ func NewAPIClientPP(url string) *ClientPP {
 	return &ClientPP{url, url + API_URL_SUFFIX, &http.Client{}, "", "", map[string]string{}, "", ""}
 }
 
-func (c *ClientPP) Subscribe(request *Subscription) (*model.PluginsResponse, *model.Response) {
+func (c *ClientPP) Subscribe(request *apps.Subscription) (*model.PluginsResponse, *model.Response) {
        r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+"/subscribe", request.ToJson())
        if appErr != nil {
                return nil, model.BuildErrorResponse(r, appErr)
@@ -49,7 +50,7 @@ func (c *ClientPP) Subscribe(request *Subscription) (*model.PluginsResponse, *mo
 }
 
 //TODO this is right now a HTTP DELETE op - which does not accept a payload - needs to be converted to a POST(?)
-func (c *ClientPP) Unsubscribe(request *Subscription) (bool, *model.Response) {
+func (c *ClientPP) Unsubscribe(request *apps.Subscription) (bool, *model.Response) {
 	   r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+"/delete", request.ToJson())
        if appErr != nil {
                return false, model.BuildErrorResponse(r, appErr)

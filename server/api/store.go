@@ -3,13 +3,13 @@
 
 package api
 
-import "github.com/mattermost/mattermost-plugin-apps/modelapps"
+import "github.com/mattermost/mattermost-plugin-apps/apps"
 
 type Store interface {
-	DeleteSub(*modelapps.Subscription) error
-	LoadApp(appID modelapps.AppID) (*modelapps.App, error)
-	LoadSubs(subject modelapps.Subject, teamID, channelID string) ([]*modelapps.Subscription, error)
-	ListApps() []*modelapps.App
-	StoreApp(app *modelapps.App) error
-	StoreSub(sub *modelapps.Subscription) error
+	DeleteSub(*apps.Subscription) error
+	LoadApp(appID apps.AppID) (*apps.App, error)
+	LoadSubs(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
+	ListApps() []*apps.App
+	StoreApp(app *apps.App) error
+	StoreSub(sub *apps.Subscription) error
 }

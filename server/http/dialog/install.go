@@ -8,19 +8,19 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
-	Manifest      *modelapps.Manifest
+	Manifest      *apps.Manifest
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *modelapps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -43,7 +43,7 @@ func NewInstallAppDialog(manifest *modelapps.Manifest, secret, pluginURL string,
 			Default:     secret,
 		},
 	}
-	if manifest.RequestedPermissions.Contains(modelapps.PermissionActAsUser) {
+	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -139,13 +139,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	app, out, err := d.api.Admin.InstallApp(
-		&modelapps.Context{
+		&apps.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
 			TeamID:       stateData.TeamID,
 		},
-		modelapps.SessionToken(session.Token),
-		&modelapps.InInstallApp{
+		apps.SessionToken(session.Token),
+		&apps.InInstallApp{
 			OAuth2TrustedApp:   noUserConsentForOAuth2,
 			AppSecret:          secret,
 			GrantedPermissions: stateData.Manifest.RequestedPermissions,

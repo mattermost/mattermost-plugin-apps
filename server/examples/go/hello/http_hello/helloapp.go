@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
@@ -40,8 +40,8 @@ func Init(router *mux.Router, appsService *api.Service) {
 	r := router.PathPrefix(api.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	handle(r, modelapps.DefaultInstallCallPath, h.Install)
-	handle(r, modelapps.DefaultBindingsCallPath, h.GetBindings)
+	handle(r, apps.DefaultInstallCallPath, h.Install)
+	handle(r, apps.DefaultBindingsCallPath, h.GetBindings)
 	handle(r, hello.PathSendSurvey, h.SendSurvey)
 	handle(r, hello.PathSendSurveyModal, h.SendSurveyModal)
 	handle(r, hello.PathSendSurveyCommandToModal, h.SendSurveyCommandToModal)
@@ -51,28 +51,28 @@ func Init(router *mux.Router, appsService *api.Service) {
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
-		modelapps.Manifest{
+		apps.Manifest{
 			AppID:       AppID,
-			Type:        modelapps.AppTypeHTTP,
+			Type:        apps.AppTypeHTTP,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			HTTPRootURL: h.appURL(""),
-			RequestedPermissions: modelapps.Permissions{
-				modelapps.PermissionUserJoinedChannelNotification,
-				modelapps.PermissionActAsUser,
-				modelapps.PermissionActAsBot,
+			RequestedPermissions: apps.Permissions{
+				apps.PermissionUserJoinedChannelNotification,
+				apps.PermissionActAsUser,
+				apps.PermissionActAsBot,
 			},
-			RequestedLocations: modelapps.Locations{
-				modelapps.LocationChannelHeader,
-				modelapps.LocationPostMenu,
-				modelapps.LocationCommand,
-				modelapps.LocationInPost,
+			RequestedLocations: apps.Locations{
+				apps.LocationChannelHeader,
+				apps.LocationPostMenu,
+				apps.LocationCommand,
+				apps.LocationInPost,
 			},
 			HomepageURL: h.appURL("/"),
 		})
 }
 
-type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *modelapps.Call) (int, error)
+type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.Call) (int, error)
 
 func handle(r *mux.Router, path string, h handler) {
 	r.HandleFunc(path,
@@ -83,7 +83,7 @@ func handle(r *mux.Router, path string, h handler) {
 				return
 			}
 
-			data, err := modelapps.UnmarshalCallFromReader(req.Body)
+			data, err := apps.UnmarshalCallFromReader(req.Body)
 			if err != nil {
 				proxy.WriteCallError(w, http.StatusInternalServerError, err)
 				return

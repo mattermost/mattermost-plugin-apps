@@ -1,9 +1,10 @@
-package modelapps
+package mmclient
 
 import (
 	"fmt"
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
@@ -14,19 +15,19 @@ type Client struct {
 	userID string
 }
 
-func as(id, token string, cc *Context) Client {
+func as(id, token string, cc *apps.Context) Client {
 	return NewClient(id, token, cc.MattermostSiteURL)
 }
 
-func AsBot(cc *Context) Client {
+func AsBot(cc *apps.Context) Client {
 	return as(cc.BotUserID, cc.BotAccessToken, cc)
 }
 
-func AsActingUser(cc *Context) Client {
+func AsActingUser(cc *apps.Context) Client {
 	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
 }
 
-func AsAdmin(cc *Context) Client {
+func AsAdmin(cc *apps.Context) Client {
 	return as(cc.ActingUserID, cc.AdminAccessToken, cc)
 }
 
@@ -40,7 +41,7 @@ func NewClient(userID, token, mattermostSiteURL string) Client {
 	return client
 }
 
-func (client *Client) Subscribe(sub *Subscription) (*model.PluginsResponse, error) {
+func (client *Client) Subscribe(sub *apps.Subscription) (*model.PluginsResponse, error) {
 	var pluginsRes *model.PluginsResponse
 	var res *model.Response
 
@@ -54,7 +55,7 @@ func (client *Client) Subscribe(sub *Subscription) (*model.PluginsResponse, erro
 	return pluginsRes, nil
 }
 
-func (client *Client) Unsubscribe(sub *Subscription) (bool, error) {
+func (client *Client) Unsubscribe(sub *apps.Subscription) (bool, error) {
 	var pluginsRes bool
 	var res *model.Response
 

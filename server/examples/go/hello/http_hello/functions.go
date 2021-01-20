@@ -4,54 +4,54 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
-	httputils.WriteJSON(w, modelapps.CallResponse{
-		Type: modelapps.CallResponseTypeOK,
+func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	httputils.WriteJSON(w, apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
 		Data: hello.Bindings(),
 	})
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
-	if c.Type != modelapps.CallTypeSubmit {
+func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	if c.Type != apps.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	httputils.WriteJSON(w, &modelapps.CallResponse{
-		Type:     modelapps.CallResponseTypeOK,
+	httputils.WriteJSON(w, &apps.CallResponse{
+		Type:     apps.CallResponseTypeOK,
 		Markdown: out,
 	})
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
-	var out *modelapps.CallResponse
+func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	var out *apps.CallResponse
 	switch c.Type {
-	case modelapps.CallTypeForm:
+	case apps.CallTypeForm:
 		out = hello.NewSendSurveyFormResponse(c)
 
-	case modelapps.CallTypeSubmit:
+	case apps.CallTypeSubmit:
 		txt, err := h.HelloApp.SendSurvey(c)
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
-		out = &modelapps.CallResponse{
-			Type:     modelapps.CallResponseTypeOK,
+		out = &apps.CallResponse{
+			Type:     apps.CallResponseTypeOK,
 			Markdown: txt,
 		}
-	case modelapps.CallTypeLookup:
-		out = &modelapps.CallResponse{
+	case apps.CallTypeLookup:
+		out = &apps.CallResponse{
 			Data: map[string]interface{}{
-				"items": []*modelapps.SelectOption{
+				"items": []*apps.SelectOption{
 					{
 						Label: "Option 1",
 						Value: "option1",
@@ -65,17 +65,17 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
+func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
 	out := hello.NewSendSurveyFormResponse(c)
 	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
-	var out *modelapps.CallResponse
+func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	var out *apps.CallResponse
 
 	switch c.Type {
-	case modelapps.CallTypeSubmit:
+	case apps.CallTypeSubmit:
 		out = hello.NewSendSurveyFormResponse(c)
 	default:
 		out = hello.NewSendSurveyPartialFormResponse(c)
@@ -85,20 +85,20 @@ func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Req
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *modelapps.Call) (int, error) {
-	var out *modelapps.CallResponse
+func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	var out *apps.CallResponse
 
 	switch c.Type {
-	case modelapps.CallTypeForm:
+	case apps.CallTypeForm:
 		out = hello.NewSurveyFormResponse(c)
 
-	case modelapps.CallTypeSubmit:
+	case apps.CallTypeSubmit:
 		err := h.ProcessSurvey(c)
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
-		out = &modelapps.CallResponse{
-			Type:     modelapps.CallResponseTypeOK,
+		out = &apps.CallResponse{
+			Type:     apps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
 	}
@@ -107,7 +107,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, call *modelapps.Call) (int, error) {
+func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, call *apps.Call) (int, error) {
 	h.HelloApp.UserJoinedChannel(call)
 	return http.StatusOK, nil
 }

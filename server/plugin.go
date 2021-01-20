@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/modelapps"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
@@ -111,29 +111,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.api.Proxy.Notify(modelapps.NewUserContext(user), modelapps.SubjectUserCreated)
+	_ = p.api.Proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(modelapps.NewChannelMemberContext(cm, actingUser), modelapps.SubjectUserJoinedChannel)
+	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(modelapps.NewChannelMemberContext(cm, actingUser), modelapps.SubjectUserLeftChannel)
+	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(modelapps.NewTeamMemberContext(tm, actingUser), modelapps.SubjectUserJoinedTeam)
+	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(modelapps.NewTeamMemberContext(tm, actingUser), modelapps.SubjectUserLeftTeam)
+	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.api.Proxy.Notify(modelapps.NewPostContext(post), modelapps.SubjectPostCreated)
+	_ = p.api.Proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.api.Proxy.Notify(modelapps.NewChannelContext(ch), modelapps.SubjectChannelCreated)
+	_ = p.api.Proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
 }

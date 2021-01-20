@@ -1,4 +1,4 @@
-package modelapps
+package apps
 
 type FieldType string
 
