@@ -38,13 +38,13 @@ func (ft FunctionType) IsValid() bool {
 type AssetType string
 
 const (
-	s3Asset   AssetType = "s3_asset"
-	httpAsset AssetType = "http_asset"
+	S3Asset   AssetType = "s3_asset"
+	HTTPAsset AssetType = "http_asset"
 )
 
 func (at AssetType) IsValid() bool {
-	return at == s3Asset ||
-		at == httpAsset
+	return at == S3Asset ||
+		at == HTTPAsset
 }
 
 // AppStatus describes status of the app

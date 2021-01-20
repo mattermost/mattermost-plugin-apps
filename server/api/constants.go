@@ -34,6 +34,7 @@ const (
 	KVPath        = "/kv"
 	SubscribePath = "/subscribe"
 	BindingsPath  = "/bindings"
+	AssetPath     = "/asset"
 )
 
 const (
