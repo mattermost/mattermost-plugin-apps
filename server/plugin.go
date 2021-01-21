@@ -131,7 +131,7 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post)
+	shouldProcessMessage, err := p.Helpers.ShouldProcessMessageNoBotCheck(post, p.api.Configurator.GetConfig().BotUserID)
 	if err != nil {
 		p.mm.Log.Error(fmt.Sprintf("Error while checking if the message should be processed %v", err))
 		return
