@@ -36,6 +36,7 @@ type Field struct {
 
 	// Select props
 	SelectRefresh       bool           `json:"refresh,omitempty"`
+	SelectMultiselect   bool           `json:"multiselect,omitempty"`
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
 	// Text props
