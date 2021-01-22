@@ -158,7 +158,7 @@ func (h *HelloApp) SendSurvey(c *apps.Call) (md.MD, error) {
 	return "Successfully sent survey", nil
 }
 
-func sendSurvey(bot mmclient.Client, userID, message string) error {
+func sendSurvey(bot *mmclient.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
