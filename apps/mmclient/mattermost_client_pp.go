@@ -43,7 +43,7 @@ func NewAPIClientPP(url string) *ClientPP {
 }
 
 func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *model.Response) {
-	query := API_PATH_PP + fmt.Sprintf("/kv/%v?prefix=%v", id, prefix)
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
 	r, appErr := c.DoApiGet(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, "")
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
@@ -53,7 +53,7 @@ func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *mod
 }
 
 func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
-	query := API_PATH_PP + fmt.Sprintf("/kv/%v?prefix=%v", id, prefix)
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
 	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, StringInterfaceToJSON(in))
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
@@ -63,7 +63,7 @@ func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (m
 }
 
 func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
-	query := API_PATH_PP + fmt.Sprintf("/kv/%v?prefix=%v", id, prefix)
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
 	r, appErr := c.DoApiDelete(c.GetPluginRoute(APPS_PLUGIN_NAME) + query)
 	if appErr != nil {
 		return false, model.BuildErrorResponse(r, appErr)
