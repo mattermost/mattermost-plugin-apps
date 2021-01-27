@@ -19,11 +19,10 @@ func (a *restapi) kvList(w http.ResponseWriter, r *http.Request, botUserID, pref
 }
 
 func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
-	id := mux.Vars(r)["key"]
-	out := map[string]interface{}{}
+	var out map[string]interface{}
 
-	client := a.getClient(botUserID, w, r)
-	out, err := client.KVGet(prefix, id)
+	id := mux.Vars(r)["key"]
+	err := a.api.AppServices.KVGet(botUserID, prefix, id, out)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -50,8 +49,7 @@ func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefi
 	// <><>TODO atomic support
 	// <><>TODO TTL support
 
-	client := a.getClient(botUserID, w, r)
-	changed, err := client.KVSet(prefix, id, in)
+	changed, err := a.api.AppServices.KVSet(botUserID, prefix, id, in)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -64,9 +62,8 @@ func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefi
 func (a *restapi) kvDelete(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
 	id := mux.Vars(r)["key"]
 
-	client := a.getClient(botUserID, w, r)
-	out, err := client.KVDelete(prefix, id)
-	if err != nil || out == false {
+	err := a.api.AppServices.KVDelete(botUserID, prefix, id)
+	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
 	}

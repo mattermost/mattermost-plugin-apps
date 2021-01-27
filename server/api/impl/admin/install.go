@@ -17,7 +17,6 @@ import (
 )
 
 func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
-
 	// TODO <><> check if acting user is a sysadmin
 
 	app, err := adm.store.LoadApp(cc.AppID)
@@ -53,7 +52,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		install = apps.DefaultInstallCall
 	}
 	install.Values = map[string]interface{}{
-		api.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
+		apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
 	install.Context = cc
 

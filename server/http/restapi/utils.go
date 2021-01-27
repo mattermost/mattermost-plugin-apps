@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func(a *restapi) getClient(userId string, w http.ResponseWriter, r *http.Request) *mmclient.Client {
+func (a *restapi) getClient(userID string, w http.ResponseWriter, r *http.Request) *mmclient.Client {
 	var err error
 
 	sessionID := r.Header.Get("MM_SESSION_ID")
@@ -30,7 +30,7 @@ func(a *restapi) getClient(userId string, w http.ResponseWriter, r *http.Request
 
 	conf := a.api.Configurator.GetConfig()
 	token := string(apps.SessionToken(session.Token))
-	client := mmclient.NewClient(userId, token, conf.MattermostSiteURL)
+	client := mmclient.NewClient(userID, token, conf.MattermostSiteURL)
 
 	return client
 }

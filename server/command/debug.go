@@ -45,8 +45,8 @@ func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.Comman
 	manifest := builtin_hello.Manifest()
 
 	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-        return errorOut(params, errors.New("forbidden"))
-    }
+		return errorOut(params, errors.New("forbidden"))
+	}
 
 	app, _, err := s.api.Admin.ProvisionApp(
 		&apps.Context{
@@ -88,8 +88,8 @@ func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandRes
 	manifest := aws_hello.Manifest()
 
 	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-        return errorOut(params, errors.New("forbidden"))
-    }
+		return errorOut(params, errors.New("forbidden"))
+	}
 
 	s.api.Mattermost.Log.Error(fmt.Sprintf("manifest = %v", manifest))
 	app, _, err := s.api.Admin.ProvisionApp(

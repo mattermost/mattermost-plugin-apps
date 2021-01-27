@@ -33,17 +33,17 @@ func AsAdmin(cc *apps.Context) *Client {
 
 func NewClient(userID, token, mattermostSiteURL string) *Client {
 	client := Client{
-		userID:  userID,
+		userID:   userID,
 		ClientPP: NewAPIClientPP(mattermostSiteURL),
-		Client4: model.NewAPIv4Client(mattermostSiteURL),
+		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
 	client.Client4.SetOAuthToken(token)
 	return &client
 }
 
 func (client *Client) KVGet(id string, prefix string) (map[string]interface{}, error) {
+	var mapRes map[string]interface{}
 	var res *model.Response
-	mapRes := map[string]interface{}{}
 
 	mapRes, res = client.ClientPP.KVGet(id, prefix)
 	if res.StatusCode != http.StatusCreated {
@@ -56,7 +56,7 @@ func (client *Client) KVGet(id string, prefix string) (map[string]interface{}, e
 }
 
 func (client *Client) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, error) {
-	mapRes := map[string]interface{}{}
+	var mapRes map[string]interface{}
 	var res *model.Response
 
 	mapRes, res = client.ClientPP.KVSet(id, prefix, in)
@@ -83,32 +83,34 @@ func (client *Client) KVDelete(id string, prefix string) (bool, error) {
 	return opRes, nil
 }
 
-func (client *Client) Subscribe(sub *apps.Subscription) (*apps.Subscription, error) {
-	var subscription *apps.Subscription
+func (client *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
+	var subResponse *apps.SubscriptionResponse
 	var res *model.Response
 
-	subscription, res = client.ClientPP.Subscribe(sub)
+	subResponse, res = client.ClientPP.Subscribe(sub)
 	if res.StatusCode != http.StatusCreated {
 		if res.Error != nil {
 			return nil, res.Error
 		}
 		return nil, fmt.Errorf("returned with status %d", res.StatusCode)
 	}
-	return subscription, nil
+
+	return subResponse, nil
 }
 
-func (client *Client) Unsubscribe(sub *apps.Subscription) (bool, error) {
-	var opRes bool
+func (client *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
+	var subResponse *apps.SubscriptionResponse
 	var res *model.Response
 
-	opRes, res = client.ClientPP.Unsubscribe(sub)
+	subResponse, res = client.ClientPP.Unsubscribe(sub)
 	if res.StatusCode != http.StatusCreated {
 		if res.Error != nil {
-			return false, res.Error
+			return nil, res.Error
 		}
-		return false, fmt.Errorf("returned with status %d", res.StatusCode)
+		return nil, fmt.Errorf("returned with status %d", res.StatusCode)
 	}
-	return opRes, nil
+
+	return subResponse, nil
 }
 
 func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {

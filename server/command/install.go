@@ -33,8 +33,8 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}
 
 	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-        return errorOut(params, errors.New("forbidden"))
-    }
+		return errorOut(params, errors.New("forbidden"))
+	}
 
 	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {

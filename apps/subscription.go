@@ -3,7 +3,10 @@
 
 package apps
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"io"
+)
 
 type Subject string
 
@@ -35,7 +38,26 @@ func (sub *Subscription) EqualScope(other *Subscription) bool {
 	return s1 == s2
 }
 
-func (o *Subscription) ToJson() string {
-	b, _ := json.Marshal(o)
+func (sub *Subscription) ToJson() string {
+	b, _ := json.Marshal(sub)
 	return string(b)
+}
+
+type SubscriptionResponse struct {
+	Error  string            `json:"error,omitempty"`
+	Errors map[string]string `json:"errors,omitempty"`
+}
+
+func SubscriptionResponseFromJson(data io.Reader) *SubscriptionResponse {
+	var o *SubscriptionResponse
+	err := json.NewDecoder(data).Decode(&o)
+	if err != nil {
+		return nil
+	}
+	return o
+}
+
+func (r *SubscriptionResponse) ToJson() []byte {
+	b, _ := json.Marshal(r)
+	return b
 }
