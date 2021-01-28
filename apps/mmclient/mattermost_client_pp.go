@@ -132,7 +132,7 @@ func (c *ClientPP) doApiRequestReader(method, url string, data io.Reader, etag s
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
 	}
 
-	if c.HttpHeader != nil && len(c.HttpHeader) > 0 {
+	if len(c.HttpHeader) > 0 {
 		for k, v := range c.HttpHeader {
 			rq.Header.Set(k, v)
 		}
