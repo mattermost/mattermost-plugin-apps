@@ -42,9 +42,10 @@ func NewAPIClientPP(url string) *ClientPP {
 	return &ClientPP{url, url, &http.Client{}, "", "", map[string]string{}, "", ""}
 }
 
-func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *model.Response) {
+func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
 	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
-	r, appErr := c.DoApiGet(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, "")
+	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, StringInterfaceToJSON(in))
+
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
@@ -52,9 +53,9 @@ func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *mod
 	return StringInterfaceFromJSON(r.Body), model.BuildResponse(r)
 }
 
-func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
+func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *model.Response) {
 	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
-	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, StringInterfaceToJSON(in))
+	r, appErr := c.DoApiGet(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, "")
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}

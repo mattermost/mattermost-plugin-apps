@@ -28,6 +28,7 @@ var pluginID = "com.mattermost.apps"
 
 type TestHelper struct {
 	ServerTestHelper    *api4.TestHelper
+	ClientPP            *mmclient.ClientPP
 	SystemAdminClientPP *mmclient.ClientPP
 	LocalClientPP       *mmclient.ClientPP
 }
@@ -41,8 +42,15 @@ func Setup(tb testing.TB) *TestHelper {
 
 	serverTestHelper := api4.Setup(tb)
 	serverTestHelper.InitBasic()
+
+	// enable bot creation by default
+	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.EnableBotAccountCreation = true
+	})
+
 	th.ServerTestHelper = serverTestHelper
 
+	th.ClientPP = th.CreateClientPP()
 	th.SystemAdminClientPP = th.CreateClientPP()
 	th.SystemAdminClientPP.AuthToken = th.ServerTestHelper.SystemAdminClient.AuthToken
 	th.SystemAdminClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType

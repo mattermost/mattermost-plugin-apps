@@ -19,10 +19,10 @@ func (a *restapi) kvList(w http.ResponseWriter, r *http.Request, botUserID, pref
 }
 
 func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
-	var out map[string]interface{}
-
 	id := mux.Vars(r)["key"]
-	err := a.api.AppServices.KVGet(botUserID, prefix, id, out)
+	var out interface{}
+
+	err := a.api.AppServices.KVGet(botUserID, prefix, id, &out)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -36,7 +36,6 @@ func (a *restapi) kvHead(w http.ResponseWriter, r *http.Request, botUserID, pref
 
 func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
 	id := mux.Vars(r)["key"]
-
 	in := map[string]interface{}{}
 
 	// TODO size limit
@@ -54,17 +53,27 @@ func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefi
 		httputils.WriteInternalServerError(w, err)
 		return
 	}
+
 	httputils.WriteJSON(w, map[string]interface{}{
 		"changed": changed,
 	})
 }
 
 func (a *restapi) kvDelete(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
+	status := http.StatusOK
+	var err error
+
 	id := mux.Vars(r)["key"]
 
-	err := a.api.AppServices.KVDelete(botUserID, prefix, id)
+	defer func() {
+		if err != nil {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+	}()
+
+	err = a.api.AppServices.KVDelete(botUserID, prefix, id)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
 		return
 	}
 }

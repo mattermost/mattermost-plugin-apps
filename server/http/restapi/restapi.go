@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
+
 type restapi struct {
 	api *api.Service
 }
