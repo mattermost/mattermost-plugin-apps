@@ -42,6 +42,8 @@ func Init(router *mux.Router, appsService *api.Service) {
 	handle(r, api.DefaultInstallCallPath, h.Install)
 	handle(r, api.DefaultBindingsCallPath, h.GetBindings)
 	handle(r, hello.PathSendSurvey, h.SendSurvey)
+	handle(r, hello.PathSendSurveyModal, h.SendSurveyModal)
+	handle(r, hello.PathSendSurveyCommandToModal, h.SendSurveyCommandToModal)
 	handle(r, hello.PathSurvey, h.Survey)
 	handle(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
 }

@@ -32,13 +32,16 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	oAuthApp, err := adm.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
-	if err != nil {
-		return nil, "", err
+	if in.GrantedPermissions.Contains(api.PermissionActAsUser) {
+		var oAuthApp *model.OAuthApp
+		oAuthApp, err = adm.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		if err != nil {
+			return nil, "", err
+		}
+		app.OAuth2ClientID = oAuthApp.Id
+		app.OAuth2ClientSecret = oAuthApp.ClientSecret
+		app.OAuth2TrustedApp = in.OAuth2TrustedApp
 	}
-	app.OAuth2ClientID = oAuthApp.Id
-	app.OAuth2ClientSecret = oAuthApp.ClientSecret
-	app.OAuth2TrustedApp = in.OAuth2TrustedApp
 
 	err = adm.store.StoreApp(app)
 	if err != nil {
@@ -49,7 +52,7 @@ func (adm *Admin) InstallApp(cc *api.Context, sessionToken api.SessionToken, in 
 	if install == nil {
 		install = api.DefaultInstallCall
 	}
-	install.Values = map[string]string{
+	install.Values = map[string]interface{}{
 		api.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
 	install.Context = cc

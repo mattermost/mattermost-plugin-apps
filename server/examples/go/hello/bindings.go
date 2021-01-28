@@ -7,12 +7,12 @@ import (
 func Bindings() []*api.Binding {
 	justSend := api.MakeCall(PathSendSurvey)
 
-	modal := api.MakeCall(PathSendSurvey)
-	modal.Type = api.CallTypeForm
+	modal := api.MakeCall(PathSendSurveyModal)
 
-	modalFromPost := api.MakeCall(PathSendSurvey)
-	modalFromPost.Type = api.CallTypeForm
+	modalFromPost := api.MakeCall(PathSendSurveyModal)
 	modalFromPost.Expand = &api.Expand{Post: api.ExpandAll}
+
+	commandToModal := api.MakeCall(PathSendSurveyCommandToModal)
 	return []*api.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
@@ -56,6 +56,12 @@ func Bindings() []*api.Binding {
 					Hint:        "[--user] message",
 					Description: "send a message to a user",
 					Call:        justSend,
+				}, {
+					Label:       "message-modal",
+					Location:    "message-modal",
+					Hint:        "[--message] message",
+					Description: "send a message to a user",
+					Call:        commandToModal,
 				}, {
 					Label:       "manage",
 					Location:    "manage",

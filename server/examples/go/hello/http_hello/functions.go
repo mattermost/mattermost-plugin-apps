@@ -47,6 +47,37 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 			Type:     api.CallResponseTypeOK,
 			Markdown: txt,
 		}
+	case api.CallTypeLookup:
+		out = &api.CallResponse{
+			Data: map[string]interface{}{
+				"items": []*api.SelectOption{
+					{
+						Label: "Option 1",
+						Value: "option1",
+					},
+				},
+			},
+		}
+	}
+
+	httputils.WriteJSON(w, out)
+	return http.StatusOK, nil
+}
+
+func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *api.Call) (int, error) {
+	out := hello.NewSendSurveyFormResponse(c)
+	httputils.WriteJSON(w, out)
+	return http.StatusOK, nil
+}
+
+func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *api.Call) (int, error) {
+	var out *api.CallResponse
+
+	switch c.Type {
+	case api.CallTypeSubmit:
+		out = hello.NewSendSurveyFormResponse(c)
+	default:
+		out = hello.NewSendSurveyPartialFormResponse(c)
 	}
 
 	httputils.WriteJSON(w, out)
