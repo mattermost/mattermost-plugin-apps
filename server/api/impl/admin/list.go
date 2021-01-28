@@ -19,8 +19,8 @@ func (adm *Admin) ListApps() ([]*apps.App, md.MD, error) {
 | :-- |:-----| :----- | :-- | :-------- | :---------- |
 `)
 	for _, app := range apps {
-		out += md.Markdownf(`|%s|%s|%s|%s|%s|%s|`,
-			app.Manifest.AppID, app.Manifest.Type, app.OAuth2ClientID, app.BotUserID, app.GrantedLocations, app.GrantedPermissions)
+		out += md.Markdownf(`|%s|%s|%s|%s|%s|%s|
+		`, app.Manifest.AppID, app.Manifest.Type, app.OAuth2ClientID, app.BotUserID, app.GrantedLocations, app.GrantedPermissions)
 	}
 
 	return apps, out, nil
