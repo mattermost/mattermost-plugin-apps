@@ -161,10 +161,37 @@ func sendSurvey(bot examples.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
-	p.AddProp(api.PropAppBindings, []*api.Binding{
+	p.AddProp(api.PropAppBindings, []*api.EmbeddedForm{
 		{
-			Location: "survey",
-			Form:     NewSurveyForm(message),
+			AppID: "http-hello",
+			Title: "Survey",
+			Text:  message,
+			Bindings: []*api.Binding{
+				{
+					Location: "select",
+					Label:    "Select one",
+					Call:     api.MakeCall(PathSubmitSurvey),
+					Bindings: []*api.Binding{
+						{
+							Location: "good",
+							Label:    "Good",
+						},
+						{
+							Location: "normal",
+							Label:    "Normal",
+						},
+						{
+							Location: "bad",
+							Label:    "Bad",
+						},
+					},
+				},
+				{
+					Location: "button",
+					Label:    "Do not send",
+					Call:     api.MakeCall(PathSubmitSurvey),
+				},
+			},
 		},
 	})
 	_, err := bot.DMPost(userID, p)

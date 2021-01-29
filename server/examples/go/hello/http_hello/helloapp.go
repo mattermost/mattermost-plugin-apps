@@ -46,6 +46,7 @@ func Init(router *mux.Router, appsService *api.Service) {
 	handle(r, hello.PathSendSurveyCommandToModal, h.SendSurveyCommandToModal)
 	handle(r, hello.PathSurvey, h.Survey)
 	handle(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
+	handle(r, hello.PathSubmitSurvey, h.SubmitSurvey)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
