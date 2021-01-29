@@ -137,7 +137,8 @@ func TestKVSet(t *testing.T) {
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
-	th.SystemAdminClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
 
 	id := "testId"
 	prefix := "prefix-test"
@@ -145,13 +146,11 @@ func TestKVSet(t *testing.T) {
 	in["test_bool"] = true
 	in["test_string"] = "test"
 
-	th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
-		// set
-		out, resp := client.KVSet(id, prefix, in)
-		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
-		require.Equal(t, out["changed"], true)
-	})
+	// set
+	out, resp := th.ClientPP.KVSet(id, prefix, in)
+	api4.CheckOKStatus(t, resp)
+	require.Nil(t, resp.Error)
+	require.Equal(t, out["changed"], true)
 }
 
 func TestKVGet(t *testing.T) {
@@ -163,7 +162,8 @@ func TestKVGet(t *testing.T) {
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
-	th.SystemAdminClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
 
 	id := "testId"
 	prefix := "prefix-test"
@@ -171,20 +171,18 @@ func TestKVGet(t *testing.T) {
 	in["test_bool"] = true
 	in["test_string"] = "test"
 
-	th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
-		// set
-		outSet, resp := client.KVSet(id, prefix, in)
-		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
-		require.Equal(t, outSet["changed"], true)
+	// set
+	outSet, resp := th.ClientPP.KVSet(id, prefix, in)
+	api4.CheckOKStatus(t, resp)
+	require.Nil(t, resp.Error)
+	require.Equal(t, outSet["changed"], true)
 
-		// get
-		outGet, resp := client.KVGet(id, prefix)
-		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
-		require.Equal(t, outGet["test_bool"], true)
-		require.Equal(t, outGet["test_string"], "test")
-	})
+	// get
+	outGet, resp := th.ClientPP.KVGet(id, prefix)
+	api4.CheckOKStatus(t, resp)
+	require.Nil(t, resp.Error)
+	require.Equal(t, outGet["test_bool"], true)
+	require.Equal(t, outGet["test_string"], "test")
 }
 
 func TestKVDelete(t *testing.T) {
@@ -196,7 +194,8 @@ func TestKVDelete(t *testing.T) {
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
-	th.SystemAdminClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthToken = rtoken.Token
+	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
 
 	id := "testId"
 	prefix := "prefix-test"
@@ -204,15 +203,14 @@ func TestKVDelete(t *testing.T) {
 	in["test_bool"] = true
 	in["test_string"] = "test"
 
-	th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
-		// set
-		outSet, resp := client.KVSet(id, prefix, in)
-		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
-		require.Equal(t, outSet["changed"], true)
+	// set
+	outSet, resp := th.ClientPP.KVSet(id, prefix, in)
+	api4.CheckOKStatus(t, resp)
+	require.Nil(t, resp.Error)
+	require.Equal(t, outSet["changed"], true)
 
-		// delete
-		_, resp = client.KVDelete(id, prefix)
-		api4.CheckNoError(t, resp)
-	})
+	// delete
+	_, resp = th.ClientPP.KVDelete(id, prefix)
+	api4.CheckNoError(t, resp)
+
 }
