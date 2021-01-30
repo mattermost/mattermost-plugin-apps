@@ -106,8 +106,8 @@ func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
 	}
 
 	return &mmclient.ClientPP{
-		ApiUrl:     "http://_" + model.API_URL_SUFFIX,
-		HttpClient: httpClient,
+		APIURL:     "http://_" + model.API_URL_SUFFIX,
+		HTTPClient: httpClient,
 	}
 }
 

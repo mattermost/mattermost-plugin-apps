@@ -32,7 +32,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		_, _ = w.Write(resp.ToJson())
+		_, _ = w.Write(resp.ToJSON())
 	}()
 
 	actingUserID = r.Header.Get("Mattermost-User-ID")

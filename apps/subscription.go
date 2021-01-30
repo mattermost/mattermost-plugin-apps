@@ -38,7 +38,7 @@ func (sub *Subscription) EqualScope(other *Subscription) bool {
 	return s1 == s2
 }
 
-func (sub *Subscription) ToJson() string {
+func (sub *Subscription) ToJSON() string {
 	b, _ := json.Marshal(sub)
 	return string(b)
 }
@@ -48,7 +48,7 @@ type SubscriptionResponse struct {
 	Errors map[string]string `json:"errors,omitempty"`
 }
 
-func SubscriptionResponseFromJson(data io.Reader) *SubscriptionResponse {
+func SubscriptionResponseFromJSON(data io.Reader) *SubscriptionResponse {
 	var o *SubscriptionResponse
 	err := json.NewDecoder(data).Decode(&o)
 	if err != nil {
@@ -57,7 +57,7 @@ func SubscriptionResponseFromJson(data io.Reader) *SubscriptionResponse {
 	return o
 }
 
-func (r *SubscriptionResponse) ToJson() []byte {
+func (r *SubscriptionResponse) ToJSON() []byte {
 	b, _ := json.Marshal(r)
 	return b
 }

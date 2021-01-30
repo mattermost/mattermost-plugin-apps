@@ -13,22 +13,22 @@ import (
 )
 
 const (
-	HEADER_ETAG_CLIENT = "If-None-Match"
-	HEADER_AUTH        = "Authorization"
+	HeaderEtagClient = "If-None-Match"
+	HeaderAuth       = "Authorization"
 
-	API_PATH_PP       = "/api/v1"
-	API_URL_SUFFIX_V4 = "/api/v4"
-	API_URL_SUFFIX    = API_URL_SUFFIX_V4
-	APPS_PLUGIN_NAME  = "com.mattermost.apps"
+	APIPathPP      = "/api/v1"
+	APIUrlSuffixV4 = "/api/v4"
+	APIUrlSuffix   = APIUrlSuffixV4
+	AppsPluginName = "com.mattermost.apps"
 )
 
 type ClientPP struct {
-	Url        string       // The location of the server, for example  "http://localhost:8065"
-	ApiUrl     string       // The api location of the server, for example "http://localhost:8065/api/v4"
-	HttpClient *http.Client // The http client
+	URL        string       // The location of the server, for example  "http://localhost:8065"
+	APIURL     string       // The api location of the server, for example "http://localhost:8065/api/v4"
+	HTTPClient *http.Client // The http client
 	AuthToken  string
 	AuthType   string
-	HttpHeader map[string]string // Headers to be copied over for each request
+	HTTPHeader map[string]string // Headers to be copied over for each request
 
 	// TrueString is the string value sent to the server for true boolean query parameters.
 	trueString string
@@ -43,8 +43,8 @@ func NewAPIClientPP(url string) *ClientPP {
 }
 
 func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
-	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, StringInterfaceToJSON(in))
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+query, StringInterfaceToJSON(in)) // nolint:bodyclose
 
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
@@ -54,8 +54,8 @@ func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (m
 }
 
 func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
-	r, appErr := c.DoApiGet(c.GetPluginRoute(APPS_PLUGIN_NAME)+query, "")
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
+	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+query, "") // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
@@ -64,8 +64,8 @@ func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *mod
 }
 
 func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", API_PATH_PP, id, prefix)
-	r, appErr := c.DoApiDelete(c.GetPluginRoute(APPS_PLUGIN_NAME) + query)
+	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
+	r, appErr := c.DoAPIDELETE(c.GetPluginRoute(AppsPluginName) + query) // nolint:bodyclose
 	if appErr != nil {
 		return false, model.BuildErrorResponse(r, appErr)
 	}
@@ -74,24 +74,24 @@ func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
 }
 
 func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response) {
-	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+API_PATH_PP+"/subscribe", request.ToJson())
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/subscribe", request.ToJSON()) // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
 
-	subResponse := apps.SubscriptionResponseFromJson(r.Body)
+	subResponse := apps.SubscriptionResponseFromJSON(r.Body)
 	return subResponse, model.BuildResponse(r)
 }
 
 func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response) {
-	r, appErr := c.DoApiPost(c.GetPluginRoute(APPS_PLUGIN_NAME)+API_PATH_PP+"/unsubscribe", request.ToJson())
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/unsubscribe", request.ToJSON()) // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
 
-	subResponse := apps.SubscriptionResponseFromJson(r.Body)
+	subResponse := apps.SubscriptionResponseFromJSON(r.Body)
 	return subResponse, model.BuildResponse(r)
 }
 
@@ -103,42 +103,42 @@ func (c *ClientPP) GetPluginRoute(pluginID string) string {
 	return fmt.Sprintf(c.GetPluginsRoute()+"/%v", pluginID)
 }
 
-func (c *ClientPP) DoApiGet(url string, etag string) (*http.Response, *model.AppError) {
-	return c.DoApiRequest(http.MethodGet, c.ApiUrl+url, "", etag)
+func (c *ClientPP) DoAPIGET(url string, etag string) (*http.Response, *model.AppError) {
+	return c.DoAPIRequest(http.MethodGet, c.APIURL+url, "", etag)
 }
 
-func (c *ClientPP) DoApiPost(url string, data string) (*http.Response, *model.AppError) {
-	return c.DoApiRequest(http.MethodPost, c.ApiUrl+url, data, "")
+func (c *ClientPP) DoAPIPOST(url string, data string) (*http.Response, *model.AppError) {
+	return c.DoAPIRequest(http.MethodPost, c.APIURL+url, data, "")
 }
 
-func (c *ClientPP) DoApiDelete(url string) (*http.Response, *model.AppError) {
-	return c.DoApiRequest(http.MethodDelete, c.ApiUrl+url, "", "")
+func (c *ClientPP) DoAPIDELETE(url string) (*http.Response, *model.AppError) {
+	return c.DoAPIRequest(http.MethodDelete, c.APIURL+url, "", "")
 }
 
-func (c *ClientPP) DoApiRequest(method, url, data, etag string) (*http.Response, *model.AppError) {
-	return c.doApiRequestReader(method, url, strings.NewReader(data), etag)
+func (c *ClientPP) DoAPIRequest(method, url, data, etag string) (*http.Response, *model.AppError) {
+	return c.doAPIRequestReader(method, url, strings.NewReader(data), etag)
 }
 
-func (c *ClientPP) doApiRequestReader(method, url string, data io.Reader, etag string) (*http.Response, *model.AppError) {
+func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag string) (*http.Response, *model.AppError) {
 	rq, err := http.NewRequest(method, url, data)
 	if err != nil {
 		return nil, model.NewAppError(url, "model.client.connecting.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
 	if len(etag) > 0 {
-		rq.Header.Set(HEADER_ETAG_CLIENT, etag)
+		rq.Header.Set(HeaderEtagClient, etag)
 	}
 
 	if len(c.AuthToken) > 0 {
-		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
+		rq.Header.Set(HeaderAuth, c.AuthType+" "+c.AuthToken)
 	}
 
-	if len(c.HttpHeader) > 0 {
-		for k, v := range c.HttpHeader {
+	if len(c.HTTPHeader) > 0 {
+		for k, v := range c.HTTPHeader {
 			rq.Header.Set(k, v)
 		}
 	}
 
-	rp, err := c.HttpClient.Do(rq)
+	rp, err := c.HTTPClient.Do(rq)
 
 	if err != nil || rp == nil {
 		return nil, model.NewAppError(url, "model.client.connecting.app_error", nil, err.Error(), 0)
