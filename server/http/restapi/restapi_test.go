@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
 	"github.com/mattermost/mattermost-server/v5/api4"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/golang/mock/gomock"
@@ -78,141 +79,54 @@ func TestKV(t *testing.T) {
 	resp.Body.Close()
 }
 
-func TestSubscribe(t *testing.T) {
-	th := SetupPP(t)
+func TestPPAPI(t *testing.T) {
+	th := Setup(t)
+	SetupPP(th, t)
 	defer th.TearDown()
 
-	th.ServerTestHelper.LoginSystemAdmin()
+	t.Run("test Subscribe API", func(t *testing.T) {
+		subscription := &apps.Subscription{
+			AppID:     "test-apiId",
+			Subject:   "test-subject",
+			ChannelID: th.ServerTestHelper.BasicChannel.Id,
+			TeamID:    th.ServerTestHelper.BasicTeam.Id,
+		}
 
-	subscription := &apps.Subscription{
-		AppID:     "test-apiId",
-		Subject:   "test-subject",
-		ChannelID: th.ServerTestHelper.BasicChannel.Id,
-		TeamID:    th.ServerTestHelper.BasicTeam.Id,
-	}
+		th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
+			// subscribe
+			_, resp := client.Subscribe(subscription)
+			api4.CheckOKStatus(t, resp)
+			require.Nil(t, resp.Error)
 
-	th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
-		_, resp := client.Subscribe(subscription)
-		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
+			// unsubscribe
+			_, resp = client.Unsubscribe(subscription)
+			api4.CheckOKStatus(t, resp)
+			require.Nil(t, resp.Error)
+		})
 	})
-}
 
-func TestUnsubscribe(t *testing.T) {
-	th := SetupPP(t)
-	defer th.TearDown()
+	t.Run("test KV API", func(t *testing.T) {
+		id := "testId"
+		prefix := "prefix-test"
+		in := map[string]interface{}{}
+		in["test_bool"] = true
+		in["test_string"] = "test"
 
-	th.ServerTestHelper.LoginSystemAdmin()
-
-	subscription := &apps.Subscription{
-		AppID:     "test-apiId",
-		Subject:   "test-subject",
-		ChannelID: th.ServerTestHelper.BasicChannel.Id,
-		TeamID:    th.ServerTestHelper.BasicTeam.Id,
-	}
-
-	th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
-		// subscribe
-		_, resp := client.Subscribe(subscription)
+		// set
+		outSet, resp := th.BotClientPP.KVSet(id, prefix, in)
 		api4.CheckOKStatus(t, resp)
 		require.Nil(t, resp.Error)
+		require.Equal(t, outSet["changed"], true)
 
-		// unsubscribe
-		_, resp = client.Unsubscribe(subscription)
+		// get
+		outGet, resp := th.BotClientPP.KVGet(id, prefix)
 		api4.CheckOKStatus(t, resp)
 		require.Nil(t, resp.Error)
+		require.Equal(t, outGet["test_bool"], true)
+		require.Equal(t, outGet["test_string"], "test")
+
+		// delete
+		_, resp = th.BotClientPP.KVDelete(id, prefix)
+		api4.CheckNoError(t, resp)
 	})
-}
-
-// TODO - add tests for non-bots
-
-func TestKVSet(t *testing.T) {
-	th := SetupPP(t)
-	defer th.TearDown()
-
-	th.ServerTestHelper.LoginSystemAdmin()
-
-	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
-	require.Nil(t, err)
-
-	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
-	api4.CheckNoError(t, resp)
-	th.ClientPP.AuthToken = rtoken.Token
-	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
-
-	id := "testId"
-	prefix := "prefix-test"
-	in := map[string]interface{}{}
-	in["test_bool"] = true
-	in["test_string"] = "test"
-
-	// set
-	out, resp := th.ClientPP.KVSet(id, prefix, in)
-	api4.CheckOKStatus(t, resp)
-	require.Nil(t, resp.Error)
-	require.Equal(t, out["changed"], true)
-}
-
-func TestKVGet(t *testing.T) {
-	th := SetupPP(t)
-	defer th.TearDown()
-
-	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
-	require.Nil(t, err)
-
-	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
-	api4.CheckNoError(t, resp)
-	th.ClientPP.AuthToken = rtoken.Token
-	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
-
-	id := "testId"
-	prefix := "prefix-test"
-	in := map[string]interface{}{}
-	in["test_bool"] = true
-	in["test_string"] = "test"
-
-	// set
-	outSet, resp := th.ClientPP.KVSet(id, prefix, in)
-	api4.CheckOKStatus(t, resp)
-	require.Nil(t, resp.Error)
-	require.Equal(t, outSet["changed"], true)
-
-	// get
-	outGet, resp := th.ClientPP.KVGet(id, prefix)
-	api4.CheckOKStatus(t, resp)
-	require.Nil(t, resp.Error)
-	require.Equal(t, outGet["test_bool"], true)
-	require.Equal(t, outGet["test_string"], "test")
-}
-
-func TestKVDelete(t *testing.T) {
-	th := SetupPP(t)
-	defer th.TearDown()
-
-	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
-	require.Nil(t, err)
-
-	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
-	api4.CheckNoError(t, resp)
-	th.ClientPP.AuthToken = rtoken.Token
-	th.ClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
-
-	id := "testId"
-	prefix := "prefix-test"
-	in := map[string]interface{}{}
-	in["test_bool"] = true
-	in["test_string"] = "test"
-
-	// set
-	outSet, resp := th.ClientPP.KVSet(id, prefix, in)
-	api4.CheckOKStatus(t, resp)
-	require.Nil(t, resp.Error)
-	require.Equal(t, outSet["changed"], true)
-
-	// delete
-	_, resp = th.ClientPP.KVDelete(id, prefix)
-	api4.CheckNoError(t, resp)
 }

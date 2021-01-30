@@ -30,6 +30,7 @@ type TestHelper struct {
 	ServerTestHelper    *api4.TestHelper
 	ClientPP            *mmclient.ClientPP
 	SystemAdminClientPP *mmclient.ClientPP
+	BotClientPP         *mmclient.ClientPP
 	LocalClientPP       *mmclient.ClientPP
 }
 
@@ -37,10 +38,10 @@ func (th *TestHelper) TearDown() {
 	th.ServerTestHelper.TearDown()
 }
 
-func Setup(tb testing.TB) *TestHelper {
+func Setup(t testing.TB) *TestHelper {
 	th := &TestHelper{}
 
-	serverTestHelper := api4.Setup(tb)
+	serverTestHelper := api4.Setup(t)
 	serverTestHelper.InitBasic()
 
 	// enable bot creation by default
@@ -55,22 +56,32 @@ func Setup(tb testing.TB) *TestHelper {
 	th.SystemAdminClientPP.AuthToken = th.ServerTestHelper.SystemAdminClient.AuthToken
 	th.SystemAdminClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
 	th.LocalClientPP = th.CreateLocalClient("TODO")
+
+	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
+	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	require.Nil(t, err)
+
+	rtoken, _ := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
+
+	th.BotClientPP = th.CreateClientPP()
+	th.BotClientPP.AuthToken = rtoken.Token
+	th.BotClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
+
 	return th
 }
 
-func SetupPP(t testing.TB) *TestHelper {
-	th := Setup(t)
-
+// Sets up the PP for test
+func SetupPP(th *TestHelper, t testing.TB) {
 	pluginsEnvironment := th.ServerTestHelper.App.GetPluginsEnvironment()
 	if pluginsEnvironment == nil {
 		mlog.Debug("Missing plugin environment")
-		return nil
+		return
 	}
 
 	basePath := os.Getenv("MM_SERVER_PATH")
 	testPluginPath := filepath.Join(basePath, model.PLUGIN_SETTINGS_DEFAULT_DIRECTORY, pluginID+".tar.gz")
 
-	// Install the plugin and enable
+	// Install the PP and enable it
 	pluginBytes, err := ioutil.ReadFile(testPluginPath)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
@@ -82,14 +93,12 @@ func SetupPP(t testing.TB) *TestHelper {
 	_, err = pluginsEnvironment.Available()
 	if err != nil {
 		mlog.Error("Unable to get available plugins", mlog.Err(err))
-		return nil
+		return
 	}
 
 	_, _, activationErr := pluginsEnvironment.Activate(pluginID)
 	require.NoError(t, activationErr)
 	require.True(t, th.ServerTestHelper.App.GetPluginsEnvironment().IsActive(pluginID))
-
-	return th
 }
 
 func (th *TestHelper) CreateClientPP() *mmclient.ClientPP {
