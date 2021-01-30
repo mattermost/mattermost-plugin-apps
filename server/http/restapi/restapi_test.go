@@ -133,7 +133,8 @@ func TestKVSet(t *testing.T) {
 	th.ServerTestHelper.LoginSystemAdmin()
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	require.Nil(t, err)
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
@@ -158,7 +159,8 @@ func TestKVGet(t *testing.T) {
 	defer th.TearDown()
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	require.Nil(t, err)
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
@@ -190,7 +192,8 @@ func TestKVDelete(t *testing.T) {
 	defer th.TearDown()
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	require.Nil(t, err)
 
 	rtoken, resp := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
 	api4.CheckNoError(t, resp)
@@ -212,5 +215,4 @@ func TestKVDelete(t *testing.T) {
 	// delete
 	_, resp = th.ClientPP.KVDelete(id, prefix)
 	api4.CheckNoError(t, resp)
-
 }

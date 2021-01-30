@@ -14,8 +14,8 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/v5/api4"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/stretchr/testify/require"
 )
@@ -64,11 +64,6 @@ func SetupPP(t testing.TB) *TestHelper {
 	pluginsEnvironment := th.ServerTestHelper.App.GetPluginsEnvironment()
 	if pluginsEnvironment == nil {
 		mlog.Debug("Missing plugin environment")
-		return nil
-	}
-
-	if err := pluginsEnvironment.PerformHealthCheck(pluginID); err != nil {
-		mlog.Debug("Missing proxy plugin")
 		return nil
 	}
 
