@@ -78,7 +78,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 	bot.DM(c.Context.ActingUserID, "Posted welcome message to channel.")
 
 	// TODO this should be done using the REST Subs API, for now mock with direct use
-	_,err := adminClient.Subscribe(&apps.Subscription{
+	_, err := adminClient.Subscribe(&apps.Subscription{
 		AppID:     appID,
 		Subject:   apps.SubjectUserJoinedChannel,
 		ChannelID: channel.Id,
