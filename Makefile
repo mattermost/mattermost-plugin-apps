@@ -26,6 +26,7 @@ LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
 LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
 GOBUILD = $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)'
 GOTEST = $(GO) test $(GOFLAGS) $(GO_TEST_FLAGS) -ldflags '$(LDFLAGS)'
+GO_PACKAGES=$(shell go list ./...)
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
@@ -214,13 +215,22 @@ detach: setup-attach
 
 ## Runs any lints and unit tests defined for the server and webapp, if they exist.
 .PHONY: test
-test: webapp/node_modules
+test: test-unit
+
+.PHONY: test-unit
+test-unit: webapp/node_modules
+	@echo Running unit tests
 ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
 endif
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) run test;
 endif
+
+.PHONY: test-e2e
+test-e2e:
+	@echo Running e2e tests
+	MM_SERVER_PATH=${MM_SERVER_PATH} $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
