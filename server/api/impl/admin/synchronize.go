@@ -44,7 +44,7 @@ func (m *Mappings) ToJSON() []byte {
 	return b
 }
 
-// SynchronizeApps synchronizes apps upgrading, downgrading and deleting apps
+// SynchronizeApps synchronizes apps with the mappings file stored in the env var.
 func (adm *Admin) SynchronizeApps() error {
 	mappingsFile := os.Getenv(appsMappingsEnvVarName)
 	if mappingsFile == "" {
