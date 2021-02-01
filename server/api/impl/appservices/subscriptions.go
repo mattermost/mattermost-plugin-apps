@@ -8,17 +8,9 @@ import (
 )
 
 func (a *AppServices) Subscribe(sub *apps.Subscription) error {
-	err := a.store.StoreSub(sub)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.store.StoreSub(sub)
 }
 
 func (a *AppServices) Unsubscribe(sub *apps.Subscription) error {
-	err := a.store.DeleteSub(sub)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.store.DeleteSub(sub)
 }
