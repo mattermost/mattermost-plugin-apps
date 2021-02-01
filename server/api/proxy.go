@@ -7,7 +7,7 @@ type Proxy interface {
 	GetBindings(*Context) ([]*Binding, error)
 	Call(SessionToken, *Call) *CallResponse
 	Notify(cc *Context, subj Subject) error
-	Asset(AppID, string) ([]byte, error)
+	GetAsset(AppID, string) ([]byte, error)
 
 	ProvisionBuiltIn(AppID, Upstream)
 }

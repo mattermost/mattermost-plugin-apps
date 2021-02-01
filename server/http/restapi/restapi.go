@@ -35,7 +35,7 @@ func Init(router *mux.Router, appsService *api.Service) {
 	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvHead)).Methods("HEAD")
 	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
 
-	subrouter.HandleFunc(api.AssetPath, a.assetGet).Methods("GET")
+	subrouter.HandleFunc(api.AssetPath, checkAuthorized(a.handleGetAsset)).Methods("GET")
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) func(http.ResponseWriter, *http.Request) {
