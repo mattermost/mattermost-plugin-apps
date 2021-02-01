@@ -18,20 +18,6 @@ func (at AppType) IsValid() bool {
 		at == AppTypeBuiltin
 }
 
-// FunctionType describes different functions that could be executed by the App.
-// For now we support AWS lambda function and an http call.
-type FunctionType string
-
-const (
-	awsLambdaFunction FunctionType = "aws_lambda"
-	httpFunction      FunctionType = "http"
-)
-
-func (ft FunctionType) IsValid() bool {
-	return ft == awsLambdaFunction ||
-		ft == httpFunction
-}
-
 // AssetType describes static assets of the Mattermost App.
 // Assets can be saved in S3 with appropriate permissions,
 // or they could be fetched as ordinary http resources.
@@ -59,10 +45,9 @@ const (
 // Function describes app's function mapping
 // For now Function can be either AWS Lambda or HTTP function
 type Function struct {
-	Name    string       `json:"name"`
-	Type    FunctionType `json:"type"`
-	Handler string       `json:"handler"`
-	Runtime string       `json:"runtime"`
+	Name    string `json:"name"`
+	Handler string `json:"handler"`
+	Runtime string `json:"runtime"`
 }
 
 // Asset describes app's static asset.

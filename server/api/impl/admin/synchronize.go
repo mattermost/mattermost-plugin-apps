@@ -44,7 +44,7 @@ func (m *Mappings) ToJSON() []byte {
 	return b
 }
 
-// SynchronizeApps synchronizes apps upgrading, downgrading and deleting apps
+// SynchronizeApps synchronizes apps with the mappings file stored in the env var.
 func (adm *Admin) SynchronizeApps() error {
 	mappingsFile := os.Getenv(appsMappingsEnvVarName)
 	if mappingsFile == "" {
@@ -165,7 +165,7 @@ func (adm *Admin) call(app *api.App, call *api.Call, values map[string]string) e
 	}
 
 	if call.Values == nil {
-		call.Values = map[string]string{}
+		call.Values = map[string]interface{}{}
 	}
 	call.Values[api.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
 	for k, v := range values {
