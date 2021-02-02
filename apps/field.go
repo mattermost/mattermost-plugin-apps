@@ -1,4 +1,4 @@
-package api
+package apps
 
 type FieldType string
 

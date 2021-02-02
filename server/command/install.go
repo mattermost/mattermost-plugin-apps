@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
@@ -32,17 +32,21 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return errorOut(params, err)
 	}
 
+	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		return errorOut(params, errors.New("forbidden"))
+	}
+
 	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
 	app, _, err := s.api.Admin.ProvisionApp(
-		&api.Context{
+		&apps.Context{
 			ActingUserID: params.commandArgs.UserId,
 		},
-		api.SessionToken(params.commandArgs.Session.Token),
-		&api.InProvisionApp{
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
 			Manifest:  manifest,
 			AppSecret: appSecret,
 			Force:     force,

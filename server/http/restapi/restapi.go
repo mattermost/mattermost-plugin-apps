@@ -10,11 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-type SubscribeResponse struct {
-	Error  string            `json:"error,omitempty"`
-	Errors map[string]string `json:"errors,omitempty"`
-}
-
 type restapi struct {
 	api *api.Service
 }
@@ -27,7 +22,8 @@ func Init(router *mux.Router, appsService *api.Service) {
 	subrouter := router.PathPrefix(api.APIPath).Subrouter()
 	subrouter.HandleFunc(api.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
 	subrouter.HandleFunc(api.CallPath, a.handleCall).Methods("POST")
-	subrouter.HandleFunc(api.SubscribePath, a.handleSubscribe).Methods("POST", "DELETE")
+	subrouter.HandleFunc(api.SubscribePath, a.handleSubscribe).Methods("POST")
+	subrouter.HandleFunc(api.UnsubscribePath, a.handleUnsubscribe).Methods("POST")
 
 	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvGet)).Methods("GET")
 	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvPut)).Methods("PUT", "POST")

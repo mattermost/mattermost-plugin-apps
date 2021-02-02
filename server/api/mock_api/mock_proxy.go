@@ -6,6 +6,7 @@ package mock_api
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	api "github.com/mattermost/mattermost-plugin-apps/server/api"
 	reflect "reflect"
 )
@@ -34,10 +35,10 @@ func (m *MockProxy) EXPECT() *MockProxyMockRecorder {
 }
 
 // Call mocks base method
-func (m *MockProxy) Call(arg0 api.SessionToken, arg1 *api.Call) *api.CallResponse {
+func (m *MockProxy) Call(arg0 apps.SessionToken, arg1 *apps.Call) *apps.CallResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Call", arg0, arg1)
-	ret0, _ := ret[0].(*api.CallResponse)
+	ret0, _ := ret[0].(*apps.CallResponse)
 	return ret0
 }
 
@@ -48,10 +49,10 @@ func (mr *MockProxyMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // GetBindings mocks base method
-func (m *MockProxy) GetBindings(arg0 *api.Context) ([]*api.Binding, error) {
+func (m *MockProxy) GetBindings(arg0 *apps.Context) ([]*apps.Binding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBindings", arg0)
-	ret0, _ := ret[0].([]*api.Binding)
+	ret0, _ := ret[0].([]*apps.Binding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -63,7 +64,7 @@ func (mr *MockProxyMockRecorder) GetBindings(arg0 interface{}) *gomock.Call {
 }
 
 // Notify mocks base method
-func (m *MockProxy) Notify(arg0 *api.Context, arg1 api.Subject) error {
+func (m *MockProxy) Notify(arg0 *apps.Context, arg1 apps.Subject) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Notify", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -77,7 +78,7 @@ func (mr *MockProxyMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // ProvisionBuiltIn mocks base method
-func (m *MockProxy) ProvisionBuiltIn(arg0 api.AppID, arg1 api.Upstream) {
+func (m *MockProxy) ProvisionBuiltIn(arg0 apps.AppID, arg1 api.Upstream) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ProvisionBuiltIn", arg0, arg1)
 }

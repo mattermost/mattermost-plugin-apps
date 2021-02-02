@@ -1,3 +1,5 @@
+// +build !e2e
+
 package store
 
 import (
@@ -11,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
@@ -25,13 +28,13 @@ func TestDeleteSub(t *testing.T) {
 	conf := configurator.NewConfigurator(apiClient, nil, &api.BuildConfig{}, botID)
 	s := NewStore(apiClient, conf)
 
-	toDelete := api.Subscription{
+	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
 		ChannelID: "channel-id",
 		AppID:     "app-id",
 	}
 
-	storedSubs := []*api.Subscription{
+	storedSubs := []*apps.Subscription{
 		{
 			Subject:   "user_joined_channel",
 			ChannelID: "channel-id",
@@ -50,7 +53,7 @@ func TestDeleteSub(t *testing.T) {
 	}
 	storedSubsBytes, _ := json.Marshal(storedSubs)
 
-	storedSubsWithToDelete := []*api.Subscription{
+	storedSubsWithToDelete := []*apps.Subscription{
 		{
 			Subject:   "user_joined_channel",
 			ChannelID: "channel-id",
@@ -74,7 +77,7 @@ func TestDeleteSub(t *testing.T) {
 	}
 	storedSubsWithToDeleteBytes, _ := json.Marshal(storedSubsWithToDelete)
 
-	emptySubs := []*api.Subscription{}
+	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
 	subKey := "sub_user_joined_channel_channel-id"
@@ -132,10 +135,10 @@ func TestGetSubs(t *testing.T) {
 	conf := configurator.NewConfigurator(apiClient, nil, &api.BuildConfig{}, botID)
 	s := NewStore(apiClient, conf)
 
-	emptySubs := []*api.Subscription{}
+	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
-	storedSubs := []*api.Subscription{
+	storedSubs := []*apps.Subscription{
 		{
 			Subject:   "user_joined_channel",
 			ChannelID: "channel-id",
@@ -195,13 +198,13 @@ func TestStoreSub(t *testing.T) {
 	conf := configurator.NewConfigurator(apiClient, nil, &api.BuildConfig{}, botID)
 	s := NewStore(apiClient, conf)
 
-	toStore := api.Subscription{
+	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",
 		ChannelID: "channel-id",
 		AppID:     "app-id",
 	}
 
-	storedSubs := []*api.Subscription{
+	storedSubs := []*apps.Subscription{
 		{
 			Subject:   "user_joined_channel",
 			ChannelID: "channel-id",
@@ -221,7 +224,7 @@ func TestStoreSub(t *testing.T) {
 
 	storedSubsBytes, _ := json.Marshal(storedSubs)
 
-	storedSubsWithToStore := []*api.Subscription{
+	storedSubsWithToStore := []*apps.Subscription{
 		{
 			Subject:   "user_joined_channel",
 			ChannelID: "channel-id",
@@ -245,10 +248,10 @@ func TestStoreSub(t *testing.T) {
 	}
 	storedSubsWithToStoreBytes, _ := json.Marshal(storedSubsWithToStore)
 
-	emptySubs := []*api.Subscription{}
+	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
-	emptySubsWithToStore := []*api.Subscription{&toStore}
+	emptySubsWithToStore := []*apps.Subscription{&toStore}
 	emptySubsWithToStoreBytes, _ := json.Marshal(emptySubsWithToStore)
 
 	subKey := "sub_user_joined_channel_channel-id"
@@ -292,55 +295,55 @@ func TestStoreSub(t *testing.T) {
 
 func TestSubsKey(t *testing.T) {
 	for name, testcase := range map[string]struct {
-		Subject   api.Subject
+		Subject   apps.Subject
 		TeamID    string
 		ChannelID string
 		Expected  string
 	}{
-		string(api.SubjectUserCreated): {
-			api.SubjectUserCreated,
+		string(apps.SubjectUserCreated): {
+			apps.SubjectUserCreated,
 			"team-id",
 			"channel-id",
 			"sub_user_created",
 		},
-		string(api.SubjectUserJoinedChannel): {
-			api.SubjectUserJoinedChannel,
+		string(apps.SubjectUserJoinedChannel): {
+			apps.SubjectUserJoinedChannel,
 			"team-id",
 			"channel-id",
 			"sub_user_joined_channel_channel-id",
 		},
-		string(api.SubjectUserLeftChannel): {
-			api.SubjectUserLeftChannel,
+		string(apps.SubjectUserLeftChannel): {
+			apps.SubjectUserLeftChannel,
 			"team-id",
 			"channel-id",
 			"sub_user_left_channel_channel-id",
 		},
-		string(api.SubjectUserJoinedTeam): {
-			api.SubjectUserJoinedTeam,
+		string(apps.SubjectUserJoinedTeam): {
+			apps.SubjectUserJoinedTeam,
 			"team-id",
 			"channel-id",
 			"sub_user_joined_team_team-id",
 		},
-		string(api.SubjectUserLeftTeam): {
-			api.SubjectUserLeftTeam,
+		string(apps.SubjectUserLeftTeam): {
+			apps.SubjectUserLeftTeam,
 			"team-id",
 			"channel-id",
 			"sub_user_left_team_team-id",
 		},
-		string(api.SubjectUserUpdated): {
-			api.SubjectUserUpdated,
+		string(apps.SubjectUserUpdated): {
+			apps.SubjectUserUpdated,
 			"team-id",
 			"channel-id",
 			"sub_user_updated",
 		},
-		string(api.SubjectChannelCreated): {
-			api.SubjectChannelCreated,
+		string(apps.SubjectChannelCreated): {
+			apps.SubjectChannelCreated,
 			"team-id",
 			"channel-id",
 			"sub_channel_created_team-id",
 		},
-		string(api.SubjectPostCreated): {
-			api.SubjectPostCreated,
+		string(apps.SubjectPostCreated): {
+			apps.SubjectPostCreated,
 			"team-id",
 			"channel-id",
 			"sub_post_created_channel-id",
