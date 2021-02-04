@@ -64,6 +64,7 @@ func (p *Plugin) OnActivate() error {
 	awsClient := aws.NewAWSClient(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, &mm.Log)
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
+	conf.RefreshConfig(&stored)
 	store := store.NewStore(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
