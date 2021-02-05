@@ -115,6 +115,7 @@ var DefaultBindingsCall = &Call{
 }
 
 type App struct {
+	ID       AppID
 	Manifest *Manifest `json:"manifest"`
 	Status   AppStatus `json:"app_status"`
 

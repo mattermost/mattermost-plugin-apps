@@ -11,4 +11,9 @@ type Store interface {
 	StoreApp(app *App) error
 	DeleteApp(app *App) error
 	StoreSub(sub *Subscription) error
+
+	EmptyManifests()
+	StoreManifest(manifest *Manifest)
+	LoadManifest(appID AppID) (*Manifest, error)
+	ListManifests() map[AppID]*Manifest
 }

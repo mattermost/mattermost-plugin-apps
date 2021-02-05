@@ -13,6 +13,8 @@ const prefixSubs = "sub_"
 type Store struct {
 	mm   *pluginapi.Client
 	conf api.Configurator
+	// Manifests of the registered apps for this installation
+	manifests map[api.AppID]*api.Manifest
 }
 
 var _ api.Store = (*Store)(nil)

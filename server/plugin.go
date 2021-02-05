@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -66,12 +67,17 @@ func (p *Plugin) OnActivate() error {
 	store := store.NewStore(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
+	mutex, err := cluster.NewMutex(p.API, "PP_Cluster_Mutex")
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
+
 	p.api = &api.Service{
 		Mattermost:   mm,
 		Configurator: conf,
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
-		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient),
+		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
 		AWS:          awsClient,
 	}
 	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))

@@ -16,6 +16,7 @@ func (s *Store) ListApps() []*api.App {
 	}
 	for _, v := range conf.Apps {
 		app := api.AppFromConfigMap(v)
+		app = s.populateAppWithManifest(app)
 		out = append(out, app)
 	}
 	return out
@@ -30,7 +31,9 @@ func (s *Store) LoadApp(appID api.AppID) (*api.App, error) {
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
-	return api.AppFromConfigMap(v), nil
+	app := api.AppFromConfigMap(v)
+	app = s.populateAppWithManifest(app)
+	return app, nil
 }
 
 func (s *Store) StoreApp(app *api.App) error {
@@ -38,6 +41,9 @@ func (s *Store) StoreApp(app *api.App) error {
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
 	}
+	//do not store manifest in the config
+	app.ID = app.Manifest.AppID
+	app.Manifest = nil
 
 	conf.Apps[string(app.Manifest.AppID)] = app.ConfigMap()
 
