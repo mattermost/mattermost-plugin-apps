@@ -41,7 +41,7 @@ func (s *Store) StoreApp(app *apps.App) error {
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
 	}
-	//do not store manifest in the config
+	// do not store manifest in the config
 	app.ID = app.Manifest.AppID
 	app.Manifest = nil
 

@@ -37,6 +37,9 @@ func (c *Client) GetManifest(appID apps.AppID, version string) (*apps.Manifest, 
 	if err := json.Unmarshal(data, manifest); err != nil {
 		return nil, err
 	}
+	if manifest == nil {
+		return nil, errors.Errorf("manifest is nil for app %s", appID)
+	}
 	if manifest.AppID != appID {
 		return nil, errors.Errorf("missmatched app ids while getting manifest %s != %s", manifest.AppID, appID)
 	}

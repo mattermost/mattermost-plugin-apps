@@ -31,7 +31,7 @@ func (s *Store) ListManifests() map[apps.AppID]*apps.Manifest {
 func (s *Store) populateAppWithManifest(app *apps.App) *apps.App {
 	manifest, ok := s.manifests[app.ID]
 	if !ok {
-		s.mm.Log.Error("This should not have happened. No manifest avaliable for", "app_id", app.ID)
+		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.ID)
 	}
 	app.Manifest = manifest
 	return app

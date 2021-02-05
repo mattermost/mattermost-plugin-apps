@@ -28,7 +28,7 @@ func getAppsForInstallation(installationID string) (map[apps.AppID]string, error
 		return nil, errors.Wrap(err, "can't read apps.json file")
 	}
 	var allAppVersions *AppVersions
-	if err := json.Unmarshal(data, allAppVersions); err != nil {
+	if err := json.Unmarshal(data, allAppVersions); err != nil || allAppVersions == nil {
 		return nil, errors.Wrap(err, "can't unmarshal apps.json file")
 	}
 
@@ -166,7 +166,9 @@ func (adm *Admin) AddApp(manifest *apps.Manifest) error {
 func (adm *Admin) callOnce(f func() error) error {
 	// Delete previous job
 	key := "PP_CallOnce_key"
-	adm.mm.KV.Delete(key)
+	if err := adm.mm.KV.Delete(key); err != nil {
+		return errors.Wrap(err, "can't delete key")
+	}
 	// Ensure all instances run this
 	time.Sleep(10 * time.Second)
 
@@ -188,10 +190,10 @@ func (adm *Admin) callOnce(f func() error) error {
 	value = 1
 	ok, err := adm.mm.KV.Set(key, value)
 	if err != nil {
-		return errors.Wrapf(err, "can't set key %s to %s", key, value)
+		return errors.Wrapf(err, "can't set key %s to %d", key, value)
 	}
 	if !ok {
-		return errors.Errorf("can't set key %s to %s", key, value)
+		return errors.Errorf("can't set key %s to %d", key, value)
 	}
 	return nil
 }
