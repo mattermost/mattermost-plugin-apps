@@ -28,7 +28,7 @@ func getAppsForInstallation(installationID string) (map[apps.AppID]string, error
 		return nil, errors.Wrap(err, "can't read apps.json file")
 	}
 	var allAppVersions *AppVersions
-	if err := json.Unmarshal(data, allAppVersions); err != nil || allAppVersions == nil {
+	if err := json.Unmarshal(data, &allAppVersions); err != nil || allAppVersions == nil {
 		return nil, errors.Wrap(err, "can't unmarshal apps.json file")
 	}
 

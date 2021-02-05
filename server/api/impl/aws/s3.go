@@ -34,7 +34,7 @@ func (c *Client) GetManifest(appID apps.AppID, version string) (*apps.Manifest, 
 		return nil, errors.Wrapf(err, "can't download manifest %s/%s", c.appsS3Bucket, manifestFileName)
 	}
 	var manifest *apps.Manifest
-	if err := json.Unmarshal(data, manifest); err != nil {
+	if err := json.Unmarshal(data, &manifest); err != nil {
 		return nil, err
 	}
 	if manifest == nil {
