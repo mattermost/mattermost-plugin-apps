@@ -56,6 +56,11 @@ func TestMergeApps(t *testing.T) {
 				}},
 			},
 		},
+		"both empty": {
+			a:        []MarketplaceApp{},
+			b:        []MarketplaceApp{},
+			expected: []MarketplaceApp{},
+		},
 		"two different elements": {
 			a: []MarketplaceApp{{
 				Manifest: apps.Manifest{
@@ -76,6 +81,28 @@ func TestMergeApps(t *testing.T) {
 				{
 					Manifest: apps.Manifest{
 						AppID: "some other ID",
+					},
+				},
+			},
+		},
+		"same element, should take first": {
+			a: []MarketplaceApp{{
+				Manifest: apps.Manifest{
+					AppID:       "someID",
+					Description: "someDescription",
+				}},
+			},
+			b: []MarketplaceApp{{
+				Manifest: apps.Manifest{
+					AppID:       "someID",
+					Description: "someOtherDescription",
+				}},
+			},
+			expected: []MarketplaceApp{
+				{
+					Manifest: apps.Manifest{
+						AppID:       "someID",
+						Description: "someDescription",
 					},
 				},
 			},
