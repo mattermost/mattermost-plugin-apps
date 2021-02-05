@@ -5,6 +5,7 @@ package store
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
@@ -14,7 +15,7 @@ type Store struct {
 	mm   *pluginapi.Client
 	conf api.Configurator
 	// Manifests of the registered apps for this installation
-	manifests map[api.AppID]*api.Manifest
+	manifests map[apps.AppID]*apps.Manifest
 }
 
 var _ api.Store = (*Store)(nil)

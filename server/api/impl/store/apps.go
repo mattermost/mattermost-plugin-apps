@@ -4,25 +4,25 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *Store) ListApps() []*api.App {
+func (s *Store) ListApps() []*apps.App {
 	conf := s.conf.GetConfig()
-	out := []*api.App{}
+	out := []*apps.App{}
 	if len(conf.Apps) == 0 {
 		return out
 	}
 	for _, v := range conf.Apps {
-		app := api.AppFromConfigMap(v)
+		app := apps.AppFromConfigMap(v)
 		app = s.populateAppWithManifest(app)
 		out = append(out, app)
 	}
 	return out
 }
 
-func (s *Store) LoadApp(appID api.AppID) (*api.App, error) {
+func (s *Store) LoadApp(appID apps.AppID) (*apps.App, error) {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
@@ -31,12 +31,12 @@ func (s *Store) LoadApp(appID api.AppID) (*api.App, error) {
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
-	app := api.AppFromConfigMap(v)
+	app := apps.AppFromConfigMap(v)
 	app = s.populateAppWithManifest(app)
 	return app, nil
 }
 
-func (s *Store) StoreApp(app *api.App) error {
+func (s *Store) StoreApp(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
@@ -57,7 +57,7 @@ func (s *Store) StoreApp(app *api.App) error {
 	return s.conf.StoreConfig(conf.StoredConfig)
 }
 
-func (s *Store) DeleteApp(app *api.App) error {
+func (s *Store) DeleteApp(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	delete(conf.Apps, string(app.Manifest.AppID))
 

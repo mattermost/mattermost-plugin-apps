@@ -1,4 +1,4 @@
-package api
+package apps
 
 import "encoding/json"
 
@@ -115,7 +115,7 @@ var DefaultBindingsCall = &Call{
 }
 
 type App struct {
-	ID       AppID
+	ID       AppID     `json:"app_id"`
 	Manifest *Manifest `json:"manifest"`
 	Status   AppStatus `json:"app_status"`
 

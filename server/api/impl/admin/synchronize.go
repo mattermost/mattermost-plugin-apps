@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
@@ -18,11 +18,11 @@ const oldVersionKey = "update_from_version"
 
 // AppVersions describes versions for all the apps in all installations
 type AppVersions struct {
-	Apps      map[api.AppID]string            `json:"apps"`
-	Overrides map[string]map[api.AppID]string `json:"overrides"`
+	Apps      map[apps.AppID]string            `json:"apps"`
+	Overrides map[string]map[apps.AppID]string `json:"overrides"`
 }
 
-func getAppsForInstallation(installationID string) (map[api.AppID]string, error) {
+func getAppsForInstallation(installationID string) (map[apps.AppID]string, error) {
 	data, err := ioutil.ReadFile("assets/apps.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "can't read apps.json file")
@@ -41,7 +41,7 @@ func getAppsForInstallation(installationID string) (map[api.AppID]string, error)
 	return apps, nil
 }
 
-func (adm *Admin) populateManifests(appVersions map[api.AppID]string) {
+func (adm *Admin) populateManifests(appVersions map[apps.AppID]string) {
 	adm.store.EmptyManifests()
 	for id, version := range appVersions {
 		manifest, err := adm.awsClient.GetManifest(id, version)
@@ -57,17 +57,17 @@ func (adm *Admin) populateManifests(appVersions map[api.AppID]string) {
 // SynchronizeApps synchronizes apps with the mappings file stored in the env var.
 func (adm *Admin) SynchronizeApps() error {
 	installationID := adm.mm.System.GetDiagnosticID()
-	apps, err := getAppsForInstallation(installationID)
+	appsForInstallation, err := getAppsForInstallation(installationID)
 	if err != nil {
 		return errors.Wrap(err, "can't get apps for installation")
 	}
 
-	adm.populateManifests(apps)
+	adm.populateManifests(appsForInstallation)
 
 	registeredApps := adm.store.ListApps()
 
-	registeredAppsMap := map[api.AppID]*api.App{}
-	updatedAppVersionsMap := map[api.AppID]string{}
+	registeredAppsMap := map[apps.AppID]*apps.App{}
+	updatedAppVersionsMap := map[apps.AppID]string{}
 	// Update apps
 	for _, registeredApp := range registeredApps {
 		registeredAppsMap[registeredApp.Manifest.AppID] = registeredApp
@@ -103,7 +103,7 @@ func (adm *Admin) SynchronizeApps() error {
 
 	// call onInstanceStartup. App migration happens here
 	for _, registeredApp := range registeredAppsUpgraded {
-		if registeredApp.Status == api.AppStatusEnabled {
+		if registeredApp.Status == apps.AppStatusEnabled {
 			values := map[string]string{}
 			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
 				values[oldVersionKey] = updatedAppVersionsMap[registeredApp.Manifest.AppID]
@@ -124,7 +124,7 @@ func (adm *Admin) SynchronizeApps() error {
 	return nil
 }
 
-func (adm *Admin) DeleteApp(app *api.App) error {
+func (adm *Admin) DeleteApp(app *apps.App) error {
 	// Call delete the function of the app
 	if err := adm.call(app, app.Manifest.OnDelete, nil); err != nil {
 		return errors.Wrapf(err, "delete failed. appID - %s", app.Manifest.AppID)
@@ -152,10 +152,10 @@ func (adm *Admin) DeleteApp(app *api.App) error {
 	return nil
 }
 
-func (adm *Admin) AddApp(manifest *api.Manifest) error {
-	newApp := &api.App{}
+func (adm *Admin) AddApp(manifest *apps.Manifest) error {
+	newApp := &apps.App{}
 	newApp.Manifest = manifest
-	newApp.Status = api.AppStatusRegistered
+	newApp.Status = apps.AppStatusRegistered
 	if err := adm.store.StoreApp(newApp); err != nil {
 		return errors.Wrapf(err, "can't store app - %s", manifest.AppID)
 	}
@@ -196,7 +196,7 @@ func (adm *Admin) callOnce(f func() error) error {
 	return nil
 }
 
-func (adm *Admin) call(app *api.App, call *api.Call, values map[string]string) error {
+func (adm *Admin) call(app *apps.App, call *apps.Call, values map[string]string) error {
 	if call == nil {
 		return nil
 	}
@@ -204,19 +204,19 @@ func (adm *Admin) call(app *api.App, call *api.Call, values map[string]string) e
 	if call.Values == nil {
 		call.Values = map[string]interface{}{}
 	}
-	call.Values[api.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
+	call.Values[apps.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
 	for k, v := range values {
 		call.Values[k] = v
 	}
 
 	if call.Expand == nil {
-		call.Expand = &api.Expand{}
+		call.Expand = &apps.Expand{}
 	}
-	call.Expand.App = api.ExpandAll
-	call.Expand.AdminAccessToken = api.ExpandAll
+	call.Expand.App = apps.ExpandAll
+	call.Expand.AdminAccessToken = apps.ExpandAll
 
 	resp := adm.proxy.Call(adm.adminToken, call)
-	if resp.Type == api.CallResponseTypeError {
+	if resp.Type == apps.CallResponseTypeError {
 		return errors.Wrapf(resp, "call %s failed", call.URL)
 	}
 	return nil

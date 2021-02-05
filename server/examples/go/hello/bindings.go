@@ -1,23 +1,23 @@
 package hello
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func Bindings() []*api.Binding {
-	justSend := api.MakeCall(PathSendSurvey)
+func Bindings() []*apps.Binding {
+	justSend := apps.MakeCall(PathSendSurvey)
 
-	modal := api.MakeCall(PathSendSurveyModal)
+	modal := apps.MakeCall(PathSendSurveyModal)
 
-	modalFromPost := api.MakeCall(PathSendSurveyModal)
-	modalFromPost.Expand = &api.Expand{Post: api.ExpandAll}
+	modalFromPost := apps.MakeCall(PathSendSurveyModal)
+	modalFromPost.Expand = &apps.Expand{Post: apps.ExpandAll}
 
-	commandToModal := api.MakeCall(PathSendSurveyCommandToModal)
-	return []*api.Binding{
+	commandToModal := apps.MakeCall(PathSendSurveyCommandToModal)
+	return []*apps.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
-			Location: api.LocationChannelHeader,
-			Bindings: []*api.Binding{
+			Location: apps.LocationChannelHeader,
+			Bindings: []*apps.Binding{
 				{
 					Location:    "send",
 					Label:       "Survey a user",
@@ -28,8 +28,8 @@ func Bindings() []*api.Binding {
 				},
 			},
 		}, {
-			Location: api.LocationPostMenu,
-			Bindings: []*api.Binding{
+			Location: apps.LocationPostMenu,
+			Bindings: []*apps.Binding{
 				{
 					Location:    "send-me",
 					Label:       "Survey myself",
@@ -48,8 +48,8 @@ func Bindings() []*api.Binding {
 		},
 		// TODO /Command binding is a placeholder, may not be final, test!
 		{
-			Location: api.LocationCommand,
-			Bindings: []*api.Binding{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
 				{
 					Label:       "message",
 					Location:    "message",
@@ -67,19 +67,19 @@ func Bindings() []*api.Binding {
 					Location:    "manage",
 					Hint:        "subscribe | unsubscribe ",
 					Description: "manage channel subscriptions to greet new users",
-					Bindings: []*api.Binding{
+					Bindings: []*apps.Binding{
 						{
 							Label:       "subscribe",
 							Location:    "subscribe",
 							Hint:        "[--channel]",
 							Description: "subscribes a channel to greet new users",
-							Call:        api.MakeCall(PathSubscribeChannel, "mode", "on"),
+							Call:        apps.MakeCall(PathSubscribeChannel, "mode", "on"),
 						}, {
 							Label:       "unsubscribe",
 							Location:    "unsubscribe",
 							Hint:        "[--channel]",
 							Description: "unsubscribes a channel from greeting new users",
-							Call:        api.MakeCall(PathSubscribeChannel, "mode", "off"),
+							Call:        apps.MakeCall(PathSubscribeChannel, "mode", "off"),
 						},
 					},
 				},

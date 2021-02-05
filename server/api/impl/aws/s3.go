@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
 )
 
@@ -27,13 +27,13 @@ func (c *Client) S3FileDownload(bucket, item string) ([]byte, error) {
 }
 
 // GetManifest returns a manifest file for an app from the S3
-func (c *Client) GetManifest(appID api.AppID, version string) (*api.Manifest, error) {
+func (c *Client) GetManifest(appID apps.AppID, version string) (*apps.Manifest, error) {
 	manifestFileName := fmt.Sprintf("manifest_%s_%s", appID, version)
 	data, err := c.S3FileDownload(c.appsS3Bucket, manifestFileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't download manifest %s/%s", c.appsS3Bucket, manifestFileName)
 	}
-	var manifest *api.Manifest
+	var manifest *apps.Manifest
 	if err := json.Unmarshal(data, manifest); err != nil {
 		return nil, err
 	}

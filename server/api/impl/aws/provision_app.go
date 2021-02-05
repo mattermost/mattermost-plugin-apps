@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +54,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
 	bundleFunctions := []functionInstallData{}
-	var mani api.Manifest
+	var mani apps.Manifest
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {

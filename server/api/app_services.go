@@ -5,13 +5,15 @@ package api
 
 import (
 	"errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 var ErrNotABot = errors.New("not a bot")
 
 type AppServices interface {
-	Subscribe(*Subscription) error
-	Unsubscribe(*Subscription) error
+	Subscribe(*apps.Subscription) error
+	Unsubscribe(*apps.Subscription) error
 	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
 	KVGet(botUserID, prefix, id string, ref interface{}) error
 	KVDelete(botUserID, prefix, id string) error
