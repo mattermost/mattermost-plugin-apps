@@ -39,7 +39,7 @@ func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
 	}
-	v := conf.Apps[string(appID)]
+	v := conf.Apps[appID]
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
@@ -51,13 +51,13 @@ func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 func (s AppStore) Save(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
-		conf.Apps = map[string]interface{}{}
+		conf.Apps = map[apps.AppID]interface{}{}
 	}
 	// do not store manifest in the config
-	app.ID = app.Manifest.AppID
+	app.AppID = app.Manifest.AppID
 	app.Manifest = nil
 
-	conf.Apps[string(app.Manifest.AppID)] = app.ConfigMap()
+	conf.Apps[app.Manifest.AppID] = app.ConfigMap()
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
@@ -71,7 +71,7 @@ func (s AppStore) Save(app *apps.App) error {
 
 func (s AppStore) Delete(app *apps.App) error {
 	conf := s.conf.GetConfig()
-	delete(conf.Apps, string(app.Manifest.AppID))
+	delete(conf.Apps, app.Manifest.AppID)
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
@@ -83,9 +83,9 @@ func (s AppStore) Delete(app *apps.App) error {
 }
 
 func (s AppStore) populateAppWithManifest(app *apps.App) *apps.App {
-	manifest, err := s.stores.manifest.Get(app.ID)
+	manifest, err := s.stores.manifest.Get(app.AppID)
 	if err != nil {
-		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.ID)
+		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.AppID)
 	}
 	app.Manifest = manifest
 	return app

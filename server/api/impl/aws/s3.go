@@ -27,7 +27,7 @@ func (c *Client) S3FileDownload(bucket, item string) ([]byte, error) {
 }
 
 // GetManifest returns a manifest file for an app from the S3
-func (c *Client) GetManifest(appID apps.AppID, version string) (*apps.Manifest, error) {
+func (c *Client) GetManifest(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
 	manifestFileName := fmt.Sprintf("manifest_%s_%s", appID, version)
 	data, err := c.S3FileDownload(c.appsS3Bucket, manifestFileName)
 	if err != nil {

@@ -17,15 +17,15 @@ import (
 
 const oldVersionKey = "update_from_version"
 const appsJSONFile = "apps.json"
-const callOnceKey = "PP_CallOnce_key"
+const callOnceKey = "CallOnce_key"
 
 // AppVersions describes versions for all the apps in all installations
 type AppVersions struct {
-	Apps      map[apps.AppID]string            `json:"apps"`
-	Overrides map[string]map[apps.AppID]string `json:"overrides"`
+	Apps      apps.AppVersionMap            `json:"apps"`
+	Overrides map[string]apps.AppVersionMap `json:"overrides"`
 }
 
-func getAppsForInstallation(installationID string) (map[apps.AppID]string, error) {
+func getAppsForInstallation(installationID string) (apps.AppVersionMap, error) {
 	data, err := ioutil.ReadFile(fmt.Sprintf("assets/%s", appsJSONFile))
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read %s file", appsJSONFile)
@@ -44,7 +44,7 @@ func getAppsForInstallation(installationID string) (map[apps.AppID]string, error
 	return apps, nil
 }
 
-func (adm *Admin) populateManifests(appVersions map[apps.AppID]string) {
+func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
 	adm.store.Manifest().Cleanup()
 	for id, version := range appVersions {
 		manifest, err := adm.awsClient.GetManifest(id, version)
@@ -70,35 +70,37 @@ func (adm *Admin) LoadAppsList() error {
 	registeredApps := adm.store.App().GetAll()
 
 	registeredAppsMap := map[apps.AppID]*apps.App{}
-	updatedAppVersionsMap := map[apps.AppID]string{}
+	updatedAppVersionsMap := apps.AppVersionMap{}
 	// Update apps
 	for _, registeredApp := range registeredApps {
 		registeredAppsMap[registeredApp.Manifest.AppID] = registeredApp
 		manifest, err := adm.store.Manifest().Get(registeredApp.Manifest.AppID)
 		if err != nil {
-			return errors.Wrapf(err, "can't load manifest from store appID = %s", registeredApp.Manifest.AppID)
+			adm.mm.Log.Error("can't load manifest from store", "app_id", registeredApp.Manifest.AppID)
+			continue
 		}
 		if err := adm.UninstallApp(registeredApp); err != nil {
-			return errors.Wrapf(err, "can't delete an app")
+			adm.mm.Log.Error("can't uninstall an app", "app_id", registeredApp.Manifest.AppID)
+			continue
 		}
 		if manifest.Version != registeredApp.Manifest.Version {
 			// update app in proxy plugin
 			oldVersion := registeredApp.Manifest.Version
 			registeredApp.Manifest = manifest
 			if err := adm.store.App().Save(registeredApp); err != nil {
-				return errors.Wrapf(err, "can't store app - %s", registeredApp.Manifest.AppID)
+				adm.mm.Log.Error("can't save an app", "app_id", registeredApp.Manifest.AppID)
 			}
 			updatedAppVersionsMap[registeredApp.Manifest.AppID] = oldVersion
 		}
 	}
 
-	// Add new apps as registered
+	// register new apps
 	for appID, manifest := range adm.store.Manifest().GetAll() {
 		if _, ok := registeredAppsMap[appID]; ok {
 			continue
 		}
-		if err := adm.AddApp(manifest); err != nil {
-			return errors.Wrapf(err, "can't add new app as registered appID - %s", manifest.AppID)
+		if err := adm.RegisterApp(manifest); err != nil {
+			adm.mm.Log.Error("can't register an app", "app_id", appID)
 		}
 	}
 
@@ -109,7 +111,7 @@ func (adm *Admin) LoadAppsList() error {
 		if registeredApp.Status == apps.AppStatusEnabled {
 			values := map[string]string{}
 			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
-				values[oldVersionKey] = updatedAppVersionsMap[registeredApp.Manifest.AppID]
+				values[oldVersionKey] = string(updatedAppVersionsMap[registeredApp.Manifest.AppID])
 			}
 			// Call onStartup the function of the app. It should be called only once
 			f := func() error {
@@ -155,7 +157,7 @@ func (adm *Admin) UninstallApp(app *apps.App) error {
 	return nil
 }
 
-func (adm *Admin) AddApp(manifest *apps.Manifest) error {
+func (adm *Admin) RegisterApp(manifest *apps.Manifest) error {
 	newApp := &apps.App{}
 	newApp.Manifest = manifest
 	newApp.Status = apps.AppStatusRegistered

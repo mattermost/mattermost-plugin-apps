@@ -27,12 +27,12 @@ func NewUpstream(app *apps.App, aws *aws.Client) *Upstream {
 }
 
 func (u *Upstream) OneWay(call *apps.Call) error {
-	_, err := u.aws.InvokeLambda(string(u.app.Manifest.AppID), u.app.Manifest.Version, call.URL, lambda.InvocationTypeEvent, call)
+	_, err := u.aws.InvokeLambda(u.app.Manifest.AppID, u.app.Manifest.Version, call.URL, lambda.InvocationTypeEvent, call)
 	return err
 }
 
 func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
-	bb, err := u.aws.InvokeLambda(string(u.app.Manifest.AppID), u.app.Manifest.Version, call.URL, lambda.InvocationTypeRequestResponse, call)
+	bb, err := u.aws.InvokeLambda(u.app.Manifest.AppID, u.app.Manifest.Version, call.URL, lambda.InvocationTypeRequestResponse, call)
 	if err != nil {
 		return nil, err
 	}

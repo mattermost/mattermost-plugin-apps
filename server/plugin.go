@@ -30,7 +30,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
-const mutexKey = "PP_Cluster_Mutex"
+const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
