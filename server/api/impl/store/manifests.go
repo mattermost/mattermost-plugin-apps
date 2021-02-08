@@ -5,18 +5,31 @@ package store
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *Store) EmptyManifests() {
+type ManifestStore struct {
+	manifests map[apps.AppID]*apps.Manifest
+}
+
+var _ api.ManifestStore = (*ManifestStore)(nil)
+
+func newManifestStore() api.ManifestStore {
+	manifests := map[apps.AppID]*apps.Manifest{}
+	s := &ManifestStore{manifests}
+	return s
+}
+
+func (s ManifestStore) Cleanup() {
 	s.manifests = map[apps.AppID]*apps.Manifest{}
 }
 
-func (s *Store) StoreManifest(manifest *apps.Manifest) {
+func (s ManifestStore) Save(manifest *apps.Manifest) {
 	s.manifests[manifest.AppID] = manifest
 }
 
-func (s *Store) LoadManifest(appID apps.AppID) (*apps.Manifest, error) {
+func (s ManifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	manifest, ok := s.manifests[appID]
 	if !ok {
 		return nil, utils.ErrNotFound
@@ -24,15 +37,6 @@ func (s *Store) LoadManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return manifest, nil
 }
 
-func (s *Store) ListManifests() map[apps.AppID]*apps.Manifest {
+func (s ManifestStore) GetAll() map[apps.AppID]*apps.Manifest {
 	return s.manifests
-}
-
-func (s *Store) populateAppWithManifest(app *apps.App) *apps.App {
-	manifest, ok := s.manifests[app.ID]
-	if !ok {
-		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.ID)
-	}
-	app.Manifest = manifest
-	return app
 }

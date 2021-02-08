@@ -5,10 +5,22 @@ package store
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *Store) ListApps() []*apps.App {
+type AppStore struct {
+	*Store
+}
+
+var _ api.AppStore = (*AppStore)(nil)
+
+func newAppStore(st *Store) api.AppStore {
+	s := &AppStore{st}
+	return s
+}
+
+func (s AppStore) GetAll() []*apps.App {
 	conf := s.conf.GetConfig()
 	out := []*apps.App{}
 	if len(conf.Apps) == 0 {
@@ -22,7 +34,7 @@ func (s *Store) ListApps() []*apps.App {
 	return out
 }
 
-func (s *Store) LoadApp(appID apps.AppID) (*apps.App, error) {
+func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
@@ -36,7 +48,7 @@ func (s *Store) LoadApp(appID apps.AppID) (*apps.App, error) {
 	return app, nil
 }
 
-func (s *Store) StoreApp(app *apps.App) error {
+func (s AppStore) Save(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
@@ -57,7 +69,7 @@ func (s *Store) StoreApp(app *apps.App) error {
 	return s.conf.StoreConfig(conf.StoredConfig)
 }
 
-func (s *Store) DeleteApp(app *apps.App) error {
+func (s AppStore) Delete(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	delete(conf.Apps, string(app.Manifest.AppID))
 
@@ -68,4 +80,13 @@ func (s *Store) DeleteApp(app *apps.App) error {
 		return err
 	}
 	return s.conf.StoreConfig(conf.StoredConfig)
+}
+
+func (s AppStore) populateAppWithManifest(app *apps.App) *apps.App {
+	manifest, err := s.stores.manifest.Get(app.ID)
+	if err != nil {
+		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.ID)
+	}
+	app.Manifest = manifest
+	return app
 }

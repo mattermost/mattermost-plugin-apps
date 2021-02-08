@@ -66,7 +66,7 @@ func (p *Plugin) OnActivate() error {
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
 	_ = conf.RefreshConfig(&stored)
-	store := store.NewStore(mm, conf)
+	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
 	mutex, err := cluster.NewMutex(p.API, "PP_Cluster_Mutex")

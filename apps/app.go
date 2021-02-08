@@ -84,9 +84,9 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	OnInstall *Call `json:"install,omitempty"`
-	OnDelete  *Call `json:"delete,omitempty"`
-	OnStartup *Call `json:"on_startup,omitempty"`
+	OnInstall   *Call `json:"on_install,omitempty"`
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+	OnStartup   *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`

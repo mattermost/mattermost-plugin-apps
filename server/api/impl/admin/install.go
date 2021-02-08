@@ -19,7 +19,7 @@ import (
 func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
 	// TODO <><> check if acting user is a sysadmin
 
-	app, err := adm.store.LoadApp(cc.AppID)
+	app, err := adm.store.App().Get(cc.AppID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -48,7 +48,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		}
 	}
 
-	err = adm.store.StoreApp(app)
+	err = adm.store.App().Save(app)
 	if err != nil {
 		return nil, "", err
 	}
@@ -71,7 +71,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 }
 
 func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	app, err := adm.store.LoadApp(manifest.AppID)
+	app, err := adm.store.App().Get(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
 	}

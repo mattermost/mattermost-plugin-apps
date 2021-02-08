@@ -9,7 +9,7 @@ import (
 )
 
 func (adm *Admin) ListApps() ([]*apps.App, md.MD, error) {
-	apps := adm.store.ListApps()
+	apps := adm.store.App().GetAll()
 	if len(apps) == 0 {
 		return nil, "no apps installed", nil
 	}
