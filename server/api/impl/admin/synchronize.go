@@ -17,6 +17,7 @@ import (
 
 const oldVersionKey = "update_from_version"
 const appsJSONFile = "apps.json"
+const callOnceKey = "PP_CallOnce_key"
 
 // AppVersions describes versions for all the apps in all installations
 type AppVersions struct {
@@ -56,8 +57,8 @@ func (adm *Admin) populateManifests(appVersions map[apps.AppID]string) {
 	}
 }
 
-// SynchronizeApps synchronizes apps with the mappings file stored in the env var.
-func (adm *Admin) SynchronizeApps() error {
+// LoadAppsList synchronizes apps with the apps.json file.
+func (adm *Admin) LoadAppsList() error {
 	installationID := adm.mm.System.GetDiagnosticID()
 	appsForInstallation, err := getAppsForInstallation(installationID)
 	if err != nil {
@@ -112,7 +113,7 @@ func (adm *Admin) SynchronizeApps() error {
 			}
 			// Call onStartup the function of the app. It should be called only once
 			f := func() error {
-				if err := adm.call(registeredApp, registeredApp.Manifest.OnStartup, values); err != nil {
+				if err := adm.expandedCall(registeredApp, registeredApp.Manifest.OnStartup, values); err != nil {
 					adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
 				}
 				return nil
@@ -128,7 +129,7 @@ func (adm *Admin) SynchronizeApps() error {
 
 func (adm *Admin) UninstallApp(app *apps.App) error {
 	// Call delete the function of the app
-	if err := adm.call(app, app.Manifest.OnUninstall, nil); err != nil {
+	if err := adm.expandedCall(app, app.Manifest.OnUninstall, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.Manifest.AppID)
 	}
 
@@ -167,8 +168,7 @@ func (adm *Admin) AddApp(manifest *apps.Manifest) error {
 
 func (adm *Admin) callOnce(f func() error) error {
 	// Delete previous job
-	key := "PP_CallOnce_key"
-	if err := adm.mm.KV.Delete(key); err != nil {
+	if err := adm.mm.KV.Delete(callOnceKey); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
@@ -177,7 +177,7 @@ func (adm *Admin) callOnce(f func() error) error {
 	adm.mutex.Lock()
 	defer adm.mutex.Unlock()
 	value := 0
-	if err := adm.mm.KV.Get(key, &value); err != nil {
+	if err := adm.mm.KV.Get(callOnceKey, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -190,17 +190,17 @@ func (adm *Admin) callOnce(f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := adm.mm.KV.Set(key, value)
+	ok, err := adm.mm.KV.Set(callOnceKey, value)
 	if err != nil {
-		return errors.Wrapf(err, "can't set key %s to %d", key, value)
+		return errors.Wrapf(err, "can't set key %s to %d", callOnceKey, value)
 	}
 	if !ok {
-		return errors.Errorf("can't set key %s to %d", key, value)
+		return errors.Errorf("can't set key %s to %d", callOnceKey, value)
 	}
 	return nil
 }
 
-func (adm *Admin) call(app *apps.App, call *apps.Call, values map[string]string) error {
+func (adm *Admin) expandedCall(app *apps.App, call *apps.Call, values map[string]string) error {
 	if call == nil {
 		return nil
 	}

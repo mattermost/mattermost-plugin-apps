@@ -43,8 +43,10 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		app.OAuth2ClientID = oAuthApp.Id
 		app.OAuth2ClientSecret = oAuthApp.ClientSecret
 		app.OAuth2TrustedApp = in.OAuth2TrustedApp
+
+		// Installed app is automatically enabled, since config is done in the installation process
 		if app.Status == "" || app.Status == apps.AppStatusRegistered {
-			app.Status = apps.AppStatusDisabled
+			app.Status = apps.AppStatusEnabled
 		}
 	}
 

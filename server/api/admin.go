@@ -9,5 +9,5 @@ type Admin interface {
 	ListApps() ([]*apps.App, md.MD, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
 	ProvisionApp(*apps.Context, apps.SessionToken, *apps.InProvisionApp) (*apps.App, md.MD, error)
-	SynchronizeApps() error
+	LoadAppsList() error
 }

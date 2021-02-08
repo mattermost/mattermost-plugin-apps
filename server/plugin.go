@@ -30,6 +30,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
+const mutexKey = "PP_Cluster_Mutex"
+
 type Plugin struct {
 	plugin.MattermostPlugin
 	*api.BuildConfig
@@ -69,7 +71,7 @@ func (p *Plugin) OnActivate() error {
 	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
-	mutex, err := cluster.NewMutex(p.API, "PP_Cluster_Mutex")
+	mutex, err := cluster.NewMutex(p.API, mutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
@@ -95,8 +97,8 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	if err := p.api.Admin.SynchronizeApps(); err != nil {
-		mm.Log.Error("Can't synchronize", "err", err.Error())
+	if err := p.api.Admin.LoadAppsList(); err != nil {
+		mm.Log.Error("Can't load apps list", "err", err.Error())
 	}
 
 	return nil
