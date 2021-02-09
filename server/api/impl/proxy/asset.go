@@ -8,8 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func (p *Proxy) GetAsset(appID apps.AppID, assetName string) ([]byte, error) {
