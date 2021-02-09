@@ -53,16 +53,16 @@ func (a *restapi) handleGetMarketplace(w http.ResponseWriter, req *http.Request,
 }
 
 func (a *restapi) getLocalApps() ([]MarketplaceApp, error) {
-	apps, _, err := a.api.Admin.ListApps()
+	localApps, _, err := a.api.Admin.ListApps()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list local apps")
 	}
 
-	result := make([]MarketplaceApp, len(apps))
-	for i := 0; i < len(apps); i++ {
+	result := make([]MarketplaceApp, len(localApps))
+	for i := 0; i < len(localApps); i++ {
 		result[i] = MarketplaceApp{
-			Manifest:  *apps[i].Manifest,
-			Installed: true,
+			Manifest:  *localApps[i].Manifest,
+			Installed: localApps[i].Status == apps.AppStatusInstalled,
 		}
 	}
 

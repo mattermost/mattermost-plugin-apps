@@ -46,7 +46,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 
 		// Installed app is automatically enabled, since config is done in the installation process
 		if app.Status == "" || app.Status == apps.AppStatusRegistered {
-			app.Status = apps.AppStatusEnabled
+			app.Status = apps.AppStatusInstalled
 		}
 	}
 

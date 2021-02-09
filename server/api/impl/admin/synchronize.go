@@ -108,7 +108,7 @@ func (adm *Admin) LoadAppsList() error {
 
 	// call onInstanceStartup. App migration happens here
 	for _, registeredApp := range registeredAppsUpgraded {
-		if registeredApp.Status == apps.AppStatusEnabled {
+		if registeredApp.Status == apps.AppStatusInstalled {
 			values := map[string]string{}
 			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
 				values[oldVersionKey] = string(updatedAppVersionsMap[registeredApp.Manifest.AppID])

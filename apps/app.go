@@ -40,8 +40,7 @@ type AppStatus string
 
 const (
 	AppStatusRegistered AppStatus = "registered"
-	AppStatusEnabled    AppStatus = "enabled"
-	AppStatusDisabled   AppStatus = "disabled"
+	AppStatusInstalled  AppStatus = "installed"
 )
 
 // Function describes app's function mapping
