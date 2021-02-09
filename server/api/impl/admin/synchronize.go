@@ -147,6 +147,11 @@ func (adm *Admin) UninstallApp(app *apps.App) error {
 		}
 	}
 
+	// delete the bot account
+	if err := adm.mm.Bot.DeletePermanently(app.BotUserID); err != nil {
+		return errors.Wrapf(err, "can't delete bot account for App - %s", app.Manifest.AppID)
+	}
+
 	// delete app from proxy plugin, not removing the data
 	if err := adm.store.App().Delete(app); err != nil {
 		return errors.Wrapf(err, "can't delete app - %s", app.Manifest.AppID)
