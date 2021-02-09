@@ -4,9 +4,10 @@
 package store
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/pkg/errors"
 )
 
 func subsKey(subject apps.Subject, teamID, channelID string) string {

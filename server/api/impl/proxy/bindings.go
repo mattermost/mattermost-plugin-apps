@@ -3,9 +3,10 @@ package proxy
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
-	"github.com/pkg/errors"
 )
 
 func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
