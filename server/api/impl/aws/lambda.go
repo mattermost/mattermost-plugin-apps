@@ -10,10 +10,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
-func (c *Client) InvokeLambda(appID, appVersion, functionName, invocationType string, request interface{}) ([]byte, error) {
+func (c *Client) InvokeLambda(appID apps.AppID, appVersion apps.AppVersion, functionName, invocationType string, request interface{}) ([]byte, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error marshaling request payload")

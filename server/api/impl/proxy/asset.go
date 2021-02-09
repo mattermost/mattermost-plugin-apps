@@ -8,12 +8,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
 )
 
-func (p *Proxy) GetAsset(appID api.AppID, assetName string) ([]byte, error) {
-	app, err := p.store.LoadApp(appID)
+func (p *Proxy) GetAsset(appID apps.AppID, assetName string) ([]byte, error) {
+	app, err := p.store.App().Get(appID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't load app - %s", appID)
 	}
@@ -23,13 +23,13 @@ func (p *Proxy) GetAsset(appID api.AppID, assetName string) ([]byte, error) {
 		}
 		errorMessage := fmt.Sprintf("can't download %s for appID - %s, assetName - %s from", asset.Type, appID, assetName)
 		switch asset.Type {
-		case api.S3Asset:
+		case apps.S3Asset:
 			data, err := p.awsClient.S3FileDownload(asset.Bucket, asset.Key)
 			if err != nil {
 				return nil, errors.Wrapf(err, "%s %s/%s", errorMessage, asset.Bucket, asset.Key)
 			}
 			return data, nil
-		case api.HTTPAsset:
+		case apps.HTTPAsset:
 			/* #nosec G107 */
 			resp, err := http.Get(asset.URL)
 			if err != nil {

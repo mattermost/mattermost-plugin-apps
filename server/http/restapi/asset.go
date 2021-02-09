@@ -3,7 +3,7 @@ package restapi
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -15,7 +15,7 @@ func (a *restapi) handleGetAsset(w http.ResponseWriter, req *http.Request, actin
 
 	// TODO verify that request is from the correct app
 
-	data, err := a.api.Proxy.GetAsset(api.AppID(appID), assetName)
+	data, err := a.api.Proxy.GetAsset(apps.AppID(appID), assetName)
 	if err != nil {
 		httputils.WriteBadRequestError(w, err)
 		return

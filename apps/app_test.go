@@ -1,4 +1,6 @@
-package api
+// +build !e2e
+
+package apps
 
 import (
 	"testing"

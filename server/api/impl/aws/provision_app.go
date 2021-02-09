@@ -16,8 +16,9 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 const lambdaFunctionFileNameMaxSize = 64
@@ -54,7 +55,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
 	bundleFunctions := []functionInstallData{}
-	var mani api.Manifest
+	var mani apps.Manifest
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
@@ -102,7 +103,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 			}
 		}
 	}
-	return c.provisionApp(string(mani.AppID), mani.Version, resFunctions)
+	return c.provisionApp(mani.AppID, mani.Version, resFunctions)
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -134,7 +135,7 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionApp(appID, appVersion string, functions []functionInstallData) error {
+func (c *Client) provisionApp(appID apps.AppID, appVersion apps.AppVersion, functions []functionInstallData) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrapf(err, "can't install app %s", appID)
@@ -188,7 +189,7 @@ func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, r
 
 // getFunctionName generates function name for a specific app
 // name can be 64 characters long.
-func getFunctionName(appID, version, function string) (string, error) {
+func getFunctionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
 	if len(appID) > appIDLengthLimit {
 		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, appIDLengthLimit)
 	}

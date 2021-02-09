@@ -10,9 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
@@ -27,6 +29,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
+
+const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
@@ -63,15 +67,21 @@ func (p *Plugin) OnActivate() error {
 	awsClient := aws.NewAWSClient(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, &mm.Log)
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
-	store := store.NewStore(mm, conf)
+	_ = conf.RefreshConfig(&stored)
+	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
+
+	mutex, err := cluster.NewMutex(p.API, mutexKey)
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
 
 	p.api = &api.Service{
 		Mattermost:   mm,
 		Configurator: conf,
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
-		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient),
+		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
 		AWS:          awsClient,
 	}
 	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
@@ -87,8 +97,8 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	if err := p.api.Admin.SynchronizeApps(); err != nil {
-		mm.Log.Error("Can't synchronize", "err", err.Error())
+	if err := p.api.Admin.LoadAppsList(); err != nil {
+		mm.Log.Error("Can't load apps list", "err", err.Error())
 	}
 
 	return nil
@@ -115,29 +125,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.api.Proxy.Notify(api.NewUserContext(user), api.SubjectUserCreated)
+	_ = p.api.Proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(api.NewChannelMemberContext(cm, actingUser), api.SubjectUserJoinedChannel)
+	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(api.NewChannelMemberContext(cm, actingUser), api.SubjectUserLeftChannel)
+	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(api.NewTeamMemberContext(tm, actingUser), api.SubjectUserJoinedTeam)
+	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(api.NewTeamMemberContext(tm, actingUser), api.SubjectUserLeftTeam)
+	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.api.Proxy.Notify(api.NewPostContext(post), api.SubjectPostCreated)
+	_ = p.api.Proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.api.Proxy.Notify(api.NewChannelContext(ch), api.SubjectChannelCreated)
+	_ = p.api.Proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
 }

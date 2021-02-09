@@ -3,12 +3,14 @@
 
 package appservices
 
-import "github.com/mattermost/mattermost-plugin-apps/server/api"
+import (
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+)
 
-func (a *AppServices) Subscribe(sub *api.Subscription) error {
-	return a.store.StoreSub(sub)
+func (a *AppServices) Subscribe(sub *apps.Subscription) error {
+	return a.store.Sub().Save(sub)
 }
 
-func (a *AppServices) Unsubscribe(sub *api.Subscription) error {
-	return a.store.DeleteSub(sub)
+func (a *AppServices) Unsubscribe(sub *apps.Subscription) error {
+	return a.store.Sub().Delete(sub)
 }

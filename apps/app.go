@@ -1,9 +1,11 @@
-package api
+package apps
 
 import "encoding/json"
 
 type AppID string
 type AppType string
+type AppVersion string
+type AppVersionMap map[AppID]AppVersion
 
 // default is HTTP
 const (
@@ -38,8 +40,7 @@ type AppStatus string
 
 const (
 	AppStatusRegistered AppStatus = "registered"
-	AppStatusEnabled    AppStatus = "enabled"
-	AppStatusDisabled   AppStatus = "disabled"
+	AppStatusInstalled  AppStatus = "installed"
 )
 
 // Function describes app's function mapping
@@ -61,11 +62,11 @@ type Asset struct {
 }
 
 type Manifest struct {
-	AppID       AppID   `json:"app_id"`
-	Type        AppType `json:"app_type"`
-	Version     string  `json:"version"`
-	DisplayName string  `json:"display_name,omitempty"`
-	Description string  `json:"description,omitempty"`
+	AppID       AppID      `json:"app_id"`
+	Type        AppType    `json:"app_type"`
+	Version     AppVersion `json:"version"`
+	DisplayName string     `json:"display_name,omitempty"`
+	Description string     `json:"description,omitempty"`
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
@@ -84,9 +85,9 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	OnInstall *Call `json:"install,omitempty"`
-	OnDelete  *Call `json:"delete,omitempty"`
-	OnStartup *Call `json:"on_startup,omitempty"`
+	OnInstall   *Call `json:"on_install,omitempty"`
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+	OnStartup   *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`
@@ -115,6 +116,7 @@ var DefaultBindingsCall = &Call{
 }
 
 type App struct {
+	AppID    AppID     `json:"app_id"`
 	Manifest *Manifest `json:"manifest"`
 	Status   AppStatus `json:"app_status"`
 

@@ -29,18 +29,21 @@ const (
 	PathOAuth2         = "/oauth2"          // convention for Mattermost Apps, comes from OAuther
 	PathOAuth2Complete = "/oauth2/complete" // convention for Mattermost Apps, comes from OAuther
 
+	// Marketplace sub-paths.
+	PathMarketplace = "/marketplace"
+
 	// Other sub-paths.
-	CallPath      = "/call"
-	KVPath        = "/kv"
-	SubscribePath = "/subscribe"
-	BindingsPath  = "/bindings"
-	AssetPath     = "/asset"
+	CallPath        = "/call"
+	KVPath          = "/kv"
+	SubscribePath   = "/subscribe"
+	UnsubscribePath = "/unsubscribe"
+	AssetPath       = "/asset"
+	BindingsPath    = "/bindings"
 )
 
 const (
-	PropTeamID             = "team_id"
-	PropChannelID          = "channel_id"
-	PropPostID             = "post_id"
-	PropOAuth2ClientSecret = "oauth2_client_secret" // nolint:gosec
-	PropAppBindings        = "app_bindings"
+	PropTeamID      = "team_id"
+	PropChannelID   = "channel_id"
+	PropPostID      = "post_id"
+	PropAppBindings = "app_bindings"
 )

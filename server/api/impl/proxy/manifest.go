@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func LoadManifest(manifestURL string) (*api.Manifest, error) {
-	var manifest api.Manifest
+func LoadManifest(manifestURL string) (*apps.Manifest, error) {
+	var manifest apps.Manifest
 	resp, err := http.Get(manifestURL) // nolint:gosec
 	if err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func LoadManifest(manifestURL string) (*api.Manifest, error) {
 	return &manifest, nil
 }
 
-func validateManifest(manifest *api.Manifest) error {
+func validateManifest(manifest *apps.Manifest) error {
 	if manifest.AppID == "" {
 		return errors.New("empty AppID")
 	}
@@ -39,7 +40,7 @@ func validateManifest(manifest *api.Manifest) error {
 		return errors.Errorf("invalid type: %s", manifest.Type)
 	}
 
-	if manifest.Type == api.AppTypeHTTP {
+	if manifest.Type == apps.AppTypeHTTP {
 		_, err := url.Parse(manifest.HTTPRootURL)
 		if err != nil {
 			return errors.Wrapf(err, "invalid manifest URL %q", manifest.HTTPRootURL)

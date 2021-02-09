@@ -5,9 +5,11 @@
 package mock_api
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	api "github.com/mattermost/mattermost-plugin-apps/server/api"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+
+	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // MockAppServices is a mock of AppServices interface
@@ -77,7 +79,7 @@ func (mr *MockAppServicesMockRecorder) KVSet(arg0, arg1, arg2, arg3 interface{})
 }
 
 // Subscribe mocks base method
-func (m *MockAppServices) Subscribe(arg0 *api.Subscription) error {
+func (m *MockAppServices) Subscribe(arg0 *apps.Subscription) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", arg0)
 	ret0, _ := ret[0].(error)
@@ -91,7 +93,7 @@ func (mr *MockAppServicesMockRecorder) Subscribe(arg0 interface{}) *gomock.Call 
 }
 
 // Unsubscribe mocks base method
-func (m *MockAppServices) Unsubscribe(arg0 *api.Subscription) error {
+func (m *MockAppServices) Unsubscribe(arg0 *apps.Subscription) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unsubscribe", arg0)
 	ret0, _ := ret[0].(error)
