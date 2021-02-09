@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/dgrijalva/jwt-go"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 

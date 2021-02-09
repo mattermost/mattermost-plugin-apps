@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func LoadManifest(manifestURL string) (*apps.Manifest, error) {

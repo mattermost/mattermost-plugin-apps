@@ -4,10 +4,11 @@
 package store
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/pkg/errors"
 )
 
 type SubStore struct {
