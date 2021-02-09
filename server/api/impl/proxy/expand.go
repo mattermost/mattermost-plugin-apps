@@ -5,9 +5,10 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type expander struct {

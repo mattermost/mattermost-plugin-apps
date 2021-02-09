@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 func TestLimitReadCloser(t *testing.T) {

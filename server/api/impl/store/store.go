@@ -5,6 +5,7 @@ package store
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 

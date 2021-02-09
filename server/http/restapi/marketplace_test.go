@@ -3,8 +3,9 @@ package restapi
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func TestMergeApps(t *testing.T) {
