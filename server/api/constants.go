@@ -29,6 +29,9 @@ const (
 	PathOAuth2         = "/oauth2"          // convention for Mattermost Apps, comes from OAuther
 	PathOAuth2Complete = "/oauth2/complete" // convention for Mattermost Apps, comes from OAuther
 
+	// Marketplace sub-paths.
+	PathMarketplace = "/marketplace"
+
 	// Other sub-paths.
 	CallPath        = "/call"
 	KVPath          = "/kv"
