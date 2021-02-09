@@ -4,6 +4,8 @@ import "encoding/json"
 
 type AppID string
 type AppType string
+type AppVersion string
+type AppVersionMap map[AppID]AppVersion
 
 // default is HTTP
 const (
@@ -18,11 +20,53 @@ func (at AppType) IsValid() bool {
 		at == AppTypeBuiltin
 }
 
+// AssetType describes static assets of the Mattermost App.
+// Assets can be saved in S3 with appropriate permissions,
+// or they could be fetched as ordinary http resources.
+type AssetType string
+
+const (
+	s3Asset   AssetType = "s3_asset"
+	httpAsset AssetType = "http_asset"
+)
+
+func (at AssetType) IsValid() bool {
+	return at == s3Asset ||
+		at == httpAsset
+}
+
+// AppStatus describes status of the app
+type AppStatus string
+
+const (
+	AppStatusRegistered AppStatus = "registered"
+	AppStatusInstalled  AppStatus = "installed"
+)
+
+// Function describes app's function mapping
+// For now Function can be either AWS Lambda or HTTP function
+type Function struct {
+	Name    string `json:"name"`
+	Handler string `json:"handler"`
+	Runtime string `json:"runtime"`
+}
+
+// Asset describes app's static asset.
+// For now asset can be an S3 file or an http resource
+type Asset struct {
+	Name   string    `json:"name"`
+	Type   AssetType `json:"type"`
+	URL    string    `json:"url"`
+	Bucket string    `json:"bucket"`
+	Key    string    `json:"key"`
+}
+
 type Manifest struct {
-	AppID       AppID   `json:"app_id"`
-	Type        AppType `json:"app_type"`
-	DisplayName string  `json:"display_name,omitempty"`
-	Description string  `json:"description,omitempty"`
+	AppID       AppID      `json:"app_id"`
+	Type        AppType    `json:"app_type"`
+	Version     AppVersion `json:"version"`
+	DisplayName string     `json:"display_name,omitempty"`
+	Description string     `json:"description,omitempty"`
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
@@ -41,12 +85,16 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	Install *Call `json:"install,omitempty"`
+	OnInstall   *Call `json:"on_install,omitempty"`
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+	OnStartup   *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
+	Functions []Function
+	Assets    []Asset
 }
 
 // Conventions for Apps paths, and field names
@@ -68,7 +116,9 @@ var DefaultBindingsCall = &Call{
 }
 
 type App struct {
+	AppID    AppID     `json:"app_id"`
 	Manifest *Manifest `json:"manifest"`
+	Status   AppStatus `json:"app_status"`
 
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`

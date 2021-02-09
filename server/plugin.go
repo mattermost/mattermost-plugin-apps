@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -28,6 +29,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
+
+const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
@@ -65,15 +68,20 @@ func (p *Plugin) OnActivate() error {
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
 	_ = conf.RefreshConfig(&stored)
-	store := store.NewStore(mm, conf)
+	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
+
+	mutex, err := cluster.NewMutex(p.API, mutexKey)
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
 
 	p.api = &api.Service{
 		Mattermost:   mm,
 		Configurator: conf,
 		Proxy:        proxy,
 		AppServices:  appservices.NewAppServices(mm, conf, store),
-		Admin:        admin.NewAdmin(mm, conf, store, proxy),
+		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
 		AWS:          awsClient,
 	}
 	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
@@ -88,6 +96,11 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
+
+	if err := p.api.Admin.LoadAppsList(); err != nil {
+		mm.Log.Error("Can't load apps list", "err", err.Error())
+	}
+
 	return nil
 }
 

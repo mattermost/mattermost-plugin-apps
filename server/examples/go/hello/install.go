@@ -5,10 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {

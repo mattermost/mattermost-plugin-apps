@@ -8,11 +8,13 @@ const (
 	AppID          = "awsHello"
 	AppDisplayName = "AWS Hello App display name"
 	AppDescription = "AWS Hello App description"
+	AppVersion     = "v0.0.1"
 )
 
 func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
+		Version:     AppVersion,
 		Type:        apps.AppTypeAWSLambda,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
@@ -28,7 +30,7 @@ func Manifest() *apps.Manifest {
 			apps.LocationInPost,
 		},
 		HomepageURL: ("https://github.com/mattermost"),
-		Install: &apps.Call{
+		OnInstall: &apps.Call{
 			URL: "on_activate",
 			Expand: &apps.Expand{
 				App:              apps.ExpandAll,

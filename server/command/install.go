@@ -78,7 +78,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}, nil
 }
 
-func (s *service) executeExperimentalInstall(params *params) (*model.CommandResponse, error) {
+func (s *service) executeProvision(params *params) (*model.CommandResponse, error) {
 	releaseURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&releaseURL, "url", "", "release URL")
@@ -88,7 +88,7 @@ func (s *service) executeExperimentalInstall(params *params) (*model.CommandResp
 		return errorOut(params, err)
 	}
 
-	err = s.api.AWS.InstallApp(releaseURL)
+	err = s.api.AWS.ProvisionApp(releaseURL)
 	if err != nil {
 		return errorOut(params, err)
 	}

@@ -6,6 +6,8 @@ package aws
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,15 +17,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 const lambdaFunctionFileNameMaxSize = 64
-
-type function struct {
-	Name    string `json:"name"`
-	Handler string `json:"handler"`
-	Runtime string `json:"runtime"` // runtime can be detected automatically from reading the lambda function
-}
+const appIDLengthLimit = 32
+const versionFormat = "v00.00.000"
 
 type functionInstallData struct {
 	zipFile io.Reader
@@ -32,14 +32,7 @@ type functionInstallData struct {
 	runtime string
 }
 
-// TODO tie up with the actual manifest
-type manifest struct {
-	AppID           string     `json:"app_id"`
-	Name            string     `json:"name"`
-	LambdaFunctions []function `json:"lambda_functions"`
-}
-
-// InstallApp gets a release URL parses the release and installs an App in AWS
+// ProvisionApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
 // ~/my_app.zip
 //  |-- manifest.json
@@ -52,7 +45,7 @@ type manifest struct {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func (c *Client) InstallApp(releaseURL string) error {
+func (c *Client) ProvisionApp(releaseURL string) error {
 	zipFile, err := downloadFile(releaseURL)
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
@@ -61,8 +54,8 @@ func (c *Client) InstallApp(releaseURL string) error {
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
-	functions := []functionInstallData{}
-	var mani manifest
+	bundleFunctions := []functionInstallData{}
+	var mani apps.Manifest
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
@@ -88,7 +81,7 @@ func (c *Client) InstallApp(releaseURL string) error {
 			}
 			defer lambdaFunctionFile.Close()
 
-			functions = append(functions, functionInstallData{
+			bundleFunctions = append(bundleFunctions, functionInstallData{
 				name:    strings.TrimSuffix(file.Name, ".zip"),
 				zipFile: lambdaFunctionFile,
 			})
@@ -97,11 +90,11 @@ func (c *Client) InstallApp(releaseURL string) error {
 	resFunctions := []functionInstallData{}
 
 	// O(n^2) code for simplicity
-	for _, f := range functions {
-		for _, manifestFunction := range mani.LambdaFunctions {
-			if strings.HasSuffix(f.name, manifestFunction.Name) {
+	for _, bundleFunction := range bundleFunctions {
+		for _, manifestFunction := range mani.Functions {
+			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, functionInstallData{
-					zipFile: f.zipFile,
+					zipFile: bundleFunction.zipFile,
 					name:    manifestFunction.Name,
 					handler: manifestFunction.Handler,
 					runtime: manifestFunction.Runtime,
@@ -110,7 +103,7 @@ func (c *Client) InstallApp(releaseURL string) error {
 			}
 		}
 	}
-	return c.installApp(mani.Name, resFunctions)
+	return c.provisionApp(mani.AppID, mani.Version, resFunctions)
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -136,31 +129,25 @@ func downloadFile(url string) ([]byte, error) {
 	return body, nil
 }
 
-// TODO filter out nonvalid URLs. Maybe create black list to prevent SSRF attack.
+// filter out nonvalid URLs. Maybe create black list to prevent SSRF attack.
 // For now we will be using only urls from github.
-// Note that this url is coming from Marketplace and should be verified,
-// but still it's good practice to validate here too.
 func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) installApp(appName string, functions []functionInstallData) error {
+func (c *Client) provisionApp(appID apps.AppID, appVersion apps.AppVersion, functions []functionInstallData) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "can't install app %s", appName)
+		return errors.Wrapf(err, "can't install app %s", appID)
 	}
 
-	// check function name lengths
 	for _, function := range functions {
-		name := getFunctionName(appName, function.name)
-		if len(name) > lambdaFunctionFileNameMaxSize {
-			return errors.Errorf("function file name %s should be less than %d", name, lambdaFunctionFileNameMaxSize)
+		name, err := getFunctionName(appID, appVersion, function.name)
+		if err != nil {
+			return errors.Wrap(err, "can't get function name")
 		}
-	}
-	for _, function := range functions {
-		name := getFunctionName(appName, function.name)
 		if err := c.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-			return errors.Wrapf(err, "can't install function for %s", appName)
+			return errors.Wrapf(err, "can't install function for %s", appID)
 		}
 	}
 	return nil
@@ -201,6 +188,24 @@ func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, r
 }
 
 // getFunctionName generates function name for a specific app
-func getFunctionName(appName, function string) string {
-	return fmt.Sprintf("%s_%s", appName, function)
+// name can be 64 characters long.
+func getFunctionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
+	if len(appID) > appIDLengthLimit {
+		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, appIDLengthLimit)
+	}
+	if len(version) > len(versionFormat) {
+		return "", errors.Errorf("version %s too long, should be in %s format", version, versionFormat)
+	}
+	name := fmt.Sprintf("%s-%s-%s", appID, version, function)
+	if len(name) <= lambdaFunctionFileNameMaxSize {
+		return name, nil
+	}
+	functionNameLength := lambdaFunctionFileNameMaxSize - len(appID) - len(version) - 2
+	hash := sha256.Sum256([]byte(name))
+	hashString := hex.EncodeToString(hash[:])
+	if len(hashString) > functionNameLength {
+		hashString = hashString[:functionNameLength]
+	}
+	name = fmt.Sprintf("%s-%s-%s", appID, version, hashString)
+	return name, nil
 }

@@ -34,7 +34,7 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 }
 
 func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
-	allApps := p.store.ListApps()
+	allApps := p.store.App().GetAll()
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {

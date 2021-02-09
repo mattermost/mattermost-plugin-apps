@@ -22,7 +22,7 @@ func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken,
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
-	_, err := adm.store.LoadApp(manifest.AppID)
+	_, err := adm.store.App().Get(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
@@ -41,7 +41,7 @@ func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken,
 		BotAccessToken: token.Token,
 		Secret:         in.AppSecret,
 	}
-	err = adm.store.StoreApp(app)
+	err = adm.store.App().Save(app)
 	if err != nil {
 		return nil, "", err
 	}

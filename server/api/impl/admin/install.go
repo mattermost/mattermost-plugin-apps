@@ -20,7 +20,7 @@ import (
 func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
 	// TODO <><> check if acting user is a sysadmin
 
-	app, err := adm.store.LoadApp(cc.AppID)
+	app, err := adm.store.App().Get(cc.AppID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -44,14 +44,19 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		app.OAuth2ClientID = oAuthApp.Id
 		app.OAuth2ClientSecret = oAuthApp.ClientSecret
 		app.OAuth2TrustedApp = in.OAuth2TrustedApp
+
+		// Installed app is automatically enabled, since config is done in the installation process
+		if app.Status == "" || app.Status == apps.AppStatusRegistered {
+			app.Status = apps.AppStatusInstalled
+		}
 	}
 
-	err = adm.store.StoreApp(app)
+	err = adm.store.App().Save(app)
 	if err != nil {
 		return nil, "", err
 	}
 
-	install := app.Manifest.Install
+	install := app.Manifest.OnInstall
 	if install == nil {
 		install = apps.DefaultInstallCall
 	}
@@ -69,7 +74,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 }
 
 func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	app, err := adm.store.LoadApp(manifest.AppID)
+	app, err := adm.store.App().Get(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
 	}

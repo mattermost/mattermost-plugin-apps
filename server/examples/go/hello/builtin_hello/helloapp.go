@@ -6,10 +6,11 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
-	"github.com/pkg/errors"
 )
 
 const (
