@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost

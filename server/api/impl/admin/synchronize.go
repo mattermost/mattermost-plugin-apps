@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 const oldVersionKey = "update_from_version"
