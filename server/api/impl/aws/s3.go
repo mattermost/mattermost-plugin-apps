@@ -9,8 +9,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // S3FileDownload is used to download files from the S3

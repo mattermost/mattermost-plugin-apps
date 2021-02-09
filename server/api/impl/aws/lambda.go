@@ -6,11 +6,12 @@ package aws
 import (
 	"encoding/json"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
