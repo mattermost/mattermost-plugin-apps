@@ -8,7 +8,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -162,7 +161,7 @@ func sendSurvey(bot *mmclient.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
-	p.AddProp(api.PropAppBindings, []*apps.Binding{
+	p.AddProp(apps.PropAppBindings, []*apps.Binding{
 		{
 			AppID:       "http-hello",
 			Location:    "survey",
