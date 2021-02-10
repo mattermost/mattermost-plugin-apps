@@ -163,11 +163,11 @@ func sendSurvey(bot examples.Client, userID, message string) error {
 	}
 	p.AddProp(api.PropAppBindings, []*api.AppPostEmbed{
 		{
-			AppID: "http-hello",
 			Title: "Survey",
 			Text:  message,
 			Bindings: []*api.Binding{
 				{
+					AppID:    "http-hello",
 					Location: "select",
 					Label:    "Select one",
 					Call:     api.MakeCall(PathSubmitSurvey),
@@ -187,6 +187,7 @@ func sendSurvey(bot examples.Client, userID, message string) error {
 					},
 				},
 				{
+					AppID:    "http-hello",
 					Location: "button",
 					Label:    "Do not send",
 					Call:     api.MakeCall(PathSubmitSurvey),
