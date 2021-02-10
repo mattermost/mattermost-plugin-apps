@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func SubmitSurvey(c *api.Call) *api.CallResponse {
+func SubmitSurvey(c *apps.Call) *apps.CallResponse {
 	location := strings.Split(string(c.Context.Location), "/")
 	if len(location) == 0 {
-		return &api.CallResponse{
-			Type:      api.CallResponseTypeError,
+		return &apps.CallResponse{
+			Type:      apps.CallResponseTypeError,
 			ErrorText: "Wrong location.",
 		}
 	}
 	selected := location[len(location)-1]
 	if selected == "button" {
-		bot := examples.AsBot(c.Context)
+		bot := mmclient.AsBot(c.Context)
 		p := &model.Post{
 			Id:      c.Context.PostID,
 			Message: "The survey will not be sent",
@@ -29,8 +29,8 @@ func SubmitSurvey(c *api.Call) *api.CallResponse {
 		fmt.Println(err)
 		fmt.Println(c.Context.PostID)
 	}
-	return &api.CallResponse{
-		Type:     api.CallResponseTypeOK,
+	return &apps.CallResponse{
+		Type:     apps.CallResponseTypeOK,
 		Markdown: md.Markdownf("You answered the survey with `%s`.", selected),
 	}
 }

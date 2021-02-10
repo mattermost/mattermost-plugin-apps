@@ -12,17 +12,17 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, in *api.InProvisionApp) (*api.App, md.MD, error) {
+func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InProvisionApp) (*apps.App, md.MD, error) {
 	manifest := in.Manifest
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
-	_, err := adm.store.LoadApp(manifest.AppID)
+	_, err := adm.store.App().Get(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
@@ -34,14 +34,14 @@ func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 		return nil, "", err
 	}
 
-	app := &api.App{
+	app := &apps.App{
 		Manifest:       manifest,
 		BotUserID:      bot.UserId,
 		BotUsername:    bot.Username,
 		BotAccessToken: token.Token,
 		Secret:         in.AppSecret,
 	}
-	err = adm.store.StoreApp(app)
+	err = adm.store.App().Save(app)
 	if err != nil {
 		return nil, "", err
 	}
@@ -52,7 +52,7 @@ func (adm *Admin) ProvisionApp(cc *api.Context, sessionToken api.SessionToken, i
 	return app, md, nil
 }
 
-func (adm *Admin) ensureBot(manifest *api.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (adm *Admin) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

@@ -14,14 +14,15 @@ import (
 
 // TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
 
-func (a *restapi) kvList(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
+func (a *restapi) kvList(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
 	// <><>TODO kvList
 }
 
-func (a *restapi) kvGet(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
-	id := mux.Vars(req)["key"]
-	out := map[string]interface{}{}
-	err := a.api.AppServices.KVGet(botUserID, prefix, id, out)
+func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
+	id := mux.Vars(r)["key"]
+	var out interface{}
+
+	err := a.api.AppServices.KVGet(botUserID, prefix, id, &out)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -29,16 +30,16 @@ func (a *restapi) kvGet(w http.ResponseWriter, req *http.Request, botUserID, pre
 	httputils.WriteJSON(w, out)
 }
 
-func (a *restapi) kvHead(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
+func (a *restapi) kvHead(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
 	// TODO "HEAD"
 }
 
-func (a *restapi) kvPut(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
-	id := mux.Vars(req)["key"]
-
+func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
+	id := mux.Vars(r)["key"]
 	in := map[string]interface{}{}
+
 	// TODO size limit
-	err := json.NewDecoder(req.Body).Decode(&in)
+	err := json.NewDecoder(r.Body).Decode(&in)
 	if err != nil {
 		httputils.WriteBadRequestError(w, err)
 		return
@@ -46,21 +47,33 @@ func (a *restapi) kvPut(w http.ResponseWriter, req *http.Request, botUserID, pre
 
 	// <><>TODO atomic support
 	// <><>TODO TTL support
+
 	changed, err := a.api.AppServices.KVSet(botUserID, prefix, id, in)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
 	}
+
 	httputils.WriteJSON(w, map[string]interface{}{
 		"changed": changed,
 	})
 }
 
-func (a *restapi) kvDelete(w http.ResponseWriter, req *http.Request, botUserID, prefix string) {
-	id := mux.Vars(req)["key"]
-	err := a.api.AppServices.KVDelete(botUserID, prefix, id)
+func (a *restapi) kvDelete(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
+	status := http.StatusOK
+	var err error
+
+	id := mux.Vars(r)["key"]
+
+	defer func() {
+		if err != nil {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+	}()
+
+	err = a.api.AppServices.KVDelete(botUserID, prefix, id)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
 		return
 	}
 }
@@ -68,20 +81,20 @@ func (a *restapi) kvDelete(w http.ResponseWriter, req *http.Request, botUserID, 
 func (a *restapi) handleKV(
 	f func(http.ResponseWriter, *http.Request, string, string),
 ) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		botUserID := req.Header.Get("Mattermost-User-Id")
+	return func(w http.ResponseWriter, r *http.Request) {
+		botUserID := r.Header.Get("Mattermost-User-Id")
 		if botUserID == "" {
 			httputils.WriteUnauthorizedError(w, errors.New("not authorized"))
 			return
 		}
 
-		err := req.ParseForm()
+		err := r.ParseForm()
 		if err != nil {
 			httputils.WriteBadRequestError(w, err)
 			return
 		}
-		prefix := req.Form.Get("prefix")
+		prefix := r.Form.Get("prefix")
 
-		f(w, req, botUserID, prefix)
+		f(w, r, botUserID, prefix)
 	}
 }

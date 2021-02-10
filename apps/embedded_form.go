@@ -1,4 +1,4 @@
-package api
+package apps
 
 type AppPostEmbed struct {
 	Title    string     `json:"title"`

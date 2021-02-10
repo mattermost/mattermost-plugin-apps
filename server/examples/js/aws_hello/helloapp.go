@@ -1,36 +1,40 @@
 package aws_hello
 
-import "github.com/mattermost/mattermost-plugin-apps/server/api"
+import (
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+)
 
 const (
 	AppID          = "awsHello"
 	AppDisplayName = "AWS Hello App display name"
 	AppDescription = "AWS Hello App description"
+	AppVersion     = "v0.0.1"
 )
 
-func Manifest() *api.Manifest {
-	return &api.Manifest{
+func Manifest() *apps.Manifest {
+	return &apps.Manifest{
 		AppID:       AppID,
-		Type:        api.AppTypeAWSLambda,
+		Version:     AppVersion,
+		Type:        apps.AppTypeAWSLambda,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
-		RequestedPermissions: api.Permissions{
-			api.PermissionUserJoinedChannelNotification,
-			api.PermissionActAsUser,
-			api.PermissionActAsBot,
+		RequestedPermissions: apps.Permissions{
+			apps.PermissionUserJoinedChannelNotification,
+			apps.PermissionActAsUser,
+			apps.PermissionActAsBot,
 		},
-		RequestedLocations: api.Locations{
-			api.LocationChannelHeader,
-			api.LocationPostMenu,
-			api.LocationCommand,
-			api.LocationInPost,
+		RequestedLocations: apps.Locations{
+			apps.LocationChannelHeader,
+			apps.LocationPostMenu,
+			apps.LocationCommand,
+			apps.LocationInPost,
 		},
 		HomepageURL: ("https://github.com/mattermost"),
-		Install: &api.Call{
+		OnInstall: &apps.Call{
 			URL: "on_activate",
-			Expand: &api.Expand{
-				App:              api.ExpandAll,
-				AdminAccessToken: api.ExpandAll,
+			Expand: &apps.Expand{
+				App:              apps.ExpandAll,
+				AdminAccessToken: apps.ExpandAll,
 			},
 		},
 	}
