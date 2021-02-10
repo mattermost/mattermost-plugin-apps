@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetAsset(w http.ResponseWriter, req *http.Request, actingUserID string) {
+func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request, actingUserID string) {
 	query := req.URL.Query()
 
 	assetName := query.Get("name")

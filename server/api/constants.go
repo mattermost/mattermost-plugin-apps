@@ -37,7 +37,7 @@ const (
 	KVPath          = "/kv"
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
-	AssetPath       = "/asset"
+	StaticAssetPath = "/static"
 	BindingsPath    = "/bindings"
 )
 
