@@ -162,13 +162,14 @@ func sendSurvey(bot *mmclient.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
-	p.AddProp(api.PropAppBindings, []*apps.AppPostEmbed{
+	p.AddProp(api.PropAppBindings, []*apps.Binding{
 		{
-			Title: "Survey",
-			Text:  message,
+			AppID:       "http-hello",
+			Location:    "survey",
+			Label:       "Survey",
+			Description: message,
 			Bindings: []*apps.Binding{
 				{
-					AppID:    "http-hello",
 					Location: "select",
 					Label:    "Select one",
 					Call:     apps.MakeCall(PathSubmitSurvey),
@@ -188,7 +189,6 @@ func sendSurvey(bot *mmclient.Client, userID, message string) error {
 					},
 				},
 				{
-					AppID:    "http-hello",
 					Location: "button",
 					Label:    "Do not send",
 					Call:     apps.MakeCall(PathSubmitSurvey),
