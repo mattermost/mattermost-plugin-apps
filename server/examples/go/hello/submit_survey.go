@@ -1,7 +1,6 @@
 package hello
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -25,9 +24,7 @@ func SubmitSurvey(c *apps.Call) *apps.CallResponse {
 			Id:      c.Context.PostID,
 			Message: "The survey will not be sent",
 		}
-		_, err := bot.UpdatePost(c.Context.PostID, p)
-		fmt.Println(err)
-		fmt.Println(c.Context.PostID)
+		_, _ = bot.UpdatePost(c.Context.PostID, p)
 	}
 	return &apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,
