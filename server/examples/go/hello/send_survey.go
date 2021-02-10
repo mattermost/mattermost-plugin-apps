@@ -161,7 +161,7 @@ func sendSurvey(bot examples.Client, userID, message string) error {
 	p := &model.Post{
 		Message: "Please respond to this survey: " + message,
 	}
-	p.AddProp(api.PropAppBindings, []*api.EmbeddedForm{
+	p.AddProp(api.PropAppBindings, []*api.AppPostEmbed{
 		{
 			AppID: "http-hello",
 			Title: "Survey",
