@@ -53,13 +53,13 @@ type assetData struct {
 //      |-- __pycache__
 //      |-- certifi/
 func (c *Client) ProvisionApp(releaseURL string) error {
-	zipFile, err := downloadFile(releaseURL)
-	if err != nil {
-		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
+	zipFile, zipErr := downloadFile(releaseURL)
+	if zipErr != nil {
+		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
 	}
 	zipReader, err := zip.NewReader(bytes.NewReader(zipFile), int64(len(zipFile)))
-	if err != nil {
-		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
+	if zipErr != nil {
+		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
 	}
 	bundleFunctions := []functionInstallData{}
 	var mani apps.Manifest
@@ -67,7 +67,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
-		if strings.HasSuffix(file.Name, "manifest.json") {
+		if strings.HasSuffix(file.Name, "manifest.json") { // nolint:gocritic
 			manifestFile, err := file.Open()
 			if err != nil {
 				return errors.Wrap(err, "can't open manifest.json file")
@@ -78,8 +78,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 			if err != nil {
 				return errors.Wrap(err, "can't read manifest.json file")
 			}
-			err = json.Unmarshal(data, &mani)
-			if err != nil {
+			if err := json.Unmarshal(data, &mani); err != nil {
 				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 		} else if strings.HasSuffix(file.Name, ".zip") {
