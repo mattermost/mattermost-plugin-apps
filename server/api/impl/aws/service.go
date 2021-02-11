@@ -44,6 +44,7 @@ type Service struct {
 	lambda       lambdaiface.LambdaAPI
 	iam          iamiface.IAMAPI
 	s3Downloader s3manageriface.DownloaderAPI
+	s3Uploader   s3manageriface.UploaderAPI
 }
 
 type log interface {
@@ -92,6 +93,7 @@ func NewService(sess *session.Session) *Service {
 		lambda:       lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
 		iam:          iam.New(sess),
 		s3Downloader: s3manager.NewDownloader(sess),
+		s3Uploader:   s3manager.NewUploader(sess),
 	}
 }
 

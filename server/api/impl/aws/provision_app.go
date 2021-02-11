@@ -6,8 +6,6 @@ package aws
 import (
 	"archive/zip"
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +22,7 @@ import (
 const lambdaFunctionFileNameMaxSize = 64
 const appIDLengthLimit = 32
 const versionFormat = "v00.00.000"
+const staticAssetsFolder = "static/"
 
 type functionInstallData struct {
 	zipFile io.Reader
@@ -32,10 +31,18 @@ type functionInstallData struct {
 	runtime string
 }
 
+type assetData struct {
+	file io.Reader
+	name string
+}
+
 // ProvisionApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
 // ~/my_app.zip
 //  |-- manifest.json
+//  |-- static
+//		|-- icon.png
+//		|-- coolFile.txt
 //  |-- my_nodejs_function.zip
 //      |-- index.js
 //      |-- node-modules
@@ -56,6 +63,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 	}
 	bundleFunctions := []functionInstallData{}
 	var mani apps.Manifest
+	assets := []assetData{}
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
@@ -85,6 +93,18 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 				name:    strings.TrimSuffix(file.Name, ".zip"),
 				zipFile: lambdaFunctionFile,
 			})
+		} else if strings.HasPrefix(file.Name, staticAssetsFolder) {
+			assetName := strings.TrimPrefix(file.Name, staticAssetsFolder)
+			assetFile, err := file.Open()
+			if err != nil {
+				return errors.Wrapf(err, "can't open file %s", file.Name)
+			}
+			defer assetFile.Close()
+
+			assets = append(assets, assetData{
+				name: assetName,
+				file: assetFile,
+			})
 		}
 	}
 	resFunctions := []functionInstallData{}
@@ -103,7 +123,20 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 			}
 		}
 	}
-	return c.provisionApp(mani.AppID, mani.Version, resFunctions)
+
+	newManifest, err := c.provisionAssets(&mani, assets)
+	if err != nil {
+		return errors.Wrapf(err, "can't provision assets of the app - %s", mani.AppID)
+	}
+
+	if err := c.provisionFunctions(newManifest, resFunctions); err != nil {
+		return errors.Wrapf(err, "can't provision functions of the app - %s", newManifest.AppID)
+	}
+
+	if err := c.SaveManifest(newManifest); err != nil {
+		return errors.Wrap(err, "can't save manifest")
+	}
+	return nil
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -135,19 +168,19 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionApp(appID apps.AppID, appVersion apps.AppVersion, functions []functionInstallData) error {
+func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functionInstallData) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "can't install app %s", appID)
+		return errors.Wrapf(err, "can't install app %s", manifest.AppID)
 	}
 
 	for _, function := range functions {
-		name, err := getFunctionName(appID, appVersion, function.name)
+		name, err := getFunctionName(manifest.AppID, manifest.Version, function.name)
 		if err != nil {
 			return errors.Wrap(err, "can't get function name")
 		}
 		if err := c.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-			return errors.Wrapf(err, "can't install function for %s", appID)
+			return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
 		}
 	}
 	return nil
@@ -187,25 +220,21 @@ func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, r
 	return nil
 }
 
-// getFunctionName generates function name for a specific app
-// name can be 64 characters long.
-func getFunctionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
-	if len(appID) > appIDLengthLimit {
-		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, appIDLengthLimit)
+func (c *Client) provisionAssets(manifest *apps.Manifest, assets []assetData) (*apps.Manifest, error) {
+	if manifest.Assets == nil {
+		manifest.Assets = make([]apps.Asset, 0, len(assets))
 	}
-	if len(version) > len(versionFormat) {
-		return "", errors.Errorf("version %s too long, should be in %s format", version, versionFormat)
+	for _, asset := range assets {
+		key := getAssetFileKey(manifest.AppID, manifest.Version, asset.name)
+		if err := c.S3FileUpload(key, asset.file); err != nil {
+			return nil, errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
+		}
+		manifest.Assets = append(manifest.Assets, apps.Asset{
+			Name:   asset.name,
+			Type:   apps.S3Asset,
+			Bucket: c.appsS3Bucket,
+			Key:    key,
+		})
 	}
-	name := fmt.Sprintf("%s-%s-%s", appID, version, function)
-	if len(name) <= lambdaFunctionFileNameMaxSize {
-		return name, nil
-	}
-	functionNameLength := lambdaFunctionFileNameMaxSize - len(appID) - len(version) - 2
-	hash := sha256.Sum256([]byte(name))
-	hashString := hex.EncodeToString(hash[:])
-	if len(hashString) > functionNameLength {
-		hashString = hashString[:functionNameLength]
-	}
-	name = fmt.Sprintf("%s-%s-%s", appID, version, hashString)
-	return name, nil
+	return manifest, nil
 }
