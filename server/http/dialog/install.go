@@ -8,18 +8,19 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
-	Manifest      *api.Manifest
+	Manifest      *apps.Manifest
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
 	for _, permission := range manifest.RequestedPermissions {
@@ -42,7 +43,7 @@ func NewInstallAppDialog(manifest *api.Manifest, secret, pluginURL string, comma
 			Default:     secret,
 		},
 	}
-	if manifest.RequestedPermissions.Contains(api.PermissionActAsUser) {
+	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -87,7 +88,12 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, errors.New("user not logged in"))
 		return
 	}
+
 	// TODO check for sysadmin
+	if !d.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
+		return
+	}
 
 	sessionID := req.Header.Get("MM_SESSION_ID")
 	if sessionID == "" {
@@ -133,13 +139,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	app, out, err := d.api.Admin.InstallApp(
-		&api.Context{
+		&apps.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.Manifest.AppID,
 			TeamID:       stateData.TeamID,
 		},
-		api.SessionToken(session.Token),
-		&api.InInstallApp{
+		apps.SessionToken(session.Token),
+		&apps.InInstallApp{
 			OAuth2TrustedApp:   noUserConsentForOAuth2,
 			AppSecret:          secret,
 			GrantedPermissions: stateData.Manifest.RequestedPermissions,

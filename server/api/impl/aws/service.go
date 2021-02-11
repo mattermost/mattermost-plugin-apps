@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -14,24 +15,35 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
 // DefaultRegion describes default region in aws
 const DefaultRegion = "us-east-2"
 
+// appsS3BucketEnvVarName determines an environment variable.
+// Variable saves address of apps S3 bucket name
+const appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
+const defaultBucketName = "MattermostAppsBucket"
+
 // Client is a client for interacting with AWS resources.
 type Client struct {
-	logger  log
-	service *Service
-	config  *aws.Config
-	mux     *sync.Mutex
+	logger       log
+	service      *Service
+	config       *aws.Config
+	mux          *sync.Mutex
+	appsS3Bucket string
 }
 
 // Service hold AWS clients for each service.
 type Service struct {
-	lambda *lambda.Lambda
-	iam    *iam.IAM
+	lambda       lambdaiface.LambdaAPI
+	iam          iamiface.IAMAPI
+	s3Downloader s3manageriface.DownloaderAPI
 }
 
 type log interface {
@@ -42,17 +54,22 @@ type log interface {
 }
 
 // NewAWSClientWithConfig returns a new instance of Client with a custom configuration.
-func NewAWSClientWithConfig(config *aws.Config, logger log) *Client {
+func NewAWSClientWithConfig(config *aws.Config, bucket string, logger log) *Client {
 	return &Client{
-		logger: logger,
-		config: config,
-		mux:    &sync.Mutex{},
+		logger:       logger,
+		config:       config,
+		mux:          &sync.Mutex{},
+		appsS3Bucket: bucket,
 	}
 }
 
 func NewAWSClient(awsAccessKeyID, awsSecretAccessKey string, logger log) *Client {
 	config := createAWSConfig(awsAccessKeyID, awsSecretAccessKey)
-	return NewAWSClientWithConfig(config, logger)
+	bucket := os.Getenv(appsS3BucketEnvVarName)
+	if bucket == "" {
+		bucket = defaultBucketName
+	}
+	return NewAWSClientWithConfig(config, bucket, logger)
 }
 
 func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
@@ -72,8 +89,9 @@ func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
 // NewService creates a new instance of Service.
 func NewService(sess *session.Session) *Service {
 	return &Service{
-		lambda: lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
-		iam:    iam.New(sess),
+		lambda:       lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		iam:          iam.New(sess),
+		s3Downloader: s3manager.NewDownloader(sess),
 	}
 }
 

@@ -3,7 +3,9 @@
 
 package api
 
+import "github.com/mattermost/mattermost-plugin-apps/apps"
+
 type AWS interface {
-	InstallApp(releaseURL string) error
-	InvokeLambda(appName, functionName, invocationType string, request interface{}) ([]byte, error)
+	ProvisionApp(releaseURL string) error
+	InvokeLambda(appID apps.AppID, appVersion apps.AppVersion, functionName, invocationType string, request interface{}) ([]byte, error)
 }

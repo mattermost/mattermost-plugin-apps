@@ -1,13 +1,13 @@
 package hello
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 )
 
-func (h *HelloApp) UserJoinedChannel(call *api.Call) {
+func (h *HelloApp) UserJoinedChannel(call *apps.Call) {
 	go func() {
-		bot := examples.AsBot(call.Context)
+		bot := mmclient.AsBot(call.Context)
 
 		err := sendSurvey(bot, call.Context.UserID, "welcome to channel")
 		if err != nil {

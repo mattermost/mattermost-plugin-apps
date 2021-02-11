@@ -43,3 +43,6 @@ ifeq ($(NPM),)
     $(error "npm is not available: see https://www.npmjs.com/get-npm")
 endif
 endif
+
+MM_SERVER_PATH ?= ${PWD}/../mattermost-server
+export MM_SERVER_PATH
