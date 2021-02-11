@@ -22,12 +22,15 @@ func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken,
 	if manifest.AppID == "" {
 		return nil, "", errors.New("app ID must not be empty")
 	}
+
+	if !adm.mm.User.HasPermissionTo(cc.ActingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+		return nil, "", errors.New("forbidden")
+	}
+
 	_, err := adm.store.App().Get(manifest.AppID)
 	if err != utils.ErrNotFound && !in.Force {
 		return nil, "", errors.Errorf("app %s already provisioned, use Force to overwrite", manifest.AppID)
 	}
-
-	// TODO check if acting user is a sysadmin
 
 	bot, token, err := adm.ensureBot(manifest, cc.ActingUserID, string(sessionToken))
 	if err != nil {

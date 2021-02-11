@@ -44,7 +44,6 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		return
 	}
 
-	// TODO check for sysadmin
 	if !a.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
 		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
 		return

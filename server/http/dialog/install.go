@@ -89,7 +89,6 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO check for sysadmin
 	if !d.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
 		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
 		return

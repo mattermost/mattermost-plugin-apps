@@ -18,11 +18,13 @@ import (
 )
 
 func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
-	// TODO <><> check if acting user is a sysadmin
-
 	app, err := adm.store.App().Get(cc.AppID)
 	if err != nil {
 		return nil, "", err
+	}
+
+	if !adm.mm.User.HasPermissionTo(cc.ActingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+		return nil, "", errors.New("forbidden")
 	}
 
 	app.GrantedPermissions = in.GrantedPermissions
@@ -77,6 +79,10 @@ func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, ac
 	app, err := adm.store.App().Get(manifest.AppID)
 	if err != nil && err != utils.ErrNotFound {
 		return nil, err
+	}
+
+	if !adm.mm.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+		return nil, errors.New("forbidden")
 	}
 
 	conf := adm.conf.GetConfig()
