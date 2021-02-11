@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -91,9 +92,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO check for sysadmin
-	if !d.mm.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
-		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
+	if err := utils.EnsureSysadmin(d.mm, actingUserID); err != nil {
+		respondWithError(w, http.StatusForbidden, err)
 		return
 	}
 

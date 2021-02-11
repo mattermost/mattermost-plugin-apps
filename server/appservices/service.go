@@ -16,8 +16,8 @@ import (
 var ErrNotABot = errors.New("not a bot")
 
 type Service interface {
-	Subscribe(*apps.Subscription) error
-	Unsubscribe(*apps.Subscription) error
+	Subscribe(actingUserID string, _ *apps.Subscription) error
+	Unsubscribe(actingUserID string, _ *apps.Subscription) error
 	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
 	KVGet(botUserID, prefix, id string, ref interface{}) error
 	KVDelete(botUserID, prefix, id string) error
