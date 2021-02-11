@@ -45,6 +45,14 @@ Change your directory back to `mattermost-plugin-apps` and run the end to end te
 make test-e2e
 ```
 
+## Provisioning
+
+To provision an App to AWS you first need to store your AWS access key in an environment variable called `APPS_PROVISION_AWS_ACCESS_KEY` and the secret key in `APPS_PROVISION_AWS_SECRET_KEY`.
+
+Only once you need to run `go run ./cmd/appsctl/ provision bucket` to create the s3 bucket.
+
+To provision an app run `go run ./cmd/appsctl/ provision app /PATH/TO/YOUR/APP/BUNDLE`. Use `--update` to update the lambda functions if they already exist. This option should not be used in production.
+
 ## Contacts
 
 Dev: Lev Brouk (@lev.brouk)

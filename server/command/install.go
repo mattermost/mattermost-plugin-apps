@@ -79,16 +79,18 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 }
 
 func (s *service) executeProvision(params *params) (*model.CommandResponse, error) {
-	releaseURL := ""
+	var releaseURL string
+	var shouldUpdate bool
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&releaseURL, "url", "", "release URL")
+	fs.BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with causion in production.")
 
 	err := fs.Parse(params.current)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	err = s.api.AWS.ProvisionApp(releaseURL)
+	err = s.api.AWS.ProvisionAppFromURL(releaseURL, shouldUpdate)
 	if err != nil {
 		return errorOut(params, err)
 	}
