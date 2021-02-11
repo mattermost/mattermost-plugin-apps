@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	gohttp "net/http"
 
 	"github.com/gorilla/mux"
@@ -148,7 +147,7 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
 	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.api.Configurator.GetConfig().BotUserID))
 	if err != nil {
-		p.mm.Log.Error(fmt.Sprintf("Error while checking if the message should be processed %v", err))
+		p.mm.Log.Error("Error while checking if the message should be processed %v", "err", err.Error())
 		return
 	}
 
