@@ -8,8 +8,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // getFunctionName generates function name for a specific app

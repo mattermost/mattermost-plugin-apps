@@ -57,7 +57,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 	if zipErr != nil {
 		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
 	}
-	zipReader, err := zip.NewReader(bytes.NewReader(zipFile), int64(len(zipFile)))
+	zipReader, zipErr := zip.NewReader(bytes.NewReader(zipFile), int64(len(zipFile)))
 	if zipErr != nil {
 		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
 	}
