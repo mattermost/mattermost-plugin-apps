@@ -25,3 +25,7 @@ func (adm *Admin) ListApps() ([]*apps.App, md.MD, error) {
 
 	return apps, out, nil
 }
+
+func (adm *Admin) GetApp(appID apps.AppID) (*apps.App, error) {
+	return adm.store.App().Get(appID)
+}
