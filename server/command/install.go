@@ -25,7 +25,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
-	fs.BoolVar(&force, "force", false, "Force re-provisioning of the app")
+	fs.BoolVar(&force, "force", false, "Force re-installing of the app")
 
 	err := fs.Parse(params.current)
 	if err != nil {
@@ -65,6 +65,9 @@ func (s *service) executeInstallAWSApp(params *params) (*model.CommandResponse, 
 	app, err := s.api.Admin.GetApp(apps.AppID(appID))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "App not found"))
+	}
+	if app.Manifest == nil || app.Manifest.Type != apps.AppTypeAWSLambda {
+		return errorOut(params, errors.Wrap(err, "Not an AWS app"))
 	}
 	return s.installApp(app.Manifest, appSecret, force, params)
 }
