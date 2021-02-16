@@ -5,11 +5,9 @@
 package mock_api
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
-
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	reflect "reflect"
 )
 
 // MockAppServices is a mock of AppServices interface
