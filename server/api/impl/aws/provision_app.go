@@ -256,9 +256,13 @@ func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, r
 		if _, ok := err.(*lambda.ResourceConflictException); !ok {
 			return errors.Wrapf(err, "Can't create function. Response: %v\n", result)
 		}
+
+		c.logger.Info(fmt.Sprintf("funcion %s already exists. Not updating it.", function))
+
+		return nil
 	}
 
-	c.logger.Info(fmt.Sprintf("function named %s was created with response: %v", function, result))
+	c.logger.Info(fmt.Sprintf("function %s was created with response: %v", function, result))
 
 	return nil
 }
