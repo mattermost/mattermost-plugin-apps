@@ -39,7 +39,7 @@ func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
 	}
-	v := conf.Apps[appID]
+	v := conf.Apps[string(appID)]
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
@@ -51,13 +51,13 @@ func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 func (s AppStore) Save(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
-		conf.Apps = map[apps.AppID]interface{}{}
+		conf.Apps = map[string]interface{}{}
 	}
 	// do not store manifest in the config
 	app.AppID = app.Manifest.AppID
 	app.Manifest = nil
 
-	conf.Apps[app.Manifest.AppID] = app.ConfigMap()
+	conf.Apps[string(app.Manifest.AppID)] = app.ConfigMap()
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
@@ -71,7 +71,7 @@ func (s AppStore) Save(app *apps.App) error {
 
 func (s AppStore) Delete(app *apps.App) error {
 	conf := s.conf.GetConfig()
-	delete(conf.Apps, app.Manifest.AppID)
+	delete(conf.Apps, string(app.Manifest.AppID))
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
