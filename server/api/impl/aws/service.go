@@ -22,13 +22,17 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
-// DefaultRegion describes default region in aws
-const DefaultRegion = "us-east-2"
+const (
+	// DefaultRegion describes default region in aws
+	DefaultRegion = "us-east-2"
 
-// appsS3BucketEnvVarName determines an environment variable.
-// Variable saves address of apps S3 bucket name
-const appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
-const defaultBucketName = "MattermostAppsBucket"
+	// appsS3BucketEnvVarName determines an environment variable.
+	// Variable saves address of apps S3 bucket name
+	appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
+
+	// defaultBucketName is the default s3 bucket name used to store app data.
+	defaultBucketName = "mattermost-apps-bucket"
+)
 
 // Client is a client for interacting with AWS resources.
 type Client struct {
