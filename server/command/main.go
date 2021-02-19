@@ -29,6 +29,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"info":                  s.executeInfo,
 		"list":                  s.executeList,
 		"install":               s.executeInstall,
+		"uninstall":             s.executeUninstall,
 	}
 
 	return runSubcommand(subcommands, in)
