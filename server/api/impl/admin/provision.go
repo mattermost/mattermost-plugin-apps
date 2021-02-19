@@ -36,6 +36,7 @@ func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken,
 
 	app := &apps.App{
 		Manifest:       manifest,
+		Status:         apps.AppStatusInstalled,
 		BotUserID:      bot.UserId,
 		BotUsername:    bot.Username,
 		BotAccessToken: token.Token,
