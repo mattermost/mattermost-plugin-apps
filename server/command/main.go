@@ -29,7 +29,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"info":                  s.executeInfo,
 		"list":                  s.executeList,
 		"install":               s.executeInstall,
-		"uninstall":             s.executeUninstall,
+		"uninstall":             s.checkSystemAdmin(s.executeUninstall),
 	}
 
 	return runSubcommand(subcommands, in)
@@ -54,4 +54,14 @@ func runSubcommand(
 	p := *params
 	p.current = params.current[1:]
 	return f(&p)
+}
+
+func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse, error)) func(*params) (*model.CommandResponse, error) {
+	return func(p *params) (*model.CommandResponse, error) {
+		if !s.api.Mattermost.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+			return errorOut(p, errors.New("you need to be a system admin to run this command"))
+		}
+
+		return handler(p)
+	}
 }
