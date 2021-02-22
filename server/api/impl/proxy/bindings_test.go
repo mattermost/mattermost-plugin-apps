@@ -125,7 +125,7 @@ func TestMergeBindings(t *testing.T) {
 							Label:       "Create zendesk ticket",
 							Description: "Create ticket in zendesk",
 							Call: &apps.Call{
-								URL: "http://localhost:4000/create",
+								Path: "http://localhost:4000/create",
 							},
 						},
 					},
@@ -140,7 +140,7 @@ func TestMergeBindings(t *testing.T) {
 							Label:       "Create hello ticket",
 							Description: "Create ticket in hello",
 							Call: &apps.Call{
-								URL: "http://localhost:4000/hello",
+								Path: "http://localhost:4000/hello",
 							},
 						},
 					},
@@ -155,7 +155,7 @@ func TestMergeBindings(t *testing.T) {
 							Label:       "Create zendesk ticket",
 							Description: "Create ticket in zendesk",
 							Call: &apps.Call{
-								URL: "http://localhost:4000/create",
+								Path: "http://localhost:4000/create",
 							},
 						},
 						{
@@ -163,7 +163,7 @@ func TestMergeBindings(t *testing.T) {
 							Label:       "Create hello ticket",
 							Description: "Create ticket in hello",
 							Call: &apps.Call{
-								URL: "http://localhost:4000/hello",
+								Path: "http://localhost:4000/hello",
 							},
 						},
 					},

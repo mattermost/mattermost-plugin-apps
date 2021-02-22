@@ -85,7 +85,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 		ChannelID: channel.Id,
 		TeamID:    channel.TeamId,
 		Call: &apps.Call{
-			URL: PathUserJoinedChannel,
+			Path: PathUserJoinedChannel,
 			Expand: &apps.Expand{
 				Channel: apps.ExpandAll,
 				Team:    apps.ExpandAll,
