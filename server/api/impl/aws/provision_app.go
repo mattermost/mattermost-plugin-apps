@@ -25,7 +25,7 @@ const versionFormat = "v00.00.000"
 const staticAssetsFolder = "static/"
 
 type functionInstallData struct {
-	zipFile io.Reader
+	bundle  io.Reader
 	name    string
 	handler string
 	runtime string
@@ -53,21 +53,22 @@ type assetData struct {
 //      |-- __pycache__
 //      |-- certifi/
 func (c *Client) ProvisionApp(releaseURL string) error {
-	zipFile, zipErr := downloadFile(releaseURL)
-	if zipErr != nil {
-		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
+	bundle, bundleErr := downloadFile(releaseURL)
+	if bundleErr != nil {
+		return errors.Wrapf(bundleErr, "can't install app from url %s", releaseURL)
 	}
-	zipReader, zipErr := zip.NewReader(bytes.NewReader(zipFile), int64(len(zipFile)))
-	if zipErr != nil {
-		return errors.Wrapf(zipErr, "can't install app from url %s", releaseURL)
+	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(bundle), int64(len(bundle)))
+	if bundleErr != nil {
+		return errors.Wrapf(bundleErr, "can't install app from url %s", releaseURL)
 	}
 	bundleFunctions := []functionInstallData{}
 	var mani apps.Manifest
 	assets := []assetData{}
 
 	// Read all the files from zip archive
-	for _, file := range zipReader.File {
-		if strings.HasSuffix(file.Name, "manifest.json") { // nolint:gocritic
+	for _, file := range bundleReader.File {
+		switch {
+		case strings.HasSuffix(file.Name, "manifest.json"):
 			manifestFile, err := file.Open()
 			if err != nil {
 				return errors.Wrap(err, "can't open manifest.json file")
@@ -81,7 +82,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 			if err := json.Unmarshal(data, &mani); err != nil {
 				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
-		} else if strings.HasSuffix(file.Name, ".zip") {
+		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
 			if err != nil {
 				return errors.Wrapf(err, "can't open file %s", file.Name)
@@ -89,10 +90,10 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 			defer lambdaFunctionFile.Close()
 
 			bundleFunctions = append(bundleFunctions, functionInstallData{
-				name:    strings.TrimSuffix(file.Name, ".zip"),
-				zipFile: lambdaFunctionFile,
+				name:   strings.TrimSuffix(file.Name, ".zip"),
+				bundle: lambdaFunctionFile,
 			})
-		} else if strings.HasPrefix(file.Name, staticAssetsFolder) {
+		case strings.HasPrefix(file.Name, staticAssetsFolder):
 			assetName := strings.TrimPrefix(file.Name, staticAssetsFolder)
 			assetFile, err := file.Open()
 			if err != nil {
@@ -113,7 +114,7 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 		for _, manifestFunction := range mani.Functions {
 			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, functionInstallData{
-					zipFile: bundleFunction.zipFile,
+					bundle:  bundleFunction.bundle,
 					name:    manifestFunction.Name,
 					handler: manifestFunction.Handler,
 					runtime: manifestFunction.Runtime,
@@ -178,7 +179,7 @@ func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functio
 		if err != nil {
 			return errors.Wrap(err, "can't get function name")
 		}
-		if err := c.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
+		if err := c.createFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
 			return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
 		}
 	}
@@ -186,12 +187,12 @@ func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functio
 }
 
 // CreateFunction method creates lambda function
-func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
-	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
-		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", zipFile, function, handler, resource, runtime)
+func (c *Client) createFunction(bundle io.Reader, function, handler, runtime, resource string) error {
+	if bundle == nil || function == "" || handler == "" || resource == "" || runtime == "" {
+		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", bundle, function, handler, resource, runtime)
 	}
 
-	contents, err := ioutil.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(bundle)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
