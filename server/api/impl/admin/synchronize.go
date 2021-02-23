@@ -5,9 +5,9 @@ package admin
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -26,10 +26,10 @@ type AppVersions struct {
 	Overrides map[string]apps.AppVersionMap `json:"overrides"`
 }
 
-func getAppsForInstallation(installationID string) (apps.AppVersionMap, error) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("assets/%s", appsJSONFile))
+func getAppsForInstallation(path, installationID string) (apps.AppVersionMap, error) {
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "can't read %s file", appsJSONFile)
+		return nil, errors.Wrapf(err, "can't read %s file", path)
 	}
 	var allAppVersions *AppVersions
 	if err := json.Unmarshal(data, &allAppVersions); err != nil || allAppVersions == nil {
@@ -60,8 +60,15 @@ func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
 
 // LoadAppsList synchronizes apps with the apps.json file.
 func (adm *Admin) LoadAppsList() error {
+	bundlePath, err := adm.mm.System.GetBundlePath()
+	if err != nil {
+		return errors.Wrap(err, "can't get bundle path")
+	}
+
 	installationID := adm.mm.System.GetDiagnosticID()
-	appsForInstallation, err := getAppsForInstallation(installationID)
+	appsPath := filepath.Join(bundlePath, "assets", appsJSONFile)
+
+	appsForInstallation, err := getAppsForInstallation(appsPath, installationID)
 	if err != nil {
 		return errors.Wrap(err, "can't get apps for installation")
 	}

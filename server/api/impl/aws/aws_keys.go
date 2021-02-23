@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -22,7 +23,13 @@ func getFunctionName(appID apps.AppID, version apps.AppVersion, function string)
 	if len(version) > len(versionFormat) {
 		return "", errors.Errorf("version %s too long, should be in %s format", version, versionFormat)
 	}
-	name := fmt.Sprintf("%s-%s-%s", appID, version, function)
+
+	// Sanitized any dots used in appID and version as lambda function names can not contain dots
+	// While there are other non-valid characters, a dots is the most commonly used one
+	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
+	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
+
+	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
 	if len(name) <= lambdaFunctionFileNameMaxSize {
 		return name, nil
 	}
@@ -32,7 +39,7 @@ func getFunctionName(appID apps.AppID, version apps.AppVersion, function string)
 	if len(hashString) > functionNameLength {
 		hashString = hashString[:functionNameLength]
 	}
-	name = fmt.Sprintf("%s-%s-%s", appID, version, hashString)
+	name = fmt.Sprintf("%s_%s_%s", appID, version, hashString)
 	return name, nil
 }
 

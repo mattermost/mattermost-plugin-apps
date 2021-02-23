@@ -5,4 +5,5 @@ package apps
 
 const (
 	PropOAuth2ClientSecret = "oauth2_client_secret" // nolint:gosec
+	PropAppBindings        = "app_bindings"
 )

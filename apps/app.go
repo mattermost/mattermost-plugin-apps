@@ -1,17 +1,69 @@
 package apps
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"unicode"
 
+	"github.com/pkg/errors"
+)
+
+// AppID is a globally unique identifier that represents a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
 type AppID string
-type AppType string
+
+func (id AppID) IsValid() error {
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appID", c)
+	}
+
+	return nil
+}
+
+// AppVersion is the version of a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
 type AppVersion string
+
+func (v AppVersion) IsValid() error {
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appVersion", c)
+	}
+
+	return nil
+}
+
 type AppVersionMap map[AppID]AppVersion
+
+type AppType string
 
 // default is HTTP
 const (
-	AppTypeHTTP      = "http"
-	AppTypeAWSLambda = "aws_lambda"
-	AppTypeBuiltin   = "builtin"
+	AppTypeHTTP      AppType = "http"
+	AppTypeAWSLambda AppType = "aws_lambda"
+	AppTypeBuiltin   AppType = "builtin"
 )
 
 func (at AppType) IsValid() bool {
