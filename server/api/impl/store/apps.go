@@ -53,11 +53,15 @@ func (s AppStore) Save(app *apps.App) error {
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
 	}
-	// do not store manifest in the config
-	app.AppID = app.Manifest.AppID
-	app.Manifest = nil
 
-	conf.Apps[string(app.AppID)] = app.ConfigMap()
+	// Copy app before modifying it
+	cApp := &apps.App{}
+	*cApp = *app
+	// do not store manifest in the config
+	cApp.AppID = app.Manifest.AppID
+	cApp.Manifest = nil
+
+	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
