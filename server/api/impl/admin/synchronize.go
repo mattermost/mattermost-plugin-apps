@@ -22,45 +22,17 @@ const callOnceKey = "CallOnce_key"
 
 // AppVersions describes versions for all the apps in all installations
 type AppVersions struct {
-	Apps      apps.AppVersionMap            `json:"apps"`
-	Overrides map[string]apps.AppVersionMap `json:"overrides"`
+	Apps apps.AppVersionMap `json:"apps"`
 }
 
-func getAppsForInstallation(path, installationID string) (apps.AppVersionMap, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "can't read %s file", path)
-	}
-	var allAppVersions *AppVersions
-	if err := json.Unmarshal(data, &allAppVersions); err != nil || allAppVersions == nil {
-		return nil, errors.Wrapf(err, "can't unmarshal %s file", appsJSONFile)
-	}
-
-	apps := allAppVersions.Apps
-	if overrides, ok := allAppVersions.Overrides[installationID]; ok {
-		for id, version := range overrides {
-			apps[id] = version
-		}
-	}
-	return apps, nil
+type appNewVersion struct {
+	oldApp     *apps.App
+	newVersion apps.AppVersion
 }
 
-func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
-	adm.store.Manifest().Cleanup()
-
-	for id, version := range appVersions {
-		manifest, err := adm.awsClient.GetManifest(id, version)
-		if err != nil {
-			// Note that we are not returning an error here. Instead we drop the app from the list.
-			delete(appVersions, id)
-
-			adm.mm.Log.Error("failed to get manifest", "app", id, "version", version, "err", err.Error())
-
-			continue
-		}
-
-		adm.store.Manifest().Save(manifest)
-	}
+type appOldVersion struct {
+	newApp     *apps.App
+	oldVersion apps.AppVersion
 }
 
 // LoadAppsList synchronizes apps with the apps.json file.
@@ -69,73 +41,34 @@ func (adm *Admin) LoadAppsList() error {
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
 	}
-
-	installationID := adm.mm.System.GetDiagnosticID()
 	appsPath := filepath.Join(bundlePath, "assets", appsJSONFile)
-
-	appsForInstallation, err := getAppsForInstallation(appsPath, installationID)
+	appsForRegistration, err := getAppsForRegistration(appsPath)
 	if err != nil {
 		return errors.Wrap(err, "can't get apps for installation")
 	}
 
-	adm.populateManifests(appsForInstallation)
-
+	// Here are apps that are provisioned and registered on this installation.
 	registeredApps := adm.store.App().GetAll()
 
-	registeredAppsMap := map[apps.AppID]*apps.App{}
-	updatedAppVersionsMap := apps.AppVersionMap{}
-	// Update apps
-	for _, registeredApp := range registeredApps {
-		registeredAppsMap[registeredApp.Manifest.AppID] = registeredApp
-		manifest, err := adm.store.Manifest().Get(registeredApp.Manifest.AppID)
-		if err != nil {
-			adm.mm.Log.Error("can't load manifest from store", "app_id", registeredApp.Manifest.AppID)
-			continue
-		}
-		if err := adm.UninstallApp(registeredApp); err != nil {
-			adm.mm.Log.Error("can't uninstall an app", "app_id", registeredApp.Manifest.AppID)
-			continue
-		}
-		if manifest.Version != registeredApp.Manifest.Version {
-			// update app in proxy plugin
-			oldVersion := registeredApp.Manifest.Version
-			registeredApp.Manifest = manifest
-			if err := adm.store.App().Save(registeredApp); err != nil {
-				adm.mm.Log.Error("can't save an app", "app_id", registeredApp.Manifest.AppID)
-			}
-			updatedAppVersionsMap[registeredApp.Manifest.AppID] = oldVersion
-		}
-	}
+	adm.populateManifests(appsForRegistration)
 
-	// register new apps
-	for appID, manifest := range adm.store.Manifest().GetAll() {
-		if _, ok := registeredAppsMap[appID]; ok {
-			continue
-		}
-		if err := adm.RegisterApp(manifest); err != nil {
-			adm.mm.Log.Error("can't register an app", "app_id", appID)
-		}
-	}
+	appsToRegister, appsToUpgrade, appsToRemove := mergeApps(appsForRegistration, registeredApps)
+	adm.removeApps(appsToRemove)
+	upgradedApps := adm.upgradeApps(appsToUpgrade)
+	adm.registerApps(appsToRegister)
 
 	registeredAppsUpgraded := adm.store.App().GetAll()
 
 	// call onInstanceStartup. App migration happens here
 	for _, registeredApp := range registeredAppsUpgraded {
 		if registeredApp.Status == apps.AppStatusInstalled {
+			upgradedApp, ok := upgradedApps[registeredApp.AppID]
 			values := map[string]string{}
-			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
-				values[oldVersionKey] = string(updatedAppVersionsMap[registeredApp.Manifest.AppID])
+			if ok {
+				// app was upgraded send the message
+				values[oldVersionKey] = string(upgradedApp.oldVersion)
 			}
-			// Call onStartup the function of the app. It should be called only once
-			f := func() error {
-				if err := adm.expandedCall(registeredApp, registeredApp.Manifest.OnStartup, values); err != nil {
-					adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
-				}
-				return nil
-			}
-			if err := adm.callOnce(f); err != nil {
-				adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
-			}
+			adm.callOnStartupOnceWithValues(registeredApp, values)
 		}
 	}
 
@@ -175,7 +108,121 @@ func (adm *Admin) UninstallApp(app *apps.App) error {
 	return nil
 }
 
-func (adm *Admin) RegisterApp(manifest *apps.Manifest) error {
+func getAppsForRegistration(path string) (apps.AppVersionMap, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't read %s file", path)
+	}
+	var apps *AppVersions
+	if err := json.Unmarshal(data, &apps); err != nil || apps == nil {
+		return nil, errors.Wrapf(err, "can't unmarshal %s file", appsJSONFile)
+	}
+
+	return apps.Apps, nil
+}
+
+func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
+	adm.store.Manifest().Cleanup()
+
+	for id, version := range appVersions {
+		manifest, err := adm.awsClient.GetManifest(id, version)
+		if err != nil {
+			// Note that we are not returning an error here. Instead we drop the app from the list.
+			delete(appVersions, id)
+
+			adm.mm.Log.Error("failed to get manifest", "app", id, "version", version, "err", err.Error())
+
+			continue
+		}
+
+		adm.store.Manifest().Save(manifest)
+	}
+}
+
+// mergeApp merges too files and detects apps that should upgrade, register or remove
+// appsForRegistration are apps from the apps.json file
+// registeredApps are apps in the config already registered.
+func mergeApps(appsForRegistration apps.AppVersionMap, registeredApps []*apps.App) (apps.AppVersionMap, map[apps.AppID]appNewVersion, map[apps.AppID]*apps.App) {
+	appsToRegister := apps.AppVersionMap{}
+	appsToUpgrade := map[apps.AppID]appNewVersion{}
+	appsToRemove := map[apps.AppID]*apps.App{}
+
+	allRegisteredAppsMap := map[apps.AppID]*apps.App{}
+	for _, registeredApp := range registeredApps {
+		allRegisteredAppsMap[registeredApp.AppID] = registeredApp
+		newVersion, ok := appsForRegistration[registeredApp.AppID]
+		if !ok {
+			// app was registered but it is not in the registration list anymore.
+			appsToRemove[registeredApp.AppID] = registeredApp
+			continue
+		}
+		if newVersion != registeredApp.Manifest.Version {
+			appsToUpgrade[registeredApp.AppID] = appNewVersion{registeredApp, newVersion}
+		}
+	}
+	for id, appToRegister := range appsForRegistration {
+		if _, ok := allRegisteredAppsMap[id]; !ok {
+			// here is a new app
+			appsToRegister[id] = appToRegister
+		}
+	}
+	return appsToRegister, appsToUpgrade, appsToRemove
+}
+
+func (adm *Admin) removeApps(appsToRemove map[apps.AppID]*apps.App) {
+	for _, appToRemove := range appsToRemove {
+		switch appToRemove.Status {
+		case apps.AppStatusInstalled:
+			if err := adm.UninstallApp(appToRemove); err != nil {
+				adm.mm.Log.Error("can't uninstall app", "app_id", appToRemove.AppID, "err", err.Error())
+			}
+		case apps.AppStatusRegistered:
+			// delete app from proxy plugin, not removing the data
+			if err := adm.store.App().Delete(appToRemove); err != nil {
+				adm.mm.Log.Error("can't delete app from store", "app_id", appToRemove.AppID, "err", err.Error())
+			}
+		}
+	}
+}
+
+func (adm *Admin) upgradeApps(appsToUpgrade map[apps.AppID]appNewVersion) map[apps.AppID]appOldVersion {
+	upgradedApps := map[apps.AppID]appOldVersion{}
+	for _, appToUpgrade := range appsToUpgrade {
+		oldVersion := appToUpgrade.oldApp.Manifest.Version
+		newManifest, err := adm.store.Manifest().Get(appToUpgrade.oldApp.AppID)
+		if err != nil {
+			adm.mm.Log.Error("can't load manifest from store", "app_id", appToUpgrade.oldApp.AppID, "err", err.Error())
+			continue
+		}
+		if newManifest.Version != appToUpgrade.newVersion {
+			adm.mm.Log.Error("versions do not match this should not happen", "app_id", appToUpgrade.oldApp.AppID)
+			continue
+		}
+		upgradedApp := appToUpgrade.oldApp
+		upgradedApp.Manifest = newManifest
+		if err := adm.store.App().Save(upgradedApp); err != nil {
+			adm.mm.Log.Error("can't save an app", "app_id", upgradedApp.AppID, "err", err.Error())
+			continue
+		}
+		upgradedApps[upgradedApp.AppID] = appOldVersion{
+			newApp:     upgradedApp,
+			oldVersion: oldVersion,
+		}
+	}
+	return upgradedApps
+}
+
+func (adm *Admin) registerApps(appsToRegister apps.AppVersionMap) {
+	for appID, manifest := range adm.store.Manifest().GetAll() {
+		if _, ok := appsToRegister[appID]; ok {
+			if err := adm.registerApp(manifest); err != nil {
+				adm.mm.Log.Error("can't register an app", "app_id", appID, "err", err.Error())
+			}
+		}
+	}
+}
+
+func (adm *Admin) registerApp(manifest *apps.Manifest) error {
 	newApp := &apps.App{}
 	newApp.Manifest = manifest
 	newApp.Status = apps.AppStatusRegistered
@@ -184,6 +231,19 @@ func (adm *Admin) RegisterApp(manifest *apps.Manifest) error {
 	}
 	adm.mm.Log.Info("App is registered", "app_id", manifest.AppID)
 	return nil
+}
+
+func (adm *Admin) callOnStartupOnceWithValues(app *apps.App, values map[string]string) {
+	// Call onStartup the function of the app. It should be called only once
+	f := func() error {
+		if err := adm.expandedCall(app, app.Manifest.OnStartup, values); err != nil {
+			adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+		}
+		return nil
+	}
+	if err := adm.callOnce(f); err != nil {
+		adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+	}
 }
 
 func (adm *Admin) callOnce(f func() error) error {
