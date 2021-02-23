@@ -42,8 +42,7 @@ const (
 )
 
 const (
-	PropTeamID      = "team_id"
-	PropChannelID   = "channel_id"
-	PropPostID      = "post_id"
-	PropAppBindings = "app_bindings"
+	PropTeamID    = "team_id"
+	PropChannelID = "channel_id"
+	PropPostID    = "post_id"
 )
