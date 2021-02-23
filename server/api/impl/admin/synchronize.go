@@ -92,7 +92,7 @@ func (adm *Admin) LoadAppsList() error {
 			adm.mm.Log.Error("can't load manifest from store", "app_id", registeredApp.Manifest.AppID)
 			continue
 		}
-		if err := adm.UninstallApp(registeredApp); err != nil {
+		if err := adm.UninstallApp(registeredApp.Manifest.AppID); err != nil {
 			adm.mm.Log.Error("can't uninstall an app", "app_id", registeredApp.Manifest.AppID)
 			continue
 		}
@@ -142,7 +142,12 @@ func (adm *Admin) LoadAppsList() error {
 	return nil
 }
 
-func (adm *Admin) UninstallApp(app *apps.App) error {
+func (adm *Admin) UninstallApp(appID apps.AppID) error {
+	app, err := adm.store.App().Get(appID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
+	}
+
 	// Call delete the function of the app
 	if err := adm.expandedCall(app, app.Manifest.OnUninstall, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.Manifest.AppID)
