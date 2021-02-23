@@ -29,7 +29,7 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"install-aws":           s.executeInstallAWSApp,
 		"info":                  s.executeInfo,
 		"list":                  s.executeList,
-		"install":               s.executeInstall,
+		"install":               s.executeInstallHTTPApp,
 	}
 
 	return runSubcommand(subcommands, in)

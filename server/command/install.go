@@ -18,7 +18,7 @@ import (
 
 // Manifest is loaded from a URL for convenience, it really should be provided
 // as text/JSON or as a file.
-func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
+func (s *service) executeInstallHTTPApp(params *params) (*model.CommandResponse, error) {
 	manifestURL := ""
 	appSecret := ""
 	force := false

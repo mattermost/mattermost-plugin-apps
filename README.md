@@ -45,11 +45,6 @@ Change your directory back to `mattermost-plugin-apps` and run the end to end te
 make test-e2e
 ```
 
-## Usage
-Use `apps provision-aws url` to provision an app in AWS. Pass the url of the archived app. 
-Use `apps install-aws app_id ... ` to install provisioned AWS app.
-Use `apps install manifest_url ...` to install HTTP app, we assume app is already provisioned somewhere.
-
 ## Contacts
 
 Dev: Lev Brouk (@lev.brouk)
