@@ -75,7 +75,12 @@ func (adm *Admin) LoadAppsList() error {
 	return nil
 }
 
-func (adm *Admin) UninstallApp(app *apps.App) error {
+func (adm *Admin) UninstallApp(appID apps.AppID) error {
+	app, err := adm.store.App().Get(appID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
+	}
+
 	// Call delete the function of the app
 	if err := adm.expandedCall(app, app.Manifest.OnUninstall, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.Manifest.AppID)
@@ -173,7 +178,7 @@ func (adm *Admin) removeApps(appsToRemove map[apps.AppID]*apps.App) {
 	for _, appToRemove := range appsToRemove {
 		switch appToRemove.Status {
 		case apps.AppStatusInstalled:
-			if err := adm.UninstallApp(appToRemove); err != nil {
+			if err := adm.UninstallApp(appToRemove.AppID); err != nil {
 				adm.mm.Log.Error("can't uninstall app", "app_id", appToRemove.AppID, "err", err.Error())
 			}
 		case apps.AppStatusRegistered:

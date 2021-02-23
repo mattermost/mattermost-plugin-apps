@@ -3,8 +3,9 @@ package admin
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func TestMergeApps(t *testing.T) {
