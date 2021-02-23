@@ -47,13 +47,18 @@ func getAppsForInstallation(path, installationID string) (apps.AppVersionMap, er
 
 func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
 	adm.store.Manifest().Cleanup()
+
 	for id, version := range appVersions {
 		manifest, err := adm.awsClient.GetManifest(id, version)
 		if err != nil {
-			// Note that we are not returning an error here.
-			adm.mm.Log.Error("can't get manifest for", "app", id, "version", version, "err", err)
+			// Note that we are not returning an error here. Instead we drop the app from the list.
+			delete(appVersions, id)
+
+			adm.mm.Log.Error("failed to get manifest", "app", id, "version", version, "err", err.Error())
+
 			continue
 		}
+
 		adm.store.Manifest().Save(manifest)
 	}
 }
