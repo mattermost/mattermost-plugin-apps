@@ -92,24 +92,3 @@ func (s *service) installApp(manifest *apps.Manifest, appSecret string, force bo
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
-
-func (s *service) executeProvisionAWSApp(params *params) (*model.CommandResponse, error) {
-	releaseURL := ""
-	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
-	fs.StringVar(&releaseURL, "url", "", "release URL")
-
-	err := fs.Parse(params.current)
-	if err != nil {
-		return errorOut(params, err)
-	}
-
-	err = s.api.AWS.ProvisionApp(releaseURL)
-	if err != nil {
-		return errorOut(params, err)
-	}
-
-	return &model.CommandResponse{
-		Text:         fmt.Sprintf("installed lambda functions from url %s.", releaseURL),
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
-}

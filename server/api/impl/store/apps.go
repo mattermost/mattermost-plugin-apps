@@ -61,7 +61,7 @@ func (s AppStore) Save(app *apps.App) error {
 	cApp.AppID = app.Manifest.AppID
 	cApp.Manifest = nil
 
-	conf.Apps[string(app.AppID)] = app.ConfigMap()
+	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
