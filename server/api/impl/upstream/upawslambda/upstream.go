@@ -46,7 +46,7 @@ func NewUpstream(app *apps.App, aws *aws.Client) *Upstream {
 }
 
 func (u *Upstream) OneWay(call *apps.Call) error {
-	payload, err := CallToInvocationPayload(call)
+	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return errors.Wrap(err, "failed to covert call into invocation payload")
 	}
@@ -56,7 +56,7 @@ func (u *Upstream) OneWay(call *apps.Call) error {
 }
 
 func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
-	payload, err := CallToInvocationPayload(call)
+	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
 	}
@@ -80,7 +80,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
-func CallToInvocationPayload(call *apps.Call) ([]byte, error) {
+func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	request := invocationPayload{
 		Path:       call.URL,
 		HTTPMethod: http.MethodPost,
