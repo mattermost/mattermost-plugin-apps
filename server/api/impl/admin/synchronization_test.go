@@ -18,7 +18,7 @@ func TestMergeApps(t *testing.T) {
 		appsForRegistration    apps.AppVersionMap
 		registeredApps         []*apps.App
 		expectedAppsToRegister apps.AppVersionMap
-		expectedAppsToUpgrade  map[apps.AppID]appNewVersion
+		expectedAppsToUpgrade  map[apps.AppID]appOldVersion
 		expectedAppsToRemove   map[apps.AppID]*apps.App
 	}{
 		{
@@ -26,7 +26,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{},
 			registeredApps:         []*apps.App{},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 		{
@@ -34,7 +34,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "1", "app2": "1"},
 			registeredApps:         []*apps.App{app1v1, app2v1},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 		{
@@ -42,7 +42,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "1", "app2": "1"},
 			registeredApps:         []*apps.App{app1v1},
 			expectedAppsToRegister: apps.AppVersionMap{"app2": "1"},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 		{
@@ -50,7 +50,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "1", "app2": "1"},
 			registeredApps:         []*apps.App{},
 			expectedAppsToRegister: apps.AppVersionMap{"app1": "1", "app2": "1"},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 		{
@@ -58,7 +58,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "2", "app2": "1"},
 			registeredApps:         []*apps.App{app1v1, app2v1},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{"app1": {oldApp: app1v1, newVersion: "2"}},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{"app1": {oldApp: app1v1, newVersion: "2"}},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 		{
@@ -66,7 +66,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "2", "app2": "1"},
 			registeredApps:         []*apps.App{app1v1, app2v2},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade: map[apps.AppID]appNewVersion{
+			expectedAppsToUpgrade: map[apps.AppID]appOldVersion{
 				"app1": {oldApp: app1v1, newVersion: "2"},
 				"app2": {oldApp: app2v2, newVersion: "1"},
 			},
@@ -77,7 +77,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app1": "1"},
 			registeredApps:         []*apps.App{app1v1, app2v1},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{"app2": app2v1},
 		},
 		{
@@ -85,7 +85,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{},
 			registeredApps:         []*apps.App{app1v1, app2v1},
 			expectedAppsToRegister: apps.AppVersionMap{},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{"app2": app2v1, "app1": app1v1},
 		},
 		{
@@ -93,7 +93,7 @@ func TestMergeApps(t *testing.T) {
 			appsForRegistration:    apps.AppVersionMap{"app2": "1", "app1": "2"},
 			registeredApps:         []*apps.App{app1v1},
 			expectedAppsToRegister: apps.AppVersionMap{"app2": "1"},
-			expectedAppsToUpgrade:  map[apps.AppID]appNewVersion{"app1": {oldApp: app1v1, newVersion: "2"}},
+			expectedAppsToUpgrade:  map[apps.AppID]appOldVersion{"app1": {oldApp: app1v1, newVersion: "2"}},
 			expectedAppsToRemove:   map[apps.AppID]*apps.App{},
 		},
 	} {
