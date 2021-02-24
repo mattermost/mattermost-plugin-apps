@@ -25,12 +25,12 @@ type AppVersions struct {
 	Apps apps.AppVersionMap `json:"apps"`
 }
 
-type appNewVersion struct {
+type appOldVersion struct {
 	oldApp     *apps.App
 	newVersion apps.AppVersion
 }
 
-type appOldVersion struct {
+type appNewVersion struct {
 	newApp     *apps.App
 	oldVersion apps.AppVersion
 }
@@ -50,7 +50,7 @@ func (adm *Admin) LoadAppsList() error {
 	// Here are apps that are provisioned and registered on this installation.
 	registeredApps := adm.store.App().GetAll()
 
-	adm.populateManifests(appsForRegistration)
+	adm.getAndStoreManifests(appsForRegistration)
 
 	appsToRegister, appsToUpgrade, appsToRemove := mergeApps(appsForRegistration, registeredApps)
 	adm.removeApps(appsToRemove)
@@ -60,15 +60,15 @@ func (adm *Admin) LoadAppsList() error {
 	registeredAppsUpgraded := adm.store.App().GetAll()
 
 	// call onInstanceStartup. App migration happens here
-	for _, registeredApp := range registeredAppsUpgraded {
-		if registeredApp.Status == apps.AppStatusInstalled {
-			upgradedApp, ok := upgradedApps[registeredApp.AppID]
+	for _, registeredAppUpgraded := range registeredAppsUpgraded {
+		if registeredAppUpgraded.Status == apps.AppStatusInstalled {
+			upgradedApp, ok := upgradedApps[registeredAppUpgraded.AppID]
 			values := map[string]string{}
 			if ok {
 				// app was upgraded send the message
 				values[oldVersionKey] = string(upgradedApp.oldVersion)
 			}
-			adm.callOnStartupOnceWithValues(registeredApp, values)
+			adm.callOnStartupOnceWithValues(registeredAppUpgraded, values)
 		}
 	}
 
@@ -126,7 +126,7 @@ func getAppsForRegistration(path string) (apps.AppVersionMap, error) {
 	return apps.Apps, nil
 }
 
-func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
+func (adm *Admin) getAndStoreManifests(appVersions apps.AppVersionMap) {
 	adm.store.Manifest().Cleanup()
 
 	for id, version := range appVersions {
@@ -144,12 +144,12 @@ func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
 	}
 }
 
-// mergeApp merges too files and detects apps that should upgrade, register or remove
+// mergeApp merges two pile of apps and detects apps that should upgrade, register or remove
 // appsForRegistration are apps from the apps.json file
 // registeredApps are apps in the config already registered.
-func mergeApps(appsForRegistration apps.AppVersionMap, registeredApps []*apps.App) (apps.AppVersionMap, map[apps.AppID]appNewVersion, map[apps.AppID]*apps.App) {
+func mergeApps(appsForRegistration apps.AppVersionMap, registeredApps []*apps.App) (apps.AppVersionMap, map[apps.AppID]appOldVersion, map[apps.AppID]*apps.App) {
 	appsToRegister := apps.AppVersionMap{}
-	appsToUpgrade := map[apps.AppID]appNewVersion{}
+	appsToUpgrade := map[apps.AppID]appOldVersion{}
 	appsToRemove := map[apps.AppID]*apps.App{}
 
 	allRegisteredAppsMap := map[apps.AppID]*apps.App{}
@@ -162,7 +162,10 @@ func mergeApps(appsForRegistration apps.AppVersionMap, registeredApps []*apps.Ap
 			continue
 		}
 		if newVersion != registeredApp.Manifest.Version {
-			appsToUpgrade[registeredApp.AppID] = appNewVersion{registeredApp, newVersion}
+			appsToUpgrade[registeredApp.AppID] = appOldVersion{
+				oldApp:     registeredApp,
+				newVersion: newVersion,
+			}
 		}
 	}
 	for id, appToRegister := range appsForRegistration {
@@ -190,8 +193,8 @@ func (adm *Admin) removeApps(appsToRemove map[apps.AppID]*apps.App) {
 	}
 }
 
-func (adm *Admin) upgradeApps(appsToUpgrade map[apps.AppID]appNewVersion) map[apps.AppID]appOldVersion {
-	upgradedApps := map[apps.AppID]appOldVersion{}
+func (adm *Admin) upgradeApps(appsToUpgrade map[apps.AppID]appOldVersion) map[apps.AppID]appNewVersion {
+	upgradedApps := map[apps.AppID]appNewVersion{}
 	for _, appToUpgrade := range appsToUpgrade {
 		oldVersion := appToUpgrade.oldApp.Manifest.Version
 		newManifest, err := adm.store.Manifest().Get(appToUpgrade.oldApp.AppID)
@@ -209,7 +212,7 @@ func (adm *Admin) upgradeApps(appsToUpgrade map[apps.AppID]appNewVersion) map[ap
 			adm.mm.Log.Error("can't save an app", "app_id", upgradedApp.AppID, "err", err.Error())
 			continue
 		}
-		upgradedApps[upgradedApp.AppID] = appOldVersion{
+		upgradedApps[upgradedApp.AppID] = appNewVersion{
 			newApp:     upgradedApp,
 			oldVersion: oldVersion,
 		}
@@ -218,11 +221,14 @@ func (adm *Admin) upgradeApps(appsToUpgrade map[apps.AppID]appNewVersion) map[ap
 }
 
 func (adm *Admin) registerApps(appsToRegister apps.AppVersionMap) {
-	for appID, manifest := range adm.store.Manifest().GetAll() {
-		if _, ok := appsToRegister[appID]; ok {
-			if err := adm.registerApp(manifest); err != nil {
-				adm.mm.Log.Error("can't register an app", "app_id", appID, "err", err.Error())
-			}
+	for id := range appsToRegister {
+		manifest, err := adm.store.Manifest().Get(id)
+		if err != nil {
+			adm.mm.Log.Error("can't get manifest from store", "app_id", id, "err", err.Error())
+			continue
+		}
+		if err := adm.registerApp(manifest); err != nil {
+			adm.mm.Log.Error("can't register an app", "app_id", id, "err", err.Error())
 		}
 	}
 }
