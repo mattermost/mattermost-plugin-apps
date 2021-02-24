@@ -1,7 +1,6 @@
 {
     "apps" : {
-        "zendesk" : "0.0.1"
-    },
-    "overrides" : {
+        "zendesk" : "0.0.1",
+        "com.mattermost.servicenow" : "0.1.0"
     }
 }
