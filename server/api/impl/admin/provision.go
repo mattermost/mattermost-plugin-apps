@@ -45,6 +45,7 @@ func (adm *Admin) ProvisionApp(cc *apps.Context, sessionToken apps.SessionToken,
 	if err != nil {
 		return nil, "", err
 	}
+	adm.store.Manifest().Save(manifest)
 
 	md := md.Markdownf("Provisioned App %s [%s](%s). Bot user @%s.",
 		app.Manifest.AppID, app.Manifest.DisplayName, app.Manifest.HomepageURL, app.BotUsername)

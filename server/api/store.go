@@ -28,5 +28,6 @@ type ManifestStore interface {
 	Get(appID apps.AppID) (*apps.Manifest, error)
 	GetAll() map[apps.AppID]*apps.Manifest
 	Save(manifest *apps.Manifest)
+	Delete(appID apps.AppID)
 	Cleanup()
 }

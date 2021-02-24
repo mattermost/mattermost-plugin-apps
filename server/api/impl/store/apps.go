@@ -75,7 +75,8 @@ func (s AppStore) Save(app *apps.App) error {
 
 func (s AppStore) Delete(app *apps.App) error {
 	conf := s.conf.GetConfig()
-	delete(conf.Apps, string(app.Manifest.AppID))
+	delete(conf.Apps, string(app.AppID))
+	s.stores.manifest.Delete(app.AppID)
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
