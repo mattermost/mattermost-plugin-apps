@@ -27,8 +27,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
 	fs.BoolVar(&force, "force", false, "Force re-installing of the app")
 
-	err := fs.Parse(params.current)
-	if err != nil {
+	if err := fs.Parse(params.current); err != nil {
 		return errorOut(params, err)
 	}
 
