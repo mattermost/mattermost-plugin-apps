@@ -38,7 +38,7 @@ func (s *service) executeDebugInstallHTTPHello(params *params) (*model.CommandRe
 		"--url", s.api.Configurator.GetConfig().PluginURL + api.HelloHTTPPath + http_hello.PathManifest,
 		"--force",
 	}
-	return s.executeInstallHTTPApp(params)
+	return s.executeInstall(params)
 }
 
 func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.CommandResponse, error) {

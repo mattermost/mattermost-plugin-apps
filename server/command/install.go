@@ -16,13 +16,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 )
 
-// Manifest is loaded from a URL for convenience, it really should be provided
-// as text/JSON or as a file.
-func (s *service) executeInstallHTTPApp(params *params) (*model.CommandResponse, error) {
+func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
+	appID := ""
 	manifestURL := ""
 	appSecret := ""
 	force := false
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
+	fs.StringVar(&appID, "app-id", "", "ID of the app")
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
 	fs.BoolVar(&force, "force", false, "Force re-installing of the app")
@@ -36,40 +36,24 @@ func (s *service) executeInstallHTTPApp(params *params) (*model.CommandResponse,
 		return errorOut(params, errors.New("forbidden"))
 	}
 
+	if appID != "" {
+		app, err := s.api.Admin.GetApp(apps.AppID(appID))
+		if err != nil {
+			return errorOut(params, errors.Wrap(err, "App not found"))
+		}
+		if app.Manifest == nil || app.Manifest.Type != apps.AppTypeAWSLambda {
+			return errorOut(params, errors.Wrap(err, "Not an AWS app"))
+		}
+		return s.installApp(app.Manifest, appSecret, force, params)
+	}
 	manifest, err := proxy.LoadManifest(manifestURL)
 	if err != nil {
 		return errorOut(params, err)
 	}
+	if manifest == nil || manifest.Type != apps.AppTypeHTTP {
+		return errorOut(params, errors.Wrap(err, "Not an HTTP app"))
+	}
 	return s.installApp(manifest, appSecret, force, params)
-}
-
-func (s *service) executeInstallAWSApp(params *params) (*model.CommandResponse, error) {
-	appID := ""
-	appSecret := ""
-	force := false
-
-	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
-	fs.StringVar(&appID, "app-id", "", "ID of the app")
-	fs.StringVar(&appSecret, "app-secret", "", "App secret")
-	fs.BoolVar(&force, "force", false, "Force re-provisioning of the app")
-
-	err := fs.Parse(params.current)
-	if err != nil {
-		return errorOut(params, err)
-	}
-
-	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-		return errorOut(params, errors.New("forbidden"))
-	}
-
-	app, err := s.api.Admin.GetApp(apps.AppID(appID))
-	if err != nil {
-		return errorOut(params, errors.Wrap(err, "App not found"))
-	}
-	if app.Manifest == nil || app.Manifest.Type != apps.AppTypeAWSLambda {
-		return errorOut(params, errors.Wrap(err, "Not an AWS app"))
-	}
-	return s.installApp(app.Manifest, appSecret, force, params)
 }
 
 func (s *service) installApp(manifest *apps.Manifest, appSecret string, force bool, params *params) (*model.CommandResponse, error) {

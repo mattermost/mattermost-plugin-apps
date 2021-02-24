@@ -26,10 +26,9 @@ func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 		"debug-install-http":    s.executeDebugInstallHTTPHello,
 		"debug-install-aws":     s.executeDebugInstallAWSHello,
 		"provision-aws":         s.executeProvisionAWSApp,
-		"install-aws":           s.executeInstallAWSApp,
 		"info":                  s.executeInfo,
 		"list":                  s.executeList,
-		"install":               s.executeInstallHTTPApp,
+		"install":               s.executeInstall,
 	}
 
 	return runSubcommand(subcommands, in)
