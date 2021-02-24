@@ -22,6 +22,8 @@ type Upstream struct {
 	aws *aws.Client
 }
 
+// invocationPayload is a scoped down version of
+// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
 type invocationPayload struct {
 	Path       string            `json:"path"`
 	HTTPMethod string            `json:"httpMethod"`
@@ -29,6 +31,8 @@ type invocationPayload struct {
 	Body       interface{}       `json:"body"`
 }
 
+// invocationResponse is a scoped down version of
+// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyResponse
 type invocationResponse struct {
 	StatusCode int    `json:"statusCode"`
 	Body       string `json:"body"`
