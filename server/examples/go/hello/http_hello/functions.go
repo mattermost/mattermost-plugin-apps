@@ -71,6 +71,12 @@ func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, cla
 	return http.StatusOK, nil
 }
 
+func (h *helloapp) SubmitSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+	out := hello.SubmitSurvey(c)
+	httputils.WriteJSON(w, out)
+	return http.StatusOK, nil
+}
+
 func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
 	var out *apps.CallResponse
 

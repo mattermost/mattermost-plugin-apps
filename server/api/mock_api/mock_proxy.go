@@ -5,12 +5,10 @@
 package mock_api
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
-
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	api "github.com/mattermost/mattermost-plugin-apps/server/api"
+	reflect "reflect"
 )
 
 // MockProxy is a mock of Proxy interface
