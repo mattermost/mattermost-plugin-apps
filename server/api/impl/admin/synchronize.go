@@ -5,9 +5,9 @@ package admin
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -26,10 +26,10 @@ type AppVersions struct {
 	Overrides map[string]apps.AppVersionMap `json:"overrides"`
 }
 
-func getAppsForInstallation(installationID string) (apps.AppVersionMap, error) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("assets/%s", appsJSONFile))
+func getAppsForInstallation(path, installationID string) (apps.AppVersionMap, error) {
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "can't read %s file", appsJSONFile)
+		return nil, errors.Wrapf(err, "can't read %s file", path)
 	}
 	var allAppVersions *AppVersions
 	if err := json.Unmarshal(data, &allAppVersions); err != nil || allAppVersions == nil {
@@ -47,21 +47,33 @@ func getAppsForInstallation(installationID string) (apps.AppVersionMap, error) {
 
 func (adm *Admin) populateManifests(appVersions apps.AppVersionMap) {
 	adm.store.Manifest().Cleanup()
+
 	for id, version := range appVersions {
 		manifest, err := adm.awsClient.GetManifest(id, version)
 		if err != nil {
-			// Note that we are not returning an error here.
-			adm.mm.Log.Error("can't get manifest for", "app", id, "version", version, "err", err)
+			// Note that we are not returning an error here. Instead we drop the app from the list.
+			delete(appVersions, id)
+
+			adm.mm.Log.Error("failed to get manifest", "app", id, "version", version, "err", err.Error())
+
 			continue
 		}
+
 		adm.store.Manifest().Save(manifest)
 	}
 }
 
 // LoadAppsList synchronizes apps with the apps.json file.
 func (adm *Admin) LoadAppsList() error {
+	bundlePath, err := adm.mm.System.GetBundlePath()
+	if err != nil {
+		return errors.Wrap(err, "can't get bundle path")
+	}
+
 	installationID := adm.mm.System.GetDiagnosticID()
-	appsForInstallation, err := getAppsForInstallation(installationID)
+	appsPath := filepath.Join(bundlePath, "assets", appsJSONFile)
+
+	appsForInstallation, err := getAppsForInstallation(appsPath, installationID)
 	if err != nil {
 		return errors.Wrap(err, "can't get apps for installation")
 	}
@@ -80,7 +92,7 @@ func (adm *Admin) LoadAppsList() error {
 			adm.mm.Log.Error("can't load manifest from store", "app_id", registeredApp.Manifest.AppID)
 			continue
 		}
-		if err := adm.UninstallApp(registeredApp); err != nil {
+		if err := adm.UninstallApp(registeredApp.Manifest.AppID); err != nil {
 			adm.mm.Log.Error("can't uninstall an app", "app_id", registeredApp.Manifest.AppID)
 			continue
 		}
@@ -130,7 +142,12 @@ func (adm *Admin) LoadAppsList() error {
 	return nil
 }
 
-func (adm *Admin) UninstallApp(app *apps.App) error {
+func (adm *Admin) UninstallApp(appID apps.AppID) error {
+	app, err := adm.store.App().Get(appID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
+	}
+
 	// Call delete the function of the app
 	if err := adm.expandedCall(app, app.Manifest.OnUninstall, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.Manifest.AppID)
