@@ -283,6 +283,30 @@ POST /plugins/com.mattermost.apps/example/hello/send
 
 </details>
 
+<details><summary>Diagram Source</summary>
+
+https://sequencediagram.org
+
+```
+title Bindings + Form Example
+
+Client->MM: Visit ChannelA, fetch bindings (Client Bindings Request)
+MM->App:Fetch bindings with call (MM Bindings Request)
+App->3rd Party Integration:Check user status
+3rd Party Integration->App:Return user status
+App->MM:Return bindings (App Bindings Response)
+MM->Client:Return bindings, render App's post menu item
+Client->MM:Clicked post menu item. Perform submit call (Client Submit Request)
+MM->App:Perform submit call (MM Submit Request)
+App->3rd Party Integration:Do something useful
+3rd Party Integration->App:Return something useful
+App->MM:Return new modal form (App Form Response)
+MM->Client:Return modal form, open modal
+```
+
+</details>
+
+
 
 ## Flow, types, responses (WIP)
 
