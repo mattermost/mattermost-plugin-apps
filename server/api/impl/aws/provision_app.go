@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -52,23 +53,43 @@ type assetData struct {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func (c *Client) ProvisionApp(releaseURL string) error {
-	bundle, bundleErr := downloadFile(releaseURL)
-	if bundleErr != nil {
-		return errors.Wrapf(bundleErr, "can't install app from url %s", releaseURL)
+func (c *Client) ProvisionAppFromURL(releaseURL string, shouldUpdate bool) error {
+	zipFile, err := downloadFile(releaseURL)
+	if err != nil {
+		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
-	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(bundle), int64(len(bundle)))
-	if bundleErr != nil {
-		return errors.Wrapf(bundleErr, "can't install app from url %s", releaseURL)
+
+	return c.ProvisionApp(zipFile, shouldUpdate)
+}
+
+func (c *Client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return errors.Wrapf(err, "can't read file from  path %s", path)
+	}
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return errors.Wrap(err, "can't read file")
+	}
+
+	return c.ProvisionApp(b, shouldUpdate)
+}
+
+func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
+	zipReader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
+		return errors.Wrap(err, "can't get zip reader")
 	}
 	bundleFunctions := []functionInstallData{}
-	var mani apps.Manifest
+	var mani *apps.Manifest
 	assets := []assetData{}
 
 	// Read all the files from zip archive
-	for _, file := range bundleReader.File {
+	for _, file := range zipReader.File {
 		switch {
 		case strings.HasSuffix(file.Name, "manifest.json"):
+
 			manifestFile, err := file.Open()
 			if err != nil {
 				return errors.Wrap(err, "can't open manifest.json file")
@@ -105,8 +126,16 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 				name: assetName,
 				file: assetFile,
 			})
+			c.logger.Debug("Found function bundle", "file", file.Name)
+		default:
+			c.logger.Info("Unknown file found in app bundle", "file", file.Name)
 		}
 	}
+
+	if mani == nil {
+		return errors.New("no manifest found")
+	}
+
 	resFunctions := []functionInstallData{}
 
 	// O(n^2) code for simplicity
@@ -124,12 +153,12 @@ func (c *Client) ProvisionApp(releaseURL string) error {
 		}
 	}
 
-	newManifest, err := c.provisionAssets(&mani, assets)
+	newManifest, err := c.provisionAssets(mani, assets)
 	if err != nil {
 		return errors.Wrapf(err, "can't provision assets of the app - %s", mani.AppID)
 	}
 
-	if err := c.provisionFunctions(newManifest, resFunctions); err != nil {
+	if err := c.provisionFunctions(newManifest, resFunctions, shouldUpdate); err != nil {
 		return errors.Wrapf(err, "can't provision functions of the app - %s", newManifest.AppID)
 	}
 
@@ -168,7 +197,7 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functionInstallData) error {
+func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functionInstallData, shouldUpdate bool) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrapf(err, "can't install app %s", manifest.AppID)
@@ -179,10 +208,55 @@ func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functio
 		if err != nil {
 			return errors.Wrap(err, "can't get function name")
 		}
-		if err := c.createFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
-			return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
+
+		if shouldUpdate {
+			if err := c.createOrUpdateFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
+			}
+		} else {
+			if err := c.createFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
+			}
 		}
 	}
+
+	return nil
+}
+
+func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
+	if zipFile == nil || function == "" {
+		return errors.New("you must supply a zip file, function name, handler, ARN and runtime")
+	}
+
+	contents, err := ioutil.ReadAll(zipFile)
+	if err != nil {
+		return errors.Wrap(err, "could not read zip file")
+	}
+
+	_, err = c.Service().lambda.GetFunction(&lambda.GetFunctionInput{
+		FunctionName: &function,
+	})
+	if err != nil {
+		if _, ok := err.(*lambda.ResourceNotFoundException); !ok {
+			return errors.Wrap(err, "Failed go get function")
+		}
+
+		// Create function if it doesn't exist
+		return c.createFunction(zipFile, function, handler, runtime, resource)
+	}
+
+	c.logger.Info("Updating existing function", "name", function)
+
+	result, err := c.Service().lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
+		ZipFile:      contents,
+		FunctionName: &function,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to update function %v", function)
+	}
+
+	c.logger.Info(fmt.Sprintf("function named %s was updated", function), "result", result.String())
+
 	return nil
 }
 
@@ -212,10 +286,15 @@ func (c *Client) createFunction(bundle io.Reader, function, handler, runtime, re
 	result, err := c.Service().lambda.CreateFunction(createArgs)
 	if err != nil {
 		if _, ok := err.(*lambda.ResourceConflictException); !ok {
-			return errors.Wrapf(err, "Can't create function res = %v\n", result)
+			return errors.Wrapf(err, "Can't create function. Response: %v\n", result)
 		}
+
+		c.logger.Info(fmt.Sprintf("funcion %s already exists. Not updating it.", function))
+
+		return nil
 	}
-	c.logger.Info(fmt.Sprintf("function named %s was created with result - %v", function, result))
+
+	c.logger.Info(fmt.Sprintf("function %s was created with response: %v", function, result))
 
 	return nil
 }
@@ -232,7 +311,7 @@ func (c *Client) provisionAssets(manifest *apps.Manifest, assets []assetData) (*
 		manifest.Assets = append(manifest.Assets, apps.Asset{
 			Name:   asset.name,
 			Type:   apps.S3Asset,
-			Bucket: c.appsS3Bucket,
+			Bucket: c.AppsS3Bucket,
 			Key:    key,
 		})
 	}
