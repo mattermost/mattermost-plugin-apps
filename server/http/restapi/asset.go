@@ -45,7 +45,6 @@ func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request,
 		httputils.WriteInternalServerError(w, err)
 		return
 	}
-
 }
 
 func copyHeaders(dst, src http.Header) {
