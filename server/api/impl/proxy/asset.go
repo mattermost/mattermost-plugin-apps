@@ -4,6 +4,7 @@
 package proxy
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 )
 
-func (p *Proxy) GetAsset(appID apps.AppID, assetName string) ([]byte, error) {
+func (p *Proxy) GetAsset(appID apps.AppID, assetName string) (*http.Response, error) {
 	app, err := p.store.App().Get(appID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't load app - %s", appID)
@@ -27,7 +28,10 @@ func (p *Proxy) GetAsset(appID apps.AppID, assetName string) ([]byte, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, errorMessage)
 		}
-		return data, nil
+		resp := &http.Response{}
+		resp.StatusCode = http.StatusOK
+		resp.Body = ioutil.NopCloser(bytes.NewReader(data))
+		return resp, nil
 	case apps.AppTypeHTTP:
 		url := fmt.Sprintf("%s/static/%s", app.Manifest.HTTPRootURL, assetName)
 		/* #nosec G107 */
@@ -35,15 +39,7 @@ func (p *Proxy) GetAsset(appID apps.AppID, assetName string) ([]byte, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s, url - %s", errorMessage, url)
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.Errorf("%s, url - %s, status - %s", errorMessage, url, resp.Status)
-		}
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrapf(err, "%s  url - %s", errorMessage, url)
-		}
-		return bodyBytes, nil
+		return resp, nil
 	case apps.AppTypeBuiltin:
 		return nil, errors.New("assets are not supported yet for builtin apps")
 	default:

@@ -3,7 +3,11 @@
 
 package api
 
-import "github.com/mattermost/mattermost-plugin-apps/apps"
+import (
+	"net/http"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+)
 
 type Proxy interface {
 	GetBindings(*apps.Context) ([]*apps.Binding, error)
@@ -12,5 +16,5 @@ type Proxy interface {
 
 	ProvisionBuiltIn(apps.AppID, Upstream)
 
-	GetAsset(apps.AppID, string) ([]byte, error)
+	GetAsset(apps.AppID, string) (*http.Response, error)
 }
