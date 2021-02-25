@@ -54,12 +54,12 @@ type assetData struct {
 //      |-- __pycache__
 //      |-- certifi/
 func (c *Client) ProvisionAppFromURL(releaseURL string, shouldUpdate bool) error {
-	zipFile, err := downloadFile(releaseURL)
+	bundle, err := downloadFile(releaseURL)
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
 
-	return c.ProvisionApp(zipFile, shouldUpdate)
+	return c.ProvisionApp(bundle, shouldUpdate)
 }
 
 func (c *Client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
@@ -223,12 +223,12 @@ func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functio
 	return nil
 }
 
-func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
-	if zipFile == nil || function == "" {
-		return errors.New("you must supply a zip file, function name, handler, ARN and runtime")
+func (c *Client) createOrUpdateFunction(bundle io.Reader, function, handler, runtime, resource string) error {
+	if bundle == nil || function == "" {
+		return errors.New("you must supply a bundle, function name, handler, ARN and runtime")
 	}
 
-	contents, err := ioutil.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(bundle)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
@@ -242,7 +242,7 @@ func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, ru
 		}
 
 		// Create function if it doesn't exist
-		return c.createFunction(zipFile, function, handler, runtime, resource)
+		return c.createFunction(bundle, function, handler, runtime, resource)
 	}
 
 	c.logger.Info("Updating existing function", "name", function)
