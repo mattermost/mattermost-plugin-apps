@@ -34,7 +34,7 @@ const (
 // itself with Expand.
 type Call struct {
 	URL        string                 `json:"url,omitempty"`
-	Type       CallType               `json:"type,omitempty"`
+	Type       CallType               `json:"type"`
 	Values     map[string]interface{} `json:"values,omitempty"`
 	Context    *Context               `json:"context,omitempty"`
 	RawCommand string                 `json:"raw_command,omitempty"`
@@ -68,7 +68,7 @@ const (
 )
 
 type CallResponse struct {
-	Type CallResponseType `json:"type,omitempty"`
+	Type CallResponseType `json:"type"`
 
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
 	Markdown md.MD       `json:"markdown,omitempty"`
