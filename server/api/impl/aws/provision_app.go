@@ -138,6 +138,7 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 
 	resFunctions := []functionInstallData{}
 
+	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
 		for _, manifestFunction := range mani.Functions {
@@ -153,17 +154,16 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 		}
 	}
 
-	newManifest, err := c.provisionAssets(mani, assets)
-	if err != nil {
+	if err := c.provisionAssets(mani, assets); err != nil {
 		return errors.Wrapf(err, "can't provision assets of the app - %s", mani.AppID)
 	}
 
-	if err := c.provisionFunctions(newManifest, resFunctions, shouldUpdate); err != nil {
-		return errors.Wrapf(err, "can't provision functions of the app - %s", newManifest.AppID)
+	if err := c.provisionFunctions(mani, resFunctions, shouldUpdate); err != nil {
+		return errors.Wrapf(err, "can't provision functions of the app - %s", mani.AppID)
 	}
 
-	if err := c.SaveManifest(newManifest); err != nil {
-		return errors.Wrap(err, "can't save manifest")
+	if err := c.SaveManifest(mani); err != nil {
+		return errors.Wrap(err, "can't save manifest to S3")
 	}
 	return nil
 }
@@ -299,21 +299,12 @@ func (c *Client) createFunction(bundle io.Reader, function, handler, runtime, re
 	return nil
 }
 
-func (c *Client) provisionAssets(manifest *apps.Manifest, assets []assetData) (*apps.Manifest, error) {
-	if manifest.Assets == nil {
-		manifest.Assets = make([]apps.Asset, 0, len(assets))
-	}
+func (c *Client) provisionAssets(manifest *apps.Manifest, assets []assetData) error {
 	for _, asset := range assets {
-		key := getAssetFileKey(manifest.AppID, manifest.Version, asset.name)
+		key := GetAssetFileKey(manifest.AppID, manifest.Version, asset.name)
 		if err := c.S3FileUpload(key, asset.file); err != nil {
-			return nil, errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
+			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
 		}
-		manifest.Assets = append(manifest.Assets, apps.Asset{
-			Name:   asset.name,
-			Type:   apps.S3Asset,
-			Bucket: c.AppsS3Bucket,
-			Key:    key,
-		})
 	}
-	return manifest, nil
+	return nil
 }

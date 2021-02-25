@@ -41,6 +41,11 @@ func (c *Client) S3FileUpload(key string, body io.Reader) error {
 	return nil
 }
 
+// S3AssetDownload is used to download app's static assets from the S3.
+func (c *Client) S3AssetDownload(item string) ([]byte, error) {
+	return c.S3FileDownload(c.AppsS3Bucket, item)
+}
+
 // CreateBucket creates a new s3 bucket.
 func (c *Client) CreateBucket(bucket string) error {
 	_, err := c.Service().s3.CreateBucket(&s3.CreateBucketInput{

@@ -49,8 +49,8 @@ func getManifestFileKey(appID apps.AppID, version apps.AppVersion) string {
 	return fmt.Sprintf("manifests/%s_%s.json", appID, version)
 }
 
-// getAssetFileKey generates key for a specific asset in S3,
+// GetAssetFileKey generates key for a specific asset in S3,
 // key can be 1024 characters long.
-func getAssetFileKey(appID apps.AppID, version apps.AppVersion, name string) string {
+func GetAssetFileKey(appID apps.AppID, version apps.AppVersion, name string) string {
 	return fmt.Sprintf("%s%s_%s_app/%s", staticAssetsFolder, appID, version, name)
 }
