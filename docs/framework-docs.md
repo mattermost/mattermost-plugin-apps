@@ -148,7 +148,10 @@ POST /plugins/com.mattermost.apps/example/hello/bindings
                 "call": {
                     "url": "/send-modal",
                     "expand": {
-                        "post": "all"
+                        "post": "all",
+                        "bot_access_token": "all",
+                        "acting_user_access_token": "all",
+                        "admin_access_token": "all"
                     }
                 }
             }
