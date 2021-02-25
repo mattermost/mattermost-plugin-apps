@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/pkg/errors"
 )
 
 func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request, actingUserID string) {
@@ -36,7 +37,15 @@ func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request,
 
 	copyHeaders(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		httputils.WriteInternalServerError(w, err)
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		httputils.WriteInternalServerError(w, err)
+		return
+	}
+
 }
 
 func copyHeaders(dst, src http.Header) {
