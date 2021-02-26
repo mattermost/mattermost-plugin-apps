@@ -59,6 +59,9 @@ func (s AppStore) Save(app *apps.App) error {
 	*cApp = *app
 	// do not store manifest in the config
 	cApp.AppID = app.Manifest.AppID
+	if cApp.Manifest != nil {
+		s.stores.manifest.Save(cApp.Manifest)
+	}
 	cApp.Manifest = nil
 
 	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
