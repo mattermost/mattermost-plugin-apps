@@ -39,6 +39,8 @@ const (
 	UnsubscribePath = "/unsubscribe"
 
 	BindingsPath = "/bindings"
+
+	WesocketEventRefreshBindings = "refresh_bindings"
 )
 
 const (
