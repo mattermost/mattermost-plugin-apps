@@ -1,6 +1,6 @@
 {
     "apps": {
-        "jira": "v3.0.0",
-        "todo": "v2.2.3"
+        "zendesk": "0.0.1",
+        "com.mattermost.servicenow": "0.1.0"
     }
 }
