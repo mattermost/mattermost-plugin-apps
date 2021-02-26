@@ -33,7 +33,7 @@ const (
 // TODO: what if a call needs a token and it was not provided? Return a call to
 // itself with Expand.
 type Call struct {
-	URL        string                 `json:"url,omitempty"`
+	Path       string                 `json:"url,omitempty"`
 	Type       CallType               `json:"type,omitempty"`
 	Values     map[string]interface{} `json:"values,omitempty"`
 	Context    *Context               `json:"context,omitempty"`
@@ -124,7 +124,7 @@ func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
 
 func MakeCall(url string, namevalues ...string) *Call {
 	c := &Call{
-		URL: url,
+		Path: url,
 	}
 
 	values := map[string]interface{}{}
