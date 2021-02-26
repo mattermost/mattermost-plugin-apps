@@ -17,6 +17,7 @@ type Context struct {
 	RootPostID        string            `json:"root_post_id,omitempty"`
 	Props             map[string]string `json:"props,omitempty"`
 	MattermostSiteURL string            `json:"mattermost_site_url"`
+	UserAgent         string            `json:"user_agent,omitempty"`
 	ExpandedContext
 }
 
