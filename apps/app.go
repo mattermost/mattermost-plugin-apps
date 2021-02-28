@@ -113,7 +113,10 @@ type Asset struct {
 	Key    string    `json:"key"`
 }
 
-type Common struct {
+// Manifest describes a "known", installable app. They generally come from the
+// marketplace, and can also be installed as overrides by developers.
+// Manifest should be abbreviated as `m`.
+type Manifest struct {
 	AppID   AppID      `json:"app_id"`
 	Type    AppType    `json:"type"`
 	Version AppVersion `json:"version"`
@@ -128,13 +131,6 @@ type Common struct {
 	OnStartup   *Call `json:"on_startup,omitempty"`
 	OnUninstall *Call `json:"on_uninstall,omitempty"`
 	Bindings    *Call `json:"bindings,omitempty"`
-}
-
-// Manifest describes a "known", installable app. They generally come from the
-// marketplace, and can also be installed as overrides by developers.
-// Manifest should be abbreviated as `m`.
-type Manifest struct {
-	Common
 
 	// For HTTP Apps all paths are relative to the RootURL.
 	HTTPRootURL string `json:"root_url,omitempty"`
@@ -172,9 +168,7 @@ var DefaultBindingsCall = &Call{
 // App describes an App installed on a Mattermost instance. App should be
 // abbreviated as `app`.
 type App struct {
-	Common
-
-	Status AppStatus `json:"app_status"`
+	Manifest
 
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`

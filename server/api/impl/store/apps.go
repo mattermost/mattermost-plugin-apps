@@ -4,94 +4,185 @@
 package store
 
 import (
+	"crypto/sha1" // nolint:gosec
+	"encoding/json"
+	"fmt"
+	"sync"
+
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-type AppStore struct {
+type appStore struct {
 	*Store
+
+	mutex sync.RWMutex
+
+	installed        map[apps.AppID]*apps.App
+	builtinInstalled map[apps.AppID]*apps.App
 }
 
-var _ api.AppStore = (*AppStore)(nil)
+var _ api.AppStore = (*appStore)(nil)
 
-func newAppStore(st *Store) api.AppStore {
-	s := &AppStore{st}
-	return s
-}
-
-func (s AppStore) GetAll() []*apps.App {
-	conf := s.conf.GetConfig()
-	out := []*apps.App{}
-	if len(conf.Apps) == 0 {
-		return out
+func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
+	s.mutex.Lock()
+	if s.builtinInstalled == nil {
+		s.builtinInstalled = map[apps.AppID]*apps.App{}
 	}
-	for _, v := range conf.Apps {
-		app := apps.AppFromConfigMap(v)
-		app = s.populateAppWithManifest(app)
-		out = append(out, app)
+	for _, app := range builtinApps {
+		s.builtinInstalled[app.AppID] = app
+	}
+	s.mutex.Unlock()
+}
+
+func (s *appStore) Configure(conf api.Config) error {
+	newInstalled := map[apps.AppID]*apps.App{}
+
+	for id, key := range conf.InstalledApps {
+		var app *apps.App
+		err := s.mm.KV.Get(prefixInstalledApp+key, &app)
+		if err != nil {
+			s.mm.Log.Error(
+				fmt.Sprintf("failed to load app %s: %s", id, err.Error()))
+		}
+		if app == nil {
+			s.mm.Log.Error(
+				fmt.Sprintf("failed to load app %s: key %s not found", id, prefixInstalledApp+key))
+		}
+
+		newInstalled[apps.AppID(id)] = app
+	}
+
+	s.mutex.Lock()
+	s.installed = newInstalled
+	s.mutex.Unlock()
+
+	return nil
+}
+
+func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
+	s.mutex.RLock()
+	installed := s.installed
+	builtin := s.builtinInstalled
+	s.mutex.RUnlock()
+
+	app, ok := builtin[appID]
+	if ok {
+		return app, nil
+	}
+	app, ok = installed[appID]
+	if ok {
+		return app, nil
+	}
+	return nil, utils.ErrNotFound
+}
+
+func (s *appStore) AsMap() map[apps.AppID]*apps.App {
+	s.mutex.RLock()
+	installed := s.installed
+	builtin := s.builtinInstalled
+	s.mutex.RUnlock()
+
+	out := map[apps.AppID]*apps.App{}
+	for appID, app := range installed {
+		out[appID] = app
+	}
+	for appID, app := range builtin {
+		out[appID] = app
 	}
 	return out
 }
 
-func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
+func (s *appStore) Save(app *apps.App) error {
 	conf := s.conf.GetConfig()
-	if len(conf.Apps) == 0 {
-		return nil, utils.ErrNotFound
+	prevSHA := conf.InstalledApps[string(app.AppID)]
+
+	data, err := json.Marshal(app)
+	if err != nil {
+		return err
 	}
-	v := conf.Apps[string(appID)]
-	if v == nil {
-		return nil, utils.ErrNotFound
+	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
+	if sha == prevSHA {
+		// no change in the data
+		return nil
 	}
-	app := apps.AppFromConfigMap(v)
-	app = s.populateAppWithManifest(app)
-	return app, nil
-}
-
-func (s AppStore) Save(app *apps.App) error {
-	conf := s.conf.GetConfig()
-	if len(conf.Apps) == 0 {
-		conf.Apps = map[string]interface{}{}
-	}
-
-	// Copy app before modifying it
-	cApp := &apps.App{}
-	*cApp = *app
-	// do not store manifest in the config
-	cApp.AppID = app.Manifest.AppID
-	cApp.Manifest = nil
-
-	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
-
-	// Refresh the local config immediately, do not wait for the
-	// OnConfigurationChange.
-	err := s.conf.RefreshConfig(conf.StoredConfig)
+	_, err = s.mm.KV.Set(prefixInstalledApp+sha, app)
 	if err != nil {
 		return err
 	}
 
-	return s.conf.StoreConfig(conf.StoredConfig)
-}
+	s.mutex.RLock()
+	installed := s.installed
+	s.mutex.RUnlock()
+	updatedInstalled := map[apps.AppID]*apps.App{}
+	for k, v := range installed {
+		if k != app.AppID {
+			updatedInstalled[k] = v
+		}
+	}
+	updatedInstalled[app.AppID] = app
+	s.mutex.Lock()
+	s.installed = updatedInstalled
+	s.mutex.Unlock()
 
-func (s AppStore) Delete(app *apps.App) error {
-	conf := s.conf.GetConfig()
-	delete(conf.Apps, string(app.AppID))
-	s.stores.manifest.Delete(app.AppID)
-
-	// Refresh the local config immediately, do not wait for the
-	// OnConfigurationChange.
-	err := s.conf.RefreshConfig(conf.StoredConfig)
+	sc := *conf.StoredConfig
+	updated := map[string]string{}
+	for k, v := range conf.InstalledApps {
+		// delete prevSHA from the list by skipping
+		if v != prevSHA {
+			updated[k] = v
+		}
+	}
+	updated[string(app.AppID)] = sha
+	sc.InstalledApps = updated
+	err = s.conf.StoreConfig(&sc)
 	if err != nil {
 		return err
 	}
-	return s.conf.StoreConfig(conf.StoredConfig)
+
+	_ = s.mm.KV.Delete(prefixInstalledApp + prevSHA)
+	return nil
 }
 
-func (s AppStore) populateAppWithManifest(app *apps.App) *apps.App {
-	manifest, err := s.stores.manifest.Get(app.AppID)
-	if err != nil {
-		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.AppID)
+func (s *appStore) Delete(appID apps.AppID) error {
+	s.mutex.RLock()
+	installed := s.installed
+	s.mutex.RUnlock()
+	_, ok := installed[appID]
+	if ok {
+		return errors.Wrap(utils.ErrNotFound, string(appID))
 	}
-	app.Manifest = manifest
-	return app
+
+	conf := s.conf.GetConfig()
+	sha, ok := conf.InstalledApps[string(appID)]
+	if !ok {
+		return utils.ErrNotFound
+	}
+
+	err := s.mm.KV.Delete(prefixInstalledApp + sha)
+	if err != nil {
+		return err
+	}
+
+	updatedInstalled := map[apps.AppID]*apps.App{}
+	for k, v := range installed {
+		if k != appID {
+			updatedInstalled[k] = v
+		}
+	}
+	s.mutex.Lock()
+	s.installed = updatedInstalled
+	s.mutex.Unlock()
+
+	sc := *conf.StoredConfig
+	updated := map[string]string{}
+	for k, v := range conf.InstalledApps {
+		updated[k] = v
+	}
+	delete(updated, string(appID))
+	sc.InstalledApps = updated
+	return s.conf.StoreConfig(&sc)
 }

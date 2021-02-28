@@ -17,13 +17,13 @@ type Admin struct {
 	conf       api.Configurator
 	store      api.Store
 	proxy      api.Proxy
-	awsClient  *aws.Client
+	aws        aws.Service
 	adminToken apps.SessionToken // TODO populate admin token
 	mutex      *cluster.Mutex
 }
 
 var _ api.Admin = (*Admin)(nil)
 
-func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy, awsClient *aws.Client, mutex *cluster.Mutex) *Admin {
-	return &Admin{mm, conf, store, proxy, awsClient, "", mutex}
+func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy, aws aws.Service, mutex *cluster.Mutex) *Admin {
+	return &Admin{mm, conf, store, proxy, aws, "", mutex}
 }

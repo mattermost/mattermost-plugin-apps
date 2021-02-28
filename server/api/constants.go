@@ -7,11 +7,14 @@ package api
 const (
 	Repository     = "mattermost-plugin-apps"
 	CommandTrigger = "apps"
+	ManifestsFile  = "manifests.json"
 
 	BotUsername    = "appsbot"
 	BotDisplayName = "Mattermost Apps"
 	BotDescription = "Mattermost Apps Registry and API proxy."
+)
 
+const (
 	// TODO replace Interactive Dialogs with Modal, eliminate the need for
 	// /dialog endpoints.
 	InteractiveDialogPath = "/dialog"

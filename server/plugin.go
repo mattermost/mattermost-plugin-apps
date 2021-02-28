@@ -10,14 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
@@ -25,6 +22,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/js/aws_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
@@ -36,8 +34,15 @@ type Plugin struct {
 	plugin.MattermostPlugin
 	*api.BuildConfig
 
-	mm      *pluginapi.Client
-	api     *api.Service
+	mm   *pluginapi.Client
+	conf api.Configurator
+	aws  aws.Service
+
+	store       *store.Store
+	admin       api.Admin
+	appservices api.AppServices
+	proxy       api.Proxy
+
 	command command.Service
 	http    http.Service
 }
@@ -49,10 +54,9 @@ func NewPlugin(buildConfig *api.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() error {
-	mm := pluginapi.NewClient(p.API)
-	p.mm = mm
+	p.mm = pluginapi.NewClient(p.API)
 
-	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
+	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
 		Username:    api.BotUsername,
 		DisplayName: api.BotDisplayName,
 		Description: api.BotDescription,
@@ -61,58 +65,61 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
+	p.conf = configurator.NewConfigurator(p.mm, p.BuildConfig, botUserID)
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = p.conf.Reconfigure(&stored)
+	conf := p.conf.GetConfig()
 
-	awsClient := aws.NewAWSClient(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, &mm.Log)
+	p.aws = aws.NewService(&p.mm.Log)
+	p.aws.Configure(conf)
 
-	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
-	_ = conf.RefreshConfig(&stored)
-	store := store.New(mm, conf)
-	proxy := proxy.NewProxy(mm, awsClient, conf, store)
+	p.store = store.New(p.mm, p.conf)
+	p.store.Manifest().InitBuiltin(
+		aws_hello.Manifest(),
+		builtin_hello.Manifest(),
+	)
+	p.store.Manifest().Configure(conf)
 
-	mutex, err := cluster.NewMutex(p.API, mutexKey)
-	if err != nil {
-		return errors.Wrapf(err, "failed creating cluster mutex")
-	}
+	p.store.App().InitBuiltin(
+		builtin_hello.App(),
+	)
+	p.store.App().Configure(conf)
 
-	p.api = &api.Service{
-		Mattermost:   mm,
-		Configurator: conf,
-		Proxy:        proxy,
-		AppServices:  appservices.NewAppServices(mm, conf, store),
-		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
-		AWS:          awsClient,
-	}
-	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
+	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store)
+	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 
-	p.http = http.NewService(mux.NewRouter(), p.api,
+	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		http_hello.Init,
 	)
 
-	p.command, err = command.MakeService(p.api)
+	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.admin)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	if err := p.api.Admin.LoadAppsList(); err != nil {
-		mm.Log.Error("Can't load apps list", "err", err.Error())
-	}
+	// if err := p.api.Admin.LoadAppsList(); err != nil {
+	// 	mm.Log.Error("Can't load apps list", "err", err.Error())
+	// }
 
 	return nil
 }
 
 func (p *Plugin) OnConfigurationChange() error {
-	if p.api == nil || p.api.Configurator == nil {
+	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
 	}
 
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
-	return p.api.Configurator.RefreshConfig(&stored)
+
+	return p.conf.Reconfigure(&stored,
+		p.aws,
+		p.store.App(),
+		p.store.Manifest())
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
@@ -125,29 +132,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.api.Proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
+	_ = p.proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.api.Proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.api.Proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
+	_ = p.proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.api.Proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
+	_ = p.proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
 }

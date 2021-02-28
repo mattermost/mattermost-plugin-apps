@@ -10,5 +10,5 @@ type Proxy interface {
 	Call(apps.SessionToken, *apps.Call) *apps.CallResponse
 	Notify(cc *apps.Context, subj apps.Subject) error
 
-	ProvisionBuiltIn(apps.AppID, Upstream)
+	AddBuiltinUpstream(apps.AppID, Upstream)
 }

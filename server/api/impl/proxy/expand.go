@@ -34,7 +34,7 @@ func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf api.Con
 
 func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Context, error) {
 	clone := *e.Context
-	clone.AppID = app.Manifest.AppID
+	clone.AppID = app.AppID
 
 	if e.MattermostSiteURL == "" {
 		mmconf := e.conf.GetMattermostConfig()

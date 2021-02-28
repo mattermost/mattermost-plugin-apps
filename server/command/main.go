@@ -20,15 +20,13 @@ type params struct {
 
 func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
 	subcommands := map[string]func(*params) (*model.CommandResponse, error){
-		"debug-bindings":        s.executeDebugBindings,
-		"debug-clean":           s.executeDebugClean,
-		"debug-install-builtin": s.executeDebugInstallBuiltinHello,
-		"debug-install-http":    s.executeDebugInstallHTTPHello,
-		"debug-install-aws":     s.executeDebugInstallAWSHello,
-		"info":                  s.executeInfo,
-		"list":                  s.executeList,
-		"install":               s.executeInstall,
-		"uninstall":             s.checkSystemAdmin(s.executeUninstall),
+		"debug-bindings":     s.executeDebugBindings,
+		"debug-clean":        s.executeDebugClean,
+		"debug-add-manifest": s.executeDebugAddManifest,
+		"info":               s.executeInfo,
+		"list":               s.executeList,
+		"install":            s.executeInstall,
+		"uninstall":          s.checkSystemAdmin(s.executeUninstall),
 	}
 
 	return runSubcommand(subcommands, in)
@@ -57,7 +55,7 @@ func runSubcommand(
 
 func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse, error)) func(*params) (*model.CommandResponse, error) {
 	return func(p *params) (*model.CommandResponse, error) {
-		if !s.api.Mattermost.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
 			return errorOut(p, errors.New("you need to be a system admin to run this command"))
 		}
 

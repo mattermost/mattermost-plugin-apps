@@ -8,7 +8,7 @@ import (
 )
 
 func (s *service) executeList(params *params) (*model.CommandResponse, error) {
-	_, txt, err := s.api.Admin.ListApps()
+	_, txt, err := s.admin.ListApps()
 	if err != nil {
 		return errorOut(params, err)
 	}

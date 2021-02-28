@@ -24,10 +24,7 @@ func TestKV(t *testing.T) {
 	mocked := mock_api.NewMockAppServices(ctrl)
 	conf := configurator.NewTestConfigurator(&api.Config{})
 	r := mux.NewRouter()
-	Init(r, &api.Service{
-		Configurator: conf,
-		AppServices:  mocked,
-	})
+	Init(r, nil, conf, nil, nil, mocked)
 
 	server := httptest.NewServer(r)
 	// server := httptest.NewServer(&HH{})

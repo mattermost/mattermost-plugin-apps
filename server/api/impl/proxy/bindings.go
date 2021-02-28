@@ -34,11 +34,11 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 }
 
 func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
-	allApps := p.store.App().GetAll()
+	allApps := p.store.App().AsMap()
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {
-		appID := app.Manifest.AppID
+		appID := app.AppID
 		appCC := *cc
 		appCC.AppID = appID
 		appCC.BotAccessToken = app.BotAccessToken
@@ -50,7 +50,7 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := app.Manifest.Bindings
+		bindingsCall := app.Bindings
 		if bindingsCall == nil {
 			bindingsCall = apps.DefaultBindingsCall
 		}
@@ -83,12 +83,12 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 		}
 		if !allowed {
 			// TODO Log this somehow to the app?
-			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.AppID))
 			continue
 		}
 
 		if !fql.IsTop() {
-			b.AppID = app.Manifest.AppID
+			b.AppID = app.AppID
 		}
 
 		if len(b.Bindings) != 0 {

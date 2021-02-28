@@ -10,6 +10,8 @@ import (
 )
 
 const prefixSubs = "sub_"
+const prefixInstalledApp = "app_"
+const prefixLocalManifest = "man_"
 
 type Store struct {
 	mm     *pluginapi.Client
@@ -30,9 +32,13 @@ func New(mm *pluginapi.Client, conf api.Configurator) *Store {
 		mm:   mm,
 		conf: conf,
 	}
-	store.stores.app = newAppStore(store)
+	store.stores.app = &appStore{
+		Store: store,
+	}
+	store.stores.manifest = &manifestStore{
+		Store: store,
+	}
 	store.stores.sub = newSubStore(store)
-	store.stores.manifest = newManifestStore()
 	return store
 }
 

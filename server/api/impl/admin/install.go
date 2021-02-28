@@ -6,6 +6,7 @@ package admin
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -20,13 +21,19 @@ import (
 func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
 	// TODO <><> check if acting user is a sysadmin
 
-	app, err := adm.store.App().Get(cc.AppID)
+	m, err := adm.store.Manifest().Get(cc.AppID)
 	if err != nil {
 		return nil, "", err
 	}
 
-	app.GrantedPermissions = in.GrantedPermissions
-	app.GrantedLocations = in.GrantedLocations
+	app, _ := adm.store.App().Get(cc.AppID)
+	if app == nil {
+		app = &apps.App{}
+	}
+
+	app.Manifest = *m
+	app.GrantedPermissions = m.RequestedPermissions
+	app.GrantedLocations = m.RequestedLocations
 	if in.AppSecret != "" {
 		app.Secret = in.AppSecret
 	}
@@ -35,20 +42,26 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	if in.GrantedPermissions.Contains(apps.PermissionActAsUser) {
+	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID == "" {
+		bot, token, err := adm.ensureBot(m, cc.ActingUserID, string(sessionToken))
+		if err != nil {
+			return nil, "", err
+		}
+
+		app.BotUserID = bot.UserId
+		app.BotUsername = bot.Username
+		app.BotAccessToken = token.Token
+	}
+
+	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) && app.OAuth2ClientID == "" {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = adm.ensureOAuthApp(app.Manifest, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		oAuthApp, err = adm.ensureOAuthApp(m, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 		if err != nil {
 			return nil, "", err
 		}
 		app.OAuth2ClientID = oAuthApp.Id
 		app.OAuth2ClientSecret = oAuthApp.ClientSecret
 		app.OAuth2TrustedApp = in.OAuth2TrustedApp
-
-		// Installed app is automatically enabled, since config is done in the installation process
-		if app.Status == "" || app.Status == apps.AppStatusRegistered {
-			app.Status = apps.AppStatusInstalled
-		}
 	}
 
 	err = adm.store.App().Save(app)
@@ -56,7 +69,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		return nil, "", err
 	}
 
-	install := app.Manifest.OnInstall
+	install := m.OnInstall
 	if install == nil {
 		install = apps.DefaultInstallCall
 	}
@@ -117,4 +130,61 @@ func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, ac
 	})
 
 	return oauthApp, nil
+}
+
+func (adm *Admin) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+	conf := adm.conf.GetConfig()
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(sessionToken)
+
+	bot := &model.Bot{
+		Username:    strings.ToLower(string(manifest.AppID)),
+		DisplayName: manifest.DisplayName,
+		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
+	}
+
+	var fullBot *model.Bot
+	user, _ := client.GetUserByUsername(bot.Username, "")
+	if user == nil {
+		var response *model.Response
+		fullBot, response = client.CreateBot(bot)
+
+		if response.StatusCode != http.StatusCreated {
+			if response.Error != nil {
+				return nil, nil, response.Error
+			}
+			return nil, nil, errors.New("could not create bot")
+		}
+	} else {
+		if !user.IsBot {
+			return nil, nil, errors.New("a user already owns the bot username")
+		}
+
+		fullBot = model.BotFromUser(user)
+		if fullBot.DeleteAt != 0 {
+			var response *model.Response
+			fullBot, response = client.EnableBot(fullBot.UserId)
+			if response.StatusCode != http.StatusOK {
+				if response.Error != nil {
+					return nil, nil, response.Error
+				}
+				return nil, nil, errors.New("could not enable bot")
+			}
+		}
+	}
+
+	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
+	if response.StatusCode != http.StatusOK {
+		if response.Error != nil {
+			return nil, nil, response.Error
+		}
+		return nil, nil, fmt.Errorf("could not create token, status code = %v", response.StatusCode)
+	}
+
+	_ = adm.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
+		Message: fmt.Sprintf("Provisioned bot account @%s (`%s`).",
+			fullBot.Username, fullBot.UserId),
+	})
+
+	return fullBot, token, nil
 }

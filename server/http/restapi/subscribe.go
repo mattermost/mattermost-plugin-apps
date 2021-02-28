@@ -45,7 +45,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 	}
 
 	// TODO check for sysadmin
-	if !a.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
+	if !a.mm.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
 		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
 		return
 	}
@@ -59,9 +59,9 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	if isSubscribe {
-		err = a.api.AppServices.Subscribe(&sub)
+		err = a.appServices.Subscribe(&sub)
 	} else {
-		err = a.api.AppServices.Unsubscribe(&sub)
+		err = a.appServices.Unsubscribe(&sub)
 	}
 
 	if err != nil {

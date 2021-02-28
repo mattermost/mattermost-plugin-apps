@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -18,18 +19,24 @@ type Service interface {
 }
 
 type service struct {
-	api *api.Service
+	mm    *pluginapi.Client
+	conf  api.Configurator
+	proxy api.Proxy
+	admin api.Admin
 }
 
 var _ Service = (*service)(nil)
 
-func MakeService(appsService *api.Service) (Service, error) {
-	conf := appsService.Configurator.GetConfig()
+func MakeService(mm *pluginapi.Client, configService api.Configurator, proxy api.Proxy, admin api.Admin) (Service, error) {
+	conf := configService.GetConfig()
 
 	s := &service{
-		api: appsService,
+		mm:    mm,
+		conf:  configService,
+		proxy: proxy,
+		admin: admin,
 	}
-	err := appsService.Mattermost.SlashCommand.Register(&model.Command{
+	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          api.CommandTrigger,
 		DisplayName:      conf.BuildConfig.Manifest.Name,
 		Description:      conf.BuildConfig.Manifest.Description,

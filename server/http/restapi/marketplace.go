@@ -9,7 +9,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/pkg/errors"
 )
 
 type MarketplaceApp struct {
@@ -45,20 +44,21 @@ func (a *restapi) handleGetMarketplace(w http.ResponseWriter, req *http.Request,
 }
 
 func (a *restapi) getApps() ([]MarketplaceApp, error) {
-	registeredApps, _, err := a.api.Admin.ListApps()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to list local apps")
-	}
+	// registeredApps, _, err := a.api.Admin.ListApps()
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "Failed to list local apps")
+	// }
 
-	result := make([]MarketplaceApp, len(registeredApps))
-	for i := 0; i < len(registeredApps); i++ {
-		result[i] = MarketplaceApp{
-			Manifest:  *registeredApps[i].Manifest,
-			Installed: registeredApps[i].Status == apps.AppStatusInstalled,
-		}
-	}
+	// result := make([]MarketplaceApp, len(registeredApps))
+	// for i := 0; i < len(registeredApps); i++ {
+	// 	result[i] = MarketplaceApp{
+	// 		Manifest:  *registeredApps[i].Manifest,
+	// 		Installed: registeredApps[i].Status == apps.AppStatusInstalled,
+	// 	}
+	// }
 
-	return result, nil
+	// return result, nil
+	return nil, nil
 }
 
 // Copied from Mattermost Server
