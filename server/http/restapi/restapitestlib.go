@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v5/api4"
@@ -80,11 +79,11 @@ func SetupPP(th *TestHelper, t testing.TB) {
 		return
 	}
 
-	basePath := os.Getenv("MM_SERVER_PATH")
-	testPluginPath := filepath.Join(basePath, model.PLUGIN_SETTINGS_DEFAULT_DIRECTORY, pluginID+".tar.gz")
+	bundle := os.Getenv("PLUGIN_BUNDLE")
+	require.NotEmpty(t, bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
 
 	// Install the PP and enable it
-	pluginBytes, err := ioutil.ReadFile(testPluginPath)
+	pluginBytes, err := ioutil.ReadFile(bundle)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
 
