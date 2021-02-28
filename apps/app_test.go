@@ -9,18 +9,13 @@ import (
 )
 
 func TestAppConfigMap(t *testing.T) {
-	m := &Manifest{
-		AppID:                "app-id",
-		DisplayName:          "display-name",
-		Description:          "description",
-		HomepageURL:          "homepage-url",
-		HTTPRootURL:          "root_url",
-		RequestedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
-		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
-	}
-
 	a1 := &App{
-		Manifest:           m,
+		Common: Common{
+			AppID:       "app-id",
+			DisplayName: "display-name",
+			Description: "description",
+			HomepageURL: "homepage-url",
+		},
 		Secret:             "1234",
 		OAuth2ClientID:     "id",
 		OAuth2ClientSecret: "4321",

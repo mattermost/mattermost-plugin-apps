@@ -113,19 +113,30 @@ type Asset struct {
 	Key    string    `json:"key"`
 }
 
-type Manifest struct {
-	AppID       AppID      `json:"app_id"`
-	Type        AppType    `json:"app_type"`
-	Version     AppVersion `json:"version"`
-	DisplayName string     `json:"display_name,omitempty"`
-	Description string     `json:"description,omitempty"`
+type Common struct {
+	AppID   AppID      `json:"app_id"`
+	Type    AppType    `json:"type"`
+	Version AppVersion `json:"version"`
 
+	DisplayName string `json:"display_name,omitempty"`
+	Description string `json:"description,omitempty"`
 	HomepageURL string `json:"homepage_url,omitempty"`
 
-	// HTTPRootURL applicable For AppTypeHTTP.
-	//
-	// TODO: check if it is used in the // user-agent, consider naming
-	// consistently.
+	OnDisable   *Call `json:"on_disable,omitempty"`
+	OnEnable    *Call `json:"on_enable,omitempty"`
+	OnInstall   *Call `json:"on_install,omitempty"`
+	OnStartup   *Call `json:"on_startup,omitempty"`
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+	Bindings    *Call `json:"bindings,omitempty"`
+}
+
+// Manifest describes a "known", installable app. They generally come from the
+// marketplace, and can also be installed as overrides by developers.
+// Manifest should be abbreviated as `m`.
+type Manifest struct {
+	Common
+
+	// For HTTP Apps all paths are relative to the RootURL.
 	HTTPRootURL string `json:"root_url,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
@@ -134,15 +145,6 @@ type Manifest struct {
 	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
-
-	// By default invoke "/install", expanding App, AdminAccessToken, and
-	// Config.
-	OnInstall   *Call `json:"on_install,omitempty"`
-	OnUninstall *Call `json:"on_uninstall,omitempty"`
-	OnStartup   *Call `json:"on_startup,omitempty"`
-
-	// By default invoke "/bindings".
-	Bindings *Call `json:"bindings,omitempty"`
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
 	Functions []Function
@@ -167,10 +169,12 @@ var DefaultBindingsCall = &Call{
 	Path: DefaultBindingsCallPath,
 }
 
+// App describes an App installed on a Mattermost instance. App should be
+// abbreviated as `app`.
 type App struct {
-	AppID    AppID     `json:"app_id"`
-	Manifest *Manifest `json:"manifest"`
-	Status   AppStatus `json:"app_status"`
+	Common
+
+	Status AppStatus `json:"app_status"`
 
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`
