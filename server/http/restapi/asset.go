@@ -29,28 +29,19 @@ func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request,
 
 	// TODO verify that request is from the correct app
 
-	resp, err := a.api.Proxy.GetAsset(apps.AppID(appID), assetName)
+	body, status, err := a.api.Proxy.GetAsset(apps.AppID(appID), assetName)
 	if err != nil {
 		httputils.WriteBadRequestError(w, err)
 		return
 	}
 
-	copyHeaders(w.Header(), resp.Header)
-	w.WriteHeader(resp.StatusCode)
-	if _, err := io.Copy(w, resp.Body); err != nil {
+	w.WriteHeader(status)
+	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
 	}
-	if err := resp.Body.Close(); err != nil {
+	if err := body.Close(); err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
-	}
-}
-
-func copyHeaders(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
 	}
 }

@@ -4,7 +4,7 @@
 package api
 
 import (
-	"net/http"
+	"io"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -16,5 +16,5 @@ type Proxy interface {
 
 	ProvisionBuiltIn(apps.AppID, Upstream)
 
-	GetAsset(apps.AppID, string) (*http.Response, error)
+	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
 }
