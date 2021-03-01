@@ -80,26 +80,32 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.store = store.New(p.mm, p.conf)
-	p.store.Manifest().InitBuiltin(
+	// manifest store
+	mstore := p.store.Manifest()
+	mstore.InitBuiltin(
 		aws_hello.Manifest(),
 		builtin_hello.Manifest(),
 	)
-	err = p.store.Manifest().Configure(conf)
+	err = mstore.Configure(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
-
-	p.store.App().InitBuiltin(
+	err = mstore.InitGlobal(p.aws.Client())
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+	}
+	// app store
+	appstore := p.store.App()
+	appstore.InitBuiltin(
 		builtin_hello.App(),
 	)
-	err = p.store.App().Configure(conf)
+	err = appstore.Configure(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
 
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store)
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
-
 	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
 	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, p.aws, nil)
 
@@ -108,7 +114,6 @@ func (p *Plugin) OnActivate() error {
 		restapi.Init,
 		http_hello.Init,
 	)
-
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.admin)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
