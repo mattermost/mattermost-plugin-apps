@@ -40,7 +40,7 @@ const (
 
 	BindingsPath = "/bindings"
 
-	WebsocketEventRefreshBindings = "refresh_bindings"
+	WebSocketEventRefreshBindings = "refresh_bindings"
 )
 
 const (
