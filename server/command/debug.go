@@ -33,6 +33,9 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
+	if err := fs.Parse(params.current); err != nil {
+		return errorOut(params, err)
+	}
 
 	data, err := httputils.GetFromURL(manifestURL)
 	if err != nil {
