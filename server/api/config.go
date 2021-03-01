@@ -7,9 +7,7 @@ import (
 // StoredConfig represents the data stored in and managed with the Mattermost
 // config.
 type StoredConfig struct {
-	Apps               map[string]interface{}
-	AWSAccessKeyID     string
-	AWSSecretAccessKey string
+	Apps map[string]interface{}
 }
 
 type ConfigMapper interface {
@@ -18,9 +16,7 @@ type ConfigMapper interface {
 
 func (sc *StoredConfig) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{
-		"Apps":               sc.Apps,
-		"AWSAccessKeyID":     sc.AWSAccessKeyID,
-		"AWSSecretAccessKey": sc.AWSSecretAccessKey,
+		"Apps": sc.Apps,
 	}
 }
 
