@@ -37,8 +37,8 @@ const (
 	KVPath          = "/kv"
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
-
-	BindingsPath = "/bindings"
+	StaticAssetPath = "/static"
+	BindingsPath    = "/bindings"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )

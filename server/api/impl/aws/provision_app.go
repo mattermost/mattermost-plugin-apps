@@ -6,8 +6,6 @@ package aws
 import (
 	"archive/zip"
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,18 +23,27 @@ import (
 const lambdaFunctionFileNameMaxSize = 64
 const appIDLengthLimit = 32
 const versionFormat = "v00.00.000"
+const staticAssetsFolder = "static/"
 
 type functionInstallData struct {
-	zipFile io.Reader
+	bundle  io.Reader
 	name    string
 	handler string
 	runtime string
+}
+
+type assetData struct {
+	file io.Reader
+	name string
 }
 
 // ProvisionApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
 // ~/my_app.zip
 //  |-- manifest.json
+//  |-- static
+//		|-- icon.png
+//		|-- coolFile.txt
 //  |-- my_nodejs_function.zip
 //      |-- index.js
 //      |-- node-modules
@@ -47,12 +54,12 @@ type functionInstallData struct {
 //      |-- __pycache__
 //      |-- certifi/
 func (c *Client) ProvisionAppFromURL(releaseURL string, shouldUpdate bool) error {
-	zipFile, err := downloadFile(releaseURL)
+	bundle, err := downloadFile(releaseURL)
 	if err != nil {
 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
 	}
 
-	return c.ProvisionApp(zipFile, shouldUpdate)
+	return c.ProvisionApp(bundle, shouldUpdate)
 }
 
 func (c *Client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
@@ -76,6 +83,7 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 	}
 	bundleFunctions := []functionInstallData{}
 	var mani *apps.Manifest
+	assets := []assetData{}
 
 	// Read all the files from zip archive
 	for _, file := range zipReader.File {
@@ -92,8 +100,7 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 			if err != nil {
 				return errors.Wrap(err, "can't read manifest.json file")
 			}
-			err = json.Unmarshal(data, &mani)
-			if err != nil {
+			if err := json.Unmarshal(data, &mani); err != nil {
 				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 		case strings.HasSuffix(file.Name, ".zip"):
@@ -104,8 +111,20 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 			defer lambdaFunctionFile.Close()
 
 			bundleFunctions = append(bundleFunctions, functionInstallData{
-				name:    strings.TrimSuffix(file.Name, ".zip"),
-				zipFile: lambdaFunctionFile,
+				name:   strings.TrimSuffix(file.Name, ".zip"),
+				bundle: lambdaFunctionFile,
+			})
+		case strings.HasPrefix(file.Name, staticAssetsFolder):
+			assetName := strings.TrimPrefix(file.Name, staticAssetsFolder)
+			assetFile, err := file.Open()
+			if err != nil {
+				return errors.Wrapf(err, "can't open file %s", file.Name)
+			}
+			defer assetFile.Close()
+
+			assets = append(assets, assetData{
+				name: assetName,
+				file: assetFile,
 			})
 			c.logger.Debug("Found function bundle", "file", file.Name)
 		default:
@@ -119,12 +138,13 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 
 	resFunctions := []functionInstallData{}
 
+	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
 		for _, manifestFunction := range mani.Functions {
 			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, functionInstallData{
-					zipFile: bundleFunction.zipFile,
+					bundle:  bundleFunction.bundle,
 					name:    manifestFunction.Name,
 					handler: manifestFunction.Handler,
 					runtime: manifestFunction.Runtime,
@@ -133,7 +153,19 @@ func (c *Client) ProvisionApp(b []byte, shouldUpdate bool) error {
 			}
 		}
 	}
-	return c.provisionApp(mani.AppID, mani.Version, resFunctions, shouldUpdate)
+
+	if err := c.provisionAssets(mani, assets); err != nil {
+		return errors.Wrapf(err, "can't provision assets of the app - %s", mani.AppID)
+	}
+
+	if err := c.provisionFunctions(mani, resFunctions, shouldUpdate); err != nil {
+		return errors.Wrapf(err, "can't provision functions of the app - %s", mani.AppID)
+	}
+
+	if err := c.SaveManifest(mani); err != nil {
+		return errors.Wrap(err, "can't save manifest to S3")
+	}
+	return nil
 }
 
 func downloadFile(url string) ([]byte, error) {
@@ -165,25 +197,25 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionApp(appID apps.AppID, appVersion apps.AppVersion, functions []functionInstallData, shouldUpdate bool) error {
+func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []functionInstallData, shouldUpdate bool) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "can't install app %s", appID)
+		return errors.Wrapf(err, "can't install app %s", manifest.AppID)
 	}
 
 	for _, function := range functions {
-		name, err := getFunctionName(appID, appVersion, function.name)
+		name, err := getFunctionName(manifest.AppID, manifest.Version, function.name)
 		if err != nil {
 			return errors.Wrap(err, "can't get function name")
 		}
 
 		if shouldUpdate {
-			if err := c.createOrUpdateFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-				return errors.Wrapf(err, "can't install function for %s", appID)
+			if err := c.createOrUpdateFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
 			}
 		} else {
-			if err := c.createFunction(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-				return errors.Wrapf(err, "can't install function for %s", appID)
+			if err := c.createFunction(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", manifest.AppID)
 			}
 		}
 	}
@@ -191,12 +223,12 @@ func (c *Client) provisionApp(appID apps.AppID, appVersion apps.AppVersion, func
 	return nil
 }
 
-func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
-	if zipFile == nil || function == "" {
-		return errors.New("you must supply a zip file, function name, handler, ARN and runtime")
+func (c *Client) createOrUpdateFunction(bundle io.Reader, function, handler, runtime, resource string) error {
+	if bundle == nil || function == "" {
+		return errors.New("you must supply a bundle, function name, handler, ARN and runtime")
 	}
 
-	contents, err := ioutil.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(bundle)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
@@ -210,7 +242,7 @@ func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, ru
 		}
 
 		// Create function if it doesn't exist
-		return c.createFunction(zipFile, function, handler, runtime, resource)
+		return c.createFunction(bundle, function, handler, runtime, resource)
 	}
 
 	c.logger.Info("Updating existing function", "name", function)
@@ -229,12 +261,12 @@ func (c *Client) createOrUpdateFunction(zipFile io.Reader, function, handler, ru
 }
 
 // CreateFunction method creates lambda function
-func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, resource string) error {
-	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
-		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", zipFile, function, handler, resource, runtime)
+func (c *Client) createFunction(bundle io.Reader, function, handler, runtime, resource string) error {
+	if bundle == nil || function == "" || handler == "" || resource == "" || runtime == "" {
+		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", bundle, function, handler, resource, runtime)
 	}
 
-	contents, err := ioutil.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(bundle)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
@@ -267,31 +299,12 @@ func (c *Client) createFunction(zipFile io.Reader, function, handler, runtime, r
 	return nil
 }
 
-// getFunctionName generates function name for a specific app
-// name can be 64 characters long.
-func getFunctionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
-	if len(appID) > appIDLengthLimit {
-		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, appIDLengthLimit)
+func (c *Client) provisionAssets(manifest *apps.Manifest, assets []assetData) error {
+	for _, asset := range assets {
+		key := GetAssetFileKey(manifest.AppID, manifest.Version, asset.name)
+		if err := c.S3FileUpload(key, asset.file); err != nil {
+			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
+		}
 	}
-	if len(version) > len(versionFormat) {
-		return "", errors.Errorf("version %s too long, should be in %s format", version, versionFormat)
-	}
-
-	// Sanitized any dots used in appID and version as lambda function names can not contain dots
-	// While there are other non-valid characters, a dots is the most commonly used one
-	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
-	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
-
-	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
-	if len(name) <= lambdaFunctionFileNameMaxSize {
-		return name, nil
-	}
-	functionNameLength := lambdaFunctionFileNameMaxSize - len(sanitizedAppID) - len(sanitizedVersion) - 2
-	hash := sha256.Sum256([]byte(name))
-	hashString := hex.EncodeToString(hash[:])
-	if len(hashString) > functionNameLength {
-		hashString = hashString[:functionNameLength]
-	}
-	name = fmt.Sprintf("%s-%s-%s", sanitizedAppID, sanitizedVersion, hashString)
-	return name, nil
+	return nil
 }
