@@ -15,7 +15,7 @@ func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
 		Version:     AppVersion,
-		Type:        apps.AppTypeAWSLambda,
+		AppType:     apps.AppTypeAWSLambda,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		HomepageURL: ("https://github.com/mattermost"),

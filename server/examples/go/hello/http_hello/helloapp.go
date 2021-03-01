@@ -57,7 +57,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		apps.Manifest{
 			AppID:       AppID,
-			Type:        apps.AppTypeHTTP,
+			AppType:     apps.AppTypeHTTP,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			HTTPRootURL: h.appURL(""),

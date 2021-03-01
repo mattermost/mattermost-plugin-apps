@@ -1,6 +1,6 @@
 {
     "app_id": "test-zendesk",
-    "type": "aws_lambda",
+    "app_type": "aws_lambda",
     "display_name": "test zendesk app",
     "description": "for testing purposes",
     "version":"0.1.0",

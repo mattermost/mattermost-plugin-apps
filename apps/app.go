@@ -119,7 +119,7 @@ type Asset struct {
 // Manifest should be abbreviated as `m`.
 type Manifest struct {
 	AppID   AppID      `json:"app_id"`
-	Type    AppType    `json:"type"`
+	AppType AppType    `json:"app_type"`
 	Version AppVersion `json:"version"`
 
 	DisplayName string `json:"display_name,omitempty"`

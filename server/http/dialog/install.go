@@ -34,7 +34,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	intro += "\n---\n"
 
 	elements := []model.DialogElement{}
-	if m.Type == apps.AppTypeHTTP {
+	if m.AppType == apps.AppTypeHTTP {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "App secret:",
 			Name:        "secret",
