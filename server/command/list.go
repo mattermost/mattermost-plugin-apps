@@ -31,7 +31,7 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		status += fmt.Sprintf(", type: `%s`", app.Type)
 
 		version := string(app.Version)
-		if mapp != nil && string(mapp.Manifest.Version) != version {
+		if string(mapp.Manifest.Version) != version {
 			version += fmt.Sprintf(", %s in marketplace", mapp.Manifest.Version)
 		}
 
