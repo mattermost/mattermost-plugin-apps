@@ -43,14 +43,14 @@ func (s *appStore) Configure(conf api.Config) error {
 
 	for id, key := range conf.InstalledApps {
 		var app *apps.App
-		err := s.mm.KV.Get(prefixInstalledApp+key, &app)
+		err := s.mm.KV.Get(api.PrefixInstalledApp+key, &app)
 		if err != nil {
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load app %s: %s", id, err.Error()))
 		}
 		if app == nil {
 			s.mm.Log.Error(
-				fmt.Sprintf("failed to load app %s: key %s not found", id, prefixInstalledApp+key))
+				fmt.Sprintf("failed to load app %s: key %s not found", id, api.PrefixInstalledApp+key))
 		}
 
 		newInstalled[apps.AppID(id)] = app
@@ -109,7 +109,7 @@ func (s *appStore) Save(app *apps.App) error {
 		// no change in the data
 		return nil
 	}
-	_, err = s.mm.KV.Set(prefixInstalledApp+sha, app)
+	_, err = s.mm.KV.Set(api.PrefixInstalledApp+sha, app)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (s *appStore) Save(app *apps.App) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(prefixInstalledApp + prevSHA)
+	_ = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (s *appStore) Delete(appID apps.AppID) error {
 		return utils.ErrNotFound
 	}
 
-	err := s.mm.KV.Delete(prefixInstalledApp + sha)
+	err := s.mm.KV.Delete(api.PrefixInstalledApp + sha)
 	if err != nil {
 		return err
 	}

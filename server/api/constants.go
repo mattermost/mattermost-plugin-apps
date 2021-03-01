@@ -49,3 +49,13 @@ const (
 	PropChannelID = "channel_id"
 	PropPostID    = "post_id"
 )
+
+// KV namespace
+const (
+	KeyCallOnce     = "CallOnce"
+	KeyClusterMutex = "Cluster_Mutex"
+
+	PrefixSubs          = "sub_"
+	PrefixInstalledApp  = "app_"
+	PrefixLocalManifest = "man_"
+)

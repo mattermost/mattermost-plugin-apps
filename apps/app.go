@@ -56,6 +56,11 @@ func (v AppVersion) IsValid() error {
 	return nil
 }
 
+func (v AppVersion) Less(other AppVersion) bool {
+	// TODO
+	return v < other
+}
+
 type AppVersionMap map[AppID]AppVersion
 
 type AppType string

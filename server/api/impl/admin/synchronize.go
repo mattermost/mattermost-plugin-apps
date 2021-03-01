@@ -4,163 +4,94 @@
 package admin
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-// const oldVersionKey = "update_from_version"
-// const appsJSONFile = "apps.json"
-// const callOnceKey = "CallOnce_key"
-
-// // AppVersions describes versions for all the apps in all installations
-// type AppVersions struct {
-// 	Apps      apps.AppVersionMap            `json:"apps"`
-// 	Overrides map[string]apps.AppVersionMap `json:"overrides"`
-// }
-
-// func getAppsForInstallation(path, installationID string) (apps.AppVersionMap, error) {
-// 	data, err := ioutil.ReadFile(path)
-// 	if err != nil {
-// 		return nil, errors.Wrapf(err, "can't read %s file", path)
-// 	}
-// 	var allAppVersions *AppVersions
-// 	if err := json.Unmarshal(data, &allAppVersions); err != nil || allAppVersions == nil {
-// 		return nil, errors.Wrapf(err, "can't unmarshal %s file", appsJSONFile)
-// 	}
-
-// 	apps := allAppVersions.Apps
-// 	if overrides, ok := allAppVersions.Overrides[installationID]; ok {
-// 		for id, version := range overrides {
-// 			apps[id] = version
-// 		}
-// 	}
-// 	return apps, nil
-// }
+const PrevVersion = "prev_version"
 
 // LoadAppsList synchronizes apps with the apps.json file.
-// func (adm *Admin) LoadAppsList() error {
-// 	bundlePath, err := adm.mm.System.GetBundlePath()
-// 	if err != nil {
-// 		return errors.Wrap(err, "can't get bundle path")
-// 	}
+func (adm *Admin) UpdateInstalledApps() error {
+	installed := adm.ListInstalledApps()
+	marketplace := adm.ListMarketplaceApps("")
 
-// 	installationID := adm.mm.System.GetDiagnosticID()
-// 	appsPath := filepath.Join(bundlePath, "assets", appsJSONFile)
+	changed := map[apps.AppID]*apps.App{}
+	for _, app := range installed {
+		mapp := marketplace[app.AppID]
 
-// 	appsForInstallation, err := getAppsForInstallation(appsPath, installationID)
-// 	if err != nil {
-// 		return errors.Wrap(err, "can't get apps for installation")
-// 	}
+		// exclude unlisted apps, or those that need no action.
+		if mapp == nil || app.Version == mapp.Manifest.Version {
+			continue
+		}
 
-// 	adm.populateManifests(appsForInstallation)
+		changed[app.AppID] = app
+	}
 
-// 	registeredApps := adm.store.App().GetAll()
+	// call onInstanceStartup. App migration happens here
+	for _, app := range changed {
+		mapp := marketplace[app.AppID]
+		values := map[string]string{
+			PrevVersion: string(app.Version),
+		}
 
-// 	registeredAppsMap := map[apps.AppID]*apps.App{}
-// 	updatedAppVersionsMap := apps.AppVersionMap{}
-// 	// Update apps
-// 	for _, registeredApp := range registeredApps {
-// 		registeredAppsMap[registeredApp.Manifest.AppID] = registeredApp
-// 		manifest, err := adm.store.Manifest().Get(registeredApp.Manifest.AppID)
-// 		if err != nil {
-// 			adm.mm.Log.Error("can't load manifest from store", "app_id", registeredApp.Manifest.AppID)
-// 			continue
-// 		}
-// 		if err := adm.UninstallApp(registeredApp.Manifest.AppID); err != nil {
-// 			adm.mm.Log.Error("can't uninstall an app", "app_id", registeredApp.Manifest.AppID)
-// 			continue
-// 		}
-// 		if manifest.Version != registeredApp.Manifest.Version {
-// 			// update app in proxy plugin
-// 			oldVersion := registeredApp.Manifest.Version
-// 			registeredApp.Manifest = manifest
-// 			if err := adm.store.App().Save(registeredApp); err != nil {
-// 				adm.mm.Log.Error("can't save an app", "app_id", registeredApp.Manifest.AppID)
-// 			}
-// 			updatedAppVersionsMap[registeredApp.Manifest.AppID] = oldVersion
-// 		}
-// 	}
+		app.Manifest = *mapp.Manifest
+		err := adm.store.App().Save(app)
+		if err != nil {
+			return err
+		}
 
-// 	// register new apps
-// 	for appID, manifest := range adm.store.Manifest().GetAll() {
-// 		if _, ok := registeredAppsMap[appID]; ok {
-// 			continue
-// 		}
-// 		if err := adm.RegisterApp(manifest); err != nil {
-// 			adm.mm.Log.Error("can't register an app", "app_id", appID)
-// 		}
-// 	}
+		// Call onStartup the function of the app. It should be called only once
+		f := func() error {
+			if err := adm.expandedCall(app, app.OnStartup, values); err != nil {
+				adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.AppID, "err", err.Error())
+			}
+			return nil
+		}
+		if err := adm.callOnce(f); err != nil {
+			adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", app.AppID, "err", err.Error())
+		}
+	}
 
-// 	registeredAppsUpgraded := adm.store.App().GetAll()
+	return nil
+}
 
-// 	// call onInstanceStartup. App migration happens here
-// 	for _, registeredApp := range registeredAppsUpgraded {
-// 		if registeredApp.Status == apps.AppStatusInstalled {
-// 			values := map[string]string{}
-// 			if _, ok := updatedAppVersionsMap[registeredApp.Manifest.AppID]; ok {
-// 				values[oldVersionKey] = string(updatedAppVersionsMap[registeredApp.Manifest.AppID])
-// 			}
-// 			// Call onStartup the function of the app. It should be called only once
-// 			f := func() error {
-// 				if err := adm.expandedCall(registeredApp, registeredApp.Manifest.OnStartup, values); err != nil {
-// 					adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
-// 				}
-// 				return nil
-// 			}
-// 			if err := adm.callOnce(f); err != nil {
-// 				adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", registeredApp.Manifest.AppID, "err", err.Error())
-// 			}
-// 		}
-// 	}
+func (adm *Admin) callOnce(f func() error) error {
+	// Delete previous job
+	if err := adm.mm.KV.Delete(api.KeyCallOnce); err != nil {
+		return errors.Wrap(err, "can't delete key")
+	}
+	// Ensure all instances run this
+	time.Sleep(10 * time.Second)
 
-// 	return nil
-// }
+	adm.mutex.Lock()
+	defer adm.mutex.Unlock()
+	value := 0
+	if err := adm.mm.KV.Get(api.KeyCallOnce, &value); err != nil {
+		return err
+	}
+	if value != 0 {
+		// job is already run by other instance
+		return nil
+	}
 
-// func (adm *Admin) RegisterApp(manifest *apps.Manifest) error {
-// 	newApp := &apps.App{}
-// 	newApp.Manifest = manifest
-// 	newApp.Status = apps.AppStatusRegistered
-// 	if err := adm.store.App().Save(newApp); err != nil {
-// 		return errors.Wrapf(err, "can't store app - %s", manifest.AppID)
-// 	}
-// 	adm.mm.Log.Info("App is registered", "app_id", manifest.AppID)
-// 	return nil
-// }
-
-// func (adm *Admin) callOnce(f func() error) error {
-// 	// Delete previous job
-// 	if err := adm.mm.KV.Delete(callOnceKey); err != nil {
-// 		return errors.Wrap(err, "can't delete key")
-// 	}
-// 	// Ensure all instances run this
-// 	time.Sleep(10 * time.Second)
-
-// 	adm.mutex.Lock()
-// 	defer adm.mutex.Unlock()
-// 	value := 0
-// 	if err := adm.mm.KV.Get(callOnceKey, &value); err != nil {
-// 		return err
-// 	}
-// 	if value != 0 {
-// 		// job is already run by other instance
-// 		return nil
-// 	}
-
-// 	// job is should be run by this instance
-// 	if err := f(); err != nil {
-// 		return errors.Wrap(err, "can't run the job")
-// 	}
-// 	value = 1
-// 	ok, err := adm.mm.KV.Set(callOnceKey, value)
-// 	if err != nil {
-// 		return errors.Wrapf(err, "can't set key %s to %d", callOnceKey, value)
-// 	}
-// 	if !ok {
-// 		return errors.Errorf("can't set key %s to %d", callOnceKey, value)
-// 	}
-// 	return nil
-// }
+	// job is should be run by this instance
+	if err := f(); err != nil {
+		return errors.Wrap(err, "can't run the job")
+	}
+	value = 1
+	ok, err := adm.mm.KV.Set(api.KeyCallOnce, value)
+	if err != nil {
+		return errors.Wrapf(err, "can't set key %s to %d", api.KeyCallOnce, value)
+	}
+	if !ok {
+		return errors.Errorf("can't set key %s to %d", api.KeyCallOnce, value)
+	}
+	return nil
+}
 
 func (adm *Admin) expandedCall(app *apps.App, call *apps.Call, values map[string]string) error {
 	if call == nil {

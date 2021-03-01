@@ -130,7 +130,7 @@ func (s *manifestStore) Configure(conf api.Config) error {
 
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
-		err := s.mm.KV.Get(prefixLocalManifest+key, &m)
+		err := s.mm.KV.Get(api.PrefixLocalManifest+key, &m)
 		if err != nil {
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load local manifest for %s: %s", id, err.Error()))
@@ -205,7 +205,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return nil
 	}
 
-	_, err = s.mm.KV.Set(prefixLocalManifest+sha, m)
+	_, err = s.mm.KV.Set(api.PrefixLocalManifest+sha, m)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(prefixLocalManifest + prevSHA)
+	_ = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
 	return nil
 }
 
@@ -244,7 +244,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	conf := s.conf.GetConfig()
 	sha := conf.LocalManifests[string(appID)]
 
-	err := s.mm.KV.Delete(prefixLocalManifest + sha)
+	err := s.mm.KV.Delete(api.PrefixLocalManifest + sha)
 	if err != nil {
 		return err
 	}

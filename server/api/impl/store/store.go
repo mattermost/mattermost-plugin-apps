@@ -9,10 +9,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-const prefixSubs = "sub_"
-const prefixInstalledApp = "app_"
-const prefixLocalManifest = "man_"
-
 type Store struct {
 	mm     *pluginapi.Client
 	conf   api.Configurator

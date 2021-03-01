@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -29,8 +30,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
-
-// const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
@@ -107,7 +106,12 @@ func (p *Plugin) OnActivate() error {
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store)
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
-	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, p.aws, nil)
+
+	mutex, err := cluster.NewMutex(p.API, api.KeyClusterMutex)
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
+	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, p.aws, mutex)
 
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
 		dialog.Init,
@@ -119,9 +123,10 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	// if err := p.api.Admin.LoadAppsList(); err != nil {
-	// 	mm.Log.Error("Can't load apps list", "err", err.Error())
-	// }
+	err = p.admin.UpdateInstalledApps()
+	if err != nil {
+		p.mm.Log.Error("failed to update apps", "err", err.Error())
+	}
 
 	return nil
 }
