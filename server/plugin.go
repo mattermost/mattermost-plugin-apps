@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
@@ -100,6 +101,7 @@ func (p *Plugin) OnActivate() error {
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 
 	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
+	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, p.aws, nil)
 
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
 		dialog.Init,

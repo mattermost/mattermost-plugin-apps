@@ -28,14 +28,14 @@ type service struct {
 var _ Service = (*service)(nil)
 
 func MakeService(mm *pluginapi.Client, configService api.Configurator, proxy api.Proxy, admin api.Admin) (Service, error) {
-	conf := configService.GetConfig()
-
 	s := &service{
 		mm:    mm,
 		conf:  configService,
 		proxy: proxy,
 		admin: admin,
 	}
+
+	conf := configService.GetConfig()
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          api.CommandTrigger,
 		DisplayName:      conf.BuildConfig.Manifest.Name,
