@@ -45,6 +45,7 @@ func NewAPIClientPP(url string) *ClientPP {
 
 func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
 	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
+	//nolint
 	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+query, StringInterfaceToJSON(in)) // nolint:bodyclose
 
 	if appErr != nil {

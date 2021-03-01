@@ -33,7 +33,7 @@ func (p *Proxy) GetAsset(appID apps.AppID, assetName string) (io.ReadCloser, int
 	case apps.AppTypeHTTP:
 		url := fmt.Sprintf("%s/static/%s", app.Manifest.HTTPRootURL, assetName)
 		/* #nosec G107 */
-		resp, err := http.Get(url)
+		resp, err := http.Get(url) // nolint:bodyclose
 		if err != nil {
 			return nil, http.StatusBadGateway, errors.Wrapf(err, "%s, url - %s", errorMessage, url)
 		}
