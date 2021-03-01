@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 type Upstream struct {
@@ -46,29 +47,31 @@ func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
 }
 
 func (u *Upstream) OneWay(call *apps.Call) error {
+	name := match(call.Path, u.app.Functions)
+	if name == "" {
+		return utils.ErrNotFound
+	}
+
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return errors.Wrap(err, "failed to covert call into invocation payload")
 	}
 
-	name, err := awsclient.MakeLambdaName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
-	if err != nil {
-		return err
-	}
 	_, err = u.awsClient.InvokeLambda(name, lambda.InvocationTypeEvent, payload)
 	return err
 }
 
 func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
+	name := match(call.Path, u.app.Functions)
+	if name == "" {
+		return nil, utils.ErrNotFound
+	}
+
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
 	}
 
-	name, err := awsclient.MakeLambdaName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
-	if err != nil {
-		return nil, err
-	}
 	bb, err := u.awsClient.InvokeLambda(name, lambda.InvocationTypeRequestResponse, payload)
 	if err != nil {
 		return nil, err
@@ -101,4 +104,18 @@ func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	}
 
 	return payload, nil
+}
+
+func match(callPath string, functions []apps.Function) string {
+	matchedName := ""
+	matchedPath := ""
+	for _, f := range functions {
+		if strings.HasPrefix(callPath, f.Path) {
+			if len(f.Path) > len(matchedPath) {
+				matchedPath = f.Path
+				matchedName = f.LambdaName
+			}
+		}
+	}
+	return matchedName
 }

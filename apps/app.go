@@ -99,9 +99,13 @@ const (
 // Function describes app's function mapping
 // For now Function can be either AWS Lambda or HTTP function
 type Function struct {
+	Path    string `json:"path"`
 	Name    string `json:"name"`
 	Handler string `json:"handler"`
 	Runtime string `json:"runtime"`
+
+	// filled out by appsctl
+	LambdaName string `json:"lambda_name,omitempty"`
 }
 
 // Asset describes app's static asset.
@@ -143,7 +147,8 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// Deployment manifest for hostable apps will include path->invoke mappings
+	// Functions are declarations that must be included by the developer in the
+	// manifest published to the Mattermost Apps Marketplace. It serves
 	Functions []Function
 	Assets    []Asset
 }
