@@ -28,7 +28,7 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		if app.Disabled {
 			status += ", **Disabled**"
 		}
-		status += fmt.Sprintf(", type: `%s`", app.AppType)
+		status += fmt.Sprintf(", type: `%s`", app.Type)
 
 		version := string(app.Version)
 		if mapp != nil && string(mapp.Manifest.Version) != version {
@@ -59,7 +59,7 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		}
 
 		version := string(mapp.Manifest.Version)
-		status := fmt.Sprintf("type: `%s`", mapp.Manifest.AppType)
+		status := fmt.Sprintf("type: `%s`", mapp.Manifest.Type)
 
 		name := fmt.Sprintf("[%s](%s) (`/%s`)",
 			mapp.Manifest.DisplayName, mapp.Manifest.HomepageURL, mapp.Manifest.AppID)

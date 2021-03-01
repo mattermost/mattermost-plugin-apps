@@ -287,14 +287,14 @@ func validateManifest(m *apps.Manifest) error {
 	if m.AppID == "" {
 		return errors.New("empty AppID")
 	}
-	if m.AppType == "" {
+	if m.Type == "" {
 		return errors.New("app_type is empty, must be specified, e.g. `aws_lamda`")
 	}
-	if !m.AppType.IsValid() {
-		return errors.Errorf("invalid type: %s", m.AppType)
+	if !m.Type.IsValid() {
+		return errors.Errorf("invalid type: %s", m.Type)
 	}
 
-	if m.AppType == apps.AppTypeHTTP {
+	if m.Type == apps.AppTypeHTTP {
 		_, err := url.Parse(m.HTTPRootURL)
 		if err != nil {
 			return errors.Wrapf(err, "invalid manifest URL %q", m.HTTPRootURL)
