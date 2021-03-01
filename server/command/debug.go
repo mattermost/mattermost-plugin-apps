@@ -44,7 +44,7 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return nil, err
 	}
 
-	out, err := s.admin.InstallManifest(
+	out, err := s.admin.AddLocalManifest(
 		&apps.Context{ActingUserID: params.commandArgs.UserId},
 		apps.SessionToken(params.commandArgs.Session.Token), &m)
 	if err != nil {

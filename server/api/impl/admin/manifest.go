@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (adm *Admin) InstallManifest(cc *apps.Context, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
+func (adm *Admin) AddLocalManifest(cc *apps.Context, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
 	if m.AppID == "" {
 		return "", errors.New("app ID must not be empty")
 	}

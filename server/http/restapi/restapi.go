@@ -16,14 +16,16 @@ type restapi struct {
 	mm          *pluginapi.Client
 	conf        api.Configurator
 	proxy       api.Proxy
+	admin       api.Admin
 	appServices api.AppServices
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, proxy api.Proxy, _ api.Admin, appServices api.AppServices) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, proxy api.Proxy, admin api.Admin, appServices api.AppServices) {
 	a := &restapi{
 		mm:          mm,
 		conf:        conf,
 		proxy:       proxy,
+		admin:       admin,
 		appServices: appServices,
 	}
 

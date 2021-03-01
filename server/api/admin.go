@@ -6,11 +6,12 @@ import (
 )
 
 type Admin interface {
-	ListApps() (map[apps.AppID]*apps.App, md.MD, error)
+	AddLocalManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
 	GetApp(appID apps.AppID) (*apps.App, error)
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
+	ListInstalledApps() map[apps.AppID]*apps.App
+	ListMarketplaceApps(filter string) map[apps.AppID]*apps.MarketplaceApp
 	UninstallApp(appID apps.AppID) error
-	InstallManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
 	// LoadAppsList() error
 }

@@ -1,10 +1,11 @@
 package apps
 
 import (
-	"encoding/json"
 	"unicode"
 
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 // AppID is a globally unique identifier that represents a Mattermost App.
@@ -170,6 +171,8 @@ var DefaultBindingsCall = &Call{
 type App struct {
 	Manifest
 
+	Disabled bool `json:"disabled,omitempty"`
+
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`
 
@@ -190,16 +193,9 @@ type App struct {
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
 }
 
-func (a *App) ConfigMap() map[string]interface{} {
-	b, _ := json.Marshal(a)
-	var out map[string]interface{}
-	_ = json.Unmarshal(b, &out)
-	return out
-}
-
-func AppFromConfigMap(in interface{}) *App {
-	b, _ := json.Marshal(in)
-	var out App
-	_ = json.Unmarshal(b, &out)
-	return &out
+type MarketplaceApp struct {
+	Manifest  *Manifest                `json:"manifest"`
+	Installed bool                     `json:"installed"`
+	Enabled   bool                     `json:"enabled"`
+	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }

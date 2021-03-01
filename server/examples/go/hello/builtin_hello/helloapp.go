@@ -36,6 +36,7 @@ func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
 		Type:        apps.AppTypeBuiltin,
+		Version:     "0.1.0",
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		HomepageURL: ("https://github.com/mattermost"),
@@ -54,10 +55,11 @@ func Manifest() *apps.Manifest {
 }
 
 func App() *apps.App {
-	m := Manifest()
+	m := *Manifest()
+	m.Version = "pre-release"
 
 	return &apps.App{
-		Manifest:           *m,
+		Manifest:           m,
 		GrantedPermissions: m.RequestedPermissions,
 		GrantedLocations:   m.RequestedLocations,
 	}
