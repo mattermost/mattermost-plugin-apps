@@ -14,7 +14,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -57,7 +56,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) && app.OAuth2ClientID == "" {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = adm.ensureOAuthApp(m, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		oAuthApp, err = adm.ensureOAuthApp(app, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 		if err != nil {
 			return nil, "", err
 		}
@@ -88,12 +87,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	return app, resp.Markdown, nil
 }
 
-func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	app, err := adm.store.App().Get(manifest.AppID)
-	if err != nil && err != utils.ErrNotFound {
-		return nil, err
-	}
-
+func (adm *Admin) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
@@ -109,15 +103,15 @@ func (adm *Admin) ensureOAuthApp(manifest *apps.Manifest, noUserConsent bool, ac
 		}
 	}
 
-	oauth2CallbackURL := adm.conf.GetConfig().PluginURL + api.AppsPath + "/" + string(manifest.AppID) + api.PathOAuth2Complete
+	oauth2CallbackURL := adm.conf.GetConfig().PluginURL + api.AppsPath + "/" + string(app.AppID) + api.PathOAuth2Complete
 
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
 	oauthApp, response := client.CreateOAuthApp(&model.OAuthApp{
 		CreatorId:    actingUserID,
-		Name:         manifest.DisplayName,
-		Description:  manifest.Description,
+		Name:         app.DisplayName,
+		Description:  app.Description,
 		CallbackUrls: []string{oauth2CallbackURL},
-		Homepage:     manifest.HomepageURL,
+		Homepage:     app.HomepageURL,
 		IsTrusted:    noUserConsent,
 	})
 	if response.StatusCode != http.StatusCreated {

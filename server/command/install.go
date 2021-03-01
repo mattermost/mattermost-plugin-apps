@@ -34,9 +34,6 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "manifest not found"))
 	}
-	if m.Type != apps.AppTypeAWSLambda {
-		return errorOut(params, errors.Wrap(err, "not an AWS app"))
-	}
 
 	return s.installApp(m, appSecret, params)
 }
