@@ -17,6 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
@@ -26,8 +28,12 @@ const DefaultRegion = "us-east-2"
 
 type Client interface {
 	GetS3(bucket, item string) ([]byte, error)
+	CreateS3Bucket(bucket string) error
+	S3BucketExists(name string) (bool, error)
 	InvokeLambda(name string, invocationType string, request interface{}) ([]byte, error)
 	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
+	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
+	MakeLambdaFunctionDefaultPolicy() (string, error)
 }
 
 // Client is a client for interacting with AWS resources.
@@ -36,6 +42,7 @@ type client struct {
 	lambda lambdaiface.LambdaAPI
 	iam    iamiface.IAMAPI
 	s3Down s3manageriface.DownloaderAPI
+	s3     s3iface.S3API
 }
 
 type Logger interface {
@@ -81,6 +88,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Clien
 		lambda: lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
 		iam:    iam.New(awsSession),
 		s3Down: s3manager.NewDownloader(awsSession),
+		s3:     s3.New(awsSession),
 	}
 
 	return c, nil

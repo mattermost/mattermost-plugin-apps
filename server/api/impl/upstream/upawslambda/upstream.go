@@ -4,10 +4,7 @@
 package upawslambda
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,10 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 )
-
-const lambdaFunctionFileNameMaxSize = 64
-const appIDLengthLimit = 32
-const versionFormat = "v00.00.000"
 
 type Upstream struct {
 	app       *apps.App
@@ -58,7 +51,7 @@ func (u *Upstream) OneWay(call *apps.Call) error {
 		return errors.Wrap(err, "failed to covert call into invocation payload")
 	}
 
-	name, err := functionName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
+	name, err := awsclient.MakeLambdaName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
 	if err != nil {
 		return err
 	}
@@ -72,7 +65,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
 	}
 
-	name, err := functionName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
+	name, err := awsclient.MakeLambdaName(u.app.AppID, u.app.Version, u.app.Functions[0].Name)
 	if err != nil {
 		return nil, err
 	}
@@ -108,31 +101,4 @@ func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	}
 
 	return payload, nil
-}
-
-func functionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
-	if len(appID) > appIDLengthLimit {
-		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, appIDLengthLimit)
-	}
-	if len(version) > len(versionFormat) {
-		return "", errors.Errorf("version %s too long, should be in %s format", version, versionFormat)
-	}
-
-	// Sanitized any dots used in appID and version as lambda function names can not contain dots
-	// While there are other non-valid characters, a dots is the most commonly used one
-	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
-	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
-
-	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
-	if len(name) <= lambdaFunctionFileNameMaxSize {
-		return name, nil
-	}
-	functionNameLength := lambdaFunctionFileNameMaxSize - len(sanitizedAppID) - len(sanitizedVersion) - 2
-	hash := sha256.Sum256([]byte(name))
-	hashString := hex.EncodeToString(hash[:])
-	if len(hashString) > functionNameLength {
-		hashString = hashString[:functionNameLength]
-	}
-	name = fmt.Sprintf("%s-%s-%s", sanitizedAppID, sanitizedVersion, hashString)
-	return name, nil
 }

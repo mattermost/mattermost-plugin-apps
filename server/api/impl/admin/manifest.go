@@ -17,7 +17,10 @@ func (adm *Admin) InstallManifest(cc *apps.Context, sessionToken apps.SessionTok
 
 	// TODO check if acting user is a sysadmin
 
-	adm.store.Manifest().StoreLocal(m)
+	err := adm.store.Manifest().StoreLocal(m)
+	if err != nil {
+		return "", err
+	}
 
 	return md.Markdownf("Stored local manifest for %s [%s](%s).", m.AppID, m.DisplayName, m.HomepageURL), nil
 }

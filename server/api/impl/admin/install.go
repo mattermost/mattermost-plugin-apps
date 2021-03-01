@@ -43,7 +43,9 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	client.SetToken(string(sessionToken))
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID == "" {
-		bot, token, err := adm.ensureBot(m, cc.ActingUserID, string(sessionToken))
+		var bot *model.Bot
+		var token *model.UserAccessToken
+		bot, token, err = adm.ensureBot(m, cc.ActingUserID, string(sessionToken))
 		if err != nil {
 			return nil, "", err
 		}

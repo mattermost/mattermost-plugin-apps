@@ -10,7 +10,7 @@ import (
 
 func TestAppConfigMap(t *testing.T) {
 	a1 := &App{
-		Common: Common{
+		Manifest: Manifest{
 			AppID:       "app-id",
 			DisplayName: "display-name",
 			Description: "description",

@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
@@ -28,7 +29,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 )
 
-const mutexKey = "Cluster_Mutex"
+// const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
@@ -72,22 +73,33 @@ func (p *Plugin) OnActivate() error {
 	conf := p.conf.GetConfig()
 
 	p.aws = aws.NewService(&p.mm.Log)
-	p.aws.Configure(conf)
+	err = p.aws.Configure(conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize AWS access")
+	}
 
 	p.store = store.New(p.mm, p.conf)
 	p.store.Manifest().InitBuiltin(
 		aws_hello.Manifest(),
 		builtin_hello.Manifest(),
 	)
-	p.store.Manifest().Configure(conf)
+	err = p.store.Manifest().Configure(conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the manifest store")
+	}
 
 	p.store.App().InitBuiltin(
 		builtin_hello.App(),
 	)
-	p.store.App().Configure(conf)
+	err = p.store.App().Configure(conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the app store")
+	}
 
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store)
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
+
+	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
 
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
 		dialog.Init,

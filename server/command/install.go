@@ -4,8 +4,6 @@
 package command
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
@@ -55,7 +53,7 @@ func (s *service) installApp(m *apps.Manifest, appSecret string, params *params)
 	}
 
 	return &model.CommandResponse{
-		Text:         fmt.Sprintf("please continue by filling out the interactive form"),
+		Text:         "please continue by filling out the interactive form",
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }

@@ -109,7 +109,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 		return upawslambda.NewUpstream(app, p.aws.Client()), nil
 
 	case apps.AppTypeBuiltin:
-		up, _ := p.builtinUpstreams[app.AppID]
+		up := p.builtinUpstreams[app.AppID]
 		if up == nil {
 			return nil, errors.Errorf("builtin app not found: %s", app.AppID)
 		}

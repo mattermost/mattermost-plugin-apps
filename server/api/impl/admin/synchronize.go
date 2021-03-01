@@ -4,8 +4,9 @@
 package admin
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // const oldVersionKey = "update_from_version"
