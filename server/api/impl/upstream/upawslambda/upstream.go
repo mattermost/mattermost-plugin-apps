@@ -82,7 +82,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 
 func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	request := invocationPayload{
-		Path:       call.URL,
+		Path:       call.Path,
 		HTTPMethod: http.MethodPost,
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       call,

@@ -39,6 +39,8 @@ const (
 	UnsubscribePath = "/unsubscribe"
 
 	BindingsPath = "/bindings"
+
+	WebSocketEventRefreshBindings = "refresh_bindings"
 )
 
 const (

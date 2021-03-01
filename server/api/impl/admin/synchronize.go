@@ -246,7 +246,7 @@ func (adm *Admin) expandedCall(app *apps.App, call *apps.Call, values map[string
 
 	resp := adm.proxy.Call(adm.adminToken, call)
 	if resp.Type == apps.CallResponseTypeError {
-		return errors.Wrapf(resp, "call %s failed", call.URL)
+		return errors.Wrapf(resp, "call %s failed", call.Path)
 	}
 	return nil
 }

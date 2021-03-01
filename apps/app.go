@@ -156,7 +156,7 @@ const (
 )
 
 var DefaultInstallCall = &Call{
-	URL: DefaultInstallCallPath,
+	Path: DefaultInstallCallPath,
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
@@ -164,7 +164,7 @@ var DefaultInstallCall = &Call{
 }
 
 var DefaultBindingsCall = &Call{
-	URL: DefaultBindingsCallPath,
+	Path: DefaultBindingsCallPath,
 }
 
 type App struct {
