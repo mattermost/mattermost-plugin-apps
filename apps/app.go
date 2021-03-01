@@ -72,21 +72,6 @@ func (at AppType) IsValid() bool {
 		at == AppTypeBuiltin
 }
 
-// AssetType describes static assets of the Mattermost App.
-// Assets can be saved in S3 with appropriate permissions,
-// or they could be fetched as ordinary http resources.
-type AssetType string
-
-const (
-	s3Asset   AssetType = "s3_asset"
-	httpAsset AssetType = "http_asset"
-)
-
-func (at AssetType) IsValid() bool {
-	return at == s3Asset ||
-		at == httpAsset
-}
-
 // AppStatus describes status of the app
 type AppStatus string
 
@@ -101,16 +86,6 @@ type Function struct {
 	Name    string `json:"name"`
 	Handler string `json:"handler"`
 	Runtime string `json:"runtime"`
-}
-
-// Asset describes app's static asset.
-// For now asset can be an S3 file or an http resource
-type Asset struct {
-	Name   string    `json:"name"`
-	Type   AssetType `json:"type"`
-	URL    string    `json:"url"`
-	Bucket string    `json:"bucket"`
-	Key    string    `json:"key"`
 }
 
 type Manifest struct {
@@ -146,7 +121,6 @@ type Manifest struct {
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
 	Functions []Function
-	Assets    []Asset
 }
 
 // Conventions for Apps paths, and field names
