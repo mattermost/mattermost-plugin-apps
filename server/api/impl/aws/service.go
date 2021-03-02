@@ -81,12 +81,7 @@ func NewAWSClient(awsAccessKeyID, awsSecretAccessKey string, logger log) *Client
 }
 
 func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
-	var creds *credentials.Credentials
-	if awsSecretAccessKey == "" && awsAccessKeyID == "" {
-		creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
-	} else {
-		creds = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
-	}
+	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 
 	return &aws.Config{
 		Region:      aws.String(DefaultRegion),
