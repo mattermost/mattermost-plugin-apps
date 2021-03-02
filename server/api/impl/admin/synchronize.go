@@ -46,11 +46,10 @@ func (adm *Admin) LoadAppsList() error {
 	if err != nil {
 		return errors.Wrap(err, "can't get apps for installation")
 	}
+	adm.getAndStoreManifests(appsForRegistration)
 
 	// Here are apps that are provisioned and registered on this installation.
 	registeredApps := adm.store.App().GetAll()
-
-	adm.getAndStoreManifests(appsForRegistration)
 
 	appsToRegister, appsToUpgrade, appsToRemove := mergeApps(appsForRegistration, registeredApps)
 	adm.removeApps(appsToRemove)
@@ -185,7 +184,7 @@ func (adm *Admin) removeApps(appsToRemove map[apps.AppID]*apps.App) {
 				adm.mm.Log.Error("can't uninstall app", "app_id", appToRemove.AppID, "err", err.Error())
 			}
 		case apps.AppStatusRegistered:
-			// delete app from proxy plugin, not removing the data
+			// delete app from proxy plugin
 			if err := adm.store.App().Delete(appToRemove); err != nil {
 				adm.mm.Log.Error("can't delete app from store", "app_id", appToRemove.AppID, "err", err.Error())
 			}
