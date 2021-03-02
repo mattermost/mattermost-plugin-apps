@@ -47,4 +47,5 @@ const (
 	PropTeamID    = "team_id"
 	PropChannelID = "channel_id"
 	PropPostID    = "post_id"
+	PropUserAgent = "user_agent_type"
 )
