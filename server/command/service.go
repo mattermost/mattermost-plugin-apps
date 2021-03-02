@@ -9,6 +9,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -63,7 +65,9 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	}
 	params.current = split[1:]
 
-	return s.handleMain(params)
+	developerMode := pluginapi.IsConfiguredForDevelopment(s.api.Mattermost.Configuration.GetConfig())
+
+	return s.handleMain(params, developerMode)
 }
 
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {

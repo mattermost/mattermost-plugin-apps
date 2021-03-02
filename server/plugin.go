@@ -94,7 +94,10 @@ func (p *Plugin) OnActivate() error {
 		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
 		AWS:          awsClient,
 	}
-	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
+
+	if pluginapi.IsConfiguredForDevelopment(mm.Configuration.GetConfig()) {
+		proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
+	}
 
 	p.http = http.NewService(mux.NewRouter(), p.api,
 		dialog.Init,
