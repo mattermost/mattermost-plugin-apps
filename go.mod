@@ -7,7 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang/mock v1.4.3
 	github.com/gorilla/mux v1.8.0
-	github.com/mattermost/mattermost-plugin-api v0.0.15-0.20210302190954-a5df629f0f14
+	github.com/mattermost/mattermost-plugin-api v0.0.15-0.20210303034931-22355254f0ea
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210120031517-5a7759f4d63b
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.1
