@@ -27,22 +27,24 @@ import (
 const DefaultRegion = "us-east-2"
 
 type Client interface {
-	GetS3(bucket, item string) ([]byte, error)
-	CreateS3Bucket(bucket string) error
-	S3BucketExists(name string) (bool, error)
-	InvokeLambda(name string, invocationType string, request interface{}) ([]byte, error)
 	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
 	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
+	CreateS3Bucket(bucket string) error
+	GetS3(bucket, item string) ([]byte, error)
+	InvokeLambda(name string, invocationType string, request interface{}) ([]byte, error)
 	MakeLambdaFunctionDefaultPolicy() (string, error)
+	ExistsS3Bucket(name string) (bool, error)
+	UploadS3(bucket, key string, body io.Reader) error
 }
 
 // Client is a client for interacting with AWS resources.
 type client struct {
-	logger Logger
-	lambda lambdaiface.LambdaAPI
-	iam    iamiface.IAMAPI
-	s3Down s3manageriface.DownloaderAPI
-	s3     s3iface.S3API
+	logger     Logger
+	lambda     lambdaiface.LambdaAPI
+	iam        iamiface.IAMAPI
+	s3Down     s3manageriface.DownloaderAPI
+	s3Uploader s3manageriface.UploaderAPI
+	s3         s3iface.S3API
 }
 
 type Logger interface {
@@ -84,11 +86,12 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Clien
 	}
 
 	c := &client{
-		logger: logger,
-		lambda: lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
-		iam:    iam.New(awsSession),
-		s3Down: s3manager.NewDownloader(awsSession),
-		s3:     s3.New(awsSession),
+		logger:     logger,
+		lambda:     lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		iam:        iam.New(awsSession),
+		s3Down:     s3manager.NewDownloader(awsSession),
+		s3Uploader: s3manager.NewUploader(awsSession),
+		s3:         s3.New(awsSession),
 	}
 
 	return c, nil

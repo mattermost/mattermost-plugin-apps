@@ -4,24 +4,15 @@
 package awsclient
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
-
-const LambdaFunctionFileNameMaxSize = 64
-const AppIDLengthLimit = 32
-const VersionFormat = "v00.00.000"
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
 func (c *client) InvokeLambda(name, invocationType string, request interface{}) ([]byte, error) {
@@ -105,33 +96,4 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 	}
 	c.logger.Info(fmt.Sprintf("function named %s was updated", function), "result", result.String())
 	return nil
-}
-
-// getFunctionName generates function name for a specific app
-// name can be 64 characters long.
-func MakeLambdaName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
-	if len(appID) > AppIDLengthLimit {
-		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, AppIDLengthLimit)
-	}
-	if len(version) > len(VersionFormat) {
-		return "", errors.Errorf("version %s too long, should be in %s format", version, VersionFormat)
-	}
-
-	// Sanitized any dots used in appID and version as lambda function names can not contain dots
-	// While there are other non-valid characters, a dots is the most commonly used one
-	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
-	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
-
-	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
-	if len(name) <= LambdaFunctionFileNameMaxSize {
-		return name, nil
-	}
-	functionNameLength := LambdaFunctionFileNameMaxSize - len(sanitizedAppID) - len(sanitizedVersion) - 2
-	hash := sha256.Sum256([]byte(name))
-	hashString := hex.EncodeToString(hash[:])
-	if len(hashString) > functionNameLength {
-		hashString = hashString[:functionNameLength]
-	}
-	name = fmt.Sprintf("%s-%s-%s", sanitizedAppID, sanitizedVersion, hashString)
-	return name, nil
 }

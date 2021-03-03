@@ -42,6 +42,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, proxy
 	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
 
 	subrouter.HandleFunc(api.PathMarketplace, checkAuthorized(a.handleGetMarketplace)).Methods(http.MethodGet)
+	subrouter.HandleFunc(api.StaticAssetPath+"/{app_id}/{name}", checkAuthorized(a.handleGetStaticAsset)).Methods(http.MethodGet)
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {

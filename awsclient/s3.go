@@ -4,20 +4,21 @@
 package awsclient
 
 import (
-	"os"
+	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/pkg/errors"
 )
 
 const (
 	// appsS3BucketEnvVarName determines an environment variable.
 	// Variable saves address of apps S3 bucket name
-	appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
+	AppsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
 
 	// defaultBucketName is the default s3 bucket name used to store app data.
-	defaultBucketName = "mattermost-apps-bucket"
+	DefaultBucketName = "mattermost-apps-bucket"
 )
 
 // GetS3 downloads files from S3.
@@ -33,6 +34,18 @@ func (c *client) GetS3(bucket, item string) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+// S3FileUpload uploads file to a specific S3 bucket
+func (c *client) UploadS3(bucket, key string, body io.Reader) error {
+	if _, err := c.s3Uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   body,
+	}); err != nil {
+		return errors.Wrap(err, "failed to upload file")
+	}
+	return nil
+}
+
 func (c *client) CreateS3Bucket(bucket string) error {
 	_, err := c.s3.CreateBucket(&s3.CreateBucketInput{
 		Bucket: aws.String(bucket),
@@ -44,9 +57,9 @@ func (c *client) CreateS3Bucket(bucket string) error {
 	return nil
 }
 
-// S3BucketExists return true if a bucket with the given name exists.
+// ExistsS3Bucket return true if a bucket with the given name exists.
 // Otherwise it returns false.
-func (c *client) S3BucketExists(name string) (bool, error) {
+func (c *client) ExistsS3Bucket(name string) (bool, error) {
 	buckets, err := c.s3.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to list buckets")
@@ -59,15 +72,4 @@ func (c *client) S3BucketExists(name string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func BucketWithDefaults(name string) string {
-	if name != "" {
-		return name
-	}
-	name = os.Getenv(appsS3BucketEnvVarName)
-	if name != "" {
-		return name
-	}
-	return defaultBucketName
 }

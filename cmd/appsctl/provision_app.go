@@ -19,16 +19,24 @@ import (
 )
 
 type functionInstallData struct {
-	zipFile io.Reader
+	bundle  io.Reader
 	name    string
 	handler string
 	runtime string
+}
+
+type assetData struct {
+	file io.Reader
+	name string
 }
 
 // ProvisionApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
 // ~/my_app.zip
 //  |-- manifest.json
+//  |-- static
+//		|-- icon.png
+//		|-- coolFile.txt
 //  |-- my_nodejs_function.zip
 //      |-- index.js
 //      |-- node-modules
@@ -38,6 +46,124 @@ type functionInstallData struct {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
+func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
+	zipReader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
+		return errors.Wrap(err, "can't get zip reader")
+	}
+	bundleFunctions := []functionInstallData{}
+	var m *apps.Manifest
+	assets := []assetData{}
+
+	// Read all the files from zip archive
+	for _, file := range zipReader.File {
+		switch {
+		case strings.HasSuffix(file.Name, "manifest.json"):
+			var f io.ReadCloser
+			f, err = file.Open()
+			if err != nil {
+				return errors.Wrap(err, "can't open manifest.json file")
+			}
+			defer f.Close()
+
+			var data []byte
+			data, err = ioutil.ReadAll(f)
+			if err != nil {
+				return errors.Wrap(err, "can't read manifest.json file")
+			}
+			err = json.Unmarshal(data, &m)
+			if err != nil {
+				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
+			}
+
+		case strings.HasSuffix(file.Name, ".zip"):
+			var f io.ReadCloser
+			f, err = file.Open()
+			if err != nil {
+				return errors.Wrapf(err, "can't open file %s", file.Name)
+			}
+			defer f.Close()
+
+			bundleFunctions = append(bundleFunctions, functionInstallData{
+				name:   strings.TrimSuffix(file.Name, ".zip"),
+				bundle: f,
+			})
+			log.Debug("Found function bundle", "file", file.Name)
+
+		case strings.HasPrefix(file.Name, awsclient.StaticAssetsFolder):
+			assetName := strings.TrimPrefix(file.Name, awsclient.StaticAssetsFolder)
+			var f io.ReadCloser
+			f, err = file.Open()
+			if err != nil {
+				return errors.Wrapf(err, "can't open file %s", file.Name)
+			}
+			defer f.Close()
+
+			assets = append(assets, assetData{
+				name: assetName,
+				file: f,
+			})
+			log.Debug("Found static asset", "file", assetName)
+
+		default:
+			log.Info("Unknown file found in app bundle", "file", file.Name)
+		}
+	}
+
+	if m == nil {
+		return errors.New("no manifest found")
+	}
+
+	resFunctions := []functionInstallData{}
+
+	// Matching bundle functions to the functions listed in manifest
+	// O(n^2) code for simplicity
+	for _, bundleFunction := range bundleFunctions {
+		for _, manifestFunction := range m.Functions {
+			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
+				resFunctions = append(resFunctions, functionInstallData{
+					bundle:  bundleFunction.bundle,
+					name:    manifestFunction.Name,
+					handler: manifestFunction.Handler,
+					runtime: manifestFunction.Runtime,
+				})
+				continue
+			}
+		}
+	}
+
+	err = provisionAssets(awscli, m, assets)
+	if err != nil {
+		return errors.Wrapf(err, "can't provision assets of the app - %s", m.AppID)
+	}
+	err = provisionFunctions(awscli, m, resFunctions, shouldUpdate)
+	if err != nil {
+		return errors.Wrapf(err, "can't provision functions of the app - %s", m.AppID)
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return errors.Wrapf(err, "can't marshal manifest for app - %s", m.AppID)
+	}
+	buffer := bytes.NewBuffer(data)
+
+	bucket := awsclient.MakeS3BucketNameWithDefaults("")
+	key := awsclient.MakeManifestS3Name(m.AppID, m.Version)
+	if err := awscli.UploadS3(bucket, key, buffer); err != nil {
+		return errors.Wrapf(err, "can't upload manifest file for the app - %s", m.AppID)
+	}
+
+	return nil
+}
+
+// func ProvisionAppFromURL(awscli awsclient.Client, releaseURL string, shouldUpdate bool) error {
+// 	bundle, err := httputils.GetFromURL(releaseURL)
+// 	if err != nil {
+// 		return errors.Wrapf(err, "can't install app from url %s", releaseURL)
+// 	}
+
+// 	return ProvisionApp(awscli, bundle, shouldUpdate)
+// }
+
 func ProvisionAppFromFile(awscli awsclient.Client, path string, shouldUpdate bool) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -52,95 +178,39 @@ func ProvisionAppFromFile(awscli awsclient.Client, path string, shouldUpdate boo
 	return ProvisionApp(awscli, b, shouldUpdate)
 }
 
-func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
-	zipReader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
-	if err != nil {
-		return errors.Wrap(err, "can't get zip reader")
-	}
-	bundleFunctions := []functionInstallData{}
-	var mani *apps.Manifest
-
-	// Read all the files from zip archive
-	for _, file := range zipReader.File {
-		switch {
-		case strings.HasSuffix(file.Name, "manifest.json"):
-
-			manifestFile, err := file.Open()
-			if err != nil {
-				return errors.Wrap(err, "can't open manifest.json file")
-			}
-			defer manifestFile.Close()
-
-			data, err := ioutil.ReadAll(manifestFile)
-			if err != nil {
-				return errors.Wrap(err, "can't read manifest.json file")
-			}
-			err = json.Unmarshal(data, &mani)
-			if err != nil {
-				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
-			}
-		case strings.HasSuffix(file.Name, ".zip"):
-			lambdaFunctionFile, err := file.Open()
-			if err != nil {
-				return errors.Wrapf(err, "can't open file %s", file.Name)
-			}
-			defer lambdaFunctionFile.Close()
-
-			bundleFunctions = append(bundleFunctions, functionInstallData{
-				name:    strings.TrimSuffix(file.Name, ".zip"),
-				zipFile: lambdaFunctionFile,
-			})
-			log.Debug("Found function bundle", "file", file.Name)
-		default:
-			log.Info("Unknown file found in app bundle", "file", file.Name)
-		}
-	}
-
-	if mani == nil {
-		return errors.New("no manifest found")
-	}
-
-	resFunctions := []functionInstallData{}
-
-	// O(n^2) code for simplicity
-	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range mani.Functions {
-			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
-				resFunctions = append(resFunctions, functionInstallData{
-					zipFile: bundleFunction.zipFile,
-					name:    manifestFunction.Name,
-					handler: manifestFunction.Handler,
-					runtime: manifestFunction.Runtime,
-				})
-				continue
-			}
-		}
-	}
-	return provisionApp(awscli, mani.AppID, mani.Version, resFunctions, shouldUpdate)
-}
-
-func provisionApp(awscli awsclient.Client, appID apps.AppID, appVersion apps.AppVersion, functions []functionInstallData, shouldUpdate bool) error {
+func provisionFunctions(awscli awsclient.Client, m *apps.Manifest, functions []functionInstallData, shouldUpdate bool) error {
 	policyName, err := awscli.MakeLambdaFunctionDefaultPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "can't install app %s", appID)
+		return errors.Wrapf(err, "can't install app %s", m.AppID)
 	}
 
 	for _, function := range functions {
-		name, err := awsclient.MakeLambdaName(appID, appVersion, function.name)
+		name, err := awsclient.MakeLambdaName(m.AppID, m.Version, function.name)
 		if err != nil {
 			return errors.Wrap(err, "can't get function name")
 		}
 
 		if shouldUpdate {
-			if err := awscli.CreateOrUpdateLambda(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-				return errors.Wrapf(err, "can't install function for %s", appID)
+			if err := awscli.CreateOrUpdateLambda(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", m.AppID)
 			}
 		} else {
-			if err := awscli.CreateLambda(function.zipFile, name, function.handler, function.runtime, policyName); err != nil {
-				return errors.Wrapf(err, "can't install function for %s", appID)
+			if err := awscli.CreateLambda(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
+				return errors.Wrapf(err, "can't install function for %s", m.AppID)
 			}
 		}
 	}
 
+	return nil
+}
+
+func provisionAssets(awscli awsclient.Client, m *apps.Manifest, assets []assetData) error {
+	for _, asset := range assets {
+		bucket := awsclient.MakeS3BucketNameWithDefaults("")
+		key := awsclient.MakeAssetS3Name(m.AppID, m.Version, asset.name)
+		if err := awscli.UploadS3(bucket, key, asset.file); err != nil {
+			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
+		}
+	}
 	return nil
 }
