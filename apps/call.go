@@ -11,7 +11,7 @@ type CallType string
 
 const (
 	// CallTypeSubmit (default) indicates the intent to take action.
-	CallTypeSubmit = CallType("")
+	CallTypeSubmit = CallType("submit")
 	// CallTypeForm retrieves the form definition for the current set of values,
 	// and the context.
 	CallTypeForm = CallType("form")
@@ -46,8 +46,7 @@ type CallResponseType string
 const (
 	// CallResponseTypeOK indicates that the call succeeded, and returns
 	// Markdown and Data.
-	// TODO update OK to be ["ok", "" default], update redux, webapp?
-	CallResponseTypeOK = CallResponseType("")
+	CallResponseTypeOK = CallResponseType("ok")
 
 	// CallResponseTypeOK indicates an error, returns Error.
 	CallResponseTypeError = CallResponseType("error")
