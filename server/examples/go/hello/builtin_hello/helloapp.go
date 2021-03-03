@@ -133,9 +133,9 @@ func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
 				},
 			},
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
-
-	return nil
 }
 
 func (h *helloapp) SendSurveyModal(c *apps.Call) *apps.CallResponse {
@@ -160,6 +160,7 @@ func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
 			Type:     apps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
-	return nil
 }
