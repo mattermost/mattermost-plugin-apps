@@ -47,7 +47,7 @@ func (s *manifestStore) InitBuiltin(manifests ...*apps.Manifest) {
 	s.mutex.Unlock()
 }
 
-func (s *manifestStore) InitGlobal(awscli awsclient.Client) error {
+func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
@@ -59,10 +59,10 @@ func (s *manifestStore) InitGlobal(awscli awsclient.Client) error {
 	}
 	defer f.Close()
 
-	return s.initGlobal(awscli, f, assetPath)
+	return s.initGlobal(awscli, bucket, f, assetPath)
 }
 
-func (s *manifestStore) initGlobal(awscli awsclient.Client, manifestsFile io.Reader, assetPath string) error {
+func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
 	global := map[apps.AppID]*apps.Manifest{}
 
 	// Read in the marketplace-listed manifests from S3, as per versions
@@ -75,14 +75,13 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, manifestsFile io.Rea
 	}
 
 	var data []byte
-	conf := s.conf.GetConfig()
 	for appID, loc := range manifestLocations {
 		parts := strings.SplitN(string(loc), ":", 2)
 		switch {
 		case len(parts) == 1:
-			data, err = s.getFromS3(awscli, conf.AWSManifestBucket, appID, apps.AppVersion(parts[0]))
+			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[0]))
 		case len(parts) == 2 && parts[0] == "s3":
-			data, err = s.getFromS3(awscli, conf.AWSManifestBucket, appID, apps.AppVersion(parts[1]))
+			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[1]))
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = ioutil.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):

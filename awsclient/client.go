@@ -39,12 +39,16 @@ type Client interface {
 
 // Client is a client for interacting with AWS resources.
 type client struct {
-	logger     Logger
+	accessKeyID     string
+	secretAccessKey string
+
 	lambda     lambdaiface.LambdaAPI
 	iam        iamiface.IAMAPI
 	s3Down     s3manageriface.DownloaderAPI
 	s3Uploader s3manageriface.UploaderAPI
 	s3         s3iface.S3API
+
+	logger Logger
 }
 
 type Logger interface {
@@ -86,12 +90,14 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Clien
 	}
 
 	c := &client{
-		logger:     logger,
-		lambda:     lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
-		iam:        iam.New(awsSession),
-		s3Down:     s3manager.NewDownloader(awsSession),
-		s3Uploader: s3manager.NewUploader(awsSession),
-		s3:         s3.New(awsSession),
+		accessKeyID:     awsAccessKeyID,
+		secretAccessKey: awsSecretAccessKey,
+		lambda:          lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		iam:             iam.New(awsSession),
+		s3Down:          s3manager.NewDownloader(awsSession),
+		s3Uploader:      s3manager.NewUploader(awsSession),
+		s3:              s3.New(awsSession),
+		logger:          logger,
 	}
 
 	return c, nil

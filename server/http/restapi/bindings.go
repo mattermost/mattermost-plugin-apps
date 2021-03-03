@@ -11,12 +11,13 @@ import (
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID string) {
 	query := req.URL.Query()
 	bindings, err := a.proxy.GetBindings(&apps.Context{
-		TeamID:            query.Get(api.PropTeamID),
-		ChannelID:         query.Get(api.PropChannelID),
 		ActingUserID:      actingUserID,
-		UserID:            actingUserID,
-		PostID:            query.Get(api.PropPostID),
+		ChannelID:         query.Get(api.PropChannelID),
 		MattermostSiteURL: a.conf.GetConfig().MattermostSiteURL,
+		PostID:            query.Get(api.PropPostID),
+		TeamID:            query.Get(api.PropTeamID),
+		UserAgent:         query.Get(api.PropUserAgent),
+		UserID:            actingUserID,
 	})
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)

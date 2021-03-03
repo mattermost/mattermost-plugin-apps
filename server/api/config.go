@@ -24,13 +24,6 @@ type StoredConfig struct {
 	// added, and the Manifest struct is stored in KV under
 	// manifest_<sha1(Manifest)>. Implemenrtation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
-
-	// TODO: do we need to store credentials in the config, or are they always
-	// provided as env. variables?
-	AWSAccessKeyID     string `json:"aws_access_key_id,omitempty"`
-	AWSSecretAccessKey string `json:"aws_secret_access_key,omitempty"`
-	AWSManifestBucket  string `json:"aws_manifest_bucket,omitempty"`
-	AWSStaticBucket    string `json:"aws_static_bucket,omitempty"`
 }
 
 type BuildConfig struct {

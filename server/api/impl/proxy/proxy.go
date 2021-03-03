@@ -21,21 +21,23 @@ import (
 type Proxy struct {
 	builtinUpstreams map[apps.AppID]api.Upstream
 
-	mm    *pluginapi.Client
-	conf  api.Configurator
-	store api.Store
-	aws   aws.Service
+	mm            *pluginapi.Client
+	conf          api.Configurator
+	store         api.Store
+	aws           aws.Service
+	s3AssetBucket string
 }
 
 var _ api.Proxy = (*Proxy)(nil)
 
-func NewProxy(mm *pluginapi.Client, aws aws.Service, conf api.Configurator, store api.Store) *Proxy {
+func NewProxy(mm *pluginapi.Client, aws aws.Service, conf api.Configurator, store api.Store, s3AssetBucket string) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]api.Upstream{},
 		mm:               mm,
 		conf:             conf,
 		store:            store,
 		aws:              aws,
+		s3AssetBucket:    s3AssetBucket,
 	}
 }
 

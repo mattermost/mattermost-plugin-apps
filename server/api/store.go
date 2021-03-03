@@ -31,7 +31,7 @@ type ManifestStore interface {
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
 	InitBuiltin(...*apps.Manifest)
-	InitGlobal(awsclient.Client) error
+	InitGlobal(_ awsclient.Client, bucket string) error
 	StoreLocal(*apps.Manifest) error
 }
 type SubStore interface {

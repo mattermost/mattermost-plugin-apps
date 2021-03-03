@@ -7,29 +7,37 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
 type Service interface {
-	api.Configurable
-
+	Refresh() error
 	Client() awsclient.Client
 }
 
 type service struct {
+	awsAccessKeyID     string
+	awsSecretAccessKey string
+	logger             awsclient.Logger
+
 	mutex  sync.RWMutex
 	client awsclient.Client
-	logger awsclient.Logger
 }
 
-func NewService(logger awsclient.Logger) Service {
-	return &service{
-		logger: logger,
+func MakeService(awsAccessKeyID, awsSecretAccessKey string, logger awsclient.Logger) (Service, error) {
+	s := &service{
+		awsAccessKeyID:     awsAccessKeyID,
+		awsSecretAccessKey: awsSecretAccessKey,
+		logger:             logger,
 	}
+	err := s.Refresh()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
-func (s *service) Configure(conf api.Config) error {
-	client, err := awsclient.MakeClient(conf.AWSAccessKeyID, conf.AWSSecretAccessKey, s.logger)
+func (s *service) Refresh() error {
+	client, err := awsclient.MakeClient(s.awsAccessKeyID, s.awsSecretAccessKey, s.logger)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ package main
 
 import (
 	gohttp "net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
@@ -72,8 +74,15 @@ func (p *Plugin) OnActivate() error {
 	_ = p.conf.Reconfigure(&stored)
 	conf := p.conf.GetConfig()
 
-	p.aws = aws.NewService(&p.mm.Log)
-	err = p.aws.Configure(conf)
+	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
+	if accessKey == "" {
+		p.mm.Log.Warn("APPS_INVOKE_AWS_ACCESS_KEY is not set. AWS apps won't work.")
+	}
+	secretKey := os.Getenv("APPS_INVOKE_AWS_SECRET_KEY")
+	if secretKey == "" {
+		p.mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
+	}
+	p.aws, err = aws.MakeService(accessKey, secretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -89,7 +98,8 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
-	err = mstore.InitGlobal(p.aws.Client())
+	manifestBucket := awsclient.MakeS3BucketNameWithDefaults("")
+	err = mstore.InitGlobal(p.aws.Client(), manifestBucket)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
@@ -103,8 +113,10 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
 
-	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store)
+	assetBucket := awsclient.MakeS3BucketNameWithDefaults("")
+	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
+
 	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
 
 	mutex, err := cluster.NewMutex(p.API, api.KeyClusterMutex)
@@ -141,7 +153,6 @@ func (p *Plugin) OnConfigurationChange() error {
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
 	return p.conf.Reconfigure(&stored,
-		p.aws,
 		p.store.App(),
 		p.store.Manifest())
 }

@@ -19,7 +19,7 @@ func (adm *Admin) UpdateInstalledApps() error {
 	installed := adm.ListInstalledApps()
 	marketplace := adm.ListMarketplaceApps("")
 
-	changed := map[apps.AppID]*apps.App{}
+	diff := map[apps.AppID]*apps.App{}
 	for _, app := range installed {
 		mapp := marketplace[app.AppID]
 
@@ -28,11 +28,11 @@ func (adm *Admin) UpdateInstalledApps() error {
 			continue
 		}
 
-		changed[app.AppID] = app
+		diff[app.AppID] = app
 	}
 
 	// call onInstanceStartup. App migration happens here
-	for _, app := range changed {
+	for _, app := range diff {
 		mapp := marketplace[app.AppID]
 		values := map[string]string{
 			PrevVersion: string(app.Version),
@@ -58,6 +58,19 @@ func (adm *Admin) UpdateInstalledApps() error {
 
 	return nil
 }
+
+// func (adm *Admin) callOnStartupOnceWithValues(app *apps.App, values map[string]string) {
+// 	// Call onStartup the function of the app. It should be called only once
+// 	f := func() error {
+// 		if err := adm.expandedCall(app, app.Manifest.OnStartup, values); err != nil {
+// 			adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+// 		}
+// 		return nil
+// 	}
+// 	if err := adm.callOnce(f); err != nil {
+// 		adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+// 	}
+// }
 
 func (adm *Admin) callOnce(f func() error) error {
 	// Delete previous job
