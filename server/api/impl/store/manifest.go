@@ -65,7 +65,7 @@ func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error
 func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
 	global := map[apps.AppID]*apps.Manifest{}
 
-	manifestLocations := apps.AppVersionMap{}
+	manifestLocations := map[apps.AppID]string{}
 	err := json.NewDecoder(manifestsFile).Decode(&manifestLocations)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 
 	var data []byte
 	for appID, loc := range manifestLocations {
-		parts := strings.SplitN(string(loc), ":", 2)
+		parts := strings.SplitN(loc, ":", 2)
 		switch {
 		case len(parts) == 1:
 			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[0]))
@@ -82,7 +82,7 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
-			data, err = httputils.GetFromURL(string(loc))
+			data, err = httputils.GetFromURL(loc)
 		default:
 			return errors.Errorf("failed to load global manifest for %s: %s is invalid", string(appID), loc)
 		}

@@ -17,8 +17,6 @@ type AppID string
 // Allowed characters are letters, numbers, underscores and hyphens.
 type AppVersion string
 
-type AppVersionMap map[AppID]AppVersion
-
 type AppType string
 
 // default is HTTP
