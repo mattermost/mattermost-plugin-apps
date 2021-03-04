@@ -26,20 +26,6 @@ const (
 	AppTypeBuiltin   AppType = "builtin"
 )
 
-func (at AppType) IsValid() bool {
-	return at == AppTypeHTTP ||
-		at == AppTypeAWSLambda ||
-		at == AppTypeBuiltin
-}
-
-// AppStatus describes status of the app
-type AppStatus string
-
-const (
-	AppStatusRegistered AppStatus = "registered"
-	AppStatusInstalled  AppStatus = "installed"
-)
-
 // Function describes app's function mapping
 // For now Function can be either AWS Lambda or HTTP function
 type Function struct {
@@ -78,8 +64,12 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// Functions are declarations that must be included by the developer in the
-	// manifest published to the Mattermost Apps Marketplace. It serves
+	// Functions must be included by the developer in the published manifest for
+	// AWS apps. These declarations are used to:
+	// - create AWS Lambda functions that will service requests in Mattermost
+	// Cloud;
+	// - define path->function mappings, aka "routes". The function with the
+	// path matching as the longest prefix is used to handle a Call request.
 	Functions []Function
 }
 
@@ -193,4 +183,10 @@ func (v AppVersion) IsValid() error {
 	}
 
 	return nil
+}
+
+func (at AppType) IsValid() bool {
+	return at == AppTypeHTTP ||
+		at == AppTypeAWSLambda ||
+		at == AppTypeBuiltin
 }
