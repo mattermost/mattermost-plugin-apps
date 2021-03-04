@@ -93,11 +93,9 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 			},
 		},
 	})
-	// if err != nil {
-	// 	ptof(14)
-	// 	ptof(err.Error())
-	// 	return "", err
-	// }
+	if err != nil {
+		return "", err
+	}
 	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")
