@@ -78,7 +78,9 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	params.current = split[1:]
 
-	return s.handleMain(params)
+	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
+
+	return s.handleMain(params, developerMode)
 }
 
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {

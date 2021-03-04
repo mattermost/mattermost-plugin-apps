@@ -68,6 +68,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
+	mmconf := p.mm.Configuration.GetConfig()
 	p.conf = configurator.NewConfigurator(p.mm, p.BuildConfig, botUserID)
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
@@ -90,10 +91,12 @@ func (p *Plugin) OnActivate() error {
 	p.store = store.New(p.mm, p.conf)
 	// manifest store
 	mstore := p.store.Manifest()
-	mstore.InitBuiltin(
-		aws_hello.Manifest(),
-		builtin_hello.Manifest(),
-	)
+	if pluginapi.IsConfiguredForDevelopment(mmconf) {
+		mstore.InitBuiltin(
+			aws_hello.Manifest(),
+			builtin_hello.Manifest(),
+		)
+	}
 	err = mstore.Configure(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
@@ -105,9 +108,9 @@ func (p *Plugin) OnActivate() error {
 	}
 	// app store
 	appstore := p.store.App()
-	appstore.InitBuiltin(
-		builtin_hello.App(),
-	)
+	if pluginapi.IsConfiguredForDevelopment(mmconf) {
+		appstore.InitBuiltin(builtin_hello.App())
+	}
 	err = appstore.Configure(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
@@ -115,7 +118,9 @@ func (p *Plugin) OnActivate() error {
 
 	assetBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
-	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
+	if pluginapi.IsConfiguredForDevelopment(mmconf) {
+		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
+	}
 
 	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
 
