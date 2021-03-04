@@ -60,12 +60,11 @@ func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error
 	return s.initGlobal(awscli, bucket, f, assetPath)
 }
 
+// initGlobal reads in the list of known (i.e. marketplace listed) app
+// manifests.
 func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
 	global := map[apps.AppID]*apps.Manifest{}
 
-	// Read in the marketplace-listed manifests from S3, as per versions
-	// indicated in apps.json. apps.json file contains a map of AppID->manifest
-	// S3 filename (the bucket comes from the config)
 	manifestLocations := apps.AppVersionMap{}
 	err := json.NewDecoder(manifestsFile).Decode(&manifestLocations)
 	if err != nil {
