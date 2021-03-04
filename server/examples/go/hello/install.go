@@ -13,7 +13,7 @@ import (
 )
 
 func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {
-	if c.Type != apps.CallTypeSubmit && c.Type != "" {
+	if c.Type != apps.CallTypeSubmit {
 		return "", errors.New("not supported")
 	}
 

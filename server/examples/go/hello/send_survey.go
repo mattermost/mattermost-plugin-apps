@@ -102,7 +102,7 @@ func NewSendSurveyFormResponse(c *apps.Call) *apps.CallResponse {
 }
 
 func NewSendSurveyPartialFormResponse(c *apps.Call) *apps.CallResponse {
-	if c.Type == apps.CallTypeSubmit || c.Type == "" {
+	if c.Type == apps.CallTypeSubmit {
 		return NewSendSurveyFormResponse(c)
 	}
 

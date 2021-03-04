@@ -19,7 +19,7 @@ func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims 
 }
 
 func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
-	if c.Type != apps.CallTypeSubmit && c.Type != "" {
+	if c.Type != apps.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
@@ -39,7 +39,7 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 	case apps.CallTypeForm:
 		out = hello.NewSendSurveyFormResponse(c)
 
-	case apps.CallTypeSubmit, "":
+	case apps.CallTypeSubmit:
 		txt, err := h.HelloApp.SendSurvey(c)
 		if err != nil {
 			return http.StatusInternalServerError, err
@@ -83,7 +83,7 @@ func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Req
 	var out *apps.CallResponse
 
 	switch c.Type {
-	case apps.CallTypeSubmit, "":
+	case apps.CallTypeSubmit:
 		out = hello.NewSendSurveyFormResponse(c)
 	default:
 		out = hello.NewSendSurveyPartialFormResponse(c)
@@ -100,7 +100,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 	case apps.CallTypeForm:
 		out = hello.NewSurveyFormResponse(c)
 
-	case apps.CallTypeSubmit, "":
+	case apps.CallTypeSubmit:
 		err := h.ProcessSurvey(c)
 		if err != nil {
 			return http.StatusInternalServerError, err
