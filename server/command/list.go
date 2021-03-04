@@ -12,15 +12,15 @@ import (
 )
 
 func (s *service) executeList(params *params) (*model.CommandResponse, error) {
-	marketplaceApps := s.admin.ListMarketplaceApps("")
-	installedApps := s.admin.ListInstalledApps()
+	listed := s.admin.GetListedApps("")
+	installed := s.admin.GetInstalledApps()
 
 	txt := md.MD("| Name | Status | Version | Account | Locations | Permissions |\n")
 	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- |\n")
 
-	for _, app := range installedApps {
-		mapp := marketplaceApps[app.AppID]
-		if mapp == nil {
+	for _, app := range installed {
+		l := listed[app.AppID]
+		if l == nil {
 			continue
 		}
 
@@ -31,8 +31,8 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		status += fmt.Sprintf(", type: `%s`", app.Type)
 
 		version := string(app.Version)
-		if string(mapp.Manifest.Version) != version {
-			version += fmt.Sprintf(", %s in marketplace", mapp.Manifest.Version)
+		if string(l.Manifest.Version) != version {
+			version += fmt.Sprintf(", %s in marketplace", l.Manifest.Version)
 		}
 
 		account := ""
@@ -52,19 +52,19 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 			name, status, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
-	for _, mapp := range marketplaceApps {
-		_, ok := installedApps[mapp.Manifest.AppID]
+	for _, l := range listed {
+		_, ok := installed[l.Manifest.AppID]
 		if ok {
 			continue
 		}
 
-		version := string(mapp.Manifest.Version)
-		status := fmt.Sprintf("type: `%s`", mapp.Manifest.Type)
+		version := string(l.Manifest.Version)
+		status := fmt.Sprintf("type: `%s`", l.Manifest.Type)
 
 		name := fmt.Sprintf("[%s](%s) (`/%s`)",
-			mapp.Manifest.DisplayName, mapp.Manifest.HomepageURL, mapp.Manifest.AppID)
+			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
 		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|\n",
-			name, status, version, "", mapp.Manifest.RequestedLocations, mapp.Manifest.RequestedPermissions)
+			name, status, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 	}
 
 	return out(params, txt)

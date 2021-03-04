@@ -17,18 +17,18 @@ func (adm *Admin) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return adm.store.Manifest().Get(appID)
 }
 
-func (adm *Admin) ListInstalledApps() map[apps.AppID]*apps.App {
+func (adm *Admin) GetInstalledApps() map[apps.AppID]*apps.App {
 	return adm.store.App().AsMap()
 }
 
-func (adm *Admin) ListMarketplaceApps(filter string) map[apps.AppID]*apps.MarketplaceApp {
-	out := map[apps.AppID]*apps.MarketplaceApp{}
+func (adm *Admin) GetListedApps(filter string) map[apps.AppID]*apps.ListedApp {
+	out := map[apps.AppID]*apps.ListedApp{}
 
 	for appID, m := range adm.store.Manifest().AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
-		marketApp := &apps.MarketplaceApp{
+		marketApp := &apps.ListedApp{
 			Manifest: m,
 		}
 		app, _ := adm.store.App().Get(appID)

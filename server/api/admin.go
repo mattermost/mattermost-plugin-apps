@@ -8,10 +8,10 @@ import (
 type Admin interface {
 	AddLocalManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
 	GetApp(appID apps.AppID) (*apps.App, error)
+	GetInstalledApps() map[apps.AppID]*apps.App
+	GetListedApps(filter string) map[apps.AppID]*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
-	ListInstalledApps() map[apps.AppID]*apps.App
-	ListMarketplaceApps(filter string) map[apps.AppID]*apps.MarketplaceApp
-	UninstallApp(appID apps.AppID) error
 	SynchronizeInstalledApps() error
+	UninstallApp(appID apps.AppID) error
 }

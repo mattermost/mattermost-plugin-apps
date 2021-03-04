@@ -9,6 +9,6 @@ import (
 func (a *restapi) handleGetMarketplace(w http.ResponseWriter, req *http.Request, actingUserID string) {
 	filter := req.URL.Query().Get("filter")
 
-	result := a.admin.ListMarketplaceApps(filter)
+	result := a.admin.GetListedApps(filter)
 	httputils.WriteJSON(w, result)
 }

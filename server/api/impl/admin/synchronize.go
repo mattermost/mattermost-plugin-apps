@@ -17,12 +17,12 @@ const PrevVersion = "prev_version"
 // SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
 func (adm *Admin) SynchronizeInstalledApps() error {
-	installed := adm.ListInstalledApps()
-	marketplace := adm.ListMarketplaceApps("")
+	installed := adm.GetInstalledApps()
+	listed := adm.GetListedApps("")
 
 	diff := map[apps.AppID]*apps.App{}
 	for _, app := range installed {
-		mapp := marketplace[app.AppID]
+		mapp := listed[app.AppID]
 
 		// exclude unlisted apps, or those that need no action.
 		if mapp == nil || app.Version == mapp.Manifest.Version {
@@ -34,12 +34,12 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 
 	// call onInstanceStartup. App migration happens here
 	for _, app := range diff {
-		mapp := marketplace[app.AppID]
+		l := listed[app.AppID]
 		values := map[string]string{
 			PrevVersion: string(app.Version),
 		}
 
-		app.Manifest = *mapp.Manifest
+		app.Manifest = *l.Manifest
 		err := adm.store.App().Save(app)
 		if err != nil {
 			return err

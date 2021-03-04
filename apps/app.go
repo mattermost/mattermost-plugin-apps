@@ -169,7 +169,8 @@ type App struct {
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
 }
 
-type MarketplaceApp struct {
+// ListedApp is a Mattermost App listed in the Marketplace containing metadata.
+type ListedApp struct {
 	Manifest  *Manifest                `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
