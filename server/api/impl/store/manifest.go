@@ -22,6 +22,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
+// manifestStore combines global (aka marketplace) manifests, and locally
+// installed ones. The global list is loaded on startup. The local manifests are
+// stored in KV store, and the list of their keys is stored in the config, as a
+// map of AppID->sha1(manifest).
 type manifestStore struct {
 	*Store
 
@@ -271,7 +275,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	return s.conf.StoreConfig(&sc)
 }
 
-// GetManifest returns a manifest file for an app from the S3
+// getFromS3 returns a manifest file for an app from the S3
 func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := fmt.Sprintf("manifest_%s_%s", appID, version)
 	data, err := awscli.GetS3(bucket, name)

@@ -16,6 +16,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
+// appStore combines installed and builtin Apps.  The installed Apps are stored
+// in KV store, and the list of their keys is stored in the config, as a map of
+// AppID->sha1(App).
 type appStore struct {
 	*Store
 

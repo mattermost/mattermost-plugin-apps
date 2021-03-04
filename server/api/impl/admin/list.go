@@ -9,10 +9,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (adm *Admin) GetApp(appID apps.AppID) (*apps.App, error) {
-	return adm.store.App().Get(appID)
-}
-
 func (adm *Admin) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return adm.store.Manifest().Get(appID)
 }
