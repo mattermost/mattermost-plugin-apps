@@ -6,7 +6,6 @@ package upawslambda
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -87,7 +86,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 		return nil, errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
 	}
 
-	return ioutil.NopCloser(strings.NewReader(resp.Body)), nil
+	return io.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
 func callToInvocationPayload(call *apps.Call) ([]byte, error) {

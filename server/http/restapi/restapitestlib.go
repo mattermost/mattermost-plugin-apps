@@ -7,7 +7,6 @@ package restapi
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -83,7 +82,7 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	require.NotEmpty(t, bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
 
 	// Install the PP and enable it
-	pluginBytes, err := ioutil.ReadFile(bundle)
+	pluginBytes, err := os.ReadFile(bundle)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
 

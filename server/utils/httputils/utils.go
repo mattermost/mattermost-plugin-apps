@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -93,7 +92,7 @@ func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
 	if in == nil {
 		return []byte{}, nil
 	}
-	return ioutil.ReadAll(&io.LimitedReader{R: in, N: limit})
+	return io.ReadAll(&io.LimitedReader{R: in, N: limit})
 }
 
 func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {
@@ -117,5 +116,5 @@ func GetFromURL(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }

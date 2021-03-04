@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 
 	"github.com/pkg/errors"
 
@@ -35,7 +34,7 @@ func New(mm *pluginapi.Client) *helloapp {
 func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
-		Type:     apps.AppTypeBuiltin,
+		Type:        apps.AppTypeBuiltin,
 		Version:     "0.1.0",
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
@@ -92,7 +91,7 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.NopCloser(bytes.NewReader(bb)), nil
+	return io.NopCloser(bytes.NewReader(bb)), nil
 }
 
 func (h *helloapp) OneWay(call *apps.Call) error {

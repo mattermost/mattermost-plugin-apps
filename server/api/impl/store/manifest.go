@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -83,7 +82,7 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		case len(parts) == 2 && parts[0] == "s3":
 			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[1]))
 		case len(parts) == 2 && parts[0] == "file":
-			data, err = ioutil.ReadFile(filepath.Join(assetPath, parts[1]))
+			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httputils.GetFromURL(string(loc))
 		default:

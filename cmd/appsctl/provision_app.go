@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -67,7 +66,7 @@ func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
 			defer f.Close()
 
 			var data []byte
-			data, err = ioutil.ReadAll(f)
+			data, err = io.ReadAll(f)
 			if err != nil {
 				return errors.Wrap(err, "can't read manifest.json file")
 			}
@@ -170,7 +169,7 @@ func ProvisionAppFromFile(awscli awsclient.Client, path string, shouldUpdate boo
 		return errors.Wrapf(err, "can't read file from  path %s", path)
 	}
 
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return errors.Wrap(err, "can't read file")
 	}
