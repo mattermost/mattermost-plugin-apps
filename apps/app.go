@@ -102,12 +102,12 @@ type Manifest struct {
 	Description string `json:"description,omitempty"`
 	HomepageURL string `json:"homepage_url,omitempty"`
 
-	OnDisable   *Call `json:"on_disable,omitempty"`
-	OnEnable    *Call `json:"on_enable,omitempty"`
-	OnInstall   *Call `json:"on_install,omitempty"`
-	OnStartup   *Call `json:"on_startup,omitempty"`
-	OnUninstall *Call `json:"on_uninstall,omitempty"`
-	Bindings    *Call `json:"bindings,omitempty"`
+	OnDisable        *Call `json:"on_disable,omitempty"`
+	OnEnable         *Call `json:"on_enable,omitempty"`
+	OnInstall        *Call `json:"on_install,omitempty"`
+	OnVersionChanged *Call `json:"on_version_changed,omitempty"`
+	OnUninstall      *Call `json:"on_uninstall,omitempty"`
+	Bindings         *Call `json:"bindings,omitempty"`
 
 	// For HTTP Apps all paths are relative to the RootURL.
 	HTTPRootURL string `json:"root_url,omitempty"`

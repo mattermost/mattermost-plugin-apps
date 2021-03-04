@@ -135,7 +135,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	err = p.admin.UpdateInstalledApps()
+	err = p.admin.SynchronizeInstalledApps()
 	if err != nil {
 		p.mm.Log.Error("failed to update apps", "err", err.Error())
 	}

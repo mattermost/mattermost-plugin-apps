@@ -14,8 +14,9 @@ import (
 
 const PrevVersion = "prev_version"
 
-// LoadAppsList synchronizes apps with the apps.json file.
-func (adm *Admin) UpdateInstalledApps() error {
+// SynchronizeInstalledApps synchronizes installed apps with known manifests,
+// performing OnVersionChanged call on the App as needed.
+func (adm *Admin) SynchronizeInstalledApps() error {
 	installed := adm.ListInstalledApps()
 	marketplace := adm.ListMarketplaceApps("")
 
@@ -44,15 +45,14 @@ func (adm *Admin) UpdateInstalledApps() error {
 			return err
 		}
 
-		// Call onStartup the function of the app. It should be called only once
-		f := func() error {
-			if err := adm.expandedCall(app, app.OnStartup, values); err != nil {
-				adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.AppID, "err", err.Error())
+		// Call OnVersionChanged the function of the app. It should be called only once
+		if app.OnVersionChanged != nil {
+			err := adm.callOnce(func() error {
+				return adm.expandedCall(app, app.OnVersionChanged, values)
+			})
+			if err != nil {
+				adm.mm.Log.Error("failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
 			}
-			return nil
-		}
-		if err := adm.callOnce(f); err != nil {
-			adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", app.AppID, "err", err.Error())
 		}
 	}
 
@@ -60,15 +60,15 @@ func (adm *Admin) UpdateInstalledApps() error {
 }
 
 // func (adm *Admin) callOnStartupOnceWithValues(app *apps.App, values map[string]string) {
-// 	// Call onStartup the function of the app. It should be called only once
+// 	// Call OnVersionChanged the function of the app. It should be called only once
 // 	f := func() error {
-// 		if err := adm.expandedCall(app, app.Manifest.OnStartup, values); err != nil {
-// 			adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+// 		if err := adm.expandedCall(app, app.Manifest.OnVersionChanged, values); err != nil {
+// 			adm.mm.Log.Error("Can't call OnVersionChanged func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
 // 		}
 // 		return nil
 // 	}
 // 	if err := adm.callOnce(f); err != nil {
-// 		adm.mm.Log.Error("Can't callOnce the onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
+// 		adm.mm.Log.Error("Can't callOnce the OnVersionChanged func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
 // 	}
 // }
 

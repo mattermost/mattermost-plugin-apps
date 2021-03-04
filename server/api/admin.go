@@ -13,5 +13,5 @@ type Admin interface {
 	ListInstalledApps() map[apps.AppID]*apps.App
 	ListMarketplaceApps(filter string) map[apps.AppID]*apps.MarketplaceApp
 	UninstallApp(appID apps.AppID) error
-	UpdateInstalledApps() error
+	SynchronizeInstalledApps() error
 }
