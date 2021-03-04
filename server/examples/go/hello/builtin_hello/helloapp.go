@@ -95,7 +95,7 @@ func (h *helloapp) OneWay(call *apps.Call) error {
 }
 
 func (h *helloapp) Install(c *apps.Call) *apps.CallResponse {
-	if c.Type != apps.CallTypeSubmit {
+	if c.Type != apps.CallTypeSubmit && c.Type != "" {
 		return apps.NewErrorCallResponse(errors.New("not supported"))
 	}
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
@@ -113,7 +113,7 @@ func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
 	case apps.CallTypeForm:
 		return hello.NewSendSurveyFormResponse(c)
 
-	case apps.CallTypeSubmit:
+	case apps.CallTypeSubmit, "":
 		txt, err := h.HelloApp.SendSurvey(c)
 		if err != nil {
 			return apps.NewErrorCallResponse(err)
@@ -151,7 +151,7 @@ func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
 	case apps.CallTypeForm:
 		return hello.NewSurveyFormResponse(c)
 
-	case apps.CallTypeSubmit:
+	case apps.CallTypeSubmit, "":
 		err := h.ProcessSurvey(c)
 		if err != nil {
 			return apps.NewErrorCallResponse(err)

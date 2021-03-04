@@ -13,7 +13,7 @@ import (
 )
 
 func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {
-	if c.Type != apps.CallTypeSubmit {
+	if c.Type != apps.CallTypeSubmit && c.Type != "" {
 		return "", errors.New("not supported")
 	}
 
@@ -93,9 +93,11 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 			},
 		},
 	})
-	if err != nil {
-		return "", err
-	}
+	// if err != nil {
+	// 	ptof(14)
+	// 	ptof(err.Error())
+	// 	return "", err
+	// }
 	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")
