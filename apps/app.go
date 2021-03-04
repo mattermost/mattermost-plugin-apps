@@ -58,6 +58,9 @@ type Manifest struct {
 	Description string `json:"description,omitempty"`
 	HomepageURL string `json:"homepage_url,omitempty"`
 
+	// See DefaultInstallCall, DefaultBindingCall, etc. for the defaults. The
+	// App developer can override the defaults by providing explicit Path,
+	// Expand values.
 	OnDisable        *Call `json:"on_disable,omitempty"`
 	OnEnable         *Call `json:"on_enable,omitempty"`
 	OnInstall        *Call `json:"on_install,omitempty"`
@@ -78,24 +81,6 @@ type Manifest struct {
 	// Functions are declarations that must be included by the developer in the
 	// manifest published to the Mattermost Apps Marketplace. It serves
 	Functions []Function
-}
-
-// Conventions for Apps paths, and field names
-const (
-	DefaultInstallCallPath  = "/install"
-	DefaultBindingsCallPath = "/bindings"
-)
-
-var DefaultInstallCall = &Call{
-	Path: DefaultInstallCallPath,
-	Expand: &Expand{
-		App:              ExpandAll,
-		AdminAccessToken: ExpandAll,
-	},
-}
-
-var DefaultBindingsCall = &Call{
-	Path: DefaultBindingsCallPath,
 }
 
 // App describes an App installed on a Mattermost instance. App should be
@@ -131,6 +116,23 @@ type ListedApp struct {
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
+}
+
+const (
+	DefaultInstallCallPath  = "/install"
+	DefaultBindingsCallPath = "/bindings"
+)
+
+var DefaultInstallCall = &Call{
+	Path: DefaultInstallCallPath,
+	Expand: &Expand{
+		App:              ExpandAll,
+		AdminAccessToken: ExpandAll,
+	},
+}
+
+var DefaultBindingsCall = &Call{
+	Path: DefaultBindingsCallPath,
 }
 
 func (m *Manifest) IsValid() error {

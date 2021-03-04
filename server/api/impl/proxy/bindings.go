@@ -50,10 +50,7 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := app.Bindings
-		if bindingsCall == nil {
-			bindingsCall = apps.DefaultBindingsCall
-		}
+		bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
 		bindingsCall.Context = &appCC
 
 		bindings, err := upstream.GetBindings(up, bindingsCall)

@@ -70,10 +70,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		return nil, "", err
 	}
 
-	install := m.OnInstall
-	if install == nil {
-		install = apps.DefaultInstallCall
-	}
+	install := apps.DefaultInstallCall.WithOverrides(app.OnInstall)
 	install.Values = map[string]interface{}{
 		apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
