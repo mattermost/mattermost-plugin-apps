@@ -127,16 +127,18 @@ func (s *manifestStore) Configure(conf api.Config) error {
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
 		err := s.mm.KV.Get(api.PrefixLocalManifest+key, &m)
-		if err != nil {
+		switch {
+		case err != nil:
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load local manifest for %s: %s", id, err.Error()))
-		}
-		if m == nil {
+
+		case m == nil:
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load local manifest for %s: not found", id))
-		}
 
-		updatedLocal[apps.AppID(id)] = m
+		default:
+			updatedLocal[apps.AppID(id)] = m
+		}
 	}
 
 	s.mutex.Lock()

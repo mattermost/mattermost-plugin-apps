@@ -44,16 +44,18 @@ func (s *appStore) Configure(conf api.Config) error {
 	for id, key := range conf.InstalledApps {
 		var app *apps.App
 		err := s.mm.KV.Get(api.PrefixInstalledApp+key, &app)
-		if err != nil {
+		switch {
+		case err != nil:
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load app %s: %s", id, err.Error()))
-		}
-		if app == nil {
+
+		case app == nil:
 			s.mm.Log.Error(
 				fmt.Sprintf("failed to load app %s: key %s not found", id, api.PrefixInstalledApp+key))
-		}
 
-		newInstalled[apps.AppID(id)] = app
+		default:
+			newInstalled[apps.AppID(id)] = app
+		}
 	}
 
 	s.mutex.Lock()
