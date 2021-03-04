@@ -98,7 +98,7 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
-	manifestBucket := awsclient.MakeS3BucketNameWithDefaults("")
+	manifestBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	err = mstore.InitGlobal(p.aws.Client(), manifestBucket)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
@@ -113,7 +113,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
 
-	assetBucket := awsclient.MakeS3BucketNameWithDefaults("")
+	assetBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
 	p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 

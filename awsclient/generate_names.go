@@ -20,9 +20,9 @@ const AppIDLengthLimit = 32
 const VersionFormat = "v00.00.000"
 const StaticAssetsFolder = "static/"
 
-// MakeLambdaName generates function name for a specific app, name can be 64
+// GenerateLambdaName generates function name for a specific app, name can be 64
 // characters long.
-func MakeLambdaName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
+func GenerateLambdaName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
 	if len(appID) > AppIDLengthLimit {
 		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, AppIDLengthLimit)
 	}
@@ -49,19 +49,19 @@ func MakeLambdaName(appID apps.AppID, version apps.AppVersion, function string) 
 	return name, nil
 }
 
-// MakeManifestS3Name generates key for a specific manifest in S3,
+// GenerateManifestS3Name generates key for a specific manifest in S3,
 // key can be 1024 characters long.
-func MakeManifestS3Name(appID apps.AppID, version apps.AppVersion) string {
+func GenerateManifestS3Name(appID apps.AppID, version apps.AppVersion) string {
 	return fmt.Sprintf("manifests/%s_%s.json", appID, version)
 }
 
-// MakeAssetS3Name generates key for a specific asset in S3,
+// GenerateAssetS3Name generates key for a specific asset in S3,
 // key can be 1024 characters long.
-func MakeAssetS3Name(appID apps.AppID, version apps.AppVersion, name string) string {
+func GenerateAssetS3Name(appID apps.AppID, version apps.AppVersion, name string) string {
 	return fmt.Sprintf("%s%s_%s_app/%s", StaticAssetsFolder, appID, version, name)
 }
 
-func MakeS3BucketNameWithDefaults(name string) string {
+func GenerateS3BucketNameWithDefaults(name string) string {
 	if name != "" {
 		return name
 	}
