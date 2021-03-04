@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -25,8 +26,11 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		return nil, "", err
 	}
 
-	app, _ := adm.store.App().Get(cc.AppID)
-	if app == nil {
+	app, err := adm.store.App().Get(cc.AppID)
+	if err != nil {
+		if errors.Cause(err) != utils.ErrNotFound {
+			return nil, "", err
+		}
 		app = &apps.App{}
 	}
 
