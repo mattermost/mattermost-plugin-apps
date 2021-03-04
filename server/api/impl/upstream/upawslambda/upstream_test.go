@@ -14,17 +14,17 @@ import (
 func TestMatch(t *testing.T) {
 	routes := []apps.Function{
 		{
-			Path:       "/",
-			LambdaName: "main",
+			Path: "/",
+			Name: "main",
 		}, {
-			Path:       "/topic",
-			LambdaName: "topic",
+			Path: "/topic",
+			Name: "topic",
 		}, {
-			Path:       "/topic/subtopic/",
-			LambdaName: "subtopic",
+			Path: "/topic/subtopic/",
+			Name: "subtopic",
 		}, {
-			Path:       "/other",
-			LambdaName: "other",
+			Path: "/other",
+			Name: "other",
 		},
 	}
 
@@ -32,13 +32,19 @@ func TestMatch(t *testing.T) {
 		callPath string
 		expected string
 	}{
-		{"/different", "main"},
-		{"/topic/subtopic/and-then-some", "subtopic"},
-		{"/topic/other/and-then-some", "topic"},
-		{"/other/and-then-some", "other"},
+		{"/different", "testID_v00-00-000_main"},
+		{"/topic/subtopic/and-then-some", "testID_v00-00-000_subtopic"},
+		{"/topic/other/and-then-some", "testID_v00-00-000_topic"},
+		{"/other/and-then-some", "testID_v00-00-000_other"},
 	} {
 		t.Run(tc.callPath, func(t *testing.T) {
-			matched := match(tc.callPath, routes)
+			matched, _ := match(tc.callPath, &apps.App{
+				Manifest: apps.Manifest{
+					AppID:     "testID",
+					Version:   "v00.00.000",
+					Functions: routes,
+				},
+			})
 			assert.Equal(t, tc.expected, matched)
 		})
 	}

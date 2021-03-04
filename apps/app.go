@@ -47,9 +47,6 @@ type Function struct {
 	Name    string `json:"name"`
 	Handler string `json:"handler"`
 	Runtime string `json:"runtime"`
-
-	// filled out by appsctl
-	LambdaName string `json:"lambda_name,omitempty"`
 }
 
 type Manifest struct {

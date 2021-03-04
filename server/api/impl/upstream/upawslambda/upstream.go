@@ -17,6 +17,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
+// Upstream wraps an awsClient to make requests to the App. It should not be
+// reused between requests, nor cached.
 type Upstream struct {
 	app       *apps.App
 	awsClient awsclient.Client
@@ -46,7 +48,10 @@ func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
 }
 
 func (u *Upstream) OneWay(call *apps.Call) error {
-	name := match(call.Path, u.app.Functions)
+	name, err := match(call.Path, u.app)
+	if err != nil {
+		return errors.Wrapf(err, "failed to match %s to function", call.Path)
+	}
 	if name == "" {
 		return utils.ErrNotFound
 	}
@@ -61,14 +66,17 @@ func (u *Upstream) OneWay(call *apps.Call) error {
 }
 
 func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
-	name := match(call.Path, u.app.Functions)
+	name, err := match(call.Path, u.app)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to match %s to function", call.Path)
+	}
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
 
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
+		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
 	bb, err := u.awsClient.InvokeLambda(name, lambda.InvocationTypeRequestResponse, payload)
@@ -105,16 +113,19 @@ func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	return payload, nil
 }
 
-func match(callPath string, functions []apps.Function) string {
+func match(callPath string, app *apps.App) (string, error) {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range functions {
+	for _, f := range app.Functions {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				matchedPath = f.Path
-				matchedName = f.LambdaName
+				var err error
+				matchedName, err = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 	}
-	return matchedName
+	return matchedName, nil
 }
