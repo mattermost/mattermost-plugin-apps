@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"net/url"
 	"unicode"
 
 	"github.com/pkg/errors"
@@ -12,49 +13,9 @@ import (
 // Allowed characters are letters, numbers, underscores and hyphens.
 type AppID string
 
-func (id AppID) IsValid() error {
-	for _, c := range id {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' {
-			continue
-		}
-
-		return errors.Errorf("invalid character %v in appID", c)
-	}
-
-	return nil
-}
-
 // AppVersion is the version of a Mattermost App.
 // Allowed characters are letters, numbers, underscores and hyphens.
 type AppVersion string
-
-func (v AppVersion) IsValid() error {
-	for _, c := range v {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' {
-			continue
-		}
-
-		return errors.Errorf("invalid character %v in appVersion", c)
-	}
-
-	return nil
-}
 
 type AppVersionMap map[AppID]AppVersion
 
@@ -175,4 +136,64 @@ type ListedApp struct {
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
+}
+
+func (m *Manifest) IsValid() error {
+	if m.AppID == "" {
+		return errors.New("empty AppID")
+	}
+	if m.Type == "" {
+		return errors.New("app_type is empty, must be specified, e.g. `aws_lamda`")
+	}
+	if !m.Type.IsValid() {
+		return errors.Errorf("invalid type: %s", m.Type)
+	}
+
+	if m.Type == AppTypeHTTP {
+		_, err := url.Parse(m.HTTPRootURL)
+		if err != nil {
+			return errors.Wrapf(err, "invalid manifest URL %q", m.HTTPRootURL)
+		}
+	}
+	return nil
+}
+
+func (id AppID) IsValid() error {
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appID", c)
+	}
+
+	return nil
+}
+
+func (v AppVersion) IsValid() error {
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appVersion", c)
+	}
+
+	return nil
 }

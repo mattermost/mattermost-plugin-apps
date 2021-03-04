@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,7 +115,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = validateManifest(&m)
+	err = m.IsValid()
 	if err != nil {
 		return nil, err
 	}
@@ -279,24 +278,4 @@ func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID 
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)
 	}
 	return data, nil
-}
-
-func validateManifest(m *apps.Manifest) error {
-	if m.AppID == "" {
-		return errors.New("empty AppID")
-	}
-	if m.Type == "" {
-		return errors.New("app_type is empty, must be specified, e.g. `aws_lamda`")
-	}
-	if !m.Type.IsValid() {
-		return errors.Errorf("invalid type: %s", m.Type)
-	}
-
-	if m.Type == apps.AppTypeHTTP {
-		_, err := url.Parse(m.HTTPRootURL)
-		if err != nil {
-			return errors.Wrapf(err, "invalid manifest URL %q", m.HTTPRootURL)
-		}
-	}
-	return nil
 }
