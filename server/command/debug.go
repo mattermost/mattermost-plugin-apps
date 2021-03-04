@@ -44,14 +44,14 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 	m := apps.Manifest{}
 	err = json.Unmarshal(data, &m)
 	if err != nil {
-		return nil, err
+		return errorOut(params, err)
 	}
 
 	out, err := s.admin.AddLocalManifest(
 		&apps.Context{ActingUserID: params.commandArgs.UserId},
 		apps.SessionToken(params.commandArgs.Session.Token), &m)
 	if err != nil {
-		return nil, err
+		return errorOut(params, err)
 	}
 	return &model.CommandResponse{
 		Text:         string(out),
