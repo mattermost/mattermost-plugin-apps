@@ -7,6 +7,7 @@ package restapi
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
