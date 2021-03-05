@@ -30,7 +30,6 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitBuiltin(...*apps.Manifest)
 	InitGlobal(_ awsclient.Client, bucket string) error
 	StoreLocal(*apps.Manifest) error
 }

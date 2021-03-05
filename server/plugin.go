@@ -27,7 +27,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/js/aws_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
@@ -91,12 +90,6 @@ func (p *Plugin) OnActivate() error {
 	p.store = store.New(p.mm, p.conf)
 	// manifest store
 	mstore := p.store.Manifest()
-	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		mstore.InitBuiltin(
-			aws_hello.Manifest(),
-			builtin_hello.Manifest(),
-		)
-	}
 	err = mstore.Configure(conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")

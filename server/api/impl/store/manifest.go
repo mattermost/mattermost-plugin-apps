@@ -31,23 +31,11 @@ type manifestStore struct {
 
 	mutex sync.RWMutex
 
-	global  map[apps.AppID]*apps.Manifest
-	local   map[apps.AppID]*apps.Manifest
-	builtin map[apps.AppID]*apps.Manifest
+	global map[apps.AppID]*apps.Manifest
+	local  map[apps.AppID]*apps.Manifest
 }
 
 var _ api.ManifestStore = (*manifestStore)(nil)
-
-func (s *manifestStore) InitBuiltin(manifests ...*apps.Manifest) {
-	s.mutex.Lock()
-	if s.builtin == nil {
-		s.builtin = map[apps.AppID]*apps.Manifest{}
-	}
-	for _, m := range manifests {
-		s.builtin[m.AppID] = m
-	}
-	s.mutex.Unlock()
-}
 
 func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
@@ -88,16 +76,16 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httputils.GetFromURL(loc)
 		default:
-			return errors.Errorf("failed to load global manifest for %s: %s is invalid", string(appID), loc)
+			return errors.Errorf("failed to load global manifest for %s: %s is invalid", appID, loc)
 		}
 		if err != nil {
-			return errors.Wrapf(err, "failed to load global manifest for %s", string(appID))
+			return errors.Wrapf(err, "failed to load global manifest for %s", appID)
 		}
 
 		var m *apps.Manifest
 		m, err = DecodeManifest(data)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to decode Manifest for %s", appID)
 		}
 		if m.AppID != appID {
 			return errors.Errorf("mismatched app ids while getting manifest %s != %s", m.AppID, appID)
@@ -154,16 +142,11 @@ func (s *manifestStore) Configure(conf api.Config) error {
 
 func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	s.mutex.RLock()
-	builtin := s.builtin
 	local := s.local
 	global := s.global
 	s.mutex.RUnlock()
 
-	m, ok := builtin[appID]
-	if ok {
-		return m, nil
-	}
-	m, ok = local[appID]
+	m, ok := local[appID]
 	if ok {
 		return m, nil
 	}
@@ -176,7 +159,6 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 
 func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
 	s.mutex.RLock()
-	builtin := s.builtin
 	local := s.local
 	global := s.global
 	s.mutex.RUnlock()
@@ -186,9 +168,6 @@ func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
 		out[id] = m
 	}
 	for id, m := range local {
-		out[id] = m
-	}
-	for id, m := range builtin {
 		out[id] = m
 	}
 	return out
