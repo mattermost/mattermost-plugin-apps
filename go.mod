@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-plugin-apps
 
-go 1.16
+go 1.15
 
 require (
 	github.com/aws/aws-sdk-go v1.36.15
