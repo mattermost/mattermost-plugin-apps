@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 
 	"github.com/pkg/errors"
 
@@ -91,7 +92,7 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return io.NopCloser(bytes.NewReader(bb)), nil
+	return ioutil.NopCloser(bytes.NewReader(bb)), nil
 }
 
 func (h *helloapp) OneWay(call *apps.Call) error {

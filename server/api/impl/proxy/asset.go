@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -29,7 +30,7 @@ func (p *Proxy) GetAsset(appID apps.AppID, assetName string) (io.ReadCloser, int
 		if err != nil {
 			return nil, http.StatusBadRequest, errors.Wrapf(err, errorMessage)
 		}
-		return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
+		return ioutil.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 
 	case apps.AppTypeHTTP:
 		url := fmt.Sprintf("%s/static/%s", app.Manifest.HTTPRootURL, assetName)
