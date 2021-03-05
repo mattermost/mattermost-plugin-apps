@@ -14,6 +14,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
+const (
+	lambdaFunctionFileNameMaxSize = 64
+	appIDLengthLimit              = 32
+	versionFormat                 = "v00.00.000"
+	awsStaticAssetsPrefix         = "static"
+)
+
 // getFunctionName generates function name for a specific app
 // name can be 64 characters long.
 func getFunctionName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
@@ -52,5 +59,5 @@ func getManifestFileKey(appID apps.AppID, version apps.AppVersion) string {
 // GetAssetFileKey generates key for a specific asset in S3,
 // key can be 1024 characters long.
 func GetAssetFileKey(appID apps.AppID, version apps.AppVersion, name string) string {
-	return fmt.Sprintf("%s%s_%s_app/%s", staticAssetsFolder, appID, version, name)
+	return fmt.Sprintf("%s/%s_%s_app/%s", awsStaticAssetsPrefix, appID, version, name)
 }
