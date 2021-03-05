@@ -33,12 +33,19 @@ const (
 // TODO: what if a call needs a token and it was not provided? Return a call to
 // itself with Expand.
 type Call struct {
-	Path       string                 `json:"path,omitempty"`
-	Type       CallType               `json:"type"`
-	Values     map[string]interface{} `json:"values,omitempty"`
-	Context    *Context               `json:"context,omitempty"`
-	RawCommand string                 `json:"raw_command,omitempty"`
-	Expand     *Expand                `json:"expand,omitempty"`
+	Path   string      `json:"path,omitempty"`
+	Expand *Expand     `json:"expand,omitempty"`
+	State  interface{} `json:"state,omitempty"`
+}
+
+type CallRequest struct {
+	*Call
+	Type          CallType               `json:"type"`
+	Values        map[string]interface{} `json:"values,omitempty"`
+	Context       *Context               `json:"context,omitempty"`
+	RawCommand    string                 `json:"raw_command,omitempty"`
+	SelectedField string                 `json:"selected_field,omitempty"`
+	Query         string                 `json:"query,omitempty"`
 }
 
 type CallResponseType string
@@ -103,8 +110,8 @@ func (cr *CallResponse) Error() string {
 	return ""
 }
 
-func UnmarshalCallFromData(data []byte) (*Call, error) {
-	c := Call{}
+func UnmarshalCallRequestFromData(data []byte) (*CallRequest, error) {
+	c := CallRequest{}
 	err := json.Unmarshal(data, &c)
 	if err != nil {
 		return nil, err
@@ -112,8 +119,8 @@ func UnmarshalCallFromData(data []byte) (*Call, error) {
 	return &c, nil
 }
 
-func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
-	c := Call{}
+func UnmarshalCallRequestFromReader(in io.Reader) (*CallRequest, error) {
+	c := CallRequest{}
 	err := json.NewDecoder(in).Decode(&c)
 	if err != nil {
 		return nil, err
@@ -121,30 +128,14 @@ func UnmarshalCallFromReader(in io.Reader) (*Call, error) {
 	return &c, nil
 }
 
-func MakeCall(url string, namevalues ...string) *Call {
+func MakeCall(url string) *Call {
 	c := &Call{
 		Path: url,
-	}
-
-	values := map[string]interface{}{}
-	for len(namevalues) > 0 {
-		switch len(namevalues) {
-		case 1:
-			values[namevalues[0]] = ""
-			namevalues = namevalues[1:]
-
-		default:
-			values[namevalues[0]] = namevalues[1]
-			namevalues = namevalues[2:]
-		}
-	}
-	if len(values) > 0 {
-		c.Values = values
 	}
 	return c
 }
 
-func (c *Call) GetValue(name, defaultValue string) string {
+func (c *CallRequest) GetValue(name, defaultValue string) string {
 	if len(c.Values) == 0 {
 		return defaultValue
 	}

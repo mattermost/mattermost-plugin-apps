@@ -33,7 +33,7 @@ func NewProxy(mm *pluginapi.Client, awsClient *aws.Client, conf api.Configurator
 	return &Proxy{nil, mm, conf, store, awsClient}
 }
 
-func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.Call) *apps.CallResponse {
+func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.CallResponse {
 	app, err := p.store.App().Get(c.Context.AppID)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -67,21 +67,23 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if call == nil {
 			return errors.New("nothing to call")
 		}
+
+		callRequest := &apps.CallRequest{Call: call}
 		app, err := p.store.App().Get(sub.AppID)
 		if err != nil {
 			return err
 		}
-		call.Context, err = expander.ExpandForApp(app, call.Expand)
+		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
 		if err != nil {
 			return err
 		}
-		call.Context.Subject = subj
+		callRequest.Context.Subject = subj
 
 		up, err := p.upstreamForApp(app)
 		if err != nil {
 			return err
 		}
-		return upstream.Notify(up, call)
+		return upstream.Notify(up, callRequest)
 	}
 
 	for _, sub := range subs {

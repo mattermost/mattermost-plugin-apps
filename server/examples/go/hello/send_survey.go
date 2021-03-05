@@ -1,6 +1,7 @@
 package hello
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -17,41 +18,34 @@ type SurveyFormSubmission struct {
 	Other   map[string]interface{} `json:"other"`
 }
 
-func extractSurveyFormValues(c *apps.Call) SurveyFormSubmission {
-	message := ""
-	userID := ""
-	var other map[string]interface{} = nil
-	if c.Context != nil && c.Context.Post != nil {
-		message = c.Context.Post.Message
+func mapToSurveyFormSubmission(values map[string]interface{}) SurveyFormSubmission {
+	submission := SurveyFormSubmission{}
+	b, err := json.Marshal(values)
+	if err != nil {
+		return submission
 	}
 
-	topValues := c.Values
-	formValues := c.Values
-	if c.Type == apps.CallTypeForm && topValues != nil {
-		formValues, _ = topValues["values"].(map[string]interface{})
+	err = json.Unmarshal(b, &submission)
+	if err != nil {
+		return submission
 	}
 
-	if formValues != nil {
-		userID, _ = formValues["userID"].(string)
-		message, _ = formValues["message"].(string)
-		otherTemp, ok2 := formValues["other"].(map[string]interface{})
-		if ok2 {
-			other = otherTemp
-		} else {
-			other = nil
-		}
-	}
-
-	return SurveyFormSubmission{
-		UserID:  userID,
-		Message: message,
-		Other:   other,
-	}
+	return submission
 }
 
-func NewSendSurveyFormResponse(c *apps.Call) *apps.CallResponse {
+func extractSurveyFormValues(c *apps.CallRequest) SurveyFormSubmission {
+	submission := mapToSurveyFormSubmission(c.Values)
+
+	if submission.Message == "" && c.Context != nil && c.Context.Post != nil {
+		submission.Message = c.Context.Post.Message
+	}
+
+	return submission
+}
+
+func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	submission := extractSurveyFormValues(c)
-	name, _ := c.Values["name"].(string)
+	name := c.SelectedField
 
 	if name == "userID" {
 		submission.Message = fmt.Sprintf("%s Now sending to %s.", submission.Message, submission.UserID)
@@ -101,7 +95,7 @@ func NewSendSurveyFormResponse(c *apps.Call) *apps.CallResponse {
 	}
 }
 
-func NewSendSurveyPartialFormResponse(c *apps.Call) *apps.CallResponse {
+func NewSendSurveyPartialFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	if c.Type == apps.CallTypeSubmit {
 		return NewSendSurveyFormResponse(c)
 	}
@@ -132,7 +126,7 @@ func NewSendSurveyPartialFormResponse(c *apps.Call) *apps.CallResponse {
 	}
 }
 
-func (h *HelloApp) SendSurvey(c *apps.Call) (md.MD, error) {
+func (h *HelloApp) SendSurvey(c *apps.CallRequest) (md.MD, error) {
 	bot := mmclient.AsBot(c.Context)
 	userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
 
