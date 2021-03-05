@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -37,7 +38,7 @@ func (c *client) CreateLambda(zipFile io.Reader, function, handler, runtime, res
 		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", zipFile, function, handler, resource, runtime)
 	}
 
-	contents, err := io.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(zipFile)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
@@ -81,7 +82,7 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 		return c.CreateLambda(zipFile, function, handler, runtime, resource)
 	}
 
-	contents, err := io.ReadAll(zipFile)
+	contents, err := ioutil.ReadAll(zipFile)
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
