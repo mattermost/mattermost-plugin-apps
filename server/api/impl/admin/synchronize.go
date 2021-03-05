@@ -22,10 +22,10 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 
 	diff := map[apps.AppID]*apps.App{}
 	for _, app := range installed {
-		mapp := listed[app.AppID]
+		l := listed[app.AppID]
 
 		// exclude unlisted apps, or those that need no action.
-		if mapp == nil || app.Version == mapp.Manifest.Version {
+		if l == nil || app.Version == l.Manifest.Version {
 			continue
 		}
 
@@ -39,6 +39,7 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 			PrevVersion: string(app.Version),
 		}
 
+		// Store the new manifest to update the current mappings of the App
 		app.Manifest = *l.Manifest
 		err := adm.store.App().Save(app)
 		if err != nil {
