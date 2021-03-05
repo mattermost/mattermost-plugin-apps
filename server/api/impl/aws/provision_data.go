@@ -12,8 +12,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 const bundleStaticAssetsFolder = "static/"
@@ -52,9 +53,9 @@ func (c *Client) GetProvisionDataFromFile(path string) (*ProvisionData, error) {
 }
 
 func (c *Client) GetProvisionData(b []byte) (*ProvisionData, error) {
-	bundleReader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
-	if err != nil {
-		return nil, errors.Wrap(err, "can't get zip reader")
+	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if bundleErr != nil {
+		return nil, errors.Wrap(bundleErr, "can't get zip reader")
 	}
 	bundleFunctions := []FunctionData{}
 	var mani *apps.Manifest

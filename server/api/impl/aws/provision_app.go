@@ -55,7 +55,7 @@ func (c *Client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
 }
 
 func (c *Client) ProvisionApp(provisionData *ProvisionData, shouldUpdate bool) error {
-	//provision assets
+	// provision assets
 	for _, asset := range provisionData.StaticFiles {
 		if err := c.S3FileUpload(asset.Key, asset.File); err != nil {
 			return errors.Wrapf(err, "can't provision asset - %s of the app - %s", asset.Key, provisionData.Manifest.AppID)
