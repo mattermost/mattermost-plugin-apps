@@ -1,3 +1,4 @@
 {
-    "test-zendesk":"file:/app-test-zendesk.json"
+    "zendesk": "0.0.1",
+    "com.mattermost.servicenow": "0.1.0"
 }
