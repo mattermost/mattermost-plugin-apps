@@ -83,6 +83,8 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	bundle := os.Getenv("PLUGIN_BUNDLE")
 	require.NotEmpty(t, bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
 
+	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"), "MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
+
 	// Install the PP and enable it
 	pluginBytes, err := ioutil.ReadFile(bundle)
 	require.NoError(t, err)
