@@ -48,6 +48,7 @@ func Setup(t testing.TB) *TestHelper {
 	// enable bot creation by default
 	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
+		*cfg.ServiceSettings.SiteURL = "http://localhost:8065"
 	})
 
 	th.ServerTestHelper = serverTestHelper
