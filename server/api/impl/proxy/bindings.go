@@ -93,6 +93,11 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			b.AppID = app.Manifest.AppID
 		}
 
+		if locPrefix == apps.LocationCommand {
+			b.Location = apps.Location(b.AppID)
+			b.Label = string(b.AppID)
+		}
+
 		if len(b.Bindings) != 0 {
 			scanned := p.scanAppBindings(app, b.Bindings, fql)
 			if len(scanned) == 0 {

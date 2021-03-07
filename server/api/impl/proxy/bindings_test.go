@@ -3,12 +3,21 @@
 package proxy
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 )
 
 func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Binding {
@@ -178,42 +187,257 @@ func TestMergeBindings(t *testing.T) {
 	}
 }
 
-// []*api.Binding{
-// 	{
-// 		Location: api.LocationCommand,
-// 		Bindings: []*api.Binding{
-// 			{
-// 				Location:  "message",
-// 				Hint:        "[--user] message",
-// 				Description: "send a message to a user",
-// 				Call:        h.makeCall(PathMessage),
-// 			}, {
-// 				Location:  "manage",
-// 				Hint:        "subscribe | unsubscribe ",
-// 				Description: "manage channel subscriptions to greet new users",
-// 				Bindings: []*api.Binding{
-// 					{
-// 						Location:  "subscribe",
-// 						Hint:        "[--channel]",
-// 						Description: "subscribes a channel to greet new users",
-// 						Call:        h.makeCall(PathMessage, "mode", "on"),
-// 					}, {
-// 						Location:  "unsubscribe",
-// 						Hint:        "[--channel]",
-// 						Description: "unsubscribes a channel from greeting new users",
-// 						Call:        h.makeCall(PathMessage, "mode", "off"),
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}, {
-// 		Location: api.LocationPostMenu,
-// 		Bindings: []*api.Binding{
-// 			{
-// 				Location:  "message",
-// 				Description: "message a user",
-// 				Call:        h.makeCall(PathMessage),
-// 			},
-// 		},
-// 	},
-// })
+func TestGetBindingsGrantedLocations(t *testing.T) {
+	type TC struct {
+		name        string
+		locations   apps.Locations
+		numBindings int
+	}
+
+	for _, tc := range []TC{
+		{
+			name: "3 locations granted",
+			locations: apps.Locations{
+				apps.Location(apps.LocationChannelHeader),
+				apps.Location(apps.LocationPostMenu),
+				apps.Location(apps.LocationCommand),
+			},
+			numBindings: 3,
+		},
+		{
+			name: "command location granted",
+			locations: apps.Locations{
+				apps.Location(apps.LocationCommand),
+			},
+			numBindings: 1,
+		},
+		{
+			name: "channel header location granted",
+			locations: apps.Locations{
+				apps.Location(apps.LocationChannelHeader),
+			},
+			numBindings: 1,
+		},
+		{
+			name: "post dropdown location granted",
+			locations: apps.Locations{
+				apps.Location(apps.LocationPostMenu),
+			},
+			numBindings: 1,
+		},
+		{
+			name:        "no granted locations",
+			locations:   apps.Locations{},
+			numBindings: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bindings := []*apps.Binding{
+				{
+					Location: apps.LocationChannelHeader,
+					Bindings: []*apps.Binding{
+						{
+							Location: "send",
+						},
+					},
+				}, {
+					Location: apps.LocationPostMenu,
+					Bindings: []*apps.Binding{
+						{
+							Location: "send-me",
+						},
+					},
+				}, {
+					Location: apps.LocationCommand,
+					Bindings: []*apps.Binding{
+						{
+							Location: "message",
+						},
+					},
+				},
+			}
+
+			app1 := &apps.App{
+				Manifest: &apps.Manifest{
+					AppID:              apps.AppID("app1"),
+					Type:               apps.AppTypeBuiltin,
+					RequestedLocations: tc.locations,
+				},
+				GrantedLocations: tc.locations,
+			}
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			proxy := newTestProxyForBindings(app1, bindings, ctrl)
+
+			cc := &apps.Context{}
+			out, err := proxy.GetBindings(cc)
+			require.NoError(t, err)
+			require.Len(t, out, tc.numBindings)
+		})
+	}
+}
+
+func TestGetBindingsCommands(t *testing.T) {
+	initial := []*apps.Binding{
+		{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					Location:    "ignored",
+					Label:       "ignored",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							Location:    "message",
+							Label:       "message",
+							Icon:        "message command icon",
+							Hint:        "message command hint",
+							Description: "message command description",
+						}, {
+							Location:    "message-modal",
+							Label:       "message-modal",
+							Icon:        "message-modal command icon",
+							Hint:        "message-modal command hint",
+							Description: "message-modal command description",
+						}, {
+							Location:    "manage",
+							Label:       "manage",
+							Icon:        "manage command icon",
+							Hint:        "manage command hint",
+							Description: "manage command description",
+							Bindings: []*apps.Binding{
+								{
+									Location:    "subscribe",
+									Label:       "subscribe",
+									Icon:        "subscribe command icon",
+									Hint:        "subscribe command hint",
+									Description: "subscribe command description",
+								}, {
+									Location:    "unsubscribe",
+									Label:       "unsubscribe",
+									Icon:        "unsubscribe command icon",
+									Hint:        "unsubscribe command hint",
+									Description: "unsubscribe command description",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []*apps.Binding{
+		{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					AppID:       apps.AppID("app1"),
+					Location:    "app1",
+					Label:       "app1",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							AppID:       apps.AppID("app1"),
+							Location:    "message",
+							Label:       "message",
+							Icon:        "message command icon",
+							Hint:        "message command hint",
+							Description: "message command description",
+						}, {
+							AppID:       apps.AppID("app1"),
+							Location:    "message-modal",
+							Label:       "message-modal",
+							Icon:        "message-modal command icon",
+							Hint:        "message-modal command hint",
+							Description: "message-modal command description",
+						}, {
+							AppID:       apps.AppID("app1"),
+							Location:    "manage",
+							Label:       "manage",
+							Icon:        "manage command icon",
+							Hint:        "manage command hint",
+							Description: "manage command description",
+							Bindings: []*apps.Binding{
+								{
+									AppID:       apps.AppID("app1"),
+									Location:    "subscribe",
+									Label:       "subscribe",
+									Icon:        "subscribe command icon",
+									Hint:        "subscribe command hint",
+									Description: "subscribe command description",
+								}, {
+									AppID:       apps.AppID("app1"),
+									Location:    "unsubscribe",
+									Label:       "unsubscribe",
+									Icon:        "unsubscribe command icon",
+									Hint:        "unsubscribe command hint",
+									Description: "unsubscribe command description",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	app := &apps.App{
+		Manifest: &apps.Manifest{
+			AppID: apps.AppID("app1"),
+			Type:  apps.AppTypeBuiltin,
+		},
+		GrantedLocations: apps.Locations{
+			apps.Location(apps.LocationChannelHeader),
+			apps.Location(apps.LocationPostMenu),
+			apps.Location(apps.LocationCommand),
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := newTestProxyForBindings(app, initial, ctrl)
+
+	cc := &apps.Context{}
+	out, err := proxy.GetBindings(cc)
+	require.NoError(t, err)
+	require.Equal(t, expected, out)
+}
+
+func newTestProxyForBindings(app *apps.App, bindings []*apps.Binding, ctrl *gomock.Controller) *Proxy {
+	testAPI := &plugintest.API{}
+	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	mm := pluginapi.NewClient(testAPI)
+
+	s := mock_api.NewMockStore(ctrl)
+	appStore := mock_api.NewMockAppStore(ctrl)
+	s.EXPECT().App().Return(appStore)
+
+	appStore.EXPECT().GetAll().Return([]*apps.App{app})
+
+	cr := &apps.CallResponse{
+		Data: bindings,
+	}
+	bb, _ := json.Marshal(cr)
+	reader := ioutil.NopCloser(bytes.NewReader(bb))
+
+	up := mock_api.NewMockUpstream(ctrl)
+	up.EXPECT().Roundtrip(gomock.Any()).Return(reader, nil)
+
+	p := &Proxy{
+		mm:    mm,
+		store: s,
+		builtIn: map[apps.AppID]api.Upstream{
+			apps.AppID("app1"): up,
+		},
+	}
+
+	return p
+}
