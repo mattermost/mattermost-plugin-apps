@@ -247,9 +247,9 @@ ifneq ($(HAS_WEBAPP),)
 endif
 
 .PHONY: test-e2e
-test-e2e: dist
+test-e2e:
 	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) MM_SERVER_PATH=${MM_SERVER_PATH} $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e $(GO_PACKAGES)
+	MM_SERVER_PATH=${MM_SERVER_PATH} $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e $(GO_PACKAGES)
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
