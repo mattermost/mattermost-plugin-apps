@@ -77,7 +77,10 @@ func (p *Plugin) OnActivate() error {
 	awsClient := aws.NewAWSClient(accessKey, secretKey, &mm.Log)
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
-	_ = conf.RefreshConfig(&stored)
+	err = conf.RefreshConfig(&stored)
+	if err != nil {
+		return errors.Wrap(err, "failed to refresh config on startup")
+	}
 	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
