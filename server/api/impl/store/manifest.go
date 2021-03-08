@@ -77,19 +77,34 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httputils.GetFromURL(loc)
 		default:
-			return errors.Errorf("failed to load global manifest for %s: %s is invalid", appID, loc)
+			s.mm.Log.Error("failed to load global manifest",
+				"err", fmt.Sprintf("%s is invalid", loc),
+				"app_id", appID)
+			continue
 		}
 		if err != nil {
-			return errors.Wrapf(err, "failed to load global manifest for %s", appID)
+			s.mm.Log.Error("failed to load global manifest",
+				"err", err.Error(),
+				"app_id", appID,
+				"loc", loc)
+			continue
 		}
 
 		var m *apps.Manifest
 		m, err = DecodeManifest(data)
 		if err != nil {
-			return errors.Wrapf(err, "failed to decode Manifest for %s", appID)
+			s.mm.Log.Error("failed to load global manifest",
+				"err", err.Error(),
+				"app_id", appID,
+				"loc", loc)
+			continue
 		}
 		if m.AppID != appID {
-			return errors.Errorf("mismatched app ids while getting manifest %s != %s", m.AppID, appID)
+			s.mm.Log.Error("failed to load global manifest",
+				"err", fmt.Sprintf("mismatched app ids while getting manifest %s != %s", m.AppID, appID),
+				"app_id", appID,
+				"loc", loc)
+			continue
 		}
 		global[appID] = m
 	}
