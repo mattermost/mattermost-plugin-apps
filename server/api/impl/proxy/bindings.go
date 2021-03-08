@@ -72,9 +72,16 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 // the App, and sets the AppID on the relevant elements.
 func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
 	out := []*apps.Binding{}
+	locationsUsed := map[apps.Location]bool{}
+	labelsUsed := map[string]bool{}
+
 	for _, appB := range bindings {
 		// clone just in case
 		b := *appB
+		if b.Location == "" {
+			b.Location = apps.Location(app.Manifest.AppID)
+		}
+
 		fql := locPrefix.Make(b.Location)
 		allowed := false
 		for _, grantedLoc := range app.GrantedLocations {
@@ -89,13 +96,30 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			continue
 		}
 
-		if !fql.IsTop() {
-			b.AppID = app.Manifest.AppID
+		if locPrefix == apps.LocationCommand {
+			b.Location = apps.Location(app.Manifest.AppID)
+			b.Label = string(app.Manifest.AppID)
 		}
 
-		if locPrefix == apps.LocationCommand {
-			b.Location = apps.Location(b.AppID)
-			b.Label = string(b.AppID)
+		if fql.IsTop() {
+			if locationsUsed[appB.Location] {
+				// TODO Log to the app that there are two bindings on the top level with the same location
+				continue
+			}
+			locationsUsed[appB.Location] = true
+		} else {
+			if b.Location == "" || b.Label == "" {
+				// TODO Log to the app that a sub-binding is missing a location or label
+				continue
+			}
+			if locationsUsed[appB.Location] || labelsUsed[appB.Label] {
+				// TODO Log to the app that there are two sub-bindings on the same level with the same location or label
+				continue
+			}
+
+			locationsUsed[appB.Location] = true
+			labelsUsed[appB.Label] = true
+			b.AppID = app.Manifest.AppID
 		}
 
 		if len(b.Bindings) != 0 {

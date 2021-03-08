@@ -20,6 +20,11 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 )
 
+type bindingTestData struct {
+	app      *apps.App
+	bindings []*apps.Binding
+}
+
 func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Binding {
 	return []*apps.Binding{
 		{
@@ -238,6 +243,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 					Bindings: []*apps.Binding{
 						{
 							Location: "send",
+							Label:    "Send",
 						},
 					},
 				}, {
@@ -245,13 +251,15 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 					Bindings: []*apps.Binding{
 						{
 							Location: "send-me",
+							Label:    "Send me",
 						},
 					},
 				}, {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location: "message",
+							Location: "ignored",
+							Label:    "ignored",
 						},
 					},
 				},
@@ -269,7 +277,12 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			proxy := newTestProxyForBindings(app1, bindings, ctrl)
+			testData := []bindingTestData{{
+				app:      app1,
+				bindings: bindings,
+			}}
+
+			proxy := newTestProxyForBindings(testData, ctrl)
 
 			cc := &apps.Context{}
 			out, err := proxy.GetBindings(cc)
@@ -280,48 +293,99 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 }
 
 func TestGetBindingsCommands(t *testing.T) {
-	initial := []*apps.Binding{
+	testData := []bindingTestData{
 		{
-			Location: apps.LocationCommand,
-			Bindings: []*apps.Binding{
+			app: &apps.App{
+				Manifest: &apps.Manifest{
+					AppID: apps.AppID("app1"),
+					Type:  apps.AppTypeBuiltin,
+				},
+				GrantedLocations: apps.Locations{
+					apps.Location(apps.LocationChannelHeader),
+					apps.Location(apps.LocationPostMenu),
+					apps.Location(apps.LocationCommand),
+				},
+			},
+			bindings: []*apps.Binding{
 				{
-					Location:    "ignored",
-					Label:       "ignored",
-					Icon:        "base command icon",
-					Hint:        "base command hint",
-					Description: "base command description",
+					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "message",
-							Label:       "message",
-							Icon:        "message command icon",
-							Hint:        "message command hint",
-							Description: "message command description",
-						}, {
-							Location:    "message-modal",
-							Label:       "message-modal",
-							Icon:        "message-modal command icon",
-							Hint:        "message-modal command hint",
-							Description: "message-modal command description",
-						}, {
-							Location:    "manage",
-							Label:       "manage",
-							Icon:        "manage command icon",
-							Hint:        "manage command hint",
-							Description: "manage command description",
+							Location:    "ignored",
+							Label:       "ignored",
+							Icon:        "base command icon",
+							Hint:        "base command hint",
+							Description: "base command description",
 							Bindings: []*apps.Binding{
 								{
-									Location:    "subscribe",
-									Label:       "subscribe",
-									Icon:        "subscribe command icon",
-									Hint:        "subscribe command hint",
-									Description: "subscribe command description",
+									Location:    "message",
+									Label:       "message",
+									Icon:        "message command icon",
+									Hint:        "message command hint",
+									Description: "message command description",
 								}, {
-									Location:    "unsubscribe",
-									Label:       "unsubscribe",
-									Icon:        "unsubscribe command icon",
-									Hint:        "unsubscribe command hint",
-									Description: "unsubscribe command description",
+									Location:    "message-modal",
+									Label:       "message-modal",
+									Icon:        "message-modal command icon",
+									Hint:        "message-modal command hint",
+									Description: "message-modal command description",
+								}, {
+									Location:    "manage",
+									Label:       "manage",
+									Icon:        "manage command icon",
+									Hint:        "manage command hint",
+									Description: "manage command description",
+									Bindings: []*apps.Binding{
+										{
+											Location:    "subscribe",
+											Label:       "subscribe",
+											Icon:        "subscribe command icon",
+											Hint:        "subscribe command hint",
+											Description: "subscribe command description",
+										}, {
+											Location:    "unsubscribe",
+											Label:       "unsubscribe",
+											Icon:        "unsubscribe command icon",
+											Hint:        "unsubscribe command hint",
+											Description: "unsubscribe command description",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			app: &apps.App{
+				Manifest: &apps.Manifest{
+					AppID: apps.AppID("app2"),
+					Type:  apps.AppTypeBuiltin,
+				},
+				GrantedLocations: apps.Locations{
+					apps.Location(apps.LocationChannelHeader),
+					apps.Location(apps.LocationPostMenu),
+					apps.Location(apps.LocationCommand),
+				},
+			},
+			bindings: []*apps.Binding{
+				{
+					Location: apps.LocationCommand,
+					Bindings: []*apps.Binding{
+						{
+							Location:    "ignored",
+							Label:       "ignored",
+							Icon:        "app2 base command icon",
+							Hint:        "app2 base command hint",
+							Description: "app2 base command description",
+							Bindings: []*apps.Binding{
+								{
+									Location:    "connect",
+									Label:       "connect",
+									Icon:        "connect command icon",
+									Hint:        "connect command hint",
+									Description: "connect command description",
 								},
 							},
 						},
@@ -384,26 +448,32 @@ func TestGetBindingsCommands(t *testing.T) {
 						},
 					},
 				},
+				{
+					AppID:       apps.AppID("app2"),
+					Location:    "app2",
+					Label:       "app2",
+					Icon:        "app2 base command icon",
+					Hint:        "app2 base command hint",
+					Description: "app2 base command description",
+					Bindings: []*apps.Binding{
+						{
+							AppID:       apps.AppID("app2"),
+							Location:    "connect",
+							Label:       "connect",
+							Icon:        "connect command icon",
+							Hint:        "connect command hint",
+							Description: "connect command description",
+						},
+					},
+				},
 			},
-		},
-	}
-
-	app := &apps.App{
-		Manifest: &apps.Manifest{
-			AppID: apps.AppID("app1"),
-			Type:  apps.AppTypeBuiltin,
-		},
-		GrantedLocations: apps.Locations{
-			apps.Location(apps.LocationChannelHeader),
-			apps.Location(apps.LocationPostMenu),
-			apps.Location(apps.LocationCommand),
 		},
 	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	proxy := newTestProxyForBindings(app, initial, ctrl)
+	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings(cc)
@@ -411,7 +481,100 @@ func TestGetBindingsCommands(t *testing.T) {
 	require.Equal(t, expected, out)
 }
 
-func newTestProxyForBindings(app *apps.App, bindings []*apps.Binding, ctrl *gomock.Controller) *Proxy {
+func TestDuplicateCommand(t *testing.T) {
+	testData := []bindingTestData{
+		{
+			app: &apps.App{
+				Manifest: &apps.Manifest{
+					AppID: apps.AppID("app1"),
+					Type:  apps.AppTypeBuiltin,
+				},
+				GrantedLocations: apps.Locations{
+					apps.Location(apps.LocationCommand),
+				},
+			},
+			bindings: []*apps.Binding{
+				{
+					Location: apps.LocationCommand,
+					Bindings: []*apps.Binding{
+						{
+							Location:    "",
+							Label:       "",
+							Icon:        "base command icon",
+							Hint:        "base command hint",
+							Description: "base command description",
+							Bindings: []*apps.Binding{
+								{
+									Location: "sub1",
+									Label:    "sub1",
+									Icon:     "sub1 icon 1",
+								},
+								{
+									Location: "sub1",
+									Label:    "sub1",
+									Icon:     "sub1 icon 2",
+								},
+								{
+									Location: "",
+									Label:    "",
+									Icon:     "",
+								},
+							},
+						},
+					},
+				},
+				{
+					Location: apps.LocationCommand,
+					Bindings: []*apps.Binding{
+						{
+							Location:    "",
+							Label:       "",
+							Icon:        "base2 command icon",
+							Hint:        "base2 command hint",
+							Description: "base2 command description",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []*apps.Binding{
+		{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					AppID:       apps.AppID("app1"),
+					Location:    "app1",
+					Label:       "app1",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							AppID:    apps.AppID("app1"),
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "sub1 icon 1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := newTestProxyForBindings(testData, ctrl)
+
+	cc := &apps.Context{}
+	out, err := proxy.GetBindings(cc)
+	require.NoError(t, err)
+	require.Equal(t, expected, out)
+}
+
+func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
@@ -420,23 +583,29 @@ func newTestProxyForBindings(app *apps.App, bindings []*apps.Binding, ctrl *gomo
 	appStore := mock_api.NewMockAppStore(ctrl)
 	s.EXPECT().App().Return(appStore)
 
-	appStore.EXPECT().GetAll().Return([]*apps.App{app})
+	appList := []*apps.App{}
+	upstreams := map[apps.AppID]api.Upstream{}
 
-	cr := &apps.CallResponse{
-		Data: bindings,
+	for _, test := range testData {
+		appList = append(appList, test.app)
+
+		cr := &apps.CallResponse{
+			Data: test.bindings,
+		}
+		bb, _ := json.Marshal(cr)
+		reader := ioutil.NopCloser(bytes.NewReader(bb))
+
+		up := mock_api.NewMockUpstream(ctrl)
+		up.EXPECT().Roundtrip(gomock.Any()).Return(reader, nil)
+		upstreams[test.app.Manifest.AppID] = up
 	}
-	bb, _ := json.Marshal(cr)
-	reader := ioutil.NopCloser(bytes.NewReader(bb))
 
-	up := mock_api.NewMockUpstream(ctrl)
-	up.EXPECT().Roundtrip(gomock.Any()).Return(reader, nil)
+	appStore.EXPECT().GetAll().Return(appList)
 
 	p := &Proxy{
-		mm:    mm,
-		store: s,
-		builtIn: map[apps.AppID]api.Upstream{
-			apps.AppID("app1"): up,
-		},
+		mm:      mm,
+		store:   s,
+		builtIn: upstreams,
 	}
 
 	return p
