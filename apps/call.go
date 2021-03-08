@@ -39,7 +39,7 @@ type Call struct {
 }
 
 type CallRequest struct {
-	*Call
+	Call
 	Type          CallType               `json:"type"`
 	Values        map[string]interface{} `json:"values,omitempty"`
 	Context       *Context               `json:"context,omitempty"`

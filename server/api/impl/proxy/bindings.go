@@ -55,7 +55,7 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 			bindingsCall = apps.DefaultBindingsCall
 		}
 
-		bindingsRequest := &apps.CallRequest{Call: bindingsCall}
+		bindingsRequest := &apps.CallRequest{Call: *bindingsCall}
 		bindingsRequest.Context = &appCC
 
 		bindings, err := upstream.GetBindings(up, bindingsRequest)

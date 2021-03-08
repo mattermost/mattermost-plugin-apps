@@ -62,7 +62,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	}
 
 	installRequest := &apps.CallRequest{
-		Call: install,
+		Call: *install,
 	}
 	installRequest.Values = map[string]interface{}{
 		apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,

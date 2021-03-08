@@ -68,7 +68,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 			return errors.New("nothing to call")
 		}
 
-		callRequest := &apps.CallRequest{Call: call}
+		callRequest := &apps.CallRequest{Call: *call}
 		app, err := p.store.App().Get(sub.AppID)
 		if err != nil {
 			return err
