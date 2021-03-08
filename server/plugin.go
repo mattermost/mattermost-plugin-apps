@@ -71,7 +71,10 @@ func (p *Plugin) OnActivate() error {
 	p.conf = configurator.NewConfigurator(p.mm, p.BuildConfig, botUserID)
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
-	_ = p.conf.Reconfigure(&stored)
+	err = p.conf.Reconfigure(&stored)
+	if err != nil {
+		return errors.Wrap(err, "failed to reconfigure configurator on startup")
+	}
 	conf := p.conf.GetConfig()
 
 	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
