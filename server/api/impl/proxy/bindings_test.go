@@ -14,10 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 )
 
 type bindingTestData struct {
@@ -203,30 +204,30 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 		{
 			name: "3 locations granted",
 			locations: apps.Locations{
-				apps.Location(apps.LocationChannelHeader),
-				apps.Location(apps.LocationPostMenu),
-				apps.Location(apps.LocationCommand),
+				apps.LocationChannelHeader,
+				apps.LocationPostMenu,
+				apps.LocationCommand,
 			},
 			numBindings: 3,
 		},
 		{
 			name: "command location granted",
 			locations: apps.Locations{
-				apps.Location(apps.LocationCommand),
+				apps.LocationCommand,
 			},
 			numBindings: 1,
 		},
 		{
 			name: "channel header location granted",
 			locations: apps.Locations{
-				apps.Location(apps.LocationChannelHeader),
+				apps.LocationChannelHeader,
 			},
 			numBindings: 1,
 		},
 		{
 			name: "post dropdown location granted",
 			locations: apps.Locations{
-				apps.Location(apps.LocationPostMenu),
+				apps.LocationPostMenu,
 			},
 			numBindings: 1,
 		},
@@ -301,9 +302,9 @@ func TestGetBindingsCommands(t *testing.T) {
 					Type:  apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
-					apps.Location(apps.LocationChannelHeader),
-					apps.Location(apps.LocationPostMenu),
-					apps.Location(apps.LocationCommand),
+					apps.LocationChannelHeader,
+					apps.LocationPostMenu,
+					apps.LocationCommand,
 				},
 			},
 			bindings: []*apps.Binding{
@@ -364,9 +365,9 @@ func TestGetBindingsCommands(t *testing.T) {
 					Type:  apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
-					apps.Location(apps.LocationChannelHeader),
-					apps.Location(apps.LocationPostMenu),
-					apps.Location(apps.LocationCommand),
+					apps.LocationChannelHeader,
+					apps.LocationPostMenu,
+					apps.LocationCommand,
 				},
 			},
 			bindings: []*apps.Binding{
@@ -490,7 +491,7 @@ func TestDuplicateCommand(t *testing.T) {
 					Type:  apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
-					apps.Location(apps.LocationCommand),
+					apps.LocationCommand,
 				},
 			},
 			bindings: []*apps.Binding{
