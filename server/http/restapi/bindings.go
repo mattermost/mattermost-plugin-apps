@@ -16,6 +16,7 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		ActingUserID:      actingUserID,
 		UserID:            actingUserID,
 		PostID:            query.Get(api.PropPostID),
+		UserAgent:         query.Get(api.PropUserAgent),
 		MattermostSiteURL: a.api.Configurator.GetConfig().MattermostSiteURL,
 	})
 	if err != nil {

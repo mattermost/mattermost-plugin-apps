@@ -59,6 +59,9 @@ func (s AppStore) Save(app *apps.App) error {
 	*cApp = *app
 	// do not store manifest in the config
 	cApp.AppID = app.Manifest.AppID
+	if cApp.Manifest != nil {
+		s.stores.manifest.Save(cApp.Manifest)
+	}
 	cApp.Manifest = nil
 
 	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
@@ -75,7 +78,8 @@ func (s AppStore) Save(app *apps.App) error {
 
 func (s AppStore) Delete(app *apps.App) error {
 	conf := s.conf.GetConfig()
-	delete(conf.Apps, string(app.Manifest.AppID))
+	delete(conf.Apps, string(app.AppID))
+	s.stores.manifest.Delete(app.AppID)
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.

@@ -17,6 +17,7 @@ type Context struct {
 	RootPostID        string            `json:"root_post_id,omitempty"`
 	Props             map[string]string `json:"props,omitempty"`
 	MattermostSiteURL string            `json:"mattermost_site_url"`
+	UserAgent         string            `json:"user_agent,omitempty"`
 	ExpandedContext
 }
 
@@ -121,9 +122,10 @@ func NewChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *C
 
 func NewCommandContext(commandArgs *model.CommandArgs) *Context {
 	return &Context{
-		ActingUserID: commandArgs.UserId,
-		UserID:       commandArgs.UserId,
-		TeamID:       commandArgs.TeamId,
-		ChannelID:    commandArgs.ChannelId,
+		ActingUserID:      commandArgs.UserId,
+		UserID:            commandArgs.UserId,
+		TeamID:            commandArgs.TeamId,
+		ChannelID:         commandArgs.ChannelId,
+		MattermostSiteURL: commandArgs.SiteURL,
 	}
 }

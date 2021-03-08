@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
@@ -40,14 +42,16 @@ type Client struct {
 	service      *Service
 	config       *aws.Config
 	mux          *sync.Mutex
-	appsS3Bucket string
+	AppsS3Bucket string
 }
 
 // Service hold AWS clients for each service.
 type Service struct {
 	lambda       lambdaiface.LambdaAPI
 	iam          iamiface.IAMAPI
+	s3           s3iface.S3API
 	s3Downloader s3manageriface.DownloaderAPI
+	s3Uploader   s3manageriface.UploaderAPI
 }
 
 type log interface {
@@ -63,7 +67,7 @@ func NewAWSClientWithConfig(config *aws.Config, bucket string, logger log) *Clie
 		logger:       logger,
 		config:       config,
 		mux:          &sync.Mutex{},
-		appsS3Bucket: bucket,
+		AppsS3Bucket: bucket,
 	}
 }
 
@@ -77,12 +81,7 @@ func NewAWSClient(awsAccessKeyID, awsSecretAccessKey string, logger log) *Client
 }
 
 func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
-	var creds *credentials.Credentials
-	if awsSecretAccessKey == "" && awsAccessKeyID == "" {
-		creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
-	} else {
-		creds = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
-	}
+	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 
 	return &aws.Config{
 		Region:      aws.String(DefaultRegion),
@@ -93,9 +92,11 @@ func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
 // NewService creates a new instance of Service.
 func NewService(sess *session.Session) *Service {
 	return &Service{
-		lambda:       lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		lambda:       lambda.New(sess, aws.NewConfig()),
 		iam:          iam.New(sess),
+		s3:           s3.New(sess),
 		s3Downloader: s3manager.NewDownloader(sess),
+		s3Uploader:   s3manager.NewUploader(sess),
 	}
 }
 

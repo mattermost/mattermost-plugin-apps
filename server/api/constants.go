@@ -37,12 +37,15 @@ const (
 	KVPath          = "/kv"
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
+	StaticAssetPath = "/static"
+	BindingsPath    = "/bindings"
 
-	BindingsPath = "/bindings"
+	WebSocketEventRefreshBindings = "refresh_bindings"
 )
 
 const (
 	PropTeamID    = "team_id"
 	PropChannelID = "channel_id"
 	PropPostID    = "post_id"
+	PropUserAgent = "user_agent_type"
 )

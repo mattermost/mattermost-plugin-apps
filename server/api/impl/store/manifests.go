@@ -40,3 +40,7 @@ func (s ManifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 func (s ManifestStore) GetAll() map[apps.AppID]*apps.Manifest {
 	return s.manifests
 }
+
+func (s ManifestStore) Delete(appID apps.AppID) {
+	delete(s.manifests, appID)
+}
