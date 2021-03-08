@@ -35,7 +35,7 @@ func (m *MockUpstream) EXPECT() *MockUpstreamMockRecorder {
 }
 
 // OneWay mocks base method
-func (m *MockUpstream) OneWay(arg0 *apps.Call) error {
+func (m *MockUpstream) OneWay(arg0 *apps.CallRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OneWay", arg0)
 	ret0, _ := ret[0].(error)
@@ -49,7 +49,7 @@ func (mr *MockUpstreamMockRecorder) OneWay(arg0 interface{}) *gomock.Call {
 }
 
 // Roundtrip mocks base method
-func (m *MockUpstream) Roundtrip(arg0 *apps.Call) (io.ReadCloser, error) {
+func (m *MockUpstream) Roundtrip(arg0 *apps.CallRequest) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Roundtrip", arg0)
 	ret0, _ := ret[0].(io.ReadCloser)
