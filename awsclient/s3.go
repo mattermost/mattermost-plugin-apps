@@ -34,7 +34,7 @@ func (c *client) GetS3(bucket, item string) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// S3FileUpload uploads file to a specific S3 bucket
+// UploadS3 uploads file to a specific S3 bucket
 func (c *client) UploadS3(bucket, key string, body io.Reader) error {
 	if _, err := c.s3Uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
