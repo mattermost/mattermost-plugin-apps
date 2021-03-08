@@ -37,9 +37,10 @@ jobs:
       - checkout
       - run:
           name: Cloning mattermost-server
+          # Keep the commit in sync with go.mod
           command: |
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout v5.32.1
+            cd mattermost-server && git checkout 5a7759f4d63b
       - *restore_cache
       - run:
           name: Running e2e tests
