@@ -51,7 +51,9 @@ func Bindings() []*apps.Binding {
 			Location: apps.LocationCommand,
 			Bindings: []*apps.Binding{
 				{
-					Icon: "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+					Description: "The Hello app!",
+					Hint:        "[message|manage]",
 					Bindings: []*apps.Binding{
 						{
 							Label:       "message",
