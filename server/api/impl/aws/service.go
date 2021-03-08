@@ -18,17 +18,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/lambda/lambdaiface"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
-// DefaultRegion describes default region in aws
-const DefaultRegion = "us-east-2"
+const (
+	// DefaultRegion describes default region in aws
+	DefaultRegion = "us-east-2"
 
-// appsS3BucketEnvVarName determines an environment variable.
-// Variable saves address of apps S3 bucket name
-const appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
-const defaultBucketName = "MattermostAppsBucket"
+	// appsS3BucketEnvVarName determines an environment variable.
+	// Variable saves address of apps S3 bucket name
+	appsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
+
+	// defaultBucketName is the default s3 bucket name used to store app data.
+	defaultBucketName = "mattermost-apps-bucket"
+)
 
 // Client is a client for interacting with AWS resources.
 type Client struct {
@@ -36,14 +42,16 @@ type Client struct {
 	service      *Service
 	config       *aws.Config
 	mux          *sync.Mutex
-	appsS3Bucket string
+	AppsS3Bucket string
 }
 
 // Service hold AWS clients for each service.
 type Service struct {
 	lambda       lambdaiface.LambdaAPI
 	iam          iamiface.IAMAPI
+	s3           s3iface.S3API
 	s3Downloader s3manageriface.DownloaderAPI
+	s3Uploader   s3manageriface.UploaderAPI
 }
 
 type log interface {
@@ -59,7 +67,7 @@ func NewAWSClientWithConfig(config *aws.Config, bucket string, logger log) *Clie
 		logger:       logger,
 		config:       config,
 		mux:          &sync.Mutex{},
-		appsS3Bucket: bucket,
+		AppsS3Bucket: bucket,
 	}
 }
 
@@ -73,12 +81,7 @@ func NewAWSClient(awsAccessKeyID, awsSecretAccessKey string, logger log) *Client
 }
 
 func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
-	var creds *credentials.Credentials
-	if awsSecretAccessKey == "" && awsAccessKeyID == "" {
-		creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
-	} else {
-		creds = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
-	}
+	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 
 	return &aws.Config{
 		Region:      aws.String(DefaultRegion),
@@ -89,9 +92,11 @@ func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
 // NewService creates a new instance of Service.
 func NewService(sess *session.Session) *Service {
 	return &Service{
-		lambda:       lambda.New(sess, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		lambda:       lambda.New(sess, aws.NewConfig()),
 		iam:          iam.New(sess),
+		s3:           s3.New(sess),
 		s3Downloader: s3manager.NewDownloader(sess),
+		s3Uploader:   s3manager.NewUploader(sess),
 	}
 }
 

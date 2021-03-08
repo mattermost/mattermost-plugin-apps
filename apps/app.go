@@ -1,38 +1,75 @@
 package apps
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"unicode"
 
+	"github.com/pkg/errors"
+)
+
+// AppID is a globally unique identifier that represents a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
 type AppID string
-type AppType string
+
+func (id AppID) IsValid() error {
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appID", c)
+	}
+
+	return nil
+}
+
+// AppVersion is the version of a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
 type AppVersion string
+
+func (v AppVersion) IsValid() error {
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appVersion", c)
+	}
+
+	return nil
+}
+
 type AppVersionMap map[AppID]AppVersion
+
+type AppType string
 
 // default is HTTP
 const (
-	AppTypeHTTP      = "http"
-	AppTypeAWSLambda = "aws_lambda"
-	AppTypeBuiltin   = "builtin"
+	AppTypeHTTP      AppType = "http"
+	AppTypeAWSLambda AppType = "aws_lambda"
+	AppTypeBuiltin   AppType = "builtin"
 )
 
 func (at AppType) IsValid() bool {
 	return at == AppTypeHTTP ||
 		at == AppTypeAWSLambda ||
 		at == AppTypeBuiltin
-}
-
-// AssetType describes static assets of the Mattermost App.
-// Assets can be saved in S3 with appropriate permissions,
-// or they could be fetched as ordinary http resources.
-type AssetType string
-
-const (
-	s3Asset   AssetType = "s3_asset"
-	httpAsset AssetType = "http_asset"
-)
-
-func (at AssetType) IsValid() bool {
-	return at == s3Asset ||
-		at == httpAsset
 }
 
 // AppStatus describes status of the app
@@ -49,16 +86,6 @@ type Function struct {
 	Name    string `json:"name"`
 	Handler string `json:"handler"`
 	Runtime string `json:"runtime"`
-}
-
-// Asset describes app's static asset.
-// For now asset can be an S3 file or an http resource
-type Asset struct {
-	Name   string    `json:"name"`
-	Type   AssetType `json:"type"`
-	URL    string    `json:"url"`
-	Bucket string    `json:"bucket"`
-	Key    string    `json:"key"`
 }
 
 type Manifest struct {
@@ -94,7 +121,6 @@ type Manifest struct {
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
 	Functions []Function
-	Assets    []Asset
 }
 
 // Conventions for Apps paths, and field names
@@ -104,7 +130,7 @@ const (
 )
 
 var DefaultInstallCall = &Call{
-	URL: DefaultInstallCallPath,
+	Path: DefaultInstallCallPath,
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
@@ -112,7 +138,7 @@ var DefaultInstallCall = &Call{
 }
 
 var DefaultBindingsCall = &Call{
-	URL: DefaultBindingsCallPath,
+	Path: DefaultBindingsCallPath,
 }
 
 type App struct {

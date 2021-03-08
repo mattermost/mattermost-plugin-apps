@@ -9,6 +9,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -53,17 +55,27 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	if pluginContext == nil || commandArgs == nil {
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
+
+	enableOAuthServiceProvider := s.api.Mattermost.Configuration.GetConfig().ServiceSettings.EnableOAuthServiceProvider
+	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
+		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` need to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
+	}
+
 	split := strings.Fields(commandArgs.Command)
 	if len(split) < 2 {
 		return errorOut(params, errors.New("no subcommand specified, nothing to do"))
 	}
+
 	command := split[0]
 	if command != "/"+api.CommandTrigger {
 		return errorOut(params, errors.Errorf("%q is not a supported command and should not have been invoked. Please contact your system administrator", command))
 	}
+
 	params.current = split[1:]
 
-	return s.handleMain(params)
+	developerMode := pluginapi.IsConfiguredForDevelopment(s.api.Mattermost.Configuration.GetConfig())
+
+	return s.handleMain(params, developerMode)
 }
 
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {

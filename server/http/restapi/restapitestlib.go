@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+// +build e2e
 
 package restapi
 
@@ -10,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v5/api4"
@@ -48,6 +48,7 @@ func Setup(t testing.TB) *TestHelper {
 	// enable bot creation by default
 	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
+		*cfg.ServiceSettings.SiteURL = "http://localhost:8065"
 	})
 
 	th.ServerTestHelper = serverTestHelper
@@ -79,11 +80,13 @@ func SetupPP(th *TestHelper, t testing.TB) {
 		return
 	}
 
-	basePath := os.Getenv("MM_SERVER_PATH")
-	testPluginPath := filepath.Join(basePath, model.PLUGIN_SETTINGS_DEFAULT_DIRECTORY, pluginID+".tar.gz")
+	bundle := os.Getenv("PLUGIN_BUNDLE")
+	require.NotEmpty(t, bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
+
+	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"), "MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
 	// Install the PP and enable it
-	pluginBytes, err := ioutil.ReadFile(testPluginPath)
+	pluginBytes, err := ioutil.ReadFile(bundle)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
 

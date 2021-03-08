@@ -72,6 +72,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
 
+	adm.mm.Frontend.PublishWebSocketEvent(api.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
 	return app, resp.Markdown, nil
 }
 
