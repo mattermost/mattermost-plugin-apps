@@ -3,13 +3,14 @@ package proxy
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 )
 
-func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
-	out := append([]*api.Binding(nil), bb1...)
+func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
+	out := append([]*apps.Binding(nil), bb1...)
 
 	for _, b2 := range bb2 {
 		found := false
@@ -32,14 +33,15 @@ func mergeBindings(bb1, bb2 []*api.Binding) []*api.Binding {
 	return out
 }
 
-func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
-	allApps := p.store.ListApps()
+func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
+	allApps := p.store.App().GetAll()
 
-	all := []*api.Binding{}
+	all := []*apps.Binding{}
 	for _, app := range allApps {
 		appID := app.Manifest.AppID
 		appCC := *cc
 		appCC.AppID = appID
+		appCC.BotAccessToken = app.BotAccessToken
 
 		up, err := p.upstreamForApp(app)
 		if err != nil {
@@ -50,9 +52,9 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 		// TODO PERF: Fan out the calls, wait for all to complete
 		bindingsCall := app.Manifest.Bindings
 		if bindingsCall == nil {
-			bindingsCall = api.DefaultBindingsCall
+			bindingsCall = apps.DefaultBindingsCall
 		}
-		bindingsCall.Context = cc
+		bindingsCall.Context = &appCC
 
 		bindings, err := upstream.GetBindings(up, bindingsCall)
 		if err != nil {
@@ -66,8 +68,8 @@ func (p *Proxy) GetBindings(cc *api.Context) ([]*api.Binding, error) {
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *api.App, bindings []*api.Binding, locPrefix api.Location) []*api.Binding {
-	out := []*api.Binding{}
+func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
+	out := []*apps.Binding{}
 	for _, appB := range bindings {
 		// clone just in case
 		b := *appB

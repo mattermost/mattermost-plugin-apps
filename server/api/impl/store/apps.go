@@ -4,24 +4,37 @@
 package store
 
 import (
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (s *Store) ListApps() []*api.App {
+type AppStore struct {
+	*Store
+}
+
+var _ api.AppStore = (*AppStore)(nil)
+
+func newAppStore(st *Store) api.AppStore {
+	s := &AppStore{st}
+	return s
+}
+
+func (s AppStore) GetAll() []*apps.App {
 	conf := s.conf.GetConfig()
-	out := []*api.App{}
+	out := []*apps.App{}
 	if len(conf.Apps) == 0 {
 		return out
 	}
 	for _, v := range conf.Apps {
-		app := api.AppFromConfigMap(v)
+		app := apps.AppFromConfigMap(v)
+		app = s.populateAppWithManifest(app)
 		out = append(out, app)
 	}
 	return out
 }
 
-func (s *Store) LoadApp(appID api.AppID) (*api.App, error) {
+func (s AppStore) Get(appID apps.AppID) (*apps.App, error) {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		return nil, utils.ErrNotFound
@@ -30,16 +43,28 @@ func (s *Store) LoadApp(appID api.AppID) (*api.App, error) {
 	if v == nil {
 		return nil, utils.ErrNotFound
 	}
-	return api.AppFromConfigMap(v), nil
+	app := apps.AppFromConfigMap(v)
+	app = s.populateAppWithManifest(app)
+	return app, nil
 }
 
-func (s *Store) StoreApp(app *api.App) error {
+func (s AppStore) Save(app *apps.App) error {
 	conf := s.conf.GetConfig()
 	if len(conf.Apps) == 0 {
 		conf.Apps = map[string]interface{}{}
 	}
 
-	conf.Apps[string(app.Manifest.AppID)] = app.ConfigMap()
+	// Copy app before modifying it
+	cApp := &apps.App{}
+	*cApp = *app
+	// do not store manifest in the config
+	cApp.AppID = app.Manifest.AppID
+	if cApp.Manifest != nil {
+		s.stores.manifest.Save(cApp.Manifest)
+	}
+	cApp.Manifest = nil
+
+	conf.Apps[string(cApp.AppID)] = cApp.ConfigMap()
 
 	// Refresh the local config immediately, do not wait for the
 	// OnConfigurationChange.
@@ -49,4 +74,27 @@ func (s *Store) StoreApp(app *api.App) error {
 	}
 
 	return s.conf.StoreConfig(conf.StoredConfig)
+}
+
+func (s AppStore) Delete(app *apps.App) error {
+	conf := s.conf.GetConfig()
+	delete(conf.Apps, string(app.AppID))
+	s.stores.manifest.Delete(app.AppID)
+
+	// Refresh the local config immediately, do not wait for the
+	// OnConfigurationChange.
+	err := s.conf.RefreshConfig(conf.StoredConfig)
+	if err != nil {
+		return err
+	}
+	return s.conf.StoreConfig(conf.StoredConfig)
+}
+
+func (s AppStore) populateAppWithManifest(app *apps.App) *apps.App {
+	manifest, err := s.stores.manifest.Get(app.AppID)
+	if err != nil {
+		s.mm.Log.Error("This should not have happened. No manifest available for", "app_id", app.AppID)
+	}
+	app.Manifest = manifest
+	return app
 }

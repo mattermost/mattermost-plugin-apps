@@ -3,6 +3,50 @@ version: 2.1
 orbs:
   plugin-ci: mattermost/plugin-ci@volatile
 
+aliases:
+- &restore_cache
+  restore_cache:
+    key: go-mod-v1-{{ checksum "go.sum" }}
+- &save_cache
+  save_cache:
+    key: go-mod-v1-{{ checksum "go.sum" }}
+    paths:
+    - "/go/pkg/mod"
+
+jobs:
+  test-e2e-postgres11:
+    docker:
+      - image: circleci/golang:1.16.0
+      - image: circleci/postgres:11-alpine
+        environment:
+          POSTGRES_USER: mmuser
+          POSTGRES_DB: mattermost_test
+    executor:
+      name: plugin-ci/default
+    steps:
+      - run:
+          name: Waiting for Postgres to be ready
+          command: |
+            for i in `seq 1 20`;
+            do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for Postgres && exit 1
+      - checkout
+      - run:
+          name: Cloning mattermost-server
+          # Keep the commit in sync with go.mod
+          command: |
+            git clone -n https://github.com/mattermost/mattermost-server.git
+            cd mattermost-server && git checkout 5a7759f4d63b
+      - *restore_cache
+      - run:
+          name: Running e2e tests
+          command: MM_SERVER_PATH=$(pwd)/mattermost-server make test-e2e
+      - *save_cache
+
 workflows:
   version: 2
   nightly:
@@ -16,6 +60,7 @@ workflows:
     jobs:
       - plugin-ci/lint
       - plugin-ci/test
+      - test-e2e-postgres11
       - plugin-ci/build
   ci:
     jobs:
@@ -24,6 +69,10 @@ workflows:
             tags:
               only: /^v.*/
       - plugin-ci/coverage:
+          filters:
+            tags:
+              only: /^v.*/
+      - test-e2e-postgres11:
           filters:
             tags:
               only: /^v.*/
@@ -39,6 +88,7 @@ workflows:
           requires:
             - plugin-ci/lint
             - plugin-ci/coverage
+            - test-e2e-postgres11
             - plugin-ci/build
       - plugin-ci/deploy-release-github:
           filters:
@@ -50,4 +100,5 @@ workflows:
           requires:
             - plugin-ci/lint
             - plugin-ci/coverage
+            - test-e2e-postgres11
             - plugin-ci/build

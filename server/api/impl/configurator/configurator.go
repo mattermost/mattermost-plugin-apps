@@ -80,15 +80,6 @@ func (c *config) RefreshConfig(stored *api.StoredConfig) error {
 
 	newConfig := c.GetConfig()
 
-	prevStored := newConfig.StoredConfig
-
-	if prevStored != nil {
-		if prevStored.AWSSecretAccessKey != stored.AWSSecretAccessKey ||
-			prevStored.AWSAccessKeyID != stored.AWSAccessKeyID {
-			c.awsClient.RefreshService(stored.AWSAccessKeyID, stored.AWSSecretAccessKey)
-		}
-	}
-
 	newConfig.StoredConfig = stored
 	newConfig.MattermostSiteURL = *mattermostSiteURL
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()

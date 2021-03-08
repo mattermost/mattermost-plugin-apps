@@ -1,15 +1,69 @@
-package api
+package apps
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"unicode"
 
+	"github.com/pkg/errors"
+)
+
+// AppID is a globally unique identifier that represents a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
 type AppID string
+
+func (id AppID) IsValid() error {
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appID", c)
+	}
+
+	return nil
+}
+
+// AppVersion is the version of a Mattermost App.
+// Allowed characters are letters, numbers, underscores and hyphens.
+type AppVersion string
+
+func (v AppVersion) IsValid() error {
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' {
+			continue
+		}
+
+		return errors.Errorf("invalid character %v in appVersion", c)
+	}
+
+	return nil
+}
+
+type AppVersionMap map[AppID]AppVersion
+
 type AppType string
 
 // default is HTTP
 const (
-	AppTypeHTTP      = "http"
-	AppTypeAWSLambda = "aws_lambda"
-	AppTypeBuiltin   = "builtin"
+	AppTypeHTTP      AppType = "http"
+	AppTypeAWSLambda AppType = "aws_lambda"
+	AppTypeBuiltin   AppType = "builtin"
 )
 
 func (at AppType) IsValid() bool {
@@ -18,11 +72,28 @@ func (at AppType) IsValid() bool {
 		at == AppTypeBuiltin
 }
 
+// AppStatus describes status of the app
+type AppStatus string
+
+const (
+	AppStatusRegistered AppStatus = "registered"
+	AppStatusInstalled  AppStatus = "installed"
+)
+
+// Function describes app's function mapping
+// For now Function can be either AWS Lambda or HTTP function
+type Function struct {
+	Name    string `json:"name"`
+	Handler string `json:"handler"`
+	Runtime string `json:"runtime"`
+}
+
 type Manifest struct {
-	AppID       AppID   `json:"app_id"`
-	Type        AppType `json:"app_type"`
-	DisplayName string  `json:"display_name,omitempty"`
-	Description string  `json:"description,omitempty"`
+	AppID       AppID      `json:"app_id"`
+	Type        AppType    `json:"app_type"`
+	Version     AppVersion `json:"version"`
+	DisplayName string     `json:"display_name,omitempty"`
+	Description string     `json:"description,omitempty"`
 
 	HomepageURL string `json:"homepage_url,omitempty"`
 
@@ -41,12 +112,15 @@ type Manifest struct {
 
 	// By default invoke "/install", expanding App, AdminAccessToken, and
 	// Config.
-	Install *Call `json:"install,omitempty"`
+	OnInstall   *Call `json:"on_install,omitempty"`
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+	OnStartup   *Call `json:"on_startup,omitempty"`
 
 	// By default invoke "/bindings".
 	Bindings *Call `json:"bindings,omitempty"`
 
 	// Deployment manifest for hostable apps will include path->invoke mappings
+	Functions []Function
 }
 
 // Conventions for Apps paths, and field names
@@ -56,7 +130,7 @@ const (
 )
 
 var DefaultInstallCall = &Call{
-	URL: DefaultInstallCallPath,
+	Path: DefaultInstallCallPath,
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
@@ -64,11 +138,13 @@ var DefaultInstallCall = &Call{
 }
 
 var DefaultBindingsCall = &Call{
-	URL: DefaultBindingsCallPath,
+	Path: DefaultBindingsCallPath,
 }
 
 type App struct {
+	AppID    AppID     `json:"app_id"`
 	Manifest *Manifest `json:"manifest"`
+	Status   AppStatus `json:"app_status"`
 
 	// Secret is used to issue JWT
 	Secret string `json:"secret,omitempty"`

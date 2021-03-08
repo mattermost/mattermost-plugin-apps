@@ -1,4 +1,4 @@
-package api
+package apps
 
 type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.
@@ -16,6 +16,7 @@ type Binding struct {
 	// - For LocationPostMenu is the menu item text.
 	// - For LocationChannelHeader is the dropdown text.
 	// - For LocationCommand is the name of the command
+	// - For InPost is the title
 	Label string `json:"label,omitempty"`
 
 	// Hint is the secondary text to display
@@ -25,6 +26,7 @@ type Binding struct {
 	Hint string `json:"hint,omitempty"`
 
 	// Description is the (optional) extended help text, used in modals and autocomplete
+	// - For InPost is the text of the embed
 	Description string `json:"description,omitempty"`
 
 	RoleID           string `json:"role_id,omitempty"`

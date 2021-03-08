@@ -2,9 +2,12 @@ package appservices
 
 import (
 	"crypto/md5" // nolint:gosec
+	"unicode/utf8"
 
 	"encoding/hex"
 	"strings"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
@@ -40,11 +43,17 @@ func kvKey(namespace, prefix, id string) string {
 
 	namespaceHash := md5.Sum([]byte(namespace)) // nolint:gosec
 	idHash := md5.Sum([]byte(id))               // nolint:gosec
-	return strings.Join([]string{
+	key := strings.Join([]string{
 		hex.EncodeToString(namespaceHash[:]),
 		prefix,
 		hex.EncodeToString(idHash[:]),
 	}, "/")
+
+	if utf8.RuneCountInString(key) > model.KEY_VALUE_KEY_MAX_RUNES {
+		return key[:model.KEY_VALUE_KEY_MAX_RUNES]
+	}
+
+	return key
 }
 
 // TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API

@@ -5,19 +5,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *HelloApp) Install(appID api.AppID, channelDisplayName string, c *api.Call) (md.MD, error) {
-	if c.Type != api.CallTypeSubmit {
+func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {
+	if c.Type != apps.CallTypeSubmit {
 		return "", errors.New("not supported")
 	}
 
-	bot := examples.AsBot(c.Context)
-	adminClient := examples.AsAdmin(c.Context)
+	bot := mmclient.AsBot(c.Context)
+	adminClient := mmclient.AsAdmin(c.Context)
 
 	var teams []*model.Team
 	var team *model.Team
@@ -78,24 +79,24 @@ func (h *HelloApp) Install(appID api.AppID, channelDisplayName string, c *api.Ca
 	bot.DM(c.Context.ActingUserID, "Posted welcome message to channel.")
 
 	// TODO this should be done using the REST Subs API, for now mock with direct use
-	err := h.API.AppServices.Subscribe(&api.Subscription{
+	_, err := adminClient.Subscribe(&apps.Subscription{
 		AppID:     appID,
-		Subject:   api.SubjectUserJoinedChannel,
+		Subject:   apps.SubjectUserJoinedChannel,
 		ChannelID: channel.Id,
 		TeamID:    channel.TeamId,
-		Call: &api.Call{
-			URL: PathUserJoinedChannel,
-			Expand: &api.Expand{
-				Channel: api.ExpandAll,
-				Team:    api.ExpandAll,
-				User:    api.ExpandAll,
+		Call: &apps.Call{
+			Path: PathUserJoinedChannel,
+			Expand: &apps.Expand{
+				Channel: apps.ExpandAll,
+				Team:    apps.ExpandAll,
+				User:    apps.ExpandAll,
 			},
 		},
 	})
 	if err != nil {
 		return "", err
 	}
-	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", api.SubjectUserJoinedChannel)
+	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")
 
