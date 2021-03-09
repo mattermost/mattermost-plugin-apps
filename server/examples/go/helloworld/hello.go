@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -15,10 +16,20 @@ import (
 var iconData []byte
 
 func main() {
+	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", manifest)
+
+	// Returns the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", bindings)
 
-	http.HandleFunc("/hello", hello)
+	// The main form for sending a Hello message.
+	http.HandleFunc("/send", send)
+
+	// Forces the send form to be displayed as a modal.
+	// TODO: ticket: this should be unnecessary.
+	http.HandleFunc("/send-modal", sendModal)
+
+	// Serves the icon for the App.
 	http.HandleFunc("/static/icon.png", icon)
 
 	http.ListenAndServe(":8080", nil)
@@ -26,78 +37,102 @@ func main() {
 
 func manifest(w http.ResponseWriter, req *http.Request) {
 	m := apps.Manifest{
-		AppID:       "helloworld",
-		DisplayName: "Hello, world!",
-		Type:        apps.AppTypeHTTP,
-		HTTPRootURL: "http://localhost:8080",
-		RequestedPermissions: apps.Permissions{
-			apps.PermissionActAsBot,
-		},
-		RequestedLocations: apps.Locations{
-			apps.LocationChannelHeader,
-			apps.LocationCommand,
-		},
+		AppID:                "helloworld",
+		DisplayName:          "Hello, world!",
+		Type:                 "http",
+		HTTPRootURL:          "http://localhost:8080",
+		RequestedPermissions: apps.Permissions{"act_as_bot"},
+		RequestedLocations:   apps.Locations{"/channel_header", "/command"},
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(m)
 }
 
 func bindings(w http.ResponseWriter, req *http.Request) {
-	hello := &apps.Call{
-		Path: "/hello",
-	}
 	bindings := []*apps.Binding{
 		{
-			Location: apps.LocationChannelHeader,
+			Location: "/channel_header",
+			// Make this a top-level command, not subcommand
 			Bindings: []*apps.Binding{
 				{
-					Location: "message",
+					//TODO: ticket: Why is Location necessary? (getting Not Found without it)
+					//TODO: ticket: Location on call was not FQ
+					Location: "send-button",
 					//TODO: ticket: relative URL doesn't work
 					Icon: "http://localhost:8080/static/icon.png",
-					Call: hello,
+					Call: &apps.Call{
+						Path: "/send-modal",
+					},
 				},
 			},
 		},
 		{
-			Location: apps.LocationCommand,
+			Location: "/command",
 			Bindings: []*apps.Binding{
 				{
-					Location: "message",
+					//TODO: ticket: Location on call was "/command", not "/command/helloworld/send"
+					Location: "send",
 					//TODO: ticket: Location alone does not work, requires Label
-					Label: "message",
-					Call:  hello,
+					Label: "send",
+					Call: &apps.Call{
+						Path: "/send",
+					},
 				},
 			},
 		},
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
+		Type: "ok",
 		Data: bindings,
 	})
 }
 
-func hello(w http.ResponseWriter, req *http.Request) {
-	call := apps.Call{}
-	_ = json.NewDecoder(req.Body).Decode(&call)
-
-	w.Header().Set("Content-Type", "application/json")
-	switch call.Type {
-	case apps.CallTypeForm:
-		_ = json.NewEncoder(w).Encode(apps.CallResponse{
-			//TODO: ticket: client is erroring with `App response type was not expected. Response type: ok.` if {} is returned.
-			Type: apps.CallResponseTypeForm,
-			//TODO: ticket: client is erroring with `Response type is form, but no form was included in response.` if not initialized.
-			Form: &apps.Form{},
-		})
-		return
-
-	case apps.CallTypeSubmit:
-		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, "Hello, world!")
-
+func helloForm() apps.CallResponse {
+	return apps.CallResponse{
+		Type: "form",
+		Form: &apps.Form{
+			Title: "Hello, world!",
+			//TODO: ticket: relative URL doesn't work
+			Icon: "http://localhost:8080/static/icon.png",
+			Fields: []*apps.Field{
+				{
+					Name:  "message",
+					Type:  apps.FieldTypeText,
+					Label: "message",
+				},
+			},
+			//TODO: ticket: Modal submit does not work
+			Call: &apps.Call{
+				Path: "/send",
+			},
+		},
 	}
+}
 
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{})
+func sendModal(w http.ResponseWriter, req *http.Request) {
+	_ = json.NewEncoder(w).Encode(helloForm())
+}
+
+func send(w http.ResponseWriter, req *http.Request) {
+	call := apps.Call{}
+	out := apps.CallResponse{}
+
+	_ = json.NewDecoder(req.Body).Decode(&call)
+	w.Header().Set("Content-Type", "application/json")
+	switch {
+	case call.Type == "form":
+		out = helloForm()
+
+	case call.Type == "submit":
+		message := "Hello, world!"
+		v, ok := call.Values["message"]
+		if ok && v != nil {
+			message += fmt.Sprintf(" ...and %s!", v)
+		}
+		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, message)
+	}
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 func icon(w http.ResponseWriter, r *http.Request) {
