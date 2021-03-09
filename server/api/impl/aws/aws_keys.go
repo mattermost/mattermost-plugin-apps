@@ -18,7 +18,7 @@ const (
 	lambdaFunctionFileNameMaxSize = 64
 	appIDLengthLimit              = 32
 	versionFormat                 = "v00.00.000"
-	awsStaticAssetsPrefix         = "static"
+	staticAssetsPrefix            = "static"
 )
 
 // getFunctionName generates function name for a specific app
@@ -59,5 +59,5 @@ func getManifestFileKey(appID apps.AppID, version apps.AppVersion) string {
 // GetAssetFileKey generates key for a specific asset in S3,
 // key can be 1024 characters long.
 func GetAssetFileKey(appID apps.AppID, version apps.AppVersion, name string) string {
-	return fmt.Sprintf("%s/%s_%s_app/%s", awsStaticAssetsPrefix, appID, version, name)
+	return fmt.Sprintf("%s/%s_%s_app/%s", staticAssetsPrefix, appID, version, name)
 }

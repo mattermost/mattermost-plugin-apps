@@ -20,7 +20,6 @@ import (
 const bundleStaticAssetsFolder = "static/"
 
 type ProvisionData struct {
-	S3BucketName    string                  `json:"s3_bucket_name"`
 	StaticFiles     map[string]AssetData    `json:"static_files"`
 	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
 	Manifest        *apps.Manifest          `json:"-"`
@@ -139,7 +138,6 @@ func (c *Client) GetProvisionData(b []byte) (*ProvisionData, error) {
 	}
 
 	return &ProvisionData{
-		S3BucketName:    c.AppsS3Bucket,
 		StaticFiles:     assetMap,
 		LambdaFunctions: functionMap,
 		Manifest:        mani,
