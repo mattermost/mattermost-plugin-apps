@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -16,21 +15,13 @@ import (
 var iconData []byte
 
 func main() {
-	http.HandleFunc("/", catchAll)
 	http.HandleFunc("/manifest.json", manifest)
 	http.HandleFunc("/bindings", bindings)
+
 	http.HandleFunc("/hello", hello)
 	http.HandleFunc("/static/icon.png", icon)
+
 	http.ListenAndServe(":8080", nil)
-}
-
-func catchAll(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("<><> catchAll: %s\n", r.URL.String())
-}
-
-func icon(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "image/png")
-	io.Copy(w, bytes.NewReader(iconData))
 }
 
 func manifest(w http.ResponseWriter, req *http.Request) {
@@ -89,13 +80,12 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 func hello(w http.ResponseWriter, req *http.Request) {
 	call := apps.Call{}
 	_ = json.NewDecoder(req.Body).Decode(&call)
-	fmt.Printf("<><> 1: %s\n", call.Type)
 
 	w.Header().Set("Content-Type", "application/json")
 	switch call.Type {
 	case apps.CallTypeForm:
 		_ = json.NewEncoder(w).Encode(apps.CallResponse{
-			//TODO: ticket: client is erroring with `App response type not supported. Response type: {type}.` if {} is returned.
+			//TODO: ticket: client is erroring with `App response type was not expected. Response type: ok.` if {} is returned.
 			Type: apps.CallResponseTypeForm,
 			//TODO: ticket: client is erroring with `Response type is form, but no form was included in response.` if not initialized.
 			Form: &apps.Form{},
@@ -103,13 +93,14 @@ func hello(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case apps.CallTypeSubmit:
-		fmt.Printf("<><> 2: DM to %s\n", call.Context.ActingUserID)
 		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, "Hello, world!")
 
 	}
 
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		//TODO: ticket: OK should be defaulted on by the proxy, {} should be enough
-		Type: apps.CallResponseTypeOK,
-	})
+	_ = json.NewEncoder(w).Encode(apps.CallResponse{})
+}
+
+func icon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/png")
+	io.Copy(w, bytes.NewReader(iconData))
 }

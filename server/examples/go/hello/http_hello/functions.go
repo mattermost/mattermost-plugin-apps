@@ -1,13 +1,13 @@
 package http_hello
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/pkg/errors"
 )
 
 func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
@@ -59,6 +59,8 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 				},
 			},
 		}
+	default:
+		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
 
 	httputils.WriteJSON(w, out)
@@ -107,6 +109,8 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 			Type:     apps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
+	default:
+		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
 
 	httputils.WriteJSON(w, out)
