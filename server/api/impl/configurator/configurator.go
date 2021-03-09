@@ -17,7 +17,7 @@ import (
 var _ api.Configurator = (*config)(nil)
 
 type config struct {
-	*api.BuildConfig
+	api.BuildConfig
 	botUserID string
 
 	conf *api.Config
@@ -28,7 +28,7 @@ type config struct {
 	mattermostConfig *model.Config
 }
 
-func NewConfigurator(mattermost *pluginapi.Client, awsClient *aws.Client, buildConfig *api.BuildConfig, botUserID string) api.Configurator {
+func NewConfigurator(mattermost *pluginapi.Client, awsClient *aws.Client, buildConfig api.BuildConfig, botUserID string) api.Configurator {
 	return &config{
 		lock:        &sync.RWMutex{},
 		mm:          mattermost,
@@ -66,7 +66,7 @@ func (c *config) GetMattermostConfig() *model.Config {
 	return c.mattermostConfig
 }
 
-func (c *config) RefreshConfig(stored *api.StoredConfig) error {
+func (c *config) RefreshConfig(stored api.StoredConfig) error {
 	mattermostSiteURL := c.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
