@@ -51,6 +51,7 @@ type Service struct {
 	iam          iamiface.IAMAPI
 	s3           s3iface.S3API
 	s3Downloader s3manageriface.DownloaderAPI
+	s3Uploader   s3manageriface.UploaderAPI
 }
 
 type log interface {
@@ -80,12 +81,7 @@ func NewAWSClient(awsAccessKeyID, awsSecretAccessKey string, logger log) *Client
 }
 
 func createAWSConfig(awsAccessKeyID, awsSecretAccessKey string) *aws.Config {
-	var creds *credentials.Credentials
-	if awsSecretAccessKey == "" && awsAccessKeyID == "" {
-		creds = credentials.NewEnvCredentials() // Read Mattermost cloud credentials from the environment variables
-	} else {
-		creds = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
-	}
+	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 
 	return &aws.Config{
 		Region:      aws.String(DefaultRegion),
@@ -100,6 +96,7 @@ func NewService(sess *session.Session) *Service {
 		iam:          iam.New(sess),
 		s3:           s3.New(sess),
 		s3Downloader: s3manager.NewDownloader(sess),
+		s3Uploader:   s3manager.NewUploader(sess),
 	}
 }
 

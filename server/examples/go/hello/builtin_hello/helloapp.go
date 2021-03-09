@@ -56,7 +56,7 @@ func Manifest() *apps.Manifest {
 
 func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
-	switch c.URL {
+	switch c.Path {
 	case api.BindingsPath:
 		cr = &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
@@ -74,7 +74,7 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	case hello.PathSurvey:
 		cr = h.Survey(c)
 	default:
-		return nil, errors.Errorf("%s is not found", c.URL)
+		return nil, errors.Errorf("%s is not found", c.Path)
 	}
 
 	bb, err := json.Marshal(cr)

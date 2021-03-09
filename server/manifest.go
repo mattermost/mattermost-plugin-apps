@@ -19,8 +19,8 @@ const manifestStr = `
   "min_server_version": "5.26.0",
   "server": {
     "executables": {
-      "linux-amd64": "server/dist/plugin-linux-amd64",
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "linux-amd64": "server/dist/plugin-linux-amd64",
       "windows-amd64": "server/dist/plugin-windows-amd64.exe"
     },
     "executable": ""
@@ -28,24 +28,7 @@ const manifestStr = `
   "settings_schema": {
     "header": "Provide keyID and secret to the AWS account, if left empty apps will be installed in the MM cloud",
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-apps).",
-    "settings": [
-      {
-        "key": "AWSAccessKeyID",
-        "display_name": "AWS Access Key ID",
-        "type": "text",
-        "help_text": "",
-        "placeholder": "",
-        "default": ""
-      },
-      {
-        "key": "AWSSecretAccessKey",
-        "display_name": "AWS Secret Access Key",
-        "type": "text",
-        "help_text": "",
-        "placeholder": "",
-        "default": ""
-      }
-    ]
+    "settings": []
   }
 }
 `

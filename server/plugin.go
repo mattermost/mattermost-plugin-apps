@@ -5,6 +5,7 @@ package main
 
 import (
 	gohttp "net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -64,10 +65,22 @@ func (p *Plugin) OnActivate() error {
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	awsClient := aws.NewAWSClient(stored.AWSAccessKeyID, stored.AWSSecretAccessKey, &mm.Log)
+	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
+	if accessKey == "" {
+		mm.Log.Warn("APPS_INVOKE_AWS_ACCESS_KEY is not set. AWS apps won't work.")
+	}
+	secretKey := os.Getenv("APPS_INVOKE_AWS_SECRET_KEY")
+	if secretKey == "" {
+		mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
+	}
+
+	awsClient := aws.NewAWSClient(accessKey, secretKey, &mm.Log)
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
-	_ = conf.RefreshConfig(&stored)
+	err = conf.RefreshConfig(&stored)
+	if err != nil {
+		return errors.Wrap(err, "failed to refresh config on startup")
+	}
 	store := store.New(mm, conf)
 	proxy := proxy.NewProxy(mm, awsClient, conf, store)
 
@@ -84,7 +97,10 @@ func (p *Plugin) OnActivate() error {
 		Admin:        admin.NewAdmin(mm, conf, store, proxy, awsClient, mutex),
 		AWS:          awsClient,
 	}
-	proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
+
+	if pluginapi.IsConfiguredForDevelopment(mm.Configuration.GetConfig()) {
+		proxy.ProvisionBuiltIn(builtin_hello.AppID, builtin_hello.New(p.api))
+	}
 
 	p.http = http.NewService(mux.NewRouter(), p.api,
 		dialog.Init,

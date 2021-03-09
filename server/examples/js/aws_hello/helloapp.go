@@ -31,7 +31,7 @@ func Manifest() *apps.Manifest {
 		},
 		HomepageURL: ("https://github.com/mattermost"),
 		OnInstall: &apps.Call{
-			URL: "on_activate",
+			Path: "on_activate",
 			Expand: &apps.Expand{
 				App:              apps.ExpandAll,
 				AdminAccessToken: apps.ExpandAll,

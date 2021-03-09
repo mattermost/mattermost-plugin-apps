@@ -28,7 +28,7 @@ type invocationPayload struct {
 	Path       string            `json:"path"`
 	HTTPMethod string            `json:"httpMethod"`
 	Headers    map[string]string `json:"headers"`
-	Body       interface{}       `json:"body"`
+	Body       string            `json:"body"`
 }
 
 // invocationResponse is a scoped down version of
@@ -81,16 +81,21 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 }
 
 func callToInvocationPayload(call *apps.Call) ([]byte, error) {
+	body, err := json.Marshal(call)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal call for lambda payload")
+	}
+
 	request := invocationPayload{
-		Path:       call.URL,
+		Path:       call.Path,
 		HTTPMethod: http.MethodPost,
 		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       call,
+		Body:       string(body),
 	}
 
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal call into http payload")
+		return nil, errors.Wrap(err, "Failed to marshal lambda payload")
 	}
 
 	return payload, nil

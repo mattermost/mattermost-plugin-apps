@@ -48,10 +48,10 @@ func (u *Upstream) invoke(fromMattermostUserID string, call *apps.Call) (*http.R
 	if call == nil {
 		return nil, errors.New("empty call is not valid")
 	}
-	if len(call.URL) == 0 || call.URL[0] != '/' {
-		return nil, errors.Errorf("not a valid call path: %q", call.URL)
+	if len(call.Path) == 0 || call.Path[0] != '/' {
+		return nil, errors.Errorf("not a valid call path: %q", call.Path)
 	}
-	return u.post(call.Context.ActingUserID, u.rootURL+call.URL, call)
+	return u.post(call.Context.ActingUserID, u.rootURL+call.Path, call)
 }
 
 // post does not close resp.Body, it's the caller's responsibility
