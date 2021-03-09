@@ -26,7 +26,7 @@ func (c *testConfigurator) GetMattermostConfig() *model.Config {
 	return &model.Config{}
 }
 
-func (c *testConfigurator) RefreshConfig(*api.StoredConfig) error {
+func (c *testConfigurator) RefreshConfig(api.StoredConfig) error {
 	return nil
 }
 

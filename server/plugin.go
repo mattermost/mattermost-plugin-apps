@@ -35,7 +35,7 @@ const mutexKey = "Cluster_Mutex"
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	*api.BuildConfig
+	api.BuildConfig
 
 	mm      *pluginapi.Client
 	api     *api.Service
@@ -43,7 +43,7 @@ type Plugin struct {
 	http    http.Service
 }
 
-func NewPlugin(buildConfig *api.BuildConfig) *Plugin {
+func NewPlugin(buildConfig api.BuildConfig) *Plugin {
 	return &Plugin{
 		BuildConfig: buildConfig,
 	}
@@ -77,7 +77,7 @@ func (p *Plugin) OnActivate() error {
 	awsClient := aws.NewAWSClient(accessKey, secretKey, &mm.Log)
 
 	conf := configurator.NewConfigurator(mm, awsClient, p.BuildConfig, botUserID)
-	err = conf.RefreshConfig(&stored)
+	err = conf.RefreshConfig(stored)
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh config on startup")
 	}
@@ -128,7 +128,8 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	stored := api.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
-	return p.api.Configurator.RefreshConfig(&stored)
+
+	return p.api.Configurator.RefreshConfig(stored)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
