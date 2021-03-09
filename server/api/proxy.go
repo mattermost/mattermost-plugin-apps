@@ -10,11 +10,10 @@ import (
 )
 
 type Proxy interface {
-	GetBindings(*apps.Context) ([]*apps.Binding, error)
 	Call(apps.SessionToken, *apps.Call) *apps.CallResponse
+	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
+	GetBindings(*apps.Context) ([]*apps.Binding, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
 
-	ProvisionBuiltIn(apps.AppID, Upstream)
-
-	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
+	AddBuiltinUpstream(apps.AppID, Upstream)
 }

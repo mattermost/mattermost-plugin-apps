@@ -14,12 +14,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
+// Upstream wraps an awsClient to make requests to the App. It should not be
+// reused between requests, nor cached.
 type Upstream struct {
-	app *apps.App
-	aws *aws.Client
+	app       *apps.App
+	awsClient awsclient.Client
 }
 
 // invocationPayload is a scoped down version of
@@ -38,36 +41,51 @@ type invocationResponse struct {
 	Body       string `json:"body"`
 }
 
-func NewUpstream(app *apps.App, aws *aws.Client) *Upstream {
+func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
 	return &Upstream{
-		app: app,
-		aws: aws,
+		app:       app,
+		awsClient: awsClient,
 	}
 }
 
 func (u *Upstream) OneWay(call *apps.Call) error {
+	name, err := match(call.Path, u.app)
+	if err != nil {
+		return errors.Wrapf(err, "failed to match %s to function", call.Path)
+	}
+	if name == "" {
+		return utils.ErrNotFound
+	}
+
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return errors.Wrap(err, "failed to covert call into invocation payload")
 	}
 
-	_, err = u.aws.InvokeLambda(u.app.Manifest.AppID, u.app.Manifest.Version, u.app.Manifest.Functions[0].Name, lambda.InvocationTypeEvent, payload)
+	_, err = u.awsClient.InvokeLambda(name, lambda.InvocationTypeEvent, payload)
 	return err
 }
 
 func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
-	payload, err := callToInvocationPayload(call)
+	name, err := match(call.Path, u.app)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
+		return nil, errors.Wrapf(err, "failed to match %s to function", call.Path)
+	}
+	if name == "" {
+		return nil, utils.ErrNotFound
 	}
 
-	bb, err := u.aws.InvokeLambda(u.app.Manifest.AppID, u.app.Manifest.Version, u.app.Manifest.Functions[0].Name, lambda.InvocationTypeRequestResponse, payload)
+	payload, err := callToInvocationPayload(call)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
+	}
+
+	bb, err := u.awsClient.InvokeLambda(name, lambda.InvocationTypeRequestResponse, payload)
 	if err != nil {
 		return nil, err
 	}
 
 	var resp invocationResponse
-
 	err = json.Unmarshal(bb, &resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error marshaling request payload")
@@ -99,4 +117,21 @@ func callToInvocationPayload(call *apps.Call) ([]byte, error) {
 	}
 
 	return payload, nil
+}
+
+func match(callPath string, app *apps.App) (string, error) {
+	matchedName := ""
+	matchedPath := ""
+	for _, f := range app.Functions {
+		if strings.HasPrefix(callPath, f.Path) {
+			if len(f.Path) > len(matchedPath) {
+				var err error
+				matchedName, err = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+	return matchedName, nil
 }

@@ -25,15 +25,13 @@ type commandHandler struct {
 
 func (s *service) handleMain(in *params, developerMode bool) (*model.CommandResponse, error) {
 	subcommands := map[string]commandHandler{
-		"debug-bindings":        {s.executeDebugBindings, true},
-		"debug-clean":           {s.executeDebugClean, true},
-		"debug-install-builtin": {s.executeDebugInstallBuiltinHello, true},
-		"debug-install-http":    {s.executeDebugInstallHTTPHello, true},
-		"debug-install-aws":     {s.executeDebugInstallAWSHello, true},
-		"info":                  {s.executeInfo, false},
-		"list":                  {s.executeList, false},
-		"install":               {s.executeInstall, false},
-		"uninstall":             {s.checkSystemAdmin(s.executeUninstall), false},
+		"debug-bindings":     {s.executeDebugBindings, true},
+		"debug-clean":        {s.executeDebugClean, true},
+		"debug-add-manifest": {s.executeDebugAddManifest, true},
+		"info":               {s.executeInfo, false},
+		"list":               {s.executeList, false},
+		"install":            {s.executeInstall, false},
+		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false},
 	}
 
 	return runSubcommand(subcommands, in, developerMode)
@@ -63,7 +61,7 @@ func runSubcommand(subcommands map[string]commandHandler, params *params, develo
 
 func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse, error)) func(*params) (*model.CommandResponse, error) {
 	return func(p *params) (*model.CommandResponse, error) {
-		if !s.api.Mattermost.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
 			return errorOut(p, errors.New("you need to be a system admin to run this command"))
 		}
 

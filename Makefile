@@ -99,7 +99,6 @@ mock:
 ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen
 	mockgen -destination server/api/mock_api/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/api AppServices
-	mockgen -destination server/api/mock_api/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/api Proxy
 endif
 
 ## Generates mock golang interfaces for testing
@@ -240,7 +239,7 @@ test: test-unit
 test-unit: webapp/node_modules
 	@echo Running unit tests
 ifneq ($(HAS_SERVER),)
-	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
+	$(GO) test -v $(GO_TEST_FLAGS) ./server/... ./apps/... ./awsclient/... ./cmd/appsctl 
 endif
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) run test;

@@ -6,10 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
-
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
@@ -20,18 +19,24 @@ type Service interface {
 }
 
 type service struct {
-	api *api.Service
+	mm    *pluginapi.Client
+	conf  api.Configurator
+	proxy api.Proxy
+	admin api.Admin
 }
 
 var _ Service = (*service)(nil)
 
-func MakeService(appsService *api.Service) (Service, error) {
-	conf := appsService.Configurator.GetConfig()
-
+func MakeService(mm *pluginapi.Client, configService api.Configurator, proxy api.Proxy, admin api.Admin) (Service, error) {
 	s := &service{
-		api: appsService,
+		mm:    mm,
+		conf:  configService,
+		proxy: proxy,
+		admin: admin,
 	}
-	err := appsService.Mattermost.SlashCommand.Register(&model.Command{
+
+	conf := configService.GetConfig()
+	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          api.CommandTrigger,
 		DisplayName:      conf.BuildConfig.Manifest.Name,
 		Description:      conf.BuildConfig.Manifest.Description,
@@ -56,7 +61,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
 
-	enableOAuthServiceProvider := s.api.Mattermost.Configuration.GetConfig().ServiceSettings.EnableOAuthServiceProvider
+	enableOAuthServiceProvider := s.mm.Configuration.GetConfig().ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
 		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` need to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
 	}
@@ -73,7 +78,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	params.current = split[1:]
 
-	developerMode := pluginapi.IsConfiguredForDevelopment(s.api.Mattermost.Configuration.GetConfig())
+	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
 
 	return s.handleMain(params, developerMode)
 }

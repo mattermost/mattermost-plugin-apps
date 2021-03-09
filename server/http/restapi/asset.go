@@ -29,7 +29,7 @@ func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request,
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := a.api.Proxy.GetAsset(apps.AppID(appID), assetName)
+	body, status, err := a.proxy.GetAsset(apps.AppID(appID), assetName)
 	if err != nil {
 		httputils.WriteBadRequestError(w, err)
 		return

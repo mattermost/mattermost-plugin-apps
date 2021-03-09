@@ -7,11 +7,14 @@ package api
 const (
 	Repository     = "mattermost-plugin-apps"
 	CommandTrigger = "apps"
+	ManifestsFile  = "manifests.json"
 
 	BotUsername    = "appsbot"
 	BotDisplayName = "Mattermost Apps"
 	BotDescription = "Mattermost Apps Registry and API proxy."
+)
 
+const (
 	// TODO replace Interactive Dialogs with Modal, eliminate the need for
 	// /dialog endpoints.
 	InteractiveDialogPath = "/dialog"
@@ -48,4 +51,14 @@ const (
 	PropChannelID = "channel_id"
 	PropPostID    = "post_id"
 	PropUserAgent = "user_agent_type"
+)
+
+// KV namespace
+const (
+	KeyCallOnce     = "CallOnce"
+	KeyClusterMutex = "Cluster_Mutex"
+
+	PrefixSubs          = "sub_"
+	PrefixInstalledApp  = "app_"
+	PrefixLocalManifest = "man_"
 )

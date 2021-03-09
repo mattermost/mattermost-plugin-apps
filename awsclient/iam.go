@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package aws
+package awsclient
 
 import (
 	"encoding/json"
@@ -38,7 +38,7 @@ type rolePrincipal struct {
 	Service string
 }
 
-func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
+func (c *client) MakeLambdaFunctionDefaultPolicy() (string, error) {
 	// Builds our policy document for IAM.
 	policy := policyDocument{
 		Version: "2012-10-17",
@@ -62,8 +62,7 @@ func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
 	policyName := "my_cool_policy_name"
 
 	arn := ""
-	iamService := c.Service().iam
-	out, err := iamService.CreatePolicy(&iam.CreatePolicyInput{
+	out, err := c.iam.CreatePolicy(&iam.CreatePolicyInput{
 		PolicyDocument: aws.String(string(b)),
 		PolicyName:     &policyName,
 	})
@@ -73,7 +72,7 @@ func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
 			return "", errors.Wrap(err, "can't create default lambda function policy")
 		}
 
-		if err = iamService.ListPoliciesPages(&iam.ListPoliciesInput{},
+		if err = c.iam.ListPoliciesPages(&iam.ListPoliciesInput{},
 			func(page *iam.ListPoliciesOutput, lastPage bool) bool {
 				for _, pol := range page.Policies {
 					if *pol.PolicyName == policyName {
@@ -97,7 +96,7 @@ func (c *Client) makeLambdaFunctionDefaultPolicy() (string, error) {
 	return role, nil
 }
 
-func (c *Client) createRole(policyARN string) (string, error) {
+func (c *client) createRole(policyARN string) (string, error) {
 	rolePolicy := rolePolicyDocument{
 		Version: "2012-10-17",
 		Statement: []rolePolicyStatementEntry{
@@ -116,8 +115,7 @@ func (c *Client) createRole(policyARN string) (string, error) {
 	}
 	roleName := "my_cool_role_name1"
 	roleARN := ""
-	iamService := c.Service().iam
-	out, err := iamService.CreateRole(&iam.CreateRoleInput{
+	out, err := c.iam.CreateRole(&iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(string(b)),
 		RoleName:                 &roleName,
 	})
@@ -127,7 +125,7 @@ func (c *Client) createRole(policyARN string) (string, error) {
 			return "", errors.Wrap(err, "can't create default lambda function role")
 		}
 
-		if err = iamService.ListRolesPages(&iam.ListRolesInput{},
+		if err = c.iam.ListRolesPages(&iam.ListRolesInput{},
 			func(page *iam.ListRolesOutput, lastPage bool) bool {
 				for _, r := range page.Roles {
 					if *r.RoleName == roleName {
@@ -142,7 +140,7 @@ func (c *Client) createRole(policyARN string) (string, error) {
 		}
 	} else {
 		roleARN = *out.Role.Arn
-		if _, err := iamService.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		if _, err := c.iam.AttachRolePolicy(&iam.AttachRolePolicyInput{
 			PolicyArn: &policyARN,
 			RoleName:  &roleName,
 		}); err != nil {

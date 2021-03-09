@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
@@ -17,11 +18,15 @@ const (
 )
 
 type dialog struct {
-	api *api.Service
+	mm    *pluginapi.Client
+	admin api.Admin
 }
 
-func Init(router *mux.Router, service *api.Service) {
-	d := dialog{service}
+func Init(router *mux.Router, mm *pluginapi.Client, _ api.Configurator, _ api.Proxy, admin api.Admin, _ api.AppServices) {
+	d := dialog{
+		mm:    mm,
+		admin: admin,
+	}
 
 	subrouter := router.PathPrefix(api.InteractiveDialogPath).Subrouter()
 	subrouter.HandleFunc(InstallPath, d.handleInstall).Methods("POST")
