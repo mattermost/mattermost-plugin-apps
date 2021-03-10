@@ -36,10 +36,10 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {
-		manifest, err := p.store.Manifest().Get(app.AppID)
-		if err != nil {
+		manifest := app.Manifest
+		if manifest == nil {
 			// TODO Log error (chance to flood the logs)
-			// p.mm.Log.Debug("Could not load manifest. Error: " + err.Error())
+			// p.mm.Log.Debug("Manifest not present in the app")
 			continue
 		}
 
@@ -69,7 +69,7 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 		var bindings = []*apps.Binding{}
 		b, _ := json.Marshal(resp.Data)
-		err = json.Unmarshal(b, &bindings)
+		err := json.Unmarshal(b, &bindings)
 		if err != nil {
 			// TODO Log error (chance to flood the logs)
 			// p.mm.Log.Debug("Bindings are not of the right type.")
