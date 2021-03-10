@@ -11,3 +11,20 @@
 ## Versioning
 - Upgrade/Downgrade/callOnce
 - adminToken??
+
+
+
+
+
+
+
+
+
+# App Lifecycle
+## Development
+## Submit to Marketplace
+## Provision
+## Publish
+## Install
+## Uninstall
+## Upgrade/downgrade consideration

@@ -1,12 +1,4 @@
-## Authentication
-## Context Expansion
-
-
-## Calls
-
-
-
-### Conext Expansion Example
+# Post Menu Example 
 
 In this example, the bindings specify to expand the post the user clicks on:
 
@@ -212,15 +204,6 @@ MM->Client:Return modal form, open modal
 
 </details>
 
-
-
-## Flow, types, responses (WIP)
-
-- Authentication
-	- To App:
-- Expanded: config (Mattermost Site URL)
-- Lambda: none (invoked with AWS Invoke API, authenticated with IAM)
-- HTTP: optional secret-based JWT
 
 - Webhooks
   - Any third-party webhook calls will be proxied through the framework

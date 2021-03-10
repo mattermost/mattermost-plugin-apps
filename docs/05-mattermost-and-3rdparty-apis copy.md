@@ -339,3 +339,33 @@ MM->Client:Return modal form, open modal
   - Subscribe schema (per channel?)
   - All the p.API hooks available
   - Use the Call format (Expand business)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Using Mattermost APIs
+## Authentication and Token Store
+## Scopes and Permissions
+## Apps Subscriptions API
+## Apps KV API
+## Mattermost REST API
+
+# Using 3rd party APIs
+## Authentication and Token Store
+## 3rd party webhooks
+
