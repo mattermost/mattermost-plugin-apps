@@ -19,12 +19,36 @@ type Manifest struct {
 	// See DefaultInstallCall, DefaultBindingCall, etc. for the defaults. The
 	// App developer can override the defaults by providing explicit Path,
 	// Expand values.
-	OnDisable        *Call `json:"on_disable,omitempty"`
-	OnEnable         *Call `json:"on_enable,omitempty"`
-	OnInstall        *Call `json:"on_install,omitempty"`
+
+	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
+	// install` command. It may return another call to the app, or a form to
+	// display. The default values for its fields are,
+	//  "path":"/install",
+	//  "expand":{
+	//    "app":"all",
+	//	  "admin_access_token":"all"
+	//   }
+	OnInstall *Call `json:"on_install,omitempty"`
+
+	// OnVersionChanged gets invoked when the Mattermost-recommended version of
+	// the app no longer matches the previously installed one, and the app needs
+	// to be upgraded/downgraded. It is not called unless explicitly provided in
+	// the manifest.
 	OnVersionChanged *Call `json:"on_version_changed,omitempty"`
-	OnUninstall      *Call `json:"on_uninstall,omitempty"`
-	Bindings         *Call `json:"bindings,omitempty"`
+
+	// OnUninstall gets invoked when a sysadmin uses the `/apps uninstall`
+	// command, before the app is actually removed. It is not called unless
+	// explicitly provided in the manifest.
+	OnUninstall *Call `json:"on_uninstall,omitempty"`
+
+	// Bindings must be implemented by the Apps to add any UX elements to the
+	// Mattermost UI. The default values for its fields are,
+	//  "path":"/bindings",
+	Bindings *Call `json:"bindings,omitempty"`
+
+	// OnEnable, OnDisable are not yet supported
+	OnDisable *Call `json:"on_disable,omitempty"`
+	OnEnable  *Call `json:"on_enable,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
