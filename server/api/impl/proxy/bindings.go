@@ -61,9 +61,9 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)
 			// p.mm.Log.Debug("Response is nil or unexpected type.")
-			if resp != nil && resp.Type == apps.CallResponseTypeError {
-				p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
-			}
+			// if resp != nil && resp.Type == apps.CallResponseTypeError {
+			// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
+			// }
 			continue
 		}
 
