@@ -43,11 +43,6 @@ type Form struct {
 	CancelButton  bool `json:"cancel_button,omitempty"`
 	SubmitOnCanel bool `json:"submit_on_cancel,omitempty"`
 
-	// DependsOn is the list of field names that when changed force reloading
-	// the form. Values of the fields with values that are not included in the
-	// refreshed form are lost.
-	DependsOn []string `json:"depends_on,omitempty"`
-
 	// Fields is the list of fields in the form.
 	Fields []*Field `json:"fields,omitempty"`
 }
