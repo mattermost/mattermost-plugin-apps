@@ -22,6 +22,28 @@ const (
 	CallTypeLookup = CallType("lookup")
 )
 
+/*
+A Call defines a way to invoke an App's function. Calls are used to fetch App's
+bindings, and to process user input, webhook events, and dynamic data lookups.
+
+
+A Call request is sent to the App’s server when:
+- The user visits a channel (call to fetch bindings)
+- The user clicks on a post menu or channel binding (may open a modal)
+- Commands:
+  - The user is filling out a command argument that fetches dynamic results
+    (lookup call is performed)
+  - The user submits a command (may open a modal)
+- Modals:
+  - The user types a search in a modal’s autocomplete select field (lookup call
+    is performed)
+  - The user selects a value from a “refresh” select element in a modal (the
+    modal’s form will be re-fetched based on all filled out values)
+  - The user submits the modal (a new form may be returned from the App)
+- (TBD) A subscribed event like MessageHasBeenPosted occurs
+- (TBD) A third-party webhook request comes in
+*/
+
 // A Call invocation is supplied a BotAccessToken as part of the context. If a
 // call needs acting user's or admin tokens, it should be specified in the
 // Expand section.
@@ -33,7 +55,15 @@ const (
 // TODO: what if a call needs a token and it was not provided? Return a call to
 // itself with Expand.
 type Call struct {
+	// The path of the Call. For HTTP apps, the path is appended to the app's
+	// RootURL. For AWS Lambda apps, it is mapped to the appropriate Lambda name
+	// to invoke, and then passed in the call request.
 	Path       string                 `json:"path,omitempty"`
+
+	// There are currently 3 Types of calls associated with user actions:
+	// - Submit - submit a form/command or click on a UI binding
+	// - Form - Fetch a form’s definition like a command or modal
+	// - Lookup - Fetch autocomplete results for am autocomplete form field
 	Type       CallType               `json:"type"`
 	Values     map[string]interface{} `json:"values,omitempty"`
 	Context    *Context               `json:"context,omitempty"`
