@@ -57,13 +57,13 @@ Apps are lighweight interactive add-ons to mattermost. Apps can:
 
 #### In-Post Interactivity
 
-#### [Using Mattermost APIs](05-mattermost-API.md)
+#### [Using Mattermost APIs](05-using-mattermost-api.md)
 
-#### [Using 3rd party APIs](06-3rd-party-API.md)
+#### [Using 3rd party APIs](06-using-3rdparty-api.md)
 
 #### App Lifecycle
+- [App Lifecycle](07-lifecycle.md)
 - godoc: [appsctl](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/cmd/appsctl) - CLI tool used to provision Mattermost Apps in development and production.
-- [App Lifecycle](07-app=lifecycle)
 
 
 
