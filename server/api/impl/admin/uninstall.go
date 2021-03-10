@@ -19,7 +19,10 @@ func (adm *Admin) UninstallApp(appID apps.AppID) error {
 	}
 
 	// Call delete the function of the app
-	if err := adm.expandedCall(app, app.OnUninstall, nil); err != nil {
+	creq := &apps.CallRequest{
+		Call: *app.OnUninstall,
+	}
+	if err := adm.expandedCall(app, creq, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.AppID)
 	}
 

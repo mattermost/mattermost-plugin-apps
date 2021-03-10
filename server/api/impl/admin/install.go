@@ -75,12 +75,15 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	}
 
 	install := apps.DefaultInstallCall.WithOverrides(app.OnInstall)
-	install.Values = map[string]interface{}{
-		apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
+	installRequest := &apps.CallRequest{
+		Call: *install,
+		Values: map[string]interface{}{
+			apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
+		},
+		Context: cc,
 	}
-	install.Context = cc
 
-	resp := adm.proxy.Call(sessionToken, install)
+	resp := adm.proxy.Call(sessionToken, installRequest)
 	if resp.Type == apps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}

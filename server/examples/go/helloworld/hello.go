@@ -43,22 +43,22 @@ func main() {
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
-	call := apps.Call{}
-	json.NewDecoder(req.Body).Decode(&call)
+	c := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&c)
 
 	w.Header().Set("Content-Type", "application/json")
 	switch {
-	case call.Type == "form":
+	case c.Type == "form":
 		w.Write(formData)
 		return
 
-	case call.Type == "submit":
+	case c.Type == "submit":
 		message := "Hello, world!"
-		v, ok := call.Values["message"]
+		v, ok := c.Values["message"]
 		if ok && v != nil {
 			message += fmt.Sprintf(" ...and %s!", v)
 		}
-		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, message)
+		mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 	}
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }

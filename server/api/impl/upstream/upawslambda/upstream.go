@@ -48,7 +48,7 @@ func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
 	}
 }
 
-func (u *Upstream) OneWay(call *apps.Call) error {
+func (u *Upstream) OneWay(call *apps.CallRequest) error {
 	name, err := match(call.Path, u.app)
 	if err != nil {
 		return errors.Wrapf(err, "failed to match %s to function", call.Path)
@@ -66,7 +66,7 @@ func (u *Upstream) OneWay(call *apps.Call) error {
 	return err
 }
 
-func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
 	name, err := match(call.Path, u.app)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to match %s to function", call.Path)
@@ -98,7 +98,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
-func callToInvocationPayload(call *apps.Call) ([]byte, error) {
+func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(call)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal call for lambda payload")

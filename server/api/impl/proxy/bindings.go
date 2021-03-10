@@ -51,9 +51,12 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
 		bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
-		bindingsCall.Context = &appCC
+		bindingsRequest := &apps.CallRequest{
+			Call: *bindingsCall,
+		}
+		bindingsRequest.Context = &appCC
 
-		bindings, err := upstream.GetBindings(up, bindingsCall)
+		bindings, err := upstream.GetBindings(up, bindingsRequest)
 		if err != nil {
 			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
 		}
