@@ -5,6 +5,11 @@ package apps
 // call, that it can customize in its Manifest. App's bindings can be identical,
 // or differ for users, channels, and such.
 //
+// Bindings are currently refreshed when a user visits a channel, in the context
+// of the current channel, from all the registered Apps. A server-side cache
+// implementation is in the works. TODO ticket ref. This allows each App to
+// dynamically add things to the UI on a per-channel basis.
+//
 // Example bindings (hello world app) create a button in the channel header, and
 // a "/helloworld send" command:
 //   {

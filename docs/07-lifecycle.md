@@ -1,5 +1,10 @@
-## App Lifecycle
-### Installing
+# App Lifecycle
+## Development
+## Submit to Marketplace
+## Provision
+## Publish
+## Install
+Apps are installed with `apps install 
 - Manifest -> Installed App
   - Consent to permissions, locations, OAuth app type
   - Create Bot+Access Token, OAuth App
@@ -8,23 +13,6 @@
   - Admin access token
 - Also Uninstall/Enable/Disable per App
 
-## Versioning
-- Upgrade/Downgrade/callOnce
-- adminToken??
-
-
-
-
-
-
-
-
-
-# App Lifecycle
-## Development
-## Submit to Marketplace
-## Provision
-## Publish
-## Install
 ## Uninstall
 ## Upgrade/downgrade consideration
+## appsctl 
