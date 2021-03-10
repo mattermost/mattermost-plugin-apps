@@ -16,46 +16,28 @@ Here is an example of an HTTP App, written in Go and runnable on
 http://localhost:8080. [Source](/server/examples/go/helloworld)
 
 - In its `manifest.json` it declares itself an HTTP application.
-- It contains a `send` function that sends a parameterized message back to the user. 
-- It contains a `send-modal` function that forces displaying the `send` form as a Modal.
-- In its `bindings` function it attaches `send-modal` to a button in the channel header, and `send` to a /helloworld command
- It adds a channel header
-button, and a command to send "Hello" messages.  
+- It contains a `send` function that sends a parameterized message back to the
+  user. 
+- It contains a `send-modal` function that forces displaying the `send` form as
+  a Modal.
+- In its `bindings` function it attaches `send-modal` to a button in the channel
+  header, and `send` to a /helloworld command
 
-To install Hello, World follow these steps,
-- cd .../mattermost-plugin-apps/server/examples/go/helloworld
-- `go run .` - note go 1.16 is required
-- In Mattermost, `/apps debug-add-manifest --url http://localhost:8080/manifest.json`
-  and `/apps install --app-id helloworld`
+To install "Hello, World" on a locally-running instance of Mattermost follow
+these steps (go 1.16 is required):
+```sh
+cd .../mattermost-plugin-apps/server/examples/go/helloworld
+go run . 
+```
+
+In Mattermost desktop app run:
+```
+/apps debug-add-manifest --url http://localhost:8080/manifest.json
+/apps install --app-id helloworld
+```
 
 Then you can try clicking the "Hello World" channel header button, or using
 `/helloworld send` command.
-
-
-There are 4 principal pieces to the App: `manifest`, `bindings` handler,
-functions (`send`, `send-modal`), and the icon.
-
-```go
-func main() {
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", manifest)
-	
-	// Returns the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", bindings)
-	
-	// The main form for sending a Hello message.
-	http.HandleFunc("/send", send)
-
-	// Forces the send form to be displayed as a modal.
-	// TODO: ticket: this should be unnecessary.
-	http.HandleFunc("/send-modal", sendModal)
-
-	// Serves the icon for the App.
-	http.HandleFunc("/static/icon.png", icon)
-
-	http.ListenAndServe(":8080", nil)
-}
-```
 
 ## Manifest
 The manifest declares App metadata, and for AWS Lambda apps declares the Call
@@ -87,39 +69,35 @@ should be displayed at, and invoked from these locations.
 
 The Hello App creates a Channel Header button, and adds a `/helloworld send` command.
 
-```go
-func bindings(w http.ResponseWriter, req *http.Request) {
-	bindings := []*apps.Binding{
+```json
+{
+	"type": "ok",
+	"data": [
 		{
-			Location: "/channel_header",
-			Bindings: []*apps.Binding{
+			"location": "/channel_header",
+			"bindings": [
 				{
-					Location: "send-button",
-					Icon: "http://localhost:8080/static/icon.png",
-					Call: &apps.Call{
-						Path: "/send-modal",
-					},
-				},
-			},
+					"location": "send-button",
+					"icon": "http://localhost:8080/static/icon.png",
+					"call": {
+						"path": "/send-modal"
+					}
+				}
+			]
 		},
 		{
-			Location: "/command",
-			Bindings: []*apps.Binding{
+			"location": "/command",
+			"bindings": [
 				{
-					Location: "send",
-					Label: "send",
-					Call: &apps.Call{
-						Path: "/send",
-					},
-				},
-			},
-		},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		Type: "ok",
-		Data: bindings,
-	})
+					"location": "send",
+					"label": "send",
+					"call": {
+						"path": "/send"
+					}
+				}
+			]
+		}
+	]
 }
 ```
 
