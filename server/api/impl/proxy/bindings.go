@@ -39,7 +39,7 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 		manifest, err := p.store.Manifest().Get(app.AppID)
 		if err != nil {
 			// TODO Log error (chance to flood the logs)
-			p.mm.Log.Debug("Could not load manifest. Error: " + err.Error())
+			// p.mm.Log.Debug("Could not load manifest. Error: " + err.Error())
 			continue
 		}
 
@@ -60,7 +60,7 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)
-			p.mm.Log.Debug("Response is nil or unexpected type.")
+			// p.mm.Log.Debug("Response is nil or unexpected type.")
 			continue
 		}
 
@@ -69,7 +69,7 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 		err = json.Unmarshal(b, &bindings)
 		if err != nil {
 			// TODO Log error (chance to flood the logs)
-			p.mm.Log.Debug("Bindings are not of the right type.")
+			// p.mm.Log.Debug("Bindings are not of the right type.")
 			continue
 		}
 
