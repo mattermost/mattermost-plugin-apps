@@ -1,19 +1,7 @@
-# Overview
-
-Apps are lighweight interactive add-ons to mattermost. Apps can:
-- display interactive, dynamic Modal forms and Message Actions.
-- attach themselves to locations in the Mattermost UI (e.g. channel bar buttons,
-  post menu, channel menu, commands), and can add their custom /commands with
-  full Autocomplete.
-- receive webhooks from Mattermost, and from 3rd parties, and use the Mattermost
-  REST APIs to post messages, etc. 
-- be hosted externally (HTTP), on Mattermost Cloud (AWS Lambda), and soon
-  on-prem and in customers' own AWS environments.
-- be developed in any language*
-
 # Hello World!
-Here is an example of an HTTP App, written in Go and runnable on
-http://localhost:8080. [Source](/server/examples/go/helloworld)
+
+Here is an example of an HTTP App ([source](/server/examples/go/helloworld)),
+written in Go and runnable on http://localhost:8080. 
 
 - In its `manifest.json` it declares itself an HTTP application.
 - It contains a `send` function that sends a parameterized message back to the

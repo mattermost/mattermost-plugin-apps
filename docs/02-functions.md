@@ -1,20 +1,38 @@
 # Functions
 
+A "function" is what gets invoked in response to a user or a notification event.
+A function to invoke is described by a `Call` structure
 
 ## Call
-## Authentication
-## Context Expansion
-## Special Notes
-### Use of router packages in Apps
-- Go (gorilla mux)
-- JavaScript
-### Call vs Notification
-### AWS Lambda packaging
+A Call is a general request to an App server. Calls are used to fetch App's
+bindings, and to process user input, webhook events, and dynamic data lookups.
+There are 3 data structures involved:
+- `Call` that defines what function to invoke, and how.
+- `CallRequest` which includes the `Call`, but adds user-input values,
+  `Context`, etc. 
+- `CallResponse` is the result of a call.
+
+`Context` of a `CallRequest` sent to the App include Mattermost Site URL, and
+the access tokens requested by the App. This allows the App to use the
+Mattermost REST API. Context may be further expanded using the `Expand`
+attribute of a call to include the detailed data on the User, Channel, Team, and
+other relevant entities. Expanded context may also contain 3rd party OAuth2
+access token previously maintained and stored in Mattermost. 
+
+### `Call`
+
+```go
+type Call struct {
+	Path   string      `json:"path,omitempty"`
+	Expand *Expand     `json:"expand,omitempty"`
+	State  interface{} `json:"state,omitempty"`
+}
+```
 
 
-## Calls
 
-A Call is a request to an App server on behalf of a user (as well as events such as MessageHasBeenPosted). When the user performs some action (e.g. visiting a channel or submitting a form), a Call is sent to give the App server context of what channel/post/binding a user is interacting with. The Call also contains certain tokens in its payload (bot, user, and/or admin depending on request).
+
+When the user performs some action (e.g. visiting a channel or submitting a form), a Call is sent to give the App server context of what channel/post/binding a user is interacting with. The Call also contains certain tokens in its payload (bot, user, and/or admin depending on request).
 
 There are currently 3 types of calls associated with user actions:
 - Submit - submit a form/command or click on a UI binding
@@ -33,6 +51,19 @@ A Call request is sent to the App’s server when:
   - The user submits the modal (a new form may be returned from the App)
 - (TBD) A subscribed event like MessageHasBeenPosted occurs
 - (TBD) A third-party webhook request comes in
+## Authentication
+## Context Expansion
+## Special Notes
+### Use of router packages in Apps
+- Go (gorilla mux)
+- JavaScript
+### Call vs Notification
+### AWS Lambda packaging
+
+
+
+## Calls
+
 
 
 ## Context Expansion
