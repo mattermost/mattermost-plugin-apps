@@ -20,9 +20,9 @@ Apps are lighweight interactive add-ons to mattermost. Apps can:
 - [Anatomy](01-anatomy-hello.md) of a simple app.
 
 #### Functions, Calls
-- Example: [Hello, World](/server/examples/go/helloworld/hello.go#L45)) `send`
+- Example: [Hello, World](/server/examples/go/helloworld/hello.go#L45) `send`
   function.
-- [Post Menu Flow](02-example-post-menu.md) - message flow to define a Post Menu
+- [Post Menu Message Flow](02-example-post-menu.md) - message flow to define a Post Menu
   action, then have a user click it.
 - godoc: [Call](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Call) -
   [local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Call) -
@@ -38,20 +38,22 @@ Apps are lighweight interactive add-ons to mattermost. Apps can:
   controls context expansion.
 
 #### Forms
-- Example: [Hello, World](/server/examples/go/helloworld/send_form.json)) `send` form.
-- [Interactive Flows](03-example-interactivity.md) - message flow to define a
+- Example: [Hello, World](/server/examples/go/helloworld/send_form.json) `send` form.
+- [Interactive Message Flows](03-example-interactivity.md) - message flow to define a
   Post Menu action, then have a user click it.
 - godoc [Form](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Form) - [local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Form)
 - godoc [Field](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Field) - [local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Field)
 
 
 #### Bindings and Locations
-- Example: [Hello, World](/server/examples/go/helloworld/bindings.json)) bindings.
+- Example: [Hello, World](/server/examples/go/helloworld/bindings.json) bindings.
 - godoc [Binding](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Binding) - [local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Binding)
 
 #### Autocomplete
+- Example: [Hello, World](/server/examples/go/helloworld/bindings.json) bindings.
 
 #### Modals
+- Example: [Hello, World](/server/examples/go/helloworld/send_form.json) `send` form.
 
 #### In-Post Interactivity
 

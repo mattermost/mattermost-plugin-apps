@@ -73,27 +73,38 @@ type CallRequest struct {
 type CallResponseType string
 
 const (
-	// CallResponseTypeOK indicates that the call succeeded, and returns
-	// Markdown and Data.
-	CallResponseTypeOK = CallResponseType("ok")
+	// CallResponseTypeOK indicates that the call succeeded, returns optional
+	// Markdown (message) and Data.
+	CallResponseTypeOK CallResponseType = "ok"
 
-	// CallResponseTypeOK indicates an error, returns Error.
-	CallResponseTypeError = CallResponseType("error")
+	// CallResponseTypeOK indicates an error, returns ErrorText, and optional
+	// field-level errors in Data.
+	CallResponseTypeError CallResponseType = "error"
 
-	// CallResponseTypeForm returns the definition of the form to display for
-	// the inputs.
-	CallResponseTypeForm = CallResponseType("form")
+	// CallResponseTypeForm returns Form, the definition of the form to display.
+	// If returned responding to a submit, causes the form to be displayed as a
+	// modal.
+	CallResponseTypeForm CallResponseType = "form"
 
 	// CallResponseTypeCall indicates that another Call that should be executed
-	// (from the user-agent?). Call field is returned.
-	CallResponseTypeCall = CallResponseType("call")
+	// (all the way from the user-agent). Call is returned.
+	CallResponseTypeCall CallResponseType = "call"
 
 	// CallResponseTypeNavigate indicates that the user should be forcefully
 	// navigated to a URL, which may be a channel in Mattermost. NavigateToURL
 	// and UseExternalBrowser are expected to be returned.
-	// TODO should CallResponseTypeNavigate be a variation of CallResponseTypeOK?
-	CallResponseTypeNavigate = CallResponseType("navigate")
+	CallResponseTypeNavigate CallResponseType = "navigate"
 )
+
+// CallResponse is general envelope for all Call responses.
+//
+// For submit requests ok, error, form, call, or navigate response types. Form requests expect form or error. Lookup requests expect ok or error.
+// Returning a "form" type in response to a submission from the user-agent
+// triggers displaying a Modal.
+//
+// Returning a "call" type in response to a submission
+// In case of an error, the returned response type is "error", ErrorText
+// contains the overall error text. Data contains optional, field-level errors.
 
 type CallResponse struct {
 	Type CallResponseType `json:"type"`
