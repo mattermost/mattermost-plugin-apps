@@ -27,6 +27,8 @@ In Mattermost desktop app run:
 Then you can try clicking the "Hello World" channel header button, or using
 `/helloworld send` command.
 
+TODO: include screenshots
+
 ## Manifest
 The manifest declares App metadata, and for AWS Lambda apps declares the Call
 Path to Lambda Function mappings. For HTTP apps, paths are prefixed with

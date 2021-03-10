@@ -12,18 +12,19 @@ Apps are lighweight interactive add-ons to mattermost. Apps can:
 - be developed in any language*
 
 # Contents
+
 #### Development environment
-- [Google Doc](https://docs.google.com/document/d/1-o9A8l65__rYbx6O-ZdIgJ7LJgZ1f3XRXphAyD7YfF4/edit#) - DRAFT Dev environment doc.
+- DRAFT [Google Doc](https://docs.google.com/document/d/1-o9A8l65__rYbx6O-ZdIgJ7LJgZ1f3XRXphAyD7YfF4/edit#) - Dev environment doc.
 
 #### Hello, World
-- [Anatomy](01-anatomy-hello.md)
+- [Anatomy](01-anatomy-hello.md) of a simple app.
 
 #### Functions, Calls
 - [Post Menu Flow](02-example-post-menu.md) - message flow to define a Post Menu action, then have a user click it.
-- godoc: [Call](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Call) - describes how to call a function.
-- godoc: [CallRequest](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#CallRequest) - structure of a request to a function.
-- godoc: [Context](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Context) - extra data passed to call requests.
-- godoc: [Expand](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Expand) - controls context expansion.
+- godoc: [Call](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Call)[local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Call) - describes how to call a function.
+- godoc: [CallRequest](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#CallRequest)[local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#CallRequest) - structure of a request to a function.
+- godoc: [Context](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Context)[local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Context) - extra data passed to call requests.
+- godoc: [Expand](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Expand)[local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps#Expand) - controls context expansion.
 
 #### Forms
 - [godoc Form](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps#Form)

@@ -203,14 +203,3 @@ MM->Client:Return modal form, open modal
 ```
 
 </details>
-
-
-- Webhooks
-  - Any third-party webhook calls will be proxied through the framework
-  - Exact implementation here is TBD
-  - Webhook handlers will only have access to Bot Access Token (no User/Sysadmin OAuth2)
-
-- Notifications
-  - Subscribe schema (per channel?)
-  - All the p.API hooks available
-  - Use the Call format (Expand business)
