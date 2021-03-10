@@ -1,15 +1,33 @@
-## Overview
-### What are Apps?
-- Apps are lighweight interactive add-ons to mattermost. 
-- Apps can display interactive, dynamic Modal forms.
-- Apps can attach themselves to locations in the Mattermost UI (e.g. channel bar buttons, post menu, channel menu, commands), and can add their custom /commands with full Autocomplete.
-- Apps can receive webhooks from Mattermost, and from 3rd parties, and use the Mattermost REST APIs to post messages, etc. 
-- Apps can be hosted externally (HTTP), on Mattermost Cloud (AWS Lambda), and soon on-prem and in customers' own AWS environments.
-- Apps can be developed in any language*
+# Overview
 
-## Anatomy of an App: Hello World!
-Adds a channel header button, and a command to send "Hello" messages. See /server/examples/go/helloworld. A standalone HTTP app, running on http://localhost:8080.
+Apps are lighweight interactive add-ons to mattermost. Apps can:
+- display interactive, dynamic Modal forms and Message Actions.
+- attach themselves to locations in the Mattermost UI (e.g. channel bar buttons,
+  post menu, channel menu, commands), and can add their custom /commands with
+  full Autocomplete.
+- receive webhooks from Mattermost, and from 3rd parties, and use the Mattermost
+  REST APIs to post messages, etc. 
+- be hosted externally (HTTP), on Mattermost Cloud (AWS Lambda), and soon
+  on-prem and in customers' own AWS environments.
+- be developed in any language*
 
+# Hello World!
+Here is an example of an HTTP App, written in Go. It adds a channel header
+button, and a command to send "Hello" messages. See
+/server/examples/go/helloworld. 
+
+To install Hello, World follow these steps,
+- cd .../mattermost-plugin-apps/server/examples/go/helloworld
+- `go run .` - note go 1.16 is required
+- In Mattermost, `/apps debug-add-manifest --url http://localhost:8080/manifest.json`
+  and `/apps install --app-id helloworld`
+
+Then you can try clicking the "Hello World" channel header button, or using
+`/helloworld send` command.
+
+
+There are 4 principal pieces to the App: `manifest`, `bindings` handler,
+functions (`send`, `send-modal`), and the icon.
 
 ```go
 func main() {
@@ -38,8 +56,8 @@ The manifest declares App metadata, and for AWS Lambda apps declares the Call
 Path to Lambda Function mappings. For HTTP apps, paths are prefixed with
 HTTPRootURL before invoking, so no mappings are needed.
 
-The Hello World App requests the permission to act as a Bot, and to add UI to
-the channel header, and to /commands.
+The Hello World App is an HTTP app. It requests the permission to act as a Bot,
+and to add UI to the channel header, and to /commands.
 
 ```go
 func manifest(w http.ResponseWriter, req *http.Request) {
@@ -99,7 +117,9 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 ```
 
 ### Functions
-When the App's channel header button is clicked, or `/helloworld` command is executed, a **Call** is made to the App's **function** matching the call path. The App can then perform its task, or respond with a **Form** to gather more data from the user.
+Functions handle user events and webhooks. The Hello World App exposes 2 functions:
+- `/send` that services the command and modal
+- `/send-modal` that forces the modal to be displayed
 
 ### Icons 
 Apps may include static assets. At the moment, only icons are used.
