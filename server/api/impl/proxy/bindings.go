@@ -50,17 +50,20 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := manifest.Bindings
-		if bindingsCall == nil {
-			bindingsCall = apps.DefaultBindingsCall
+		bindingsCall := *apps.DefaultBindingsCall
+		if manifest.Bindings != nil {
+			bindingsCall = *manifest.Bindings
 		}
 		bindingsCall.Context = &appCC
 
-		resp := p.Call(debugSessionToken, bindingsCall)
+		resp := p.Call(debugSessionToken, &bindingsCall)
 
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)
 			// p.mm.Log.Debug("Response is nil or unexpected type.")
+			if resp != nil && resp.Type == apps.CallResponseTypeError {
+				p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
+			}
 			continue
 		}
 
