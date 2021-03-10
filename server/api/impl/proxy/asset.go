@@ -22,8 +22,8 @@ func (p *Proxy) GetAsset(appID apps.AppID, assetName string) (io.ReadCloser, int
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't load app - %s", appID)
 	}
 
-	errorMessage := fmt.Sprintf("can't download %s for appID - %s, assetName - %s", app.Manifest.Type, appID, assetName)
-	switch app.Manifest.Type {
+	errorMessage := fmt.Sprintf("can't download %s for appID - %s, assetName - %s", app.Manifest.AppType, appID, assetName)
+	switch app.Manifest.AppType {
 	case apps.AppTypeAWSLambda:
 		key := awsclient.GenerateAssetS3Name(app.AppID, app.Manifest.Version, assetName)
 		data, err := p.aws.Client().GetS3(p.s3AssetBucket, key)

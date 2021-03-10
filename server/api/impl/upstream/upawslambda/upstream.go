@@ -49,10 +49,7 @@ func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
 }
 
 func (u *Upstream) OneWay(call *apps.CallRequest) error {
-	name, err := match(call.Path, u.app)
-	if err != nil {
-		return errors.Wrapf(err, "failed to match %s to function", call.Path)
-	}
+	name := match(call.Path, u.app)
 	if name == "" {
 		return utils.ErrNotFound
 	}
@@ -67,10 +64,7 @@ func (u *Upstream) OneWay(call *apps.CallRequest) error {
 }
 
 func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
-	name, err := match(call.Path, u.app)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to match %s to function", call.Path)
-	}
+	name := match(call.Path, u.app)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
@@ -119,19 +113,15 @@ func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	return payload, nil
 }
 
-func match(callPath string, app *apps.App) (string, error) {
+func match(callPath string, app *apps.App) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range app.Functions {
+	for _, f := range app.AWSLambda {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				var err error
-				matchedName, err = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
-				if err != nil {
-					return "", err
-				}
+				matchedName = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
 			}
 		}
 	}
-	return matchedName, nil
+	return matchedName
 }

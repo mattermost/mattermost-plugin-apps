@@ -1,54 +1,9 @@
 ## Authentication
 ## Context Expansion
-## Special Notes
-### Use of router packages in Apps
-- Go (gorilla mux)
-- JavaScript
-### Call vs Notification
-### AWS Lambda packaging
-
 
 
 ## Calls
 
-
-
-## Context Expansion
-
-By default, only the IDs of certain entities are provided in the Call. Since we want these App functions to be stateless and quick, the App can specify certain objects to be "expanded" within the request to the App.
-
-The framework verifies that the user has access to the entities before expanding and including them in the request. Choosing which level of access token to use for expand depends on what the App initially requests when installed:
-
-- Bot token (possibly less privileged than admin)
-- Acting user token
-- Admin token
-
-
-Entities that can be expanded:
-
-- App - details about the App itself
-  - see what is provided in summary vs full
-
-- Acting User - model.User struct
-
-- ActingUserAccessToken - OAuth2 token for acting user
-  - currently is just acting MM session token
-
-- AdminAccessToken - Access token to do admin-level operations
-  - currently is just acting MM session token
-  - Eventually make a short-lived bot admin token, scoped to certain operations
-
-- Channel - The current channel the acting user is interacting with
-
-- Mentioned - Users/channels mentioned in the related post or command being run
-  - not implemented yet
-  - should be access controlled as far as what is able to be expanded per user/context
-
-- ParentPost - Parent post of the selected post
-- Post - Selected post, if the call is specific to a given post
-- RootPost - Root post of the selected post
-
-- Team - The current ream the acting user is interacting with
 
 
 ### Conext Expansion Example

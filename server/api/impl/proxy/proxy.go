@@ -105,7 +105,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
-	switch app.Type {
+	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil
 
@@ -120,7 +120,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 		return up, nil
 
 	default:
-		return nil, errors.Errorf("not a valid app type: %s", app.Type)
+		return nil, errors.Errorf("not a valid app type: %s", app.AppType)
 	}
 }
 

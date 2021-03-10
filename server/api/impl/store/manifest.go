@@ -91,7 +91,7 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		}
 
 		var m *apps.Manifest
-		m, err = DecodeManifest(data)
+		m, err = apps.ManifestFromJSON(data)
 		if err != nil {
 			s.mm.Log.Error("failed to load global manifest",
 				"err", err.Error(),
@@ -114,19 +114,6 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 	s.mutex.Unlock()
 
 	return nil
-}
-
-func DecodeManifest(data []byte) (*apps.Manifest, error) {
-	var m apps.Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
-	}
-	err = m.IsValid()
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
 }
 
 func (s *manifestStore) Configure(conf api.Config) error {

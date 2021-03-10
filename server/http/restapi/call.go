@@ -10,7 +10,7 @@ import (
 )
 
 func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
-	call, err := apps.UnmarshalCallRequestFromReader(req.Body)
+	call, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to unmarshal Call struct")
 		httputils.WriteBadRequestError(w, err)

@@ -10,43 +10,33 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-const LambdaFunctionFileNameMaxSize = 64
-const AppIDLengthLimit = 32
-const VersionFormat = "v00.00.000"
+const MaxLambdaName = 64
 const StaticAssetsFolder = "static/"
 
 // GenerateLambdaName generates function name for a specific app, name can be 64
 // characters long.
-func GenerateLambdaName(appID apps.AppID, version apps.AppVersion, function string) (string, error) {
-	if len(appID) > AppIDLengthLimit {
-		return "", errors.Errorf("appID %s too long, should be %d bytes", appID, AppIDLengthLimit)
-	}
-	if len(version) > len(VersionFormat) {
-		return "", errors.Errorf("version %s too long, should be in %s format", version, VersionFormat)
-	}
-
+func GenerateLambdaName(appID apps.AppID, version apps.AppVersion, function string) string {
 	// Sanitized any dots used in appID and version as lambda function names can not contain dots
 	// While there are other non-valid characters, a dots is the most commonly used one
 	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
 	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
 
 	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
-	if len(name) <= LambdaFunctionFileNameMaxSize {
-		return name, nil
+	if len(name) <= MaxLambdaName {
+		return name
 	}
-	functionNameLength := LambdaFunctionFileNameMaxSize - len(appID) - len(version) - 2
+
+	functionNameLength := MaxLambdaName - len(appID) - len(version) - 2
 	hash := sha256.Sum256([]byte(name))
 	hashString := hex.EncodeToString(hash[:])
 	if len(hashString) > functionNameLength {
 		hashString = hashString[:functionNameLength]
 	}
 	name = fmt.Sprintf("%s_%s_%s", appID, version, hashString)
-	return name, nil
+	return name
 }
 
 // GenerateManifestS3Name generates key for a specific manifest in S3,

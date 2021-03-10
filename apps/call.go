@@ -7,74 +7,67 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
+// CallType determines what action is expected of a function.
 type CallType string
 
 const (
 	// CallTypeSubmit (default) indicates the intent to take action.
-	CallTypeSubmit = CallType("submit")
+	CallTypeSubmit CallType = "submit"
+
 	// CallTypeForm retrieves the form definition for the current set of values,
 	// and the context.
-	CallTypeForm = CallType("form")
+	CallTypeForm CallType = "form"
+
 	// CallTypeCancel is used for for the (rare?) case of when the form with
 	// SubmitOnCancel set is dismissed by the user.
-	CallTypeCancel = CallType("cancel")
+	CallTypeCancel CallType = "cancel"
+
 	// CallTypeLookup is used to fetch items for dynamic select elements
-	CallTypeLookup = CallType("lookup")
+	CallTypeLookup CallType = "lookup"
 )
 
-/*
-A Call defines a way to invoke an App's function. Calls are used to fetch App's
-bindings, and to process user input, webhook events, and dynamic data lookups.
-
-
-A Call request is sent to the App’s server when:
-- The user visits a channel (call to fetch bindings)
-- The user clicks on a post menu or channel binding (may open a modal)
-- Commands:
-  - The user is filling out a command argument that fetches dynamic results
-    (lookup call is performed)
-  - The user submits a command (may open a modal)
-- Modals:
-  - The user types a search in a modal’s autocomplete select field (lookup call
-    is performed)
-  - The user selects a value from a “refresh” select element in a modal (the
-    modal’s form will be re-fetched based on all filled out values)
-  - The user submits the modal (a new form may be returned from the App)
-- (TBD) A subscribed event like MessageHasBeenPosted occurs
-- (TBD) A third-party webhook request comes in
-*/
-
-// A Call invocation is supplied a BotAccessToken as part of the context. If a
-// call needs acting user's or admin tokens, it should be specified in the
-// Expand section.
-//
-// If a user or admin token are required and are not available from previous
-// consent, the appropriate OAuth flow is launched, and the Call is executed
-// upon its success.
-//
-// TODO: what if a call needs a token and it was not provided? Return a call to
-// itself with Expand.
+// A Call defines a way to invoke an App's function. Calls are used to fetch
+// App's bindings, to process notifications, and to respond to user input from
+// forms, and command line.
 type Call struct {
 	// The path of the Call. For HTTP apps, the path is appended to the app's
 	// RootURL. For AWS Lambda apps, it is mapped to the appropriate Lambda name
 	// to invoke, and then passed in the call request.
-	Path   string      `json:"path,omitempty"`
-	Expand *Expand     `json:"expand,omitempty"`
-	State  interface{} `json:"state,omitempty"`
+	Path string `json:"path,omitempty"`
+
+	// Expand specifies what extended data should be provided to the function in
+	// each request. It may be various auth tokens, configuration data, or
+	// details of Mattermost entities such as the acting user, current team and
+	// channel, etc.
+	Expand *Expand `json:"expand,omitempty"`
+
+	// Custom data that will be passed to the function in JSON, "as is".
+	State interface{} `json:"state,omitempty"`
 }
 
 type CallRequest struct {
+	// A copy of the Call struct that originated the request. Path and State are
+	// of significance.
 	Call
-	// There are currently 3 Types of calls associated with user actions:
-	// - Submit - submit a form/command or click on a UI binding
-	// - Form - Fetch a form’s definition like a command or modal
-	// - Lookup - Fetch autocomplete results for am autocomplete form field
-	Type          CallType               `json:"type"`
-	Values        map[string]interface{} `json:"values,omitempty"`
-	Context       *Context               `json:"context,omitempty"`
-	RawCommand    string                 `json:"raw_command,omitempty"`
-	SelectedField string                 `json:"selected_field,omitempty"`
-	Query         string                 `json:"query,omitempty"`
+
+	// Type of the request, see CallType type for more information.
+	Type CallType `json:"type"`
+
+	// Values are all values entered by the user.
+	Values map[string]interface{} `json:"values,omitempty"`
+
+	// Context of execution, see the Context type for more information.
+	Context *Context `json:"context,omitempty"`
+
+	// In case the request came from the command line, the raw text of the
+	// command, as submitted by the user.
+	RawCommand string `json:"raw_command,omitempty"`
+
+	// SelectedField and Query are used in calls of type lookup, to communicate
+	// what field is selected, and what query string is already entered by the
+	// user for it.
+	SelectedField string `json:"selected_field,omitempty"`
+	Query         string `json:"query,omitempty"`
 }
 
 type CallResponseType string
@@ -139,7 +132,7 @@ func (cr *CallResponse) Error() string {
 	return ""
 }
 
-func UnmarshalCallRequestFromData(data []byte) (*CallRequest, error) {
+func CallRequestFromJSON(data []byte) (*CallRequest, error) {
 	c := CallRequest{}
 	err := json.Unmarshal(data, &c)
 	if err != nil {
@@ -148,7 +141,7 @@ func UnmarshalCallRequestFromData(data []byte) (*CallRequest, error) {
 	return &c, nil
 }
 
-func UnmarshalCallRequestFromReader(in io.Reader) (*CallRequest, error) {
+func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 	c := CallRequest{}
 	err := json.NewDecoder(in).Decode(&c)
 	if err != nil {
@@ -157,7 +150,7 @@ func UnmarshalCallRequestFromReader(in io.Reader) (*CallRequest, error) {
 	return &c, nil
 }
 
-func MakeCall(url string) *Call {
+func NewCall(url string) *Call {
 	c := &Call{
 		Path: url,
 	}
