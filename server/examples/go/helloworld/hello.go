@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -14,6 +12,12 @@ import (
 
 //go:embed icon.png
 var iconData []byte
+
+//go:embed manifest.json
+var manifestData []byte
+
+//go:embed send_form.json
+var formData []byte
 
 func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
@@ -33,19 +37,6 @@ func main() {
 	http.HandleFunc("/static/icon.png", icon)
 
 	http.ListenAndServe(":8080", nil)
-}
-
-func manifest(w http.ResponseWriter, req *http.Request) {
-	m := apps.Manifest{
-		AppID:                "helloworld",
-		DisplayName:          "Hello, world!",
-		Type:                 "http",
-		HTTPRootURL:          "http://localhost:8080",
-		RequestedPermissions: apps.Permissions{"act_as_bot"},
-		RequestedLocations:   apps.Locations{"/channel_header", "/command"},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(m)
 }
 
 func bindings(w http.ResponseWriter, req *http.Request) {
@@ -88,41 +79,15 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func helloForm() apps.CallResponse {
-	return apps.CallResponse{
-		Type: "form",
-		Form: &apps.Form{
-			Title: "Hello, world!",
-			//TODO: ticket: relative URL doesn't work
-			Icon: "http://localhost:8080/static/icon.png",
-			Fields: []*apps.Field{
-				{
-					Name:  "message",
-					Type:  apps.FieldTypeText,
-					Label: "message",
-				},
-			},
-			//TODO: ticket: Modal submit does not work
-			Call: &apps.Call{
-				Path: "/send",
-			},
-		},
-	}
-}
-
-func sendModal(w http.ResponseWriter, req *http.Request) {
-	_ = json.NewEncoder(w).Encode(helloForm())
-}
-
 func send(w http.ResponseWriter, req *http.Request) {
 	call := apps.Call{}
-	out := apps.CallResponse{}
-
 	_ = json.NewDecoder(req.Body).Decode(&call)
+
 	w.Header().Set("Content-Type", "application/json")
 	switch {
 	case call.Type == "form":
-		out = helloForm()
+		_, _ = w.Write(formData)
+		return
 
 	case call.Type == "submit":
 		message := "Hello, world!"
@@ -132,10 +97,19 @@ func send(w http.ResponseWriter, req *http.Request) {
 		}
 		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, message)
 	}
-	_ = json.NewEncoder(w).Encode(out)
+	_ = json.NewEncoder(w).Encode(apps.CallResponse{})
+}
+
+func sendModal(w http.ResponseWriter, req *http.Request) {
+	_, _ = w.Write(formData)
+}
+
+func manifest(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(manifestData)
 }
 
 func icon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
-	io.Copy(w, bytes.NewReader(iconData))
+	w.Write(iconData)
 }

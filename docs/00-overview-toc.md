@@ -12,9 +12,15 @@ Apps are lighweight interactive add-ons to mattermost. Apps can:
 - be developed in any language*
 
 # Hello World!
-Here is an example of an HTTP App, written in Go. It adds a channel header
-button, and a command to send "Hello" messages. See
-/server/examples/go/helloworld. 
+Here is an example of an HTTP App, written in Go and runnable on
+http://localhost:8080. [Source](/server/examples/go/helloworld)
+
+- In its `manifest.json` it declares itself an HTTP application.
+- It contains a `send` function that sends a parameterized message back to the user. 
+- It contains a `send-modal` function that forces displaying the `send` form as a Modal.
+- In its `bindings` function it attaches `send-modal` to a button in the channel header, and `send` to a /helloworld command
+ It adds a channel header
+button, and a command to send "Hello" messages.  
 
 To install Hello, World follow these steps,
 - cd .../mattermost-plugin-apps/server/examples/go/helloworld
@@ -51,7 +57,7 @@ func main() {
 }
 ```
 
-### Manifest
+## Manifest
 The manifest declares App metadata, and for AWS Lambda apps declares the Call
 Path to Lambda Function mappings. For HTTP apps, paths are prefixed with
 HTTPRootURL before invoking, so no mappings are needed.
@@ -59,22 +65,23 @@ HTTPRootURL before invoking, so no mappings are needed.
 The Hello World App is an HTTP app. It requests the permission to act as a Bot,
 and to add UI to the channel header, and to /commands.
 
-```go
-func manifest(w http.ResponseWriter, req *http.Request) {
-	m := apps.Manifest{
-		AppID:                "helloworld",
-		DisplayName:          "Hello, world!",
-		Type:                 "http",
-		HTTPRootURL:          "http://localhost:8080",
-		RequestedPermissions: apps.Permissions{"act_as_bot"},
-		RequestedLocations:   apps.Locations{"/channel_header", "/command"},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(m)
+```json
+{
+	"app_id": "helloworld",
+	"display_name": "Hello, world!",
+	"app_type": "http",
+	"root_url": "http://localhost:8080",
+	"requested_permissions": [
+		"act_as_bot"
+	],
+	"requested_locations": [
+		"/channel_header",
+		"/command"
+	]
 }
 ```
 
-### Bindings and Locations
+## Bindings and Locations
 Locations are named elements in Mattermost UI. Bindings specify how App's calls
 should be displayed at, and invoked from these locations. 
 
@@ -116,48 +123,110 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-### Functions
+## Functions and Form
 Functions handle user events and webhooks. The Hello World App exposes 2 functions:
-- `/send` that services the command and modal
-- `/send-modal` that forces the modal to be displayed
+- `/send` that services the command and modal.
+- `/send-modal` that forces the modal to be displayed.
 
-### Icons 
+```go
+func send(w http.ResponseWriter, req *http.Request) {
+	call := apps.Call{}
+	out := apps.CallResponse{}
+
+	_ = json.NewDecoder(req.Body).Decode(&call)
+	w.Header().Set("Content-Type", "application/json")
+	switch {
+	case call.Type == "form":
+		out = helloForm()
+
+	case call.Type == "submit":
+		message := "Hello, world!"
+		v, ok := call.Values["message"]
+		if ok && v != nil {
+			message += fmt.Sprintf(" ...and %s!", v)
+		}
+		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, message)
+	}
+	_ = json.NewEncoder(w).Encode(out)
+}
+
+func sendModal(w http.ResponseWriter, req *http.Request) {
+	_ = json.NewEncoder(w).Encode(helloForm())
+}
+```
+
+The functions use a simple form with 1 text field named `"message"`, the form
+submits to `/send`.
+
+```json
+{
+	"type": "form",
+	"form": {
+		"title": "Hello, world!",
+		"icon": "http://localhost:8080/static/icon.png",
+		"fields": [
+			{
+				"type": "text",
+				"name": "message",
+				"label": "message"
+			}
+		],
+		"call": {
+			"path": "/send"
+		}
+	}
+}
+```
+
+## Icons 
 Apps may include static assets. At the moment, only icons are used.
 
-### OAuth2 support
+## OAuth2 support
 Apps rely on user-level OAuth2 authentication to impersonate Mattermost users,
 or to execute administrative tasks. Apps are expected to rely on user-level
 OAuth2 to 3rd party systems.
 
-## Development environment
+# Development environment
+See https://docs.google.com/document/d/1-o9A8l65__rYbx6O-ZdIgJ7LJgZ1f3XRXphAyD7YfF4/edit#
 
-## Forms and Functions
-### Authentication
-### Context Expansion
+# Functions
+## Call
+## Authentication
+## Context Expansion
+## Special Notes
+### Use of router packages in Apps
+- Go (gorilla mux)
+- JavaScript
 ### Call vs Notification
+### AWS Lambda packaging
 
-## Interactive Features
-### Locations and Bindings
-### /commands and autocomplete
-### Modals
-### In-Post interactivity
+# Forms
+## Binding Forms to Locations
+### Channel Header
+### Post Menu
+### /Command Autocomplete
+## Autocomplete
+## Modals
 
-## Using Mattermost APIs
-### Authentication and Token Store
-### Scopes and Permissions
-### Apps Subscriptions API
-### Apps KV API
-### Mattermost REST API
 
-## Using 3rd party APIs
-### Authentication and Token Store
-### 3rd party webhooks
+# In-Post Interactivity
 
-## Lifecycle
-### Development
-### Submit to Marketplace
-### Provision
-### Publish
-### Install
-### Uninstall
-### Upgrade/downgrade consideration
+# Using Mattermost APIs
+## Authentication and Token Store
+## Scopes and Permissions
+## Apps Subscriptions API
+## Apps KV API
+## Mattermost REST API
+
+# Using 3rd party APIs
+## Authentication and Token Store
+## 3rd party webhooks
+
+# App Lifecycle
+## Development
+## Submit to Marketplace
+## Provision
+## Publish
+## Install
+## Uninstall
+## Upgrade/downgrade consideration
