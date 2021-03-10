@@ -42,5 +42,9 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	res := a.api.Proxy.Call(apps.SessionToken(session.Token), call)
+	if res.Type == "" {
+		res.Type = apps.CallResponseTypeOK
+	}
+
 	httputils.WriteJSON(w, res)
 }
