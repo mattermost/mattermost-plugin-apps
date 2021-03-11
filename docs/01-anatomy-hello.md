@@ -32,12 +32,9 @@ type `testing` and click Submit, you should see:
 You can also use `/helloworld send` command.
 
 ## Manifest
-The manifest declares App metadata, and for AWS Lambda apps declares the Call
-Path to Lambda Function mappings. For HTTP apps, paths are prefixed with
-HTTPRootURL before invoking, so no mappings are needed.
-
-The Hello World App is an HTTP app. It requests the permission to act as a Bot,
-and to add UI to the channel header, and to /commands.
+The manifest declares App metadata, For HTTP apps like this no paths mappings
+are needed. The Hello World App requests the *permission* to act as a Bot, and
+to *bind* itself to the channel header, and to /commands.
 
 ```json
 {
