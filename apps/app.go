@@ -3,8 +3,9 @@ package apps
 import (
 	"unicode"
 
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 // AppID is a globally unique identifier that represents a Mattermost App.
