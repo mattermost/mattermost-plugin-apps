@@ -146,7 +146,10 @@ func (s *appStore) Save(app *apps.App) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
+	err = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
+	if err != nil {
+		s.mm.Log.Warn("failed to delete previous App KV value", "err", err.Error())
+	}
 	return nil
 }
 

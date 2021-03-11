@@ -231,7 +231,10 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
+	err = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
+	if err != nil {
+		s.mm.Log.Warn("failed to delete previous Manifest KV value", "err", err.Error())
+	}
 	return nil
 }
 
