@@ -32,7 +32,6 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 		diff[app.AppID] = app
 	}
 
-	// call onInstanceStartup. App migration happens here
 	for _, app := range diff {
 		l := listed[app.AppID]
 		values := map[string]string{
@@ -71,19 +70,6 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 
 	return nil
 }
-
-// func (adm *Admin) callOnStartupOnceWithValues(app *apps.App, values map[string]string) {
-// 	// Call OnVersionChanged the function of the app. It should be called only once
-// 	f := func() error {
-// 		if err := adm.expandedCall(app, app.Manifest.OnVersionChanged, values); err != nil {
-// 			adm.mm.Log.Error("Can't call OnVersionChanged func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
-// 		}
-// 		return nil
-// 	}
-// 	if err := adm.callOnce(f); err != nil {
-// 		adm.mm.Log.Error("Can't callOnce the OnVersionChanged func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
-// 	}
-// }
 
 func (adm *Admin) callOnce(f func() error) error {
 	// Delete previous job
