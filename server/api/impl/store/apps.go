@@ -41,7 +41,7 @@ func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf api.Config) error {
+func (s *appStore) Configure(conf api.Config) {
 	newInstalled := map[apps.AppID]*apps.App{}
 
 	for id, key := range conf.InstalledApps {
@@ -64,8 +64,6 @@ func (s *appStore) Configure(conf api.Config) error {
 	s.mutex.Lock()
 	s.installed = newInstalled
 	s.mutex.Unlock()
-
-	return nil
 }
 
 func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
@@ -148,7 +146,10 @@ func (s *appStore) Save(app *apps.App) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
+	err = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
+	if err != nil {
+		s.mm.Log.Warn("failed to delete previous App KV value", "err", err.Error())
+	}
 	return nil
 }
 

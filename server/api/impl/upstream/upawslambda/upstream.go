@@ -120,6 +120,7 @@ func match(callPath string, app *apps.App) string {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				matchedName = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
+				matchedPath = f.Path
 			}
 		}
 	}

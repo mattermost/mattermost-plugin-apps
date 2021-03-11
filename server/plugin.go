@@ -20,7 +20,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/store"
@@ -38,7 +37,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf api.Configurator
-	aws  aws.Service
+	aws  awsclient.Client
 
 	store       *store.Store
 	admin       api.Admin
@@ -75,7 +74,6 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
-	conf := p.conf.GetConfig()
 
 	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
 	if accessKey == "" {
@@ -85,20 +83,19 @@ func (p *Plugin) OnActivate() error {
 	if secretKey == "" {
 		p.mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
 	}
-	p.aws, err = aws.MakeService(accessKey, secretKey, &p.mm.Log)
+	p.aws, err = awsclient.MakeClient(accessKey, secretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
 
 	p.store = store.New(p.mm, p.conf)
 	// manifest store
+	conf := p.conf.GetConfig()
 	mstore := p.store.Manifest()
-	err = mstore.Configure(conf)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the manifest store")
-	}
+	mstore.Configure(conf)
+	// TODO: uses the default bucket name, do we need it customizeable?
 	manifestBucket := awsclient.GenerateS3BucketNameWithDefaults("")
-	err = mstore.InitGlobal(p.aws.Client(), manifestBucket)
+	err = mstore.InitGlobal(p.aws, manifestBucket)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
@@ -107,11 +104,10 @@ func (p *Plugin) OnActivate() error {
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		appstore.InitBuiltin(builtin_hello.App())
 	}
-	err = appstore.Configure(conf)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the app store")
-	}
+	appstore.Configure(conf)
 
+	// TODO: uses the default bucket name, same as for the manifests do we need
+	// it customizeable?
 	assetBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
@@ -124,7 +120,7 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, p.aws, mutex)
+	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, mutex)
 
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
 		dialog.Init,

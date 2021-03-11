@@ -26,18 +26,24 @@ import (
 // DefaultRegion describes default region in aws
 const DefaultRegion = "us-east-2"
 
+// Client is an authenticated client for interacting with AWS resources.
 type Client interface {
-	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
-	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
-	CreateS3Bucket(bucket string) error
+	// Proxy methods
+
 	GetS3(bucket, item string) ([]byte, error)
 	InvokeLambda(name string, invocationType string, request interface{}) ([]byte, error)
+
+	// Admin methods
+
+	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
+	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
 	MakeLambdaFunctionDefaultPolicy() (string, error)
-	ExistsS3Bucket(name string) (bool, error)
+
+	CreateS3Bucket(bucket string) error
 	UploadS3(bucket, key string, body io.Reader) error
+	ExistsS3Bucket(name string) (bool, error)
 }
 
-// Client is a client for interacting with AWS resources.
 type client struct {
 	accessKeyID     string
 	secretAccessKey string

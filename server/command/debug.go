@@ -22,7 +22,7 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.proxy.GetBindings(apps.NewCommandContext(params.commandArgs))
+	bindings, err := s.proxy.GetBindings(apps.SessionToken(params.commandArgs.Session.Token), apps.NewCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
 	}

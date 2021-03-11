@@ -74,12 +74,8 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 		return nil, "", err
 	}
 
-	install := apps.DefaultInstallCall.WithOverrides(app.OnInstall)
 	installRequest := &apps.CallRequest{
-		Call: *install,
-		Values: map[string]interface{}{
-			apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
-		},
+		Call:    *apps.DefaultInstallCall.WithOverrides(app.OnInstall),
 		Context: cc,
 	}
 

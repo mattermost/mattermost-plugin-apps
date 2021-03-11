@@ -50,9 +50,18 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 		if app.OnVersionChanged != nil {
 			err := adm.callOnce(func() error {
 				creq := &apps.CallRequest{
-					Call: *app.OnVersionChanged,
+					Call:   *app.OnVersionChanged,
+					Values: map[string]interface{}{},
 				}
-				return adm.expandedCall(app, creq, values)
+				for k, v := range values {
+					creq.Values[k] = v
+				}
+
+				resp := adm.proxy.Call(adm.adminToken, creq)
+				if resp.Type == apps.CallResponseTypeError {
+					return errors.Wrapf(resp, "call %s failed", creq.Path)
+				}
+				return nil
 			})
 			if err != nil {
 				adm.mm.Log.Error("failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
@@ -106,32 +115,6 @@ func (adm *Admin) callOnce(f func() error) error {
 	}
 	if !ok {
 		return errors.Errorf("can't set key %s to %d", api.KeyCallOnce, value)
-	}
-	return nil
-}
-
-func (adm *Admin) expandedCall(app *apps.App, call *apps.CallRequest, values map[string]string) error {
-	if call == nil {
-		return nil
-	}
-
-	if call.Values == nil {
-		call.Values = map[string]interface{}{}
-	}
-	call.Values[apps.PropOAuth2ClientSecret] = app.OAuth2ClientSecret
-	for k, v := range values {
-		call.Values[k] = v
-	}
-
-	if call.Expand == nil {
-		call.Expand = &apps.Expand{}
-	}
-	call.Expand.App = apps.ExpandAll
-	call.Expand.AdminAccessToken = apps.ExpandAll
-
-	resp := adm.proxy.Call(adm.adminToken, call)
-	if resp.Type == apps.CallResponseTypeError {
-		return errors.Wrapf(resp, "call %s failed", call.Path)
 	}
 	return nil
 }

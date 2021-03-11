@@ -68,7 +68,7 @@ func (c *client) CreateLambda(zipFile io.Reader, function, handler, runtime, res
 
 func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error {
 	if zipFile == nil || function == "" {
-		return errors.New("you must supply a zip file, function name, handler, ARN and runtime")
+		return errors.New("you must supply a zip file and the function name")
 	}
 
 	exists := false

@@ -116,7 +116,20 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 	return nil
 }
 
-func (s *manifestStore) Configure(conf api.Config) error {
+func DecodeManifest(data []byte) (*apps.Manifest, error) {
+	var m apps.Manifest
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+	err = m.IsValid()
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (s *manifestStore) Configure(conf api.Config) {
 	updatedLocal := map[apps.AppID]*apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
@@ -139,8 +152,6 @@ func (s *manifestStore) Configure(conf api.Config) error {
 	s.mutex.Lock()
 	s.local = updatedLocal
 	s.mutex.Unlock()
-
-	return nil
 }
 
 func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
@@ -220,7 +231,10 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return err
 	}
 
-	_ = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
+	err = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
+	if err != nil {
+		s.mm.Log.Warn("failed to delete previous Manifest KV value", "err", err.Error())
+	}
 	return nil
 }
 
@@ -259,7 +273,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 
 // getFromS3 returns a manifest file for an app from the S3
 func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
-	name := fmt.Sprintf("manifest_%s_%s", appID, version)
+	name := awsclient.GenerateManifestS3Name(appID, version)
 	data, err := awscli.GetS3(bucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)

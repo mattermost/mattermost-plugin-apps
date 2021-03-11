@@ -49,7 +49,7 @@ type Config struct {
 }
 
 type Configurable interface {
-	Configure(Config) error
+	Configure(Config)
 }
 
 type Configurator interface {
