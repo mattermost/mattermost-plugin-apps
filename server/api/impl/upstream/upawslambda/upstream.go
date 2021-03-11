@@ -126,6 +126,7 @@ func match(callPath string, app *apps.App) (string, error) {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				var err error
+				matchedPath = f.Path
 				matchedName, err = awsclient.GenerateLambdaName(app.AppID, app.Version, f.Name)
 				if err != nil {
 					return "", err

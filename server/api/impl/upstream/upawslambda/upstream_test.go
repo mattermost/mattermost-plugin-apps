@@ -14,9 +14,6 @@ import (
 func TestMatch(t *testing.T) {
 	routes := []apps.Function{
 		{
-			Path: "/",
-			Name: "main",
-		}, {
 			Path: "/topic",
 			Name: "topic",
 		}, {
@@ -25,6 +22,9 @@ func TestMatch(t *testing.T) {
 		}, {
 			Path: "/other",
 			Name: "other",
+		}, {
+			Path: "/",
+			Name: "main",
 		},
 	}
 

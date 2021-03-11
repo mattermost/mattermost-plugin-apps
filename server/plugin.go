@@ -96,6 +96,7 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
+	// TODO: uses the default bucket name, do we need it customizeable?
 	manifestBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	err = mstore.InitGlobal(p.aws, manifestBucket)
 	if err != nil {
@@ -111,6 +112,8 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
 
+	// TODO: uses the default bucket name, same as for the manifests do we need
+	// it customizeable?
 	assetBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
