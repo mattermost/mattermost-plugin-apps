@@ -1,12 +1,10 @@
 package proxy
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 )
 
 func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
@@ -33,7 +31,7 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 	return out
 }
 
-func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := p.store.App().AsMap()
 
 	all := []*apps.Binding{}
@@ -43,11 +41,6 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 		appCC.AppID = appID
 		appCC.BotAccessToken = app.BotAccessToken
 
-		up, err := p.upstreamForApp(app)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to make upstream for %s", appID)
-		}
-
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
 		bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
@@ -56,10 +49,25 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 			Context: &appCC,
 		}
 
-		bindings, err := upstream.GetBindings(up, bindingsRequest)
-		if err != nil {
-			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
+		resp := p.Call(debugSessionToken, bindingsRequest)
+		if resp == nil || resp.Type != apps.CallResponseTypeOK {
+			// TODO Log error (chance to flood the logs)
+			// p.mm.Log.Debug("Response is nil or unexpected type.")
+			// if resp != nil && resp.Type == apps.CallResponseTypeError {
+			// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
+			// }
+			continue
 		}
+
+		var bindings = []*apps.Binding{}
+		b, _ := json.Marshal(resp.Data)
+		err := json.Unmarshal(b, &bindings)
+		if err != nil {
+			// TODO Log error (chance to flood the logs)
+			// p.mm.Log.Debug("Bindings are not of the right type.")
+			continue
+		}
+
 		all = mergeBindings(all, p.scanAppBindings(app, bindings, ""))
 	}
 
