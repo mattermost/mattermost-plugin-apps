@@ -24,10 +24,12 @@ In Mattermost desktop app run:
 /apps install --app-id helloworld
 ```
 
-Then you can try clicking the "Hello World" channel header button, or using
-`/helloworld send` command.
+Then you can try clicking the "Hello World" channel header button, which brings up a modal:
+![image](https://user-images.githubusercontent.com/1187448/110829345-da81d800-824c-11eb-96e7-c62637242897.png)
+type `testing` and click Submit, you should see:
+![image](https://user-images.githubusercontent.com/1187448/110829449-fb4a2d80-824c-11eb-8ade-d20e0fbd1b94.png)
 
-TODO: include screenshots
+You can also use `/helloworld send` command.
 
 ## Manifest
 The manifest declares App metadata, and for AWS Lambda apps declares the Call
