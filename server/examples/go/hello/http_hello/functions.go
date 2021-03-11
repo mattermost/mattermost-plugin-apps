@@ -3,6 +3,7 @@ package http_hello
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
@@ -19,9 +20,6 @@ func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims 
 }
 
 func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
-	if c.Type != apps.CallTypeSubmit {
-		return http.StatusBadRequest, errors.New("not supported")
-	}
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -35,7 +33,10 @@ func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api
 
 func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
-	switch c.Type {
+	vars := mux.Vars(req)
+	callType := apps.CallType(vars["type"])
+
+	switch callType {
 	case apps.CallTypeForm:
 		out = hello.NewSendSurveyFormResponse(c)
 
@@ -60,7 +61,7 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 			},
 		}
 	default:
-		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
+		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
 
 	httputils.WriteJSON(w, out)
@@ -81,12 +82,14 @@ func (h *helloapp) SubmitSurvey(w http.ResponseWriter, req *http.Request, claims
 
 func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
+	vars := mux.Vars(req)
+	callType := apps.CallType(vars["type"])
 
-	switch c.Type {
+	switch callType {
 	case apps.CallTypeSubmit:
 		out = hello.NewSendSurveyFormResponse(c)
 	default:
-		out = hello.NewSendSurveyPartialFormResponse(c)
+		out = hello.NewSendSurveyPartialFormResponse(c, callType)
 	}
 
 	httputils.WriteJSON(w, out)
@@ -95,8 +98,10 @@ func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Req
 
 func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
+	vars := mux.Vars(req)
+	callType := apps.CallType(vars["type"])
 
-	switch c.Type {
+	switch callType {
 	case apps.CallTypeForm:
 		out = hello.NewSurveyFormResponse(c)
 
@@ -110,7 +115,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 			Markdown: "<><> TODO",
 		}
 	default:
-		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
+		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
 
 	httputils.WriteJSON(w, out)
