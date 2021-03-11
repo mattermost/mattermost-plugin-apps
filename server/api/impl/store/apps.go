@@ -41,7 +41,7 @@ func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf api.Config) error {
+func (s *appStore) Configure(conf api.Config) {
 	newInstalled := map[apps.AppID]*apps.App{}
 
 	for id, key := range conf.InstalledApps {
@@ -64,8 +64,6 @@ func (s *appStore) Configure(conf api.Config) error {
 	s.mutex.Lock()
 	s.installed = newInstalled
 	s.mutex.Unlock()
-
-	return nil
 }
 
 func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {

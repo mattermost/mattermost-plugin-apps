@@ -129,7 +129,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	return &m, nil
 }
 
-func (s *manifestStore) Configure(conf api.Config) error {
+func (s *manifestStore) Configure(conf api.Config) {
 	updatedLocal := map[apps.AppID]*apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
@@ -152,8 +152,6 @@ func (s *manifestStore) Configure(conf api.Config) error {
 	s.mutex.Lock()
 	s.local = updatedLocal
 	s.mutex.Unlock()
-
-	return nil
 }
 
 func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {

@@ -74,7 +74,6 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
-	conf := p.conf.GetConfig()
 
 	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
 	if accessKey == "" {
@@ -91,11 +90,9 @@ func (p *Plugin) OnActivate() error {
 
 	p.store = store.New(p.mm, p.conf)
 	// manifest store
+	conf := p.conf.GetConfig()
 	mstore := p.store.Manifest()
-	err = mstore.Configure(conf)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the manifest store")
-	}
+	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
 	manifestBucket := awsclient.GenerateS3BucketNameWithDefaults("")
 	err = mstore.InitGlobal(p.aws, manifestBucket)
@@ -107,10 +104,7 @@ func (p *Plugin) OnActivate() error {
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		appstore.InitBuiltin(builtin_hello.App())
 	}
-	err = appstore.Configure(conf)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the app store")
-	}
+	appstore.Configure(conf)
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?

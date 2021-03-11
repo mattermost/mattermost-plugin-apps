@@ -87,10 +87,7 @@ func (c *config) Reconfigure(stored *api.StoredConfig, services ...api.Configura
 	c.lock.Unlock()
 
 	for _, s := range services {
-		err = s.Configure(newConfig)
-		if err != nil {
-			return errors.Wrapf(err, "failed to reconfigure service %T", s)
-		}
+		s.Configure(newConfig)
 	}
 
 	return nil
