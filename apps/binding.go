@@ -1,9 +1,49 @@
 package apps
 
 // Binding is the main way for an App to attach its functionality to the
-// Mattermost UI. An App returns the bindings in response to the "bindings"
-// call, that it can customize in its Manifest. App's bindings can be identical,
-// or differ for users, channels, and such.
+// Mattermost UI.
+//
+// An App returns the bindings in response to the "bindings" call, that it must
+// implement, and can customize in its Manifest. For each context in which it is
+// invoked, the bindings call returns a tree of app's bindings, organized by the
+// top-level location.
+//
+// Top level bindings need to define:
+//  location - the top-level location to bind to, e.g. "post_menu".
+//  bindings - an array of bindings
+//
+// /post_menu bindings need to define:
+//  location - Name of this location. The whole path of locations will be added in the context.
+//  icon - optional URL or path to the icon
+//  label - Text to show in the item
+//  call - Call to perform.
+//
+// /channel_header bindings need to define:
+//  location - Name of this location. The whole path of locations will be added in the context.
+//  icon - optional URL or path to the icon
+//  label - text to show in the item on mobile and webapp collapsed view.
+//  hint - text to show in the tooltip.
+//  call - Call to perform.
+//
+// /command bindings can define "inner" subcommands that are collections of more
+// bindings/subcommands, and "outer" subcommands that implement forms and can be
+// executed. It is not possible to have command bindings that have subcommands
+// and flags. It is possible to have positional parameters in an outer
+// subcommand, accomplishing similar user experience.
+//
+// Inner command bindings need to define:
+//  label - the label for the command itself.
+//  location - the location of the command, defaults to label.
+//  hint - Hint line in autocomplete.
+//  description - description line in autocomplete.
+//  bindings - subcommands
+//
+// Outer command bindings need to define:
+//  label - the label for the command itself.
+//  location - the location of the command, defaults to label.
+//  hint - Hint line in autocomplete.
+//  description - description line in autocomplete.
+//  call or form - either embed a form, or provide a call to fetch it.
 //
 // Bindings are currently refreshed when a user visits a channel, in the context
 // of the current channel, from all the registered Apps. A server-side cache

@@ -14,6 +14,14 @@ package apps
 //
 // Requests for forms are calls, have expanded contexts, making it easy to
 // generate forms specific to the user, channel, etc.
+//
+// When a dynamic select field is selected in a Modal, or in Autocomplete, a
+// Lookup call request is made to the Form's Call. The app should respond with
+// "data":[]SelectOption, and "type":"ok".
+//
+// When a select field with "refresh" set changes value, it forces reloading of
+// the form. A call request type form is made to fetch it, with the partial
+// values provided. Expected response is a "type":"form" response.
 type Form struct {
 	// Title, Header, and Footer are used for Modals only.
 	Title  string `json:"title,omitempty"`
