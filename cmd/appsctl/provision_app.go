@@ -132,26 +132,15 @@ func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
 		}
 	}
 
-	err = provisionAssets(awscli, m, assets)
-	if err != nil {
-		return errors.Wrapf(err, "can't provision assets of the app - %s", m.AppID)
+	if err = provisionAssets(awscli, m, assets); err != nil {
+		return errors.Wrapf(err, "can't provision assets of app - %s", m.AppID)
 	}
-	err = provisionFunctions(awscli, m, resFunctions, shouldUpdate)
-	if err != nil {
-		return errors.Wrapf(err, "can't provision functions of the app - %s", m.AppID)
+	if err = provisionFunctions(awscli, m, resFunctions, shouldUpdate); err != nil {
+		return errors.Wrapf(err, "can't provision functions of app - %s", m.AppID)
 	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		return errors.Wrapf(err, "can't marshal manifest for app - %s", m.AppID)
+	if err = provisionManifest(awscli, m); err != nil {
+		return errors.Wrapf(err, "can't provision manifest of app - %s", m.AppID)
 	}
-	buffer := bytes.NewBuffer(data)
-
-	bucket := awsclient.GenerateS3BucketNameWithDefaults("")
-	key := awsclient.GenerateManifestS3Name(m.AppID, m.Version)
-	if err := awscli.UploadS3(bucket, key, buffer); err != nil {
-		return errors.Wrapf(err, "can't upload manifest file for the app - %s", m.AppID)
-	}
-
 	return nil
 }
 
@@ -176,6 +165,17 @@ func ProvisionAppFromFile(awscli awsclient.Client, path string, shouldUpdate boo
 	}
 
 	return ProvisionApp(awscli, b, shouldUpdate)
+}
+
+func provisionAssets(awscli awsclient.Client, m *apps.Manifest, assets []assetData) error {
+	for _, asset := range assets {
+		bucket := awsclient.GenerateS3BucketNameWithDefaults("")
+		key := awsclient.GenerateAssetS3Name(m.AppID, m.Version, asset.name)
+		if err := awscli.UploadS3(bucket, key, asset.file); err != nil {
+			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
+		}
+	}
+	return nil
 }
 
 func provisionFunctions(awscli awsclient.Client, m *apps.Manifest, functions []functionInstallData, shouldUpdate bool) error {
@@ -204,13 +204,18 @@ func provisionFunctions(awscli awsclient.Client, m *apps.Manifest, functions []f
 	return nil
 }
 
-func provisionAssets(awscli awsclient.Client, m *apps.Manifest, assets []assetData) error {
-	for _, asset := range assets {
-		bucket := awsclient.GenerateS3BucketNameWithDefaults("")
-		key := awsclient.GenerateAssetS3Name(m.AppID, m.Version, asset.name)
-		if err := awscli.UploadS3(bucket, key, asset.file); err != nil {
-			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
-		}
+func provisionManifest(awscli awsclient.Client, m *apps.Manifest) error {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return errors.Wrapf(err, "can't marshal manifest for app - %s", m.AppID)
 	}
+	buffer := bytes.NewBuffer(data)
+
+	bucket := awsclient.GenerateS3BucketNameWithDefaults("")
+	key := awsclient.GenerateManifestS3Name(m.AppID, m.Version)
+	if err := awscli.UploadS3(bucket, key, buffer); err != nil {
+		return errors.Wrapf(err, "can't upload manifest file for the app - %s", m.AppID)
+	}
+
 	return nil
 }
