@@ -10,7 +10,7 @@ import (
 )
 
 func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
-	call, err := apps.UnmarshalCallFromReader(req.Body)
+	call, err := apps.UnmarshalCallRequestFromReader(req.Body)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to unmarshal Call struct")
 		httputils.WriteBadRequestError(w, err)
@@ -42,5 +42,9 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	res := a.api.Proxy.Call(apps.SessionToken(session.Token), call)
+	if res.Type == "" {
+		res.Type = apps.CallResponseTypeOK
+	}
+
 	httputils.WriteJSON(w, res)
 }

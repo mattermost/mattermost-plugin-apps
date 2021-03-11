@@ -44,9 +44,6 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 		}
 
 		appID := app.AppID
-		appCC := *cc
-		appCC.AppID = appID
-		appCC.BotAccessToken = app.BotAccessToken
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
@@ -54,9 +51,14 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 		if manifest.Bindings != nil {
 			bindingsCall = *manifest.Bindings
 		}
-		bindingsCall.Context = &appCC
+		bindingsRequest := &apps.CallRequest{Call: bindingsCall}
 
-		resp := p.Call(debugSessionToken, &bindingsCall)
+		appCC := *cc
+		appCC.AppID = appID
+		appCC.BotAccessToken = app.BotAccessToken
+		bindingsRequest.Context = &appCC
+
+		resp := p.Call(debugSessionToken, bindingsRequest)
 
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)

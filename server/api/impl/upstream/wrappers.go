@@ -10,11 +10,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func Notify(u api.Upstream, call *apps.Call) error {
+func Notify(u api.Upstream, call *apps.CallRequest) error {
 	return u.OneWay(call)
 }
 
-func Call(u api.Upstream, call *apps.Call) *apps.CallResponse {
+func Call(u api.Upstream, call *apps.CallRequest) *apps.CallResponse {
 	r, err := u.Roundtrip(call)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)

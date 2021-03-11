@@ -73,7 +73,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 		})
 }
 
-type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.Call) (int, error)
+type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.CallRequest) (int, error)
 
 func handle(r *mux.Router, path string, h handler) {
 	r.HandleFunc(path,
@@ -84,7 +84,7 @@ func handle(r *mux.Router, path string, h handler) {
 				return
 			}
 
-			data, err := apps.UnmarshalCallFromReader(req.Body)
+			data, err := apps.UnmarshalCallRequestFromReader(req.Body)
 			if err != nil {
 				proxy.WriteCallError(w, http.StatusInternalServerError, err)
 				return
