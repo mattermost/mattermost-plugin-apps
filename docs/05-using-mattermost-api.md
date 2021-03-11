@@ -28,7 +28,3 @@ The KV APIs require the use of the Bot Account Token, and will fail if a user to
 
 ## Mattermost REST API
 - godoc: [Go Client](https://pkg.go.dev/github.com/mattermost/mattermost-plugin-apps/apps/mmclient/#Client) - [local](http://localhost:6060/pkg/github.com/mattermost/mattermost-plugin-apps/apps/mmclient/#Client) - mmclient.Client includes the *model.Client4 Mattermost REST API client, pre-initialized with the auth token.
-
-## Go client
-
-

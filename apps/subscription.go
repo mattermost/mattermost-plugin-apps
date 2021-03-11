@@ -52,7 +52,7 @@ type Subscription struct {
 	// developers.
 	AppID AppID `json:"app_id,omitempty"`
 
-	// Subscription subject.
+	// Subscription subject. See type Subject godoc (linked) for details.
 	Subject Subject `json:"subject"`
 
 	// ChannelID and TeamID are the subscription scope, as applicable to the subject.
