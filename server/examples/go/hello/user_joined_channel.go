@@ -5,7 +5,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 )
 
-func (h *HelloApp) UserJoinedChannel(call *apps.Call) {
+func (h *HelloApp) UserJoinedChannel(call *apps.CallRequest) {
 	go func() {
 		bot := mmclient.AsBot(call.Context)
 

@@ -18,9 +18,12 @@ func (adm *Admin) UninstallApp(appID apps.AppID) error {
 		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	// Call delete the function of the app
-	if err := adm.expandedCall(app, app.OnUninstall, nil); err != nil {
-		return errors.Wrapf(err, "uninstall failed. appID - %s", app.AppID)
+	creq := &apps.CallRequest{
+		Call: *app.OnUninstall,
+	}
+	resp := adm.proxy.Call(adm.adminToken, creq)
+	if resp.Type == apps.CallResponseTypeError {
+		return errors.Wrapf(resp, "call %s failed", creq.Path)
 	}
 
 	// delete oauth app

@@ -65,7 +65,7 @@ func App() *apps.App {
 	}
 }
 
-func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
+func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
 	case api.BindingsPath:
@@ -95,7 +95,7 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) OneWay(call *apps.Call) error {
+func (h *helloapp) OneWay(call *apps.CallRequest) error {
 	switch call.Context.Subject {
 	case apps.SubjectUserJoinedChannel:
 		h.HelloApp.UserJoinedChannel(call)
@@ -105,7 +105,7 @@ func (h *helloapp) OneWay(call *apps.Call) error {
 	return nil
 }
 
-func (h *helloapp) Install(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
 	if c.Type != apps.CallTypeSubmit {
 		return apps.NewErrorCallResponse(errors.New("not supported"))
 	}
@@ -119,7 +119,7 @@ func (h *helloapp) Install(c *apps.Call) *apps.CallResponse {
 	}
 }
 
-func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) SendSurvey(c *apps.CallRequest) *apps.CallResponse {
 	switch c.Type {
 	case apps.CallTypeForm:
 		return hello.NewSendSurveyFormResponse(c)
@@ -144,20 +144,20 @@ func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
 				},
 			},
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
-
-	return nil
 }
 
-func (h *helloapp) SendSurveyModal(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) SendSurveyModal(c *apps.CallRequest) *apps.CallResponse {
 	return hello.NewSendSurveyFormResponse(c)
 }
 
-func (h *helloapp) SendSurveyCommandToModal(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) SendSurveyCommandToModal(c *apps.CallRequest) *apps.CallResponse {
 	return hello.NewSendSurveyPartialFormResponse(c)
 }
 
-func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) Survey(c *apps.CallRequest) *apps.CallResponse {
 	switch c.Type {
 	case apps.CallTypeForm:
 		return hello.NewSurveyFormResponse(c)
@@ -171,6 +171,7 @@ func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
 			Type:     apps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
 	}
-	return nil
 }

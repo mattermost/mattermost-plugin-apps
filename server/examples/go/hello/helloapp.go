@@ -13,6 +13,7 @@ const (
 	PathSendSurveyModal          = "/send-modal"
 	PathSendSurveyCommandToModal = "/send-command-modal"
 	PathSubscribeChannel         = "/subscribe"
+	PathUnsubscribeChannel       = "/unsubscribe"
 	PathSurvey                   = "/survey"
 	PathUserJoinedChannel        = "/user-joined-channel"
 	PathSubmitSurvey             = "/survey-submit"
