@@ -10,7 +10,7 @@ import (
 )
 
 type Proxy interface {
-	GetBindings(*apps.Context) ([]*apps.Binding, error)
+	GetBindings(apps.SessionToken, *apps.Context) ([]*apps.Binding, error)
 	Call(apps.SessionToken, *apps.CallRequest) *apps.CallResponse
 	Notify(cc *apps.Context, subj apps.Subject) error
 
