@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	httputils.WriteJSON(w, apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
 		Data: hello.Bindings(),
@@ -18,7 +18,7 @@ func (h *helloapp) GetBindings(w http.ResponseWriter, req *http.Request, claims 
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	if c.Type != apps.CallTypeSubmit {
 		return http.StatusBadRequest, errors.New("not supported")
 	}
@@ -33,7 +33,7 @@ func (h *helloapp) Install(w http.ResponseWriter, req *http.Request, claims *api
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
 	switch c.Type {
 	case apps.CallTypeForm:
@@ -67,19 +67,19 @@ func (h *helloapp) SendSurvey(w http.ResponseWriter, req *http.Request, claims *
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) SendSurveyModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	out := hello.NewSendSurveyFormResponse(c)
 	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SubmitSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) SubmitSurvey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	out := hello.SubmitSurvey(c)
 	httputils.WriteJSON(w, out)
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
 
 	switch c.Type {
@@ -93,7 +93,7 @@ func (h *helloapp) SendSurveyCommandToModal(w http.ResponseWriter, req *http.Req
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.Call) (int, error) {
+func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.JWTClaims, c *apps.CallRequest) (int, error) {
 	var out *apps.CallResponse
 
 	switch c.Type {
@@ -117,7 +117,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *api.
 	return http.StatusOK, nil
 }
 
-func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, call *apps.Call) (int, error) {
+func (h *helloapp) UserJoinedChannel(_ http.ResponseWriter, _ *http.Request, _ *api.JWTClaims, call *apps.CallRequest) (int, error) {
 	h.HelloApp.UserJoinedChannel(call)
 	return http.StatusOK, nil
 }

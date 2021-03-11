@@ -81,7 +81,8 @@ func (adm *Admin) UninstallApp(appID apps.AppID) error {
 	}
 
 	// Call delete the function of the app
-	if err := adm.expandedCall(app, app.Manifest.OnUninstall, nil); err != nil {
+	onUninstallRequest := &apps.CallRequest{Call: *app.Manifest.OnUninstall}
+	if err := adm.expandedCall(app, onUninstallRequest, nil); err != nil {
 		return errors.Wrapf(err, "uninstall failed. appID - %s", app.Manifest.AppID)
 	}
 
@@ -246,7 +247,8 @@ func (adm *Admin) registerApp(manifest *apps.Manifest) error {
 func (adm *Admin) callOnStartupOnceWithValues(app *apps.App, values map[string]string) {
 	// Call onStartup the function of the app. It should be called only once
 	f := func() error {
-		if err := adm.expandedCall(app, app.Manifest.OnStartup, values); err != nil {
+		onStartupRequest := &apps.CallRequest{Call: *app.Manifest.OnStartup}
+		if err := adm.expandedCall(app, onStartupRequest, values); err != nil {
 			adm.mm.Log.Error("Can't call onStartup func of the app", "app_id", app.Manifest.AppID, "err", err.Error())
 		}
 		return nil
@@ -290,7 +292,7 @@ func (adm *Admin) callOnce(f func() error) error {
 	return nil
 }
 
-func (adm *Admin) expandedCall(app *apps.App, call *apps.Call, values map[string]string) error {
+func (adm *Admin) expandedCall(app *apps.App, call *apps.CallRequest, values map[string]string) error {
 	if call == nil {
 		return nil
 	}

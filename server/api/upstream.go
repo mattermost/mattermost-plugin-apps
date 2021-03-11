@@ -14,8 +14,8 @@ import (
 const OutgoingAuthHeader = "Mattermost-App-Authorization"
 
 type Upstream interface {
-	Roundtrip(call *apps.Call) (io.ReadCloser, error)
-	OneWay(call *apps.Call) error
+	Roundtrip(call *apps.CallRequest) (io.ReadCloser, error)
+	OneWay(call *apps.CallRequest) error
 }
 
 type JWTClaims struct {

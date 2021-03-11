@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {
+func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (md.MD, error) {
 	if c.Type != apps.CallTypeSubmit {
 		return "", errors.New("not supported")
 	}

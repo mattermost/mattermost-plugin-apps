@@ -60,12 +60,16 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	if install == nil {
 		install = apps.DefaultInstallCall
 	}
-	install.Values = map[string]interface{}{
+
+	installRequest := &apps.CallRequest{
+		Call: *install,
+	}
+	installRequest.Values = map[string]interface{}{
 		apps.PropOAuth2ClientSecret: app.OAuth2ClientSecret,
 	}
-	install.Context = cc
+	installRequest.Context = cc
 
-	resp := adm.proxy.Call(sessionToken, install)
+	resp := adm.proxy.Call(sessionToken, installRequest)
 	if resp.Type == apps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}

@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	api "github.com/mattermost/mattermost-plugin-apps/server/api"
+	io "io"
 	reflect "reflect"
 )
 
@@ -35,7 +36,7 @@ func (m *MockProxy) EXPECT() *MockProxyMockRecorder {
 }
 
 // Call mocks base method
-func (m *MockProxy) Call(arg0 apps.SessionToken, arg1 *apps.Call) *apps.CallResponse {
+func (m *MockProxy) Call(arg0 apps.SessionToken, arg1 *apps.CallRequest) *apps.CallResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Call", arg0, arg1)
 	ret0, _ := ret[0].(*apps.CallResponse)
@@ -46,6 +47,22 @@ func (m *MockProxy) Call(arg0 apps.SessionToken, arg1 *apps.Call) *apps.CallResp
 func (mr *MockProxyMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockProxy)(nil).Call), arg0, arg1)
+}
+
+// GetAsset mocks base method
+func (m *MockProxy) GetAsset(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAsset", arg0, arg1)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAsset indicates an expected call of GetAsset
+func (mr *MockProxyMockRecorder) GetAsset(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAsset", reflect.TypeOf((*MockProxy)(nil).GetAsset), arg0, arg1)
 }
 
 // GetBindings mocks base method
