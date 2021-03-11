@@ -94,7 +94,7 @@ func (p *Plugin) OnActivate() error {
 	mstore := p.store.Manifest()
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
-	manifestBucket := awsclient.GenerateS3BucketNameWithDefaults("")
+	manifestBucket := apps.S3BucketNameWithDefaults("")
 	err = mstore.InitGlobal(p.aws, manifestBucket)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
@@ -108,7 +108,7 @@ func (p *Plugin) OnActivate() error {
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
-	assetBucket := awsclient.GenerateS3BucketNameWithDefaults("")
+	assetBucket := apps.S3BucketNameWithDefaults("")
 	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
