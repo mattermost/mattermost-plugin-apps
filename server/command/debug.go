@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/js/aws_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
@@ -38,6 +39,49 @@ func (s *service) executeDebugInstallHTTPHello(params *params) (*model.CommandRe
 		"--force",
 	}
 	return s.executeInstall(params)
+}
+
+func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.CommandResponse, error) {
+	manifest := builtin_hello.Manifest()
+
+	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		return errorOut(params, errors.New("forbidden"))
+	}
+
+	app, _, err := s.api.Admin.ProvisionApp(
+		&apps.Context{
+			ActingUserID: params.commandArgs.UserId,
+		},
+		apps.SessionToken(params.commandArgs.Session.Token),
+		&apps.InProvisionApp{
+			Manifest: manifest,
+			Force:    true,
+		},
+	)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	conf := s.api.Configurator.GetConfig()
+
+	// Finish the installation when the Dialog is submitted, see
+	// <plugin>/http/dialog/install.go
+	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
+		dialog.NewInstallAppDialog(manifest, "", conf.PluginURL, params.commandArgs))
+	if err != nil {
+		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
+	}
+
+	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	return &model.CommandResponse{
+		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + app.BotUsername,
+		Text:         fmt.Sprintf("redirected to the DM with @%s to continue installing **%s**", app.BotUsername, manifest.DisplayName),
+		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+	}, nil
 }
 
 func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandResponse, error) {

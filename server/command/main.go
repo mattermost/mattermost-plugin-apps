@@ -25,14 +25,15 @@ type commandHandler struct {
 
 func (s *service) handleMain(in *params, developerMode bool) (*model.CommandResponse, error) {
 	subcommands := map[string]commandHandler{
-		"debug-bindings":     {s.executeDebugBindings, true},
-		"debug-clean":        {s.executeDebugClean, true},
-		"debug-install-http": {s.executeDebugInstallHTTPHello, true},
-		"debug-install-aws":  {s.executeDebugInstallAWSHello, true},
-		"info":               {s.executeInfo, false},
-		"list":               {s.executeList, false},
-		"install":            {s.executeInstall, false},
-		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false},
+		"debug-bindings":        {s.executeDebugBindings, true},
+		"debug-clean":           {s.executeDebugClean, true},
+		"debug-install-builtin": {s.executeDebugInstallBuiltinHello, true},
+		"debug-install-http":    {s.executeDebugInstallHTTPHello, true},
+		"debug-install-aws":     {s.executeDebugInstallAWSHello, true},
+		"info":                  {s.executeInfo, false},
+		"list":                  {s.executeList, false},
+		"install":               {s.executeInstall, false},
+		"uninstall":             {s.checkSystemAdmin(s.executeUninstall), false},
 	}
 
 	return runSubcommand(subcommands, in, developerMode)
