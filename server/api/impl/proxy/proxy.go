@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/uphttp"
@@ -24,13 +24,13 @@ type Proxy struct {
 	mm            *pluginapi.Client
 	conf          api.Configurator
 	store         api.Store
-	aws           aws.Service
+	aws           awsclient.Client
 	s3AssetBucket string
 }
 
 var _ api.Proxy = (*Proxy)(nil)
 
-func NewProxy(mm *pluginapi.Client, aws aws.Service, conf api.Configurator, store api.Store, s3AssetBucket string) *Proxy {
+func NewProxy(mm *pluginapi.Client, aws awsclient.Client, conf api.Configurator, store api.Store, s3AssetBucket string) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]api.Upstream{},
 		mm:               mm,
@@ -110,7 +110,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 		return uphttp.NewUpstream(app), nil
 
 	case apps.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app, p.aws.Client()), nil
+		return upawslambda.NewUpstream(app, p.aws), nil
 
 	case apps.AppTypeBuiltin:
 		up := p.builtinUpstreams[app.AppID]

@@ -9,7 +9,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 )
 
 type Admin struct {
@@ -17,13 +16,12 @@ type Admin struct {
 	conf       api.Configurator
 	store      api.Store
 	proxy      api.Proxy
-	aws        aws.Service
 	adminToken apps.SessionToken // TODO populate admin token
 	mutex      *cluster.Mutex
 }
 
 var _ api.Admin = (*Admin)(nil)
 
-func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy, aws aws.Service, mutex *cluster.Mutex) *Admin {
-	return &Admin{mm, conf, store, proxy, aws, "", mutex}
+func NewAdmin(mm *pluginapi.Client, conf api.Configurator, store api.Store, proxy api.Proxy, mutex *cluster.Mutex) *Admin {
+	return &Admin{mm, conf, store, proxy, "", mutex}
 }
