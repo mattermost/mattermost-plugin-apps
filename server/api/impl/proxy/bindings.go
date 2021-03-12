@@ -33,6 +33,8 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 	return out
 }
 
+// GetBindings fetches bindings for all apps.
+// We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := p.store.App().GetAll()
 
@@ -60,7 +62,7 @@ func (p *Proxy) GetBindings(cc *apps.Context) ([]*apps.Binding, error) {
 
 		bindings, err := upstream.GetBindings(up, bindingsRequest)
 		if err != nil {
-			p.mm.Log.Error(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
+			p.mm.Log.Debug(fmt.Sprintf("failed to get bindings for %s: %v", appID, err))
 		}
 		all = mergeBindings(all, p.scanAppBindings(app, bindings, ""))
 	}
@@ -91,7 +93,6 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			// TODO Log this somehow to the app?
 			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
 			continue
 		}
@@ -103,17 +104,14 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 
 		if fql.IsTop() {
 			if locationsUsed[appB.Location] {
-				// TODO Log to the app that there are two bindings on the top level with the same location
 				continue
 			}
 			locationsUsed[appB.Location] = true
 		} else {
 			if b.Location == "" || b.Label == "" {
-				// TODO Log to the app that a sub-binding is missing a location or label
 				continue
 			}
 			if locationsUsed[appB.Location] || labelsUsed[appB.Label] {
-				// TODO Log to the app that there are two sub-bindings on the same level with the same location or label
 				continue
 			}
 
