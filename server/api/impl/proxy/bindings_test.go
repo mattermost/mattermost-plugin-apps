@@ -3,19 +3,34 @@
 package proxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+)
+const (
+	testAppID1  = "test-appID1"
+	testUserID  = "test-userID"
+	testChannelID = "test-channelID"
 )
 
-func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Binding {
-	return []*apps.Binding{
+func buildTestAppBindings() map[apps.AppID][]*apps.Binding {
+	bindingsForApp := map[apps.AppID][]*apps.Binding{}
+
+	n := "simple"
+	appID := apps.AppID(testAppID1)
+	bindingsApp1 := []*apps.Binding{
 		{
 			AppID:    appID,
-			Location: parent,
+			Location: "/channel_header",
 			Bindings: []*apps.Binding{
 				{
 					AppID:    appID,
@@ -23,197 +38,244 @@ func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Bindi
 					Hint:     fmt.Sprintf("hint-%s", n),
 				},
 			},
+			DependsOnChannel: false,
+			DependsOnUser: false,
+		},
+		{
+			AppID:    appID,
+			Location: "/command",
+			Bindings: []*apps.Binding{
+				{
+					AppID:    appID,
+					Location: apps.Location(fmt.Sprintf("id-%s", n)),
+					Hint:     fmt.Sprintf("hint-%s", n),
+				},
+			},
+			DependsOnChannel: true,
+			DependsOnUser: false,
+		},
+		{
+			AppID:    appID,
+			Location: "/post_menu",
+			Bindings: []*apps.Binding{
+				{
+					AppID:    appID,
+					Location: apps.Location(fmt.Sprintf("id-%s", n)),
+					Hint:     fmt.Sprintf("hint-%s", n),
+				},
+			},
+			DependsOnChannel: false,
+			DependsOnUser: true,
+		},
+		{
+			AppID:    appID,
+			Location: "/in_post",
+			Bindings: []*apps.Binding{
+				{
+					AppID:    appID,
+					Location: apps.Location(fmt.Sprintf("id-%s", n)),
+					Hint:     fmt.Sprintf("hint-%s", n),
+				},
+			},
+			DependsOnChannel: true,
+			DependsOnUser: true,
 		},
 	}
+
+	bindingsForApp[appID] = bindingsApp1
+
+	return bindingsForApp
 }
 
-func TestMergeBindings(t *testing.T) {
-	type TC struct {
-		name               string
-		bb1, bb2, expected []*apps.Binding
+func newTestProxyForBindings(testAppBindings map[apps.AppID][]*apps.Binding) (*Proxy, *plugintest.API) {
+	testAPI := &plugintest.API{}
+	mm := pluginapi.NewClient(testAPI)
+
+	p := &Proxy{
+		mm:      mm,
 	}
 
-	for _, tc := range []TC{
-		{
-			name: "happy simplest",
-			bb1: []*apps.Binding{
-				{
-					Location: "1",
-				},
-			},
-			bb2: []*apps.Binding{
-				{
-					Location: "2",
-				},
-			},
-			expected: []*apps.Binding{
-				{
-					Location: "1",
-				},
-				{
-					Location: "2",
-				},
-			},
-		},
-		{
-			name:     "happy simple 1",
-			bb1:      testBinding("app1", apps.LocationCommand, "simple"),
-			bb2:      nil,
-			expected: testBinding("app1", apps.LocationCommand, "simple"),
-		},
-		{
-			name:     "happy simple 2",
-			bb1:      nil,
-			bb2:      testBinding("app1", apps.LocationCommand, "simple"),
-			expected: testBinding("app1", apps.LocationCommand, "simple"),
-		},
-		{
-			name:     "happy simple same",
-			bb1:      testBinding("app1", apps.LocationCommand, "simple"),
-			bb2:      testBinding("app1", apps.LocationCommand, "simple"),
-			expected: testBinding("app1", apps.LocationCommand, "simple"),
-		},
-		{
-			name: "happy simple merge",
-			bb1:  testBinding("app1", apps.LocationPostMenu, "simple"),
-			bb2:  testBinding("app1", apps.LocationCommand, "simple"),
-			expected: append(
-				testBinding("app1", apps.LocationPostMenu, "simple"),
-				testBinding("app1", apps.LocationCommand, "simple")...,
-			),
-		},
-		{
-			name: "happy simple 2 apps",
-			bb1:  testBinding("app1", apps.LocationCommand, "simple"),
-			bb2:  testBinding("app2", apps.LocationCommand, "simple"),
-			expected: append(
-				testBinding("app1", apps.LocationCommand, "simple"),
-				testBinding("app2", apps.LocationCommand, "simple")...,
-			),
-		},
-		{
-			name: "happy 2 simple commands",
-			bb1:  testBinding("app1", apps.LocationCommand, "simple1"),
-			bb2:  testBinding("app1", apps.LocationCommand, "simple2"),
-			expected: []*apps.Binding{
-				{
-					AppID:    "app1",
-					Location: "/command",
-					Bindings: []*apps.Binding{
-						{
-							AppID:    "app1",
-							Location: "id-simple1",
-							Hint:     "hint-simple1",
-						},
-						{
-							AppID:    "app1",
-							Location: "id-simple2",
-							Hint:     "hint-simple2",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "happy 2 apps",
-			bb1: []*apps.Binding{
-				{
-					Location: "/post_menu",
-					Bindings: []*apps.Binding{
-						{
-							AppID:       "zendesk",
-							Label:       "Create zendesk ticket",
-							Description: "Create ticket in zendesk",
-							Call: &apps.Call{
-								Path: "http://localhost:4000/create",
-							},
-						},
-					},
-				},
-			},
-			bb2: []*apps.Binding{
-				{
-					Location: "/post_menu",
-					Bindings: []*apps.Binding{
-						{
-							AppID:       "hello",
-							Label:       "Create hello ticket",
-							Description: "Create ticket in hello",
-							Call: &apps.Call{
-								Path: "http://localhost:4000/hello",
-							},
-						},
-					},
-				},
-			},
-			expected: []*apps.Binding{
-				{
-					Location: "/post_menu",
-					Bindings: []*apps.Binding{
-						{
-							AppID:       "zendesk",
-							Label:       "Create zendesk ticket",
-							Description: "Create ticket in zendesk",
-							Call: &apps.Call{
-								Path: "http://localhost:4000/create",
-							},
-						},
-						{
-							AppID:       "hello",
-							Label:       "Create hello ticket",
-							Description: "Create ticket in hello",
-							Call: &apps.Call{
-								Path: "http://localhost:4000/hello",
-							},
-						},
-					},
-				},
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			out := mergeBindings(tc.bb1, tc.bb2)
-			require.Equal(t, tc.expected, out)
-		})
-	}
+	return p, testAPI
 }
 
-// []*api.Binding{
-// 	{
-// 		Location: api.LocationCommand,
-// 		Bindings: []*api.Binding{
-// 			{
-// 				Location:  "message",
-// 				Hint:        "[--user] message",
-// 				Description: "send a message to a user",
-// 				Call:        h.makeCall(PathMessage),
-// 			}, {
-// 				Location:  "manage",
-// 				Hint:        "subscribe | unsubscribe ",
-// 				Description: "manage channel subscriptions to greet new users",
-// 				Bindings: []*api.Binding{
-// 					{
-// 						Location:  "subscribe",
-// 						Hint:        "[--channel]",
-// 						Description: "subscribes a channel to greet new users",
-// 						Call:        h.makeCall(PathMessage, "mode", "on"),
-// 					}, {
-// 						Location:  "unsubscribe",
-// 						Hint:        "[--channel]",
-// 						Description: "unsubscribes a channel from greeting new users",
-// 						Call:        h.makeCall(PathMessage, "mode", "off"),
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}, {
-// 		Location: api.LocationPostMenu,
-// 		Bindings: []*api.Binding{
-// 			{
-// 				Location:  "message",
-// 				Description: "message a user",
-// 				Call:        h.makeCall(PathMessage),
-// 			},
-// 		},
-// 	},
-// })
+func TestGetAllBindings(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+	context1 := &apps.Context {
+		AppID : appID,
+		ActingUserID: testUserID,
+		UserID: testUserID,
+		ChannelID: testChannelID,
+	}
+
+	key1 := p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+	key2 := p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+	key3 := p.CacheBuildKey(KEY_ALL_USERS, testChannelID)
+	key4 := p.CacheBuildKey(testUserID, testChannelID)
+
+	bindingBytes := []byte{}
+	bindingsBytes := [][]byte{}
+	bindingBytes, _ = json.Marshal(&appBindings[appID][0])
+	bindingsBytes = append(bindingsBytes, bindingBytes)
+	api.On("AppsCacheGet", string(appID), key1).Return(bindingsBytes, nil)
+
+	bindingsBytes = [][]byte{}
+	bindingBytes, _ = json.Marshal(&appBindings[appID][1])
+	bindingsBytes = append(bindingsBytes, bindingBytes)
+	api.On("AppsCacheGet", string(appID), key2).Return(bindingsBytes, nil)
+
+	bindingsBytes = [][]byte{}
+	bindingBytes, _ = json.Marshal(&appBindings[appID][2])
+	bindingsBytes = append(bindingsBytes, bindingBytes)
+	api.On("AppsCacheGet", string(appID), key3).Return(bindingsBytes, nil)
+
+	bindingsBytes = [][]byte{}
+	bindingBytes, _ = json.Marshal(&appBindings[appID][3])
+	bindingsBytes = append(bindingsBytes, bindingBytes)
+	api.On("AppsCacheGet", string(appID), key4).Return(bindingsBytes, nil)
+
+	outBindings, err := p.CacheGetAll(context1, appID)
+	require.Equal(t, outBindings, appBindings[appID])
+
+	assert.NoError(t, err)
+}
+
+func TestGetBindings(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+	context1 := &apps.Context {
+		AppID : appID,
+		ActingUserID: testUserID,
+		UserID: testUserID,
+		ChannelID: testChannelID,
+	}
+
+	key2 := p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+
+	bindingsBytes := [][]byte{}
+	bindingBytes, _ := json.Marshal(&appBindings[appID][1])
+	bindingsBytes = append(bindingsBytes, bindingBytes)
+	api.On("AppsCacheGet", string(appID), key2).Return(bindingsBytes, nil)
+
+	outBindings, err := p.CacheGet(context1, appID, key2)
+	bindings := make([]*apps.Binding,0)
+	bindings = append(bindings, appBindings[appID][1])
+	require.Equal(t, outBindings, bindings)
+
+	assert.NoError(t, err)
+}
+
+func TestDeleteBindingsForApp(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+	key1 := p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+
+	api.On("AppsCacheDelete", string(appID), key1).Return(nil)
+	err := p.CacheDelete(appID, key1)
+
+	assert.NoError(t, err)
+}
+
+func TestDeleteAllBindings(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+	api.On("AppsCacheDeleteAll", string(appID)).Return(nil)
+	err := p.CacheDeleteAll(appID)
+
+	assert.NoError(t, err)
+}
+
+func TestDeleteAllBindingsForAllApps(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+
+	s := mock_api.NewMockStore(controller)
+	appStore := mock_api.NewMockAppStore(controller)
+	s.EXPECT().App().Return(appStore)
+	p.store = s
+
+	appList := []*apps.App{}
+	for k, _ := range appBindings {
+		tapp := &apps.App{
+			Manifest: &apps.Manifest{
+				AppID:              apps.AppID(k),
+				Type:               apps.AppTypeBuiltin,
+			},
+		}
+		appList = append(appList, tapp)
+	}
+	appStore.EXPECT().GetAll().Return(appList)
+
+	api.On("AppsCacheDeleteAll", string(appID)).Return(nil)
+	errors := p.CacheDeleteAllApps()
+
+	assert.Equal(t, len(errors), 0)
+}
+
+func TestSetBindings(t *testing.T) {
+	appBindings := buildTestAppBindings()
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	p, api := newTestProxyForBindings(appBindings)
+	defer api.AssertExpectations(t)
+
+	appID := apps.AppID(testAppID1)
+	context1 := &apps.Context {
+		AppID : appID,
+		ActingUserID: testUserID,
+		UserID: testUserID,
+		ChannelID: testChannelID,
+	}
+
+	var key string
+	bindingsMap := make(map[string][][]byte, len(appBindings[appID]))
+
+	for _, binding := range appBindings[appID] {
+		if !binding.DependsOnUser && !binding.DependsOnChannel {
+			key = p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+		} else if binding.DependsOnUser && !binding.DependsOnChannel {
+			key = p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+		} else if !binding.DependsOnUser && binding.DependsOnChannel {
+			key = p.CacheBuildKey(KEY_ALL_USERS, testChannelID)
+		} else {
+			key = p.CacheBuildKey(testUserID, testChannelID)
+		}
+		valueBytes, _ := json.Marshal(&binding)
+
+		bindingsMap[key] = make([][]byte, 0)
+		bindingsForKey := bindingsMap[key]
+		bindingsForKey = append(bindingsForKey, valueBytes)
+		bindingsMap[key] = bindingsForKey
+
+		api.On("AppsCacheSet", string(appID), bindingsMap).Return(nil)
+	}
+
+	err := p.CacheSet(context1, appID, appBindings[appID])
+
+	assert.NoError(t, err)
+}

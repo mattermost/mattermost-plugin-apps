@@ -33,6 +33,8 @@ func Init(router *mux.Router, appsService *api.Service) {
 
 	subrouter.HandleFunc(api.PathMarketplace, checkAuthorized(a.handleGetMarketplace)).Methods(http.MethodGet)
 	subrouter.HandleFunc(api.StaticAssetPath+"/{app_id}/{name}", checkAuthorized(a.handleGetStaticAsset)).Methods(http.MethodGet)
+
+	subrouter.HandleFunc(api.InvalidateCachePath+"/{app_id}/{user_id}/{channel_id}", checkAuthorized(a.handleInvalidateCache)).Methods(http.MethodGet)
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {

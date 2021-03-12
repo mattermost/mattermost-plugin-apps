@@ -17,4 +17,8 @@ type Proxy interface {
 	ProvisionBuiltIn(apps.AppID, Upstream)
 
 	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
+
+	InvalidateCache(apps.AppID, string, string) error
+	CacheDeleteAll(apps.AppID) error
+	CacheDeleteAllApps() []error
 }

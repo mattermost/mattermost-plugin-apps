@@ -100,6 +100,8 @@ ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen
 	mockgen -destination server/api/mock_api/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/api AppServices
 	mockgen -destination server/api/mock_api/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/api Proxy
+	mockgen -destination server/api/mock_api/mock_store.go github.com/mattermost/mattermost-plugin-apps/server/api Store
+	mockgen -destination server/api/mock_api/mock_app_store.go github.com/mattermost/mattermost-plugin-apps/server/api AppStore
 endif
 
 ## Generates mock golang interfaces for testing

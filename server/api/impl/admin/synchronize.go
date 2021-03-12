@@ -99,13 +99,18 @@ func (adm *Admin) UninstallApp(appID apps.AppID) error {
 	}
 
 	// delete the bot account
-	if err := adm.mm.Bot.DeletePermanently(app.BotUserID); err != nil {
+	if err = adm.mm.Bot.DeletePermanently(app.BotUserID); err != nil {
 		return errors.Wrapf(err, "can't delete bot account for App - %s", app.Manifest.AppID)
 	}
 
 	// delete app from proxy plugin, not removing the data
-	if err := adm.store.App().Delete(app); err != nil {
+	if err = adm.store.App().Delete(app); err != nil {
 		return errors.Wrapf(err, "can't delete app - %s", app.Manifest.AppID)
+	}
+
+	// clear this app cache
+	if err = adm.proxy.CacheDeleteAll(app.AppID); err != nil {
+		adm.mm.Log.Error("error emptying the cache", "app_id", app.Manifest.AppID, "err", err.Error())
 	}
 
 	adm.mm.Log.Info("Uninstalled the app", "app_id", app.Manifest.AppID)

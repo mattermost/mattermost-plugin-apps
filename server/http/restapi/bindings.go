@@ -3,6 +3,7 @@ package restapi
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
@@ -40,4 +41,21 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 	}
 
 	httputils.WriteJSON(w, bindings)
+}
+
+func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request, actingUserID string) {
+	vars := mux.Vars(req)
+
+	appID := vars["app_id"]
+	userID := vars["user_id"]
+	channelID := vars["channel_id"]
+
+	if appID == "" {
+		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		return
+	}
+
+	if err := a.api.Proxy.InvalidateCache(apps.AppID(appID), userID, channelID); err != nil {
+		httputils.WriteInternalServerError(w, err)
+	}
 }

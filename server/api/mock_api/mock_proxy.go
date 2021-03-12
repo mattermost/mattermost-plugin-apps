@@ -35,6 +35,34 @@ func (m *MockProxy) EXPECT() *MockProxyMockRecorder {
 	return m.recorder
 }
 
+// CacheDeleteAll mocks base method
+func (m *MockProxy) CacheDeleteAll(arg0 apps.AppID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CacheDeleteAll", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CacheDeleteAll indicates an expected call of CacheDeleteAll
+func (mr *MockProxyMockRecorder) CacheDeleteAll(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDeleteAll", reflect.TypeOf((*MockProxy)(nil).CacheDeleteAll), arg0)
+}
+
+// CacheDeleteAllApps mocks base method
+func (m *MockProxy) CacheDeleteAllApps() []error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CacheDeleteAllApps")
+	ret0, _ := ret[0].([]error)
+	return ret0
+}
+
+// CacheDeleteAllApps indicates an expected call of CacheDeleteAllApps
+func (mr *MockProxyMockRecorder) CacheDeleteAllApps() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDeleteAllApps", reflect.TypeOf((*MockProxy)(nil).CacheDeleteAllApps))
+}
+
 // Call mocks base method
 func (m *MockProxy) Call(arg0 apps.SessionToken, arg1 *apps.CallRequest) *apps.CallResponse {
 	m.ctrl.T.Helper()
@@ -78,6 +106,20 @@ func (m *MockProxy) GetBindings(arg0 *apps.Context) ([]*apps.Binding, error) {
 func (mr *MockProxyMockRecorder) GetBindings(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockProxy)(nil).GetBindings), arg0)
+}
+
+// InvalidateCache mocks base method
+func (m *MockProxy) InvalidateCache(arg0 apps.AppID, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvalidateCache", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InvalidateCache indicates an expected call of InvalidateCache
+func (mr *MockProxyMockRecorder) InvalidateCache(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvalidateCache", reflect.TypeOf((*MockProxy)(nil).InvalidateCache), arg0, arg1, arg2)
 }
 
 // Notify mocks base method

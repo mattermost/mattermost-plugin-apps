@@ -39,6 +39,7 @@ const (
 	UnsubscribePath = "/unsubscribe"
 	StaticAssetPath = "/static"
 	BindingsPath    = "/bindings"
+	InvalidateCachePath    = "/invalidatecache"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )
