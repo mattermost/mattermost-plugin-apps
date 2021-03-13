@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -286,7 +287,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			proxy := newTestProxyForBindings(testData, ctrl)
 
 			cc := &apps.Context{}
-			out, err := proxy.GetBindings(cc)
+			out, err := proxy.GetBindings("", cc)
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -477,7 +478,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings(cc)
+	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
 	require.Equal(t, expected, out)
 }
@@ -570,7 +571,7 @@ func TestDuplicateCommand(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings(cc)
+	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
 	require.Equal(t, expected, out)
 }
@@ -582,7 +583,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 	s := mock_api.NewMockStore(ctrl)
 	appStore := mock_api.NewMockAppStore(ctrl)
-	s.EXPECT().App().Return(appStore)
+	s.EXPECT().App().Return(appStore).AnyTimes()
 
 	appList := []*apps.App{}
 	upstreams := map[apps.AppID]api.Upstream{}
@@ -591,6 +592,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		appList = append(appList, test.app)
 
 		cr := &apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
 			Data: test.bindings,
 		}
 		bb, _ := json.Marshal(cr)
@@ -599,14 +601,23 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		up := mock_api.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
+		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
 	appStore.EXPECT().GetAll().Return(appList)
+
+	configurator := mock_api.NewMockConfigurator(ctrl)
+	configurator.EXPECT().GetMattermostConfig().Return(&model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: model.NewString("test.mattermost.com"),
+		},
+	}).AnyTimes()
 
 	p := &Proxy{
 		mm:      mm,
 		store:   s,
 		builtIn: upstreams,
+		conf:    configurator,
 	}
 
 	return p

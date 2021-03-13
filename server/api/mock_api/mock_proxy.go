@@ -66,18 +66,18 @@ func (mr *MockProxyMockRecorder) GetAsset(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // GetBindings mocks base method
-func (m *MockProxy) GetBindings(arg0 *apps.Context) ([]*apps.Binding, error) {
+func (m *MockProxy) GetBindings(arg0 apps.SessionToken, arg1 *apps.Context) ([]*apps.Binding, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindings", arg0)
+	ret := m.ctrl.Call(m, "GetBindings", arg0, arg1)
 	ret0, _ := ret[0].([]*apps.Binding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBindings indicates an expected call of GetBindings
-func (mr *MockProxyMockRecorder) GetBindings(arg0 interface{}) *gomock.Call {
+func (mr *MockProxyMockRecorder) GetBindings(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockProxy)(nil).GetBindings), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockProxy)(nil).GetBindings), arg0, arg1)
 }
 
 // Notify mocks base method
