@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -31,6 +30,8 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 	return out
 }
 
+// GetBindings fetches bindings for all apps.
+// We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := p.store.App().GetAll()
 
@@ -88,9 +89,16 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 // the App, and sets the AppID on the relevant elements.
 func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
 	out := []*apps.Binding{}
+	locationsUsed := map[apps.Location]bool{}
+	labelsUsed := map[string]bool{}
+
 	for _, appB := range bindings {
 		// clone just in case
 		b := *appB
+		if b.Location == "" {
+			b.Location = apps.Location(app.Manifest.AppID)
+		}
+
 		fql := locPrefix.Make(b.Location)
 		allowed := false
 		for _, grantedLoc := range app.GrantedLocations {
@@ -100,12 +108,30 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			// TODO Log this somehow to the app?
-			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			// p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
 			continue
 		}
 
-		if !fql.IsTop() {
+		if locPrefix == apps.LocationCommand {
+			b.Location = apps.Location(app.Manifest.AppID)
+			b.Label = string(app.Manifest.AppID)
+		}
+
+		if fql.IsTop() {
+			if locationsUsed[appB.Location] {
+				continue
+			}
+			locationsUsed[appB.Location] = true
+		} else {
+			if b.Location == "" || b.Label == "" {
+				continue
+			}
+			if locationsUsed[appB.Location] || labelsUsed[appB.Label] {
+				continue
+			}
+
+			locationsUsed[appB.Location] = true
+			labelsUsed[appB.Label] = true
 			b.AppID = app.Manifest.AppID
 		}
 
