@@ -20,9 +20,9 @@ import (
 const bundleStaticAssetsFolder = "static/"
 
 type ProvisionData struct {
-	StaticFiles     map[string]AssetData    `json:"static_files"`
-	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
-	Manifest        *apps.Manifest          `json:"-"`
+	StaticFiles     []AssetData    `json:"static_files"`
+	LambdaFunctions []FunctionData `json:"lambda_functions"`
+	Manifest        *apps.Manifest `json:"-"`
 }
 
 type FunctionData struct {
@@ -37,7 +37,7 @@ type AssetData struct {
 	Key  string    `json:"key"`
 }
 
-func (c *Client) GetProvisionDataFromFile(path string) (*ProvisionData, error) {
+func GetProvisionDataFromFile(path string, logger log) (*ProvisionData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -48,10 +48,11 @@ func (c *Client) GetProvisionDataFromFile(path string) (*ProvisionData, error) {
 		return nil, errors.Wrap(err, "can't read file")
 	}
 
-	return c.GetProvisionData(b)
+	return getProvisionData(b, logger)
 }
 
-func (c *Client) GetProvisionData(b []byte) (*ProvisionData, error) {
+// getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
+func getProvisionData(b []byte, logger log) (*ProvisionData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -103,9 +104,9 @@ func (c *Client) GetProvisionData(b []byte) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			c.logger.Debug("Found function bundle", "file", file.Name)
+			logger.Debug("Found function bundle", "file", file.Name)
 		default:
-			c.logger.Info("Unknown file found in app bundle", "file", file.Name)
+			logger.Info("Unknown file found in app bundle", "file", file.Name)
 		}
 	}
 
@@ -131,43 +132,43 @@ func (c *Client) GetProvisionData(b []byte) (*ProvisionData, error) {
 		}
 	}
 
-	assetMap := generateAssetNames(mani, assets)
-	functionMap, err := generateFunctionNames(mani, resFunctions)
+	generatedAssets := generateAssetNames(mani, assets)
+	generatedFunctions, err := generateFunctionNames(mani, resFunctions)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ProvisionData{
-		StaticFiles:     assetMap,
-		LambdaFunctions: functionMap,
+		StaticFiles:     generatedAssets,
+		LambdaFunctions: generatedFunctions,
 		Manifest:        mani,
 	}, nil
 }
 
-func generateAssetNames(manifest *apps.Manifest, assets []AssetData) map[string]AssetData {
-	assetMap := make(map[string]AssetData, len(assets))
+func generateAssetNames(manifest *apps.Manifest, assets []AssetData) []AssetData {
+	generatedAssets := make([]AssetData, 0, len(assets))
 	for _, asset := range assets {
-		assetMap[asset.Key] = AssetData{
+		generatedAssets = append(generatedAssets, AssetData{
 			Key:  GetAssetFileKey(manifest.AppID, manifest.Version, asset.Key),
 			File: asset.File,
-		}
+		})
 	}
-	return assetMap
+	return generatedAssets
 }
 
-func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) (map[string]FunctionData, error) {
-	functionMap := make(map[string]FunctionData, len(functions))
+func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ([]FunctionData, error) {
+	generatedFunctions := make([]FunctionData, 0, len(functions))
 	for _, function := range functions {
 		name, err := getFunctionName(manifest.AppID, manifest.Version, function.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't get function name")
 		}
-		functionMap[function.Name] = FunctionData{
+		generatedFunctions = append(generatedFunctions, FunctionData{
 			Name:    name,
 			Bundle:  function.Bundle,
 			Handler: function.Handler,
 			Runtime: function.Runtime,
-		}
+		})
 	}
-	return functionMap, nil
+	return generatedFunctions, nil
 }

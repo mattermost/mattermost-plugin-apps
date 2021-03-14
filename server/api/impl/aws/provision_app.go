@@ -38,7 +38,7 @@ func (c *Client) ProvisionAppFromURL(releaseURL string, shouldUpdate bool) error
 		return errors.Wrapf(err, "can't provision app from url %s", releaseURL)
 	}
 
-	provisionData, err := c.GetProvisionData(bundle)
+	provisionData, err := getProvisionData(bundle, c.logger)
 	if err != nil {
 		return errors.Wrapf(err, "can't get provision data for url %s", releaseURL)
 	}
@@ -47,7 +47,7 @@ func (c *Client) ProvisionAppFromURL(releaseURL string, shouldUpdate bool) error
 }
 
 func (c *Client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
-	provisionData, err := c.GetProvisionDataFromFile(path)
+	provisionData, err := GetProvisionDataFromFile(path, c.logger)
 	if err != nil {
 		return errors.Wrapf(err, "can't get Provision data from file %s", path)
 	}
@@ -101,7 +101,7 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionFunctions(manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
+func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []FunctionData, shouldUpdate bool) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrap(err, "can't make lambda function default policy")
