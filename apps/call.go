@@ -28,7 +28,7 @@ const (
 
 // Call defines a way to invoke an App's function. Calls are used to fetch App's
 // bindings, to process notifications, and to respond to user input from forms,
-// and command line.
+// bindings and command line.
 type Call struct {
 	// The path of the Call. For HTTP apps, the path is appended to the app's
 	// RootURL. For AWS Lambda apps, it is mapped to the appropriate Lambda name

@@ -44,7 +44,8 @@ type Context struct {
 	// Top-level Mattermost site URL to use for REST API calls.
 	MattermostSiteURL string `json:"mattermost_site_url"`
 
-	// TODO @larkox to document
+	// UserAgent used to perform the call. It can be either "webapp" or "mobile".
+	// Non user interactions like notifications will have this field empty.
 	UserAgent string `json:"user_agent,omitempty"`
 
 	// More data as requested by call.Expand
