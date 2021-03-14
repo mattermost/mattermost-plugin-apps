@@ -189,7 +189,7 @@ func TestMergeBindings(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			out := mergeBindings(tc.bb1, tc.bb2)
-			require.Equal(t, tc.expected, out)
+			require.EqualValues(t, tc.expected, out)
 		})
 	}
 }
@@ -480,7 +480,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
-	require.Equal(t, expected, out)
+	require.EqualValues(t, expected, out)
 }
 
 func TestDuplicateCommand(t *testing.T) {
@@ -573,7 +573,7 @@ func TestDuplicateCommand(t *testing.T) {
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
-	require.Equal(t, expected, out)
+	require.EqualValues(t, expected, out)
 }
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {

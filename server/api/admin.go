@@ -7,8 +7,9 @@ import (
 
 type Admin interface {
 	AddLocalManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
-	GetInstalledApps() map[apps.AppID]*apps.App
-	GetListedApps(filter string) map[apps.AppID]*apps.ListedApp
+	GetInstalledApp(appID apps.AppID) (*apps.App, error)
+	GetInstalledApps() []*apps.App
+	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
