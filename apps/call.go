@@ -36,9 +36,9 @@ type Call struct {
 	Path string `json:"path,omitempty"`
 
 	// Expand specifies what extended data should be provided to the function in
-	// each request. It may be various auth tokens, configuration data, or
-	// details of Mattermost entities such as the acting user, current team and
-	// channel, etc.
+	// each request's Context. It may be various auth tokens, configuration
+	// data, or details of Mattermost entities such as the acting user, current
+	// team and channel, etc.
 	Expand *Expand `json:"expand,omitempty"`
 
 	// Custom data that will be passed to the function in JSON, "as is".

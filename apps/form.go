@@ -12,8 +12,8 @@ package apps
 // autocomplete once the subcommand is selected is designed to mirror the
 // functionality of the Modal. Some gaps and differences still remain.
 //
-// Requests for forms are calls, have expanded contexts, making it easy to
-// generate forms specific to the user, channel, etc.
+// Requests for forms are calls, can use Expand, making it easy to generate
+// forms specific to the user, channel, etc.
 //
 // When a dynamic select field is selected in a Modal, or in Autocomplete, a
 // Lookup call request is made to the Form's Call. The app should respond with
