@@ -63,7 +63,8 @@ type Field struct {
 
 	// SelectRefresh means that a change in the value of this select triggers
 	// reloading the form. Values of the fields with inputs that are not
-	// included in the refreshed form are lost.
+	// included in the refreshed form are lost. Not yet implemented for /command
+	// autocomplete.
 	SelectRefresh bool `json:"refresh,omitempty"`
 
 	// SelectStaticOptions is the list of options to display in a static select

@@ -1,6 +1,6 @@
 package apps
 
-// Binding is the main way for an App to attach its functionality to the
+// Binding is the principal way for an App to attach its functionality to the
 // Mattermost UI.
 //
 // An App returns the bindings in response to the "bindings" call, that it must
@@ -22,7 +22,7 @@ package apps
 //  location - Name of this location. The whole path of locations will be added in the context.
 //  icon - optional URL or path to the icon
 //  label - text to show in the item on mobile and webapp collapsed view.
-//  hint - text to show in the tooltip.
+//  hint - text to show in the webapp's tooltip.
 //  call - Call to perform.
 //
 // /command bindings can define "inner" subcommands that are collections of more
@@ -47,7 +47,8 @@ package apps
 //
 // Bindings are currently refreshed when a user visits a channel, in the context
 // of the current channel, from all the registered Apps. A server-side cache
-// implementation is in the works. TODO ticket ref. This allows each App to
+// implementation is in the works,
+// https://mattermost.atlassian.net/browse/MM-30472. This allows each App to
 // dynamically add things to the UI on a per-channel basis.
 //
 // Example bindings (hello world app) create a button in the channel header, and

@@ -64,9 +64,9 @@ type CallRequest struct {
 	// command, as submitted by the user.
 	RawCommand string `json:"raw_command,omitempty"`
 
-	// SelectedField and Query are used in calls of type lookup, to communicate
-	// what field is selected, and what query string is already entered by the
-	// user for it.
+	// SelectedField and Query are used in calls of type lookup, and calls type
+	// form used to refresh the form upon user entry, to communicate what field
+	// is selected, and what query string is already entered by the user for it.
 	SelectedField string `json:"selected_field,omitempty"`
 	Query         string `json:"query,omitempty"`
 }
@@ -88,7 +88,7 @@ const (
 	CallResponseTypeForm CallResponseType = "form"
 
 	// CallResponseTypeCall indicates that another Call that should be executed
-	// (all the way from the user-agent). Call is returned.
+	// (all the way from the user-agent). Call is returned. NOT YET IMPLEMENTED.
 	CallResponseTypeCall CallResponseType = "call"
 
 	// CallResponseTypeNavigate indicates that the user should be forcefully
@@ -99,14 +99,18 @@ const (
 
 // CallResponse is general envelope for all Call responses.
 //
-// For submit requests ok, error, form, call, or navigate response types. Form requests expect form or error. Lookup requests expect ok or error.
+// Submit requests expect ok, error, form, call, or navigate response types.
 // Returning a "form" type in response to a submission from the user-agent
-// triggers displaying a Modal.
+// triggers displaying a Modal. Returning a "call" type in response to a
+// submission causes the call to be executed from the user-agent (NOT
+// IMPLEMENTED YET)
 //
-// Returning a "call" type in response to a submission
+// Form requests expect form or error.
+//
+// Lookup requests expect ok or error.
+//
 // In case of an error, the returned response type is "error", ErrorText
 // contains the overall error text. Data contains optional, field-level errors.
-
 type CallResponse struct {
 	Type CallResponseType `json:"type"`
 

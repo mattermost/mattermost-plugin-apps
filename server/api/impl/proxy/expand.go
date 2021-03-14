@@ -129,7 +129,12 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
 	if user == nil || level == apps.ExpandAll {
-		return user
+		sanitized := *user
+		sanitized.Sanitize(map[string]bool{
+			"passwordupdate": true,
+			"authservice":    true,
+		})
+		return &sanitized
 	}
 	if level != apps.ExpandSummary {
 		return nil
@@ -169,7 +174,9 @@ func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel
 
 func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
 	if team == nil || level == apps.ExpandAll {
-		return team
+		sanitized := *team
+		sanitized.Sanitize()
+		return &sanitized
 	}
 	if level != apps.ExpandSummary {
 		return nil
@@ -186,7 +193,9 @@ func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
 
 func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
 	if post == nil || level == apps.ExpandAll {
-		return post
+		sanitized := *post.Clone()
+		sanitized.SanitizeProps()
+		return &sanitized
 	}
 	if level != apps.ExpandSummary {
 		return nil

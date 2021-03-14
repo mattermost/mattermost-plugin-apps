@@ -12,8 +12,7 @@ import (
 // can be included by adding a corresponding Expand attribute to the originating
 // Call.
 type Context struct {
-	// AppID is used for handling CallRequest internally, and is always filled
-	// in.
+	// AppID is used for handling CallRequest internally.
 	AppID AppID `json:"app_id"`
 
 	// Fully qualified original Location of the user action (if applicable),

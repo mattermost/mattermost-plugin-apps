@@ -12,14 +12,11 @@ type Manifest struct {
 	AppType AppType    `json:"app_type"`
 	Version AppVersion `json:"version"`
 
+	// HomepageURL is required.
+	HomepageURL string `json:"homepage_url"`
+
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
-	HomepageURL string `json:"homepage_url,omitempty"`
-
-	// See DefaultInstallCall, DefaultBindingCall, etc. for the defaults. The
-	// App developer can override the defaults by providing explicit Path,
-	// Expand values.
-
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
 	// display. The default values for its fields are,
