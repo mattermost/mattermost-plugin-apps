@@ -6,9 +6,10 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 )
 
 func init() {

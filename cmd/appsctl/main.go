@@ -48,7 +48,3 @@ func createAWSClient() (*aws.Client, error) {
 
 	return aws.NewAWSClient(accessKey, secretKey, &log), nil
 }
-
-func createAWSClientWithoutCredentials() (*aws.Client, error) {
-	return aws.NewAWSClient("", "", &log), nil
-}
