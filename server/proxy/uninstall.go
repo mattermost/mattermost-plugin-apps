@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package admin
+package proxy
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (adm *Admin) UninstallApp(appID apps.AppID) error {
+func (p *Proxy) UninstallApp(appID apps.AppID) error {
 	app, err := adm.store.App().Get(appID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get app. appID: %s", appID)

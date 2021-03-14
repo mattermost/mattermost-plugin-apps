@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package admin
+package proxy
 
 import (
 	"time"
@@ -16,7 +16,7 @@ const PrevVersion = "prev_version"
 
 // SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
-func (adm *Admin) SynchronizeInstalledApps() error {
+func (p *Proxy) SynchronizeInstalledApps() error {
 	installed := adm.store.App().AsMap()
 	listed := adm.store.Manifest().AsMap()
 
@@ -71,7 +71,7 @@ func (adm *Admin) SynchronizeInstalledApps() error {
 	return nil
 }
 
-func (adm *Admin) callOnce(f func() error) error {
+func (p *Proxy) callOnce(f func() error) error {
 	// Delete previous job
 	if err := adm.mm.KV.Delete(api.KeyCallOnce); err != nil {
 		return errors.Wrap(err, "can't delete key")

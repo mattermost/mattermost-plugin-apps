@@ -13,14 +13,25 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
+
+type App interface {
+	config.Configurable
+
+	AsMap() map[apps.AppID]*apps.App
+	Delete(apps.AppID) error
+	Get(appID apps.AppID) (*apps.App, error)
+	InitBuiltin(...*apps.App)
+	Save(app *apps.App) error
+}
 
 // appStore combines installed and builtin Apps.  The installed Apps are stored
 // in KV store, and the list of their keys is stored in the config, as a map of
 // AppID->sha1(App).
 type appStore struct {
-	*Store
+	*Service
 
 	mutex sync.RWMutex
 
@@ -28,7 +39,7 @@ type appStore struct {
 	builtinInstalled map[apps.AppID]*apps.App
 }
 
-var _ api.AppStore = (*appStore)(nil)
+var _ App = (*appStore)(nil)
 
 func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Lock()
@@ -41,12 +52,12 @@ func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf api.Config) {
+func (s *appStore) Configure(conf config.Config) {
 	newInstalled := map[apps.AppID]*apps.App{}
 
 	for id, key := range conf.InstalledApps {
 		var app *apps.App
-		err := s.mm.KV.Get(api.PrefixInstalledApp+key, &app)
+		err := s.mm.KV.Get(config.PrefixInstalledApp+key, &app)
 		switch {
 		case err != nil:
 			s.mm.Log.Error(
@@ -54,7 +65,7 @@ func (s *appStore) Configure(conf api.Config) {
 
 		case app == nil:
 			s.mm.Log.Error(
-				fmt.Sprintf("failed to load app %s: key %s not found", id, api.PrefixInstalledApp+key))
+				fmt.Sprintf("failed to load app %s: key %s not found", id, config.PrefixInstalledApp+key))
 
 		default:
 			newInstalled[apps.AppID(id)] = app
@@ -100,7 +111,7 @@ func (s *appStore) AsMap() map[apps.AppID]*apps.App {
 }
 
 func (s *appStore) Save(app *apps.App) error {
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	data, err := json.Marshal(app)
@@ -112,7 +123,7 @@ func (s *appStore) Save(app *apps.App) error {
 		// no change in the data
 		return nil
 	}
-	_, err = s.mm.KV.Set(api.PrefixInstalledApp+sha, app)
+	_, err = s.mm.KV.Set(config.PrefixInstalledApp+sha, app)
 	if err != nil {
 		return err
 	}
@@ -146,7 +157,7 @@ func (s *appStore) Save(app *apps.App) error {
 		return err
 	}
 
-	err = s.mm.KV.Delete(api.PrefixInstalledApp + prevSHA)
+	err = s.mm.KV.Delete(config.PrefixInstalledApp + prevSHA)
 	if err != nil {
 		s.mm.Log.Warn("failed to delete previous App KV value", "err", err.Error())
 	}

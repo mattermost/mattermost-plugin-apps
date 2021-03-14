@@ -7,17 +7,23 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
+
+type Subscription interface {
+	Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
+	Save(sub *apps.Subscription) error
+	Delete(*apps.Subscription) error
+}
 
 type SubStore struct {
 	*Store
 }
 
-var _ api.SubStore = (*SubStore)(nil)
+var _ Sub = (*SubStore)(nil)
 
-func newSubStore(st *Store) api.SubStore {
+func newSubStore(st *Store) Sub {
 	s := &SubStore{st}
 	return s
 }
@@ -34,7 +40,7 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 		apps.SubjectChannelCreated:
 		idSuffix = "_" + teamID
 	}
-	return api.PrefixSubs + string(subject) + idSuffix
+	return config.PrefixSubs + string(subject) + idSuffix
 }
 
 func (s SubStore) Delete(sub *apps.Subscription) error {

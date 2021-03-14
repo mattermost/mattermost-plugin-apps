@@ -19,9 +19,20 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
+
+type Manifest interface {
+	config.Configurable
+
+	AsMap() map[apps.AppID]*apps.Manifest
+	DeleteLocal(apps.AppID) error
+	Get(apps.AppID) (*apps.Manifest, error)
+	InitGlobal(_ awsclient.Client, bucket string) error
+	StoreLocal(*apps.Manifest) error
+}
 
 // manifestStore combines global (aka marketplace) manifests, and locally
 // installed ones. The global list is loaded on startup. The local manifests are
@@ -36,7 +47,7 @@ type manifestStore struct {
 	local  map[apps.AppID]*apps.Manifest
 }
 
-var _ api.ManifestStore = (*manifestStore)(nil)
+var _ Manifest = (*manifestStore)(nil)
 
 func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
@@ -44,7 +55,7 @@ func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error
 		return errors.Wrap(err, "can't get bundle path")
 	}
 	assetPath := filepath.Join(bundlePath, "assets")
-	f, err := os.Open(filepath.Join(assetPath, api.ManifestsFile))
+	f, err := os.Open(filepath.Join(assetPath, config.ManifestsFile))
 	if err != nil {
 		return errors.Wrap(err, "failed to load global list of available apps")
 	}
@@ -129,12 +140,12 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	return &m, nil
 }
 
-func (s *manifestStore) Configure(conf api.Config) {
+func (s *manifestStore) Configure(conf config.Config) {
 	updatedLocal := map[apps.AppID]*apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
-		err := s.mm.KV.Get(api.PrefixLocalManifest+key, &m)
+		err := s.mm.KV.Get(config.PrefixLocalManifest+key, &m)
 		switch {
 		case err != nil:
 			s.mm.Log.Error(

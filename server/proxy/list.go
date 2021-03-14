@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package admin
+package proxy
 
 import (
 	"sort"
@@ -10,15 +10,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (adm *Admin) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
+func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return adm.store.Manifest().Get(appID)
 }
 
-func (adm *Admin) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
+func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return adm.store.App().Get(appID)
 }
 
-func (adm *Admin) GetInstalledApps() []*apps.App {
+func (p *Proxy) GetInstalledApps() []*apps.App {
 	installed := adm.store.App().AsMap()
 	out := []*apps.App{}
 	for _, app := range installed {
@@ -33,7 +33,7 @@ func (adm *Admin) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (adm *Admin) GetListedApps(filter string) []*apps.ListedApp {
+func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 	out := []*apps.ListedApp{}
 
 	for _, m := range adm.store.Manifest().AsMap() {

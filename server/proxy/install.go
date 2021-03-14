@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package admin
+package proxy
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
 	// TODO <><> check if acting user is a sysadmin
 
 	m, err := adm.store.Manifest().Get(cc.AppID)
@@ -88,7 +88,7 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	return app, resp.Markdown, nil
 }
 
-func (adm *Admin) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
 	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
@@ -129,7 +129,7 @@ func (adm *Admin) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID
 	return oauthApp, nil
 }
 
-func (adm *Admin) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
+func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
 	conf := adm.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)

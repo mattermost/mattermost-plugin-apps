@@ -14,8 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -25,7 +24,7 @@ func TestDeleteSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &api.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
 	s := New(apiClient, conf)
 
 	toDelete := apps.Subscription{
@@ -132,7 +131,7 @@ func TestGetSubs(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &api.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
 	s := New(apiClient, conf)
 
 	emptySubs := []*apps.Subscription{}
@@ -195,7 +194,7 @@ func TestStoreSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := configurator.NewConfigurator(apiClient, &api.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
 	s := New(apiClient, conf)
 
 	toStore := apps.Subscription{

@@ -1,4 +1,4 @@
-package api
+package config
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -50,11 +50,4 @@ type Config struct {
 
 type Configurable interface {
 	Configure(Config)
-}
-
-type Configurator interface {
-	GetConfig() Config
-	GetMattermostConfig() *model.Config
-	Reconfigure(*StoredConfig, ...Configurable) error
-	StoreConfig(sc *StoredConfig) error
 }
