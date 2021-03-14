@@ -19,8 +19,8 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- |\n")
 
 	for _, app := range installed {
-		l := listed[app.AppID]
-		if l == nil {
+		m, _ := s.admin.GetManifest(app.AppID)
+		if m == nil {
 			continue
 		}
 
@@ -31,8 +31,8 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		status += fmt.Sprintf(", type: `%s`", app.AppType)
 
 		version := string(app.Version)
-		if string(l.Manifest.Version) != version {
-			version += fmt.Sprintf(", %s in marketplace", l.Manifest.Version)
+		if string(m.Version) != version {
+			version += fmt.Sprintf(", %s in marketplace", m.Version)
 		}
 
 		account := ""
@@ -53,8 +53,8 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 	}
 
 	for _, l := range listed {
-		_, ok := installed[l.Manifest.AppID]
-		if ok {
+		app, _ := s.admin.GetInstalledApp(l.Manifest.AppID)
+		if app != nil {
 			continue
 		}
 
