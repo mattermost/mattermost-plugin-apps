@@ -9,10 +9,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
-const prefixInstalledApp = "app_"
-const prefixLocalManifest = "manifest_"
-const prefixSubs = "sub_"
-
 type Service struct {
 	App          App
 	Subscription Subscription
@@ -30,7 +26,7 @@ func NewService(mm *pluginapi.Client, conf config.Service) *Service {
 	s.App = &appStore{
 		Service: s,
 	}
-	s.Subscription =  &SubStore{
+	s.Subscription = &SubStore{
 		Service: s}
 
 	s.Manifest = &manifestStore{

@@ -106,30 +106,29 @@ func (p *Plugin) OnActivate() error {
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
 	assetBucket := apps.S3BucketNameWithDefaults("")
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket)
+	mutex, err := cluster.NewMutex(p.API, config.KeyClusterMutex)
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
+
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 	}
 
-	p.appservices = appservices.NewAppServices(p.mm, p.conf, p.store)
+	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 
-	mutex, err := cluster.NewMutex(p.API, api.KeyClusterMutex)
-	if err != nil {
-		return errors.Wrapf(err, "failed creating cluster mutex")
-	}
-	p.admin = admin.NewAdmin(p.mm, p.conf, p.store, p.proxy, mutex)
-
-	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.admin, p.appservices,
+	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		http_hello.Init,
 	)
-	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.admin)
+	p.command, err = command.MakeService(p.mm, p.conf, p.proxy)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
 
-	err = p.admin.SynchronizeInstalledApps()
+	err = p.proxy.SynchronizeInstalledApps()
 	if err != nil {
 		p.mm.Log.Error("failed to update apps", "err", err.Error())
 	}
@@ -143,12 +142,10 @@ func (p *Plugin) OnConfigurationChange() error {
 		return nil
 	}
 
-	stored := api.StoredConfig{}
+	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(&stored,
-		p.store.App(),
-		p.store.Manifest())
+	return p.conf.Reconfigure(&stored, p.store.App, p.store.Manifest)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {

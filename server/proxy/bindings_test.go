@@ -18,6 +18,11 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 )
 
@@ -580,9 +585,9 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	s := mock_api.NewMockStore(ctrl)
-	appStore := mock_api.NewMockAppStore(ctrl)
-	s.EXPECT().App().Return(appStore).AnyTimes()
+	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
+	appStore := mock_store.NewMockApp(ctrl)
+	s.App = appStore
 
 	appList := map[apps.AppID]*apps.App{}
 	upstreams := map[apps.AppID]upstream.Upstream{}
@@ -597,16 +602,16 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		bb, _ := json.Marshal(cr)
 		reader := ioutil.NopCloser(bytes.NewReader(bb))
 
-		up := mock_api.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any()).Return(reader, nil)
+		up := mock_upstream.NewMockUpstream(ctrl)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
 		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
 	appStore.EXPECT().AsMap().Return(appList)
 
-	configurator := mock_api.NewMockConfigurator(ctrl)
-	configurator.EXPECT().GetMattermostConfig().Return(&model.Config{
+	conf := mock_config.NewMockService(ctrl)
+	conf.EXPECT().GetMattermostConfig().Return(&model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("test.mattermost.com"),
 		},
@@ -616,7 +621,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		mm:               mm,
 		store:            s,
 		builtinUpstreams: upstreams,
-		conf:             configurator,
+		conf:             conf,
 	}
 
 	return p

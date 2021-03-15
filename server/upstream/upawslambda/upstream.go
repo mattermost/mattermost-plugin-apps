@@ -86,11 +86,11 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 	return io.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
-func (up *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := apps.AssetS3Name(up.app.AppID, up.app.Version, path)
-	data, err := up.awsClient.GetS3(up.bucket, key)
+func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
+	key := apps.AssetS3Name(u.app.AppID, u.app.Version, path)
+	data, err := u.awsClient.GetS3(u.bucket, key)
 	if err != nil {
-		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", up.bucket, path)
+		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
 	}
 	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }

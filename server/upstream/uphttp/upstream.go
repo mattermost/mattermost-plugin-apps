@@ -26,10 +26,10 @@ func NewUpstream(app *apps.App) *Upstream {
 	return &Upstream{app.HTTPRootURL, app.Secret}
 }
 
-func (up *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := up.invoke(call.Context.BotUserID, call)
+			resp, _ := u.invoke(call.Context.BotUserID, call)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -37,7 +37,7 @@ func (up *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser
 		return nil, nil
 	}
 
-	resp, err := up.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +90,8 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	return resp, nil
 }
 
-func (up *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", up.rootURL, apps.StaticAssetsFolder, path)
+func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticAssetsFolder, path)
 	/* #nosec G107 */
 	resp, err := http.Get(url) // nolint:bodyclose
 	if err != nil {

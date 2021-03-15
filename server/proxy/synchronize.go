@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 const PrevVersion = "prev_version"
@@ -56,14 +56,14 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 					creq.Values[k] = v
 				}
 
-				resp := p.Call(p.adminToken, creq)
+				resp := p.Call("", creq)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", creq.Path)
 				}
 				return nil
 			})
 			if err != nil {
-				adm.mm.Log.Error("failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
+				p.mm.Log.Error("failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
 			}
 		}
 	}
@@ -73,16 +73,16 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 func (p *Proxy) callOnce(f func() error) error {
 	// Delete previous job
-	if err := adm.mm.KV.Delete(api.KeyCallOnce); err != nil {
+	if err := p.mm.KV.Delete(config.KeyCallOnce); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
 	time.Sleep(10 * time.Second)
 
-	adm.mutex.Lock()
-	defer adm.mutex.Unlock()
+	p.callOnceMutex.Lock()
+	defer p.callOnceMutex.Unlock()
 	value := 0
-	if err := adm.mm.KV.Get(api.KeyCallOnce, &value); err != nil {
+	if err := p.mm.KV.Get(config.KeyCallOnce, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -95,12 +95,12 @@ func (p *Proxy) callOnce(f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := adm.mm.KV.Set(api.KeyCallOnce, value)
+	ok, err := p.mm.KV.Set(config.KeyCallOnce, value)
 	if err != nil {
-		return errors.Wrapf(err, "can't set key %s to %d", api.KeyCallOnce, value)
+		return errors.Wrapf(err, "can't set key %s to %d", config.KeyCallOnce, value)
 	}
 	if !ok {
-		return errors.Errorf("can't set key %s to %d", api.KeyCallOnce, value)
+		return errors.Errorf("can't set key %s to %d", config.KeyCallOnce, value)
 	}
 	return nil
 }
