@@ -18,8 +18,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 )
 
 type bindingTestData struct {
@@ -586,7 +585,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	s.EXPECT().App().Return(appStore).AnyTimes()
 
 	appList := map[apps.AppID]*apps.App{}
-	upstreams := map[apps.AppID]api.Upstream{}
+	upstreams := map[apps.AppID]upstream.Upstream{}
 
 	for _, test := range testData {
 		appList[test.app.AppID] = test.app

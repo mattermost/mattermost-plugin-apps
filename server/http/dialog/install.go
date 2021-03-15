@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -72,7 +72,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 
 	return model.OpenDialogRequest{
 		TriggerId: commandArgs.TriggerId,
-		URL:       pluginURL + api.InteractiveDialogPath + InstallPath,
+		URL:       pluginURL + config.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
 			Title:            "Install App - " + m.DisplayName,
 			IntroductionText: intro.String(),
@@ -140,7 +140,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app, out, err := d.admin.InstallApp(
+	app, out, err := d.proxy.InstallApp(
 		&apps.Context{
 			ActingUserID: actingUserID,
 			AppID:        stateData.AppID,

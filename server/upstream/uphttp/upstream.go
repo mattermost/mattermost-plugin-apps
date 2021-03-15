@@ -5,6 +5,7 @@ package uphttp
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -26,18 +26,18 @@ func NewUpstream(app *apps.App) *Upstream {
 	return &Upstream{app.HTTPRootURL, app.Secret}
 }
 
-func (u *Upstream) OneWay(call *apps.CallRequest) error {
-	go func() {
-		resp, _ := u.invoke(call.Context.BotUserID, call)
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-	return nil
-}
+func (up *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if async {
+		go func() {
+			resp, _ := up.invoke(call.Context.BotUserID, call)
+			if resp != nil {
+				resp.Body.Close()
+			}
+		}()
+		return nil, nil
+	}
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
-	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := up.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(api.OutgoingAuthHeader, "Bearer "+jwtoken)
+	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -90,12 +90,22 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	return resp, nil
 }
 
+func (up *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", up.rootURL, apps.StaticAssetsFolder, path)
+	/* #nosec G107 */
+	resp, err := http.Get(url) // nolint:bodyclose
+	if err != nil {
+		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
+	}
+	return resp.Body, resp.StatusCode, nil
+}
+
 func (u *Upstream) getClient() *http.Client {
 	return &http.Client{}
 }
 
 func createJWT(actingUserID, secret string) (string, error) {
-	claims := api.JWTClaims{
+	claims := apps.JWTClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 		},

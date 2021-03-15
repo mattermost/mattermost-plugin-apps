@@ -8,41 +8,42 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 type restapi struct {
 	mm          *pluginapi.Client
-	conf        api.Configurator
-	proxy       api.Proxy
-	admin       api.Admin
-	appServices api.AppServices
+	conf        config.Service
+	proxy       proxy.Service
+	appServices appservices.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, proxy api.Proxy, admin api.Admin, appServices api.AppServices) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, appServices appservices.Service) {
 	a := &restapi{
 		mm:          mm,
 		conf:        conf,
 		proxy:       proxy,
-		admin:       admin,
 		appServices: appServices,
 	}
 
-	subrouter := router.PathPrefix(api.APIPath).Subrouter()
-	subrouter.HandleFunc(api.BindingsPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
-	subrouter.HandleFunc(api.CallPath, a.handleCall).Methods("POST")
-	subrouter.HandleFunc(api.SubscribePath, a.handleSubscribe).Methods("POST")
-	subrouter.HandleFunc(api.UnsubscribePath, a.handleUnsubscribe).Methods("POST")
+	subrouter := router.PathPrefix(config.APIPath).Subrouter()
+	subrouter.HandleFunc(apps.DefaultBindingsCallPath, checkAuthorized(a.handleGetBindings)).Methods("GET")
+	subrouter.HandleFunc(config.CallPath, a.handleCall).Methods("POST")
+	subrouter.HandleFunc(config.SubscribePath, a.handleSubscribe).Methods("POST")
+	subrouter.HandleFunc(config.UnsubscribePath, a.handleUnsubscribe).Methods("POST")
 
-	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvGet)).Methods("GET")
-	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvPut)).Methods("PUT", "POST")
-	subrouter.HandleFunc(api.KVPath+"/", a.handleKV(a.kvList)).Methods("GET")
-	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvHead)).Methods("HEAD")
-	subrouter.HandleFunc(api.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
+	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvGet)).Methods("GET")
+	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvPut)).Methods("PUT", "POST")
+	subrouter.HandleFunc(config.KVPath+"/", a.handleKV(a.kvList)).Methods("GET")
+	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvHead)).Methods("HEAD")
+	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
 
-	subrouter.HandleFunc(api.PathMarketplace, checkAuthorized(a.handleGetMarketplace)).Methods(http.MethodGet)
-	subrouter.HandleFunc(api.StaticAssetPath+"/{app_id}/{name}", checkAuthorized(a.handleGetStaticAsset)).Methods(http.MethodGet)
+	subrouter.HandleFunc(config.PathMarketplace, checkAuthorized(a.handleGetMarketplace)).Methods(http.MethodGet)
+	subrouter.HandleFunc(config.StaticAssetPath+"/{app_id}/{name}", checkAuthorized(a.handleGetStaticAsset)).Methods(http.MethodGet)
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {

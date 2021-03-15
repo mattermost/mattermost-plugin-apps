@@ -11,15 +11,15 @@ import (
 )
 
 func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
-	return adm.store.Manifest().Get(appID)
+	return p.store.Manifest.Get(appID)
 }
 
 func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
-	return adm.store.App().Get(appID)
+	return p.store.App.Get(appID)
 }
 
 func (p *Proxy) GetInstalledApps() []*apps.App {
-	installed := adm.store.App().AsMap()
+	installed := p.store.App.AsMap()
 	out := []*apps.App{}
 	for _, app := range installed {
 		out = append(out, app)
@@ -36,14 +36,14 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 	out := []*apps.ListedApp{}
 
-	for _, m := range adm.store.Manifest().AsMap() {
+	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
 		marketApp := &apps.ListedApp{
 			Manifest: m,
 		}
-		app, _ := adm.store.App().Get(m.AppID)
+		app, _ := p.store.App.Get(m.AppID)
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled

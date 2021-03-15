@@ -30,9 +30,9 @@ func NewService(mm *pluginapi.Client, conf config.Service) *Service {
 	s.App = &appStore{
 		Service: s,
 	}
-	s.Subscription = &subscriptionStore{
-		Service: s,
-	}
+	s.Subscription =  &SubStore{
+		Service: s}
+
 	s.Manifest = &manifestStore{
 		Service: s,
 	}

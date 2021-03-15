@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
@@ -111,7 +110,7 @@ func (s *appStore) AsMap() map[apps.AppID]*apps.App {
 }
 
 func (s *appStore) Save(app *apps.App) error {
-	conf := s.conf.Get()
+	conf := s.conf.GetConfig()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	data, err := json.Marshal(app)
@@ -179,7 +178,7 @@ func (s *appStore) Delete(appID apps.AppID) error {
 		return utils.ErrNotFound
 	}
 
-	err := s.mm.KV.Delete(api.PrefixInstalledApp + sha)
+	err := s.mm.KV.Delete(config.PrefixInstalledApp + sha)
 	if err != nil {
 		return err
 	}

@@ -4,45 +4,20 @@
 package proxy
 
 import (
-	"encoding/json"
+	"io"
 	"net/http"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/upawslambda"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-type Proxy struct {
-	builtinUpstreams map[apps.AppID]api.Upstream
-
-	mm            *pluginapi.Client
-	conf          api.Configurator
-	store         api.Store
-	aws           awsclient.Client
-	s3AssetBucket string
-}
-
-var _ api.Proxy = (*Proxy)(nil)
-
-func NewProxy(mm *pluginapi.Client, aws awsclient.Client, conf api.Configurator, store api.Store, s3AssetBucket string) *Proxy {
-	return &Proxy{
-		builtinUpstreams: map[apps.AppID]api.Upstream{},
-		mm:               mm,
-		conf:             conf,
-		store:            store,
-		aws:              aws,
-		s3AssetBucket:    s3AssetBucket,
-	}
-}
-
 func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.CallResponse {
-	app, err := p.store.App().Get(c.Context.AppID)
+	app, err := p.store.App.Get(c.Context.AppID)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
@@ -63,7 +38,7 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
-	subs, err := p.store.Sub().Get(subj, cc.TeamID, cc.ChannelID)
+	subs, err := p.store.Subscription.Get(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
 		return err
 	}
@@ -77,7 +52,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		}
 
 		callRequest := &apps.CallRequest{Call: *call}
-		app, err := p.store.App().Get(sub.AppID)
+		app, err := p.store.App.Get(sub.AppID)
 		if err != nil {
 			return err
 		}
@@ -104,13 +79,30 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	return nil
 }
 
-func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
+func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+	app, err := p.store.App.Get(appID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Cause(err) == utils.ErrNotFound {
+			status = http.StatusNotFound
+		}
+		return nil, status, err
+	}
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return up.GetStatic(path)
+}
+
+func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil
 
 	case apps.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app, p.aws), nil
+		return upawslambda.NewUpstream(app, p.aws, p.s3AssetBucket), nil
 
 	case apps.AppTypeBuiltin:
 		up := p.builtinUpstreams[app.AppID]
@@ -122,20 +114,4 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 	default:
 		return nil, errors.Errorf("not a valid app type: %s", app.AppType)
 	}
-}
-
-func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up api.Upstream) {
-	if p.builtinUpstreams == nil {
-		p.builtinUpstreams = map[apps.AppID]api.Upstream{}
-	}
-	p.builtinUpstreams[appID] = up
-}
-
-func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		Type:      apps.CallResponseTypeError,
-		ErrorText: err.Error(),
-	})
 }

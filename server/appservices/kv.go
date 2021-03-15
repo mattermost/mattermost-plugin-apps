@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
 // TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
@@ -64,7 +62,7 @@ func (a *AppServices) kvDo(botUserID, prefix, id string, ref interface{}, f func
 	}
 
 	if !mmuser.IsBot {
-		return api.ErrNotABot
+		return ErrNotABot
 	}
 
 	return f(kvKey(botUserID, prefix, id), ref)

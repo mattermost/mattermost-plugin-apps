@@ -18,7 +18,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
@@ -39,7 +38,7 @@ type Manifest interface {
 // stored in KV store, and the list of their keys is stored in the config, as a
 // map of AppID->sha1(manifest).
 type manifestStore struct {
-	*Store
+	*Service
 
 	mutex sync.RWMutex
 
@@ -211,7 +210,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return nil
 	}
 
-	_, err = s.mm.KV.Set(api.PrefixLocalManifest+sha, m)
+	_, err = s.mm.KV.Set(config.PrefixLocalManifest+sha, m)
 	if err != nil {
 		return err
 	}
@@ -242,7 +241,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return err
 	}
 
-	err = s.mm.KV.Delete(api.PrefixLocalManifest + prevSHA)
+	err = s.mm.KV.Delete(config.PrefixLocalManifest + prevSHA)
 	if err != nil {
 		s.mm.Log.Warn("failed to delete previous Manifest KV value", "err", err.Error())
 	}
@@ -253,7 +252,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	conf := s.conf.GetConfig()
 	sha := conf.LocalManifests[string(appID)]
 
-	err := s.mm.KV.Delete(api.PrefixLocalManifest + sha)
+	err := s.mm.KV.Delete(config.PrefixLocalManifest + sha)
 	if err != nil {
 		return err
 	}

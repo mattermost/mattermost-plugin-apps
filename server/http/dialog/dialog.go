@@ -8,9 +8,11 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const (
@@ -19,16 +21,16 @@ const (
 
 type dialog struct {
 	mm    *pluginapi.Client
-	admin api.Admin
+	proxy proxy.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, _ api.Configurator, _ api.Proxy, admin api.Admin, _ api.AppServices) {
+func Init(router *mux.Router, mm *pluginapi.Client, _ config.Service, proxy proxy.Service, _ appservices.Service) {
 	d := dialog{
 		mm:    mm,
-		admin: admin,
+		proxy: proxy,
 	}
 
-	subrouter := router.PathPrefix(api.InteractiveDialogPath).Subrouter()
+	subrouter := router.PathPrefix(config.InteractiveDialogPath).Subrouter()
 	subrouter.HandleFunc(InstallPath, d.handleInstall).Methods("POST")
 }
 

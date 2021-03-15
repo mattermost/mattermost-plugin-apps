@@ -8,7 +8,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type expander struct {
@@ -16,12 +17,12 @@ type expander struct {
 	*apps.Context
 
 	mm           *pluginapi.Client
-	conf         api.Configurator
-	store        api.Store
+	conf         config.Service
+	store        *store.Service
 	sessionToken apps.SessionToken
 }
 
-func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf api.Configurator, store api.Store, debugSessionToken apps.SessionToken) *expander {
+func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf config.Service, store *store.Service, debugSessionToken apps.SessionToken) *expander {
 	e := &expander{
 		Context:      cc,
 		mm:           mm,

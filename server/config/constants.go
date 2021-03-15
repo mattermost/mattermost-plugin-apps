@@ -43,7 +43,6 @@ const (
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
 	StaticAssetPath = "/" + apps.StaticAssetsFolder
-	BindingsPath    = "/bindings"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )

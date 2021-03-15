@@ -16,7 +16,7 @@ import (
 type Service interface {
 	GetConfig() Config
 	GetMattermostConfig() *model.Config
-	Refresh(*StoredConfig, ...Configurable) error
+	Reconfigure(*StoredConfig, ...Configurable) error
 	StoreConfig(sc *StoredConfig) error
 }
 
@@ -70,7 +70,7 @@ func (s *service) GetMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Refresh(stored *StoredConfig, services ...Configurable) error {
+func (s *service) Reconfigure(stored *StoredConfig, services ...Configurable) error {
 	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -103,7 +103,7 @@ func (s *service) Refresh(stored *StoredConfig, services ...Configurable) error 
 
 func (s *service) StoreConfig(sc *StoredConfig) error {
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Refresh(sc)
+	err := s.Reconfigure(sc)
 	if err != nil {
 		return err
 	}

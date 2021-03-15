@@ -25,7 +25,7 @@ func TestDeleteSub(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
-	s := New(apiClient, conf)
+	s := NewService(apiClient, conf)
 
 	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -83,21 +83,21 @@ func TestDeleteSub(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
 
 	t.Run("no value for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, nil).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
@@ -105,14 +105,14 @@ func TestDeleteSub(t *testing.T) {
 	t.Run("error setting subscription", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsWithToDeleteBytes, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, storedSubsBytes, mock.Anything).Return(false, model.NewAppError("KVSet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.Error(t, err)
 		require.Equal(t, "failed to save subscriptions: KVSet: test, test error", err.Error())
 	})
 
 	t.Run("subscription not found", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
@@ -120,7 +120,7 @@ func TestDeleteSub(t *testing.T) {
 	t.Run("subscription deleted", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsWithToDeleteBytes, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, storedSubsBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Sub().Delete(&toDelete)
+		err := s.Subscription.Delete(&toDelete)
 		require.NoError(t, err)
 	})
 }
@@ -132,7 +132,7 @@ func TestGetSubs(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
-	s := New(apiClient, conf)
+	s := NewService(apiClient, conf)
 
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
@@ -161,28 +161,28 @@ func TestGetSubs(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		_, err := s.Sub().Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
 
 	t.Run("no value for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, nil).Times(1)
-		_, err := s.Sub().Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
-		_, err := s.Sub().Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("subscription list got", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
-		subs, err := s.Sub().Get("user_joined_channel", "team-id", "channel-id")
+		subs, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
 		require.NoError(t, err)
 		require.Equal(t, storedSubs, subs)
 	})
@@ -195,7 +195,7 @@ func TestStoreSub(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
-	s := New(apiClient, conf)
+	s := NewService(apiClient, conf)
 
 	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -257,7 +257,7 @@ func TestStoreSub(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Sub().Save(&toStore)
+		err := s.Subscription.Save(&toStore)
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
@@ -265,21 +265,21 @@ func TestStoreSub(t *testing.T) {
 	t.Run("no value for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, emptySubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Sub().Save(&toStore)
+		err := s.Subscription.Save(&toStore)
 		require.NoError(t, err)
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, emptySubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Sub().Save(&toStore)
+		err := s.Subscription.Save(&toStore)
 		require.NoError(t, err)
 	})
 
 	t.Run("error setting subscription", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, storedSubsWithToStoreBytes, mock.Anything).Return(false, model.NewAppError("KVSet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Sub().Save(&toStore)
+		err := s.Subscription.Save(&toStore)
 		require.Error(t, err)
 		require.Equal(t, "KVSet: test, test error", err.Error())
 	})
@@ -287,7 +287,7 @@ func TestStoreSub(t *testing.T) {
 	t.Run("subscription stored", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
 		mockAPI.On("KVSetWithOptions", subKey, storedSubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Sub().Save(&toStore)
+		err := s.Subscription.Save(&toStore)
 		require.NoError(t, err)
 	})
 }

@@ -4,21 +4,28 @@
 package proxy
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/aws"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type BuiltinApp interface {
-	// may also implement upstream.Upstream
-	App() *apps.App
+type Proxy struct {
+	builtinUpstreams map[apps.AppID]upstream.Upstream
+
+	mm            *pluginapi.Client
+	conf          config.Service
+	store         *store.Service
+	aws           awsclient.Client
+	s3AssetBucket string
 }
 
 type Service interface {
@@ -36,49 +43,34 @@ type Service interface {
 	SynchronizeInstalledApps() error
 	UninstallApp(appID apps.AppID) error
 
-	AddBuiltinUpstream(apps.AppID, Upstream)
+	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
 
-type proxy struct {
-	// Manifests contains all relevant manifests. For V1, the entire list is
-	// cached in memory, and loaded on startup.
-	Manifests map[apps.AppID]*apps.Manifest
+var _ Service = (*Proxy)(nil)
 
-	// Built-in Apps are linked in Go and invoked directly. The list is
-	// initialized on startup, and need not be synchronized. Built-in apps do
-	// not need manifests.
-	builtinUpstreams map[apps.AppID]upstream.Upstream
-
-	mm    *pluginapi.Client
-	conf  config.Service
-	store *store.Service
-	aws   aws.Service
-}
-
-var _ Service = (*proxy)(nil)
-
-func NewService(mm *pluginapi.Client, aws aws.Service, conf config.Service, store *store.Service) Service {
-	return &proxy{
-		mm:    mm,
-		conf:  conf,
-		store: store,
-		aws:   aws,
+func NewService(mm *pluginapi.Client, aws awsclient.Client, conf config.Service, store *store.Service, s3AssetBucket string) *Proxy {
+	return &Proxy{
+		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
+		mm:               mm,
+		conf:             conf,
+		store:            store,
+		aws:              aws,
+		s3AssetBucket:    s3AssetBucket,
 	}
 }
 
-func (p *proxy) InitBuiltinApps(builtinApps ...BuiltinApp) {
-	for _, b := range builtinApps {
-		app := b.App()
-		if app != nil {
-			p.store.App.InitBuiltin(app)
-		}
-
-		up, ok := b.(upstream.Upstream)
-		if ok {
-			if p.builtinUpstreams == nil {
-				p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
-			}
-			p.builtinUpstreams[app.AppID] = up
-		}
+func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
+	if p.builtinUpstreams == nil {
+		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
+	p.builtinUpstreams[appID] = up
+}
+
+func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(apps.CallResponse{
+		Type:      apps.CallResponseTypeError,
+		ErrorText: err.Error(),
+	})
 }

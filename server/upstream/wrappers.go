@@ -7,15 +7,18 @@ import (
 	"encoding/json"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func Notify(u api.Upstream, call *apps.CallRequest) error {
-	return u.OneWay(call)
+func Notify(u Upstream, call *apps.CallRequest) error {
+	r, err := u.Roundtrip(call, true)
+	if r != nil {
+		r.Close()
+	}
+	return err
 }
 
-func Call(u api.Upstream, call *apps.CallRequest) *apps.CallResponse {
-	r, err := u.Roundtrip(call)
+func Call(u Upstream, call *apps.CallRequest) *apps.CallResponse {
+	r, err := u.Roundtrip(call, false)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}

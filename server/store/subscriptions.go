@@ -18,15 +18,10 @@ type Subscription interface {
 }
 
 type SubStore struct {
-	*Store
+	*Service
 }
 
-var _ Sub = (*SubStore)(nil)
-
-func newSubStore(st *Store) Sub {
-	s := &SubStore{st}
-	return s
-}
+var _ Subscription = (*SubStore)(nil)
 
 func subsKey(subject apps.Subject, teamID, channelID string) string {
 	idSuffix := ""

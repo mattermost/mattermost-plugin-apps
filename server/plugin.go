@@ -17,38 +17,35 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/admin"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	*api.BuildConfig
+	*config.BuildConfig
 
 	mm   *pluginapi.Client
-	conf api.Configurator
+	conf config.Service
 	aws  awsclient.Client
 
-	store       *store.Store
-	admin       api.Admin
-	appservices api.AppServices
-	proxy       api.Proxy
+	store       *store.Service
+	appservices appservices.Service
+	proxy       proxy.Service
 
 	command command.Service
 	http    http.Service
 }
 
-func NewPlugin(buildConfig *api.BuildConfig) *Plugin {
+func NewPlugin(buildConfig *config.BuildConfig) *Plugin {
 	return &Plugin{
 		BuildConfig: buildConfig,
 	}
@@ -58,17 +55,17 @@ func (p *Plugin) OnActivate() error {
 	p.mm = pluginapi.NewClient(p.API)
 
 	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
-		Username:    api.BotUsername,
-		DisplayName: api.BotDisplayName,
-		Description: api.BotDescription,
+		Username:    config.BotUsername,
+		DisplayName: config.BotDisplayName,
+		Description: config.BotDescription,
 	}, pluginapi.ProfileImagePath("assets/profile.png"))
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
 	mmconf := p.mm.Configuration.GetConfig()
-	p.conf = configurator.NewConfigurator(p.mm, p.BuildConfig, botUserID)
-	stored := api.StoredConfig{}
+	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
+	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(&stored)
 	if err != nil {
@@ -88,10 +85,10 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
 
-	p.store = store.New(p.mm, p.conf)
+	p.store = store.NewService(p.mm, p.conf)
 	// manifest store
 	conf := p.conf.GetConfig()
-	mstore := p.store.Manifest()
+	mstore := p.store.Manifest
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
 	manifestBucket := apps.S3BucketNameWithDefaults("")
@@ -100,7 +97,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
 	// app store
-	appstore := p.store.App()
+	appstore := p.store.App
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		appstore.InitBuiltin(builtin_hello.App())
 	}
@@ -109,7 +106,7 @@ func (p *Plugin) OnActivate() error {
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
 	assetBucket := apps.S3BucketNameWithDefaults("")
-	p.proxy = proxy.NewProxy(p.mm, p.aws, p.conf, p.store, assetBucket)
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
 		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 	}

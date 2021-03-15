@@ -4,9 +4,9 @@
 package upawslambda
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -23,7 +24,10 @@ import (
 type Upstream struct {
 	app       *apps.App
 	awsClient awsclient.Client
+	bucket    string
 }
+
+var _ upstream.Upstream = (*Upstream)(nil)
 
 // invocationPayload is a scoped down version of
 // https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
@@ -41,29 +45,19 @@ type invocationResponse struct {
 	Body       string `json:"body"`
 }
 
-func NewUpstream(app *apps.App, awsClient awsclient.Client) *Upstream {
+func NewUpstream(app *apps.App, awsClient awsclient.Client, bucket string) *Upstream {
 	return &Upstream{
 		app:       app,
 		awsClient: awsClient,
+		bucket:    bucket,
 	}
 }
 
-func (u *Upstream) OneWay(call *apps.CallRequest) error {
-	name := match(call.Path, u.app)
-	if name == "" {
-		return utils.ErrNotFound
+func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	typ := lambda.InvocationTypeRequestResponse
+	if async {
+		typ = lambda.InvocationTypeEvent
 	}
-
-	payload, err := callToInvocationPayload(call)
-	if err != nil {
-		return errors.Wrap(err, "failed to covert call into invocation payload")
-	}
-
-	_, err = u.awsClient.InvokeLambda(name, lambda.InvocationTypeEvent, payload)
-	return err
-}
-
-func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
 	name := match(call.Path, u.app)
 	if name == "" {
 		return nil, utils.ErrNotFound
@@ -74,8 +68,8 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
-	bb, err := u.awsClient.InvokeLambda(name, lambda.InvocationTypeRequestResponse, payload)
-	if err != nil {
+	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
+	if async || err != nil {
 		return nil, err
 	}
 
@@ -89,7 +83,16 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
 		return nil, errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
 	}
 
-	return ioutil.NopCloser(strings.NewReader(resp.Body)), nil
+	return io.NopCloser(strings.NewReader(resp.Body)), nil
+}
+
+func (up *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
+	key := apps.AssetS3Name(up.app.AppID, up.app.Version, path)
+	data, err := up.awsClient.GetS3(up.bucket, key)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", up.bucket, path)
+	}
+	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
 func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {

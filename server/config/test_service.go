@@ -24,7 +24,7 @@ func (c *testConfigurator) GetMattermostConfig() *model.Config {
 	return &model.Config{}
 }
 
-func (c *testConfigurator) Refresh(*StoredConfig, ...Configurable) error {
+func (c *testConfigurator) Reconfigure(*StoredConfig, ...Configurable) error {
 	return nil
 }
 

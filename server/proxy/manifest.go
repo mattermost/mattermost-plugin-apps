@@ -17,7 +17,7 @@ func (p *Proxy) AddLocalManifest(cc *apps.Context, sessionToken apps.SessionToke
 
 	// TODO check if acting user is a sysadmin
 
-	err := adm.store.Manifest().StoreLocal(m)
+	err := p.store.Manifest.StoreLocal(m)
 	if err != nil {
 		return "", err
 	}

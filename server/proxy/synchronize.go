@@ -17,8 +17,8 @@ const PrevVersion = "prev_version"
 // SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
 func (p *Proxy) SynchronizeInstalledApps() error {
-	installed := adm.store.App().AsMap()
-	listed := adm.store.Manifest().AsMap()
+	installed := p.store.App.AsMap()
+	listed := p.store.Manifest.AsMap()
 
 	diff := map[apps.AppID]*apps.App{}
 	for _, app := range installed {
@@ -40,14 +40,14 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 		// Store the new manifest to update the current mappings of the App
 		app.Manifest = *m
-		err := adm.store.App().Save(app)
+		err := p.store.App.Save(app)
 		if err != nil {
 			return err
 		}
 
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
-			err := adm.callOnce(func() error {
+			err := p.callOnce(func() error {
 				creq := &apps.CallRequest{
 					Call:   *app.OnVersionChanged,
 					Values: map[string]interface{}{},
@@ -56,7 +56,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 					creq.Values[k] = v
 				}
 
-				resp := adm.proxy.Call(adm.adminToken, creq)
+				resp := p.Call(p.adminToken, creq)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", creq.Path)
 				}
