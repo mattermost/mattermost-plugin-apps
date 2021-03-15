@@ -182,10 +182,10 @@ func (pd *ProvisionData) IsValid() error {
 		return errors.New("no manifest")
 	}
 	if pd.Manifest.AppID == "" {
-		return errors.New("AppID is empty")
+		return errors.New("empty AppID")
 	}
 	if !pd.Manifest.Type.IsValid() {
-		return errors.Errorf("AppType %s is not valid", pd.Manifest.Type)
+		return errors.Errorf("not valid AppType %s", pd.Manifest.Type)
 	}
 	if err := pd.Manifest.Version.IsValid(); err != nil {
 		return err
