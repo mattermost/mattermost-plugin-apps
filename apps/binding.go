@@ -53,35 +53,43 @@ package apps
 //
 // Example bindings (hello world app) create a button in the channel header, and
 // a "/helloworld send" command:
-//   {
-//      "type": "ok",
-//      "data": [
-//          {
-//              "location": "/channel_header",
-//              "bindings": [
-//                  {
-//                      "location": "send-button",
-//                      "icon": "http://localhost:8080/static/icon.png",
-//                      "call": {
-//                          "path": "/send-modal"
-//                      }
-//                  }
-//              ]
-//          },
-//          {
-//              "location": "/command",
-//              "bindings": [
-//                  {
-//                      "location": "send",
-//                      "label": "send",
-//                      "call": {
-//                          "path": "/send"
-//                      }
-//                  }
-//              ]
-//          }
-//      ]
-//   }
+//  {
+// 		"type": "ok",
+// 		"data": [
+// 			{
+// 				"location": "/channel_header",
+// 				"bindings": [
+// 					{
+// 						"location": "send-button",
+// 						"icon": "http://localhost:8080/static/icon.png",
+// 						"label":"send hello message",
+// 						"call": {
+// 							"path": "/send-modal"
+// 						}
+// 					}
+// 				]
+// 			},
+// 			{
+// 				"location": "/command",
+// 				"bindings": [
+// 					{
+// 						"icon": "http://localhost:8080/static/icon.png",
+// 						"description": "Hello World app",
+// 						"hint":        "[send]",
+// 						"bindings": [
+// 							{
+// 								"location": "send",
+// 								"label": "send",
+// 								"call": {
+// 									"path": "/send"
+// 								}
+// 							}
+// 						]
+// 					}
+// 				]
+// 			}
+// 		]
+// }
 type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.
 	AppID AppID `json:"app_id,omitempty"`

@@ -68,6 +68,7 @@ The Hello App creates a Channel Header button, and adds a `/helloworld send` com
 				{
 					"location": "send-button",
 					"icon": "http://localhost:8080/static/icon.png",
+					"label":"send hello message",
 					"call": {
 						"path": "/send-modal"
 					}
@@ -78,11 +79,18 @@ The Hello App creates a Channel Header button, and adds a `/helloworld send` com
 			"location": "/command",
 			"bindings": [
 				{
-					"location": "send",
-					"label": "send",
-					"call": {
-						"path": "/send"
-					}
+					"icon": "http://localhost:8080/static/icon.png",
+					"description": "Hello World app",
+					"hint":        "[send]",
+					"bindings": [
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						}
+					]
 				}
 			]
 		}
