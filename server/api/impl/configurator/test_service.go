@@ -24,11 +24,11 @@ func (c *testConfigurator) GetMattermostConfig() *model.Config {
 	return &model.Config{}
 }
 
-func (c *testConfigurator) Reconfigure(*api.StoredConfig, ...api.Configurable) error {
+func (c *testConfigurator) Reconfigure(api.StoredConfig, ...api.Configurable) error {
 	return nil
 }
 
-func (c *testConfigurator) StoreConfig(sc *api.StoredConfig) error {
+func (c *testConfigurator) StoreConfig(sc api.StoredConfig) error {
 	c.config.StoredConfig = sc
 	return nil
 }
