@@ -82,11 +82,6 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
 }
 
 func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error) {
-	if strings.HasPrefix(c.Path, hello.PathSendSurvey) {
-		callType := strings.TrimPrefix(c.Path, hello.PathSendSurvey+"/")
-		return h.SendSurvey(c, apps.CallType(callType)), nil
-	}
-
 	if strings.HasPrefix(c.Path, hello.PathSendSurveyModal) {
 		return h.SendSurveyModal(c), nil
 	}
@@ -94,6 +89,11 @@ func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error)
 	if strings.HasPrefix(c.Path, hello.PathSendSurveyCommandToModal) {
 		callType := strings.TrimPrefix(c.Path, hello.PathSendSurveyCommandToModal+"/")
 		return h.SendSurveyCommandToModal(c, apps.CallType(callType)), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSendSurvey) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSendSurvey+"/")
+		return h.SendSurvey(c, apps.CallType(callType)), nil
 	}
 
 	if strings.HasPrefix(c.Path, hello.PathSurvey) {
