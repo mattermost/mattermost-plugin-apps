@@ -103,8 +103,6 @@ ifneq ($(HAS_SERVER),)
 	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
 	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/server/upstream Upstream
 	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store App
-	mockgen -destination server/mocks/mock_store/mock_manifest.go github.com/mattermost/mattermost-plugin-apps/server/store Manifest
-	mockgen -destination server/mocks/mock_store/mock_subscription.go github.com/mattermost/mattermost-plugin-apps/server/store Subscription
 endif
 
 ## Generates mock golang interfaces for testing
