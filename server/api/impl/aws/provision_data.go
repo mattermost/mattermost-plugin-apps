@@ -20,9 +20,9 @@ import (
 const bundleStaticAssetsFolder = "static/"
 
 type ProvisionData struct {
-	StaticFiles     []AssetData    `json:"static_files"`
-	LambdaFunctions []FunctionData `json:"lambda_functions"`
-	Manifest        *apps.Manifest `json:"-"`
+	StaticFiles     map[string]AssetData    `json:"static_files"`
+	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
+	Manifest        *apps.Manifest          `json:"-"`
 }
 
 type FunctionData struct {
@@ -145,30 +145,30 @@ func getProvisionData(b []byte, logger log) (*ProvisionData, error) {
 	}, nil
 }
 
-func generateAssetNames(manifest *apps.Manifest, assets []AssetData) []AssetData {
-	generatedAssets := make([]AssetData, 0, len(assets))
+func generateAssetNames(manifest *apps.Manifest, assets []AssetData) map[string]AssetData {
+	generatedAssets := make(map[string]AssetData, len(assets))
 	for _, asset := range assets {
-		generatedAssets = append(generatedAssets, AssetData{
+		generatedAssets[asset.Key] = AssetData{
 			Key:  GetAssetFileKey(manifest.AppID, manifest.Version, asset.Key),
 			File: asset.File,
-		})
+		}
 	}
 	return generatedAssets
 }
 
-func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ([]FunctionData, error) {
-	generatedFunctions := make([]FunctionData, 0, len(functions))
+func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) (map[string]FunctionData, error) {
+	generatedFunctions := make(map[string]FunctionData, len(functions))
 	for _, function := range functions {
 		name, err := getFunctionName(manifest.AppID, manifest.Version, function.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't get function name")
 		}
-		generatedFunctions = append(generatedFunctions, FunctionData{
+		generatedFunctions[function.Name] = FunctionData{
 			Name:    name,
 			Bundle:  function.Bundle,
 			Handler: function.Handler,
 			Runtime: function.Runtime,
-		})
+		}
 	}
 	return generatedFunctions, nil
 }

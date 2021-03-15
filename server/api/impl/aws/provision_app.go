@@ -101,7 +101,7 @@ func isValid(url string) bool {
 	return strings.HasPrefix(url, "https://github.com/")
 }
 
-func (c *Client) provisionFunctions(manifest *apps.Manifest, functions []FunctionData, shouldUpdate bool) error {
+func (c *Client) provisionFunctions(manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
 	policyName, err := c.makeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrap(err, "can't make lambda function default policy")
