@@ -138,11 +138,15 @@ func getProvisionData(b []byte, logger log) (*ProvisionData, error) {
 		return nil, err
 	}
 
-	return &ProvisionData{
+	pd := &ProvisionData{
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
 		Manifest:        mani,
-	}, nil
+	}
+	if err := pd.IsValid(); err != nil {
+		return nil, errors.Wrap(err, "provision data is not valid")
+	}
+	return pd, nil
 }
 
 func generateAssetNames(manifest *apps.Manifest, assets []AssetData) map[string]AssetData {
@@ -171,4 +175,38 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) (m
 		}
 	}
 	return generatedFunctions, nil
+}
+
+func (pd *ProvisionData) IsValid() error {
+	if pd.Manifest == nil {
+		return errors.New("no manifest")
+	}
+	if pd.Manifest.AppID == "" {
+		return errors.New("AppID is empty")
+	}
+	if !pd.Manifest.Type.IsValid() {
+		return errors.Errorf("AppType %s is not valid", pd.Manifest.Type)
+	}
+	if err := pd.Manifest.Version.IsValid(); err != nil {
+		return err
+	}
+
+	if len(pd.Manifest.Functions) != len(pd.LambdaFunctions) {
+		return errors.New("different amount of functions in manifest and in the bundle")
+	}
+
+	for _, function := range pd.Manifest.Functions {
+		data, ok := pd.LambdaFunctions[function.Name]
+		if !ok {
+			return errors.Errorf("function %s was not found in the bundle", function)
+		}
+		if data.Handler != function.Handler {
+			return errors.New("mismatched handler")
+		}
+		if data.Runtime != function.Runtime {
+			return errors.New("mismatched runtime")
+		}
+	}
+
+	return nil
 }
