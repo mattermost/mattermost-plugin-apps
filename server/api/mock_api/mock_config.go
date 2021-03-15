@@ -63,7 +63,7 @@ func (mr *MockConfiguratorMockRecorder) GetMattermostConfig() *gomock.Call {
 }
 
 // RefreshConfig mocks base method
-func (m *MockConfigurator) RefreshConfig(arg0 *api.StoredConfig) error {
+func (m *MockConfigurator) RefreshConfig(arg0 api.StoredConfig) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RefreshConfig", arg0)
 	ret0, _ := ret[0].(error)
