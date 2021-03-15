@@ -27,7 +27,7 @@ type StoredConfig struct {
 }
 
 type BuildConfig struct {
-	*model.Manifest
+	model.Manifest
 	BuildDate      string
 	BuildHash      string
 	BuildHashShort string
@@ -38,16 +38,12 @@ type BuildConfig struct {
 //
 // Config should be abbreviated as `conf`.
 type Config struct {
-	*StoredConfig
-	*BuildConfig
+	StoredConfig
+	BuildConfig
 
 	BotUserID              string
 	MattermostSiteHostname string
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
-}
-
-type Configurable interface {
-	Configure(Config)
 }

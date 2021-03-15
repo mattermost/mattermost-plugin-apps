@@ -63,7 +63,7 @@ func (mr *MockServiceMockRecorder) GetMattermostConfig() *gomock.Call {
 }
 
 // Reconfigure mocks base method
-func (m *MockService) Reconfigure(arg0 *config.StoredConfig, arg1 ...config.Configurable) error {
+func (m *MockService) Reconfigure(arg0 config.StoredConfig, arg1 ...config.Configurable) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
@@ -82,7 +82,7 @@ func (mr *MockServiceMockRecorder) Reconfigure(arg0 interface{}, arg1 ...interfa
 }
 
 // StoreConfig mocks base method
-func (m *MockService) StoreConfig(arg0 *config.StoredConfig) error {
+func (m *MockService) StoreConfig(arg0 config.StoredConfig) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreConfig", arg0)
 	ret0, _ := ret[0].(error)

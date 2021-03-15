@@ -12,18 +12,22 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+type Configurable interface {
+	Configure(Config)
+}
+
 // Configurator should be abbreviated as `cfg`
 type Service interface {
 	GetConfig() Config
 	GetMattermostConfig() *model.Config
-	Reconfigure(*StoredConfig, ...Configurable) error
-	StoreConfig(sc *StoredConfig) error
+	Reconfigure(StoredConfig, ...Configurable) error
+	StoreConfig(sc StoredConfig) error
 }
 
 var _ Service = (*service)(nil)
 
 type service struct {
-	*BuildConfig
+	BuildConfig
 	botUserID string
 
 	conf *Config
@@ -33,7 +37,7 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func NewService(mattermost *pluginapi.Client, buildConfig *BuildConfig, botUserID string) Service {
+func NewService(mattermost *pluginapi.Client, buildConfig BuildConfig, botUserID string) Service {
 	return &service{
 		lock:        &sync.RWMutex{},
 		mm:          mattermost,
@@ -70,7 +74,7 @@ func (s *service) GetMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(stored *StoredConfig, services ...Configurable) error {
+func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -101,7 +105,7 @@ func (s *service) Reconfigure(stored *StoredConfig, services ...Configurable) er
 	return nil
 }
 
-func (s *service) StoreConfig(sc *StoredConfig) error {
+func (s *service) StoreConfig(sc StoredConfig) error {
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
 	err := s.Reconfigure(sc)
 	if err != nil {

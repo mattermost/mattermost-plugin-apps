@@ -234,9 +234,9 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		updated[k] = v
 	}
 	updated[string(m.AppID)] = sha
-	sc := *conf.StoredConfig
+	sc := conf.StoredConfig
 	sc.LocalManifests = updated
-	err = s.conf.StoreConfig(&sc)
+	err = s.conf.StoreConfig(sc)
 	if err != nil {
 		return err
 	}
@@ -275,10 +275,10 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 		updated[k] = v
 	}
 	delete(updated, string(appID))
-	sc := *conf.StoredConfig
+	sc := conf.StoredConfig
 	sc.LocalManifests = updated
 
-	return s.conf.StoreConfig(&sc)
+	return s.conf.StoreConfig(sc)
 }
 
 // getFromS3 returns a manifest file for an app from the S3

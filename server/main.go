@@ -13,8 +13,8 @@ var BuildDate string
 func main() {
 	plugin.ClientMain(
 		NewPlugin(
-			&config.BuildConfig{
-				Manifest:       manifest,
+			config.BuildConfig{
+				Manifest:       *manifest,
 				BuildHash:      BuildHash,
 				BuildHashShort: BuildHashShort,
 				BuildDate:      BuildDate,

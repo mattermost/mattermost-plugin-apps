@@ -24,7 +24,7 @@ func TestDeleteSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s := NewService(apiClient, conf)
 
 	toDelete := apps.Subscription{
@@ -131,7 +131,7 @@ func TestGetSubs(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s := NewService(apiClient, conf)
 
 	emptySubs := []*apps.Subscription{}
@@ -194,7 +194,7 @@ func TestStoreSub(t *testing.T) {
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
-	conf := config.NewService(apiClient, &config.BuildConfig{}, botID)
+	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s := NewService(apiClient, conf)
 
 	toStore := apps.Subscription{

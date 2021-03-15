@@ -141,7 +141,7 @@ func (s *appStore) Save(app *apps.App) error {
 	s.installed = updatedInstalled
 	s.mutex.Unlock()
 
-	sc := *conf.StoredConfig
+	sc := conf.StoredConfig
 	updated := map[string]string{}
 	for k, v := range conf.InstalledApps {
 		// delete prevSHA from the list by skipping
@@ -151,7 +151,7 @@ func (s *appStore) Save(app *apps.App) error {
 	}
 	updated[string(app.AppID)] = sha
 	sc.InstalledApps = updated
-	err = s.conf.StoreConfig(&sc)
+	err = s.conf.StoreConfig(sc)
 	if err != nil {
 		return err
 	}
@@ -193,12 +193,12 @@ func (s *appStore) Delete(appID apps.AppID) error {
 	s.installed = updatedInstalled
 	s.mutex.Unlock()
 
-	sc := *conf.StoredConfig
+	sc := conf.StoredConfig
 	updated := map[string]string{}
 	for k, v := range conf.InstalledApps {
 		updated[k] = v
 	}
 	delete(updated, string(appID))
 	sc.InstalledApps = updated
-	return s.conf.StoreConfig(&sc)
+	return s.conf.StoreConfig(sc)
 }

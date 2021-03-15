@@ -31,7 +31,7 @@ import (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	*config.BuildConfig
+	config.BuildConfig
 
 	mm   *pluginapi.Client
 	conf config.Service
@@ -45,7 +45,7 @@ type Plugin struct {
 	http    http.Service
 }
 
-func NewPlugin(buildConfig *config.BuildConfig) *Plugin {
+func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 	return &Plugin{
 		BuildConfig: buildConfig,
 	}
@@ -67,7 +67,7 @@ func (p *Plugin) OnActivate() error {
 	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(&stored)
+	err = p.conf.Reconfigure(stored)
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
@@ -145,7 +145,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(&stored, p.store.App, p.store.Manifest)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
