@@ -48,7 +48,15 @@ package apps
 //  hint - Hint line in autocomplete.
 //  description - description line in autocomplete.
 //  call or form - either embed a form, or provide a call to fetch it.
-//
+// 
+// In post bindings are embedded into posts, and are not registered like the rest of the bindings.
+// In order to make in post bindings appear, you must create a post with a post_bindings property.
+// You can add several bindings to a post, and each one will appear as a single attachment to the post.
+// Top level bindings will define the attachment contents, with the Label becoming the title, and the
+// Description becoming the body of the attachment. Sub-bindings will become the actions of the post.
+// An action with no sub-bindings will be rendered as a button. An action with sub-bindings will be rendered
+// as a select. You can identify the action triggered by the location.
+// 
 // Bindings are currently refreshed when a user visits a channel, in the context
 // of the current channel, from all the registered Apps. A server-side cache
 // implementation is in the works,
