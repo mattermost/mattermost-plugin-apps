@@ -10,10 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -30,17 +32,17 @@ const (
 
 type helloapp struct {
 	*hello.HelloApp
-	conf api.Configurator
+	conf config.Service
 }
 
 // Init hello app router
-func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, _ api.Proxy, _ api.Admin, _ api.AppServices) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	h := helloapp{
 		HelloApp: hello.NewHelloApp(mm),
 		conf:     conf,
 	}
 
-	r := router.PathPrefix(api.HelloHTTPPath).Subrouter()
+	r := router.PathPrefix(config.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
 	handle(r, apps.DefaultInstallCallPath, h.Install)
@@ -76,7 +78,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 		})
 }
 
-type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.CallRequest) (int, error)
+type handler func(http.ResponseWriter, *http.Request, *apps.JWTClaims, *apps.CallRequest) (int, error)
 
 func handle(r *mux.Router, path string, h handler) {
 	r.HandleFunc(path,
@@ -101,14 +103,14 @@ func handle(r *mux.Router, path string, h handler) {
 	).Methods("POST")
 }
 
-func checkJWT(req *http.Request) (*api.JWTClaims, error) {
-	authValue := req.Header.Get(api.OutgoingAuthHeader)
+func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
+	authValue := req.Header.Get(apps.OutgoingAuthHeader)
 	if !strings.HasPrefix(authValue, "Bearer ") {
-		return nil, errors.Errorf("missing %s: Bearer header", api.OutgoingAuthHeader)
+		return nil, errors.Errorf("missing %s: Bearer header", apps.OutgoingAuthHeader)
 	}
 
 	jwtoken := strings.TrimPrefix(authValue, "Bearer ")
-	claims := api.JWTClaims{}
+	claims := apps.JWTClaims{}
 	_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -124,5 +126,5 @@ func checkJWT(req *http.Request) (*api.JWTClaims, error) {
 
 func (h *helloapp) appURL(path string) string {
 	conf := h.conf.GetConfig()
-	return conf.PluginURL + api.HelloHTTPPath + path
+	return conf.PluginURL + config.HelloHTTPPath + path
 }

@@ -30,7 +30,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	if appID == "" {
 		return errorOut(params, errors.New("must select an App ID"))
 	}
-	m, err := s.admin.GetManifest(apps.AppID(appID))
+	m, err := s.proxy.GetManifest(apps.AppID(appID))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "manifest not found"))
 	}

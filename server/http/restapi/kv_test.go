@@ -9,28 +9,26 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/configurator"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/mock_api"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 )
 
 func TestKV(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mocked := mock_api.NewMockAppServices(ctrl)
-	conf := configurator.NewTestConfigurator(&api.Config{})
+	mocked := mock_appservices.NewMockService(ctrl)
+	conf := config.NewTestConfigurator(&config.Config{})
 	r := mux.NewRouter()
-	Init(r, nil, conf, nil, nil, mocked)
+	Init(r, nil, conf, nil, mocked)
 
 	server := httptest.NewServer(r)
 	// server := httptest.NewServer(&HH{})
 	defer server.Close()
 
-	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), api.APIPath, api.KVPath, "/test-id"}, "")
+	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), config.APIPath, config.KVPath, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
 
 	req, err := http.NewRequest("PUT", itemURL, bytes.NewReader(item))

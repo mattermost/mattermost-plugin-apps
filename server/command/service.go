@@ -10,7 +10,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -20,29 +21,27 @@ type Service interface {
 
 type service struct {
 	mm    *pluginapi.Client
-	conf  api.Configurator
-	proxy api.Proxy
-	admin api.Admin
+	conf  config.Service
+	proxy proxy.Service
 }
 
 var _ Service = (*service)(nil)
 
-func MakeService(mm *pluginapi.Client, configService api.Configurator, proxy api.Proxy, admin api.Admin) (Service, error) {
+func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service) (Service, error) {
 	s := &service{
 		mm:    mm,
 		conf:  configService,
 		proxy: proxy,
-		admin: admin,
 	}
 
 	conf := configService.GetConfig()
 	err := mm.SlashCommand.Register(&model.Command{
-		Trigger:          api.CommandTrigger,
+		Trigger:          config.CommandTrigger,
 		DisplayName:      conf.BuildConfig.Manifest.Name,
 		Description:      conf.BuildConfig.Manifest.Description,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Cloud Apps",
-		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", api.CommandTrigger),
+		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
 	})
 	if err != nil {
 		return nil, err
@@ -72,7 +71,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	}
 
 	command := split[0]
-	if command != "/"+api.CommandTrigger {
+	if command != "/"+config.CommandTrigger {
 		return errorOut(params, errors.Errorf("%q is not a supported command and should not have been invoked. Please contact your system administrator", command))
 	}
 
