@@ -19,8 +19,15 @@ import (
 
 const bundleStaticAssetsFolder = "static/"
 
+// ProvisionData contains all the necessary data for provisioning an app
 type ProvisionData struct {
-	StaticFiles     map[string]AssetData    `json:"static_files"`
+	// StaticFiles key is the name of the static file in the /static folder
+	// Staticfiles value is the S3 Key where file should be provisioned
+	StaticFiles map[string]AssetData `json:"static_files"`
+
+	// LambdaFunctions key is the name of the lambda function zip bundle
+	// LambdaFunctions value contains info for provisioning a function in the AWS.
+	// LambdaFunctions value's Name field contains functions name in the AWS.
 	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
 	Manifest        *apps.Manifest          `json:"-"`
 }

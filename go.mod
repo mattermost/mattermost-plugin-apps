@@ -5,18 +5,13 @@ go 1.15
 require (
 	github.com/aws/aws-sdk-go v1.36.15
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
-	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/golang/mock v1.4.3
 	github.com/gorilla/mux v1.8.0
 	github.com/mattermost/mattermost-plugin-api v0.0.15-0.20210303034931-22355254f0ea
-	github.com/mattermost/mattermost-server v5.11.1+incompatible
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210120031517-5a7759f4d63b
-	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.1
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
-	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )
