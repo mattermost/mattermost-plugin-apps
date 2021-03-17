@@ -244,7 +244,7 @@ test: test-unit
 test-unit: webapp/node_modules
 	@echo Running unit tests
 ifneq ($(HAS_SERVER),)
-	$(GO) test -v $(GO_TEST_FLAGS) ./server/... ./apps/... ./awsclient/... ./cmd/appsctl 
+	$(GO) test -v $(GO_TEST_FLAGS) ./...
 endif
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) run test;

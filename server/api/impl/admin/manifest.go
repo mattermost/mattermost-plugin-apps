@@ -4,15 +4,13 @@
 package admin
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (adm *Admin) AddLocalManifest(cc *apps.Context, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
-	if m.AppID == "" {
-		return "", errors.New("app ID must not be empty")
+	if err := m.IsValid(); err != nil {
+		return "", err
 	}
 
 	// TODO check if acting user is a sysadmin

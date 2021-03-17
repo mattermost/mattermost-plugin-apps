@@ -105,6 +105,9 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
+	if !p.AppIsEnabled(app) {
+		return nil, errors.Errorf("%s is disabled", app.AppID)
+	}
 	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil

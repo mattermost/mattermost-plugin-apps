@@ -30,6 +30,8 @@ import (
 type manifestStore struct {
 	*Store
 
+	// mutex guards local, the pointer to the map of locally-installed
+	// manifests.
 	mutex sync.RWMutex
 
 	global map[apps.AppID]*apps.Manifest

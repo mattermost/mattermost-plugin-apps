@@ -35,6 +35,9 @@ func (adm *Admin) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, i
 	}
 
 	app.Manifest = *m
+	if app.Disabled {
+		app.Disabled = false
+	}
 	app.GrantedPermissions = m.RequestedPermissions
 	app.GrantedLocations = m.RequestedLocations
 	if in.AppSecret != "" {
