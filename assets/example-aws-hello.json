@@ -24,12 +24,12 @@
             "admin_access_token": "all"
         }
     },
-    "aws_lambda":[
+    "aws_lambda": [
         {
-            "path":"/",
-            "name":"test",
-            "handler":"todo",
-            "runtime":"todo"
+            "path": "/",
+            "name": "test",
+            "handler": "todo",
+            "runtime": "todo"
         }
     ]
 }
