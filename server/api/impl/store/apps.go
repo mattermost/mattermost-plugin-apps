@@ -22,6 +22,7 @@ import (
 type appStore struct {
 	*Store
 
+	// mutex guards installed, the pointer to the map of locally-installed apps.
 	mutex sync.RWMutex
 
 	installed        map[apps.AppID]*apps.App
