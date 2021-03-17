@@ -23,7 +23,7 @@ type Upstream struct {
 }
 
 func NewUpstream(app *apps.App) *Upstream {
-	return &Upstream{app.Manifest.HTTPRootURL, app.Secret}
+	return &Upstream{app.HTTPRootURL, app.Secret}
 }
 
 func (u *Upstream) OneWay(call *apps.CallRequest) error {
@@ -83,7 +83,8 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, httputils.DecodeJSONError(resp.Body)
+		bb, _ := httputils.ReadAndClose(resp.Body)
+		return nil, errors.New(string(bb))
 	}
 
 	return resp, nil

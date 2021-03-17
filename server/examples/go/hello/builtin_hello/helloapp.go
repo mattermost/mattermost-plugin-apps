@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
@@ -26,11 +27,9 @@ type helloapp struct {
 
 var _ api.Upstream = (*helloapp)(nil)
 
-func New(appService *api.Service) *helloapp {
+func New(mm *pluginapi.Client) *helloapp {
 	return &helloapp{
-		HelloApp: &hello.HelloApp{
-			API: appService,
-		},
+		HelloApp: hello.NewHelloApp(mm),
 	}
 }
 
@@ -38,8 +37,10 @@ func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
 		Type:        apps.AppTypeBuiltin,
+		Version:     "0.1.0",
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		HomepageURL: ("https://github.com/mattermost"),
 		RequestedPermissions: apps.Permissions{
 			apps.PermissionUserJoinedChannelNotification,
 			apps.PermissionActAsUser,
@@ -51,7 +52,17 @@ func Manifest() *apps.Manifest {
 			apps.LocationCommand,
 			apps.LocationInPost,
 		},
-		HomepageURL: ("https://github.com/mattermost"),
+	}
+}
+
+func App() *apps.App {
+	m := *Manifest()
+	m.Version = "pre-release"
+
+	return &apps.App{
+		Manifest:           m,
+		GrantedPermissions: m.RequestedPermissions,
+		GrantedLocations:   m.RequestedLocations,
 	}
 }
 

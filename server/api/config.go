@@ -6,18 +6,24 @@ import (
 
 // StoredConfig represents the data stored in and managed with the Mattermost
 // config.
+//
+// StoredConfig should be abbreviated as sc.
 type StoredConfig struct {
-	Apps map[string]interface{}
-}
+	// InstalledApps is a list of all apps installed on the Mattermost instance.
+	//
+	// For each installed app, an entry of string(AppID) -> sha1(App) is added,
+	// and the App struct is stored in KV under app_<sha1(App)>. Implementation
+	// in `store.App`.
+	InstalledApps map[string]string `json:"installed_apps,omitempty"`
 
-type ConfigMapper interface {
-	ConfigMap() (result map[string]interface{})
-}
-
-func (sc StoredConfig) ConfigMap() map[string]interface{} {
-	return map[string]interface{}{
-		"Apps": sc.Apps,
-	}
+	// LocalManifests is a list of locally-stored manifests. Local is in
+	// contrast to the "global" list of manifests which in the initial version
+	// is loaded from S3.
+	//
+	// For each installed app, an entry of string(AppID) -> sha1(Manifest) is
+	// added, and the Manifest struct is stored in KV under
+	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
+	LocalManifests map[string]string `json:"local_manifests,omitempty"`
 }
 
 type BuildConfig struct {
@@ -29,6 +35,8 @@ type BuildConfig struct {
 
 // Config represents the the metadata handed to all request runners (command,
 // http).
+//
+// Config should be abbreviated as `conf`.
 type Config struct {
 	StoredConfig
 	BuildConfig
@@ -40,9 +48,13 @@ type Config struct {
 	PluginURLPath          string
 }
 
+type Configurable interface {
+	Configure(Config)
+}
+
 type Configurator interface {
 	GetConfig() Config
 	GetMattermostConfig() *model.Config
-	RefreshConfig(StoredConfig) error
-	StoreConfig(ConfigMapper) error
+	Reconfigure(StoredConfig, ...Configurable) error
+	StoreConfig(sc StoredConfig) error
 }

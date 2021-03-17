@@ -62,22 +62,27 @@ func (mr *MockConfiguratorMockRecorder) GetMattermostConfig() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMattermostConfig", reflect.TypeOf((*MockConfigurator)(nil).GetMattermostConfig))
 }
 
-// RefreshConfig mocks base method
-func (m *MockConfigurator) RefreshConfig(arg0 api.StoredConfig) error {
+// Reconfigure mocks base method
+func (m *MockConfigurator) Reconfigure(arg0 api.StoredConfig, arg1 ...api.Configurable) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RefreshConfig", arg0)
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Reconfigure", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RefreshConfig indicates an expected call of RefreshConfig
-func (mr *MockConfiguratorMockRecorder) RefreshConfig(arg0 interface{}) *gomock.Call {
+// Reconfigure indicates an expected call of Reconfigure
+func (mr *MockConfiguratorMockRecorder) Reconfigure(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshConfig", reflect.TypeOf((*MockConfigurator)(nil).RefreshConfig), arg0)
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconfigure", reflect.TypeOf((*MockConfigurator)(nil).Reconfigure), varargs...)
 }
 
 // StoreConfig mocks base method
-func (m *MockConfigurator) StoreConfig(arg0 api.ConfigMapper) error {
+func (m *MockConfigurator) StoreConfig(arg0 api.StoredConfig) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreConfig", arg0)
 	ret0, _ := ret[0].(error)

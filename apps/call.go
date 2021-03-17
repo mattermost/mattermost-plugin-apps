@@ -134,6 +134,23 @@ func MakeCall(url string) *Call {
 	return c
 }
 
+func (c *Call) WithOverrides(override *Call) *Call {
+	out := Call{}
+	if c != nil {
+		out = *c
+	}
+	if override == nil {
+		return &out
+	}
+	if override.Path != "" {
+		out.Path = override.Path
+	}
+	if override.Expand != nil {
+		out.Expand = override.Expand
+	}
+	return &out
+}
+
 func (c *CallRequest) GetValue(name, defaultValue string) string {
 	if len(c.Values) == 0 {
 		return defaultValue

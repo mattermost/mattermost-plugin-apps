@@ -1,20 +1,18 @@
 package configurator
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"sync"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/aws"
 
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
-)
 
-var _ api.Configurator = (*config)(nil)
+	"github.com/mattermost/mattermost-plugin-apps/server/api"
+)
 
 type config struct {
 	api.BuildConfig
@@ -24,17 +22,15 @@ type config struct {
 
 	lock             *sync.RWMutex
 	mm               *pluginapi.Client
-	awsClient        *aws.Client
 	mattermostConfig *model.Config
 }
 
-func NewConfigurator(mattermost *pluginapi.Client, awsClient *aws.Client, buildConfig api.BuildConfig, botUserID string) api.Configurator {
+func NewConfigurator(mattermost *pluginapi.Client, buildConfig api.BuildConfig, botUserID string) api.Configurator {
 	return &config{
 		lock:        &sync.RWMutex{},
 		mm:          mattermost,
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
-		awsClient:   awsClient,
 	}
 }
 
@@ -63,10 +59,10 @@ func (c *config) GetMattermostConfig() *model.Config {
 		c.mattermostConfig = mmconf
 		c.lock.Unlock()
 	}
-	return c.mattermostConfig
+	return mmconf
 }
 
-func (c *config) RefreshConfig(stored api.StoredConfig) error {
+func (c *config) Reconfigure(stored api.StoredConfig, services ...api.Configurable) error {
 	mattermostSiteURL := c.GetMattermostConfig().ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -79,8 +75,8 @@ func (c *config) RefreshConfig(stored api.StoredConfig) error {
 	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
 
 	newConfig := c.GetConfig()
-
 	newConfig.StoredConfig = stored
+
 	newConfig.MattermostSiteURL = *mattermostSiteURL
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
@@ -90,10 +86,30 @@ func (c *config) RefreshConfig(stored api.StoredConfig) error {
 	c.conf = &newConfig
 	c.lock.Unlock()
 
+	for _, s := range services {
+		s.Configure(newConfig)
+	}
+
 	return nil
 }
 
-func (c *config) StoreConfig(newStored api.ConfigMapper) error {
-	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
-	return c.mm.Configuration.SavePluginConfig(newStored.ConfigMap())
+func (c *config) StoreConfig(sc api.StoredConfig) error {
+	// Reconfigure computed values immediately, do not wait for OnConfigurationChanged
+	err := c.Reconfigure(sc)
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(sc)
+	if err != nil {
+		return err
+	}
+	out := map[string]interface{}{}
+	err = json.Unmarshal(data, &out)
+	if err != nil {
+		return err
+	}
+
+	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Reconfigure
+	return c.mm.Configuration.SavePluginConfig(out)
 }

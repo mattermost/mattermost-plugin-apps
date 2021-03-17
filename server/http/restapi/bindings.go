@@ -17,22 +17,22 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
-	session, err := a.api.Mattermost.Session.Get(sessionID)
+	session, err := a.mm.Session.Get(sessionID)
 	if err != nil {
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
 
 	query := req.URL.Query()
-	bindings, err := a.api.Proxy.GetBindings(apps.SessionToken(session.Token),
+	bindings, err := a.proxy.GetBindings(apps.SessionToken(session.Token),
 		&apps.Context{
-			TeamID:            query.Get(api.PropTeamID),
-			ChannelID:         query.Get(api.PropChannelID),
 			ActingUserID:      actingUserID,
-			UserID:            actingUserID,
+			ChannelID:         query.Get(api.PropChannelID),
+			MattermostSiteURL: a.conf.GetConfig().MattermostSiteURL,
 			PostID:            query.Get(api.PropPostID),
+			TeamID:            query.Get(api.PropTeamID),
 			UserAgent:         query.Get(api.PropUserAgent),
-			MattermostSiteURL: a.api.Configurator.GetConfig().MattermostSiteURL,
+			UserID:            actingUserID,
 		})
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)

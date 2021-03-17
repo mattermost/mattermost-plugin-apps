@@ -10,8 +10,6 @@ type testConfigurator struct {
 	config *api.Config
 }
 
-var _ api.Configurator = (*testConfigurator)(nil)
-
 func NewTestConfigurator(config *api.Config) api.Configurator {
 	return &testConfigurator{
 		config: config,
@@ -26,10 +24,11 @@ func (c *testConfigurator) GetMattermostConfig() *model.Config {
 	return &model.Config{}
 }
 
-func (c *testConfigurator) RefreshConfig(api.StoredConfig) error {
+func (c *testConfigurator) Reconfigure(api.StoredConfig, ...api.Configurable) error {
 	return nil
 }
 
-func (c *testConfigurator) StoreConfig(newStored api.ConfigMapper) error {
+func (c *testConfigurator) StoreConfig(sc api.StoredConfig) error {
+	c.config.StoredConfig = sc
 	return nil
 }

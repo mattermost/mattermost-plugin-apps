@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/api/impl/proxy"
@@ -29,12 +30,14 @@ const (
 
 type helloapp struct {
 	*hello.HelloApp
+	conf api.Configurator
 }
 
 // Init hello app router
-func Init(router *mux.Router, appsService *api.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, _ api.Proxy, _ api.Admin, _ api.AppServices) {
 	h := helloapp{
-		hello.NewHelloApp(appsService),
+		HelloApp: hello.NewHelloApp(mm),
+		conf:     conf,
 	}
 
 	r := router.PathPrefix(api.HelloHTTPPath).Subrouter()
@@ -54,7 +57,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		apps.Manifest{
 			AppID:       AppID,
-			Type:        apps.AppTypeHTTP,
+			Type:     apps.AppTypeHTTP,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			HTTPRootURL: h.appURL(""),
@@ -120,6 +123,6 @@ func checkJWT(req *http.Request) (*api.JWTClaims, error) {
 }
 
 func (h *helloapp) appURL(path string) string {
-	conf := h.API.Configurator.GetConfig()
+	conf := h.conf.GetConfig()
 	return conf.PluginURL + api.HelloHTTPPath + path
 }

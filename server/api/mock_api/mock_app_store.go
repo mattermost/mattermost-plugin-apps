@@ -7,6 +7,7 @@ package mock_api
 import (
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	api "github.com/mattermost/mattermost-plugin-apps/server/api"
 	reflect "reflect"
 )
 
@@ -33,8 +34,34 @@ func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 	return m.recorder
 }
 
+// AsMap mocks base method
+func (m *MockAppStore) AsMap() map[apps.AppID]*apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AsMap")
+	ret0, _ := ret[0].(map[apps.AppID]*apps.App)
+	return ret0
+}
+
+// AsMap indicates an expected call of AsMap
+func (mr *MockAppStoreMockRecorder) AsMap() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap))
+}
+
+// Configure mocks base method
+func (m *MockAppStore) Configure(arg0 api.Config) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Configure", arg0)
+}
+
+// Configure indicates an expected call of Configure
+func (mr *MockAppStoreMockRecorder) Configure(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockAppStore)(nil).Configure), arg0)
+}
+
 // Delete mocks base method
-func (m *MockAppStore) Delete(arg0 *apps.App) error {
+func (m *MockAppStore) Delete(arg0 apps.AppID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0)
 	ret0, _ := ret[0].(error)
@@ -62,18 +89,20 @@ func (mr *MockAppStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppStore)(nil).Get), arg0)
 }
 
-// GetAll mocks base method
-func (m *MockAppStore) GetAll() []*apps.App {
+// InitBuiltin mocks base method
+func (m *MockAppStore) InitBuiltin(arg0 ...*apps.App) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll")
-	ret0, _ := ret[0].([]*apps.App)
-	return ret0
+	varargs := []interface{}{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "InitBuiltin", varargs...)
 }
 
-// GetAll indicates an expected call of GetAll
-func (mr *MockAppStoreMockRecorder) GetAll() *gomock.Call {
+// InitBuiltin indicates an expected call of InitBuiltin
+func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockAppStore)(nil).GetAll))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitBuiltin", reflect.TypeOf((*MockAppStore)(nil).InitBuiltin), arg0...)
 }
 
 // Save mocks base method

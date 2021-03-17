@@ -33,34 +33,27 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
-	allApps := p.store.App().GetAll()
+	allApps := p.store.App().AsMap()
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {
-		manifest := app.Manifest
-		if manifest == nil {
-			// TODO Log error (chance to flood the logs)
-			// p.mm.Log.Debug("Manifest not present in the app")
+		if !p.AppIsEnabled(app) {
 			continue
 		}
-
 		appID := app.AppID
-
-		// TODO PERF: Add caching
-		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := *apps.DefaultBindingsCall
-		if manifest.Bindings != nil {
-			bindingsCall = *manifest.Bindings
-		}
-		bindingsRequest := &apps.CallRequest{Call: bindingsCall}
-
 		appCC := *cc
 		appCC.AppID = appID
 		appCC.BotAccessToken = app.BotAccessToken
-		bindingsRequest.Context = &appCC
+
+		// TODO PERF: Add caching
+		// TODO PERF: Fan out the calls, wait for all to complete
+		bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
+		bindingsRequest := &apps.CallRequest{
+			Call:    *bindingsCall,
+			Context: &appCC,
+		}
 
 		resp := p.Call(debugSessionToken, bindingsRequest)
-
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)
 			// p.mm.Log.Debug("Response is nil or unexpected type.")

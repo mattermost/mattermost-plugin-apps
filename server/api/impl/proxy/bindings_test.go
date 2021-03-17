@@ -189,7 +189,7 @@ func TestMergeBindings(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			out := mergeBindings(tc.bb1, tc.bb2)
-			require.Equal(t, tc.expected, out)
+			require.EqualValues(t, tc.expected, out)
 		})
 	}
 }
@@ -268,7 +268,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}
 
 			app1 := &apps.App{
-				Manifest: &apps.Manifest{
+				Manifest: apps.Manifest{
 					AppID:              apps.AppID("app1"),
 					Type:               apps.AppTypeBuiltin,
 					RequestedLocations: tc.locations,
@@ -298,7 +298,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	testData := []bindingTestData{
 		{
 			app: &apps.App{
-				Manifest: &apps.Manifest{
+				Manifest: apps.Manifest{
 					AppID: apps.AppID("app1"),
 					Type:  apps.AppTypeBuiltin,
 				},
@@ -361,7 +361,7 @@ func TestGetBindingsCommands(t *testing.T) {
 		},
 		{
 			app: &apps.App{
-				Manifest: &apps.Manifest{
+				Manifest: apps.Manifest{
 					AppID: apps.AppID("app2"),
 					Type:  apps.AppTypeBuiltin,
 				},
@@ -480,14 +480,14 @@ func TestGetBindingsCommands(t *testing.T) {
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
-	require.Equal(t, expected, out)
+	require.EqualValues(t, expected, out)
 }
 
 func TestDuplicateCommand(t *testing.T) {
 	testData := []bindingTestData{
 		{
 			app: &apps.App{
-				Manifest: &apps.Manifest{
+				Manifest: apps.Manifest{
 					AppID: apps.AppID("app1"),
 					Type:  apps.AppTypeBuiltin,
 				},
@@ -573,7 +573,7 @@ func TestDuplicateCommand(t *testing.T) {
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", cc)
 	require.NoError(t, err)
-	require.Equal(t, expected, out)
+	require.EqualValues(t, expected, out)
 }
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
@@ -585,11 +585,11 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	appStore := mock_api.NewMockAppStore(ctrl)
 	s.EXPECT().App().Return(appStore).AnyTimes()
 
-	appList := []*apps.App{}
+	appList := map[apps.AppID]*apps.App{}
 	upstreams := map[apps.AppID]api.Upstream{}
 
 	for _, test := range testData {
-		appList = append(appList, test.app)
+		appList[test.app.AppID] = test.app
 
 		cr := &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
@@ -604,7 +604,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
-	appStore.EXPECT().GetAll().Return(appList)
+	appStore.EXPECT().AsMap().Return(appList)
 
 	configurator := mock_api.NewMockConfigurator(ctrl)
 	configurator.EXPECT().GetMattermostConfig().Return(&model.Config{
@@ -614,10 +614,10 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	}).AnyTimes()
 
 	p := &Proxy{
-		mm:      mm,
-		store:   s,
-		builtIn: upstreams,
-		conf:    configurator,
+		mm:               mm,
+		store:            s,
+		builtinUpstreams: upstreams,
+		conf:             configurator,
 	}
 
 	return p
