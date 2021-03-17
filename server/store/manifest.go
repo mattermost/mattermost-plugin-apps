@@ -40,6 +40,8 @@ type Manifest interface {
 type manifestStore struct {
 	*Service
 
+	// mutex guards local, the pointer to the map of locally-installed
+	// manifests.
 	mutex sync.RWMutex
 
 	global map[apps.AppID]*apps.Manifest

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -79,18 +80,13 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error)
 
 	case apps.DefaultInstallCallPath:
 		cr = h.Install(c)
-	case hello.PathSendSurvey:
-		cr = h.SendSurvey(c)
-	case hello.PathSendSurveyModal:
-		cr = h.SendSurveyModal(c)
-	case hello.PathSendSurveyCommandToModal:
-		cr = h.SendSurveyCommandToModal(c)
-	case hello.PathSurvey:
-		cr = h.Survey(c)
-	case hello.PathUserJoinedChannel:
-		h.HelloApp.UserJoinedChannel(c)
+
 	default:
-		return nil, errors.Errorf("%s is not found", c.Path)
+		var err error
+		cr, err = h.mapFunctions(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	bb, err := json.Marshal(cr)
@@ -104,10 +100,36 @@ func (h *helloapp) GetStatic(path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 
-func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
-	if c.Type != apps.CallTypeSubmit {
-		return apps.NewErrorCallResponse(errors.New("not supported"))
+func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error) {
+	if strings.HasPrefix(c.Path, hello.PathSendSurveyModal) {
+		return h.SendSurveyModal(c), nil
 	}
+
+	if strings.HasPrefix(c.Path, hello.PathSendSurveyCommandToModal) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSendSurveyCommandToModal+"/")
+		return h.SendSurveyCommandToModal(c, apps.CallType(callType)), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSendSurvey) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSendSurvey+"/")
+		return h.SendSurvey(c, apps.CallType(callType)), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSurvey) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSurvey+"/")
+		return h.Survey(c, apps.CallType(callType)), nil
+	}
+
+	// notifications
+	if strings.HasPrefix(c.Path, hello.PathUserJoinedChannel) {
+		h.HelloApp.UserJoinedChannel(c)
+		return &apps.CallResponse{Type: apps.CallResponseTypeOK}, nil
+	}
+
+	return nil, errors.Errorf("%s is not found", c.Path)
+}
+
+func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -118,8 +140,8 @@ func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
 	}
 }
 
-func (h *helloapp) SendSurvey(c *apps.CallRequest) *apps.CallResponse {
-	switch c.Type {
+func (h *helloapp) SendSurvey(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	switch callType {
 	case apps.CallTypeForm:
 		return hello.NewSendSurveyFormResponse(c)
 
@@ -144,7 +166,7 @@ func (h *helloapp) SendSurvey(c *apps.CallRequest) *apps.CallResponse {
 			},
 		}
 	default:
-		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
 }
 
@@ -152,12 +174,12 @@ func (h *helloapp) SendSurveyModal(c *apps.CallRequest) *apps.CallResponse {
 	return hello.NewSendSurveyFormResponse(c)
 }
 
-func (h *helloapp) SendSurveyCommandToModal(c *apps.CallRequest) *apps.CallResponse {
-	return hello.NewSendSurveyPartialFormResponse(c)
+func (h *helloapp) SendSurveyCommandToModal(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	return hello.NewSendSurveyPartialFormResponse(c, callType)
 }
 
-func (h *helloapp) Survey(c *apps.CallRequest) *apps.CallResponse {
-	switch c.Type {
+func (h *helloapp) Survey(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	switch callType {
 	case apps.CallTypeForm:
 		return hello.NewSurveyFormResponse(c)
 
@@ -171,6 +193,6 @@ func (h *helloapp) Survey(c *apps.CallRequest) *apps.CallResponse {
 			Markdown: "<><> TODO",
 		}
 	default:
-		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", c.Type))
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
 }

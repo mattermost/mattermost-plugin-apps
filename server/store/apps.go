@@ -32,6 +32,7 @@ type App interface {
 type appStore struct {
 	*Service
 
+	// mutex guards installed, the pointer to the map of locally-installed apps.
 	mutex sync.RWMutex
 
 	installed        map[apps.AppID]*apps.App

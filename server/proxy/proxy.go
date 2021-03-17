@@ -97,6 +97,9 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+	if !p.AppIsEnabled(app) {
+		return nil, errors.Errorf("%s is disabled", app.AppID)
+	}
 	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil

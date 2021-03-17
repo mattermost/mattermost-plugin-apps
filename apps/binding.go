@@ -1,9 +1,13 @@
 package apps
 
 // Binding is the principal way for an App to attach its functionality to the
-// Mattermost UI.
+// Mattermost UI.  An App can bind to top-level UI elements by implementing the
+// (mandatory) "bindings" call. It can also add bindings to messages (posts) in
+// Mattermost, by setting "app_bindings" property of the posts.
 //
-// An App returns the bindings in response to the "bindings" call, that it must
+// Mattermost UI Bindings
+//
+// An App returns its bindings in response to the "bindings" call, that it must
 // implement, and can customize in its Manifest. For each context in which it is
 // invoked, the bindings call returns a tree of app's bindings, organized by the
 // top-level location.
@@ -54,42 +58,97 @@ package apps
 // Example bindings (hello world app) create a button in the channel header, and
 // a "/helloworld send" command:
 //  {
-// 		"type": "ok",
-// 		"data": [
-// 			{
-// 				"location": "/channel_header",
-// 				"bindings": [
-// 					{
-// 						"location": "send-button",
-// 						"icon": "http://localhost:8080/static/icon.png",
-// 						"label":"send hello message",
-// 						"call": {
-// 							"path": "/send-modal"
-// 						}
-// 					}
-// 				]
-// 			},
-// 			{
-// 				"location": "/command",
-// 				"bindings": [
-// 					{
-// 						"icon": "http://localhost:8080/static/icon.png",
-// 						"description": "Hello World app",
-// 						"hint":        "[send]",
-// 						"bindings": [
-// 							{
-// 								"location": "send",
-// 								"label": "send",
-// 								"call": {
-// 									"path": "/send"
-// 								}
-// 							}
-// 						]
-// 					}
-// 				]
-// 			}
-// 		]
-// }
+//      "type": "ok",
+//      "data": [
+//          {
+//              "location": "/channel_header",
+//              "bindings": [
+//                  {
+//                      "location": "send-button",
+//                      "icon": "http://localhost:8080/static/icon.png",
+//                      "label":"send hello message",
+//                      "call": {
+//                          "path": "/send-modal"
+//                      }
+//                  }
+//              ]
+//          },
+//          {
+//              "location": "/command",
+//              "bindings": [
+//                  {
+//                      "icon": "http://localhost:8080/static/icon.png",
+//                      "description": "Hello World app",
+//                      "hint":        "[send]",
+//                      "bindings": [
+//                          {
+//                              "location": "send",
+//                              "label": "send",
+//                              "call": {
+//                                  "path": "/send"
+//                              }
+//                          }
+//                      ]
+//                  }
+//              ]
+//          }
+//      ]
+//  }
+//
+// In-post Bindings
+//
+// An App can also create messages (posts) in Mattermost with in-post bindings.
+// To do that, it invokes `CreatePost` REST API, and sets the "app_bindings"
+// prop, as in the following example:
+//
+// In post bindings are embedded into posts, and are not registered like the
+// rest of the bindings. In order to make in post bindings appear, you must
+// create a post with an apps_bindings property. You can add several bindings to
+// a post, and each one will appear as a single attachment to the post. Top
+// level bindings will define the attachment contents, with the Label becoming
+// the title, and the Description becoming the body of the attachment.
+// Sub-bindings will become the actions of the post. An action with no
+// sub-bindings will be rendered as a button. An action with sub-bindings will
+// be rendered as a select. You can identify the action triggered by the
+// location.
+//
+//  {
+//     channel_id: "channelID",
+//     message: "Some message to appear before the attachment",
+//     props: {
+//         app_bindings: [{
+//             app_id: "my app id",
+//             location: "location",
+//             label: "title of the attachment",
+//             description: "body of the attachment",
+//             bindings: [
+//                 {
+//                     location: "my_select",
+//                     label: "Placeholder text",
+//                     bindings: [
+//                         {
+//                             location: "option1",
+//                             label: "Option 1",
+//                         }, {
+//                             location: "option2",
+//                             label: "Option 2",
+//                         },
+//                     ],
+//                     call: {
+//                         path: "my/path",
+//                     },
+//                 }, {
+//                     location: "my_button",
+//                     label: "Button label",
+//                     call: {
+//                         path: "my/path",
+//                     },
+//                 },
+//             ],
+//         }],
+//     },
+//  }
+//
 type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.
 	AppID AppID `json:"app_id,omitempty"`

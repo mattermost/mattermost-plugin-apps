@@ -37,6 +37,9 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {
+		if !p.AppIsEnabled(app) {
+			continue
+		}
 		appID := app.AppID
 		appCC := *cc
 		appCC.AppID = appID
