@@ -1,7 +1,7 @@
 package apps
 
-// Form defines what inputs a Call accepts, and how they can be gathered from
-// the user, in Modal and Autocomplete modes.
+// Forms define inputs for Calls, and how they can be gathered from the user, in
+// Modal and Autocomplete modes.
 //
 // For a Modal, the form defines the modal entirely, and displays it when
 // returned in response to a submit Call. Modals are dynamic in the sense that
