@@ -11,17 +11,17 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-type Subscription interface {
+type SubscriptionStore interface {
 	Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
 	Save(sub *apps.Subscription) error
 	Delete(*apps.Subscription) error
 }
 
-type SubStore struct {
+type subscriptionStore struct {
 	*Service
 }
 
-var _ Subscription = (*SubStore)(nil)
+var _ SubscriptionStore = (*subscriptionStore)(nil)
 
 func subsKey(subject apps.Subject, teamID, channelID string) string {
 	idSuffix := ""
@@ -38,7 +38,7 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 	return config.PrefixSubs + string(subject) + idSuffix
 }
 
-func (s SubStore) Delete(sub *apps.Subscription) error {
+func (s subscriptionStore) Delete(sub *apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []*apps.Subscription
@@ -68,7 +68,7 @@ func (s SubStore) Delete(sub *apps.Subscription) error {
 	return utils.ErrNotFound
 }
 
-func (s SubStore) Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
+func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
 	key := subsKey(subject, teamID, channelID)
 	var subs []*apps.Subscription
 	err := s.mm.KV.Get(key, &subs)
@@ -81,7 +81,7 @@ func (s SubStore) Get(subject apps.Subject, teamID, channelID string) ([]*apps.S
 	return subs, nil
 }
 
-func (s SubStore) Save(sub *apps.Subscription) error {
+func (s subscriptionStore) Save(sub *apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []*apps.Subscription

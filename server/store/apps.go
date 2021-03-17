@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-type App interface {
+type AppStore interface {
 	config.Configurable
 
 	AsMap() map[apps.AppID]*apps.App
@@ -39,7 +39,7 @@ type appStore struct {
 	builtinInstalled map[apps.AppID]*apps.App
 }
 
-var _ App = (*appStore)(nil)
+var _ AppStore = (*appStore)(nil)
 
 func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Lock()

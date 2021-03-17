@@ -10,9 +10,9 @@ import (
 )
 
 type Service struct {
-	App          App
-	Subscription Subscription
-	Manifest     Manifest
+	App          AppStore
+	Subscription SubscriptionStore
+	Manifest     ManifestStore
 
 	mm   *pluginapi.Client
 	conf config.Service
@@ -26,7 +26,7 @@ func NewService(mm *pluginapi.Client, conf config.Service) *Service {
 	s.App = &appStore{
 		Service: s,
 	}
-	s.Subscription = &SubStore{
+	s.Subscription = &subscriptionStore{
 		Service: s}
 
 	s.Manifest = &manifestStore{

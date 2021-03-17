@@ -23,7 +23,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-type Manifest interface {
+type ManifestStore interface {
 	config.Configurable
 
 	AsMap() map[apps.AppID]*apps.Manifest
@@ -48,7 +48,7 @@ type manifestStore struct {
 	local  map[apps.AppID]*apps.Manifest
 }
 
-var _ Manifest = (*manifestStore)(nil)
+var _ ManifestStore = (*manifestStore)(nil)
 
 func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
