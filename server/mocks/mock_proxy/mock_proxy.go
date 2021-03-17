@@ -63,6 +63,20 @@ func (mr *MockServiceMockRecorder) AddLocalManifest(arg0, arg1, arg2 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLocalManifest", reflect.TypeOf((*MockService)(nil).AddLocalManifest), arg0, arg1, arg2)
 }
 
+// AppIsEnabled mocks base method
+func (m *MockService) AppIsEnabled(arg0 *apps.App) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AppIsEnabled", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AppIsEnabled indicates an expected call of AppIsEnabled
+func (mr *MockServiceMockRecorder) AppIsEnabled(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppIsEnabled", reflect.TypeOf((*MockService)(nil).AppIsEnabled), arg0)
+}
+
 // Call mocks base method
 func (m *MockService) Call(arg0 apps.SessionToken, arg1 *apps.CallRequest) *apps.CallResponse {
 	m.ctrl.T.Helper()
@@ -75,6 +89,36 @@ func (m *MockService) Call(arg0 apps.SessionToken, arg1 *apps.CallRequest) *apps
 func (mr *MockServiceMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1)
+}
+
+// DisableApp mocks base method
+func (m *MockService) DisableApp(arg0 *apps.Context, arg1 *apps.App) (md.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1)
+	ret0, _ := ret[0].(md.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DisableApp indicates an expected call of DisableApp
+func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableApp", reflect.TypeOf((*MockService)(nil).DisableApp), arg0, arg1)
+}
+
+// EnableApp mocks base method
+func (m *MockService) EnableApp(arg0 *apps.Context, arg1 *apps.App) (md.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1)
+	ret0, _ := ret[0].(md.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EnableApp indicates an expected call of EnableApp
+func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1)
 }
 
 // GetAsset mocks base method
