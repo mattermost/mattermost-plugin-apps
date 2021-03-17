@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
@@ -33,7 +34,7 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
-	allApps := p.store.App.AsMap()
+	allApps := store.SortApps(p.store.App.AsMap())
 
 	all := []*apps.Binding{}
 	for _, app := range allApps {

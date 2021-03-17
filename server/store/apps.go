@@ -7,6 +7,7 @@ import (
 	"crypto/sha1" // nolint:gosec
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -107,6 +108,18 @@ func (s *appStore) AsMap() map[apps.AppID]*apps.App {
 	for appID, app := range builtin {
 		out[appID] = app
 	}
+	return out
+}
+
+func SortApps(appsMap map[apps.AppID]*apps.App) []*apps.App {
+	out := []*apps.App{}
+	for _, app := range appsMap {
+		out = append(out, app)
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return apps.AppID(out[i].DisplayName) < apps.AppID(out[j].DisplayName)
+	})
 	return out
 }
 
