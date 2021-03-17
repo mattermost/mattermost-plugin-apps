@@ -31,7 +31,7 @@ func (c *Client) S3FileDownload(bucket, item string) ([]byte, error) {
 
 // S3FileUpload uploads file to a specific S3 bucket
 func (c *Client) S3FileUpload(key string, body io.Reader) error {
-	if _, err := c.service.s3Uploader.Upload(&s3manager.UploadInput{
+	if _, err := c.Service().s3Uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(c.AppsS3Bucket),
 		Key:    aws.String(key),
 		Body:   body,
