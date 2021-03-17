@@ -13,5 +13,5 @@ type Admin interface {
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(appID apps.AppID) error
+	UninstallApp(apps.AppID, apps.SessionToken) error
 }
