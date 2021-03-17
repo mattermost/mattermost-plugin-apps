@@ -13,10 +13,6 @@ import (
 )
 
 func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (md.MD, error) {
-	if c.Type != apps.CallTypeSubmit {
-		return "", errors.New("not supported")
-	}
-
 	bot := mmclient.AsBot(c.Context)
 	adminClient := mmclient.AsAdmin(c.Context)
 
