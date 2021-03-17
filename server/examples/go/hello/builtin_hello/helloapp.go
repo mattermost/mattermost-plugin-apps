@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -54,7 +55,7 @@ func Manifest() *apps.Manifest {
 	}
 }
 
-func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
+func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
 	case api.BindingsPath:
@@ -65,16 +66,12 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 
 	case apps.DefaultInstallCallPath:
 		cr = h.Install(c)
-	case hello.PathSendSurvey:
-		cr = h.SendSurvey(c)
-	case hello.PathSendSurveyModal:
-		cr = h.SendSurveyModal(c)
-	case hello.PathSendSurveyCommandToModal:
-		cr = h.SendSurveyCommandToModal(c)
-	case hello.PathSurvey:
-		cr = h.Survey(c)
 	default:
-		return nil, errors.Errorf("%s is not found", c.Path)
+		var err error
+		cr, err = h.mapFunctions(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	bb, err := json.Marshal(cr)
@@ -84,7 +81,30 @@ func (h *helloapp) Roundtrip(c *apps.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) OneWay(call *apps.Call) error {
+func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error) {
+	if strings.HasPrefix(c.Path, hello.PathSendSurveyModal) {
+		return h.SendSurveyModal(c), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSendSurveyCommandToModal) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSendSurveyCommandToModal+"/")
+		return h.SendSurveyCommandToModal(c, apps.CallType(callType)), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSendSurvey) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSendSurvey+"/")
+		return h.SendSurvey(c, apps.CallType(callType)), nil
+	}
+
+	if strings.HasPrefix(c.Path, hello.PathSurvey) {
+		callType := strings.TrimPrefix(c.Path, hello.PathSurvey+"/")
+		return h.Survey(c, apps.CallType(callType)), nil
+	}
+
+	return nil, errors.Errorf("%s is not found", c.Path)
+}
+
+func (h *helloapp) OneWay(call *apps.CallRequest) error {
 	switch call.Context.Subject {
 	case apps.SubjectUserJoinedChannel:
 		h.HelloApp.UserJoinedChannel(call)
@@ -94,10 +114,7 @@ func (h *helloapp) OneWay(call *apps.Call) error {
 	return nil
 }
 
-func (h *helloapp) Install(c *apps.Call) *apps.CallResponse {
-	if c.Type != apps.CallTypeSubmit {
-		return apps.NewErrorCallResponse(errors.New("not supported"))
-	}
+func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
 	out, err := h.HelloApp.Install(AppID, AppDisplayName, c)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -108,8 +125,8 @@ func (h *helloapp) Install(c *apps.Call) *apps.CallResponse {
 	}
 }
 
-func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
-	switch c.Type {
+func (h *helloapp) SendSurvey(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	switch callType {
 	case apps.CallTypeForm:
 		return hello.NewSendSurveyFormResponse(c)
 
@@ -133,21 +150,21 @@ func (h *helloapp) SendSurvey(c *apps.Call) *apps.CallResponse {
 				},
 			},
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
-
-	return nil
 }
 
-func (h *helloapp) SendSurveyModal(c *apps.Call) *apps.CallResponse {
+func (h *helloapp) SendSurveyModal(c *apps.CallRequest) *apps.CallResponse {
 	return hello.NewSendSurveyFormResponse(c)
 }
 
-func (h *helloapp) SendSurveyCommandToModal(c *apps.Call) *apps.CallResponse {
-	return hello.NewSendSurveyPartialFormResponse(c)
+func (h *helloapp) SendSurveyCommandToModal(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	return hello.NewSendSurveyPartialFormResponse(c, callType)
 }
 
-func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
-	switch c.Type {
+func (h *helloapp) Survey(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	switch callType {
 	case apps.CallTypeForm:
 		return hello.NewSurveyFormResponse(c)
 
@@ -160,6 +177,7 @@ func (h *helloapp) Survey(c *apps.Call) *apps.CallResponse {
 			Type:     apps.CallResponseTypeOK,
 			Markdown: "<><> TODO",
 		}
+	default:
+		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
 	}
-	return nil
 }

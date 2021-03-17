@@ -14,14 +14,14 @@ type ConfigMapper interface {
 	ConfigMap() (result map[string]interface{})
 }
 
-func (sc *StoredConfig) ConfigMap() map[string]interface{} {
+func (sc StoredConfig) ConfigMap() map[string]interface{} {
 	return map[string]interface{}{
 		"Apps": sc.Apps,
 	}
 }
 
 type BuildConfig struct {
-	*model.Manifest
+	model.Manifest
 	BuildDate      string
 	BuildHash      string
 	BuildHashShort string
@@ -30,8 +30,8 @@ type BuildConfig struct {
 // Config represents the the metadata handed to all request runners (command,
 // http).
 type Config struct {
-	*StoredConfig
-	*BuildConfig
+	StoredConfig
+	BuildConfig
 
 	BotUserID              string
 	MattermostSiteHostname string
@@ -43,6 +43,6 @@ type Config struct {
 type Configurator interface {
 	GetConfig() Config
 	GetMattermostConfig() *model.Config
-	RefreshConfig(*StoredConfig) error
+	RefreshConfig(StoredConfig) error
 	StoreConfig(ConfigMapper) error
 }

@@ -23,7 +23,7 @@ func NewSurveyForm(message string) *apps.Form {
 	}
 }
 
-func NewSurveyFormResponse(c *apps.Call) *apps.CallResponse {
+func NewSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	message := c.GetValue(fieldMessage, "default hello message")
 	return &apps.CallResponse{
 		Type: apps.CallResponseTypeForm,
@@ -31,7 +31,7 @@ func NewSurveyFormResponse(c *apps.Call) *apps.CallResponse {
 	}
 }
 
-func (h *HelloApp) ProcessSurvey(c *apps.Call) error {
+func (h *HelloApp) ProcessSurvey(c *apps.CallRequest) error {
 	// TODO post something; for embedded form - what do we do?
 	return nil
 }

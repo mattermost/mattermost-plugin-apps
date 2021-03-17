@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func SubmitSurvey(c *apps.Call) *apps.CallResponse {
+func SubmitSurvey(c *apps.CallRequest) *apps.CallResponse {
 	location := strings.Split(string(c.Context.Location), "/")
 	if len(location) == 0 {
 		return &apps.CallResponse{

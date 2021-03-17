@@ -5,17 +5,16 @@ package upstream
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/api"
 )
 
-func Notify(u api.Upstream, call *apps.Call) error {
+func Notify(u api.Upstream, call *apps.CallRequest) error {
 	return u.OneWay(call)
 }
 
-func Call(u api.Upstream, call *apps.Call) *apps.CallResponse {
+func Call(u api.Upstream, call *apps.CallRequest) *apps.CallResponse {
 	r, err := u.Roundtrip(call)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -28,26 +27,4 @@ func Call(u api.Upstream, call *apps.Call) *apps.CallResponse {
 		return apps.NewErrorCallResponse(err)
 	}
 	return &cr
-}
-
-func GetBindings(u api.Upstream, call *apps.Call) ([]*apps.Binding, error) {
-	r, err := u.Roundtrip(call)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	cr := apps.CallResponse{
-		Data: &[]*apps.Binding{},
-	}
-	err = json.NewDecoder(r).Decode(&cr)
-	if err != nil {
-		return nil, err
-	}
-
-	bindings, ok := cr.Data.(*[]*apps.Binding)
-	if !ok {
-		return nil, errors.New("failed to decode bindings")
-	}
-	return *bindings, nil
 }

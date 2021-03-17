@@ -45,7 +45,7 @@ func NewUpstream(app *apps.App, aws *aws.Client) *Upstream {
 	}
 }
 
-func (u *Upstream) OneWay(call *apps.Call) error {
+func (u *Upstream) OneWay(call *apps.CallRequest) error {
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return errors.Wrap(err, "failed to covert call into invocation payload")
@@ -55,7 +55,7 @@ func (u *Upstream) OneWay(call *apps.Call) error {
 	return err
 }
 
-func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(call *apps.CallRequest) (io.ReadCloser, error) {
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to covert call into invocation payload")
@@ -80,7 +80,7 @@ func (u *Upstream) Roundtrip(call *apps.Call) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
-func callToInvocationPayload(call *apps.Call) ([]byte, error) {
+func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(call)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal call for lambda payload")

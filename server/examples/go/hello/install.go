@@ -12,11 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.Call) (md.MD, error) {
-	if c.Type != apps.CallTypeSubmit {
-		return "", errors.New("not supported")
-	}
-
+func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (md.MD, error) {
 	bot := mmclient.AsBot(c.Context)
 	adminClient := mmclient.AsAdmin(c.Context)
 
@@ -96,6 +92,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 	if err != nil {
 		return "", err
 	}
+
 	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")

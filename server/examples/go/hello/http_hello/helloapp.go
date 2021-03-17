@@ -42,12 +42,12 @@ func Init(router *mux.Router, appsService *api.Service) {
 
 	handle(r, apps.DefaultInstallCallPath, h.Install)
 	handle(r, apps.DefaultBindingsCallPath, h.GetBindings)
-	handle(r, hello.PathSendSurvey, h.SendSurvey)
-	handle(r, hello.PathSendSurveyModal, h.SendSurveyModal)
-	handle(r, hello.PathSendSurveyCommandToModal, h.SendSurveyCommandToModal)
-	handle(r, hello.PathSurvey, h.Survey)
-	handle(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
-	handle(r, hello.PathSubmitSurvey, h.SubmitSurvey)
+	handle(r, hello.PathSendSurvey+"/{type}", h.SendSurvey)
+	handle(r, hello.PathSendSurveyModal+"/{type}", h.SendSurveyModal)
+	handle(r, hello.PathSendSurveyCommandToModal+"/{type}", h.SendSurveyCommandToModal)
+	handle(r, hello.PathSurvey+"/{type}", h.Survey)
+	handle(r, hello.PathUserJoinedChannel+"/{type}", h.UserJoinedChannel)
+	handle(r, hello.PathSubmitSurvey+"/{type}", h.SubmitSurvey)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
@@ -73,7 +73,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 		})
 }
 
-type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.Call) (int, error)
+type handler func(http.ResponseWriter, *http.Request, *api.JWTClaims, *apps.CallRequest) (int, error)
 
 func handle(r *mux.Router, path string, h handler) {
 	r.HandleFunc(path,
@@ -84,7 +84,7 @@ func handle(r *mux.Router, path string, h handler) {
 				return
 			}
 
-			data, err := apps.UnmarshalCallFromReader(req.Body)
+			data, err := apps.UnmarshalCallRequestFromReader(req.Body)
 			if err != nil {
 				proxy.WriteCallError(w, http.StatusInternalServerError, err)
 				return
