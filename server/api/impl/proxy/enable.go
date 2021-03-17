@@ -64,7 +64,7 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 }
 
 func (p *Proxy) AppIsEnabled(app *apps.App) bool {
-	if app.Type == apps.AppTypeBuiltin {
+	if app.AppType == apps.AppTypeBuiltin {
 		return true
 	}
 	if app.Disabled {

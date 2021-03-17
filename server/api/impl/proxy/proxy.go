@@ -108,7 +108,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 	if !p.AppIsEnabled(app) {
 		return nil, errors.Errorf("%s is disabled", app.AppID)
 	}
-	switch app.Type {
+	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil
 
@@ -123,7 +123,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (api.Upstream, error) {
 		return up, nil
 
 	default:
-		return nil, errors.Errorf("not a valid app type: %s", app.Type)
+		return nil, errors.Errorf("not a valid app type: %s", app.AppType)
 	}
 }
 

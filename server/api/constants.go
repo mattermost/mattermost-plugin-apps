@@ -3,6 +3,8 @@
 
 package api
 
+import "github.com/mattermost/mattermost-plugin-apps/apps"
+
 // Internal configuration apps.of mattermost-plugin-apps
 const (
 	Repository     = "mattermost-plugin-apps"
@@ -40,7 +42,7 @@ const (
 	KVPath          = "/kv"
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
-	StaticAssetPath = "/static"
+	StaticAssetPath = "/" + apps.StaticAssetsFolder
 	BindingsPath    = "/bindings"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"

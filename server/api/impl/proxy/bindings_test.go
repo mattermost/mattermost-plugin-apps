@@ -270,7 +270,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			app1 := &apps.App{
 				Manifest: apps.Manifest{
 					AppID:              apps.AppID("app1"),
-					Type:               apps.AppTypeBuiltin,
+					AppType:            apps.AppTypeBuiltin,
 					RequestedLocations: tc.locations,
 				},
 				GrantedLocations: tc.locations,
@@ -299,8 +299,8 @@ func TestGetBindingsCommands(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID: apps.AppID("app1"),
-					Type:  apps.AppTypeBuiltin,
+					AppID:   apps.AppID("app1"),
+					AppType: apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationChannelHeader,
@@ -362,8 +362,8 @@ func TestGetBindingsCommands(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID: apps.AppID("app2"),
-					Type:  apps.AppTypeBuiltin,
+					AppID:   apps.AppID("app2"),
+					AppType: apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationChannelHeader,
@@ -488,8 +488,8 @@ func TestDuplicateCommand(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID: apps.AppID("app1"),
-					Type:  apps.AppTypeBuiltin,
+					AppID:   apps.AppID("app1"),
+					AppType: apps.AppTypeBuiltin,
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationCommand,

@@ -330,12 +330,6 @@ func TestSubsKey(t *testing.T) {
 			"channel-id",
 			"sub_user_left_team_team-id",
 		},
-		string(apps.SubjectUserUpdated): {
-			apps.SubjectUserUpdated,
-			"team-id",
-			"channel-id",
-			"sub_user_updated",
-		},
 		string(apps.SubjectChannelCreated): {
 			apps.SubjectChannelCreated,
 			"team-id",

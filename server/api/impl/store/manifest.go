@@ -93,7 +93,7 @@ func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manif
 		}
 
 		var m *apps.Manifest
-		m, err = DecodeManifest(data)
+		m, err = apps.ManifestFromJSON(data)
 		if err != nil {
 			s.mm.Log.Error("failed to load global manifest",
 				"err", err.Error(),
@@ -275,7 +275,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 
 // getFromS3 returns a manifest file for an app from the S3
 func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
-	name := awsclient.GenerateManifestS3Name(appID, version)
+	name := apps.ManifestS3Name(appID, version)
 	data, err := awscli.GetS3(bucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)

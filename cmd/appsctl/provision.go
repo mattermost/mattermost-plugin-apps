@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 var (
@@ -56,7 +56,7 @@ var provisionBucketCmd = &cobra.Command{
 			return err
 		}
 
-		name := awsclient.GenerateS3BucketNameWithDefaults("")
+		name := apps.S3BucketNameWithDefaults("")
 
 		exists, err := awsClient.ExistsS3Bucket(name)
 		if err != nil {

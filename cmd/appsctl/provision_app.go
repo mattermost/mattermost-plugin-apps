@@ -71,9 +71,9 @@ func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
 			if err != nil {
 				return errors.Wrap(err, "can't read manifest.json file")
 			}
-			err = json.Unmarshal(data, &m)
+			m, err = apps.ManifestFromJSON(data)
 			if err != nil {
-				return errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
+				return errors.Wrapf(err, "file %s", string(data))
 			}
 
 		case strings.HasSuffix(file.Name, ".zip"):
@@ -90,8 +90,8 @@ func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
 			})
 			log.Debug("Found function bundle", "file", file.Name)
 
-		case strings.HasPrefix(file.Name, awsclient.StaticAssetsFolder):
-			assetName := strings.TrimPrefix(file.Name, awsclient.StaticAssetsFolder)
+		case strings.HasPrefix(file.Name, apps.StaticAssetsFolder+"/"):
+			assetName := strings.TrimPrefix(file.Name, apps.StaticAssetsFolder+"/")
 			var f io.ReadCloser
 			f, err = file.Open()
 			if err != nil {
@@ -119,7 +119,7 @@ func ProvisionApp(awscli awsclient.Client, b []byte, shouldUpdate bool) error {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range m.Functions {
+		for _, manifestFunction := range m.AWSLambda {
 			if strings.HasSuffix(bundleFunction.name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, functionInstallData{
 					bundle:  bundleFunction.bundle,
@@ -169,8 +169,8 @@ func ProvisionAppFromFile(awscli awsclient.Client, path string, shouldUpdate boo
 
 func provisionAssets(awscli awsclient.Client, m *apps.Manifest, assets []assetData) error {
 	for _, asset := range assets {
-		bucket := awsclient.GenerateS3BucketNameWithDefaults("")
-		key := awsclient.GenerateAssetS3Name(m.AppID, m.Version, asset.name)
+		bucket := apps.S3BucketNameWithDefaults("")
+		key := apps.AssetS3Name(m.AppID, m.Version, asset.name)
 		if err := awscli.UploadS3(bucket, key, asset.file); err != nil {
 			return errors.Wrapf(err, "can't provision asset - %s with key - %s", asset.name, key)
 		}
@@ -185,10 +185,7 @@ func provisionFunctions(awscli awsclient.Client, m *apps.Manifest, functions []f
 	}
 
 	for _, function := range functions {
-		name, err := awsclient.GenerateLambdaName(m.AppID, m.Version, function.name)
-		if err != nil {
-			return errors.Wrap(err, "can't get function name")
-		}
+		name := apps.LambdaName(m.AppID, m.Version, function.name)
 
 		if shouldUpdate {
 			if err := awscli.CreateOrUpdateLambda(function.bundle, name, function.handler, function.runtime, policyName); err != nil {
@@ -211,8 +208,8 @@ func provisionManifest(awscli awsclient.Client, m *apps.Manifest) error {
 	}
 	buffer := bytes.NewBuffer(data)
 
-	bucket := awsclient.GenerateS3BucketNameWithDefaults("")
-	key := awsclient.GenerateManifestS3Name(m.AppID, m.Version)
+	bucket := apps.S3BucketNameWithDefaults("")
+	key := apps.ManifestS3Name(m.AppID, m.Version)
 	if err := awscli.UploadS3(bucket, key, buffer); err != nil {
 		return errors.Wrapf(err, "can't upload manifest file for the app - %s", m.AppID)
 	}

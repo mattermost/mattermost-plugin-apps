@@ -1,6 +1,10 @@
 {
     "app_id": "awsHello",
+<<<<<<< HEAD
+    "version": "v0_0_1",
+=======
     "version": "v0.0.1",
+>>>>>>> da436b7cd6e39b4c09db6689ea2f307861d65470
     "app_type": "aws_lambda",
     "display_name": "AWS Hello App display name",
     "description": "AWS Hello App description",
@@ -23,5 +27,17 @@
             "app": "all",
             "admin_access_token": "all"
         }
+<<<<<<< HEAD
+    },
+    "aws_lambda":[
+        {
+            "path":"/",
+            "name":"test",
+            "handler":"todo",
+            "runtime":"todo"
+        }
+    ]
+=======
     }
+>>>>>>> da436b7cd6e39b4c09db6689ea2f307861d65470
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	routes := []apps.Function{
+	lambdas := []apps.AWSLambdaFunction{
 		{
 			Path: "/topic",
 			Name: "topic",
@@ -38,11 +38,11 @@ func TestMatch(t *testing.T) {
 		{"/other/and-then-some", "testID_v00-00-000_other"},
 	} {
 		t.Run(tc.callPath, func(t *testing.T) {
-			matched, _ := match(tc.callPath, &apps.App{
+			matched := match(tc.callPath, &apps.App{
 				Manifest: apps.Manifest{
 					AppID:     "testID",
 					Version:   "v00.00.000",
-					Functions: routes,
+					AWSLambda: lambdas,
 				},
 			})
 			assert.Equal(t, tc.expected, matched)

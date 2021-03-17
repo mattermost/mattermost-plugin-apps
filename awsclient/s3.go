@@ -12,15 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	// appsS3BucketEnvVarName determines an environment variable.
-	// Variable saves address of apps S3 bucket name
-	AppsS3BucketEnvVarName = "MM_APPS_S3_BUCKET"
-
-	// defaultBucketName is the default s3 bucket name used to store app data.
-	DefaultBucketName = "mattermost-apps-bucket"
-)
-
 // GetS3 downloads files from S3.
 func (c *client) GetS3(bucket, item string) ([]byte, error) {
 	var buffer aws.WriteAtBuffer

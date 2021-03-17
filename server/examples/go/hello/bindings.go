@@ -5,14 +5,14 @@ import (
 )
 
 func Bindings() []*apps.Binding {
-	justSend := apps.MakeCall(PathSendSurvey)
+	justSend := apps.NewCall(PathSendSurvey)
 
-	modal := apps.MakeCall(PathSendSurveyModal)
+	modal := apps.NewCall(PathSendSurveyModal)
 
-	modalFromPost := apps.MakeCall(PathSendSurveyModal)
+	modalFromPost := apps.NewCall(PathSendSurveyModal)
 	modalFromPost.Expand = &apps.Expand{Post: apps.ExpandAll}
 
-	commandToModal := apps.MakeCall(PathSendSurveyCommandToModal)
+	commandToModal := apps.NewCall(PathSendSurveyCommandToModal)
 	return []*apps.Binding{
 		{
 			// TODO make this a subscribe button, with a state (current subscription status)
@@ -78,13 +78,13 @@ func Bindings() []*apps.Binding {
 									Location:    "subscribe",
 									Hint:        "[--channel]",
 									Description: "subscribes a channel to greet new users",
-									Call:        apps.MakeCall(PathSubscribeChannel),
+									Call:        apps.NewCall(PathSubscribeChannel),
 								}, {
 									Label:       "unsubscribe",
 									Location:    "unsubscribe",
 									Hint:        "[--channel]",
 									Description: "unsubscribes a channel from greeting new users",
-									Call:        apps.MakeCall(PathUnsubscribeChannel),
+									Call:        apps.NewCall(PathUnsubscribeChannel),
 								},
 							},
 						},

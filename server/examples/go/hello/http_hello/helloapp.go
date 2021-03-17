@@ -57,7 +57,7 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 	httputils.WriteJSON(w,
 		apps.Manifest{
 			AppID:       AppID,
-			Type:     apps.AppTypeHTTP,
+			AppType:     apps.AppTypeHTTP,
 			DisplayName: AppDisplayName,
 			Description: AppDescription,
 			HTTPRootURL: h.appURL(""),
@@ -87,7 +87,7 @@ func handle(r *mux.Router, path string, h handler) {
 				return
 			}
 
-			data, err := apps.UnmarshalCallRequestFromReader(req.Body)
+			data, err := apps.CallRequestFromJSONReader(req.Body)
 			if err != nil {
 				proxy.WriteCallError(w, http.StatusInternalServerError, err)
 				return
