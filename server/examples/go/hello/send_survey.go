@@ -95,8 +95,8 @@ func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	}
 }
 
-func NewSendSurveyPartialFormResponse(c *apps.CallRequest) *apps.CallResponse {
-	if c.Type == apps.CallTypeSubmit {
+func NewSendSurveyPartialFormResponse(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	if callType == apps.CallTypeSubmit {
 		return NewSendSurveyFormResponse(c)
 	}
 

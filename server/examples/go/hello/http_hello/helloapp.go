@@ -45,12 +45,12 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf api.Configurator, _ api
 
 	handle(r, apps.DefaultInstallCallPath, h.Install)
 	handle(r, apps.DefaultBindingsCallPath, h.GetBindings)
-	handle(r, hello.PathSendSurvey, h.SendSurvey)
-	handle(r, hello.PathSendSurveyModal, h.SendSurveyModal)
-	handle(r, hello.PathSendSurveyCommandToModal, h.SendSurveyCommandToModal)
-	handle(r, hello.PathSurvey, h.Survey)
-	handle(r, hello.PathUserJoinedChannel, h.UserJoinedChannel)
-	handle(r, hello.PathSubmitSurvey, h.SubmitSurvey)
+	handle(r, hello.PathSendSurvey+"/{type}", h.SendSurvey)
+	handle(r, hello.PathSendSurveyModal+"/{type}", h.SendSurveyModal)
+	handle(r, hello.PathSendSurveyCommandToModal+"/{type}", h.SendSurveyCommandToModal)
+	handle(r, hello.PathSurvey+"/{type}", h.Survey)
+	handle(r, hello.PathUserJoinedChannel+"/{type}", h.UserJoinedChannel)
+	handle(r, hello.PathSubmitSurvey+"/{type}", h.SubmitSurvey)
 }
 
 func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
