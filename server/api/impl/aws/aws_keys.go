@@ -59,5 +59,6 @@ func getManifestFileKey(appID apps.AppID, version apps.AppVersion) string {
 // GetAssetFileKey generates key for a specific asset in S3,
 // key can be 1024 characters long.
 func GetAssetFileKey(appID apps.AppID, version apps.AppVersion, name string) string {
-	return fmt.Sprintf("%s/%s_%s_app/%s", staticAssetsPrefix, appID, version, name)
+	sanitizedName := strings.ReplaceAll(name, " ", "-")
+	return fmt.Sprintf("%s/%s_%s_app/%s", staticAssetsPrefix, appID, version, sanitizedName)
 }

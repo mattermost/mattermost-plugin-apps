@@ -111,9 +111,13 @@ func getProvisionData(b []byte, logger log) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			logger.Debug("Found function bundle", "file", file.Name)
+			if logger != nil {
+				logger.Debug("Found function bundle", "file", file.Name)
+			}
 		default:
-			logger.Info("Unknown file found in app bundle", "file", file.Name)
+			if logger != nil {
+				logger.Info("Unknown file found in app bundle", "file", file.Name)
+			}
 		}
 	}
 
