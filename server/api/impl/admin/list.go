@@ -51,7 +51,7 @@ func (adm *Admin) GetListedApps(filter string) []*apps.ListedApp {
 		out = append(out, marketApp)
 	}
 
-	// Sort result alphabetically, byu display name.
+	// Sort result alphabetically, by display name.
 	sort.SliceStable(out, func(i, j int) bool {
 		return strings.ToLower(out[i].Manifest.DisplayName) < strings.ToLower(out[j].Manifest.DisplayName)
 	})
