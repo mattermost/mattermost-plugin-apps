@@ -128,7 +128,10 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 }
 
 func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
-	if user == nil || level == apps.ExpandAll {
+	if user == nil {
+		return user
+	}
+	if level == apps.ExpandAll {
 		sanitized := *user
 		sanitized.Sanitize(map[string]bool{
 			"passwordupdate": true,
@@ -156,7 +159,10 @@ func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
 }
 
 func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel {
-	if channel == nil || level == apps.ExpandAll {
+	if channel == nil {
+		return channel
+	}
+	if level == apps.ExpandAll {
 		return channel
 	}
 	if level != apps.ExpandSummary {
@@ -173,7 +179,10 @@ func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel
 }
 
 func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
-	if team == nil || level == apps.ExpandAll {
+	if team == nil {
+		return team
+	}
+	if level == apps.ExpandAll {
 		sanitized := *team
 		sanitized.Sanitize()
 		return &sanitized
@@ -192,7 +201,10 @@ func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
 }
 
 func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
-	if post == nil || level == apps.ExpandAll {
+	if post == nil {
+		return post
+	}
+	if level == apps.ExpandAll {
 		sanitized := *post.Clone()
 		sanitized.SanitizeProps()
 		return &sanitized

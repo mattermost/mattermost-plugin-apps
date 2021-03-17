@@ -36,7 +36,7 @@ func New(mm *pluginapi.Client) *helloapp {
 func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
-		AppType:        apps.AppTypeBuiltin,
+		AppType:     apps.AppTypeBuiltin,
 		Version:     "0.1.0",
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
