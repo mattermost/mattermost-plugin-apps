@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -18,7 +19,7 @@ func ToJSON(in interface{}) string {
 }
 
 func EnsureSysadmin(mm *pluginapi.Client, userID string) error {
-	if mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
+	if !mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
 		return errors.Wrapf(ErrUnauthorized, "user must be a sysadmin")
 	}
 	return nil
