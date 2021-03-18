@@ -586,7 +586,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	mm := pluginapi.NewClient(testAPI)
 
 	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
-	appStore := mock_store.NewMockApp(ctrl)
+	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
 	appList := map[apps.AppID]*apps.App{}
