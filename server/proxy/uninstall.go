@@ -10,9 +10,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) UninstallApp(appID apps.AppID) error {
+func (p *Proxy) UninstallApp(actingUserID string, appID apps.AppID) error {
+	err := utils.EnsureSysadmin(p.mm, actingUserID)
+	if err != nil {
+		return err
+	}
+
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
