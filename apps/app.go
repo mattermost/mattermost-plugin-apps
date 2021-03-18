@@ -82,11 +82,11 @@ func (id AppID) IsValid() error {
 			continue
 		}
 
-		if c == '-' || c == '_' {
+		if c == '-' || c == '_' || c == '.' {
 			continue
 		}
 
-		return errors.Errorf("invalid character %v in appID", c)
+		return errors.Errorf("invalid character '%c' in appID %q", c, id)
 	}
 
 	return nil
@@ -108,11 +108,11 @@ func (v AppVersion) IsValid() error {
 			continue
 		}
 
-		if c == '-' || c == '_' {
+		if c == '-' || c == '_' || c == '.' {
 			continue
 		}
 
-		return errors.Errorf("invalid character %v in appVersion", c)
+		return errors.Errorf("invalid character '%c' in appVersion", c)
 	}
 
 	return nil

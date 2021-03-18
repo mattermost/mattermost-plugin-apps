@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
@@ -29,7 +29,7 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitGlobal(_ awsclient.Client, bucket string) error
+	InitGlobal(_ aws.Client, bucket string) error
 	StoreLocal(*apps.Manifest) error
 }
 
@@ -50,7 +50,7 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error {
+func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
@@ -67,7 +67,7 @@ func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string) error
 
 // initGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) initGlobal(awscli awsclient.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
+func (s *manifestStore) initGlobal(awscli aws.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
 	global := map[apps.AppID]*apps.Manifest{}
 
 	manifestLocations := map[apps.AppID]string{}
@@ -284,7 +284,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 }
 
 // getFromS3 returns a manifest file for an app from the S3
-func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
+func (s *manifestStore) getFromS3(awscli aws.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := apps.ManifestS3Name(appID, version)
 	data, err := awscli.GetS3(bucket, name)
 	if err != nil {

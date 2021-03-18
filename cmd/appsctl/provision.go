@@ -38,7 +38,7 @@ var provisionAppCmd = &cobra.Command{
 			return err
 		}
 
-		err = ProvisionAppFromFile(awsClient, args[0], shouldUpdate)
+		err = awsClient.ProvisionAppFromFile(args[0], shouldUpdate)
 		if err != nil {
 			return err
 		}

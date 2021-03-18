@@ -84,7 +84,11 @@ var DefaultBindingsCall = &Call{
 }
 
 func (m Manifest) IsValid() error {
-	for _, f := range []func() error{m.AppID.IsValid, m.Version.IsValid, m.AppType.IsValid} {
+	for _, f := range []func() error{
+		m.AppID.IsValid,
+		m.Version.IsValid,
+		m.AppType.IsValid,
+	} {
 		if err := f(); err != nil {
 			return err
 		}
