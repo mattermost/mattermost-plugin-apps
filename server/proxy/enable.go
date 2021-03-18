@@ -8,18 +8,22 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
-	// TODO <><> check if acting user is an admin
+	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+	if err != nil {
+		return "", err
+	}
 
 	if !app.Disabled {
 		return "no change.", nil
 	}
 
 	app.Disabled = false
-	err := p.store.App.Save(app)
+	err = p.store.App.Save(app)
 	if err != nil {
 		return "", err
 	}
@@ -38,7 +42,10 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 }
 
 func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
-	// TODO <><> check if acting user is an admin
+	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+	if err != nil {
+		return "", err
+	}
 
 	if app.Disabled {
 		return "no change.", nil
@@ -53,7 +60,7 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 		p.mm.Log.Warn("OnDisable failed, app disabled anyway", "err", resp.Error(), "app_id", app.AppID)
 	}
 
-	err := p.store.App.Save(app)
+	err = p.store.App.Save(app)
 	if err != nil {
 		return "", err
 	}

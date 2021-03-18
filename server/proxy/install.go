@@ -19,7 +19,10 @@ import (
 )
 
 func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
-	// TODO <><> check if acting user is a sysadmin
+	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+	if err != nil {
+		return nil, "", err
+	}
 
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {

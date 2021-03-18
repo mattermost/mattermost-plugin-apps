@@ -275,6 +275,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 				Manifest: apps.Manifest{
 					AppID:              apps.AppID("app1"),
 					AppType:            apps.AppTypeBuiltin,
+					DisplayName:        "App 1",
 					RequestedLocations: tc.locations,
 				},
 				GrantedLocations: tc.locations,
@@ -303,8 +304,9 @@ func TestGetBindingsCommands(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID:   apps.AppID("app1"),
-					AppType: apps.AppTypeBuiltin,
+					AppID:       apps.AppID("app1"),
+					AppType:     apps.AppTypeBuiltin,
+					DisplayName: "App 1",
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationChannelHeader,
@@ -366,8 +368,9 @@ func TestGetBindingsCommands(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID:   apps.AppID("app2"),
-					AppType: apps.AppTypeBuiltin,
+					AppID:       apps.AppID("app2"),
+					AppType:     apps.AppTypeBuiltin,
+					DisplayName: "App 2",
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationChannelHeader,
@@ -492,8 +495,9 @@ func TestDuplicateCommand(t *testing.T) {
 		{
 			app: &apps.App{
 				Manifest: apps.Manifest{
-					AppID:   apps.AppID("app1"),
-					AppType: apps.AppTypeBuiltin,
+					AppID:       apps.AppID("app1"),
+					AppType:     apps.AppTypeBuiltin,
+					DisplayName: "App 1",
 				},
 				GrantedLocations: apps.Locations{
 					apps.LocationCommand,
@@ -586,7 +590,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	mm := pluginapi.NewClient(testAPI)
 
 	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
-	appStore := mock_store.NewMockApp(ctrl)
+	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
 	appList := map[apps.AppID]*apps.App{}

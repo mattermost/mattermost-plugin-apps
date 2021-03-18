@@ -57,6 +57,9 @@ Only once you need to run `go run ./cmd/appsctl/ provision bucket` to create the
 
 To provision an app run `go run ./cmd/appsctl/ provision app /PATH/TO/YOUR/APP/BUNDLE`. Use `--update` to update the lambda functions if they already exist. This option should not be used in production.
 
+To provision an app in the cloud environment pipeline will need bundle to be uploaded in S3 as well as the additional terraform data(function names, asset keys, etc.). To generate these terraform variables run `go run ./cmd/appsctl/ generate-terraform-data /PATH/TO/YOUR/APP/BUNDLE`. It will print the indented json directly in the console. Pipe as needed.
+
+
 ## Contacts
 
 Dev: Lev Brouk (@lev.brouk)

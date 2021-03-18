@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -35,7 +35,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
-	aws  awsclient.Client
+	aws  aws.Client
 
 	store       *store.Service
 	appservices appservices.Service
@@ -80,7 +80,7 @@ func (p *Plugin) OnActivate() error {
 	if secretKey == "" {
 		p.mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
 	}
-	p.aws, err = awsclient.MakeClient(accessKey, secretKey, &p.mm.Log)
+	p.aws, err = aws.MakeClient(accessKey, secretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}

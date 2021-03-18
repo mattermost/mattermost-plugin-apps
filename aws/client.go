@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package awsclient
+package aws
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 )
 
 // DefaultRegion describes default region in aws
-const DefaultRegion = "us-east-2"
+const DefaultRegion = "us-east-1"
 
 // Client is an authenticated client for interacting with AWS resources.
 type Client interface {
@@ -42,6 +42,8 @@ type Client interface {
 	CreateS3Bucket(bucket string) error
 	UploadS3(bucket, key string, body io.Reader) error
 	ExistsS3Bucket(name string) (bool, error)
+
+	ProvisionAppFromFile(path string, shouldUpdate bool) error
 }
 
 type client struct {
