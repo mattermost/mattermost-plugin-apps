@@ -4,9 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func TestGetProvisionData(t *testing.T) {
