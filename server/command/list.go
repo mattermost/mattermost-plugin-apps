@@ -12,14 +12,14 @@ import (
 )
 
 func (s *service) executeList(params *params) (*model.CommandResponse, error) {
-	listed := s.admin.GetListedApps("")
-	installed := s.admin.GetInstalledApps()
+	listed := s.proxy.GetListedApps("")
+	installed := s.proxy.GetInstalledApps()
 
 	txt := md.MD("| Name | Status | Version | Account | Locations | Permissions |\n")
 	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- |\n")
 
 	for _, app := range installed {
-		m, _ := s.admin.GetManifest(app.AppID)
+		m, _ := s.proxy.GetManifest(app.AppID)
 		if m == nil {
 			continue
 		}
@@ -53,7 +53,7 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 	}
 
 	for _, l := range listed {
-		app, _ := s.admin.GetInstalledApp(l.Manifest.AppID)
+		app, _ := s.proxy.GetInstalledApp(l.Manifest.AppID)
 		if app != nil {
 			continue
 		}

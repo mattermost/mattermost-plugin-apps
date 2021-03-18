@@ -10,14 +10,14 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
 	_ = s.mm.KV.DeleteAll()
-	_ = s.conf.StoreConfig(api.StoredConfig{})
+	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, md.MD("Deleted all KV records and emptied the config."))
 }
 
@@ -47,7 +47,7 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, err)
 	}
 
-	out, err := s.admin.AddLocalManifest(
+	out, err := s.proxy.AddLocalManifest(
 		&apps.Context{ActingUserID: params.commandArgs.UserId},
 		apps.SessionToken(params.commandArgs.Session.Token), &m)
 	if err != nil {

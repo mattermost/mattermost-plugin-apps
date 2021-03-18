@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 const (
@@ -25,7 +28,7 @@ type helloapp struct {
 	*hello.HelloApp
 }
 
-var _ api.Upstream = (*helloapp)(nil)
+var _ upstream.Upstream = (*helloapp)(nil)
 
 func New(mm *pluginapi.Client) *helloapp {
 	return &helloapp{
@@ -66,10 +69,10 @@ func App() *apps.App {
 	}
 }
 
-func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
+func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
-	case api.BindingsPath:
+	case apps.DefaultBindingsCallPath:
 		cr = &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 			Data: hello.Bindings(),
@@ -77,6 +80,7 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
 
 	case apps.DefaultInstallCallPath:
 		cr = h.Install(c)
+
 	default:
 		var err error
 		cr, err = h.mapFunctions(c)
@@ -90,6 +94,10 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return ioutil.NopCloser(bytes.NewReader(bb)), nil
+}
+
+func (h *helloapp) GetStatic(path string) (io.ReadCloser, int, error) {
+	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 
 func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error) {
@@ -112,17 +120,13 @@ func (h *helloapp) mapFunctions(c *apps.CallRequest) (*apps.CallResponse, error)
 		return h.Survey(c, apps.CallType(callType)), nil
 	}
 
-	return nil, errors.Errorf("%s is not found", c.Path)
-}
-
-func (h *helloapp) OneWay(call *apps.CallRequest) error {
-	switch call.Context.Subject {
-	case apps.SubjectUserJoinedChannel:
-		h.HelloApp.UserJoinedChannel(call)
-	default:
-		return errors.Errorf("%s is not supported", call.Context.Subject)
+	// notifications
+	if strings.HasPrefix(c.Path, hello.PathUserJoinedChannel) {
+		h.HelloApp.UserJoinedChannel(c)
+		return &apps.CallResponse{Type: apps.CallResponseTypeOK}, nil
 	}
-	return nil
+
+	return nil, errors.Errorf("%s is not found", c.Path)
 }
 
 func (h *helloapp) Install(c *apps.CallRequest) *apps.CallResponse {
