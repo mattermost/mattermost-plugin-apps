@@ -66,8 +66,9 @@ func LambdaName(appID AppID, version AppVersion, function string) string {
 	// While there are other non-valid characters, a dots is the most commonly used one
 	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
 	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
+	sanitizedFunction := strings.ReplaceAll(function, " ", "-")
 
-	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
+	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, sanitizedFunction)
 	if len(name) <= AWSMaxLambdaName {
 		return name
 	}

@@ -1,18 +1,84 @@
 package main
 
-// func TestGetProvisionData(t *testing.T) {
-// 	testDir, found := utils.FindDir("tests")
-// 	require.True(t, found)
+import (
+	"path/filepath"
+	"testing"
 
-// 	bundlepath := filepath.Join(testDir, "app_bundle_without_assets.zip")
-// 	provisionData, err := GetProvisionDataFromFile(bundlepath)
-// 	require.NoError(t, err)
-// 	require.Equal(t, apps.AppID("com.mattermost.servicenow"), provisionData.Manifest.AppID)
-// 	require.Len(t, provisionData.LambdaFunctions, 1)
-// 	require.Len(t, provisionData.Manifest.AWSLambda, 1)
-// 	function, ok := provisionData.LambdaFunctions[provisionData.Manifest.AWSLambda[0].Name]
-// 	require.True(t, ok)
-// 	require.Equal(t, "com-mattermost-servicenow_0-1-0_go-function", function.Name)
-// 	require.Equal(t, "mattermost-app-servicenow", function.Handler)
-// 	require.Equal(t, "go1.x", function.Runtime)
-// }
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetProvisionData(t *testing.T) {
+	testDir, found := utils.FindDir("tests")
+	require.True(t, found)
+
+	bundlepath := filepath.Join(testDir, "test-bundle.zip")
+	provisionData, err := GetProvisionDataFromFile(bundlepath)
+	require.NoError(t, err)
+	require.Equal(t, apps.AppID("com.mattermost.servicenow"), provisionData.Manifest.AppID)
+	require.Len(t, provisionData.LambdaFunctions, 4)
+	require.Len(t, provisionData.Manifest.AWSLambda, 4)
+
+	for i, tc := range []struct {
+		name, handler, runtime string
+	}{
+		{
+			name:    "com-mattermost-servicenow_0-1-0_function1",
+			handler: "mattermost-app-servicenow",
+			runtime: "go1.x",
+		},
+		{
+			name:    "com-mattermost-servicenow_0-1-0_function2",
+			handler: "index.handler",
+			runtime: "nodejs14.x",
+		},
+		{
+			name:    "com-mattermost-servicenow_0-1-0_function-with-spaces",
+			handler: "mattermost-app-servicenow",
+			runtime: "go1.x",
+		},
+		{
+			name:    "com.mattermost.servicenow_0.1.0_95f51579baba92ea2a0a3ad98c24fcbc",
+			handler: "mattermost-app-servicenow",
+			runtime: "go1.x",
+		},
+	} {
+		function, ok := provisionData.LambdaFunctions[provisionData.Manifest.AWSLambda[i].Name]
+		require.True(t, ok)
+		require.Equal(t, tc.name, function.Name)
+		require.Equal(t, tc.handler, function.Handler)
+		require.Equal(t, tc.runtime, function.Runtime)
+	}
+
+	require.Len(t, provisionData.StaticFiles, 5)
+
+	for _, tc := range []struct {
+		key, value string
+	}{
+		{
+			key:   "photo.png",
+			value: "static/com.mattermost.servicenow_0.1.0_app/photo.png",
+		},
+		{
+			key:   "some.json",
+			value: "static/com.mattermost.servicenow_0.1.0_app/some.json",
+		},
+		{
+			key:   "static file with spaces.txt",
+			value: "static/com.mattermost.servicenow_0.1.0_app/static-file-with-spaces.txt",
+		},
+		{
+			key:   "static-file-with-very-very-very-very-very-very-very-very-long-name.txt",
+			value: "static/com.mattermost.servicenow_0.1.0_app/static-file-with-very-very-very-very-very-very-very-very-long-name.txt",
+		},
+		{
+			key:   "text.txt",
+			value: "static/com.mattermost.servicenow_0.1.0_app/text.txt",
+		},
+	} {
+		asset, ok := provisionData.StaticFiles[tc.key]
+		require.True(t, ok)
+		require.Equal(t, tc.value, asset.Key)
+	}
+}
