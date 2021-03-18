@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"os"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
+	"github.com/pkg/errors"
 )
 
 func ToJSON(in interface{}) string {
@@ -33,4 +36,11 @@ func FindDir(dir string) (string, bool) {
 	}
 
 	return found, true
+}
+
+func EnsureSysadmin(mm *pluginapi.Client, userID string) error {
+	if !mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
+		return errors.Wrapf(ErrUnauthorized, "user must be a sysadmin")
+	}
+	return nil
 }
