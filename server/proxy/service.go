@@ -47,7 +47,7 @@ type Service interface {
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(actingUserID string, appID apps.AppID) error
+	UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, actingUserID string) error
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }

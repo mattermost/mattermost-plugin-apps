@@ -3,7 +3,6 @@ package hello
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
@@ -13,7 +12,7 @@ import (
 )
 
 type SurveyFormSubmission struct {
-	UserID  string                 `json:"userID"`
+	UserID  apps.SelectOption      `json:"userID"`
 	Message string                 `json:"message"`
 	Other   map[string]interface{} `json:"other"`
 }
@@ -48,7 +47,7 @@ func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	name := c.SelectedField
 
 	if name == "userID" {
-		submission.Message = fmt.Sprintf("%s Now sending to %s.", submission.Message, submission.UserID)
+		submission.Message = fmt.Sprintf("%s Now sending to %s.", submission.Message, submission.UserID.Label)
 	}
 
 	return &apps.CallResponse{
@@ -128,14 +127,15 @@ func NewSendSurveyPartialFormResponse(c *apps.CallRequest, callType apps.CallTyp
 
 func (h *HelloApp) SendSurvey(c *apps.CallRequest) (md.MD, error) {
 	bot := mmclient.AsBot(c.Context)
-	userID := c.GetValue(fieldUserID, c.Context.ActingUserID)
-
-	// TODO this should be done with expanding mentions, make a ticket
-	if strings.HasPrefix(userID, "@") {
-		user, _ := bot.GetUserByUsername(userID[1:], "")
-		if user != nil {
-			userID = user.Id
+	userID := c.Context.ActingUserID
+	if c.Values[fieldUserID] != nil {
+		option := apps.SelectOption{}
+		b, _ := json.Marshal(c.Values[fieldUserID])
+		err := json.Unmarshal(b, &option)
+		if err != nil {
+			return "", err
 		}
+		userID = option.Value
 	}
 
 	message := c.GetValue(fieldMessage, "Hello")

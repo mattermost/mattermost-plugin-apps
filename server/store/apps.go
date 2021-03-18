@@ -182,7 +182,7 @@ func (s *appStore) Delete(appID apps.AppID) error {
 	installed := s.installed
 	s.mutex.RUnlock()
 	_, ok := installed[appID]
-	if ok {
+	if !ok {
 		return errors.Wrap(utils.ErrNotFound, string(appID))
 	}
 
