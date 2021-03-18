@@ -8,9 +8,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
-func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken) error {
+func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, actingUserID string) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -53,5 +54,6 @@ func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken) e
 
 	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)
 
+	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	return nil
 }
