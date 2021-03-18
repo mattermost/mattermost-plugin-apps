@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/mattermost/mattermost-plugin-apps/aws"
 )
 
 func init() {
@@ -21,7 +23,7 @@ var generateTerraformCmd = &cobra.Command{
 	Short: "Generate data for terraform to provision aws apps",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, err := GetProvisionDataFromFile(args[0])
+		data, err := aws.GetProvisionDataFromFile(args[0], &log)
 		if err != nil {
 			return errors.Wrap(err, "can't get provision data")
 		}
