@@ -1,8 +1,6 @@
 package hello
 
-import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-)
+import pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 const (
 	fieldUserID   = "userID"
@@ -22,9 +20,11 @@ const (
 )
 
 type HelloApp struct {
-	API *api.Service
+	mm *pluginapi.Client
 }
 
-func NewHelloApp(api *api.Service) *HelloApp {
-	return &HelloApp{api}
+func NewHelloApp(mm *pluginapi.Client) *HelloApp {
+	return &HelloApp{
+		mm: mm,
+	}
 }

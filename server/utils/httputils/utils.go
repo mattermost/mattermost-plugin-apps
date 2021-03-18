@@ -5,19 +5,16 @@ package httputils
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
-)
 
-type JSONError struct {
-	Error   string `json:"error"`
-	Summary string `json:"details"`
-}
+	"github.com/pkg/errors"
+)
 
 func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error) {
 	u, err := url.Parse(remoteURL)
@@ -50,23 +47,12 @@ func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error)
 	return remoteURL, nil
 }
 
-func WriteJSONError(w http.ResponseWriter, statusCode int, summary string, err error) {
-	w.Header().Set("Content-Type", "application/json")
+func WriteError(w http.ResponseWriter, statusCode int, err error) {
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(JSONError{
-		Summary: summary,
-		Error:   err.Error(),
-	})
-}
-
-func DecodeJSONError(body io.ReadCloser) error {
-	defer body.Close()
-	e := JSONError{}
-	err := json.NewDecoder(body).Decode(&e)
 	if err != nil {
-		return err
+		_, _ = w.Write([]byte(err.Error()))
 	}
-	return errors.New(e.Error)
 }
 
 func WriteJSON(w http.ResponseWriter, v interface{}) {
@@ -81,17 +67,55 @@ func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) {
 }
 
 func WriteInternalServerError(w http.ResponseWriter, err error) {
-	WriteJSONError(w, http.StatusInternalServerError, "An internal error has occurred. Check app server logs for details.", err)
+	WriteError(w, http.StatusInternalServerError, err)
 }
 
 func WriteBadRequestError(w http.ResponseWriter, err error) {
-	WriteJSONError(w, http.StatusBadRequest, "Invalid request.", err)
+	WriteError(w, http.StatusBadRequest, err)
 }
 
 func WriteNotFoundError(w http.ResponseWriter, err error) {
-	WriteJSONError(w, http.StatusNotFound, "Not found.", err)
+	WriteError(w, http.StatusNotFound, err)
 }
 
 func WriteUnauthorizedError(w http.ResponseWriter, err error) {
-	WriteJSONError(w, http.StatusUnauthorized, "Unauthorized.", err)
+	WriteError(w, http.StatusUnauthorized, err)
+}
+
+const InLimit = 10 * (1 << 20)
+
+func ReadAndClose(in io.ReadCloser) ([]byte, error) {
+	defer in.Close()
+	return LimitReadAll(in, InLimit)
+}
+
+func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
+	if in == nil {
+		return []byte{}, nil
+	}
+	return ioutil.ReadAll(&io.LimitedReader{R: in, N: limit})
+}
+
+func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, err)
+		return true
+	}
+	if resp.StatusCode != http.StatusOK {
+		bb, _ := ReadAndClose(resp.Body)
+		WriteError(w, http.StatusBadGateway,
+			errors.Errorf("received status %v: %s", resp.Status, string(bb)))
+		return true
+	}
+	return false
+}
+
+func GetFromURL(url string) ([]byte, error) {
+	// nolint:gosec
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
 }
