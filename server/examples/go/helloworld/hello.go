@@ -29,12 +29,15 @@ func main() {
 	// Returns the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", writeJSON(bindingsData))
 
-	// The main form for sending a Hello message.
-	http.HandleFunc("/send", send)
+	// The form for sending a Hello message.
+	http.HandleFunc("/send/form", writeJSON(formData))
+
+	// The main handler for sending a Hello message.
+	http.HandleFunc("/send/submit", send)
 
 	// Forces the send form to be displayed as a modal.
 	// TODO: ticket: this should be unnecessary.
-	http.HandleFunc("/send-modal", writeJSON(formData))
+	http.HandleFunc("/send-modal/submit", writeJSON(formData))
 
 	// Serves the icon for the App.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
@@ -46,20 +49,13 @@ func send(w http.ResponseWriter, req *http.Request) {
 	c := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&c)
 
-	w.Header().Set("Content-Type", "application/json")
-	switch {
-	case c.Type == "form":
-		w.Write(formData)
-		return
-
-	case c.Type == "submit":
-		message := "Hello, world!"
-		v, ok := c.Values["message"]
-		if ok && v != nil {
-			message += fmt.Sprintf(" ...and %s!", v)
-		}
-		mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+	message := "Hello, world!"
+	v, ok := c.Values["message"]
+	if ok && v != nil {
+		message += fmt.Sprintf(" ...and %s!", v)
 	}
+	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
@@ -71,8 +67,5 @@ func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Reque
 }
 
 func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
+	return writeData("application/json", data)
 }
