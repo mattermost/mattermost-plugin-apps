@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 
 	"github.com/pkg/errors"
@@ -18,22 +18,22 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
-	session, err := a.api.Mattermost.Session.Get(sessionID)
+	session, err := a.mm.Session.Get(sessionID)
 	if err != nil {
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
 
 	query := req.URL.Query()
-	bindings, err := a.api.Proxy.GetBindings(apps.SessionToken(session.Token),
+	bindings, err := a.proxy.GetBindings(apps.SessionToken(session.Token),
 		&apps.Context{
-			TeamID:            query.Get(api.PropTeamID),
-			ChannelID:         query.Get(api.PropChannelID),
 			ActingUserID:      actingUserID,
+			ChannelID:         query.Get(config.PropChannelID),
+			MattermostSiteURL: a.conf.GetConfig().MattermostSiteURL,
+			PostID:            query.Get(config.PropPostID),
+			TeamID:            query.Get(config.PropTeamID),
+			UserAgent:         query.Get(config.PropUserAgent),
 			UserID:            actingUserID,
-			PostID:            query.Get(api.PropPostID),
-			UserAgent:         query.Get(api.PropUserAgent),
-			MattermostSiteURL: a.api.Configurator.GetConfig().MattermostSiteURL,
 		})
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)

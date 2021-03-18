@@ -57,7 +57,7 @@ func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 			Title:  "Send a survey to user",
 			Header: "Message modal form header",
 			Footer: "Message modal form footer",
-			Call:   apps.MakeCall(PathSendSurvey),
+			Call:   apps.NewCall(PathSendSurvey),
 			Fields: []*apps.Field{
 				{
 					Name:                 fieldUserID,
@@ -95,8 +95,8 @@ func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 	}
 }
 
-func NewSendSurveyPartialFormResponse(c *apps.CallRequest) *apps.CallResponse {
-	if c.Type == apps.CallTypeSubmit {
+func NewSendSurveyPartialFormResponse(c *apps.CallRequest, callType apps.CallType) *apps.CallResponse {
+	if callType == apps.CallTypeSubmit {
 		return NewSendSurveyFormResponse(c)
 	}
 
@@ -106,7 +106,7 @@ func NewSendSurveyPartialFormResponse(c *apps.CallRequest) *apps.CallResponse {
 			Title:  "Send a survey to user",
 			Header: "Message modal form header",
 			Footer: "Message modal form footer",
-			Call:   apps.MakeCall(PathSendSurveyCommandToModal),
+			Call:   apps.NewCall(PathSendSurveyCommandToModal),
 			Fields: []*apps.Field{
 				{
 					Name:             fieldMessage,
@@ -165,7 +165,7 @@ func sendSurvey(bot *mmclient.Client, userID, message string) error {
 				{
 					Location: "select",
 					Label:    "Select one",
-					Call:     apps.MakeCall(PathSubmitSurvey),
+					Call:     apps.NewCall(PathSubmitSurvey),
 					Bindings: []*apps.Binding{
 						{
 							Location: "good",
@@ -184,7 +184,7 @@ func sendSurvey(bot *mmclient.Client, userID, message string) error {
 				{
 					Location: "button",
 					Label:    "Do not send",
-					Call:     apps.MakeCall(PathSubmitSurvey),
+					Call:     apps.NewCall(PathSubmitSurvey),
 				},
 			},
 		},

@@ -15,9 +15,11 @@ func Manifest() *apps.Manifest {
 	return &apps.Manifest{
 		AppID:       AppID,
 		Version:     AppVersion,
-		Type:        apps.AppTypeAWSLambda,
+		AppType:     apps.AppTypeAWSLambda,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		HomepageURL: ("https://github.com/mattermost"),
+
 		RequestedPermissions: apps.Permissions{
 			apps.PermissionUserJoinedChannelNotification,
 			apps.PermissionActAsUser,
@@ -29,7 +31,7 @@ func Manifest() *apps.Manifest {
 			apps.LocationCommand,
 			apps.LocationInPost,
 		},
-		HomepageURL: ("https://github.com/mattermost"),
+
 		OnInstall: &apps.Call{
 			Path: "on_activate",
 			Expand: &apps.Expand{

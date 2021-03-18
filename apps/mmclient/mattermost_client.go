@@ -39,6 +39,7 @@ func NewClient(userID, token, mattermostSiteURL string) *Client {
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
 	client.Client4.SetOAuthToken(token)
+	client.ClientPP.AuthToken = token
 	return &client
 }
 
