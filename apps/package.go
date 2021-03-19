@@ -4,6 +4,8 @@
 // Package apps provides the data types, constants, and convenience functions
 // for the Mattermost Apps API.
 //
+// Main documentation: https://github.com/mattermost/mattermost-plugin-apps/blob/master/docs/00-toc.md
+//
 // Function
 //
 // Functions are invoked in response to a user or a notification event. A
@@ -40,9 +42,9 @@
 //
 // Special Notes
 //
-// ### Use of router packages in Apps - Go (gorilla mux) - JavaScript
+//  - TODO Use of router packages in Apps - Go (gorilla mux) - JavaScript
 //
-// ### Call vs Notification
+//  - TODO Call vs Notification
 //
-// ### AWS Lambda packaging
+//  - TODO AWS Lambda packaging
 package apps
