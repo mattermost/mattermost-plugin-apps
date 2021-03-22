@@ -51,7 +51,7 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID == "" {
+	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) {
 		var bot *model.Bot
 		var token *model.UserAccessToken
 		bot, token, err = p.ensureBot(m, cc.ActingUserID, string(sessionToken))
@@ -64,7 +64,7 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 		app.BotAccessToken = token.Token
 	}
 
-	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) && app.OAuth2ClientID == "" {
+	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
 		oAuthApp, err = p.ensureOAuthApp(app, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 		if err != nil {

@@ -66,8 +66,9 @@ func LambdaName(appID AppID, version AppVersion, function string) string {
 	// While there are other non-valid characters, a dots is the most commonly used one
 	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
 	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
+	sanitizedFunction := strings.ReplaceAll(function, " ", "-")
 
-	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, function)
+	name := fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, sanitizedFunction)
 	if len(name) <= AWSMaxLambdaName {
 		return name
 	}
@@ -91,7 +92,8 @@ func ManifestS3Name(appID AppID, version AppVersion) string {
 // GenerateAssetS3Name generates key for a specific asset in S3,
 // key can be 1024 characters long.
 func AssetS3Name(appID AppID, version AppVersion, name string) string {
-	return fmt.Sprintf("%s/%s_%s_app/%s", StaticAssetsFolder, appID, version, name)
+	sanitizedName := strings.ReplaceAll(name, " ", "-")
+	return fmt.Sprintf("%s/%s_%s_app/%s", StaticAssetsFolder, appID, version, sanitizedName)
 }
 
 func S3BucketNameWithDefaults(name string) string {

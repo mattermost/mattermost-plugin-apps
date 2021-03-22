@@ -104,29 +104,41 @@ Functions handle user events and webhooks. The Hello World App exposes 2 functio
 - `/send-modal` that forces the modal to be displayed.
 
 ```go
-func send(w http.ResponseWriter, req *http.Request) {
-	call := apps.Call{}
-	out := apps.CallResponse{}
+func main() {
+	// Serve its own manifest as HTTP for convenience in dev. mode.
+	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
-	_ = json.NewDecoder(req.Body).Decode(&call)
-	w.Header().Set("Content-Type", "application/json")
-	switch {
-	case call.Type == "form":
-		out = helloForm()
+	// Returns the Channel Header and Command bindings for the App.
+	http.HandleFunc("/bindings", writeJSON(bindingsData))
 
-	case call.Type == "submit":
-		message := "Hello, world!"
-		v, ok := call.Values["message"]
-		if ok && v != nil {
-			message += fmt.Sprintf(" ...and %s!", v)
-		}
-		mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, message)
-	}
-	_ = json.NewEncoder(w).Encode(out)
+	// The form for sending a Hello message.
+	http.HandleFunc("/send/form", writeJSON(formData))
+
+	// The main handler for sending a Hello message.
+	http.HandleFunc("/send/submit", send)
+
+	// Forces the send form to be displayed as a modal.
+	// TODO: ticket: this should be unnecessary.
+	http.HandleFunc("/send-modal/submit", writeJSON(formData))
+
+	// Serves the icon for the App.
+	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
+
+	http.ListenAndServe(":8080", nil)
 }
 
-func sendModal(w http.ResponseWriter, req *http.Request) {
-	_ = json.NewEncoder(w).Encode(helloForm())
+func send(w http.ResponseWriter, req *http.Request) {
+	c := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&c)
+
+	message := "Hello, world!"
+	v, ok := c.Values["message"]
+	if ok && v != nil {
+		message += fmt.Sprintf(" ...and %s!", v)
+	}
+	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+
+	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 ```
 
