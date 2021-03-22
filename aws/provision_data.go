@@ -30,6 +30,7 @@ type ProvisionData struct {
 	// LambdaFunctions value's Name field contains functions name in the AWS.
 	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
 	Manifest        *apps.Manifest          `json:"-"`
+	ManifestKey     string                  `json:"manifest_key"`
 }
 
 type FunctionData struct {
@@ -153,6 +154,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
 		Manifest:        mani,
+		ManifestKey:     apps.ManifestS3Name(mani.AppID, mani.Version),
 	}
 	if err := pd.IsValid(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
