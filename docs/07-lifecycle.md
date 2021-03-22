@@ -40,9 +40,14 @@ All files in the static folder of the bundle are considered to be the app's stat
 
 The `manifest.json` file of an app is stored in the same S3 bucket as well with the key - `manifests/$appID_$appVersion.json`.
 
+![](imgs/provisioning-in-3rd-party-aws.png)
+
+
 ### Provisioning In Mattermost AWS Cloud
 To be provisioned in AWS mattermost cloud an app bundle is uploaded to the specific S3 bucket(`mattermost-apps-bucket`). On a new app release bundle is created by the circleCI and uploaded to S3. [Mattermost apps cloud deployer](https://github.com/mattermost/mattermost-apps-cloud-deployer) , running on GitlabCI, detects the S3 upload, creates appropriate lambda functions, assets and manifest the same way the **appsclt** does for the third party accounts. The deployer needs lambda function names, asset keys and manifest key to provision the app. It calls the `aws.GetProvisionDataFromFile(/PATH/TO/THE/APP/BUNDLE)` from the Proxy Plugin to get the provision data. Same data can be generated using the
 `go run ./cmd/appsctl/ generate-terraform-data /PATH/TO/YOUR/APP/BUNDLE` 
+![](imgs/provisioning-in-mm-aws.png)
+
 
 ## Publish
 publishing or registering an app in a Mattermost installation means the app will be shown in the Marketplace of the installation and it can be later installed by the sysadmin and used by the users. On a totally new app registration or on a registration of the new version of the already registered app, a new version of the Proxy Plugin is cut. `manifests.json` file is updated and a new app is added in the listing. Later, plugin is installed in the appropriate installations(using feature flags if necessary). After the plugin update Proxy Plugin synchronizes the list of the registered apps by downloading appropriate manifests from the S3 and storing them in memory. So the Marketplace shows renewed app listings and sysadmin can install a new app(or new version).
@@ -55,6 +60,9 @@ It is worth mentioning here that Proxy Plugin needs AWS credentials to download 
 
 ## Install
 Installing is a process when sysadmin installs provisioned and already registered/published apps in their Mattermost installation. As mentioned above list of the registered apps are in the memory of the Proxy Plugin. Whenever sysadmin executes an install slash command or clicks the install button in the Marketplace appropriate permissions are requested and the app is installed. A bot and an OAuth app are created on installation, `OnInstall` call is sent to the app(relevant lambda function) as well.
+![](imgs/install-mm-aws-app.png)
+
+
 
 Apps are installed with `apps install 
 - Manifest -> Installed App
