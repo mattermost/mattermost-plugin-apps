@@ -50,6 +50,10 @@ type Service interface {
 	UninstallApp(actingUserID string, appID apps.AppID) error
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+
+	InvalidateCache(apps.AppID, string, string) error
+	CacheDeleteAll(apps.AppID) error
+	CacheDeleteAllApps() []error
 }
 
 var _ Service = (*Proxy)(nil)

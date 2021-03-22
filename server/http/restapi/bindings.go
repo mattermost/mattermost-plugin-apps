@@ -55,7 +55,7 @@ func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	if err := a.api.Proxy.InvalidateCache(apps.AppID(appID), userID, channelID); err != nil {
+	if err := a.proxy.InvalidateCache(apps.AppID(appID), userID, channelID); err != nil {
 		httputils.WriteInternalServerError(w, err)
 	}
 }

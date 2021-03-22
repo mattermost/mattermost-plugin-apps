@@ -237,7 +237,7 @@ func (p *Proxy) CacheDeleteAll(appID apps.AppID) (error) {
 func (p *Proxy) CacheDeleteAllApps() []error {
 	errors := []error{}
 
-	allApps := p.store.App().GetAll()
+	allApps := store.SortApps(p.store.App.AsMap())
 	for _, app := range allApps {
 		if err := p.CacheDeleteAll(app.Manifest.AppID); err != nil {
 			errors = append(errors, err)
