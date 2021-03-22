@@ -20,6 +20,7 @@ func TestGetProvisionData(t *testing.T) {
 	require.Equal(t, apps.AppID("com.mattermost.servicenow"), provisionData.Manifest.AppID)
 	require.Len(t, provisionData.LambdaFunctions, 4)
 	require.Len(t, provisionData.Manifest.AWSLambda, 4)
+	require.Equal(t, "manifests/com.mattermost.servicenow_0.1.0.json", provisionData.ManifestKey)
 
 	for i, tc := range []struct {
 		name, handler, runtime string
