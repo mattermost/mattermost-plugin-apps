@@ -49,7 +49,7 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(apps.SessionToken(params.commandArgs.Session.Token), &m)
+	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, apps.SessionToken(params.commandArgs.Session.Token), &m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -60,10 +60,10 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 }
 
 func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	cc := s.conf.GetConfig().NewContext()
-	cc.ActingUserID = commandArgs.UserId
-	cc.UserID = commandArgs.UserId
-	cc.TeamID = commandArgs.TeamId
-	cc.ChannelID = commandArgs.ChannelId
-	return cc
+	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: commandArgs.UserId,
+		UserID:       commandArgs.UserId,
+		TeamID:       commandArgs.TeamId,
+		ChannelID:    commandArgs.ChannelId,
+	})
 }

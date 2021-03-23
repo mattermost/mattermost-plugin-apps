@@ -52,18 +52,15 @@ type Config struct {
 	PluginURLPath          string
 }
 
-func (c Config) NewContext() *apps.Context {
-	return &apps.Context{
-		BotUserID:         c.BotUserID,
-		MattermostSiteURL: c.MattermostSiteURL,
-	}
+func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
+	cc.BotUserID = c.BotUserID
+	cc.MattermostSiteURL = c.MattermostSiteURL
+	return cc
 }
 
-func (c Config) NewContextForApp(appID apps.AppID) *apps.Context {
-	return &apps.Context{
-		AppID:             appID,
-		BotUserID:         c.BotUserID,
-		MattermostSiteURL: c.MattermostSiteURL,
-		AppPath:           path.Join(c.PluginURLPath, string(appID)),
-	}
+func (c Config) SetContextDefaultsForApp(cc *apps.Context, appID apps.AppID) *apps.Context {
+	cc = c.SetContextDefaults(cc)
+	cc.AppID = appID
+	cc.AppPath = path.Join(c.PluginURLPath, string(appID))
+	return cc
 }

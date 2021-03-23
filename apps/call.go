@@ -136,7 +136,7 @@ type CallResponse struct {
 func NewErrorCallResponse(err error) *CallResponse {
 	return &CallResponse{
 		Type: CallResponseTypeError,
-		// TODO <><> ticket use MD and Data, remove Error
+		// TODO <><> ticket use MD instead of ErrorText
 		ErrorText: err.Error(),
 	}
 }

@@ -1,7 +1,7 @@
 {
 	"type": "form",
 	"form": {
-		"title": "Hello, world!",
+		"title": "Send a Google-connected 'hello, world!' message",
 		"icon": "http://localhost:8080/static/icon.png",
 		"fields": [
 			{

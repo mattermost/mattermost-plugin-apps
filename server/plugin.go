@@ -158,9 +158,12 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().NewContext()
-	cc.UserID = user.Id
-	cc.ExpandedContext.User = user
+	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID: user.Id,
+		ExpandedContext: apps.ExpandedContext{
+			User: user,
+		},
+	})
 	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
 
@@ -186,46 +189,55 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().NewContext()
-	cc.UserID = ch.CreatorId
-	cc.ChannelID = ch.Id
-	cc.TeamID = ch.TeamId
-	cc.ExpandedContext.Channel = ch
+	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID:    ch.CreatorId,
+		ChannelID: ch.Id,
+		TeamID:    ch.TeamId,
+		ExpandedContext: apps.ExpandedContext{
+			Channel: ch,
+		},
+	})
 	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
 }
 
 func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	cc := p.conf.GetConfig().NewContext()
-	cc.UserID = post.UserId
-	cc.PostID = post.Id
-	cc.RootPostID = post.RootId
-	cc.ChannelID = post.ChannelId
-	cc.ExpandedContext.Post = post
-	return cc
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID:     post.UserId,
+		PostID:     post.Id,
+		RootPostID: post.RootId,
+		ChannelID:  post.ChannelId,
+		ExpandedContext: apps.ExpandedContext{
+			Post: post,
+		},
+	})
 }
 
 func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
-	cc := p.conf.GetConfig().NewContext()
 	actingUserID := ""
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	cc.ActingUserID = actingUserID
-	cc.UserID = tm.UserId
-	cc.TeamID = tm.TeamId
-	cc.ExpandedContext.ActingUser = actingUser
-	return cc
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		UserID:       tm.UserId,
+		TeamID:       tm.TeamId,
+		ExpandedContext: apps.ExpandedContext{
+			ActingUser: actingUser,
+		},
+	})
 }
 
 func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
-	cc := p.conf.GetConfig().NewContext()
 	actingUserID := ""
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	cc.ActingUserID = actingUserID
-	cc.UserID = cm.UserId
-	cc.ChannelID = cm.ChannelId
-	cc.ExpandedContext.ActingUser = actingUser
-	return cc
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		UserID:       cm.UserId,
+		ChannelID:    cm.ChannelId,
+		ExpandedContext: apps.ExpandedContext{
+			ActingUser: actingUser,
+		},
+	})
 }

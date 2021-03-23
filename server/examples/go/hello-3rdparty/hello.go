@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 //go:embed icon.png
@@ -21,7 +22,10 @@ var manifestData []byte
 var bindingsData []byte
 
 //go:embed send_form.json
-var formData []byte
+var sendFormData []byte
+
+//go:embed connect_form.json
+var connectFormData []byte
 
 func main() {
 	// Static handlers
@@ -35,15 +39,16 @@ func main() {
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
-	// Serve the form for sending a Hello message.
-	http.HandleFunc("/send/form", writeJSON(formData))
-
 	// Submit handlers
 
 	// `send` command - send a Hello message.
+	http.HandleFunc("/send/form", writeJSON(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
 	// `connect` command - display the OAuth2 connect link.
+	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
+	// cached by the user agent as a {}
+	http.HandleFunc("/connect/form", writeJSON(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
 	// Handle an OAuth2 connect request redirect.
@@ -70,15 +75,14 @@ func send(w http.ResponseWriter, req *http.Request) {
 }
 
 func connect(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("<>/<> connect")
 	c := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&c)
 
-	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID,
-		fmt.Sprintf("[Connect] your Google Calendar.](%s%s)", c.Context.MattermostSiteURL, path.Join(c.Context.AppPath, "/oauth2/connect")))
+	txt := fmt.Sprintf("[Connect](%s%s) to Google.", c.Context.MattermostSiteURL, path.Join(c.Context.AppPath, "/oauth2/connect"))
 
+	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, txt)
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "connect link `TODO` markdown",
+		Markdown: md.MD(txt),
 	})
 }
 

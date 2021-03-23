@@ -23,14 +23,15 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		return
 	}
 
-	cc := a.conf.GetConfig().NewContext()
 	q := req.URL.Query()
-	cc.ActingUserID = actingUserID
-	cc.TeamID = q.Get(config.PropTeamID)
-	cc.ChannelID = q.Get(config.PropChannelID)
-	cc.PostID = q.Get(config.PropPostID)
-	cc.UserAgent = q.Get(config.PropUserAgent)
-	cc.UserID = actingUserID
+	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		TeamID:       q.Get(config.PropTeamID),
+		ChannelID:    q.Get(config.PropChannelID),
+		PostID:       q.Get(config.PropPostID),
+		UserAgent:    q.Get(config.PropUserAgent),
+		UserID:       actingUserID,
+	})
 
 	bindings, err := a.proxy.GetBindings(apps.SessionToken(session.Token), cc)
 	if err != nil {
