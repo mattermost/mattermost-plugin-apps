@@ -185,7 +185,7 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken st
 	}
 
 	_ = p.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
-		Message: fmt.Sprintf("Provisioned bot account @%s (`%s`).",
+		Message: fmt.Sprintf("Using bot account @%s (`%s`).",
 			fullBot.Username, fullBot.UserId),
 	})
 
