@@ -7,7 +7,7 @@ Bundle is a convenient way to deliver an app to the Mattermost ecosystem. It pro
 App bundle contains `manifest.json` file, `static/` folder and one or several lambda function bundles.
 - `static/` folder contains all the static files app needs. For the Mattermost AWS Apps static files are automatically provisioned and stored in the dedicated AWS S3 bucket(`mattermost-apps-bucket-production`). Apps can use them whenever they wish by providing the static file name to the Proxy Plugin. For the third-party hosted AWS apps static files are stored in the different S3 bucket(specified by the third-party). For the HTTP Apps, when creating a server, developer should store the static files in the `/static/file_name` relative URL.
 - `manifest.json` file contains details about the app such as appID, appVersion, appType(http or an AWS app), requested permissions, requested locations, and information about the  functions such as function Path, name, runtime and handler.
-- Each of the lambda function bundles is a valid and runnable AWS lambda function, which are provisioned in the AWS by the Gitlab pipeline.
+- Each of the lambda function bundles is a valid and runnable AWS lambda function, which are provisioned in the AWS by the [Mattermost Apps Cloud Deployer](https://github.com/mattermost/mattermost-apps-cloud-deployer).
 AWS Lambda function bundle is a `.zip` file which contains scripts or compiled programs and their dependencies. Note that it must be less than 50 MB. Exact specification of the bundle varies for different runtimes. For example one can see more details for `node.js` bundles [here](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html) 
 
 ### Provisioning In The 3rd Party AWS
@@ -44,7 +44,7 @@ The `manifest.json` file of an app is stored in the same S3 bucket as well with 
 
 
 ### Provisioning In Mattermost AWS Cloud
-To be provisioned in AWS mattermost cloud an app bundle is uploaded to the specific S3 bucket(`mattermost-apps-bucket`). On a new app release bundle is created by the circleCI and uploaded to S3. [Mattermost apps cloud deployer](https://github.com/mattermost/mattermost-apps-cloud-deployer) , running on GitlabCI, detects the S3 upload, creates appropriate lambda functions, assets and manifest the same way the **appsclt** does for the third party accounts. The deployer needs lambda function names, asset keys and manifest key to provision the app. It calls the `aws.GetProvisionDataFromFile(/PATH/TO/THE/APP/BUNDLE)` from the Proxy Plugin to get the provision data. Same data can be generated using the
+To be provisioned in AWS mattermost cloud an app bundle is uploaded to the specific S3 bucket(`mattermost-apps-bucket`). On a new app release, bundle is created by the circleCI and uploaded to S3. [Mattermost apps cloud deployer](https://github.com/mattermost/mattermost-apps-cloud-deployer), running as a k8s cron job every hour, detects the S3 upload, creates appropriate lambda functions, assets and manifest the same way the **appsclt** does for the third party accounts. The deployer needs lambda function names, asset keys and manifest key to provision the app. It calls the `aws.GetProvisionDataFromFile(/PATH/TO/THE/APP/BUNDLE)` from the Proxy Plugin to get the provision data. Same data can be generated using the
 `go run ./cmd/appsctl/ generate-terraform-data /PATH/TO/YOUR/APP/BUNDLE` 
 ![](imgs/provisioning-in-mm-aws.png)
 
