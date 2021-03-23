@@ -22,10 +22,9 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	cc := s.conf.GetConfig().NewContext(
-		apps.ForCommand(params.commandArgs))
-
-	bindings, err := s.proxy.GetBindings(apps.SessionToken(params.commandArgs.Session.Token), cc)
+	bindings, err := s.proxy.GetBindings(
+		apps.SessionToken(params.commandArgs.Session.Token),
+		s.newCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -58,4 +57,13 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		Text:         string(out),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
+}
+
+func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
+	cc := s.conf.GetConfig().NewContext()
+	cc.ActingUserID = commandArgs.UserId
+	cc.UserID = commandArgs.UserId
+	cc.TeamID = commandArgs.TeamId
+	cc.ChannelID = commandArgs.ChannelId
+	return cc
 }

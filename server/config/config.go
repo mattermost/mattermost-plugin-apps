@@ -52,30 +52,18 @@ type Config struct {
 	PluginURLPath          string
 }
 
-func (c Config) NewContext(options ...func(c apps.Context) *apps.Context) *apps.Context {
-	cc := &apps.Context{
+func (c Config) NewContext() *apps.Context {
+	return &apps.Context{
 		BotUserID:         c.BotUserID,
 		MattermostSiteURL: c.MattermostSiteURL,
 	}
-
-	for _, optf := range options {
-		cc = optf(*cc)
-	}
-
-	return cc
 }
 
-func (c Config) NewContextForApp(appID apps.AppID, options ...func(c apps.Context) *apps.Context) *apps.Context {
-	cc := &apps.Context{
+func (c Config) NewContextForApp(appID apps.AppID) *apps.Context {
+	return &apps.Context{
 		AppID:             appID,
 		BotUserID:         c.BotUserID,
 		MattermostSiteURL: c.MattermostSiteURL,
 		AppPath:           path.Join(c.PluginURLPath, string(appID)),
 	}
-
-	for _, optf := range options {
-		cc = optf(*cc)
-	}
-
-	return cc
 }

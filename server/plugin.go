@@ -158,43 +158,74 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForUserCreated(user))
+	cc := p.conf.GetConfig().NewContext()
+	cc.UserID = user.Id
+	cc.ExpandedContext.User = user
 	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForChannelMember(cm, actingUser))
-	_ = p.proxy.Notify(cc, apps.SubjectUserJoinedChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForChannelMember(cm, actingUser))
-	_ = p.proxy.Notify(cc, apps.SubjectUserLeftChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForTeamMember(tm, actingUser))
-	_ = p.proxy.Notify(cc, apps.SubjectUserJoinedTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForTeamMember(tm, actingUser))
-	_ = p.proxy.Notify(cc, apps.SubjectUserLeftTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForPostCreated(post))
-	_ = p.proxy.Notify(cc, apps.SubjectPostCreated)
+	_ = p.proxy.Notify(
+		p.newPostCreatedContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().NewContext(
-		apps.ForChannelCreated(ch))
+	cc := p.conf.GetConfig().NewContext()
+	cc.UserID = ch.CreatorId
+	cc.ChannelID = ch.Id
+	cc.TeamID = ch.TeamId
+	cc.ExpandedContext.Channel = ch
 	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
+}
+
+func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
+	cc := p.conf.GetConfig().NewContext()
+	cc.UserID = post.UserId
+	cc.PostID = post.Id
+	cc.RootPostID = post.RootId
+	cc.ChannelID = post.ChannelId
+	cc.ExpandedContext.Post = post
+	return cc
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
+	cc := p.conf.GetConfig().NewContext()
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
+	cc.ActingUserID = actingUserID
+	cc.UserID = tm.UserId
+	cc.TeamID = tm.TeamId
+	cc.ExpandedContext.ActingUser = actingUser
+	return cc
+}
+
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
+	cc := p.conf.GetConfig().NewContext()
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
+	cc.ActingUserID = actingUserID
+	cc.UserID = cm.UserId
+	cc.ChannelID = cm.ChannelId
+	cc.ExpandedContext.ActingUser = actingUser
+	return cc
 }
