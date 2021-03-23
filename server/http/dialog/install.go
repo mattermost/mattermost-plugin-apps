@@ -21,7 +21,7 @@ type installDialogState struct {
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(m *apps.Manifest, secret, whSecret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
 	for _, permission := range m.RequestedPermissions {
@@ -43,6 +43,14 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 			SubType:     "password",
 			HelpText:    "TODO: How to obtain the App Secret",
 			Default:     secret,
+		})
+		elements = append(elements, model.DialogElement{
+			DisplayName: "App webhook secret:",
+			Name:        "webhooksecret",
+			Type:        "text",
+			SubType:     "password",
+			HelpText:    "TODO: How to obtain the App Webhook Secret",
+			Default:     whSecret,
 		})
 	}
 
@@ -133,6 +141,9 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
+	v = dialogRequest.Submission["webhooksecret"]
+	whsecret, _ := v.(string)
+
 	stateData := installDialogState{}
 	err = json.Unmarshal([]byte(dialogRequest.State), &stateData)
 	if err != nil {
@@ -151,6 +162,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 			AppID:            stateData.AppID,
 			OAuth2TrustedApp: noUserConsentForOAuth2,
 			AppSecret:        secret,
+			AppWebhookSecret: whsecret,
 		},
 	)
 	if err != nil {

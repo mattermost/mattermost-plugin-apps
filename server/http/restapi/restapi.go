@@ -44,6 +44,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	subrouter.HandleFunc(config.PathMarketplace, checkAuthorized(a.handleGetMarketplace)).Methods(http.MethodGet)
 	subrouter.HandleFunc(config.StaticAssetPath+"/{app_id}/{name}", checkAuthorized(a.handleGetStaticAsset)).Methods(http.MethodGet)
+	subrouter.HandleFunc(config.Webhook+"/{app_id}/{name}", a.handleWebhook).Methods(http.MethodPost)
 }
 
 func checkAuthorized(f func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {

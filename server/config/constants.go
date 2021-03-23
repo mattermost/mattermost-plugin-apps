@@ -42,6 +42,7 @@ const (
 	KVPath          = "/kv"
 	SubscribePath   = "/subscribe"
 	UnsubscribePath = "/unsubscribe"
+	Webhook         = "/webhook"
 	StaticAssetPath = "/" + apps.StaticAssetsFolder
 
 	WebSocketEventRefreshBindings = "refresh_bindings"

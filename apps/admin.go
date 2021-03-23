@@ -8,5 +8,6 @@ type SessionToken string
 type InInstallApp struct {
 	AppID            AppID  `json:"app_id"`
 	AppSecret        string `json:"app_secret,omitempty"`
+	AppWebhookSecret string `json:"app_webhook_secret,omitempty"`
 	OAuth2TrustedApp bool   `json:"oauth2_trusted_app,omitempty"`
 }

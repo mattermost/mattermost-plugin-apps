@@ -47,6 +47,10 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 		app.Secret = in.AppSecret
 	}
 
+	if in.AppWebhookSecret != "" {
+		app.WebhookSecret = in.AppWebhookSecret
+	}
+
 	conf := p.conf.GetConfig()
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
