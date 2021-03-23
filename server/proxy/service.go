@@ -37,7 +37,7 @@ type Service interface {
 	GetBindings(apps.SessionToken, *apps.Context) ([]*apps.Binding, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
 
-	AddLocalManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
+	AddLocalManifest(apps.SessionToken, *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
 	DisableApp(cc *apps.Context, app *apps.App) (md.MD, error)
 	EnableApp(cc *apps.Context, app *apps.App) (md.MD, error)

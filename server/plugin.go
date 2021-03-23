@@ -158,29 +158,43 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForUserCreated(user))
+	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForChannelMember(cm, actingUser))
+	_ = p.proxy.Notify(cc, apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForChannelMember(cm, actingUser))
+	_ = p.proxy.Notify(cc, apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForTeamMember(tm, actingUser))
+	_ = p.proxy.Notify(cc, apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForTeamMember(tm, actingUser))
+	_ = p.proxy.Notify(cc, apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForPostCreated(post))
+	_ = p.proxy.Notify(cc, apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
+	cc := p.conf.GetConfig().NewContext(
+		apps.ForChannelCreated(ch))
+	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
 }

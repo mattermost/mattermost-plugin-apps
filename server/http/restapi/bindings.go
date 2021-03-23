@@ -23,17 +23,16 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		return
 	}
 
-	query := req.URL.Query()
-	bindings, err := a.proxy.GetBindings(apps.SessionToken(session.Token),
-		&apps.Context{
-			ActingUserID:      actingUserID,
-			ChannelID:         query.Get(config.PropChannelID),
-			MattermostSiteURL: a.conf.GetConfig().MattermostSiteURL,
-			PostID:            query.Get(config.PropPostID),
-			TeamID:            query.Get(config.PropTeamID),
-			UserAgent:         query.Get(config.PropUserAgent),
-			UserID:            actingUserID,
-		})
+	cc := a.conf.GetConfig().NewContext()
+	q := req.URL.Query()
+	cc.ActingUserID = actingUserID
+	cc.TeamID = q.Get(config.PropTeamID)
+	cc.ChannelID = q.Get(config.PropChannelID)
+	cc.PostID = q.Get(config.PropPostID)
+	cc.UserAgent = q.Get(config.PropUserAgent)
+	cc.UserID = actingUserID
+
+	bindings, err := a.proxy.GetBindings(apps.SessionToken(session.Token), cc)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return

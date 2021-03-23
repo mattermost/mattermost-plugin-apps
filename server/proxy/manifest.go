@@ -8,12 +8,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (p *Proxy) AddLocalManifest(cc *apps.Context, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
+func (p *Proxy) AddLocalManifest(sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
 	if err := m.IsValid(); err != nil {
 		return "", err
 	}
 
-	// TODO check if acting user is a sysadmin
+	// <>/<> TODO check if acting user is a sysadmin
 
 	err := p.store.Manifest.StoreLocal(m)
 	if err != nil {

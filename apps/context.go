@@ -44,6 +44,9 @@ type Context struct {
 	// Top-level Mattermost site URL to use for REST API calls.
 	MattermostSiteURL string `json:"mattermost_site_url"`
 
+	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
+	AppPath string `json:"app_path"`
+
 	// UserAgent used to perform the call. It can be either "webapp" or "mobile".
 	// Non user interactions like notifications will have this field empty.
 	UserAgent string `json:"user_agent,omitempty"`
@@ -72,74 +75,84 @@ type ExpandedContext struct {
 	User *model.User `json:"user,omitempty"`
 }
 
-func NewChannelContext(ch *model.Channel) *Context {
-	return &Context{
-		UserID:    ch.CreatorId,
-		ChannelID: ch.Id,
-		TeamID:    ch.TeamId,
-		ExpandedContext: ExpandedContext{
-			Channel: ch,
-		},
+func WithActingUser(id string) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.ActingUserID = id
+		return &c
 	}
 }
 
-func NewPostContext(p *model.Post) *Context {
-	return &Context{
-		UserID:     p.UserId,
-		PostID:     p.Id,
-		RootPostID: p.RootId,
-		ChannelID:  p.ChannelId,
-		ExpandedContext: ExpandedContext{
-			Post: p,
-		},
+func WithTeam(id string) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.TeamID = id
+		return &c
 	}
 }
 
-func NewUserContext(user *model.User) *Context {
-	return &Context{
-		UserID: user.Id,
-		ExpandedContext: ExpandedContext{
-			User: user,
-		},
+func ForChannelCreated(ch *model.Channel) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.UserID = ch.CreatorId
+		c.ChannelID = ch.Id
+		c.TeamID = ch.TeamId
+		c.ExpandedContext.Channel = ch
+		return &c
 	}
 }
 
-func NewTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return &Context{
-		ActingUserID: actingUserID,
-		UserID:       tm.UserId,
-		TeamID:       tm.TeamId,
-		ExpandedContext: ExpandedContext{
-			ActingUser: actingUser,
-		},
+func ForPostCreated(p *model.Post) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.UserID = p.UserId
+		c.PostID = p.Id
+		c.RootPostID = p.RootId
+		c.ChannelID = p.ChannelId
+		c.ExpandedContext.Post = p
+		return &c
 	}
 }
 
-func NewChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return &Context{
-		ActingUserID: actingUserID,
-		UserID:       cm.UserId,
-		ChannelID:    cm.ChannelId,
-		ExpandedContext: ExpandedContext{
-			ActingUser: actingUser,
-		},
+func ForUserCreated(user *model.User) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.UserID = user.Id
+		c.ExpandedContext.User = user
+		return &c
 	}
 }
 
-func NewCommandContext(commandArgs *model.CommandArgs) *Context {
-	return &Context{
-		ActingUserID:      commandArgs.UserId,
-		UserID:            commandArgs.UserId,
-		TeamID:            commandArgs.TeamId,
-		ChannelID:         commandArgs.ChannelId,
-		MattermostSiteURL: commandArgs.SiteURL,
+func ForTeamMember(tm *model.TeamMember, actingUser *model.User) func(c Context) *Context {
+	return func(c Context) *Context {
+		actingUserID := ""
+		if actingUser != nil {
+			actingUserID = actingUser.Id
+		}
+		c.ActingUserID = actingUserID
+		c.UserID = tm.UserId
+		c.TeamID = tm.TeamId
+		c.ExpandedContext.ActingUser = actingUser
+		return &c
+	}
+}
+
+func ForChannelMember(cm *model.ChannelMember, actingUser *model.User) func(c Context) *Context {
+	return func(c Context) *Context {
+		actingUserID := ""
+		if actingUser != nil {
+			actingUserID = actingUser.Id
+		}
+		c.ActingUserID = actingUserID
+		c.UserID = cm.UserId
+		c.ChannelID = cm.ChannelId
+		c.ExpandedContext.ActingUser = actingUser
+		return &c
+	}
+}
+
+func ForCommand(commandArgs *model.CommandArgs) func(c Context) *Context {
+	return func(c Context) *Context {
+		c.ActingUserID = commandArgs.UserId
+		c.UserID = commandArgs.UserId
+		c.TeamID = commandArgs.TeamId
+		c.ChannelID = commandArgs.ChannelId
+		c.MattermostSiteURL = commandArgs.SiteURL
+		return &c
 	}
 }

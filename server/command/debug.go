@@ -22,7 +22,10 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.proxy.GetBindings(apps.SessionToken(params.commandArgs.Session.Token), apps.NewCommandContext(params.commandArgs))
+	cc := s.conf.GetConfig().NewContext(
+		apps.ForCommand(params.commandArgs))
+
+	bindings, err := s.proxy.GetBindings(apps.SessionToken(params.commandArgs.Session.Token), cc)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -47,9 +50,7 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(
-		&apps.Context{ActingUserID: params.commandArgs.UserId},
-		apps.SessionToken(params.commandArgs.Session.Token), &m)
+	out, err := s.proxy.AddLocalManifest(apps.SessionToken(params.commandArgs.Session.Token), &m)
 	if err != nil {
 		return errorOut(params, err)
 	}

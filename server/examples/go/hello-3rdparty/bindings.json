@@ -1,0 +1,31 @@
+{
+	"type": "ok",
+	"data": [
+		{
+			"location": "/command",
+			"bindings": [
+				{
+					"icon": "http://localhost:8080/static/icon.png",
+					"description": "Hello 3rd party OAuth2 App",
+					"hint":        "[connect | send]",
+					"bindings": [
+						{
+							"location": "connect",
+							"label": "connect",
+							"call": {
+								"path": "/connect"
+							}
+						},
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

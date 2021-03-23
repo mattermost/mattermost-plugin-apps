@@ -22,12 +22,14 @@ const (
 type dialog struct {
 	mm    *pluginapi.Client
 	proxy proxy.Service
+	conf  config.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, _ config.Service, proxy proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service) {
 	d := dialog{
 		mm:    mm,
 		proxy: proxy,
+		conf:  conf,
 	}
 
 	subrouter := router.PathPrefix(config.InteractiveDialogPath).Subrouter()
