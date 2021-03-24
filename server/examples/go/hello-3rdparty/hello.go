@@ -15,6 +15,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	oauth2api "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -113,6 +114,8 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 		RedirectURL:  completeURL,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/calendar",
+			"https://www.googleapis.com/auth/userinfo.profile",
+			"https://www.googleapis.com/auth/userinfo.email",
 		},
 	}
 }
@@ -197,23 +200,25 @@ func send(w http.ResponseWriter, req *http.Request) {
 	ctx := context.Background()
 	tokenSource := oauthConfig.TokenSource(ctx, &token)
 
-	srv, _ := calendar.NewService(ctx, option.WithTokenSource(tokenSource))
+	oauth2Service, _ := oauth2api.NewService(ctx, option.WithTokenSource(tokenSource))
+	uiService := oauth2api.NewUserinfoService(oauth2Service)
+	ui, _ := uiService.V2.Me.Get().Do()
+	message := fmt.Sprintf("Hello from Google, [%s](mailto:%s)!", ui.Name, ui.Email)
 
-	cl, _ := srv.CalendarList.List().Do()
-
-	message := "Hello from Google! "
+	calService, _ := calendar.NewService(ctx, option.WithTokenSource(tokenSource))
+	cl, _ := calService.CalendarList.List().Do()
 	if cl != nil && len(cl.Items) > 0 {
-		message += "You have the following calendars:\n"
+		message += " You have the following calendars:\n"
 		for _, item := range cl.Items {
 			message += "- " + item.Summary + "\n"
 		}
 	} else {
-		message += "You have no calendars.\n"
+		message += " You have no calendars.\n"
 	}
 
-	asBot.DM(creq.Context.ActingUserID, message)
-
-	json.NewEncoder(w).Encode(apps.CallResponse{})
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Markdown: md.MD(message),
+	})
 }
 
 func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {

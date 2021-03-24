@@ -1,8 +1,7 @@
 package appservices
 
 import (
-	// nolint:gosec
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"encoding/base64"
 	"path"
 
