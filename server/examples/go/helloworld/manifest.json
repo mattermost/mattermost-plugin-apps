@@ -9,6 +9,7 @@
 	],
 	"requested_locations": [
 		"/channel_header",
-		"/command"
+		"/command",
+		"/post_menu"
 	]
 }

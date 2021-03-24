@@ -8,6 +8,17 @@
 				"type": "text",
 				"name": "message",
 				"label": "message"
+			},
+			{
+				"type": "user",
+				"name": "user",
+				"label": "user",
+				"refresh": true
+			},
+			{
+				"type": "dynamic_select",
+				"name": "lookup",
+				"label": "lookup"
 			}
 		],
 		"call": {
