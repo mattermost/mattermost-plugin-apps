@@ -63,8 +63,9 @@ func sendSubmit(w http.ResponseWriter, req *http.Request) {
 			},
 		}
 		resp := apps.CallResponse{
-			Type: apps.CallResponseTypeError,
-			Data: data,
+			Type:      apps.CallResponseTypeError,
+			ErrorText: "This is an error.",
+			Data:      data,
 		}
 		json.NewEncoder(w).Encode(resp)
 		return
