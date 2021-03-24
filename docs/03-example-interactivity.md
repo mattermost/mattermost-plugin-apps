@@ -482,3 +482,21 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 ```
 
 </details>
+
+## Returning a main error and errors for specific fields
+
+<details><summary>App Field-specific Error Response</summary>
+
+```json
+{
+    "type":"error",
+    "error":"This is the error.",
+    "data": {
+        "errors":{
+            "somefield": "This field seems to have an invalid value."
+        }
+    }
+}
+```
+
+</details>
