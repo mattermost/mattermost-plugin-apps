@@ -55,8 +55,22 @@ func sendSubmit(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&c)
 
 	message := "Hello, world!"
-	v, ok := c.Values["message"]
-	if ok && v != nil {
+	v, _ := c.Values["message"].(string)
+	if v == "cause an error" {
+		data := map[string]interface{}{
+			"errors": map[string]string{
+				"message": "This field seems to have an invalid value.",
+			},
+		}
+		resp := apps.CallResponse{
+			Type: apps.CallResponseTypeError,
+			Data: data,
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if v != "" {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
 
