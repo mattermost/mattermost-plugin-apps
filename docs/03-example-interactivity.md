@@ -455,7 +455,7 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 
 ## Returning a single error
 
-<details><summary>App Error Response</summary>
+<details><summary>Main Error Response</summary>
 
 ```json
 {
@@ -468,7 +468,7 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 
 ## Returning errors for specific fields
 
-<details><summary>App Field-specific Error Response</summary>
+<details><summary>Field-specific Error Response</summary>
 
 ```json
 {
@@ -485,7 +485,7 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 
 ## Returning a main error and errors for specific fields
 
-<details><summary>App Field-specific Error Response</summary>
+<details><summary>Main Error and Field-specific Error Response</summary>
 
 ```json
 {
@@ -500,3 +500,5 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 ```
 
 </details>
+
+![modal-errors.png](https://user-images.githubusercontent.com/6913320/112268885-0722f000-8c4e-11eb-9ad1-2874e89049cd.png)
