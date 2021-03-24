@@ -2,8 +2,6 @@ package appservices
 
 import (
 	"crypto/md5" // nolint:gosec
-	"unicode/utf8"
-
 	"encoding/hex"
 	"strings"
 
@@ -47,7 +45,12 @@ func kvKey(namespace, prefix, id string) string {
 		hex.EncodeToString(idHash[:]),
 	}, "/")
 
-	if utf8.RuneCountInString(key) > model.KEY_VALUE_KEY_MAX_RUNES {
+	// <>/<> TODO:
+	// - combine prefix and namespace into 1 SHA
+	// - do not use the "/"
+	// - shorten the prefix SHA to 50-32=18 characters
+	// - use base64 not hex.Encode
+	if len(key) > model.KEY_VALUE_KEY_MAX_RUNES {
 		return key[:model.KEY_VALUE_KEY_MAX_RUNES]
 	}
 

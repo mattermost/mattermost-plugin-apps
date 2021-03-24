@@ -74,3 +74,9 @@ type ExpandedContext struct {
 	// TODO replace User with mentions
 	User *model.User `json:"user,omitempty"`
 }
+
+// Paths for OAuth endpoint that the App needs to set up remote (3rd party) OAuth
+const (
+	PathOAuthRedirect = "/oauth2/remote/redirect"
+	PathOAuthSuccess  = "/oauth2/remote/success"
+)

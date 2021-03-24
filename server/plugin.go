@@ -24,6 +24,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -121,6 +122,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
+		gateway.Init,
 		http_hello.Init,
 	)
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy)

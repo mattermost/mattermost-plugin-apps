@@ -2,8 +2,10 @@ package main
 
 import (
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"path"
 
@@ -39,6 +41,14 @@ func main() {
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
+	// Remote OAuth2 handlers
+
+	// Handle an OAuth2 connect request redirect.
+	http.HandleFunc("/oauth2/redirect", oauth2Redirect)
+
+	// Handle a successful OAuth2 connection.
+	http.HandleFunc("/oauth2/success", oauth2Success)
+
 	// Submit handlers
 
 	// `send` command - send a Hello message.
@@ -50,12 +60,6 @@ func main() {
 	// cached by the user agent as a {}
 	http.HandleFunc("/connect/form", writeJSON(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
-
-	// Handle an OAuth2 connect request redirect.
-	http.HandleFunc("/oauth2/connect/submit", oauth2Success)
-
-	// Handle a successful OAuth2 connection.
-	http.HandleFunc("/oauth2/success/submit", oauth2Success)
 
 	http.ListenAndServe(":8080", nil)
 }
@@ -75,14 +79,34 @@ func send(w http.ResponseWriter, req *http.Request) {
 }
 
 func connect(w http.ResponseWriter, req *http.Request) {
-	c := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&c)
+	call := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&call)
 
-	txt := fmt.Sprintf("[Connect](%s%s) to Google.", c.Context.MattermostSiteURL, path.Join(c.Context.AppPath, "/oauth2/connect"))
+	// <>/<> consider adding OAuth URLs to ExtendedContext, on request.
+	// "/oauth2/remote/redirect" is hard-coded in the Apps proxy.
+	txt := fmt.Sprintf("[Connect](%s%s) to Google.", call.Context.MattermostSiteURL, path.Join(call.Context.AppPath, apps.PathOAuthRedirect))
 
-	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, txt)
+	mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, txt)
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: md.MD(txt),
+	})
+}
+
+func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
+	call := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&call)
+
+	r := make([]byte, 10) // 20 hex digits
+	rand.Read(r)
+	random := hex.EncodeToString(r)
+	state := fmt.Sprintf("%v_%s", random, call.Context.ActingUserID)
+
+	asBot := mmclient.AsBot(call.Context)
+	asBot.KVSet(state, "", state)
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: "https://www.google.com",
 	})
 }
 

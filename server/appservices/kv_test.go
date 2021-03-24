@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,13 +22,13 @@ func TestKVKey(t *testing.T) {
 		{
 			namespace: "test_ns",
 			id:        "test_id",
-			expected:  ("0f4001ca61f41fc32bf6ede6d746bea3//2e06cda4c3c0d4a2a42058f74641546a")[:model.KEY_VALUE_KEY_MAX_RUNES],
+			expected:  ("0f4001ca61f41fc32bf6ede6d746bea3//2e06cda4c3c0d4a2"),
 		},
 		{
 			namespace: "test_ns",
 			prefix:    "test_prefix",
 			id:        "test_id",
-			expected:  ("0f4001ca61f41fc32bf6ede6d746bea3/test_prefix/2e06cda4c3c0d4a2a42058f74641546a")[:model.KEY_VALUE_KEY_MAX_RUNES],
+			expected:  ("0f4001ca61f41fc32bf6ede6d746bea3/test_prefix/2e06c"),
 		},
 	} {
 		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "_")

@@ -61,6 +61,6 @@ func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
 func (c Config) SetContextDefaultsForApp(cc *apps.Context, appID apps.AppID) *apps.Context {
 	cc = c.SetContextDefaults(cc)
 	cc.AppID = appID
-	cc.AppPath = path.Join(c.PluginURLPath, string(appID))
+	cc.AppPath = path.Join(c.PluginURLPath, AppsPath, string(appID))
 	return cc
 }

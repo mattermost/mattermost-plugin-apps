@@ -19,7 +19,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -589,7 +588,13 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
+	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: model.NewString("test.mattermost.com"),
+		},
+	})
+
+	s := store.NewService(mm, conf)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -613,13 +618,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	}
 
 	appStore.EXPECT().AsMap().Return(appList)
-
-	conf := mock_config.NewMockService(ctrl)
-	conf.EXPECT().GetMattermostConfig().Return(&model.Config{
-		ServiceSettings: model.ServiceSettings{
-			SiteURL: model.NewString("test.mattermost.com"),
-		},
-	}).AnyTimes()
 
 	p := &Proxy{
 		mm:               mm,
