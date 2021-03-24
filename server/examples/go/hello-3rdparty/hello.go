@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"path"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
@@ -98,12 +103,8 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 	clientID, _ := m["client_id"].(string)
 	clientSecret, _ := m["client_secret"].(string)
 
-	fmt.Printf("<>/<> OAuth2Config 1: %s %s\n", clientID, clientSecret)
-
 	completeURL := creq.Context.MattermostSiteURL +
 		path.Join(creq.Context.AppPath, apps.PathOAuthComplete)
-
-	fmt.Printf("<>/<> OAuth2Config 2: %s\n", completeURL)
 
 	return &oauth2.Config{
 		ClientID:     clientID,
@@ -151,20 +152,66 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 }
 
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("<>/<> OAuth2 success")
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	q, _ := creq.Values["q"].(string)
+	values, _ := url.ParseQuery(q)
+	state := values.Get("state")
+	code := values.Get("code")
+	userId := strings.Split(state, "_")[1]
+
+	asBot := mmclient.AsBot(creq.Context)
+	v, _ := asBot.KVGet(state, "")
+
+	storedState, _ := v.(string)
+	if storedState != state {
+		http.Error(w, "Invalid state", http.StatusBadRequest)
+		return
+	}
+
+	asBot.KVDelete(state, "")
+
+	oauthConfig := oauth2Config(asBot, &creq)
+	token, _ := oauthConfig.Exchange(context.Background(), code)
+
+	// TODO: token needs to be stored double-encoded 'cause KV doesn't have a get into a struct. Change KV?
+	tokenData, _ := json.Marshal(token)
+	asBot.KVSet("token"+userId, "", string(tokenData))
+
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
-	c := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&c)
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
 
-	message := "Hello, world!"
-	v, ok := c.Values["message"]
-	if ok && v != nil {
-		message += fmt.Sprintf(" ...and %s!", v)
+	asBot := mmclient.AsBot(creq.Context)
+	v, _ := asBot.KVGet("token"+creq.Context.ActingUserID, "")
+
+	tokenData, _ := v.(string)
+	var token oauth2.Token
+	_ = json.Unmarshal([]byte(tokenData), &token)
+
+	oauthConfig := oauth2Config(asBot, &creq)
+	ctx := context.Background()
+	tokenSource := oauthConfig.TokenSource(ctx, &token)
+
+	srv, _ := calendar.NewService(ctx, option.WithTokenSource(tokenSource))
+
+	cl, _ := srv.CalendarList.List().Do()
+
+	message := "Hello from Google! "
+	if cl != nil && len(cl.Items) > 0 {
+		message += "You have the following calendars:\n"
+		for _, item := range cl.Items {
+			message += "- " + item.Summary + "\n"
+		}
+	} else {
+		message += "You have no calendars.\n"
 	}
-	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+
+	asBot.DM(creq.Context.ActingUserID, message)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }

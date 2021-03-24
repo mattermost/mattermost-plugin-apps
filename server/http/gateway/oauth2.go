@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (g *gateway) handleGetOAuth2RemoteRedirect(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
 	vars := mux.Vars(req)
 
 	appID := vars["app_id"]
@@ -36,7 +36,7 @@ func (g *gateway) handleGetOAuth2RemoteRedirect(w http.ResponseWriter, req *http
 		httputils.WriteInternalServerError(w, cresp)
 		return
 	}
-	if cresp.Type != apps.CallResponseTypeOK {
+	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
 		httputils.WriteInternalServerError(w, errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type))
 		return
 	}
@@ -47,4 +47,55 @@ func (g *gateway) handleGetOAuth2RemoteRedirect(w http.ResponseWriter, req *http
 	}
 
 	http.Redirect(w, req, redirectURL, http.StatusTemporaryRedirect)
+}
+
+func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+	vars := mux.Vars(req)
+
+	appID := vars["app_id"]
+	if appID == "" {
+		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		return
+	}
+
+	creq := apps.CallRequest{
+		Call: apps.Call{
+			Path: "/oauth2/complete", // <>/<>
+		},
+		Type: apps.CallTypeSubmit,
+		Context: g.conf.GetConfig().SetContextDefaultsForApp(
+			&apps.Context{
+				ActingUserID: actingUserID,
+			},
+			apps.AppID(appID),
+		),
+		Values: map[string]interface{}{
+			"q": req.URL.RawQuery,
+		},
+	}
+	cresp := g.proxy.Call(apps.SessionToken(token), &creq)
+	if cresp.Type == apps.CallResponseTypeError {
+		httputils.WriteInternalServerError(w, cresp)
+		return
+	}
+	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
+		httputils.WriteInternalServerError(w, errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	html := `
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<script>
+				window.close();
+			</script>
+		</head>
+		<body>
+			<p>Completed connecting to Google. Please close this window.</p>
+		</body>
+	</html>
+	`
+	_, _ = w.Write([]byte(html))
 }

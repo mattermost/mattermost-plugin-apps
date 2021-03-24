@@ -7,7 +7,7 @@
 				{
 					"icon": "http://localhost:8080/static/icon.png",
 					"description": "Hello 3rd party OAuth2 App",
-					"hint":        "[connect | send]",
+					"hint":        "[configure | connect | send]",
 					"bindings": [
 						{
 							"location": "configure",

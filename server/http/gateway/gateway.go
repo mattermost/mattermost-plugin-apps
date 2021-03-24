@@ -29,9 +29,13 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	subrouter := router.PathPrefix(config.AppsPath).Subrouter()
 
+	// Static
 	subrouter.HandleFunc("/{app_id}/"+apps.StaticAssetsFolder+"/{name}",
-		httputils.CheckAuthorized(mm, p.handleGetStaticAsset)).Methods(http.MethodGet)
+		httputils.CheckAuthorized(mm, p.static)).Methods(http.MethodGet)
 
+	// OAuth2
 	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthRedirect,
-		httputils.CheckAuthorized(mm, p.handleGetOAuth2RemoteRedirect)).Methods(http.MethodGet)
+		httputils.CheckAuthorized(mm, p.remoteOAuth2Redirect)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthComplete,
+		httputils.CheckAuthorized(mm, p.remoteOAuth2Complete)).Methods(http.MethodGet)
 }
