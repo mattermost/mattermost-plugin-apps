@@ -78,5 +78,5 @@ type ExpandedContext struct {
 // Paths for OAuth endpoint that the App needs to set up remote (3rd party) OAuth
 const (
 	PathOAuthRedirect = "/oauth2/remote/redirect"
-	PathOAuthSuccess  = "/oauth2/remote/success"
+	PathOAuthComplete = "/oauth2/remote/complete"
 )

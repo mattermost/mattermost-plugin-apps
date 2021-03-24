@@ -10,6 +10,13 @@
 					"hint":        "[connect | send]",
 					"bindings": [
 						{
+							"location": "configure",
+							"label": "configure",
+							"call": {
+								"path": "/configure"
+							}
+						},
+						{
 							"location": "connect",
 							"label": "connect",
 							"call": {

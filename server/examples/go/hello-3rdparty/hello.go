@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"path"
 
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
@@ -29,6 +32,11 @@ var sendFormData []byte
 //go:embed connect_form.json
 var connectFormData []byte
 
+//go:embed configure_form.json
+var configureFormData []byte
+
+const configKey = "config"
+
 func main() {
 	// Static handlers
 
@@ -47,13 +55,13 @@ func main() {
 	http.HandleFunc("/oauth2/redirect", oauth2Redirect)
 
 	// Handle a successful OAuth2 connection.
-	http.HandleFunc("/oauth2/success", oauth2Success)
+	http.HandleFunc("/oauth2/complete", oauth2Complete)
 
 	// Submit handlers
 
-	// `send` command - send a Hello message.
-	http.HandleFunc("/send/form", writeJSON(sendFormData))
-	http.HandleFunc("/send/submit", send)
+	// `configure` command - sets up Google OAuth client credentials.
+	http.HandleFunc("/configure/form", writeJSON(configureFormData))
+	http.HandleFunc("/configure/submit", configure)
 
 	// `connect` command - display the OAuth2 connect link.
 	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
@@ -61,7 +69,90 @@ func main() {
 	http.HandleFunc("/connect/form", writeJSON(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
+	// `send` command - send a Hello message.
+	http.HandleFunc("/send/form", writeJSON(sendFormData))
+	http.HandleFunc("/send/submit", send)
+
 	http.ListenAndServe(":8080", nil)
+}
+
+func configure(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	clientID, _ := creq.Values["client_id"].(string)
+	clientSecret, _ := creq.Values["client_secret"].(string)
+	mmclient.AsBot(creq.Context).KVSet(configKey, "", map[string]string{
+		"client_id":     clientID,
+		"client_secret": clientSecret,
+	})
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Markdown: "updated OAuth client credentials",
+	})
+}
+
+func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config {
+	v, _ := asBot.KVGet(configKey, "")
+	m, _ := v.(map[string]interface{})
+	clientID, _ := m["client_id"].(string)
+	clientSecret, _ := m["client_secret"].(string)
+
+	fmt.Printf("<>/<> OAuth2Config 1: %s %s\n", clientID, clientSecret)
+
+	completeURL := creq.Context.MattermostSiteURL +
+		path.Join(creq.Context.AppPath, apps.PathOAuthComplete)
+
+	fmt.Printf("<>/<> OAuth2Config 2: %s\n", completeURL)
+
+	return &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Endpoint:     google.Endpoint,
+		RedirectURL:  completeURL,
+		Scopes: []string{
+			"https://www.googleapis.com/auth/calendar",
+		},
+	}
+}
+
+func connect(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	// <>/<> consider adding OAuth URLs to ExtendedContext, on request.
+	// "/oauth2/remote/redirect" is hard-coded in the Apps proxy.
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Markdown: md.Markdownf("[Connect](%s%s) to Google.",
+			creq.Context.MattermostSiteURL,
+			path.Join(creq.Context.AppPath, apps.PathOAuthRedirect)),
+	})
+}
+
+func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	r := make([]byte, 10) // 20 hex digits
+	rand.Read(r)
+	random := hex.EncodeToString(r)
+	state := fmt.Sprintf("%v_%s", random, creq.Context.ActingUserID)
+
+	asBot := mmclient.AsBot(creq.Context)
+	asBot.KVSet(state, "", state)
+
+	oauthConfig := oauth2Config(asBot, &creq)
+	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: url,
+	})
+}
+
+func oauth2Complete(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("<>/<> OAuth2 success")
+	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -75,43 +166,6 @@ func send(w http.ResponseWriter, req *http.Request) {
 	}
 	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{})
-}
-
-func connect(w http.ResponseWriter, req *http.Request) {
-	call := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&call)
-
-	// <>/<> consider adding OAuth URLs to ExtendedContext, on request.
-	// "/oauth2/remote/redirect" is hard-coded in the Apps proxy.
-	txt := fmt.Sprintf("[Connect](%s%s) to Google.", call.Context.MattermostSiteURL, path.Join(call.Context.AppPath, apps.PathOAuthRedirect))
-
-	mmclient.AsBot(call.Context).DM(call.Context.ActingUserID, txt)
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.MD(txt),
-	})
-}
-
-func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
-	call := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&call)
-
-	r := make([]byte, 10) // 20 hex digits
-	rand.Read(r)
-	random := hex.EncodeToString(r)
-	state := fmt.Sprintf("%v_%s", random, call.Context.ActingUserID)
-
-	asBot := mmclient.AsBot(call.Context)
-	asBot.KVSet(state, "", state)
-
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
-		Data: "https://www.google.com",
-	})
-}
-
-func oauth2Success(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("<>/<> OAuth2 success")
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
