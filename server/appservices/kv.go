@@ -1,9 +1,10 @@
 package appservices
 
 import (
-	"crypto/md5" // nolint:gosec
-	"encoding/hex"
-	"strings"
+	// nolint:gosec
+	"crypto/sha1"
+	"encoding/base64"
+	"path"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -37,19 +38,12 @@ func kvKey(namespace, prefix, id string) string {
 		return ""
 	}
 
-	namespaceHash := md5.Sum([]byte(namespace)) // nolint:gosec
-	idHash := md5.Sum([]byte(id))               // nolint:gosec
-	key := strings.Join([]string{
-		hex.EncodeToString(namespaceHash[:]),
-		prefix,
-		hex.EncodeToString(idHash[:]),
-	}, "/")
+	namespacePrefixHash := sha1.Sum([]byte(namespace + prefix)) // nolint:gosec
+	idHash := sha1.Sum([]byte(id))                              // nolint:gosec
+	key := path.Join(
+		base64.RawURLEncoding.EncodeToString(namespacePrefixHash[:]),
+		base64.RawURLEncoding.EncodeToString(idHash[:]))
 
-	// <>/<> TODO:
-	// - combine prefix and namespace into 1 SHA
-	// - do not use the "/"
-	// - shorten the prefix SHA to 50-32=18 characters
-	// - use base64 not hex.Encode
 	if len(key) > model.KEY_VALUE_KEY_MAX_RUNES {
 		return key[:model.KEY_VALUE_KEY_MAX_RUNES]
 	}
