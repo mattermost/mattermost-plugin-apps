@@ -483,7 +483,7 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 
 </details>
 
-## Returning a main error and errors for specific fields
+## Returning a main error and errors for specific fields (includes picture)
 
 <details><summary>Main Error and Field-specific Error Response</summary>
 
@@ -499,6 +499,8 @@ POST /plugins/com.mattermost.apps/example/hello/send/submit
 }
 ```
 
+![modal-errors.png](https://user-images.githubusercontent.com/6913320/112268885-0722f000-8c4e-11eb-9ad1-2874e89049cd.png)
+
 </details>
 
-![modal-errors.png](https://user-images.githubusercontent.com/6913320/112268885-0722f000-8c4e-11eb-9ad1-2874e89049cd.png)
+
