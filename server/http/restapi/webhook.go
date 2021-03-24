@@ -58,15 +58,11 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 			Path: "/webhook-incoming",
 		},
 	}
-	a.proxy.Call("", &call)
-	return
+	_ = a.proxy.Call("", &call)
 }
 
 func (a *restapi) validSecret(appID, secret string) bool {
 	app, _ := a.proxy.GetInstalledApp(apps.AppID(appID))
 	savedSecret := app.WebhookSecret
-	if secret == savedSecret {
-		return true
-	}
-	return false
+	return secret == savedSecret
 }
