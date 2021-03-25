@@ -20,7 +20,7 @@
     "lodash.mapkeys": "4.6.0",
     "lodash.without": "4.4.0",
     "lodash.xor": "4.5.0",
-    "mattermost-redux": "5.26.2",
+    "mattermost-redux": "github:mattermost/mattermost-redux#3d1028034d7677adfda58e91b9a5dcaf1bc0ff99",
     "mattermost-webapp": "github:mattermost/mattermost-webapp#40853eab863f321bd64d67efe1b986864b01278c",
     "mime": "2.4.6",
     "mime-types": "2.1.27",

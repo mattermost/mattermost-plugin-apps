@@ -2,13 +2,13 @@
 // See LICENSE.txt for license information.
 // <reference path="../support/index.d.ts" />
 
-import {Team} from 'mattermost-redux/types/teams';
-
 // ***************************************************************
 // - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
+
+import {AppCallRequest} from 'mattermost-redux/types/apps';
 
 const axios = require('axios');
 
@@ -41,10 +41,28 @@ describe('Apps binsings - Channel header', () => {
         cy.get('#send-button-testers').click();
 
         cy.wait(1000);
-        cy.getLastPost().should('contain.text', 'Sent survey to mickmister.')
+        cy.getLastPost().should('contain.text', 'Sent survey to mickmister.');
+
+        getBindingsRequest().then((request: {body: AppCallRequest}) => {
+            const {
+                path,
+                context,
+            } = request.body;
+
+            expect(path).to.equal('/bindings');
+
+            expect(context.app_id).to.equal('e2e-testapp');
+            expect(context.user_agent).to.equal('webapp');
+            expect(context.mattermost_site_url).to.equal('http://localhost:8065');
+            expect(context.bot_user_id).to.be.ok;
+            expect(context.acting_user_id).to.be.ok;
+            // expect(context.team_id).to.be.ok; // currently fails
+            expect(context.channel_id).to.be.ok;
+            expect(context.bot_access_token).to.be.ok;
+        });
     });
 
-    it.only('MM-00000 Bindings - Channel header open form', () => {
+    it('MM-00000 Bindings - Channel header open form', () => {
         setChannelHeaderBinding();
         setChannelHeaderSubmitResponse({
             "type": "form",
@@ -70,11 +88,6 @@ describe('Apps binsings - Channel header', () => {
             }
         });
 
-        setFormSubmitResponse({
-            "type":"ok",
-            "markdown":"You submitted the form!",
-        })
-
         cy.visit('/');
         cy.get('#send-button-testers').click();
 
@@ -85,18 +98,22 @@ describe('Apps binsings - Channel header', () => {
         cy.findByTestId('user').click();
         cy.get('.suggestion-list__item').first().click();
 
+        setFormSubmitResponse({
+            "type":"ok",
+            "markdown":"You submitted the form!",
+        });
         cy.get('#appsModalSubmit').click();
 
         cy.wait(1000);
         cy.getLastPost().should('contain.text', 'You submitted the form!');
 
-        getSubmitRequest('/test-form').then((response) => {
+        getSubmitRequest('/test-form').then((request: {body: AppCallRequest}) => {
             const {
                 path,
                 expand,
                 values,
                 context,
-            } = response.body;
+            } = request.body;
 
             expect(path).to.equal('/test-form/submit');
             expect(expand).to.deep.equal({});
@@ -154,6 +171,10 @@ const setBindings = (bindings) => {
     };
 
     return cy.request('POST', 'http://localhost:8065/plugins/com.mattermost.apps/e2e-testapp/bindings/set-response', data);
+}
+
+const getBindingsRequest = () => {
+    return cy.request('GET', 'http://localhost:8065/plugins/com.mattermost.apps/e2e-testapp/bindings/get-request');
 }
 
 const setSubmitResponse = (url, response) => {

@@ -17,6 +17,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/e2e/mockappserver"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -122,6 +123,7 @@ func (p *Plugin) OnActivate() error {
 		dialog.Init,
 		restapi.Init,
 		http_hello.Init,
+		mockappserver.Init,
 	)
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy)
 	if err != nil {

@@ -25,11 +25,26 @@ const runE2ETestApp = true
 var bindingsRequest []byte
 var bindingsResponse []byte
 
-var channelHeaderSubmitRequest []byte
-var channelHeaderSubmitResponse []byte
+type CapturedData struct {
+	Submit []byte
+	Form   []byte
+	Lookup []byte
+}
 
-var formSubmitRequest []byte
-var formSubmitResponse []byte
+type StoredRequestResponse struct {
+	Requests  CapturedData
+	Responses CapturedData
+}
+
+var storedRequestResponses = map[string]*StoredRequestResponse{}
+
+func ensureStoredData(formName string) *StoredRequestResponse {
+	if storedRequestResponses[formName] == nil {
+		storedRequestResponses[formName] = &StoredRequestResponse{}
+	}
+
+	return storedRequestResponses[formName]
+}
 
 func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	if !runE2ETestApp {
@@ -42,7 +57,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 		defer r.Body.Close()
 		bindingsRequest = b
 
-		writeJSON(bindingsResponse)
+		writeJSON(bindingsResponse)(w, r)
 	})
 
 	r.HandleFunc("/bindings/set-response", func(w http.ResponseWriter, r *http.Request) {
@@ -54,47 +69,36 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 	})
 
 	r.HandleFunc("/bindings/get-request", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(bindingsRequest)
+		writeJSON(bindingsRequest)(w, r)
 	})
 
-	r.HandleFunc("/test-form/set-submit-response", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/{form_name}/set-submit-response", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 
-		formSubmitResponse = b
+		name := mux.Vars(r)["form_name"]
+		stored := ensureStoredData(name)
+		stored.Responses.Submit = b
+
 		w.Write([]byte("Success"))
 	})
 
-	r.HandleFunc("/test-form/submit", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/{form_name}/submit", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 
-		formSubmitRequest = b
-		writeJSON(formSubmitResponse)
+		name := mux.Vars(r)["form_name"]
+		stored := ensureStoredData(name)
+		stored.Requests.Submit = b
+
+		writeJSON(storedRequestResponses[name].Responses.Submit)(w, r)
 	})
 
-	r.HandleFunc("/test-form/get-submit-request", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(formSubmitRequest)
-	})
+	r.HandleFunc("/{form_name}/get-submit-request", func(w http.ResponseWriter, r *http.Request) {
+		name := mux.Vars(r)["form_name"]
+		stored := ensureStoredData(name)
 
-	r.HandleFunc("/channel-header-submit/set-submit-response", func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-
-		channelHeaderSubmitResponse = b
-		w.Write([]byte("Success"))
-	})
-
-	r.HandleFunc("/channel-header-submit/submit", func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-
-		channelHeaderSubmitRequest = b
-		writeJSON(channelHeaderSubmitResponse)
-	})
-
-	r.HandleFunc("/channel-header-submit/get-submit-request", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(channelHeaderSubmitRequest)
+		writeJSON(stored.Requests.Submit)(w, r)
 	})
 
 	r.HandleFunc("/manifest.json", writeJSON(manifest))
