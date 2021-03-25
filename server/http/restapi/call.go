@@ -24,8 +24,10 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if call.Context == nil {
-		call.Context = &apps.Context{}
+	if call.Context == nil || call.Context.AppID == "" {
+		err = errors.New("must provide Context and set the app ID")
+		httputils.WriteBadRequestError(w, err)
+		return
 	}
 	call.Context.ActingUserID = actingUserID
 

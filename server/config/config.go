@@ -1,7 +1,11 @@
 package config
 
 import (
+	"path"
+
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
@@ -46,4 +50,17 @@ type Config struct {
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
+}
+
+func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
+	cc.BotUserID = c.BotUserID
+	cc.MattermostSiteURL = c.MattermostSiteURL
+	return cc
+}
+
+func (c Config) SetContextDefaultsForApp(cc *apps.Context, appID apps.AppID) *apps.Context {
+	cc = c.SetContextDefaults(cc)
+	cc.AppID = appID
+	cc.AppPath = path.Join(c.PluginURLPath, AppsPath, string(appID))
+	return cc
 }
