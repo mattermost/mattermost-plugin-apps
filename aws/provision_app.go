@@ -49,7 +49,7 @@ func (c *client) provisionApp(provisionData *ProvisionData, shouldUpdate bool) e
 		return errors.Wrapf(err, "can't provision functions of the app - %s", provisionData.Manifest.AppID)
 	}
 
-	if err := c.provisionManifest(bucket, provisionData.Manifest); err != nil {
+	if err := c.provisionManifest(bucket, provisionData.Manifest, provisionData.ManifestKey); err != nil {
 		return errors.Wrapf(err, "can't save manifest fo the app %s to S3", provisionData.Manifest.AppID)
 	}
 	return nil
@@ -77,14 +77,13 @@ func (c *client) provisionFunctions(manifest *apps.Manifest, functions map[strin
 }
 
 // provisionManifest saves manifest file in S3
-func (c *client) provisionManifest(bucket string, manifest *apps.Manifest) error {
+func (c *client) provisionManifest(bucket string, manifest *apps.Manifest, key string) error {
 	data, err := json.Marshal(manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", manifest.AppID)
 	}
 	buffer := bytes.NewBuffer(data)
 
-	key := apps.ManifestS3Name(manifest.AppID, manifest.Version)
 	if err := c.UploadS3(bucket, key, buffer); err != nil {
 		return errors.Wrapf(err, "can't upload manifest file for the app - %s", manifest.AppID)
 	}
