@@ -52,6 +52,8 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 	}
 
 	r := router.PathPrefix(TestAppPath).Subrouter()
+	r.HandleFunc("/manifest.json", writeJSON(manifest))
+
 	r.HandleFunc("/bindings", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -101,5 +103,9 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 		writeJSON(stored.Requests.Submit)(w, r)
 	})
 
-	r.HandleFunc("/manifest.json", writeJSON(manifest))
+	r.HandleFunc("/clean", func(w http.ResponseWriter, r *http.Request) {
+		bindingsRequest = nil
+		bindingsResponse = nil
+		storedRequestResponses = map[string]*StoredRequestResponse{}
+	})
 }

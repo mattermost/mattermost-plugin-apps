@@ -10,8 +10,6 @@
 
 import {AppCallRequest} from 'mattermost-redux/types/apps';
 
-const axios = require('axios');
-
 describe('Apps binsings - Channel header', () => {
     // const pluginID = Cypress.config('pluginID');
     // const pluginFile = Cypress.config('pluginFile');
@@ -28,6 +26,10 @@ describe('Apps binsings - Channel header', () => {
 
         cy.apiUpdateConfig(newSettings);
         cy.apiInitSetup();
+    });
+
+    beforeEach(() => {
+        cleanTestApp();
     });
 
     it('MM-00000 Bindings - Channel header submit', () => {
@@ -183,4 +185,8 @@ const setSubmitResponse = (url, response) => {
 
 const getSubmitRequest = (url) => {
     return cy.request('GET', 'http://localhost:8065/plugins/com.mattermost.apps/e2e-testapp' + url + '/get-submit-request');
+}
+
+const cleanTestApp = () => {
+    return cy.request('POST', 'http://localhost:8065/plugins/com.mattermost.apps/e2e-testapp/clean');
 }
