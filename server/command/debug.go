@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -37,9 +38,13 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, err)
 	}
 
+	if manifestURL == "" {
+		return errorOut(params, errors.New("you must add a `--url`"))
+	}
+
 	data, err := httputils.GetFromURL(manifestURL)
 	if err != nil {
-		return nil, err
+		return errorOut(params, err)
 	}
 	m := apps.Manifest{}
 	err = json.Unmarshal(data, &m)
