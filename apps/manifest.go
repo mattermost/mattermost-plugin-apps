@@ -47,6 +47,10 @@ type Manifest struct {
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
+	// OnAuth2... are called to support 3rd party (remote system) OAuth2
+	OnOAuth2Redirect *Call `json:"on_disable,omitempty"`
+	OnDisable *Call `json:"on_disable,omitempty"`
+
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
 	// RequestedLocations is the list of top-level locations that the
