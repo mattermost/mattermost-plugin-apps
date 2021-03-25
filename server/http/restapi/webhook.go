@@ -33,7 +33,7 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	secret := queryVars["secret"][0]
-	if !a.validSecret(appID, secret) {
+	if !a.isValidSecret(appID, secret) {
 		httputils.WriteBadRequestError(w, errors.New("webhook secret is not valid"))
 		return
 	}
@@ -61,7 +61,7 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	_ = a.proxy.Call("", &call)
 }
 
-func (a *restapi) validSecret(appID, secret string) bool {
+func (a *restapi) isValidSecret(appID, secret string) bool {
 	app, _ := a.proxy.GetInstalledApp(apps.AppID(appID))
 	savedSecret := app.WebhookSecret
 	return secret == savedSecret
