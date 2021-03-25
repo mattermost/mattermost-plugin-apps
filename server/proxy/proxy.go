@@ -26,8 +26,10 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 		return apps.NewErrorCallResponse(err)
 	}
 
-	expander := p.newExpander(c.Context, p.mm, p.conf, p.store, debugSessionToken)
-	cc, err := expander.ExpandForApp(app, c.Expand)
+	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context, c.Context.AppID)
+
+	expander := p.newExpander(cc, p.mm, p.conf, p.store, debugSessionToken)
+	cc, err = expander.ExpandForApp(app, c.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}

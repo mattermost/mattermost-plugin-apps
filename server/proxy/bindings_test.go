@@ -3,10 +3,8 @@
 package proxy
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -20,7 +18,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -353,7 +350,14 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 				bindings: bindings,
 			}}
 
-			proxy, _ := newTestProxyForBindings(testData, ctrl)
+			proxy, api := newTestProxyForBindings(testData, ctrl)
+
+			key1 := proxy.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+			bindingBytes := []byte{}
+			bindingsBytes := [][]byte{}
+			bindingBytes, _ = json.Marshal(&bindings[0])
+			bindingsBytes = append(bindingsBytes, bindingBytes)
+			api.On("AppsCacheGet", "app1", key1).Return(bindingsBytes, nil)
 
 			cc := &apps.Context{}
 			out, err := proxy.GetBindings("", cc)
@@ -653,7 +657,13 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
+	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: model.NewString("test.mattermost.com"),
+		},
+	})
+
+	s := store.NewService(mm, conf)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -663,27 +673,20 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	for _, test := range testData {
 		appList[test.app.AppID] = test.app
 
-		cr := &apps.CallResponse{
-			Type: apps.CallResponseTypeOK,
-			Data: test.bindings,
-		}
-		bb, _ := json.Marshal(cr)
-		reader := ioutil.NopCloser(bytes.NewReader(bb))
+		// cr := &apps.CallResponse{
+		// 	Type: apps.CallResponseTypeOK,
+		// 	Data: test.bindings,
+		// }
+		//bb, _ := json.Marshal(cr)
+		//reader := ioutil.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
+		//up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
-		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
+		//appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
 	appStore.EXPECT().AsMap().Return(appList)
-
-	conf := mock_config.NewMockService(ctrl)
-	conf.EXPECT().GetMattermostConfig().Return(&model.Config{
-		ServiceSettings: model.ServiceSettings{
-			SiteURL: model.NewString("test.mattermost.com"),
-		},
-	}).AnyTimes()
 
 	p := &Proxy{
 		mm:               mm,
@@ -710,10 +713,10 @@ func TestGetAllBindings(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
+			bindings: bindings,
 		},
 	}
-	p, api := newTestProxyForBindings(testData, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
 	context1 := &apps.Context {
@@ -723,40 +726,40 @@ func TestGetAllBindings(t *testing.T) {
 		ChannelID: testChannelID,
 	}
 
-	key1 := p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
-	key2 := p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
-	key3 := p.CacheBuildKey(KEY_ALL_USERS, testChannelID)
-	key4 := p.CacheBuildKey(testUserID, testChannelID)
+	key1 := proxy.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+	key2 := proxy.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+	key3 := proxy.CacheBuildKey(KEY_ALL_USERS, testChannelID)
+	key4 := proxy.CacheBuildKey(testUserID, testChannelID)
 
 	bindingBytes := []byte{}
 	bindingsBytes := [][]byte{}
-	bindingBytes, _ = json.Marshal(&bindings[appID][0])
+	bindingBytes, _ = json.Marshal(&bindings[0])
 	bindingsBytes = append(bindingsBytes, bindingBytes)
 	api.On("AppsCacheGet", string(appID), key1).Return(bindingsBytes, nil)
 
 	bindingsBytes = [][]byte{}
-	bindingBytes, _ = json.Marshal(&bindings[appID][1])
+	bindingBytes, _ = json.Marshal(&bindings[1])
 	bindingsBytes = append(bindingsBytes, bindingBytes)
 	api.On("AppsCacheGet", string(appID), key2).Return(bindingsBytes, nil)
 
 	bindingsBytes = [][]byte{}
-	bindingBytes, _ = json.Marshal(&bindings[appID][2])
+	bindingBytes, _ = json.Marshal(&bindings[2])
 	bindingsBytes = append(bindingsBytes, bindingBytes)
 	api.On("AppsCacheGet", string(appID), key3).Return(bindingsBytes, nil)
 
 	bindingsBytes = [][]byte{}
-	bindingBytes, _ = json.Marshal(&bindings[appID][3])
+	bindingBytes, _ = json.Marshal(&bindings[3])
 	bindingsBytes = append(bindingsBytes, bindingBytes)
 	api.On("AppsCacheGet", string(appID), key4).Return(bindingsBytes, nil)
 
-	outBindings, err := p.CacheGetAll(context1, appID)
-	require.Equal(t, outBindings, bindings[appID])
+	outBindings, err := proxy.CacheGetAll(context1, appID)
+	require.Equal(t, outBindings, bindings)
 
 	assert.NoError(t, err)
 }
 
 func TestGetBindings(t *testing.T) {
-	appBindings := testBindings(testAppID1, apps.LocationCommand, "test")
+	bindings := testBindings(testAppID1, apps.LocationCommand, "test")
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
@@ -770,13 +773,12 @@ func TestGetBindings(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
-		}
+			bindings: bindings,
+		},
 	}
-	p, api := newTestProxyForBindings(appBindings, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
-	appID := apps.AppID(testAppID1)
 	context1 := &apps.Context {
 		AppID : appID,
 		ActingUserID: testUserID,
@@ -784,17 +786,17 @@ func TestGetBindings(t *testing.T) {
 		ChannelID: testChannelID,
 	}
 
-	key2 := p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+	key2 := proxy.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
 
 	bindingsBytes := [][]byte{}
-	bindingBytes, _ := json.Marshal(&appBindings[appID][1])
+	bindingBytes, _ := json.Marshal(&bindings[1])
 	bindingsBytes = append(bindingsBytes, bindingBytes)
 	api.On("AppsCacheGet", string(appID), key2).Return(bindingsBytes, nil)
 
-	outBindings, err := p.CacheGet(context1, appID, key2)
-	bindings := make([]*apps.Binding,0)
-	bindings = append(bindings, appBindings[appID][1])
-	require.Equal(t, outBindings, bindings)
+	outBindings, err := proxy.CacheGet(context1, appID, key2)
+	selbindings := make([]*apps.Binding,0)
+	selbindings = append(selbindings, bindings[1])
+	require.Equal(t, outBindings, selbindings)
 
 	assert.NoError(t, err)
 }
@@ -814,22 +816,22 @@ func TestDeleteBindingsForApp(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
-		}
+			bindings: bindings,
+		},
 	}
-	p, api := newTestProxyForBindings(testData, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
-	key1 := p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+	key1 := proxy.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
 
 	api.On("AppsCacheDelete", string(appID), key1).Return(nil)
-	err := p.CacheDelete(appID, key1)
+	err := proxy.CacheDelete(appID, key1)
 
 	assert.NoError(t, err)
 }
 
 func TestDeleteAllBindings(t *testing.T) {
-	appBindings := testBindings(testAppID1, apps.LocationCommand, "test")
+	bindings := testBindings(testAppID1, apps.LocationCommand, "test")
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
@@ -843,14 +845,14 @@ func TestDeleteAllBindings(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
-		}
+			bindings: bindings,
+		},
 	}
-	p, api := newTestProxyForBindings(testData, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
 	api.On("AppsCacheDeleteAll", string(appID)).Return(nil)
-	err := p.CacheDeleteAll(appID)
+	err := proxy.CacheDeleteAll(appID)
 
 	assert.NoError(t, err)
 }
@@ -870,33 +872,26 @@ func TestDeleteAllBindingsForAllApps(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
+			bindings: bindings,
 		},
 	}
-	p, api := newTestProxyForBindings(testData, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
-	appID := apps.AppID(testAppID1)
-
-	s := mock_api.NewMockStore(controller)
-	appStore := mock_api.NewMockAppStore(controller)
-	s.EXPECT().App().Return(appStore)
-	p.store = s
-
-	appList := []*apps.App{}
-	for k, _ := range appBindings {
-		tapp := &apps.App{
-			Manifest: &apps.Manifest{
-				AppID:              apps.AppID(k),
-				Type:               apps.AppTypeBuiltin,
-			},
-		}
-		appList = append(appList, tapp)
-	}
-	appStore.EXPECT().GetAll().Return(appList)
+	// appList := []*apps.App{}
+	// for k, _ := range bindings {
+	// 	tapp := &apps.App{
+	// 		Manifest: apps.Manifest{
+	// 			AppID:		apps.AppID(k),
+	// 			AppType:	apps.AppTypeBuiltin,
+	// 		},
+	// 	}
+	// 	appList = append(appList, tapp)
+	// }
+	//p.store.App.(mock_store).EXPECT().GetAll().Return(appList)
 
 	api.On("AppsCacheDeleteAll", string(appID)).Return(nil)
-	errors := p.CacheDeleteAllApps()
+	errors := proxy.CacheDeleteAllApps()
 
 	assert.Equal(t, len(errors), 0)
 }
@@ -916,13 +911,12 @@ func TestSetBindings(t *testing.T) {
 					DisplayName: "App 1",
 				},
 			},
-			bindings,
+			bindings: bindings,
 		},
 	}
-	p, api := newTestProxyForBindings(testData, controller)
+	proxy, api := newTestProxyForBindings(testData, controller)
 	defer api.AssertExpectations(t)
 
-	appID := apps.AppID(testAppID1)
 	context1 := &apps.Context {
 		AppID : appID,
 		ActingUserID: testUserID,
@@ -931,17 +925,17 @@ func TestSetBindings(t *testing.T) {
 	}
 
 	var key string
-	bindingsMap := make(map[string][][]byte, len(bindings[appID]))
+	bindingsMap := make(map[string][][]byte, len(bindings))
 
-	for _, binding := range bindings[appID] {
+	for _, binding := range bindings {
 		if !binding.DependsOnUser && !binding.DependsOnChannel {
-			key = p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
+			key = proxy.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
 		} else if binding.DependsOnUser && !binding.DependsOnChannel {
-			key = p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
+			key = proxy.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
 		} else if !binding.DependsOnUser && binding.DependsOnChannel {
-			key = p.CacheBuildKey(KEY_ALL_USERS, testChannelID)
+			key = proxy.CacheBuildKey(KEY_ALL_USERS, testChannelID)
 		} else {
-			key = p.CacheBuildKey(testUserID, testChannelID)
+			key = proxy.CacheBuildKey(testUserID, testChannelID)
 		}
 		valueBytes, _ := json.Marshal(&binding)
 
@@ -953,7 +947,7 @@ func TestSetBindings(t *testing.T) {
 		api.On("AppsCacheSet", string(appID), bindingsMap).Return(nil)
 	}
 
-	err := p.CacheSet(context1, appID, bindings[appID])
+	err := proxy.CacheSet(context1, appID, bindings)
 
 	assert.NoError(t, err)
 }

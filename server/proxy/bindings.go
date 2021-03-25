@@ -164,12 +164,12 @@ func (p *Proxy) CacheSet(cc *apps.Context, appID apps.AppID, bindings []*apps.Bi
 
 	for _, binding := range bindings {
 		userID := KEY_ALL_USERS
-		if binding.DependsOnUser {
+		if binding.DependsOnUser && cc.ActingUserID != "" {
 			userID = cc.ActingUserID
 		}
 
 		channelID := KEY_ALL_CHANNELS
-		if binding.DependsOnChannel {
+		if binding.DependsOnChannel && cc.ChannelID != "" {
 			channelID = cc.ChannelID
 		}
 
@@ -251,10 +251,18 @@ func (p *Proxy) CacheBuildKeys(userID string, channelID string) []string {
 	keys := []string{}
 
 	keys = append(keys, p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS))
-	keys = append(keys, p.CacheBuildKey(userID, KEY_ALL_CHANNELS))
-	keys = append(keys, p.CacheBuildKey(KEY_ALL_USERS, channelID))
-	keys = append(keys, p.CacheBuildKey(userID, channelID))
 
+	if userID != "" {
+		keys = append(keys, p.CacheBuildKey(userID, KEY_ALL_CHANNELS))
+	}
+
+	if channelID != "" {
+		keys = append(keys, p.CacheBuildKey(KEY_ALL_USERS, channelID))
+	}
+
+	if userID != "" && channelID != "" {
+		keys = append(keys, p.CacheBuildKey(userID, channelID))
+	}
 	return keys
 }
 

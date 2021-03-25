@@ -1,0 +1,13 @@
+{
+	"app_id": "hello3rdparty",
+	"display_name": "Hello, 3rd party OAuth2!",
+	"app_type": "http",
+	"root_url": "http://localhost:8080",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
+	"requested_permissions": [
+		"act_as_bot"
+	],
+	"requested_locations": [
+		"/command"
+	]
+}
