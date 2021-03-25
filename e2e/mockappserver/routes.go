@@ -74,6 +74,17 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 		writeJSON(bindingsRequest)(w, r)
 	})
 
+	r.HandleFunc("/{form_name}/submit", func(w http.ResponseWriter, r *http.Request) {
+		b, _ := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		name := mux.Vars(r)["form_name"]
+		stored := ensureStoredData(name)
+		stored.Requests.Submit = b
+
+		writeJSON(stored.Responses.Submit)(w, r)
+	})
+
 	r.HandleFunc("/{form_name}/set-submit-response", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -83,17 +94,6 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 		stored.Responses.Submit = b
 
 		w.Write([]byte("Success"))
-	})
-
-	r.HandleFunc("/{form_name}/submit", func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-
-		name := mux.Vars(r)["form_name"]
-		stored := ensureStoredData(name)
-		stored.Requests.Submit = b
-
-		writeJSON(storedRequestResponses[name].Responses.Submit)(w, r)
 	})
 
 	r.HandleFunc("/{form_name}/get-submit-request", func(w http.ResponseWriter, r *http.Request) {
