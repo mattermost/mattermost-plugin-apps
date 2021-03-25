@@ -110,7 +110,7 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, 
 		}
 	}
 
-	oauth2CallbackURL := p.conf.GetConfig().PluginURL + config.AppsPath + "/" + string(app.AppID) + config.PathOAuth2Complete
+	oauth2CallbackURL := p.conf.GetConfig().PluginURL + config.AppsPath + "/" + string(app.AppID) + config.PathOAuth2 + config.PathMattermostComplete
 
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
 	oauthApp, response := client.CreateOAuthApp(&model.OAuthApp{
@@ -185,7 +185,7 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken st
 	}
 
 	_ = p.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
-		Message: fmt.Sprintf("Provisioned bot account @%s (`%s`).",
+		Message: fmt.Sprintf("Using bot account @%s (`%s`).",
 			fullBot.Username, fullBot.UserId),
 	})
 

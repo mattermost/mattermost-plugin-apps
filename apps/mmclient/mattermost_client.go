@@ -39,16 +39,16 @@ func NewClient(userID, token, mattermostSiteURL string) *Client {
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
 	client.Client4.SetOAuthToken(token)
-	client.ClientPP.AuthToken = token
+	client.ClientPP.SetOAuthToken(token)
 	return &client
 }
 
-func (client *Client) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, error) {
-	var mapRes map[string]interface{}
+func (client *Client) KVSet(id string, prefix string, in interface{}) (interface{}, error) {
+	var mapRes interface{}
 	var res *model.Response
 	mapRes, res = client.ClientPP.KVSet(id, prefix, in)
 
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}
@@ -57,12 +57,12 @@ func (client *Client) KVSet(id string, prefix string, in map[string]interface{})
 	return mapRes, nil
 }
 
-func (client *Client) KVGet(id string, prefix string) (map[string]interface{}, error) {
-	var mapRes map[string]interface{}
+func (client *Client) KVGet(id string, prefix string) (interface{}, error) {
+	var mapRes interface{}
 	var res *model.Response
 
 	mapRes, res = client.ClientPP.KVGet(id, prefix)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}
@@ -76,7 +76,7 @@ func (client *Client) KVDelete(id string, prefix string) (bool, error) {
 	var res *model.Response
 
 	opRes, res = client.ClientPP.KVDelete(id, prefix)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return false, res.Error
 		}
@@ -90,7 +90,7 @@ func (client *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionRespo
 	var res *model.Response
 
 	subResponse, res = client.ClientPP.Subscribe(sub)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}
@@ -105,7 +105,7 @@ func (client *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionRes
 	var res *model.Response
 
 	subResponse, res = client.ClientPP.Unsubscribe(sub)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}
@@ -156,7 +156,7 @@ func (client *Client) getDirectChannelWith(userID string) (*model.Channel, error
 	var res *model.Response
 
 	channel, res = client.CreateDirectChannel(client.userID, userID)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}

@@ -31,8 +31,9 @@ const (
 	AppsPath = "/apps"
 
 	// OAuth2 sub-paths.
-	PathOAuth2         = "/oauth2"          // convention for Mattermost Apps, comes from OAuther
-	PathOAuth2Complete = "/oauth2/complete" // convention for Mattermost Apps, comes from OAuther
+	PathOAuth2             = "/oauth2"
+	PathMattermostRedirect = "/mattermost/redirect"
+	PathMattermostComplete = "/mattermost/complete"
 
 	// Marketplace sub-paths.
 	PathMarketplace = "/marketplace"
