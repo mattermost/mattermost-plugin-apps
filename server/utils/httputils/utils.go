@@ -14,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 )
 
 func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error) {
@@ -118,4 +120,26 @@ func GetFromURL(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
+}
+
+func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, actingUserID, sessionToken string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		actingUserID := req.Header.Get("Mattermost-User-Id")
+		if actingUserID == "" {
+			WriteUnauthorizedError(w, errors.New("not authorized"))
+			return
+		}
+		sessionID := req.Header.Get("MM_SESSION_ID")
+		if sessionID == "" {
+			WriteUnauthorizedError(w, errors.New("no user session"))
+			return
+		}
+		session, err := mm.Session.Get(sessionID)
+		if err != nil {
+			WriteUnauthorizedError(w, err)
+			return
+		}
+
+		f(w, req, actingUserID, session.Token)
+	}
 }

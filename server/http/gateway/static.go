@@ -1,4 +1,4 @@
-package restapi
+package gateway
 
 import (
 	"io"
@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request, actingUserID string) {
+func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
 	vars := mux.Vars(req)
 
 	assetName := vars["name"]
@@ -29,7 +29,7 @@ func (a *restapi) handleGetStaticAsset(w http.ResponseWriter, req *http.Request,
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := a.proxy.GetAsset(apps.AppID(appID), assetName)
+	body, status, err := g.proxy.GetAsset(apps.AppID(appID), assetName)
 	if err != nil {
 		httputils.WriteBadRequestError(w, err)
 		return

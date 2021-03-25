@@ -165,7 +165,7 @@ POST /plugins/com.mattermost.apps/example/hello/send
                 "name": "message",
                 "type": "text",
                 "is_required": true,
-                "value": "Provisioned bot account @builtin (`ux3jks3kn7fz9ghnycx7iy5e7w`).",
+                "value": "Using bot account @builtin (`ux3jks3kn7fz9ghnycx7iy5e7w`).",
                 "description": "Text to ask the user about",
                 "label": "message",
                 "hint": "Anything you want to say",

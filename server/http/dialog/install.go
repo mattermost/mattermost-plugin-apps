@@ -140,13 +140,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app, out, err := d.proxy.InstallApp(
-		&apps.Context{
-			ActingUserID: actingUserID,
-			AppID:        stateData.AppID,
-			TeamID:       stateData.TeamID,
-		},
-		apps.SessionToken(session.Token),
+	cc := apps.Context{
+		ActingUserID: actingUserID,
+		TeamID:       stateData.TeamID,
+	}
+	d.conf.GetConfig().SetContextDefaultsForApp(&cc, stateData.AppID)
+
+	app, out, err := d.proxy.InstallApp(&cc, apps.SessionToken(session.Token),
 		&apps.InInstallApp{
 			AppID:            stateData.AppID,
 			OAuth2TrustedApp: noUserConsentForOAuth2,
