@@ -11,14 +11,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func Hey() string {
-	return "hey"
-}
-
-type testapp struct {
-	conf config.Service
-}
-
 const TestAppPath = "/e2e-testapp"
 const runE2ETestApp = true
 
