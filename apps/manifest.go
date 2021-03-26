@@ -17,6 +17,14 @@ type Manifest struct {
 
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
+
+	// Callbacks
+
+	// Bindings must be implemented by the Apps to add any UX elements to the
+	// Mattermost UI. The default values for its fields are,
+	//  "path":"/bindings",
+	Bindings *Call `json:"bindings,omitempty"`
+
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
 	// display. The default values for its fields are,
@@ -38,19 +46,22 @@ type Manifest struct {
 	// explicitly provided in the manifest.
 	OnUninstall *Call `json:"on_uninstall,omitempty"`
 
-	// Bindings must be implemented by the Apps to add any UX elements to the
-	// Mattermost UI. The default values for its fields are,
-	//  "path":"/bindings",
-	Bindings *Call `json:"bindings,omitempty"`
-
 	// OnEnable, OnDisable are not yet supported
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
-	// OnOAuth2Redirect must return
+	// OnOAuth2Redirect must return Data set to the redirect URL. It should also
+	// save the state data that will be used to validate OAuth2 complete
+	// callback.
 	OnOAuth2Redirect *Call `json:"on_oauth2_redirect,omitempty"`
 
+	// OnOAuth2Complete gets called upon successful completion of the OAuth2
+	// process. It gets passed the URL query as Values. The App should validate
+	// the state data, obtain the OAuth2 user token, and store it persistently
+	// for future use.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
+
+	// Requested Access
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
@@ -59,7 +70,10 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
+	// App type-specific fields
+
 	// For HTTP Apps all paths are relative to the RootURL.
+	// <>/<> TODO move to HTTP.RootURL
 	HTTPRootURL string `json:"root_url,omitempty"`
 
 	// AWSLambda must be included by the developer in the published manifest for
