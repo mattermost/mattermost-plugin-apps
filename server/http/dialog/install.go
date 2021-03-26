@@ -49,6 +49,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, whSecret, pluginURL string, c
 			Name:        "webhooksecret",
 			Type:        "text",
 			SubType:     "password",
+			Optional:    true,
 			HelpText:    "TODO: How to obtain the App Webhook Secret",
 			Default:     whSecret,
 		})
