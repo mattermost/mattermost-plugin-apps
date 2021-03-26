@@ -11,6 +11,9 @@ func (p *Proxy) GetOAuth2RedirectURL(appID apps.AppID, actingUserID, token strin
 	if err != nil {
 		return "", err
 	}
+	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
+		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
+	}
 
 	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{
 		Call: *app.OnOAuth2Redirect.WithOverrides(apps.DefaultOnOAuth2RedirectCall),
@@ -39,6 +42,9 @@ func (p *Proxy) CompleteOAuth2(appID apps.AppID, actingUserID, token string, url
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
+	}
+	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
+		return errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
 	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{

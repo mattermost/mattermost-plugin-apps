@@ -34,6 +34,8 @@ const (
 	PathOAuth2             = "/oauth2"
 	PathMattermostRedirect = "/mattermost/redirect"
 	PathMattermostComplete = "/mattermost/complete"
+	PathRemoteRedirect     = "/remote/redirect"
+	PathRemoteComplete     = "/remote/complete"
 
 	// Marketplace sub-paths.
 	PathMarketplace = "/marketplace"
