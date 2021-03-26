@@ -6,7 +6,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (p *Proxy) GetOAuth2RedirectURL(appID apps.AppID, actingUserID, token string) (string, error) {
+func (p *Proxy) GetRemoteOAuth2RedirectURL(appID apps.AppID, actingUserID, token string) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", err
@@ -16,7 +16,7 @@ func (p *Proxy) GetOAuth2RedirectURL(appID apps.AppID, actingUserID, token strin
 	}
 
 	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{
-		Call: *app.OnOAuth2Redirect.WithOverrides(apps.DefaultOnOAuth2RedirectCall),
+		Call: *app.OnRemoteOAuth2Redirect.WithOverrides(apps.DefaultOnRemoteOAuth2RedirectCall),
 		Type: apps.CallTypeSubmit,
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{
@@ -38,17 +38,17 @@ func (p *Proxy) GetOAuth2RedirectURL(appID apps.AppID, actingUserID, token strin
 	return redirectURL, nil
 }
 
-func (p *Proxy) CompleteOAuth2(appID apps.AppID, actingUserID, token string, urlValues map[string]interface{}) error {
+func (p *Proxy) CompleteRemoteOAuth2(appID apps.AppID, actingUserID, token string, urlValues map[string]interface{}) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
-		return errors.Errorf("%s is not authorized to use OAuth2", appID)
+		return errors.Errorf("%s is not authorized to use remote OAuth2", appID)
 	}
 
 	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{
-		Call: *app.OnOAuth2Complete.WithOverrides(apps.DefaultOnOAuth2CompleteCall),
+		Call: *app.OnRemoteOAuth2Complete.WithOverrides(apps.DefaultOnRemoteOAuth2CompleteCall),
 		Type: apps.CallTypeSubmit,
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"path"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -57,10 +56,10 @@ func main() {
 	// Remote OAuth2 handlers
 
 	// Handle an OAuth2 connect request redirect.
-	http.HandleFunc("/oauth2/redirect", oauth2Redirect)
+	http.HandleFunc("/oauth2/remote/redirect", oauth2Redirect)
 
 	// Handle a successful OAuth2 connection.
-	http.HandleFunc("/oauth2/complete", oauth2Complete)
+	http.HandleFunc("/oauth2/remote/complete", oauth2Complete)
 
 	// Submit handlers
 
@@ -103,14 +102,11 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 	clientID, _ := m["client_id"].(string)
 	clientSecret, _ := m["client_secret"].(string)
 
-	completeURL := creq.Context.MattermostSiteURL +
-		path.Join(creq.Context.AppPath, apps.PathOAuthComplete)
-
 	return &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint:     google.Endpoint,
-		RedirectURL:  completeURL,
+		RedirectURL:  creq.Context.RemoteOAuth2.CompleteURL,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/calendar",
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -122,13 +118,8 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 func connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
-
-	// <>/<> consider adding OAuth URLs to ExtendedContext, on request.
-	// "/oauth2/remote/redirect" is hard-coded in the Apps proxy.
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s%s) to Google.",
-			creq.Context.MattermostSiteURL,
-			path.Join(creq.Context.AppPath, apps.PathOAuthRedirect)),
+		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.RemoteOAuth2.RedirectURL),
 	})
 }
 

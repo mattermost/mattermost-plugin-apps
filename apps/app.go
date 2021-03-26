@@ -35,9 +35,8 @@ type App struct {
 
 	// App's Mattermost OAuth2 credentials. An Mattermost server OAuth2 app is
 	// created (or updated) when a Mattermost App is installed on the instance.
-	OAuth2ClientID     string `json:"oauth2_client_id,omitempty"`
-	OAuth2ClientSecret string `json:"oauth2_client_secret,omitempty"`
-	OAuth2TrustedApp   bool   `json:"oauth2_trusted_app,omitempty"`
+	MattermostOAuth2           OAuth2App `json:"mattermost_oauth2,omitempty"`
+	MattermostOAuth2TrustedApp bool      `json:"mattermost_oauth2_trusted_app,omitempty"`
 
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
@@ -45,6 +44,9 @@ type App struct {
 	BotUserID      string `json:"bot_user_id,omitempty"`
 	BotUsername    string `json:"bot_username,omitempty"`
 	BotAccessToken string `json:"bot_access_token,omitempty"`
+
+	// App's remote OAuth2 credentials. <>/<>TODO document how to store.
+	RemoteOAuth2 OAuth2App `json:"remote_oauth2,omitempty"`
 
 	// In V1, GrantedPermissions are simply copied from RequestedPermissions
 	// upon the sysadmin's consent, during installing the App.
@@ -56,6 +58,14 @@ type App struct {
 	// In V1, GrantedLocations are simply copied from RequestedLocations upon
 	// the sysadmin's consent, during installing the App.
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
+}
+
+// OAuth2App contains the setored settings for an "OAuth2 app" used by the App.
+// It is used to describe the OAuth2 connections both to Mattermost, and
+// optionally to a 3rd party remote system.
+type OAuth2App struct {
+	ClientID     string `json:"client_id,omitempty"`
+	ClientSecret string `json:"client_secret,omitempty"`
 }
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.

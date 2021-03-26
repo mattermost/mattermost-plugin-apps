@@ -50,16 +50,16 @@ type Manifest struct {
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
-	// OnOAuth2Redirect must return Data set to the redirect URL. It should also
-	// save the state data that will be used to validate OAuth2 complete
-	// callback.
-	OnOAuth2Redirect *Call `json:"on_oauth2_redirect,omitempty"`
+	// OnRemoteOAuth2Redirect must return Data set to the redirect URL. It
+	// should also save the state data that will be used to validate OAuth2
+	// complete callback.
+	OnRemoteOAuth2Redirect *Call `json:"on_remote_oauth2_redirect,omitempty"`
 
-	// OnOAuth2Complete gets called upon successful completion of the OAuth2
-	// process. It gets passed the URL query as Values. The App should validate
-	// the state data, obtain the OAuth2 user token, and store it persistently
-	// for future use.
-	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
+	// OnRemoteOAuth2Complete gets called upon successful completion of the
+	// OAuth2 process. It gets passed the URL query as Values. The App should
+	// validate the state data, obtain the OAuth2 user token, and store it
+	// persistently for future use.
+	OnRemoteOAuth2Complete *Call `json:"on_remote_oauth2_complete,omitempty"`
 
 	// Requested Access
 
@@ -97,12 +97,20 @@ var DefaultBindingsCall = &Call{
 	Path: "/bindings",
 }
 
-var DefaultOnOAuth2RedirectCall = &Call{
+var DefaultOnRemoteOAuth2RedirectCall = &Call{
 	Path: "/oauth2/remote/redirect",
+	Expand: &Expand{
+		ActingUser:      ExpandSummary,
+		RemoteOAuth2App: ExpandAll,
+	},
 }
 
-var DefaultOnOAuth2CompleteCall = &Call{
+var DefaultOnRemoteOAuth2CompleteCall = &Call{
 	Path: "/oauth2/remote/complete",
+	Expand: &Expand{
+		ActingUser:      ExpandSummary,
+		RemoteOAuth2App: ExpandAll,
+	},
 }
 
 func (m Manifest) IsValid() error {

@@ -38,13 +38,13 @@ func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, a
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(string(sessionToken))
 
-	if app.OAuth2ClientID != "" {
-		success, response := client.DeleteOAuthApp(app.OAuth2ClientID)
+	if app.MattermostOAuth2.ClientID != "" {
+		success, response := client.DeleteOAuthApp(app.MattermostOAuth2.ClientID)
 		if !success {
 			if response.Error != nil {
-				return errors.Wrapf(response.Error, "failed to delete OAuth2 App - %s", app.AppID)
+				return errors.Wrapf(response.Error, "failed to delete Mattermost OAuth2 App - %s", app.AppID)
 			}
-			return errors.Errorf("failed to delete OAuth2 App - returned with status code %d", response.StatusCode)
+			return errors.Errorf("failed to delete Mattermost OAuth2 App - returned with status code %d", response.StatusCode)
 		}
 	}
 

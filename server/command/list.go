@@ -39,12 +39,16 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		if app.BotUserID != "" {
 			account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
 		}
-		if app.OAuth2ClientID != "" {
+		if app.MattermostOAuth2.ClientID != "" {
 			if account != "" {
 				account += ", "
 			}
-			account += fmt.Sprintf("OAuth: `%s`", app.OAuth2ClientID)
+			account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.ClientID)
+			if app.RemoteOAuth2.ClientID != "" {
+				account += fmt.Sprintf("/`%s`", app.RemoteOAuth2.ClientID)
+			}
 		}
+
 		name := fmt.Sprintf("**[%s](%s)** (`/%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 

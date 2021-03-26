@@ -148,9 +148,9 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	app, out, err := d.proxy.InstallApp(&cc, apps.SessionToken(session.Token),
 		&apps.InInstallApp{
-			AppID:            stateData.AppID,
-			OAuth2TrustedApp: noUserConsentForOAuth2,
-			AppSecret:        secret,
+			AppID:                      stateData.AppID,
+			MattermostOAuth2TrustedApp: noUserConsentForOAuth2,
+			AppSecret:                  secret,
 		},
 	)
 	if err != nil {

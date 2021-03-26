@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"path"
+
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -116,13 +118,33 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		// TODO Mentioned
 	}
 
-	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
-	// now pass in the session token to make things work.
+	// TODO: use the appropriate user's Mattermost OAuth2 token once
+	// re-implemented, for now pass in the session token to make things work.
 	if expand.AdminAccessToken != "" {
 		clone.ExpandedContext.AdminAccessToken = string(e.sessionToken)
 	}
 	if expand.ActingUserAccessToken != "" {
 		clone.ExpandedContext.ActingUserAccessToken = string(e.sessionToken)
+	}
+
+	conf := e.conf.GetConfig()
+	if expand.RemoteOAuth2App != "" {
+		clone.ExpandedContext.RemoteOAuth2.ClientID = app.RemoteOAuth2.ClientID
+		clone.ExpandedContext.RemoteOAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
+		baseURL := conf.PluginURL + path.Join(config.AppsPath, string(app.AppID), config.PathOAuth2)
+		clone.ExpandedContext.RemoteOAuth2.RedirectURL = baseURL + config.PathRemoteRedirect
+		clone.ExpandedContext.RemoteOAuth2.CompleteURL = baseURL + config.PathRemoteComplete
+	}
+
+	if expand.RemoteOAuth2State != "" && e.RemoteOAuth2.State == "" {
+		//<>/<> TODO: fetch the state
+		state := "<>/<>"
+		clone.ExpandedContext.RemoteOAuth2.State = state
+	}
+
+	if expand.RemoteOAuth2Token != "" && e.RemoteOAuth2.Token == nil {
+		//<>/<> TODO: fetch the token
+		clone.ExpandedContext.RemoteOAuth2.Token = nil
 	}
 
 	return &clone, nil
@@ -230,7 +252,8 @@ func stripApp(app *apps.App, level apps.ExpandLevel) *apps.App {
 
 	clone := *app
 	clone.Secret = ""
-	clone.OAuth2ClientSecret = ""
+	clone.MattermostOAuth2.ClientSecret = ""
+	clone.RemoteOAuth2 = apps.OAuth2App{}
 
 	switch level {
 	case apps.ExpandAll, apps.ExpandSummary:

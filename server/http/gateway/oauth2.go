@@ -19,7 +19,7 @@ func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	redirectURL, err := g.proxy.GetOAuth2RedirectURL(apps.AppID(appID), actingUserID, token)
+	redirectURL, err := g.proxy.GetRemoteOAuth2RedirectURL(apps.AppID(appID), actingUserID, token)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return
@@ -43,7 +43,7 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteOAuth2(apps.AppID(appID), actingUserID, token, urlValues)
+	err := g.proxy.CompleteRemoteOAuth2(apps.AppID(appID), actingUserID, token, urlValues)
 	if err != nil {
 		httputils.WriteInternalServerError(w, err)
 		return

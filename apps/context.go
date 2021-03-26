@@ -2,6 +2,7 @@ package apps
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
+	"golang.org/x/oauth2"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -64,6 +65,7 @@ type ExpandedContext struct {
 	ActingUser            *model.User    `json:"acting_user,omitempty"`
 	ActingUserAccessToken string         `json:"acting_user_access_token,omitempty"`
 	AdminAccessToken      string         `json:"admin_access_token,omitempty"`
+	RemoteOAuth2          OAuth2Context  `json:"remote_oauth2,omitempty"`
 	App                   *App           `json:"app,omitempty"`
 	Channel               *model.Channel `json:"channel,omitempty"`
 	Mentioned             []*model.User  `json:"mentioned,omitempty"`
@@ -75,8 +77,17 @@ type ExpandedContext struct {
 	User *model.User `json:"user,omitempty"`
 }
 
-// Paths for OAuth endpoint that the App needs to set up remote (3rd party) OAuth
-const (
-	PathOAuthRedirect = "/oauth2/remote/redirect"
-	PathOAuthComplete = "/oauth2/remote/complete"
-)
+type OAuth2Context struct {
+	// Expanded with "oauth2_app". Config must be previously stored with
+	// TODO:<>/<>.
+	RedirectURL string `json:"redirect_url,omitempty"`
+	CompleteURL string `json:"complete_url,omitempty"`
+	*OAuth2App
+
+	// Expanded with "oauth2_state". State must be previously stored with TODO:<>/<>.
+	State string `json:"state,omitempty"`
+
+	// Expanded with "oauth2_token". Token must be previously stored with
+	// TODO:<>/<>.
+	Token *oauth2.Token `json:"token,omitempty"`
+}

@@ -66,13 +66,13 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(app, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		oAuthApp, err = p.ensureOAuthApp(app, in.MattermostOAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
 		if err != nil {
 			return nil, "", err
 		}
-		app.OAuth2ClientID = oAuthApp.Id
-		app.OAuth2ClientSecret = oAuthApp.ClientSecret
-		app.OAuth2TrustedApp = in.OAuth2TrustedApp
+		app.MattermostOAuth2.ClientID = oAuthApp.Id
+		app.MattermostOAuth2.ClientSecret = oAuthApp.ClientSecret
+		app.MattermostOAuth2TrustedApp = in.MattermostOAuth2TrustedApp
 	}
 
 	err = p.store.App.Save(app)
@@ -99,8 +99,8 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, 
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(sessionToken)
 
-	if app.OAuth2ClientID != "" {
-		oauthApp, response := client.GetOAuthApp(app.OAuth2ClientID)
+	if app.MattermostOAuth2.ClientID != "" {
+		oauthApp, response := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if response.StatusCode == http.StatusOK && response.Error == nil {
 			_ = p.mm.Post.DM(app.BotUserID, actingUserID, &model.Post{
 				Message: fmt.Sprintf("Using existing OAuth2 App `%s`.", oauthApp.Id),

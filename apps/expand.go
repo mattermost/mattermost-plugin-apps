@@ -39,14 +39,16 @@ type Expand struct {
 
 	// ActingUserAccessToken: all. Include user-level access token in the
 	// request. Requires act_as_user permission to have been granted to the app.
-	// This should be user's OAuth2 token, but until it's implemented the MM
-	// session token is used.
+	// This should be user's Mattermost OAuth2 token, but until it's implemented
+	// the MM session token is used.
+	// https://mattermost.atlassian.net/browse/MM-31117
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 
 	// AdminAccessToken: all. Include admin-level access token in the request.
 	// Requires act_as_admin permission to have been granted to the app. This
-	// should be a special OAuth2 token, but until it's implemented the MM
-	// session token is used.
+	// should be a special Mattermost OAuth2 token, but until it's implemented
+	// the MM session token is used.
+	// https://mattermost.atlassian.net/browse/MM-28542
 	AdminAccessToken ExpandLevel `json:"admin_access_token,omitempty"`
 
 	// Channel: all for model.Channel, summary for Id, DeleteAt, TeamId, Type,
@@ -69,4 +71,14 @@ type Expand struct {
 	// FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,
 	// Username.
 	User ExpandLevel `json:"user,omitempty"`
+
+	// RemoteOAuth2App expands the remote OAuth2 app configuration data.
+	RemoteOAuth2App ExpandLevel `json:"remote_oauth2_app,omitempty"`
+
+	// RemoteOAuth2Token expands the remote OAuth2 user token.
+	RemoteOAuth2Token ExpandLevel `json:"remote_oauth2_token,omitempty"`
+
+	// RemoteOAuth2State expands the state data (if any) for an in-progress
+	// remote OAuth2 connect flow.
+	RemoteOAuth2State ExpandLevel `json:"remote_oauth2_state,omitempty"`
 }
