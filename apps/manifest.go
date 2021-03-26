@@ -47,9 +47,10 @@ type Manifest struct {
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
-	// OnAuth2... are called to support 3rd party (remote system) OAuth2
-	OnOAuth2Redirect *Call `json:"on_disable,omitempty"`
-	OnDisable *Call `json:"on_disable,omitempty"`
+	// OnOAuth2Redirect must return
+	OnOAuth2Redirect *Call `json:"on_oauth2_redirect,omitempty"`
+
+	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
@@ -70,13 +71,8 @@ type Manifest struct {
 	AWSLambda []AWSLambdaFunction `json:"aws_lambda,omitempty"`
 }
 
-const (
-	DefaultInstallCallPath  = "/install"
-	DefaultBindingsCallPath = "/bindings"
-)
-
-var DefaultInstallCall = &Call{
-	Path: DefaultInstallCallPath,
+var DefaultOnInstallCall = &Call{
+	Path: "/install",
 	Expand: &Expand{
 		App:              ExpandAll,
 		AdminAccessToken: ExpandAll,
@@ -84,7 +80,15 @@ var DefaultInstallCall = &Call{
 }
 
 var DefaultBindingsCall = &Call{
-	Path: DefaultBindingsCallPath,
+	Path: "/bindings",
+}
+
+var DefaultOnOAuth2RedirectCall = &Call{
+	Path: "/oauth2/remote/redirect",
+}
+
+var DefaultOnOAuth2CompleteCall = &Call{
+	Path: "/oauth2/remote/complete",
 }
 
 func (m Manifest) IsValid() error {

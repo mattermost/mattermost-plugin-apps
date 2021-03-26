@@ -33,8 +33,10 @@ type Proxy struct {
 
 type Service interface {
 	Call(apps.SessionToken, *apps.CallRequest) *apps.CallResponse
+	CompleteOAuth2(appID apps.AppID, actingUserID, token string, urlValues map[string]interface{}) error
 	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
 	GetBindings(apps.SessionToken, *apps.Context) ([]*apps.Binding, error)
+	GetOAuth2RedirectURL(appID apps.AppID, actingUserID, token string) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
 
 	AddLocalManifest(actingUserID string, _ apps.SessionToken, _ *apps.Manifest) (md.MD, error)

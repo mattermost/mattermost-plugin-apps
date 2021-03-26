@@ -19,30 +19,9 @@ func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	creq := apps.CallRequest{
-		Call: apps.Call{
-			Path: "/oauth2/redirect", // <>/<>
-		},
-		Type: apps.CallTypeSubmit,
-		Context: g.conf.GetConfig().SetContextDefaultsForApp(
-			&apps.Context{
-				ActingUserID: actingUserID,
-			},
-			apps.AppID(appID),
-		),
-	}
-	cresp := g.proxy.Call(apps.SessionToken(token), &creq)
-	if cresp.Type == apps.CallResponseTypeError {
-		httputils.WriteInternalServerError(w, cresp)
-		return
-	}
-	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
-		httputils.WriteInternalServerError(w, errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type))
-		return
-	}
-	redirectURL, ok := cresp.Data.(string)
-	if !ok {
-		httputils.WriteInternalServerError(w, errors.Errorf("oauth2: unexpected data type from the app: %T, expected string (redirect URL)", cresp.Data))
+	redirectURL, err := g.proxy.GetOAuth2RedirectURL(apps.AppID(appID), actingUserID, token)
+	if err != nil {
+		httputils.WriteInternalServerError(w, err)
 		return
 	}
 
@@ -58,33 +37,20 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	creq := apps.CallRequest{
-		Call: apps.Call{
-			Path: "/oauth2/complete", // <>/<>
-		},
-		Type: apps.CallTypeSubmit,
-		Context: g.conf.GetConfig().SetContextDefaultsForApp(
-			&apps.Context{
-				ActingUserID: actingUserID,
-			},
-			apps.AppID(appID),
-		),
-		Values: map[string]interface{}{
-			"q": req.URL.RawQuery,
-		},
+	q := req.URL.Query()
+	urlValues := map[string]interface{}{}
+	for key := range q {
+		urlValues[key] = q.Get(key)
 	}
-	cresp := g.proxy.Call(apps.SessionToken(token), &creq)
-	if cresp.Type == apps.CallResponseTypeError {
-		httputils.WriteInternalServerError(w, cresp)
-		return
-	}
-	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
-		httputils.WriteInternalServerError(w, errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type))
+
+	err := g.proxy.CompleteOAuth2(apps.AppID(appID), actingUserID, token, urlValues)
+	if err != nil {
+		httputils.WriteInternalServerError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	html := `
+	_, _ = w.Write([]byte(`
 	<!DOCTYPE html>
 	<html>
 		<head>
@@ -96,6 +62,5 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 			<p>Completed connecting to Google. Please close this window.</p>
 		</body>
 	</html>
-	`
-	_, _ = w.Write([]byte(html))
+	`))
 }

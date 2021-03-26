@@ -26,7 +26,7 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 		return apps.NewErrorCallResponse(err)
 	}
 
-	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context, c.Context.AppID)
+	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context.AppID, c.Context)
 
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, debugSessionToken)
 	cc, err = expander.ExpandForApp(app, c.Expand)

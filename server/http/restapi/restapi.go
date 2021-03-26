@@ -31,7 +31,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	subrouter := router.PathPrefix(config.APIPath).Subrouter()
 
-	subrouter.HandleFunc(apps.DefaultBindingsCallPath,
+	subrouter.HandleFunc(apps.DefaultBindingsCall.Path,
 		httputils.CheckAuthorized(mm, a.handleGetBindings)).Methods("GET")
 
 	subrouter.HandleFunc(config.CallPath, a.handleCall).Methods("POST")

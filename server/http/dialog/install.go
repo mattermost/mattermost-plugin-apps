@@ -144,7 +144,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		ActingUserID: actingUserID,
 		TeamID:       stateData.TeamID,
 	}
-	d.conf.GetConfig().SetContextDefaultsForApp(&cc, stateData.AppID)
+	d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, &cc)
 
 	app, out, err := d.proxy.InstallApp(&cc, apps.SessionToken(session.Token),
 		&apps.InInstallApp{

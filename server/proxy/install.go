@@ -81,7 +81,7 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 	}
 
 	installRequest := &apps.CallRequest{
-		Call:    *apps.DefaultInstallCall.WithOverrides(app.OnInstall),
+		Call:    *apps.DefaultOnInstallCall.WithOverrides(app.OnInstall),
 		Context: cc,
 	}
 
