@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"path"
 	"strings"
 
@@ -157,11 +156,8 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
-
-	q, _ := creq.Values["q"].(string)
-	values, _ := url.ParseQuery(q)
-	state := values.Get("state")
-	code := values.Get("code")
+	state := creq.Values["state"].(string)
+	code := creq.Values["code"].(string)
 	userId := strings.Split(state, "_")[1]
 
 	asBot := mmclient.AsBot(creq.Context)
