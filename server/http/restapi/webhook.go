@@ -13,16 +13,15 @@ import (
 
 func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-
 	appID := vars["app_id"]
 	if appID == "" {
 		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
 		return
 	}
 
-	whName := vars["name"]
-	if whName == "" {
-		httputils.WriteBadRequestError(w, errors.New("webhook name not specified"))
+	path := vars["path"]
+	if path == "" {
+		httputils.WriteBadRequestError(w, errors.New("webhook call path not specified"))
 		return
 	}
 
@@ -55,7 +54,7 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		},
 		Type: apps.CallTypeSubmit,
 		Call: apps.Call{
-			Path: "/webhook-incoming",
+			Path: "/" + path,
 		},
 	}
 	_ = a.proxy.Call("", &call)
