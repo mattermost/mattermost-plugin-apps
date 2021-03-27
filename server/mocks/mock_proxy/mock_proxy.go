@@ -92,6 +92,20 @@ func (mr *MockServiceMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1)
 }
 
+// CompleteRemoteOAuth2 mocks base method.
+func (m *MockService) CompleteRemoteOAuth2(arg0 apps.AppID, arg1, arg2 string, arg3 map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteRemoteOAuth2", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CompleteRemoteOAuth2 indicates an expected call of CompleteRemoteOAuth2.
+func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteRemoteOAuth2", reflect.TypeOf((*MockService)(nil).CompleteRemoteOAuth2), arg0, arg1, arg2, arg3)
+}
+
 // DisableApp mocks base method.
 func (m *MockService) DisableApp(arg0 *apps.Context, arg1 *apps.App) (md.MD, error) {
 	m.ctrl.T.Helper()
@@ -209,6 +223,21 @@ func (m *MockService) GetManifest(arg0 apps.AppID) (*apps.Manifest, error) {
 func (mr *MockServiceMockRecorder) GetManifest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0)
+}
+
+// GetRemoteOAuth2RedirectURL mocks base method.
+func (m *MockService) GetRemoteOAuth2RedirectURL(arg0 apps.AppID, arg1, arg2 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRemoteOAuth2RedirectURL", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRemoteOAuth2RedirectURL indicates an expected call of GetRemoteOAuth2RedirectURL.
+func (mr *MockServiceMockRecorder) GetRemoteOAuth2RedirectURL(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteOAuth2RedirectURL", reflect.TypeOf((*MockService)(nil).GetRemoteOAuth2RedirectURL), arg0, arg1, arg2)
 }
 
 // InstallApp mocks base method.

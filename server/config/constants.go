@@ -59,10 +59,23 @@ const (
 
 // KV namespace
 const (
-	KeyCallOnce     = "CallOnce"
-	KeyClusterMutex = "Cluster_Mutex"
+	// PrefixApp is the Apps namespace. Short, maximize the app keyspace
+	KVAppPrefix = "a_"
 
-	PrefixSubs          = "sub_"
-	PrefixInstalledApp  = "app_"
-	PrefixLocalManifest = "man_"
+	// PrefixOAuth2 is used to store OAuth2-related information (state, tokens)
+	KVOAuth2Prefix = "oauth2_"
+
+	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
+	// usually upon a Mattermost instance startup.
+	KVCallOnceKey     = "CallOnce"
+	KVClusterMutexKey = "Cluster_Mutex"
+
+	// PrefixSub is used for keys storing subscriptions.
+	KVSubPrefix = "sub_"
+
+	// PrefixInstalledApp is used to store App records.
+	KVInstalledAppPrefix = "app_"
+
+	// PrefixLocalManifest is used to store locally-listed manifests.
+	KVLocalManifestPrefix = "man_"
 )

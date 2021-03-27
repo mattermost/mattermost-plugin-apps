@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 const (
@@ -99,6 +100,80 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionRe
 
 	subResponse := apps.SubscriptionResponseFromJSON(r.Body)
 	return subResponse, model.BuildResponse(r)
+}
+
+func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
+	r, appErr := c.DoAPIPOST(
+		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/create-oauth2-state",
+		"{}") // nolint:bodyclose
+	if appErr != nil {
+		return "", model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+
+	s := ""
+	err := json.NewDecoder(r.Body).Decode(&s)
+	if err != nil {
+		return "", model.BuildErrorResponse(r, model.NewAppError("CreateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
+	}
+	return "", model.BuildResponse(r)
+}
+
+func (c *ClientPP) ValidateOAuth2State(state string) (bool, *model.Response) {
+	r, appErr := c.DoAPIPOST(
+		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/validate-oauth2-state",
+		utils.ToJSON(state)) // nolint:bodyclose
+	if appErr != nil {
+		return false, model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+
+	valid := false
+	err := json.NewDecoder(r.Body).Decode(&valid)
+	if err != nil {
+		return false, model.BuildErrorResponse(r, model.NewAppError("ValidateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
+	}
+	return valid, model.BuildResponse(r)
+}
+
+func (c *ClientPP) StoreRemoteOAuth2App(clientID, clientSecret string) *model.Response {
+	r, appErr := c.DoAPIPOST(
+		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/oauth2-app",
+		utils.ToJSON(apps.OAuth2App{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+		})) // nolint:bodyclose
+	if appErr != nil {
+		return model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+	return model.BuildResponse(r)
+}
+
+func (c *ClientPP) StoreRemoteOAuth2User(appID apps.AppID, mattermostUserID string, ref interface{}) *model.Response {
+	r, appErr := c.DoAPIPOST(
+		c.GetPluginRoute(
+			AppsPluginName)+APIPathPP+"/oauth2-user/"+mattermostUserID,
+		utils.ToJSON(ref)) // nolint:bodyclose
+	if appErr != nil {
+		return model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+	return model.BuildResponse(r)
+}
+
+func (c *ClientPP) GetRemoteOAuth2User(appID apps.AppID, ref interface{}) *model.Response {
+	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/oauth2-user/"+string(appID), "") // nolint:bodyclose
+	if appErr != nil {
+		return model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+
+	err := json.NewDecoder(r.Body).Decode(ref)
+	if err != nil {
+		return model.BuildErrorResponse(r, model.NewAppError("GetRemoteOAuth2User", "", nil, err.Error(), http.StatusInternalServerError))
+	}
+	return model.BuildResponse(r)
 }
 
 func (c *ClientPP) GetPluginsRoute() string {

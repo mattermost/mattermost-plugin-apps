@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	_ "embed"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strings"
 
@@ -38,8 +36,6 @@ var connectFormData []byte
 
 //go:embed configure_form.json
 var configureFormData []byte
-
-const configKey = "config"
 
 func main() {
 	// Static handlers
@@ -86,10 +82,9 @@ func configure(w http.ResponseWriter, req *http.Request) {
 
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
-	mmclient.AsBot(creq.Context).KVSet(configKey, "", map[string]string{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-	})
+
+	asBot := mmclient.AsBot(creq.Context)
+	asBot.StoreRemoteOAuth2App(clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: "updated OAuth client credentials",
@@ -97,14 +92,9 @@ func configure(w http.ResponseWriter, req *http.Request) {
 }
 
 func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config {
-	v, _ := asBot.KVGet(configKey, "")
-	m, _ := v.(map[string]interface{})
-	clientID, _ := m["client_id"].(string)
-	clientSecret, _ := m["client_secret"].(string)
-
 	return &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+		ClientID:     creq.Context.RemoteOAuth2.OAuth2App.ClientID,
+		ClientSecret: creq.Context.RemoteOAuth2.OAuth2App.ClientSecret,
 		Endpoint:     google.Endpoint,
 		RedirectURL:  creq.Context.RemoteOAuth2.CompleteURL,
 		Scopes: []string{
@@ -127,13 +117,10 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	r := make([]byte, 10) // 20 hex digits
-	rand.Read(r)
-	random := hex.EncodeToString(r)
-	state := fmt.Sprintf("%v_%s", random, creq.Context.ActingUserID)
-
 	asBot := mmclient.AsBot(creq.Context)
-	asBot.KVSet(state, "", state)
+	asActingUser := mmclient.AsActingUser(creq.Context)
+
+	state, _ := asActingUser.CreateOAuth2State()
 
 	oauthConfig := oauth2Config(asBot, &creq)
 	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
@@ -151,19 +138,16 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	code := creq.Values["code"].(string)
 	userId := strings.Split(state, "_")[1]
 
+	asActingUser := mmclient.AsActingUser(creq.Context)
+	asActingUser.ValidateOAuth2State(state)
+
 	asBot := mmclient.AsBot(creq.Context)
-	v, _ := asBot.KVGet(state, "")
-
-	storedState, _ := v.(string)
-	if storedState != state {
-		http.Error(w, "Invalid state", http.StatusBadRequest)
-		return
-	}
-
-	asBot.KVDelete(state, "")
-
 	oauthConfig := oauth2Config(asBot, &creq)
 	token, _ := oauthConfig.Exchange(context.Background(), code)
+
+	asActingUser.StoreRemoteOAuth2User(creq.Context.AppID,)
+
+
 
 	// TODO: token needs to be stored double-encoded 'cause KV doesn't have a get into a struct. Change KV?
 	tokenData, _ := json.Marshal(token)

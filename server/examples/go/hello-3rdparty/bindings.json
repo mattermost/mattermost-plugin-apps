@@ -13,7 +13,10 @@
 							"location": "configure",
 							"label": "configure",
 							"call": {
-								"path": "/configure"
+								"path": "/configure",
+								"expand":{
+									"admin_access_token":"all"
+								}
 							}
 						},
 						{

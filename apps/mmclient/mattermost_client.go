@@ -115,6 +115,61 @@ func (client *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionRes
 	return subResponse, nil
 }
 
+func (c *Client) CreateOAuth2State() (string, error) {
+	state, res := c.ClientPP.CreateOAuth2State()
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return "", res.Error
+		}
+		return "", fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return state, nil
+}
+
+func (c *Client) ValidateOAuth2State(state string) (bool, error) {
+	valid, res := c.ClientPP.ValidateOAuth2State(state)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return false, res.Error
+		}
+		return false, fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return valid, nil
+}
+
+func (c *Client) StoreRemoteOAuth2App(clientID, clientSecret string) error {
+	res := c.ClientPP.StoreRemoteOAuth2App( clientID, clientSecret)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (c *Client) StoreRemoteOAuth2User(appID apps.AppID, ref interface{}) error {
+	res := c.ClientPP.StoreRemoteOAuth2User(appID, mattermostUserID, ref)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (c *Client) GetRemoteOAuth2User(botUserID, mattermostUserID string, ref interface{}) error {
+	res := c.ClientPP.GetRemoteOAuth2User(botUserID, mattermostUserID, ref)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
 func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	var createdPost *model.Post
 	var res *model.Response

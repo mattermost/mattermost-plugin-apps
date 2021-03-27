@@ -1,6 +1,6 @@
 // +build !e2e
 
-package appservices
+package store
 
 import (
 	"strings"
@@ -22,13 +22,13 @@ func TestKVKey(t *testing.T) {
 		{
 			namespace: "test_ns",
 			id:        "test_id",
-			expected:  ("_E17qMxGaOyuJqYQs5PB8PtHS7A/VBevAGLPmHSVthG1nH7DdU"),
+			expected:  ("a__E17qMxGaOyuJqYQs5PB8PtHS7A/VBevAGLPmHSVthG1nH7DdU"),
 		},
 		{
 			namespace: "test_ns",
 			prefix:    "test_prefix",
 			id:        "test_id",
-			expected:  ("iGXV5w_xPrIPpq84ntMkm_99yls/VBevAGLPmHSVthG1nH7DdU"),
+			expected:  ("a_iGXV5w_xPrIPpq84ntMkm_99yls/VBevAGLPmHSVthG1nH7DdU"),
 		},
 	} {
 		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "_")

@@ -13,6 +13,8 @@ type Service struct {
 	App          AppStore
 	Subscription SubscriptionStore
 	Manifest     ManifestStore
+	AppKV        AppKVStore
+	OAuth2        OAuth2Store
 
 	mm   *pluginapi.Client
 	conf config.Service
@@ -26,9 +28,15 @@ func NewService(mm *pluginapi.Client, conf config.Service) *Service {
 	s.App = &appStore{
 		Service: s,
 	}
+	s.AppKV = &appKVStore{
+		Service: s,
+	}
+	s.OAuth2 = &oauth2Store{
+		Service: s,
+	}
 	s.Subscription = &subscriptionStore{
-		Service: s}
-
+		Service: s,
+	}
 	s.Manifest = &manifestStore{
 		Service: s,
 	}

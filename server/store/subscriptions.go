@@ -35,7 +35,7 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 		apps.SubjectChannelCreated:
 		idSuffix = "_" + teamID
 	}
-	return config.PrefixSubs + string(subject) + idSuffix
+	return config.KVSubPrefix + string(subject) + idSuffix
 }
 
 func (s subscriptionStore) Delete(sub *apps.Subscription) error {
