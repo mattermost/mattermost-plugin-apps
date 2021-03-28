@@ -60,24 +60,17 @@ func (p Permission) Markdown() md.MD {
 }
 
 func (p Permissions) IsValid() error {
-	check := func(pp Permissions) error {
+	for _, pp := range []Permissions{
+		{PermissionRemoteOAuth2, PermissionActAsBot, PermissionActAsUser},
+		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
+	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {
-			return nil
+			continue
 		}
 		for _, d := range pp[1:] {
 			if !p.Contains(d) {
 				return utils.NewInvalidError("%s requires %s", p, d)
 			}
-		}
-		return nil
-	}
-
-	for _, pp := range []Permissions{
-		{PermissionRemoteOAuth2, PermissionActAsBot, PermissionActAsUser},
-		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
-	} {
-		if err := check(pp); err != nil {
-			return err
 		}
 	}
 
