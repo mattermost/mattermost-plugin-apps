@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -17,7 +18,7 @@ import (
 
 type OAuth2Store interface {
 	CreateState(actingUserID string) (string, error)
-	GetStateOnce(urlState string) (string, error)
+	ValidateStateOnce(urlState, actingUserID string) error
 	SaveUser(namespace, mattermostUserID string, ref interface{}) error
 	GetUser(namespace, mattermostUserID string, ref interface{}) error
 }
@@ -32,9 +33,9 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	// fit the max key size of ~50chars
 	r := make([]byte, 15)
 	_, _ = rand.Read(r)
-	state := fmt.Sprintf("state_%v_%s", base64.RawURLEncoding.EncodeToString(r), actingUserID)
+	state := fmt.Sprintf("%s_%s", base64.RawURLEncoding.EncodeToString(r), actingUserID)
 
-	_, err := s.mm.KV.Set(config.KVOAuth2Prefix+state, state, pluginapi.SetExpiry(15*time.Minute))
+	_, err := s.mm.KV.Set(config.KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
@@ -42,12 +43,24 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	return state, nil
 }
 
-func (s *oauth2Store) GetStateOnce(urlState string) (string, error) {
+func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
+	urlUserID := strings.Split(urlState, "_")[1]
+	if urlUserID != actingUserID {
+		return utils.ErrForbidden
+	}
+
 	storedState := ""
-	key := config.KVOAuth2Prefix + urlState
+	key := config.KVOAuth2StatePrefix + urlState
 	err := s.mm.KV.Get(key, &storedState)
 	_ = s.mm.KV.Delete(key)
-	return storedState, err
+	if err != nil {
+		return err
+	}
+	if storedState != urlState {
+		return utils.NewForbiddenError("state mismatch")
+	}
+
+	return nil
 }
 
 func (s *oauth2Store) SaveUser(namespace, mattermostUserID string, ref interface{}) error {

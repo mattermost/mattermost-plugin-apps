@@ -22,21 +22,6 @@ func (a *restapi) oauth2CreateState(w http.ResponseWriter, r *http.Request) {
 	httputils.WriteJSON(w, state)
 }
 
-func (a *restapi) oauth2ValidateState(w http.ResponseWriter, r *http.Request) {
-	state := ""
-	err := json.NewDecoder(r.Body).Decode(&state)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-	err = a.appServices.ValidateOAuth2State(actingID(r), state)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-	httputils.WriteJSON(w, true)
-}
-
 func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request) {
 	oapp := apps.OAuth2App{}
 	err := json.NewDecoder(r.Body).Decode(&oapp)

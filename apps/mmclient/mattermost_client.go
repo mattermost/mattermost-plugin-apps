@@ -123,17 +123,6 @@ func (c *Client) CreateOAuth2State() (string, error) {
 	return state, nil
 }
 
-func (c *Client) ValidateOAuth2State(state string) (bool, error) {
-	valid, res := c.ClientPP.ValidateOAuth2State(state)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if res.Error != nil {
-			return false, res.Error
-		}
-		return false, fmt.Errorf("returned with status %d", res.StatusCode)
-	}
-	return valid, nil
-}
-
 func (c *Client) StoreOAuth2App(clientID, clientSecret string) error {
 	res := c.ClientPP.StoreOAuth2App(clientID, clientSecret)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {

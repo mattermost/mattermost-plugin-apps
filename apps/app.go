@@ -49,8 +49,8 @@ type App struct {
 	// App is installed on the instance.
 	MattermostOAuth2 OAuth2App `json:"mattermost_oauth2,omitempty"`
 
-	// RemoteOAuth2 contains App's remote OAuth2 credentials. <>/<>TODO document
-	// how to store.
+	// RemoteOAuth2 contains App's remote OAuth2 credentials. Use
+	// mmclient.StoreOAuth2App to update.
 	RemoteOAuth2 OAuth2App `json:"remote_oauth2,omitempty"`
 
 	// In V1, GrantedPermissions are simply copied from RequestedPermissions

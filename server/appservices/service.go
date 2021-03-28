@@ -30,7 +30,6 @@ type Service interface {
 
 	// Remote (3rd party) OAuth2
 	CreateOAuth2State(actingUserID string) (string, error)
-	ValidateOAuth2State(actingUserID string, state string) error
 	StoreOAuth2App(botUserID string, oapp apps.OAuth2App) error
 	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
 	StoreOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error

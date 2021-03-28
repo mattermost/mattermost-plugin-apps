@@ -55,11 +55,12 @@ const (
 
 // KV namespace
 const (
-	// PrefixApp is the Apps namespace. Short, maximize the app keyspace
+	// KVAppPrefix is the Apps namespace. Short, maximize the app keyspace
 	KVAppPrefix = "_"
 
-	// PrefixOAuth2 is used to store OAuth2-related information (state, tokens)
-	KVOAuth2Prefix = "oauth2_"
+	// KVOAuth2Prefix is used to store OAuth2-related information (state, tokens)
+	KVOAuth2Prefix = "o_"
+	KVOAuth2StatePrefix = "s_"
 
 	// PrefixSub is used for keys storing subscriptions.
 	KVSubPrefix = "sub_"

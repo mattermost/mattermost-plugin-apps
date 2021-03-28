@@ -69,14 +69,14 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 
 		if expand.AdminAccessToken != "" {
-			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser.Markdown())
+			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin.Markdown())
 			}
 			clone.ExpandedContext.AdminAccessToken = e.session.Token
 		}
 		if expand.ActingUserAccessToken != "" {
-			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin.Markdown())
+			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser.Markdown())
 			}
 			clone.ExpandedContext.ActingUserAccessToken = e.session.Token
 		}
@@ -147,12 +147,6 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
 		clone.ExpandedContext.OAuth2.RedirectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Redirect
 		clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
-	}
-
-	if expand.OAuth2State != "" && e.OAuth2.State == "" {
-		//<>/<> TODO: fetch the state
-		state := "<>/<>"
-		clone.ExpandedContext.OAuth2.State = state
 	}
 
 	if expand.OAuth2User != "" && e.OAuth2.User == nil {

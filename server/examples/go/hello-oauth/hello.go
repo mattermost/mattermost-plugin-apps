@@ -123,7 +123,6 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 	state, _ := asActingUser.CreateOAuth2State()
 
 	url := oauth2Config(asBot, &creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
-
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
 		Data: url,
@@ -133,17 +132,10 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
-	state, _ := creq.Values["state"].(string)
 	code, _ := creq.Values["code"].(string)
 
 	asBot := mmclient.AsBot(creq.Context)
 	asActingUser := mmclient.AsActingUser(creq.Context)
-
-	valid, _ := asActingUser.ValidateOAuth2State(state)
-	if !valid {
-		http.Error(w, "invalid state data", http.StatusUnauthorized)
-		return
-	}
 
 	token, _ := oauth2Config(asBot, &creq).Exchange(context.Background(), code)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)

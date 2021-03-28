@@ -49,7 +49,6 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", a.kvDelete).Methods("DELETE")
 
 	subrouter.HandleFunc(mmclient.PathOAuth2CreateState, a.oauth2CreateState).Methods("PUT", "POST")
-	subrouter.HandleFunc(mmclient.PathOAuth2ValidateState, a.oauth2ValidateState).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2App, a.oauth2StoreApp).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2StoreUser).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2GetUser).Methods("GET")

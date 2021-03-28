@@ -63,10 +63,10 @@ type Manifest struct {
 	GetOAuth2RedirectURL *Call `json:"get_oauth2_redirect_url,omitempty"`
 
 	// OnOAuth2Complete gets called upon successful completion of the remote
-	// (3rd party) OAuth2 flow. It gets passed the URL query as Values. The App
-	// should validate the state data using mmclient.ValidateOAuth2State API,
-	// obtain the OAuth2 user token, and store it persistently for future use
-	// using mmclient.StoreOAuth2User.
+	// (3rd party) OAuth2 flow, and after the "state" has already been
+	// validated. It gets passed the URL query as Values. The App should obtain
+	// the OAuth2 user token, and store it persistently for future use using
+	// mmclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access
@@ -108,17 +108,18 @@ var DefaultBindings = &Call{
 var DefaultGetOAuth2RedirectURL = &Call{
 	Path: "/oauth2/redirect",
 	Expand: &Expand{
-		ActingUser: ExpandSummary,
-		OAuth2App:  ExpandAll,
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
 	},
 }
 
 var DefaultOnOAuth2Complete = &Call{
 	Path: "/oauth2/complete",
 	Expand: &Expand{
-		ActingUser:  ExpandSummary,
-		OAuth2App:   ExpandAll,
-		OAuth2State: ExpandAll,
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
 	},
 }
 
@@ -127,6 +128,7 @@ func (m Manifest) IsValid() error {
 		m.AppID.IsValid,
 		m.Version.IsValid,
 		m.AppType.IsValid,
+		m.RequestedPermissions.IsValid,
 	} {
 		if err := f(); err != nil {
 			return err

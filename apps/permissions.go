@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -56,4 +57,29 @@ func (p Permission) Markdown() md.MD {
 		m = "unknown permission: " + string(p)
 	}
 	return md.MD(m)
+}
+
+func (p Permissions) IsValid() error {
+	check := func(pp Permissions) error {
+		if len(pp) == 0 || !p.Contains(pp[0]) {
+			return nil
+		}
+		for _, d := range pp[1:] {
+			if !p.Contains(d) {
+				return utils.NewInvalidError("%s requires %s", p, d)
+			}
+		}
+		return nil
+	}
+
+	for _, pp := range []Permissions{
+		{PermissionRemoteOAuth2, PermissionActAsBot, PermissionActAsUser},
+		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
+	} {
+		if err := check(pp); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

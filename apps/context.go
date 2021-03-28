@@ -78,13 +78,10 @@ type ExpandedContext struct {
 
 type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
-	// TODO:<>/<>.
+	// mmclient.StoreOAuth2App
+	OAuth2App
 	RedirectURL string `json:"redirect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`
-	OAuth2App
-
-	// Expanded with "oauth2_state". State must be previously stored with TODO:<>/<>.
-	State string `json:"state,omitempty"`
 
 	User interface{} `json:"user,omitempty"`
 }

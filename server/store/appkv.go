@@ -1,7 +1,7 @@
 package store
 
 import (
-	"crypto/sha1" // nolint:gosec
+	"crypto/md5" // nolint:gosec
 	"encoding/base64"
 	"path"
 
@@ -40,8 +40,8 @@ func kvKey(namespace, prefix, id string) string {
 		return ""
 	}
 
-	namespacePrefixHash := sha1.Sum([]byte(namespace + prefix)) // nolint:gosec
-	idHash := sha1.Sum([]byte(id))                              // nolint:gosec
+	namespacePrefixHash := md5.Sum([]byte(namespace + prefix)) // nolint:gosec
+	idHash := md5.Sum([]byte(id))                              // nolint:gosec
 	key := config.KVAppPrefix + path.Join(
 		base64.RawURLEncoding.EncodeToString(namespacePrefixHash[:]),
 		base64.RawURLEncoding.EncodeToString(idHash[:]))

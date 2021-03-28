@@ -32,10 +32,9 @@ const (
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
 
-	PathOAuth2App           = "/oauth2/app"
-	PathOAuth2User          = "/oauth2/user"
-	PathOAuth2CreateState   = "/oauth2/create-state"
-	PathOAuth2ValidateState = "/oauth2/validate-state"
+	PathOAuth2App         = "/oauth2/app"
+	PathOAuth2User        = "/oauth2/user"
+	PathOAuth2CreateState = "/oauth2/create-state"
 )
 
 type ClientPP struct {
@@ -123,28 +122,12 @@ func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
 		return "", model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
-
 	s := ""
 	err := json.NewDecoder(r.Body).Decode(&s)
 	if err != nil {
 		return "", model.BuildErrorResponse(r, model.NewAppError("CreateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
 	}
-	return "", model.BuildResponse(r)
-}
-
-func (c *ClientPP) ValidateOAuth2State(state string) (bool, *model.Response) {
-	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2ValidateState), utils.ToJSON(state)) // nolint:bodyclose
-	if appErr != nil {
-		return false, model.BuildErrorResponse(r, appErr)
-	}
-	defer c.closeBody(r)
-
-	valid := false
-	err := json.NewDecoder(r.Body).Decode(&valid)
-	if err != nil {
-		return false, model.BuildErrorResponse(r, model.NewAppError("ValidateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
-	}
-	return valid, model.BuildResponse(r)
+	return s, model.BuildResponse(r)
 }
 
 func (c *ClientPP) StoreOAuth2App(clientID, clientSecret string) *model.Response {
