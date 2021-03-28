@@ -81,7 +81,6 @@ type Manifest struct {
 	// App type-specific fields
 
 	// For HTTP Apps all paths are relative to the RootURL.
-	// <>/<> TODO move to HTTP.RootURL
 	HTTPRootURL string `json:"root_url,omitempty"`
 
 	// AWSLambda must be included by the developer in the published manifest for
