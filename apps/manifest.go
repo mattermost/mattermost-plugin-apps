@@ -116,8 +116,9 @@ var DefaultGetOAuth2RedirectURL = &Call{
 var DefaultOnOAuth2Complete = &Call{
 	Path: "/oauth2/complete",
 	Expand: &Expand{
-		ActingUser: ExpandSummary,
-		OAuth2App:  ExpandAll,
+		ActingUser:  ExpandSummary,
+		OAuth2App:   ExpandAll,
+		OAuth2State: ExpandAll,
 	},
 }
 

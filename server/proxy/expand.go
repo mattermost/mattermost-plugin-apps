@@ -48,10 +48,8 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 	clone.MattermostSiteURL = e.MattermostSiteURL
 	clone.BotUserID = app.BotUserID
+	clone.ExpandedContext.BotAccessToken = app.BotAccessToken
 	if expand == nil {
-		clone.ExpandedContext = apps.ExpandedContext{
-			BotAccessToken: app.BotAccessToken,
-		}
 		return &clone, nil
 	}
 
@@ -72,17 +70,19 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 		if expand.AdminAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-				return nil, utils.NewForbiddenError("%s does not have %s permission", app.AppID, apps.PermissionActAsUser.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser.Markdown())
 			}
 			clone.ExpandedContext.AdminAccessToken = e.session.Token
 		}
 		if expand.ActingUserAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-				return nil, utils.NewForbiddenError("%s does not have %s permission", app.AppID, apps.PermissionActAsAdmin.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin.Markdown())
 			}
 			clone.ExpandedContext.ActingUserAccessToken = e.session.Token
 		}
 	}
+
+	clone.ExpandedContext.App = stripApp(app, expand.App)
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
 		actingUser, err := e.mm.User.Get(e.ActingUserID)
@@ -91,6 +91,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.ActingUser = actingUser
 	}
+	clone.ExpandedContext.ActingUser = stripUser(e.ActingUser, expand.ActingUser)
 
 	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
 		ch, err := e.mm.Channel.Get(e.ChannelID)
@@ -99,8 +100,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.Channel = ch
 	}
-
-	// TODO expand Mentioned
+	clone.ExpandedContext.Channel = stripChannel(e.Channel, expand.Channel)
 
 	if expand.Post != "" && e.PostID != "" && e.Post == nil {
 		post, err := e.mm.Post.GetPost(e.PostID)
@@ -109,6 +109,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.Post = post
 	}
+	clone.ExpandedContext.Post = stripPost(e.Post, expand.Post)
 
 	if expand.RootPost != "" && e.RootPostID != "" && e.RootPost == nil {
 		post, err := e.mm.Post.GetPost(e.RootPostID)
@@ -117,6 +118,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.RootPost = post
 	}
+	clone.ExpandedContext.RootPost = stripPost(e.RootPost, expand.RootPost)
 
 	if expand.Team != "" && e.TeamID != "" && e.Team == nil {
 		team, err := e.mm.Team.Get(e.TeamID)
@@ -125,6 +127,10 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.Team = team
 	}
+	clone.ExpandedContext.Team = stripTeam(e.Team, expand.Team)
+
+	// TODO: expand Mentions, maybe replacing User?
+	// https://mattermost.atlassian.net/browse/MM-30403
 
 	if expand.User != "" && e.UserID != "" && e.User == nil {
 		user, err := e.mm.User.Get(e.UserID)
@@ -133,19 +139,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.User = user
 	}
-
-	clone.ExpandedContext = apps.ExpandedContext{
-		BotAccessToken: app.BotAccessToken,
-
-		ActingUser: stripUser(e.ActingUser, expand.ActingUser),
-		App:        stripApp(app, expand.App),
-		Channel:    stripChannel(e.Channel, expand.Channel),
-		Post:       stripPost(e.Post, expand.Post),
-		RootPost:   stripPost(e.RootPost, expand.RootPost),
-		Team:       stripTeam(e.Team, expand.Team),
-		User:       stripUser(e.User, expand.User),
-		// TODO Mentioned
-	}
+	clone.ExpandedContext.User = stripUser(e.User, expand.User)
 
 	conf := e.conf.GetConfig()
 	if expand.OAuth2App != "" {

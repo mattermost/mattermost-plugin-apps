@@ -107,6 +107,7 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 func connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
+
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.RedirectURL),
 	})

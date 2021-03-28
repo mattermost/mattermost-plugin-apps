@@ -7,16 +7,13 @@
 				{
 					"icon": "http://localhost:8080/static/icon.png",
 					"description": "Hello remote (3rd party) OAuth2 App",
-					"hint":        "[configure | connect | send]",
+					"hint": "[configure | connect | send]",
 					"bindings": [
 						{
 							"location": "configure",
 							"label": "configure",
 							"call": {
-								"path": "/configure",
-								"expand":{
-									"admin_access_token":"all"
-								}
+								"path": "/configure"
 							}
 						},
 						{

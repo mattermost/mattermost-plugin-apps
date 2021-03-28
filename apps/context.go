@@ -81,7 +81,7 @@ type OAuth2Context struct {
 	// TODO:<>/<>.
 	RedirectURL string `json:"redirect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`
-	*OAuth2App
+	OAuth2App
 
 	// Expanded with "oauth2_state". State must be previously stored with TODO:<>/<>.
 	State string `json:"state,omitempty"`

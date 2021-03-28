@@ -1,11 +1,13 @@
 {
-	"app_id": "hello-remote-oauth2",
+	"app_id": "hello-oauth2",
+	"version":"demo",
 	"display_name": "Hello, remote (3rd party)  OAuth2!",
 	"app_type": "http",
 	"root_url": "http://localhost:8080",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
 	"requested_permissions": [
 		"act_as_bot",
+		"act_as_user",
 		"remote_oauth2"
 	],
 	"requested_locations": [
