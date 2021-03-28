@@ -5,7 +5,7 @@ import (
 )
 
 type AppKVStore interface {
-	Set(namespace, prefix, id string, data []byte) (bool, error)
+	Set(namespace, prefix, id string, ref interface{}) (bool, error)
 	Get(namespace, prefix, id string, ref interface{}) error
 	Delete(namespace, prefix, id string) error
 }
@@ -17,8 +17,8 @@ type appKVStore struct {
 var _ AppKVStore = (*appKVStore)(nil)
 
 // TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
-func (s *appKVStore) Set(namespace, prefix, id string, data []byte) (bool, error) {
-	return s.mm.KV.Set(s.kvKey(namespace, prefix, id), data)
+func (s *appKVStore) Set(namespace, prefix, id string, ref interface{}) (bool, error) {
+	return s.mm.KV.Set(s.kvKey(namespace, prefix, id), ref)
 }
 
 func (s *appKVStore) Get(namespace, prefix, id string, ref interface{}) error {

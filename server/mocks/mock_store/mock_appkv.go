@@ -62,7 +62,7 @@ func (mr *MockAppKVStoreMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *g
 }
 
 // Set mocks base method.
-func (m *MockAppKVStore) Set(arg0, arg1, arg2 string, arg3 []byte) (bool, error) {
+func (m *MockAppKVStore) Set(arg0, arg1, arg2 string, arg3 interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(bool)

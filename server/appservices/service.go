@@ -20,18 +20,23 @@ var ErrIsABot = errors.New("is a bot")
 
 type Service interface {
 	// Subscriptions
+
 	Subscribe(actingUserID string, _ *apps.Subscription) error
 	Unsubscribe(actingUserID string, _ *apps.Subscription) error
 
 	// KV
-	KVSet(botUserID, prefix, id string, data []byte) (bool, error)
+
+	// ref can be either a []byte for raw data, or anything else will be JSON marshaled.
+	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
 	KVGet(botUserID, prefix, id string, ref interface{}) error
 	KVDelete(botUserID, prefix, id string) error
 
 	// Remote (3rd party) OAuth2
+
 	CreateOAuth2State(actingUserID string) (string, error)
 	StoreOAuth2App(botUserID string, oapp apps.OAuth2App) error
 	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
+	// ref can be either a []byte, or anything else will be JSON marshaled.
 	StoreOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
 }
 

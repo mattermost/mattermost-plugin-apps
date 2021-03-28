@@ -1,10 +1,10 @@
 package appservices
 
-func (a *AppServices) KVSet(botUserID, prefix, id string, data []byte) (bool, error) {
+func (a *AppServices) KVSet(botUserID, prefix, id string, ref interface{}) (bool, error) {
 	if err := a.ensureFromBot(botUserID); err != nil {
 		return false, err
 	}
-	return a.store.AppKV.Set(botUserID, prefix, id, data)
+	return a.store.AppKV.Set(botUserID, prefix, id, ref)
 }
 
 func (a *AppServices) KVGet(botUserID, prefix, id string, ref interface{}) error {

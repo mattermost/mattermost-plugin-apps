@@ -92,7 +92,7 @@ func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3 interface{}) *go
 }
 
 // KVSet mocks base method.
-func (m *MockService) KVSet(arg0, arg1, arg2 string, arg3 []byte) (bool, error) {
+func (m *MockService) KVSet(arg0, arg1, arg2 string, arg3 interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(bool)
@@ -160,18 +160,4 @@ func (m *MockService) Unsubscribe(arg0 string, arg1 *apps.Subscription) error {
 func (mr *MockServiceMockRecorder) Unsubscribe(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockService)(nil).Unsubscribe), arg0, arg1)
-}
-
-// ValidateOAuth2State mocks base method.
-func (m *MockService) ValidateOAuth2State(arg0, arg1 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateOAuth2State", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ValidateOAuth2State indicates an expected call of ValidateOAuth2State.
-func (mr *MockServiceMockRecorder) ValidateOAuth2State(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateOAuth2State", reflect.TypeOf((*MockService)(nil).ValidateOAuth2State), arg0, arg1)
 }
