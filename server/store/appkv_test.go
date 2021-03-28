@@ -22,18 +22,19 @@ func TestKVKey(t *testing.T) {
 		{
 			namespace: "test_ns",
 			id:        "test_id1",
-			expected:  ("kv_D0ABymH0H8Mr9u3m10a-ow/DXm7v7FXNWbB31V8ph-F_Q"),
+			expected:  ("kv.D0ABymH0H8Mr9u3m10a-ow/DXm7v7FXNWbB31V8ph-F_Q"),
 		},
 		{
 			namespace: "test_ns",
 			prefix:    "test_prefix",
 			id:        "test_id2",
-			expected:  ("kv_pDHhAKgqD9f_UeD7gpEABw/H1FeDBrxovdZ95Lzh3BB8g"),
+			expected:  ("kv.pDHhAKgqD9f_UeD7gpEABw/H1FeDBrxovdZ95Lzh3BB8g"),
 		},
 	} {
-		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "_")
+		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "-")
+		s := appKVStore{}
 		t.Run(name, func(t *testing.T) {
-			key := kvKey(tc.namespace, tc.prefix, tc.id)
+			key := s.kvKey(tc.namespace, tc.prefix, tc.id)
 			require.Equal(t, tc.expected, key)
 		})
 	}

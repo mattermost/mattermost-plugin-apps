@@ -29,11 +29,11 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 	case apps.SubjectUserJoinedChannel,
 		apps.SubjectUserLeftChannel,
 		apps.SubjectPostCreated:
-		idSuffix = "_" + channelID
+		idSuffix = "." + channelID
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
 		apps.SubjectChannelCreated:
-		idSuffix = "_" + teamID
+		idSuffix = "." + teamID
 	}
 	return config.KVSubPrefix + string(subject) + idSuffix
 }

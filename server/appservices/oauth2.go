@@ -44,7 +44,7 @@ func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
-	return a.store.OAuth2.SaveUser(actingUserID, string(appID), ref)
+	return a.store.OAuth2.SaveUser(appID, actingUserID, ref)
 }
 
 func (a *AppServices) GetOAuth2User(appID apps.AppID, actingUserID string, ref interface{}) error {
@@ -58,7 +58,7 @@ func (a *AppServices) GetOAuth2User(appID apps.AppID, actingUserID string, ref i
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
-	return a.store.OAuth2.GetUser(actingUserID, string(appID), ref)
+	return a.store.OAuth2.GetUser(appID, actingUserID, ref)
 }
 
 func (a *AppServices) findBot(botUserID string) (*apps.App, error) {

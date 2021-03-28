@@ -12,6 +12,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
@@ -19,8 +20,8 @@ import (
 type OAuth2Store interface {
 	CreateState(actingUserID string) (string, error)
 	ValidateStateOnce(urlState, actingUserID string) error
-	SaveUser(namespace, mattermostUserID string, ref interface{}) error
-	GetUser(namespace, mattermostUserID string, ref interface{}) error
+	SaveUser(_ apps.AppID, mattermostUserID string, ref interface{}) error
+	GetUser(_ apps.AppID, mattermostUserID string, ref interface{}) error
 }
 
 type oauth2Store struct {
@@ -33,19 +34,17 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	// fit the max key size of ~50chars
 	r := make([]byte, 15)
 	_, _ = rand.Read(r)
-	state := fmt.Sprintf("%s_%s", base64.RawURLEncoding.EncodeToString(r), actingUserID)
-
+	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(r), actingUserID)
 	_, err := s.mm.KV.Set(config.KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
-
 	return state, nil
 }
 
 func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
-	urlUserID := strings.Split(urlState, "_")[1]
-	if urlUserID != actingUserID {
+	ss := strings.Split(urlState, ".")
+	if len(ss) != 2 || ss[1] != actingUserID {
 		return utils.ErrForbidden
 	}
 
@@ -63,18 +62,18 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 	return nil
 }
 
-func (s *oauth2Store) SaveUser(namespace, mattermostUserID string, ref interface{}) error {
-	if namespace == "" || mattermostUserID == "" {
+func (s *oauth2Store) SaveUser(appID apps.AppID, mattermostUserID string, ref interface{}) error {
+	if appID == "" || mattermostUserID == "" {
 		return utils.NewInvalidError("namespace and mattermost user ID must be provided")
 	}
-	_, err := s.mm.KV.Set(remoteUserKey(namespace, mattermostUserID), ref)
+	_, err := s.mm.KV.Set(s.userKey(string(appID), mattermostUserID), ref)
 	return err
 }
 
-func (s *oauth2Store) GetUser(namespace, mattermostUserID string, ref interface{}) error {
-	return s.mm.KV.Get(remoteUserKey(namespace, mattermostUserID), ref)
+func (s *oauth2Store) GetUser(appID apps.AppID, mattermostUserID string, ref interface{}) error {
+	return s.mm.KV.Get(s.userKey(string(appID), mattermostUserID), ref)
 }
 
-func remoteUserKey(namespace, mattermostUserID string) string {
-	return config.KVOAuth2Prefix + kvKey(namespace, "remote_user", mattermostUserID)
+func (s *oauth2Store) userKey(namespace, mattermostUserID string) string {
+	return s.hashkey(config.KVOAuth2Prefix, namespace, "remote_user", mattermostUserID)
 }

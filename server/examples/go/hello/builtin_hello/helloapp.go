@@ -190,7 +190,7 @@ func (h *helloapp) Survey(c *apps.CallRequest, callType apps.CallType) *apps.Cal
 		}
 		return &apps.CallResponse{
 			Type:     apps.CallResponseTypeOK,
-			Markdown: "<><> TODO",
+			Markdown: "<>/<> TODO",
 		}
 	default:
 		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))

@@ -53,23 +53,25 @@ const (
 	PropUserAgent = "user_agent_type"
 )
 
-// KV namespace
+// KV namespace. The use of '.' in the prefixes is to avoid conflicts with
+// base64 URL encoding that already uses '-' and '_'.
 const (
 	// KVAppPrefix is the Apps namespace. Short, maximize the app keyspace
-	KVAppPrefix = "kv_"
+	KVAppPrefix = "kv."
 
-	// KVOAuth2Prefix is used to store OAuth2-related information (state, tokens)
-	KVOAuth2Prefix      = "o_"
-	KVOAuth2StatePrefix = "s_"
+	// KVOAuth2Prefix is used to store OAuth2-related information (state,
+	// tokens)
+	KVOAuth2Prefix      = "o."
+	KVOAuth2StatePrefix = "s."
 
-	// PrefixSub is used for keys storing subscriptions.
-	KVSubPrefix = "sub_"
+	// KVSubPrefix is used for keys storing subscriptions.
+	KVSubPrefix = "sub."
 
-	// PrefixInstalledApp is used to store App records.
-	KVInstalledAppPrefix = "app_"
+	// KVInstalledAppPrefix is used to store App records.
+	KVInstalledAppPrefix = "app."
 
-	// PrefixLocalManifest is used to store locally-listed manifests.
-	KVLocalManifestPrefix = "man_"
+	// KVLocalManifestPrefix is used to store locally-listed manifests.
+	KVLocalManifestPrefix = "man."
 
 	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
 	// usually upon a Mattermost instance startup.

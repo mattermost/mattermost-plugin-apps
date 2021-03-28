@@ -147,11 +147,10 @@ func send(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	asBot := mmclient.AsBot(creq.Context)
-	asActingUser := mmclient.AsActingUser(creq.Context)
 
-	var token oauth2.Token
-	_ = asActingUser.GetOAuth2User(creq.Context.AppID, &token)
 	oauthConfig := oauth2Config(asBot, &creq)
+	token := oauth2.Token{}
+	remarshal(&token, creq.Context.OAuth2.User)
 	ctx := context.Background()
 	tokenSource := oauthConfig.TokenSource(ctx, &token)
 	oauth2Service, _ := oauth2api.NewService(ctx, option.WithTokenSource(tokenSource))
@@ -184,4 +183,9 @@ func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Reque
 
 func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
 	return writeData("application/json", data)
+}
+
+func remarshal(dst, src interface{}) {
+	data, _ := json.Marshal(src)
+	json.Unmarshal(data, dst)
 }

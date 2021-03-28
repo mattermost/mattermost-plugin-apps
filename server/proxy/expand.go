@@ -141,17 +141,23 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	}
 	clone.ExpandedContext.User = stripUser(e.User, expand.User)
 
-	conf := e.conf.GetConfig()
-	if expand.OAuth2App != "" {
-		clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
-		clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
-		clone.ExpandedContext.OAuth2.RedirectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Redirect
-		clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
-	}
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
+		conf := e.conf.GetConfig()
+		if expand.OAuth2App != "" {
+			clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
+			clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
+			clone.ExpandedContext.OAuth2.RedirectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Redirect
+			clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
+		}
 
-	if expand.OAuth2User != "" && e.OAuth2.User == nil {
-		//<>/<> TODO: fetch the OAuth user
-		clone.ExpandedContext.OAuth2.User = nil
+		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
+			var v interface{}
+			err := e.store.OAuth2.GetUser(app.AppID, e.ActingUserID, &v)
+			if err != nil && errors.Cause(err) != utils.ErrNotFound {
+				return nil, errors.Wrapf(err, "failed to expand OAuth user %s", e.UserID)
+			}
+			clone.ExpandedContext.OAuth2.User = v
+		}
 	}
 
 	return &clone, nil
