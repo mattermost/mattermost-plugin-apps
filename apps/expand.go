@@ -72,13 +72,14 @@ type Expand struct {
 	// Username.
 	User ExpandLevel `json:"user,omitempty"`
 
-	// RemoteOAuth2App expands the remote OAuth2 app configuration data.
-	RemoteOAuth2App ExpandLevel `json:"remote_oauth2_app,omitempty"`
+	// OAuth2App expands the remote (3rd party) OAuth2 app configuration data.
+	OAuth2App ExpandLevel `json:"oauth2_app,omitempty"`
 
-	// RemoteOAuth2Token expands the remote OAuth2 user token.
-	RemoteOAuth2Token ExpandLevel `json:"remote_oauth2_token,omitempty"`
+	// OAuth2User expands the remote (3rd party) OAuth2 user (custom object,
+	// previously stored with mmclient.StoreOAuthUser).
+	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
 
-	// RemoteOAuth2State expands the state data (if any) for an in-progress
-	// remote OAuth2 connect flow.
-	RemoteOAuth2State ExpandLevel `json:"remote_oauth2_state,omitempty"`
+	// OAuth2State expands the state data (if any) for an in-progress
+	// remote (3rd party) OAuth2 connect flow.
+	OAuth2State ExpandLevel `json:"oauth2_state,omitempty"`
 }

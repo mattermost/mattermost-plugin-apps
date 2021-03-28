@@ -21,14 +21,14 @@ func TestKVKey(t *testing.T) {
 		},
 		{
 			namespace: "test_ns",
-			id:        "test_id",
-			expected:  ("a__E17qMxGaOyuJqYQs5PB8PtHS7A/VBevAGLPmHSVthG1nH7DdU"),
+			id:        "test_id1",
+			expected:  ("__E17qMxGaOyuJqYQs5PB8PtHS7A/tMjpGjp2h7PlMhUBjLzjO"),
 		},
 		{
 			namespace: "test_ns",
 			prefix:    "test_prefix",
-			id:        "test_id",
-			expected:  ("a_iGXV5w_xPrIPpq84ntMkm_99yls/VBevAGLPmHSVthG1nH7DdU"),
+			id:        "test_id2",
+			expected:  ("_iGXV5w_xPrIPpq84ntMkm_99yls/A9CtwkTHxKvq_DBgdNy6C"),
 		},
 	} {
 		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "_")

@@ -72,13 +72,13 @@ func App() *apps.App {
 func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
-	case apps.DefaultBindingsCall.Path:
+	case apps.DefaultBindings.Path:
 		cr = &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 			Data: hello.Bindings(),
 		}
 
-	case apps.DefaultOnInstallCall.Path:
+	case apps.DefaultOnInstall.Path:
 		cr = h.Install(c)
 
 	default:

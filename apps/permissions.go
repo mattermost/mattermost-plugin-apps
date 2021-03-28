@@ -27,9 +27,8 @@ const (
 	// access tokens in its calls.
 	PermissionActAsAdmin Permission = "act_as_admin"
 
-	// PermissionRemoteOAuth2 means that the app is allowed to use the Remote
-	// (3rd party) OAuth2 support, and will store secrets to 3rd party
-	// system(s).
+	// PermissionRemoteOAuth2 means that the app is allowed to use remote (3rd
+	// party) OAuth2 support, and will store secrets to 3rd party system(s).
 	PermissionRemoteOAuth2 Permission = "remote_oauth2"
 )
 

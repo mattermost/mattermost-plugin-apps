@@ -24,28 +24,24 @@ const (
 	// Top-level path(s) for HTTP example apps.
 	HelloHTTPPath = "/example/hello"
 
-	// Top-level path for the REST APIs exposed by the plugin itself.
-	APIPath = "/api/v1"
+	// Path to the Call API
+	// <>/<> TODO: ticket migrate to gateway
+	PathCall = "/call"
 
-	// Top-level path for the Apps namespaces, followed by /AppID/subpath.
-	AppsPath = "/apps"
+	// Top-level path for the Apps namespaces, followed by /{AppID}/...
+	PathApps = "/apps"
 
-	// OAuth2 sub-paths.
-	PathOAuth2             = "/oauth2"
-	PathMattermostRedirect = "/mattermost/redirect"
-	PathMattermostComplete = "/mattermost/complete"
-	PathRemoteRedirect     = "/remote/redirect"
-	PathRemoteComplete     = "/remote/complete"
+	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
+	PathMattermostOAuth2Redirect = "/oauth2/mattermost/redirect"
+	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
+	PathRemoteOAuth2Redirect     = "/oauth2/remote/redirect"
+	PathRemoteOAuth2Complete     = "/oauth2/remote/complete"
+
+	// Static assets are served from {PluginURL}/static/...
+	PathStatic = "/" + apps.StaticFolder
 
 	// Marketplace sub-paths.
 	PathMarketplace = "/marketplace"
-
-	// Other sub-paths.
-	CallPath        = "/call"
-	KVPath          = "/kv"
-	SubscribePath   = "/subscribe"
-	UnsubscribePath = "/unsubscribe"
-	StaticAssetPath = "/" + apps.StaticAssetsFolder
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )
@@ -60,15 +56,10 @@ const (
 // KV namespace
 const (
 	// PrefixApp is the Apps namespace. Short, maximize the app keyspace
-	KVAppPrefix = "a_"
+	KVAppPrefix = "_"
 
 	// PrefixOAuth2 is used to store OAuth2-related information (state, tokens)
 	KVOAuth2Prefix = "oauth2_"
-
-	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
-	// usually upon a Mattermost instance startup.
-	KVCallOnceKey     = "CallOnce"
-	KVClusterMutexKey = "Cluster_Mutex"
 
 	// PrefixSub is used for keys storing subscriptions.
 	KVSubPrefix = "sub_"
@@ -78,4 +69,9 @@ const (
 
 	// PrefixLocalManifest is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man_"
+
+	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
+	// usually upon a Mattermost instance startup.
+	KVCallOnceKey     = "CallOnce"
+	KVClusterMutexKey = "Cluster_Mutex"
 )

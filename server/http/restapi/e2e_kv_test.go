@@ -7,9 +7,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/api4"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,9 +18,10 @@ func TestKVE2E(t *testing.T) {
 	t.Run("test KV API", func(t *testing.T) {
 		id := "testId"
 		prefix := "prefix-test"
-		in := map[string]interface{}{}
-		in["test_bool"] = true
-		in["test_string"] = "test"
+		in := map[string]interface{}{
+			"test_bool":   true,
+			"test_string": "test",
+		}
 
 		// set
 		outSet, resp := th.BotClientPP.KVSet(id, prefix, in)
@@ -34,13 +32,13 @@ func TestKVE2E(t *testing.T) {
 		require.Equal(t, outSetMap["changed"], true)
 
 		// get
-		outGet, resp := th.BotClientPP.KVGet(id, prefix)
+		var outGet map[string]interface{}
+		resp = th.BotClientPP.KVGet(id, prefix, &outGet)
 		api4.CheckOKStatus(t, resp)
 		require.Nil(t, resp.Error)
-		outGetMap, ok := outGet.(map[string]interface{})
 		require.True(t, ok)
-		require.Equal(t, outGetMap["test_bool"], true)
-		require.Equal(t, outGetMap["test_string"], "test")
+		require.Equal(t, outGet["test_bool"], true)
+		require.Equal(t, outGet["test_string"], "test")
 
 		// delete
 		_, resp = th.BotClientPP.KVDelete(id, prefix)

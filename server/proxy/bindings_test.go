@@ -291,7 +291,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			proxy := newTestProxyForBindings(testData, ctrl)
 
 			cc := &apps.Context{}
-			out, err := proxy.GetBindings("", cc)
+			out, err := proxy.GetBindings("", "", cc)
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -484,7 +484,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
 	require.EqualValues(t, expected, out)
 }
@@ -578,7 +578,7 @@ func TestDuplicateCommand(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
 	require.EqualValues(t, expected, out)
 }

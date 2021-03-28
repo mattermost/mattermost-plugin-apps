@@ -16,8 +16,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.CallResponse {
-	app, err := p.store.App.Get(c.Context.AppID)
+func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
+	if creq.Context == nil || creq.Context.AppID == "" {
+		return apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+	}
+	creq.Context.ActingUserID = actingUserID
+
+	app, err := p.store.App.Get(creq.Context.AppID)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
@@ -26,14 +31,14 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 		return apps.NewErrorCallResponse(err)
 	}
 
-	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context.AppID, c.Context)
+	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, debugSessionToken)
-	cc, err = expander.ExpandForApp(app, c.Expand)
+	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
+	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	clone := *c
+	clone := *creq
 	clone.Context = cc
 
 	return upstream.Call(up, &clone)
@@ -112,11 +117,11 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	case apps.AppTypeBuiltin:
 		up := p.builtinUpstreams[app.AppID]
 		if up == nil {
-			return nil, errors.Errorf("builtin app not found: %s", app.AppID)
+			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
 		}
 		return up, nil
 
 	default:
-		return nil, errors.Errorf("not a valid app type: %s", app.AppType)
+		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
 	}
 }

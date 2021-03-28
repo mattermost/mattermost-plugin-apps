@@ -2,7 +2,6 @@ package apps
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
-	"golang.org/x/oauth2"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -65,7 +64,7 @@ type ExpandedContext struct {
 	ActingUser            *model.User    `json:"acting_user,omitempty"`
 	ActingUserAccessToken string         `json:"acting_user_access_token,omitempty"`
 	AdminAccessToken      string         `json:"admin_access_token,omitempty"`
-	RemoteOAuth2          OAuth2Context  `json:"remote_oauth2,omitempty"`
+	OAuth2                OAuth2Context  `json:"oauth2,omitempty"`
 	App                   *App           `json:"app,omitempty"`
 	Channel               *model.Channel `json:"channel,omitempty"`
 	Mentioned             []*model.User  `json:"mentioned,omitempty"`
@@ -87,7 +86,5 @@ type OAuth2Context struct {
 	// Expanded with "oauth2_state". State must be previously stored with TODO:<>/<>.
 	State string `json:"state,omitempty"`
 
-	// Expanded with "oauth2_token". Token must be previously stored with
-	// TODO:<>/<>.
-	Token *oauth2.Token `json:"token,omitempty"`
+	User interface{} `json:"user,omitempty"`
 }

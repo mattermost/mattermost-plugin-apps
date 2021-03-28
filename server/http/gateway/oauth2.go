@@ -4,36 +4,36 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	vars := mux.Vars(req)
 
 	appID := vars["app_id"]
 	if appID == "" {
-		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
-	redirectURL, err := g.proxy.GetRemoteOAuth2RedirectURL(apps.AppID(appID), actingUserID, token)
+	redirectURL, err := g.proxy.GetRemoteOAuth2RedirectURL(sessionID, actingUserID, apps.AppID(appID))
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 
 	http.Redirect(w, req, redirectURL, http.StatusTemporaryRedirect)
 }
 
-func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	vars := mux.Vars(req)
 
 	appID := vars["app_id"]
 	if appID == "" {
-		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
@@ -43,9 +43,9 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteRemoteOAuth2(apps.AppID(appID), actingUserID, token, urlValues)
+	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, apps.AppID(appID), urlValues)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 

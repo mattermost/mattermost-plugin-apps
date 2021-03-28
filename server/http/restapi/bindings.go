@@ -19,9 +19,9 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		UserID:       actingUserID,
 	})
 
-	bindings, err := a.proxy.GetBindings(apps.SessionToken(token), cc)
+	bindings, err := a.proxy.GetBindings(sessionID(req), actingID(req), cc)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 

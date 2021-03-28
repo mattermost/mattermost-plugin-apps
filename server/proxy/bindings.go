@@ -33,7 +33,7 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := store.SortApps(p.store.App.AsMap())
 
 	all := []*apps.Binding{}
@@ -48,13 +48,13 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 		// TODO PERF: Add caching
 		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
+		bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
 		bindingsRequest := &apps.CallRequest{
 			Call:    *bindingsCall,
 			Context: &appCC,
 		}
 
-		resp := p.Call(debugSessionToken, bindingsRequest)
+		resp := p.Call(sessionID, actingUserID, bindingsRequest)
 		if resp == nil || resp.Type != apps.CallResponseTypeOK {
 			// TODO Log error (chance to flood the logs)
 			// p.mm.Log.Debug("Response is nil or unexpected type.")

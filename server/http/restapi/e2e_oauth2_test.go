@@ -4,16 +4,9 @@ package restapi
 
 import (
 	"testing"
-
-	"github.com/mattermost/mattermost-server/v5/api4"
-
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestKVE2E(t *testing.T) {
+func TestRemoteOAuth2E2E(t *testing.T) {
 	th := Setup(t)
 	SetupPP(th, t)
 	defer th.TearDown()

@@ -56,7 +56,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 					creq.Values[k] = v
 				}
 
-				resp := p.Call("", creq)
+				resp := p.Call("", "", creq)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", creq.Path)
 				}

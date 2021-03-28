@@ -5,7 +5,12 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
+
+// Where static assets are.
+const StaticFolder = "static"
 
 type Manifest struct {
 	AppID   AppID      `json:"app_id"`
@@ -50,16 +55,19 @@ type Manifest struct {
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
-	// OnRemoteOAuth2Redirect must return Data set to the redirect URL. It
-	// should also save the state data that will be used to validate OAuth2
-	// complete callback.
-	OnRemoteOAuth2Redirect *Call `json:"on_remote_oauth2_redirect,omitempty"`
+	// GetOAuth2RedirectURL is called when the App's "connect to 3rd party" link
+	// is clicked, to be redirected to the OAuth flow. It must return Data set
+	// to the remote OAuth2 redirect URL. It should also use the
+	// mmclient.CreateOAuth2State API to create a 1-time secret that will be
+	// used to validate OAuth2 complete callback.
+	GetOAuth2RedirectURL *Call `json:"get_oauth2_redirect_url,omitempty"`
 
-	// OnRemoteOAuth2Complete gets called upon successful completion of the
-	// OAuth2 process. It gets passed the URL query as Values. The App should
-	// validate the state data, obtain the OAuth2 user token, and store it
-	// persistently for future use.
-	OnRemoteOAuth2Complete *Call `json:"on_remote_oauth2_complete,omitempty"`
+	// OnOAuth2Complete gets called upon successful completion of the remote
+	// (3rd party) OAuth2 flow. It gets passed the URL query as Values. The App
+	// should validate the state data using mmclient.ValidateOAuth2State API,
+	// obtain the OAuth2 user token, and store it persistently for future use
+	// using mmclient.StoreOAuth2User.
+	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access
 
@@ -85,7 +93,7 @@ type Manifest struct {
 	AWSLambda []AWSLambdaFunction `json:"aws_lambda,omitempty"`
 }
 
-var DefaultOnInstallCall = &Call{
+var DefaultOnInstall = &Call{
 	Path: "/install",
 	Expand: &Expand{
 		App:              ExpandAll,
@@ -93,23 +101,23 @@ var DefaultOnInstallCall = &Call{
 	},
 }
 
-var DefaultBindingsCall = &Call{
+var DefaultBindings = &Call{
 	Path: "/bindings",
 }
 
-var DefaultOnRemoteOAuth2RedirectCall = &Call{
-	Path: "/oauth2/remote/redirect",
+var DefaultGetOAuth2RedirectURL = &Call{
+	Path: "/oauth2/redirect",
 	Expand: &Expand{
-		ActingUser:      ExpandSummary,
-		RemoteOAuth2App: ExpandAll,
+		ActingUser: ExpandSummary,
+		OAuth2App:  ExpandAll,
 	},
 }
 
-var DefaultOnRemoteOAuth2CompleteCall = &Call{
-	Path: "/oauth2/remote/complete",
+var DefaultOnOAuth2Complete = &Call{
+	Path: "/oauth2/complete",
 	Expand: &Expand{
-		ActingUser:      ExpandSummary,
-		RemoteOAuth2App: ExpandAll,
+		ActingUser: ExpandSummary,
+		OAuth2App:  ExpandAll,
 	},
 }
 
@@ -128,12 +136,12 @@ func (m Manifest) IsValid() error {
 	case AppTypeHTTP:
 		_, err := url.Parse(m.HTTPRootURL)
 		if err != nil {
-			return errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL)
+			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
 		}
 
 	case AppTypeAWSLambda:
 		if len(m.AWSLambda) == 0 {
-			return errors.New("must provide at least 1 function in aws_lambda")
+			return utils.NewInvalidError("must provide at least 1 function in aws_lambda")
 		}
 		for _, l := range m.AWSLambda {
 			err := l.IsValid()

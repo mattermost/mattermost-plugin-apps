@@ -14,7 +14,7 @@ type Service struct {
 	Subscription SubscriptionStore
 	Manifest     ManifestStore
 	AppKV        AppKVStore
-	OAuth2        OAuth2Store
+	OAuth2       OAuth2Store
 
 	mm   *pluginapi.Client
 	conf config.Service

@@ -98,7 +98,7 @@ func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
 func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(call)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal call for lambda payload")
+		return nil, errors.Wrap(err, "failed to marshal call for lambda payload")
 	}
 
 	request := invocationPayload{
@@ -110,7 +110,7 @@ func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal lambda payload")
+		return nil, errors.Wrap(err, "failed to marshal lambda payload")
 	}
 
 	return payload, nil

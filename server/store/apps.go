@@ -10,8 +10,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
@@ -183,7 +181,7 @@ func (s *appStore) Delete(appID apps.AppID) error {
 	s.mutex.RUnlock()
 	_, ok := installed[appID]
 	if !ok {
-		return errors.Wrap(utils.ErrNotFound, string(appID))
+		return utils.NewNotFoundError(appID)
 	}
 
 	conf := s.conf.GetConfig()

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -18,10 +19,23 @@ const (
 	HeaderEtagClient = "If-None-Match"
 	HeaderAuth       = "Authorization"
 
-	APIPathPP      = "/api/v1"
-	APIUrlSuffixV4 = "/api/v4"
-	APIUrlSuffix   = APIUrlSuffixV4
 	AppsPluginName = "com.mattermost.apps"
+)
+
+// Paths for the REST APIs exposed by the proxy plugin itself
+const (
+	// Top-level path
+	PathAPI = "/api/v1"
+
+	// Other sub-paths.
+	PathKV          = "/kv"
+	PathSubscribe   = "/subscribe"
+	PathUnsubscribe = "/unsubscribe"
+
+	PathOAuth2App           = "/oauth2/app"
+	PathOAuth2User          = "/oauth2/user"
+	PathOAuth2CreateState   = "/oauth2/create-state"
+	PathOAuth2ValidateState = "/oauth2/validate-state"
 )
 
 type ClientPP struct {
@@ -50,9 +64,7 @@ func (c *ClientPP) SetOAuthToken(token string) {
 }
 
 func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (interface{}, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
-	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+query, interfaceToJSON(in)) // nolint:bodyclose
-
+	r, appErr := c.DoAPIPOST(c.kvpath(prefix, id), utils.ToJSON(in)) // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
@@ -60,19 +72,22 @@ func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (interface{},
 	return interfaceFromJSON(r.Body), model.BuildResponse(r)
 }
 
-func (c *ClientPP) KVGet(id string, prefix string) (interface{}, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
-	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+query, "") // nolint:bodyclose
+func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) *model.Response {
+	r, appErr := c.DoAPIGET(c.kvpath(prefix, id), "") // nolint:bodyclose
 	if appErr != nil {
-		return nil, model.BuildErrorResponse(r, appErr)
+		return model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
-	return interfaceFromJSON(r.Body), model.BuildResponse(r)
+
+	err := json.NewDecoder(r.Body).Decode(ref)
+	if err != nil {
+		return model.BuildErrorResponse(r, model.NewAppError("CreateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
+	}
+	return model.BuildResponse(r)
 }
 
 func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
-	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
-	r, appErr := c.DoAPIDELETE(c.GetPluginRoute(AppsPluginName) + query) // nolint:bodyclose
+	r, appErr := c.DoAPIDELETE(c.kvpath(prefix, id)) // nolint:bodyclose
 	if appErr != nil {
 		return false, model.BuildErrorResponse(r, appErr)
 	}
@@ -81,7 +96,7 @@ func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
 }
 
 func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response) {
-	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/subscribe", request.ToJSON()) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathSubscribe), request.ToJSON()) // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
@@ -92,7 +107,7 @@ func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResp
 }
 
 func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response) {
-	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/unsubscribe", request.ToJSON()) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathUnsubscribe), request.ToJSON()) // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
@@ -103,9 +118,7 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionRe
 }
 
 func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
-	r, appErr := c.DoAPIPOST(
-		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/create-oauth2-state",
-		"{}") // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2CreateState), "{}") // nolint:bodyclose
 	if appErr != nil {
 		return "", model.BuildErrorResponse(r, appErr)
 	}
@@ -120,9 +133,7 @@ func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
 }
 
 func (c *ClientPP) ValidateOAuth2State(state string) (bool, *model.Response) {
-	r, appErr := c.DoAPIPOST(
-		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/validate-oauth2-state",
-		utils.ToJSON(state)) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2ValidateState), utils.ToJSON(state)) // nolint:bodyclose
 	if appErr != nil {
 		return false, model.BuildErrorResponse(r, appErr)
 	}
@@ -136,13 +147,12 @@ func (c *ClientPP) ValidateOAuth2State(state string) (bool, *model.Response) {
 	return valid, model.BuildResponse(r)
 }
 
-func (c *ClientPP) StoreRemoteOAuth2App(clientID, clientSecret string) *model.Response {
-	r, appErr := c.DoAPIPOST(
-		c.GetPluginRoute(AppsPluginName)+APIPathPP+"/oauth2-app",
-		utils.ToJSON(apps.OAuth2App{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-		})) // nolint:bodyclose
+func (c *ClientPP) StoreOAuth2App(clientID, clientSecret string) *model.Response {
+	data := utils.ToJSON(apps.OAuth2App{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	})
+	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2App), data) // nolint:bodyclose
 	if appErr != nil {
 		return model.BuildErrorResponse(r, appErr)
 	}
@@ -150,11 +160,8 @@ func (c *ClientPP) StoreRemoteOAuth2App(clientID, clientSecret string) *model.Re
 	return model.BuildResponse(r)
 }
 
-func (c *ClientPP) StoreRemoteOAuth2User(appID apps.AppID, mattermostUserID string, ref interface{}) *model.Response {
-	r, appErr := c.DoAPIPOST(
-		c.GetPluginRoute(
-			AppsPluginName)+APIPathPP+"/oauth2-user/"+mattermostUserID,
-		utils.ToJSON(ref)) // nolint:bodyclose
+func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) *model.Response {
+	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
 	if appErr != nil {
 		return model.BuildErrorResponse(r, appErr)
 	}
@@ -162,8 +169,8 @@ func (c *ClientPP) StoreRemoteOAuth2User(appID apps.AppID, mattermostUserID stri
 	return model.BuildResponse(r)
 }
 
-func (c *ClientPP) GetRemoteOAuth2User(appID apps.AppID, ref interface{}) *model.Response {
-	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+APIPathPP+"/oauth2-user/"+string(appID), "") // nolint:bodyclose
+func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Response {
+	r, appErr := c.DoAPIGET(c.apipath(PathOAuth2User)+"/"+string(appID), "") // nolint:bodyclose
 	if appErr != nil {
 		return model.BuildErrorResponse(r, appErr)
 	}
@@ -171,7 +178,7 @@ func (c *ClientPP) GetRemoteOAuth2User(appID apps.AppID, ref interface{}) *model
 
 	err := json.NewDecoder(r.Body).Decode(ref)
 	if err != nil {
-		return model.BuildErrorResponse(r, model.NewAppError("GetRemoteOAuth2User", "", nil, err.Error(), http.StatusInternalServerError))
+		return model.BuildErrorResponse(r, model.NewAppError("GetOAuth2User", "", nil, err.Error(), http.StatusInternalServerError))
 	}
 	return model.BuildResponse(r)
 }
@@ -237,14 +244,6 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 	return rp, nil
 }
 
-func interfaceToJSON(objmap interface{}) string {
-	b, _ := json.Marshal(objmap)
-	if b == nil {
-		return ""
-	}
-	return string(b)
-}
-
 func interfaceFromJSON(data io.Reader) interface{} {
 	decoder := json.NewDecoder(data)
 
@@ -260,4 +259,12 @@ func (c *ClientPP) closeBody(r *http.Response) {
 		_, _ = io.Copy(ioutil.Discard, r.Body)
 		_ = r.Body.Close()
 	}
+}
+
+func (c *ClientPP) apipath(p string) string {
+	return c.GetPluginRoute(AppsPluginName) + PathAPI + p
+}
+
+func (c *ClientPP) kvpath(prefix, id string) string {
+	return c.apipath(path.Join("/kv", prefix, id))
 }

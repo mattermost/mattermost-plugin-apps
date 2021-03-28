@@ -12,24 +12,28 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 var ErrNotABot = errors.New("not a bot")
 var ErrIsABot = errors.New("is a bot")
 
 type Service interface {
+	// Subscriptions
 	Subscribe(actingUserID string, _ *apps.Subscription) error
 	Unsubscribe(actingUserID string, _ *apps.Subscription) error
 
-	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
+	// KV
+	KVSet(botUserID, prefix, id string, data []byte) (bool, error)
 	KVGet(botUserID, prefix, id string, ref interface{}) error
 	KVDelete(botUserID, prefix, id string) error
 
+	// Remote (3rd party) OAuth2
 	CreateOAuth2State(actingUserID string) (string, error)
 	ValidateOAuth2State(actingUserID string, state string) error
-	StoreRemoteOAuth2App(botUserID string, oapp apps.OAuth2App) error
-	GetRemoteOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
-	StoreRemoteOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
+	StoreOAuth2App(botUserID string, oapp apps.OAuth2App) error
+	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
+	StoreOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
 }
 
 type AppServices struct {
@@ -49,6 +53,9 @@ func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service)
 }
 
 func (a *AppServices) ensureFromBot(mattermostUserID string) error {
+	if mattermostUserID == "" {
+		return utils.NewUnauthorizedError("not logged in")
+	}
 	mmuser, err := a.mm.User.Get(mattermostUserID)
 	if err != nil {
 		return err
@@ -60,6 +67,9 @@ func (a *AppServices) ensureFromBot(mattermostUserID string) error {
 }
 
 func (a *AppServices) ensureFromUser(mattermostUserID string) error {
+	if mattermostUserID == "" {
+		return utils.NewUnauthorizedError("not logged in")
+	}
 	mmuser, err := a.mm.User.Get(mattermostUserID)
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (p *Proxy) GetRemoteOAuth2RedirectURL(appID apps.AppID, actingUserID, token string) (string, error) {
+func (p *Proxy) GetRemoteOAuth2RedirectURL(sessionID, actingUserID string, appID apps.AppID) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", err
@@ -15,15 +15,16 @@ func (p *Proxy) GetRemoteOAuth2RedirectURL(appID apps.AppID, actingUserID, token
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
-	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{
-		Call: *app.OnRemoteOAuth2Redirect.WithOverrides(apps.DefaultOnRemoteOAuth2RedirectCall),
+	creq := &apps.CallRequest{
+		Call: *app.GetOAuth2RedirectURL.WithOverrides(apps.DefaultGetOAuth2RedirectURL),
 		Type: apps.CallTypeSubmit,
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{
 				ActingUserID: actingUserID,
 			},
 		),
-	})
+	}
+	cresp := p.Call(sessionID, actingUserID, creq)
 	if cresp.Type == apps.CallResponseTypeError {
 		return "", cresp
 	}
@@ -38,7 +39,7 @@ func (p *Proxy) GetRemoteOAuth2RedirectURL(appID apps.AppID, actingUserID, token
 	return redirectURL, nil
 }
 
-func (p *Proxy) CompleteRemoteOAuth2(appID apps.AppID, actingUserID, token string, urlValues map[string]interface{}) error {
+func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -47,8 +48,8 @@ func (p *Proxy) CompleteRemoteOAuth2(appID apps.AppID, actingUserID, token strin
 		return errors.Errorf("%s is not authorized to use remote OAuth2", appID)
 	}
 
-	cresp := p.Call(apps.SessionToken(token), &apps.CallRequest{
-		Call: *app.OnRemoteOAuth2Complete.WithOverrides(apps.DefaultOnRemoteOAuth2CompleteCall),
+	creq := &apps.CallRequest{
+		Call: *app.OnOAuth2Complete.WithOverrides(apps.DefaultOnOAuth2Complete),
 		Type: apps.CallTypeSubmit,
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{
@@ -56,7 +57,8 @@ func (p *Proxy) CompleteRemoteOAuth2(appID apps.AppID, actingUserID, token strin
 			},
 		),
 		Values: urlValues,
-	})
+	}
+	cresp := p.Call(sessionID, actingUserID, creq)
 	if cresp.Type == apps.CallResponseTypeError {
 		return cresp
 	}

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -49,13 +48,13 @@ func main() {
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
-	// Remote OAuth2 handlers
+	// Google OAuth2 handlers
 
 	// Handle an OAuth2 connect request redirect.
-	http.HandleFunc("/oauth2/remote/redirect", oauth2Redirect)
+	http.HandleFunc("/oauth2/redirect", oauth2Redirect)
 
 	// Handle a successful OAuth2 connection.
-	http.HandleFunc("/oauth2/remote/complete", oauth2Complete)
+	http.HandleFunc("/oauth2/complete", oauth2Complete)
 
 	// Submit handlers
 
@@ -84,7 +83,7 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
 	asBot := mmclient.AsBot(creq.Context)
-	asBot.StoreRemoteOAuth2App(clientID, clientSecret)
+	asBot.StoreOAuth2App(clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: "updated OAuth client credentials",
@@ -93,10 +92,10 @@ func configure(w http.ResponseWriter, req *http.Request) {
 
 func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     creq.Context.RemoteOAuth2.OAuth2App.ClientID,
-		ClientSecret: creq.Context.RemoteOAuth2.OAuth2App.ClientSecret,
+		ClientID:     creq.Context.OAuth2.ClientID,
+		ClientSecret: creq.Context.OAuth2.ClientSecret,
 		Endpoint:     google.Endpoint,
-		RedirectURL:  creq.Context.RemoteOAuth2.CompleteURL,
+		RedirectURL:  creq.Context.OAuth2.CompleteURL,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/calendar",
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -109,7 +108,7 @@ func connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.RemoteOAuth2.RedirectURL),
+		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.RedirectURL),
 	})
 }
 
@@ -122,8 +121,7 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 
 	state, _ := asActingUser.CreateOAuth2State()
 
-	oauthConfig := oauth2Config(asBot, &creq)
-	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	url := oauth2Config(asBot, &creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
@@ -134,25 +132,20 @@ func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
-	state := creq.Values["state"].(string)
-	code := creq.Values["code"].(string)
-	userId := strings.Split(state, "_")[1]
-
-	asActingUser := mmclient.AsActingUser(creq.Context)
-	asActingUser.ValidateOAuth2State(state)
+	state, _ := creq.Values["state"].(string)
+	code, _ := creq.Values["code"].(string)
 
 	asBot := mmclient.AsBot(creq.Context)
-	oauthConfig := oauth2Config(asBot, &creq)
-	token, _ := oauthConfig.Exchange(context.Background(), code)
+	asActingUser := mmclient.AsActingUser(creq.Context)
 
-	asActingUser.StoreRemoteOAuth2User(creq.Context.AppID,)
+	valid, _ := asActingUser.ValidateOAuth2State(state)
+	if !valid {
+		http.Error(w, "invalid state data", http.StatusUnauthorized)
+		return
+	}
 
-
-
-	// TODO: token needs to be stored double-encoded 'cause KV doesn't have a get into a struct. Change KV?
-	tokenData, _ := json.Marshal(token)
-	asBot.KVSet("token"+userId, "", string(tokenData))
-
+	token, _ := oauth2Config(asBot, &creq).Exchange(context.Background(), code)
+	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
@@ -161,22 +154,19 @@ func send(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	asBot := mmclient.AsBot(creq.Context)
-	v, _ := asBot.KVGet("token"+creq.Context.ActingUserID, "")
+	asActingUser := mmclient.AsActingUser(creq.Context)
 
-	tokenData, _ := v.(string)
 	var token oauth2.Token
-	_ = json.Unmarshal([]byte(tokenData), &token)
-
+	_ = asActingUser.GetOAuth2User(creq.Context.AppID, &token)
 	oauthConfig := oauth2Config(asBot, &creq)
 	ctx := context.Background()
 	tokenSource := oauthConfig.TokenSource(ctx, &token)
-
 	oauth2Service, _ := oauth2api.NewService(ctx, option.WithTokenSource(tokenSource))
+	calService, _ := calendar.NewService(ctx, option.WithTokenSource(tokenSource))
 	uiService := oauth2api.NewUserinfoService(oauth2Service)
+
 	ui, _ := uiService.V2.Me.Get().Do()
 	message := fmt.Sprintf("Hello from Google, [%s](mailto:%s)!", ui.Name, ui.Email)
-
-	calService, _ := calendar.NewService(ctx, option.WithTokenSource(tokenSource))
 	cl, _ := calService.CalendarList.List().Do()
 	if cl != nil && len(cl.Items) > 0 {
 		message += " You have the following calendars:\n"

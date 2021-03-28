@@ -12,8 +12,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, actingUserID string) error {
-	err := utils.EnsureSysadmin(p.mm, actingUserID)
+func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) error {
+	err := utils.EnsureSysAdmin(p.mm, actingUserID)
 	if err != nil {
 		return err
 	}
@@ -27,19 +27,23 @@ func (p *Proxy) UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, a
 		creq := &apps.CallRequest{
 			Call: *app.OnUninstall,
 		}
-		resp := p.Call(sessionToken, creq)
+		resp := p.Call(sessionID, actingUserID, creq)
 		if resp.Type == apps.CallResponseTypeError {
 			return errors.Wrapf(resp, "call %s failed", creq.Path)
 		}
 	}
 
 	// delete oauth app
+	session, err := utils.LoadSession(p.mm, sessionID, actingUserID)
+	if err != nil {
+		return err
+	}
 	conf := p.conf.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
-	client.SetToken(string(sessionToken))
+	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
+	asAdmin.SetToken(session.Token)
 
 	if app.MattermostOAuth2.ClientID != "" {
-		success, response := client.DeleteOAuthApp(app.MattermostOAuth2.ClientID)
+		success, response := asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID)
 		if !success {
 			if response.Error != nil {
 				return errors.Wrapf(response.Error, "failed to delete Mattermost OAuth2 App - %s", app.AppID)

@@ -7,11 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
-
-// Where static assets are.
-const StaticAssetsFolder = "static"
 
 const (
 	AWSMaxLambdaName = 64
@@ -45,16 +42,16 @@ type AWSLambdaFunction struct {
 
 func (f AWSLambdaFunction) IsValid() error {
 	if f.Path == "" {
-		return errors.New("aws_lambda path must not be empty")
+		return utils.NewInvalidError("aws_lambda path must not be empty")
 	}
 	if f.Name == "" {
-		return errors.New("aws_lambda name must not be empty")
+		return utils.NewInvalidError("aws_lambda name must not be empty")
 	}
 	if f.Runtime == "" {
-		return errors.New("aws_lambda runtime must not be empty")
+		return utils.NewInvalidError("aws_lambda runtime must not be empty")
 	}
 	if f.Handler == "" {
-		return errors.New("aws_lambda handler must not be empty")
+		return utils.NewInvalidError("aws_lambda handler must not be empty")
 	}
 	return nil
 }
@@ -93,7 +90,7 @@ func ManifestS3Name(appID AppID, version AppVersion) string {
 // key can be 1024 characters long.
 func AssetS3Name(appID AppID, version AppVersion, name string) string {
 	sanitizedName := strings.ReplaceAll(name, " ", "-")
-	return fmt.Sprintf("%s/%s_%s_app/%s", StaticAssetsFolder, appID, version, sanitizedName)
+	return fmt.Sprintf("%s/%s_%s_app/%s", StaticFolder, appID, version, sanitizedName)
 }
 
 func S3BucketNameWithDefaults(name string) string {

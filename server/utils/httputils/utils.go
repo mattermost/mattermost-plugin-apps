@@ -16,6 +16,8 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error) {
@@ -49,11 +51,22 @@ func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error)
 	return remoteURL, nil
 }
 
-func WriteError(w http.ResponseWriter, statusCode int, err error) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(statusCode)
-	if err != nil {
-		_, _ = w.Write([]byte(err.Error()))
+func WriteError(w http.ResponseWriter, err error) {
+	if err == nil {
+		http.Error(w, "invalid (unknown?) error", http.StatusInternalServerError)
+		return
+	}
+	switch errors.Cause(err) {
+	case utils.ErrForbidden:
+		http.Error(w, err.Error(), http.StatusForbidden)
+	case utils.ErrUnauthorized:
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	case utils.ErrNotFound:
+		http.Error(w, err.Error(), http.StatusNotFound)
+	case utils.ErrInvalid:
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -66,22 +79,6 @@ func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(v)
-}
-
-func WriteInternalServerError(w http.ResponseWriter, err error) {
-	WriteError(w, http.StatusInternalServerError, err)
-}
-
-func WriteBadRequestError(w http.ResponseWriter, err error) {
-	WriteError(w, http.StatusBadRequest, err)
-}
-
-func WriteNotFoundError(w http.ResponseWriter, err error) {
-	WriteError(w, http.StatusNotFound, err)
-}
-
-func WriteUnauthorizedError(w http.ResponseWriter, err error) {
-	WriteError(w, http.StatusUnauthorized, err)
 }
 
 const InLimit = 10 * (1 << 20)
@@ -100,13 +97,14 @@ func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
 
 func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return true
 	}
 	if resp.StatusCode != http.StatusOK {
 		bb, _ := ReadAndClose(resp.Body)
-		WriteError(w, http.StatusBadGateway,
-			errors.Errorf("received status %v: %s", resp.Status, string(bb)))
+		http.Error(w,
+			fmt.Sprintf("received status %v: %s", resp.Status, string(bb)),
+			http.StatusBadGateway)
 		return true
 	}
 	return false
@@ -122,24 +120,19 @@ func GetFromURL(url string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, actingUserID, sessionToken string)) http.HandlerFunc {
+func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, sessionID, actingUserID string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get("Mattermost-User-Id")
 		if actingUserID == "" {
-			WriteUnauthorizedError(w, errors.New("not authorized"))
+			WriteError(w, utils.ErrUnauthorized)
 			return
 		}
 		sessionID := req.Header.Get("MM_SESSION_ID")
 		if sessionID == "" {
-			WriteUnauthorizedError(w, errors.New("no user session"))
-			return
-		}
-		session, err := mm.Session.Get(sessionID)
-		if err != nil {
-			WriteUnauthorizedError(w, err)
+			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user session"))
 			return
 		}
 
-		f(w, req, actingUserID, session.Token)
+		f(w, req, sessionID, actingUserID)
 	}
 }

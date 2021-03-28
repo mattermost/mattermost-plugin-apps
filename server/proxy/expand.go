@@ -1,8 +1,6 @@
 package proxy
 
 import (
-	"path"
-
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -12,25 +10,27 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 type expander struct {
 	// Context to expand (can be expanded multiple times on the same expander)
 	*apps.Context
 
-	mm           *pluginapi.Client
-	conf         config.Service
-	store        *store.Service
-	sessionToken apps.SessionToken
+	mm        *pluginapi.Client
+	conf      config.Service
+	store     *store.Service
+	sessionID string
+	session   *model.Session
 }
 
-func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf config.Service, store *store.Service, debugSessionToken apps.SessionToken) *expander {
+func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf config.Service, store *store.Service, sessionID string) *expander {
 	e := &expander{
-		Context:      cc,
-		mm:           mm,
-		conf:         conf,
-		store:        store,
-		sessionToken: debugSessionToken,
+		Context:   cc,
+		mm:        mm,
+		conf:      conf,
+		store:     store,
+		sessionID: sessionID,
 	}
 	return e
 }
@@ -53,6 +53,35 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 			BotAccessToken: app.BotAccessToken,
 		}
 		return &clone, nil
+	}
+
+	// TODO: use the appropriate user's Mattermost OAuth2 token once
+	// re-implemented, for now pass in the session token to make things work.
+	if expand.AdminAccessToken != "" || expand.ActingUserAccessToken != "" {
+		// Get the MM session
+		if e.sessionID == "" {
+			return nil, utils.NewUnauthorizedError("a user session is required")
+		}
+		if e.session == nil {
+			session, err := utils.LoadSession(e.mm, e.sessionID, e.Context.ActingUserID)
+			if err != nil {
+				return nil, utils.NewUnauthorizedError(err)
+			}
+			e.session = session
+		}
+
+		if expand.AdminAccessToken != "" {
+			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
+				return nil, utils.NewForbiddenError("%s does not have %s permission", app.AppID, apps.PermissionActAsUser.Markdown())
+			}
+			clone.ExpandedContext.AdminAccessToken = e.session.Token
+		}
+		if expand.ActingUserAccessToken != "" {
+			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
+				return nil, utils.NewForbiddenError("%s does not have %s permission", app.AppID, apps.PermissionActAsAdmin.Markdown())
+			}
+			clone.ExpandedContext.ActingUserAccessToken = e.session.Token
+		}
 	}
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
@@ -118,33 +147,23 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		// TODO Mentioned
 	}
 
-	// TODO: use the appropriate user's Mattermost OAuth2 token once
-	// re-implemented, for now pass in the session token to make things work.
-	if expand.AdminAccessToken != "" {
-		clone.ExpandedContext.AdminAccessToken = string(e.sessionToken)
-	}
-	if expand.ActingUserAccessToken != "" {
-		clone.ExpandedContext.ActingUserAccessToken = string(e.sessionToken)
-	}
-
 	conf := e.conf.GetConfig()
-	if expand.RemoteOAuth2App != "" {
-		clone.ExpandedContext.RemoteOAuth2.ClientID = app.RemoteOAuth2.ClientID
-		clone.ExpandedContext.RemoteOAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
-		baseURL := conf.PluginURL + path.Join(config.AppsPath, string(app.AppID), config.PathOAuth2)
-		clone.ExpandedContext.RemoteOAuth2.RedirectURL = baseURL + config.PathRemoteRedirect
-		clone.ExpandedContext.RemoteOAuth2.CompleteURL = baseURL + config.PathRemoteComplete
+	if expand.OAuth2App != "" {
+		clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
+		clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
+		clone.ExpandedContext.OAuth2.RedirectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Redirect
+		clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
 	}
 
-	if expand.RemoteOAuth2State != "" && e.RemoteOAuth2.State == "" {
+	if expand.OAuth2State != "" && e.OAuth2.State == "" {
 		//<>/<> TODO: fetch the state
 		state := "<>/<>"
-		clone.ExpandedContext.RemoteOAuth2.State = state
+		clone.ExpandedContext.OAuth2.State = state
 	}
 
-	if expand.RemoteOAuth2Token != "" && e.RemoteOAuth2.Token == nil {
-		//<>/<> TODO: fetch the token
-		clone.ExpandedContext.RemoteOAuth2.Token = nil
+	if expand.OAuth2User != "" && e.OAuth2.User == nil {
+		//<>/<> TODO: fetch the OAuth user
+		clone.ExpandedContext.OAuth2.User = nil
 	}
 
 	return &clone, nil
