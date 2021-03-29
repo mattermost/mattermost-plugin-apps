@@ -131,6 +131,8 @@ type CallResponse struct {
 
 	// Used in CallResponseTypeForm
 	Form *Form `json:"form,omitempty"`
+
+	AppMetadata AppMetadataForClient `json:"app_metadata"`
 }
 
 func NewErrorCallResponse(err error) *CallResponse {

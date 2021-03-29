@@ -36,7 +36,13 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 	clone := *c
 	clone.Context = cc
 
-	return upstream.Call(up, &clone)
+	callResponse := upstream.Call(up, &clone)
+	callResponse.AppMetadata = apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
+	return callResponse
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
