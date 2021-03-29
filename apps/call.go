@@ -132,6 +132,7 @@ type CallResponse struct {
 	// Used in CallResponseTypeForm
 	Form *Form `json:"form,omitempty"`
 
+	// Used to provide info about the App to client, e.g. the bot user id
 	AppMetadata AppMetadataForClient `json:"app_metadata"`
 }
 
