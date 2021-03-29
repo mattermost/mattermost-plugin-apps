@@ -15,22 +15,6 @@
 			]
 		},
 		{
-			"location": "/post_menu",
-			"bindings": [
-				{
-					"location": "send-button",
-					"icon": "http://localhost:8080/static/icon.png",
-					"label":"send hello message",
-					"call": {
-						"path": "/send-modal",
-						"expand": {
-							"post": "all"
-						}
-					}
-				}
-			]
-		},
-		{
 			"location": "/command",
 			"bindings": [
 				{
