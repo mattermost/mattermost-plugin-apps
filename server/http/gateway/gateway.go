@@ -21,7 +21,7 @@ type gateway struct {
 }
 
 func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service) {
-	p := &gateway{
+	g := &gateway{
 		conf:  conf,
 		mm:    mm,
 		proxy: proxy,
@@ -31,11 +31,14 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	// Static
 	subrouter.HandleFunc("/{app_id}/"+apps.StaticAssetsFolder+"/{name}",
-		httputils.CheckAuthorized(mm, p.static)).Methods(http.MethodGet)
+		httputils.CheckAuthorized(mm, g.static)).Methods(http.MethodGet)
 
 	// OAuth2
 	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthRedirect,
-		httputils.CheckAuthorized(mm, p.remoteOAuth2Redirect)).Methods(http.MethodGet)
+		httputils.CheckAuthorized(mm, g.remoteOAuth2Redirect)).Methods(http.MethodGet)
 	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthComplete,
-		httputils.CheckAuthorized(mm, p.remoteOAuth2Complete)).Methods(http.MethodGet)
+		httputils.CheckAuthorized(mm, g.remoteOAuth2Complete)).Methods(http.MethodGet)
+
+	// Webhooks
+	subrouter.HandleFunc("/{app_id}"+config.Webhook+"/{path}", g.handleWebhook).Methods(http.MethodPost)
 }

@@ -1,17 +1,16 @@
-package restapi
+package gateway
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/pkg/errors"
 )
 
-func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
+func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	appID := vars["app_id"]
 	if appID == "" {
@@ -25,14 +24,13 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	queryVars := req.URL.Query()
-	if len(queryVars["secret"]) != 1 {
+	secret := req.URL.Query().Get("secret")
+	if secret == "" {
 		httputils.WriteBadRequestError(w, errors.New("webhook secret was not provided"))
 		return
 	}
 
-	secret := queryVars["secret"][0]
-	if !a.isValidSecret(appID, secret) {
+	if !g.isValidSecret(appID, secret) {
 		httputils.WriteBadRequestError(w, errors.New("webhook secret is not valid"))
 		return
 	}
@@ -57,11 +55,11 @@ func (a *restapi) handleWebhook(w http.ResponseWriter, req *http.Request) {
 			Path: "/" + path,
 		},
 	}
-	_ = a.proxy.Call("", &call)
+	_ = g.proxy.Call("", &call)
 }
 
-func (a *restapi) isValidSecret(appID, secret string) bool {
-	app, _ := a.proxy.GetInstalledApp(apps.AppID(appID))
+func (g *gateway) isValidSecret(appID, secret string) bool {
+	app, _ := g.proxy.GetInstalledApp(apps.AppID(appID))
 	savedSecret := app.WebhookSecret
 	return secret == savedSecret
 }

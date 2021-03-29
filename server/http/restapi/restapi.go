@@ -43,7 +43,6 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(config.KVPath+"/", a.handleKV(a.kvList)).Methods("GET")
 	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvHead)).Methods("HEAD")
 	subrouter.HandleFunc(config.KVPath+"/{key}", a.handleKV(a.kvDelete)).Methods("DELETE")
-	subrouter.HandleFunc(config.Webhook+"/{app_id}/{path}", a.handleWebhook).Methods("POST")
 	subrouter.HandleFunc(config.PathMarketplace,
 		httputils.CheckAuthorized(mm, a.handleGetMarketplace)).Methods(http.MethodGet)
 }
