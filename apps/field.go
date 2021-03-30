@@ -3,40 +3,74 @@ package apps
 type FieldType string
 
 const (
-	FieldTypeText          = FieldType("text")
-	FieldTypeStaticSelect  = FieldType("static_select")
-	FieldTypeDynamicSelect = FieldType("dynamic_select")
-	FieldTypeBool          = FieldType("bool")
-	FieldTypeUser          = FieldType("user")
-	FieldTypeChannel       = FieldType("channel")
+	// Text field. "subtype":"textarea" for multi-line text input (Modal only?).
+	// min_length, max_length - self explanatory. Value (default) is expected to be type string, or nil.
+	FieldTypeText FieldType = "text"
+
+	// Static select field. The options are specified in "options"
+	FieldTypeStaticSelect FieldType = "static_select"
+
+	// Dynamic select's options are fetched by making a call to the Form's Call,
+	// in lookup mode. It responds with the list of options to display.
+	FieldTypeDynamicSelect FieldType = "dynamic_select"
+
+	// Boolean (checkbox) field.
+	FieldTypeBool FieldType = "bool"
+
+	// A mattermost @username.
+	FieldTypeUser FieldType = "user"
+
+	// A mattermost channel reference (~name).
+	FieldTypeChannel FieldType = "channel"
 )
 
 type SelectOption struct {
-	Label    string `json:"label"`
+	// Label is the display name/label for the option's value.
+	Label string `json:"label"`
+
 	Value    string `json:"value"`
 	IconData string `json:"icon_data"`
 }
 
 type Field struct {
 	// Name is the name of the JSON field to use.
-	Name       string    `json:"name"`
+	Name string `json:"name"`
+
 	Type       FieldType `json:"type"`
 	IsRequired bool      `json:"is_required,omitempty"`
 
 	// Present (default) value of the field
 	Value interface{} `json:"value,omitempty"`
 
+	// Field description. Used in modal and autocomplete.
 	Description string `json:"description,omitempty"`
 
-	Label                string `json:"label,omitempty"`
-	AutocompleteHint     string `json:"hint,omitempty"`
-	AutocompletePosition int    `json:"position,omitempty"`
+	// Label is used in Autocomplete as the --flag name. It is ignored for
+	// positional fields (with AutocompletePosition != 0).
+	//
+	// TODO: Label should default to Name.
+	Label string `json:"label,omitempty"`
 
+	// AutocompleteHint is used in Autocomplete as the hint line.
+	AutocompleteHint string `json:"hint,omitempty"`
+
+	// AutocompletePosition means that this is a positional argument, does not
+	// have a --flag. If >0, indicates what position this field is in.
+	AutocompletePosition int `json:"position,omitempty"`
+
+	// TODO: ModalLabel should default to Label, Name
 	ModalLabel string `json:"modal_label"`
 
-	// Select props
-	SelectRefresh       bool           `json:"refresh,omitempty"`
-	SelectMultiselect   bool           `json:"multiselect,omitempty"`
+	SelectMultiselect bool `json:"multiselect,omitempty"`
+
+	// SelectRefresh means that a change in the value of this select triggers
+	// reloading the form. Values of the fields with inputs that are not
+	// included in the refreshed form are lost. Not yet implemented for /command
+	// autocomplete.
+	SelectRefresh bool `json:"refresh,omitempty"`
+
+	// SelectStaticOptions is the list of options to display in a static select
+	// field.
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
 	// Text props

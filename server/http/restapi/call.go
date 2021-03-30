@@ -10,7 +10,7 @@ import (
 )
 
 func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
-	call, err := apps.UnmarshalCallFromReader(req.Body)
+	call, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to unmarshal Call struct")
 		httputils.WriteBadRequestError(w, err)
@@ -24,8 +24,10 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if call.Context == nil {
-		call.Context = &apps.Context{}
+	if call.Context == nil || call.Context.AppID == "" {
+		err = errors.New("must provide Context and set the app ID")
+		httputils.WriteBadRequestError(w, err)
+		return
 	}
 	call.Context.ActingUserID = actingUserID
 
@@ -35,12 +37,16 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
-	session, err := a.api.Mattermost.Session.Get(sessionID)
+	session, err := a.mm.Session.Get(sessionID)
 	if err != nil {
 		httputils.WriteUnauthorizedError(w, err)
 		return
 	}
 
-	res := a.api.Proxy.Call(apps.SessionToken(session.Token), call)
+	res := a.proxy.Call(apps.SessionToken(session.Token), call)
+	if res.Type == "" {
+		res.Type = apps.CallResponseTypeOK
+	}
+
 	httputils.WriteJSON(w, res)
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -44,12 +43,6 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		return
 	}
 
-	// TODO check for sysadmin
-	if !a.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
-		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
-		return
-	}
-
 	var sub apps.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		status = http.StatusUnauthorized
@@ -59,9 +52,9 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	if isSubscribe {
-		err = a.api.AppServices.Subscribe(&sub)
+		err = a.appServices.Subscribe(actingUserID, &sub)
 	} else {
-		err = a.api.AppServices.Unsubscribe(&sub)
+		err = a.appServices.Unsubscribe(actingUserID, &sub)
 	}
 
 	if err != nil {

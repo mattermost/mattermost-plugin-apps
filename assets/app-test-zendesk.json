@@ -1,0 +1,25 @@
+{
+    "app_id": "test-zendesk",
+    "app_type": "aws_lambda",
+    "display_name": "test zendesk app",
+    "description": "for testing purposes",
+    "version":"0.1.0",
+    "homepage_url": "https://testzendesk.test/home",
+    "requested_permissions": [
+        "user_joined_channel_notification",
+        "act_as_user",
+        "act_as_bot"
+    ],
+    "requested_locations": [
+        "/channel_header",
+        "/post_menu",
+        "/command",
+        "/in_post"
+    ],
+    "function_routes":{
+        "/":"main"
+    },
+    "static_routes":{
+        "/icon.ico":"icon-sha1.ico"
+    }
+}

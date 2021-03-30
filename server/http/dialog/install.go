@@ -9,41 +9,44 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
-	Manifest      *apps.Manifest
+	AppID         apps.AppID
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
-		md.Markdownf("Application %s requires the following permissions:", manifest.DisplayName)) + "\n"
-	for _, permission := range manifest.RequestedPermissions {
+		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
+	for _, permission := range m.RequestedPermissions {
 		intro += md.Markdownf("- %s\n", permission.Markdown())
 	}
 	intro += md.Bold(
-		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", manifest.DisplayName)) + "\n"
-	for _, l := range manifest.RequestedLocations {
+		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", m.DisplayName)) + "\n"
+	for _, l := range m.RequestedLocations {
 		intro += md.Markdownf("- %s\n", l.Markdown())
 	}
 	intro += "\n---\n"
 
-	elements := []model.DialogElement{
-		{
+	elements := []model.DialogElement{}
+	if m.AppType == apps.AppTypeHTTP {
+		elements = append(elements, model.DialogElement{
 			DisplayName: "App secret:",
 			Name:        "secret",
 			Type:        "text",
 			SubType:     "password",
 			HelpText:    "TODO: How to obtain the App Secret",
 			Default:     secret,
-		},
+		})
 	}
-	if manifest.RequestedPermissions.Contains(apps.PermissionActAsUser) {
+
+	if m.RequestedPermissions.Contains(apps.PermissionActAsUser) {
 		elements = append(elements, model.DialogElement{
 			DisplayName: "Require user consent to use REST API first time they use the app:",
 			Name:        "consent",
@@ -64,15 +67,15 @@ func NewInstallAppDialog(manifest *apps.Manifest, secret, pluginURL string, comm
 	}
 
 	stateData, _ := json.Marshal(installDialogState{
-		Manifest: manifest,
-		TeamID:   commandArgs.TeamId,
+		AppID:  m.AppID,
+		TeamID: commandArgs.TeamId,
 	})
 
 	return model.OpenDialogRequest{
 		TriggerId: commandArgs.TriggerId,
-		URL:       pluginURL + api.InteractiveDialogPath + InstallPath,
+		URL:       pluginURL + config.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
-			Title:            "Install App - " + manifest.DisplayName,
+			Title:            "Install App - " + m.DisplayName,
 			IntroductionText: intro.String(),
 			Elements:         elements,
 			SubmitLabel:      "Approve and Install",
@@ -89,9 +92,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO check for sysadmin
-	if !d.api.Mattermost.User.HasPermissionTo(actingUserID, model.PERMISSION_MANAGE_SYSTEM) {
-		http.Error(w, errors.New("forbidden").Error(), http.StatusForbidden)
+	if err := utils.EnsureSysadmin(d.mm, actingUserID); err != nil {
+		respondWithError(w, http.StatusForbidden, err)
 		return
 	}
 
@@ -100,7 +102,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
 		return
 	}
-	session, err := d.api.Mattermost.Session.Get(sessionID)
+	session, err := d.mm.Session.Get(sessionID)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err)
 		return
@@ -138,18 +140,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app, out, err := d.api.Admin.InstallApp(
-		&apps.Context{
-			ActingUserID: actingUserID,
-			AppID:        stateData.Manifest.AppID,
-			TeamID:       stateData.TeamID,
-		},
-		apps.SessionToken(session.Token),
+	cc := apps.Context{
+		ActingUserID: actingUserID,
+		TeamID:       stateData.TeamID,
+	}
+	d.conf.GetConfig().SetContextDefaultsForApp(&cc, stateData.AppID)
+
+	app, out, err := d.proxy.InstallApp(&cc, apps.SessionToken(session.Token),
 		&apps.InInstallApp{
-			OAuth2TrustedApp:   noUserConsentForOAuth2,
-			AppSecret:          secret,
-			GrantedPermissions: stateData.Manifest.RequestedPermissions,
-			GrantedLocations:   stateData.Manifest.RequestedLocations,
+			AppID:            stateData.AppID,
+			OAuth2TrustedApp: noUserConsentForOAuth2,
+			AppSecret:        secret,
 		},
 	)
 	if err != nil {
@@ -157,7 +158,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_ = d.api.Mattermost.Post.DM(app.BotUserID, actingUserID, &model.Post{
+	_ = d.mm.Post.DM(app.BotUserID, actingUserID, &model.Post{
 		Message: out.String(),
 	})
 }

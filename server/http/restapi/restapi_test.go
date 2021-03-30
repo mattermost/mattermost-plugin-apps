@@ -49,15 +49,19 @@ func TestPPAPI(t *testing.T) {
 		// set
 		outSet, resp := th.BotClientPP.KVSet(id, prefix, in)
 		api4.CheckOKStatus(t, resp)
+		outSetMap, ok := outSet.(map[string]interface{})
+		require.True(t, ok)
 		require.Nil(t, resp.Error)
-		require.Equal(t, outSet["changed"], true)
+		require.Equal(t, outSetMap["changed"], true)
 
 		// get
 		outGet, resp := th.BotClientPP.KVGet(id, prefix)
 		api4.CheckOKStatus(t, resp)
 		require.Nil(t, resp.Error)
-		require.Equal(t, outGet["test_bool"], true)
-		require.Equal(t, outGet["test_string"], "test")
+		outGetMap, ok := outGet.(map[string]interface{})
+		require.True(t, ok)
+		require.Equal(t, outGetMap["test_bool"], true)
+		require.Equal(t, outGetMap["test_string"], "test")
 
 		// delete
 		_, resp = th.BotClientPP.KVDelete(id, prefix)
