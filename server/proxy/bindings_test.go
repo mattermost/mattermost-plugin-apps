@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -609,7 +609,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 			Data: test.bindings,
 		}
 		bb, _ := json.Marshal(cr)
-		reader := ioutil.NopCloser(bytes.NewReader(bb))
+		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
