@@ -61,6 +61,7 @@ type Field struct {
 	// TODO: ModalLabel should default to Label, Name
 	ModalLabel string `json:"modal_label"`
 
+	// SelectIsMulti designates whether a select field is a multiselect
 	SelectIsMulti bool `json:"multiselect,omitempty"`
 
 	// SelectRefresh means that a change in the value of this select triggers
