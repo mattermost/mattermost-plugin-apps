@@ -1,12 +1,13 @@
 package detector
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
-	"github.com/pkg/errors"
 )
 
 type Detector interface {
@@ -19,13 +20,12 @@ type detector struct {
 	s3AssetBucket string
 }
 
-func NewDetector(client aws.Client, s3AssetBucket string) *detector {
+func NewDetector(client aws.Client, s3AssetBucket string) Detector {
 	return &detector{
 		builtin:       map[apps.AppID]upstream.Upstream{},
 		client:        client,
 		s3AssetBucket: s3AssetBucket,
 	}
-
 }
 
 func (d *detector) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
