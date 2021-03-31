@@ -35,6 +35,18 @@ func (m *MockDetector) EXPECT() *MockDetectorMockRecorder {
 	return m.recorder
 }
 
+// AddBuiltinUpstream mocks base method.
+func (m *MockDetector) AddBuiltinUpstream(arg0 apps.AppID, arg1 upstream.Upstream) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddBuiltinUpstream", arg0, arg1)
+}
+
+// AddBuiltinUpstream indicates an expected call of AddBuiltinUpstream.
+func (mr *MockDetectorMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBuiltinUpstream", reflect.TypeOf((*MockDetector)(nil).AddBuiltinUpstream), arg0, arg1)
+}
+
 // UpstreamForApp mocks base method.
 func (m *MockDetector) UpstreamForApp(arg0 *apps.App) (upstream.Upstream, error) {
 	m.ctrl.T.Helper()

@@ -15,25 +15,25 @@ type Detector interface {
 	AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream)
 }
 
-type detector struct {
+type UpstreamDetector struct {
 	builtin       map[apps.AppID]upstream.Upstream
 	client        aws.Client
 	s3AssetBucket string
 }
 
-func NewDetector(client aws.Client, s3AssetBucket string) Detector {
-	return &detector{
+func NewDetector(client aws.Client, s3AssetBucket string) *UpstreamDetector {
+	return &UpstreamDetector{
 		builtin:       map[apps.AppID]upstream.Upstream{},
 		client:        client,
 		s3AssetBucket: s3AssetBucket,
 	}
 }
 
-func (d *detector) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
+func (d *UpstreamDetector) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 	d.builtin[appID] = up
 }
 
-func (d *detector) UpstreamForApp(app *apps.App) (upstream.Upstream, error) {
+func (d *UpstreamDetector) UpstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app), nil
