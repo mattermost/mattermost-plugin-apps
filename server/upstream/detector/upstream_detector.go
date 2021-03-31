@@ -12,6 +12,7 @@ import (
 
 type Detector interface {
 	UpstreamForApp(app *apps.App) (upstream.Upstream, error)
+	AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream)
 }
 
 type detector struct {
