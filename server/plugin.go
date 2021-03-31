@@ -28,6 +28,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream/detector"
 )
 
 type Plugin struct {
@@ -112,10 +113,12 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
+	upstreamDetector := detector.NewDetector(p.aws, assetBucket)
 	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
+		upstreamDetector.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
 	}
+
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, upstreamDetector, mutex)
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 

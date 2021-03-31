@@ -4,6 +4,7 @@
 package proxy
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,9 @@ const PrevVersion = "prev_version"
 // performing OnVersionChanged call on the App as needed.
 func (p *Proxy) SynchronizeInstalledApps() error {
 	installed := p.store.App.AsMap()
+	println(fmt.Sprintf("installed = %v", installed))
 	listed := p.store.Manifest.AsMap()
+	println(fmt.Sprintf("listed = %v", listed))
 
 	diff := map[apps.AppID]*apps.App{}
 	for _, app := range installed {
@@ -51,6 +54,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				creq := &apps.CallRequest{
 					Call:   *app.OnVersionChanged,
 					Values: map[string]interface{}{},
+					Context: &apps.Context{
+						AppID: app.AppID,
+					},
 				}
 				for k, v := range values {
 					creq.Values[k] = v
