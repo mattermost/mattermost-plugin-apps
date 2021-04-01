@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
@@ -26,7 +27,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	}
 
 	if !s.mm.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-		return errorOut(params, errors.New("forbidden"))
+		return errorOut(params, utils.ErrForbidden)
 	}
 
 	if appID == "" {

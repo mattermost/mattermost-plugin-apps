@@ -27,18 +27,18 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 		proxy: proxy,
 	}
 
-	subrouter := router.PathPrefix(config.AppsPath).Subrouter()
+	subrouter := router.PathPrefix(config.PathApps).Subrouter()
 
 	// Static
-	subrouter.HandleFunc("/{app_id}/"+apps.StaticAssetsFolder+"/{name}",
+	subrouter.HandleFunc("/{app_id}/"+apps.StaticFolder+"/{name}",
 		httputils.CheckAuthorized(mm, g.static)).Methods(http.MethodGet)
 
-	// OAuth2
-	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthRedirect,
-		httputils.CheckAuthorized(mm, g.remoteOAuth2Redirect)).Methods(http.MethodGet)
-	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthComplete,
+	// Remote OAuth2
+	subrouter.HandleFunc("/{app_id}"+config.PathRemoteOAuth2Connect,
+		httputils.CheckAuthorized(mm, g.remoteOAuth2Connect)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{app_id}"+config.PathRemoteOAuth2Complete,
 		httputils.CheckAuthorized(mm, g.remoteOAuth2Complete)).Methods(http.MethodGet)
 
 	// Webhooks
-	subrouter.HandleFunc("/{app_id}"+config.Webhook+"/{path}", g.handleWebhook).Methods(http.MethodPost)
+	subrouter.HandleFunc("/{app_id}"+config.PathWebhook+"/{path}", g.handleWebhook).Methods(http.MethodPost)
 }

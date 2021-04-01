@@ -34,6 +34,35 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
+// CreateOAuth2State mocks base method.
+func (m *MockService) CreateOAuth2State(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOAuth2State", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOAuth2State indicates an expected call of CreateOAuth2State.
+func (mr *MockServiceMockRecorder) CreateOAuth2State(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOAuth2State", reflect.TypeOf((*MockService)(nil).CreateOAuth2State), arg0)
+}
+
+// GetOAuth2User mocks base method.
+func (m *MockService) GetOAuth2User(arg0 apps.AppID, arg1 string, arg2 interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOAuth2User", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetOAuth2User indicates an expected call of GetOAuth2User.
+func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0, arg1, arg2)
+}
+
 // KVDelete mocks base method.
 func (m *MockService) KVDelete(arg0, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -75,6 +104,34 @@ func (m *MockService) KVSet(arg0, arg1, arg2 string, arg3 interface{}) (bool, er
 func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVSet", reflect.TypeOf((*MockService)(nil).KVSet), arg0, arg1, arg2, arg3)
+}
+
+// StoreOAuth2App mocks base method.
+func (m *MockService) StoreOAuth2App(arg0 string, arg1 apps.OAuth2App) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreOAuth2App", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreOAuth2App indicates an expected call of StoreOAuth2App.
+func (mr *MockServiceMockRecorder) StoreOAuth2App(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2App", reflect.TypeOf((*MockService)(nil).StoreOAuth2App), arg0, arg1)
+}
+
+// StoreOAuth2User mocks base method.
+func (m *MockService) StoreOAuth2User(arg0 apps.AppID, arg1 string, arg2 interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreOAuth2User", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreOAuth2User indicates an expected call of StoreOAuth2User.
+func (mr *MockServiceMockRecorder) StoreOAuth2User(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2User", reflect.TypeOf((*MockService)(nil).StoreOAuth2User), arg0, arg1, arg2)
 }
 
 // Subscribe mocks base method.

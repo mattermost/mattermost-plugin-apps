@@ -5,40 +5,41 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/pkg/errors"
 )
 
 func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	appID := vars["app_id"]
 	if appID == "" {
-		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
 	path := vars["path"]
 	if path == "" {
-		httputils.WriteBadRequestError(w, errors.New("webhook call path not specified"))
+		httputils.WriteError(w, utils.NewInvalidError("webhook call path not specified"))
 		return
 	}
 
 	secret := req.URL.Query().Get("secret")
 	if secret == "" {
-		httputils.WriteBadRequestError(w, errors.New("webhook secret was not provided"))
+		httputils.WriteError(w, utils.NewInvalidError("webhook secret was not provided"))
 		return
 	}
 
 	if !g.isValidSecret(appID, secret) {
-		httputils.WriteBadRequestError(w, errors.New("webhook secret is not valid"))
+		httputils.WriteError(w, utils.NewInvalidError("webhook secret is not valid"))
 		return
 	}
 
 	var c interface{}
 	err := json.NewDecoder(req.Body).Decode(&c)
 	if err != nil {
-		httputils.WriteBadRequestError(w, err)
+		httputils.WriteError(w, utils.NewInvalidError(err))
 		return
 	}
 
@@ -55,7 +56,7 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 			Path: "/" + path,
 		},
 	}
-	_ = g.proxy.Call("", &call)
+	_ = g.proxy.Call("", "", &call)
 }
 
 func (g *gateway) isValidSecret(appID, secret string) bool {

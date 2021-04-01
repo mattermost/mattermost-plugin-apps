@@ -4,7 +4,10 @@
 		"title": "Send a Google-connected 'hello, world!' message",
 		"icon": "http://localhost:8080/static/icon.png",
 		"call": {
-			"path": "/send"
+			"path": "/send",
+			"expand": {
+				"oauth2_user": "all"
+			}
 		}
 	}
 }

@@ -9,12 +9,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (p *Proxy) AddLocalManifest(actingUserID string, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
+func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error) {
 	if err := m.IsValid(); err != nil {
 		return "", err
 	}
 
-	err := utils.EnsureSysadmin(p.mm, actingUserID)
+	err := utils.EnsureSysAdmin(p.mm, actingUserID)
 	if err != nil {
 		return "", err
 	}

@@ -101,7 +101,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := utils.EnsureSysadmin(d.mm, actingUserID); err != nil {
+	if err := utils.EnsureSysAdmin(d.mm, actingUserID); err != nil {
 		respondWithError(w, http.StatusForbidden, err)
 		return
 	}
@@ -111,14 +111,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
 		return
 	}
-	session, err := d.mm.Session.Get(sessionID)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, err)
-		return
-	}
-
 	var dialogRequest model.SubmitDialogRequest
-	err = json.NewDecoder(req.Body).Decode(&dialogRequest)
+	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err)
 		return
@@ -142,9 +136,6 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
-	v = dialogRequest.Submission["webhooksecret"]
-	whsecret, _ := v.(string)
-
 	stateData := installDialogState{}
 	err = json.Unmarshal([]byte(dialogRequest.State), &stateData)
 	if err != nil {
@@ -153,19 +144,11 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	cc := apps.Context{
-		ActingUserID: actingUserID,
-		TeamID:       stateData.TeamID,
+		TeamID: stateData.TeamID,
 	}
-	d.conf.GetConfig().SetContextDefaultsForApp(&cc, stateData.AppID)
+	d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, &cc)
 
-	app, out, err := d.proxy.InstallApp(&cc, apps.SessionToken(session.Token),
-		&apps.InInstallApp{
-			AppID:            stateData.AppID,
-			OAuth2TrustedApp: noUserConsentForOAuth2,
-			AppSecret:        secret,
-			AppWebhookSecret: whsecret,
-		},
-	)
+	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, &cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return

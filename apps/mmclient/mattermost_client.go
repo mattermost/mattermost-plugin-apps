@@ -33,20 +33,20 @@ func AsAdmin(cc *apps.Context) *Client {
 }
 
 func NewClient(userID, token, mattermostSiteURL string) *Client {
-	client := Client{
+	c := Client{
 		userID:   userID,
 		ClientPP: NewAPIClientPP(mattermostSiteURL),
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
-	client.Client4.SetOAuthToken(token)
-	client.ClientPP.SetOAuthToken(token)
-	return &client
+	c.Client4.SetOAuthToken(token)
+	c.ClientPP.SetOAuthToken(token)
+	return &c
 }
 
-func (client *Client) KVSet(id string, prefix string, in interface{}) (interface{}, error) {
+func (c *Client) KVSet(id string, prefix string, in interface{}) (interface{}, error) {
 	var mapRes interface{}
 	var res *model.Response
-	mapRes, res = client.ClientPP.KVSet(id, prefix, in)
+	mapRes, res = c.ClientPP.KVSet(id, prefix, in)
 
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
@@ -57,25 +57,22 @@ func (client *Client) KVSet(id string, prefix string, in interface{}) (interface
 	return mapRes, nil
 }
 
-func (client *Client) KVGet(id string, prefix string) (interface{}, error) {
-	var mapRes interface{}
-	var res *model.Response
-
-	mapRes, res = client.ClientPP.KVGet(id, prefix)
+func (c *Client) KVGet(id string, prefix string, ref interface{}) error {
+	res := c.ClientPP.KVGet(id, prefix, ref)
 	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
-			return nil, res.Error
+			return res.Error
 		}
-		return nil, fmt.Errorf("returned with status %d", res.StatusCode)
+		return fmt.Errorf("returned with status %d", res.StatusCode)
 	}
-	return mapRes, nil
+	return nil
 }
 
-func (client *Client) KVDelete(id string, prefix string) (bool, error) {
+func (c *Client) KVDelete(id string, prefix string) (bool, error) {
 	var opRes bool
 	var res *model.Response
 
-	opRes, res = client.ClientPP.KVDelete(id, prefix)
+	opRes, res = c.ClientPP.KVDelete(id, prefix)
 	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return false, res.Error
@@ -85,11 +82,11 @@ func (client *Client) KVDelete(id string, prefix string) (bool, error) {
 	return opRes, nil
 }
 
-func (client *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
+func (c *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
 	var subResponse *apps.SubscriptionResponse
 	var res *model.Response
 
-	subResponse, res = client.ClientPP.Subscribe(sub)
+	subResponse, res = c.ClientPP.Subscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
@@ -100,11 +97,11 @@ func (client *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionRespo
 	return subResponse, nil
 }
 
-func (client *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
+func (c *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
 	var subResponse *apps.SubscriptionResponse
 	var res *model.Response
 
-	subResponse, res = client.ClientPP.Unsubscribe(sub)
+	subResponse, res = c.ClientPP.Unsubscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
@@ -115,12 +112,45 @@ func (client *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionRes
 	return subResponse, nil
 }
 
-func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {
+func (c *Client) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) error {
+	res := c.ClientPP.StoreOAuth2App(appID, clientID, clientSecret)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (c *Client) StoreOAuth2User(appID apps.AppID, ref interface{}) error {
+	res := c.ClientPP.StoreOAuth2User(appID, ref)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (c *Client) GetOAuth2User(appID apps.AppID, ref interface{}) error {
+	res := c.ClientPP.GetOAuth2User(appID, ref)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return res.Error
+		}
+		return fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	var createdPost *model.Post
 	var res *model.Response
-	post.UserId = client.userID
+	post.UserId = c.userID
 
-	createdPost, res = client.Client4.CreatePost(post)
+	createdPost, res = c.Client4.CreatePost(post)
 	if res.StatusCode != http.StatusCreated {
 		if res.Error != nil {
 			return nil, res.Error
@@ -130,8 +160,8 @@ func (client *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	return createdPost, nil
 }
 
-func (client *Client) DM(userID string, format string, args ...interface{}) {
-	channel, err := client.getDirectChannelWith(userID)
+func (c *Client) DM(userID string, format string, args ...interface{}) {
+	channel, err := c.getDirectChannelWith(userID)
 	if err != nil {
 		return
 	}
@@ -139,23 +169,23 @@ func (client *Client) DM(userID string, format string, args ...interface{}) {
 		ChannelId: channel.Id,
 		Message:   fmt.Sprintf(format, args...),
 	}
-	_, _ = client.CreatePost(post)
+	_, _ = c.CreatePost(post)
 }
 
-func (client *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
-	channel, err := client.getDirectChannelWith(userID)
+func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
+	channel, err := c.getDirectChannelWith(userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "getDirectionChannel")
 	}
 	post.ChannelId = channel.Id
-	return client.CreatePost(post)
+	return c.CreatePost(post)
 }
 
-func (client *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
+func (c *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
 	var channel *model.Channel
 	var res *model.Response
 
-	channel, res = client.CreateDirectChannel(client.userID, userID)
+	channel, res = c.CreateDirectChannel(c.userID, userID)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error

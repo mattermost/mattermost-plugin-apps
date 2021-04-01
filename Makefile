@@ -24,8 +24,8 @@ BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
 LDFLAGS += -X "main.BuildDate=$(BUILD_DATE)"
 LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
 LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
-GOBUILD = $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)'
-GOTEST = $(GO) test $(GOFLAGS) $(GO_TEST_FLAGS) -ldflags '$(LDFLAGS)'
+GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
+GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
 GO_PACKAGES = $(shell go list ./...)
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
@@ -102,6 +102,7 @@ ifneq ($(HAS_SERVER),)
 	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
 	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/server/upstream Upstream
 	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store AppStore
+	mockgen -destination server/mocks/mock_store/mock_appkv.go github.com/mattermost/mattermost-plugin-apps/server/store AppKVStore
 endif
 
 ## Generates mock golang interfaces for testing

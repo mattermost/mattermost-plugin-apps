@@ -107,7 +107,7 @@ func (p *Plugin) OnActivate() error {
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
 	assetBucket := apps.S3BucketNameWithDefaults("")
-	mutex, err := cluster.NewMutex(p.API, config.KeyClusterMutex)
+	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}

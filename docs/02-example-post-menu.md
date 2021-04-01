@@ -112,7 +112,7 @@ POST /plugins/com.mattermost.apps/example/hello/send
             "root_id": "",
             "parent_id": "",
             "original_id": "",
-            "message": "Created OAuth2 App (`sqqug7kmcb83ffdo8ryzhbi8ko`).",
+            "message": "Created Mattermost OAuth2 App (`sqqug7kmcb83ffdo8ryzhbi8ko`).",
             "type": "",
             "props": {
                 "from_bot": "true"

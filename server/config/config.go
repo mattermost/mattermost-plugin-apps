@@ -58,9 +58,13 @@ func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
 	return cc
 }
 
-func (c Config) SetContextDefaultsForApp(cc *apps.Context, appID apps.AppID) *apps.Context {
+func (c Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
 	cc = c.SetContextDefaults(cc)
 	cc.AppID = appID
-	cc.AppPath = path.Join(c.PluginURLPath, AppsPath, string(appID))
+	cc.AppPath = path.Join(c.PluginURLPath, PathApps, string(appID))
 	return cc
+}
+
+func (c Config) AppPath(appID apps.AppID) string {
+	return c.PluginURL + PathApps + "/" + string(appID)
 }
