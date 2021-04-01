@@ -134,12 +134,12 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cc := apps.Context{
+	cc := &apps.Context{
 		TeamID: stateData.TeamID,
 	}
-	d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, &cc)
+	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, &cc, noUserConsentForOAuth2, secret)
+	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return

@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
@@ -84,6 +85,31 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		}
 	}
 	return nil
+}
+
+func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) error {
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+
+	// TODO: do we need to customize the Expand & State for the webhook Call?
+	creq := &apps.CallRequest{
+		Call: apps.Call{
+			Path: config.PathWebhook + path,
+		},
+		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
+			ActingUserID: app.BotUserID,
+		}),
+	}
+
+	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
+	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
+	if err != nil {
+		return err
+	}
+
+	return upstream.Notify(up, creq)
 }
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
