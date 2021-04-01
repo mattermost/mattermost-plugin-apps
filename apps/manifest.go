@@ -13,6 +13,8 @@ import (
 const StaticFolder = "static"
 
 type Manifest struct {
+	// The AppID is a globally unique identifier that represents your app. IDs must be at least
+	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.
 	AppID   AppID      `json:"app_id"`
 	AppType AppType    `json:"app_type"`
 	Version AppVersion `json:"version"`
@@ -163,9 +165,11 @@ func ManifestFromJSON(data []byte) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = m.IsValid()
 	if err != nil {
 		return nil, err
 	}
+
 	return &m, nil
 }

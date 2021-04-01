@@ -4,8 +4,6 @@
 package command
 
 import (
-	"encoding/json"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -49,13 +47,13 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 	if err != nil {
 		return errorOut(params, err)
 	}
-	m := apps.Manifest{}
-	err = json.Unmarshal(data, &m)
+
+	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, &m)
+	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
 	if err != nil {
 		return errorOut(params, err)
 	}
