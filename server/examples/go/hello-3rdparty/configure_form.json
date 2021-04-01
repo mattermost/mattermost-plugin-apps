@@ -1,0 +1,24 @@
+{
+	"type": "form",
+	"form": {
+		"title": "Configures Google OAuth2 App credentials",
+		"icon": "http://localhost:8080/static/icon.png",
+		"fields": [
+			{
+				"type": "text",
+				"name": "client_id",
+				"label": "client-id",
+				"is_required": true
+			},
+			{
+				"type": "text",
+				"name": "client_secret",
+				"label": "client-secret",
+				"is_required": true
+			}
+		],
+		"call": {
+			"path": "/configure"
+		}
+	}
+}

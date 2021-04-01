@@ -36,7 +36,7 @@ func (a *restapi) kvHead(w http.ResponseWriter, r *http.Request, botUserID, pref
 
 func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, botUserID, prefix string) {
 	id := mux.Vars(r)["key"]
-	in := map[string]interface{}{}
+	var in interface{}
 
 	// TODO size limit
 	err := json.NewDecoder(r.Body).Decode(&in)

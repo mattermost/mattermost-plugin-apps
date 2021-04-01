@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -43,25 +42,30 @@ func NewAPIClientPP(url string) *ClientPP {
 	return &ClientPP{url, url, &http.Client{}, "", "", map[string]string{}, "", ""}
 }
 
-func (c *ClientPP) KVSet(id string, prefix string, in map[string]interface{}) (map[string]interface{}, *model.Response) {
+func (c *ClientPP) SetOAuthToken(token string) {
+	c.AuthToken = token
+	c.AuthType = model.HEADER_BEARER
+}
+
+func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (interface{}, *model.Response) {
 	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
-	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+query, StringInterfaceToJSON(in)) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+query, interfaceToJSON(in)) // nolint:bodyclose
 
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
-	return StringInterfaceFromJSON(r.Body), model.BuildResponse(r)
+	return interfaceFromJSON(r.Body), model.BuildResponse(r)
 }
 
-func (c *ClientPP) KVGet(id string, prefix string) (map[string]interface{}, *model.Response) {
+func (c *ClientPP) KVGet(id string, prefix string) (interface{}, *model.Response) {
 	query := fmt.Sprintf("%v/kv/%v?prefix=%v", APIPathPP, id, prefix)
 	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+query, "") // nolint:bodyclose
 	if appErr != nil {
 		return nil, model.BuildErrorResponse(r, appErr)
 	}
 	defer c.closeBody(r)
-	return StringInterfaceFromJSON(r.Body), model.BuildResponse(r)
+	return interfaceFromJSON(r.Body), model.BuildResponse(r)
 }
 
 func (c *ClientPP) KVDelete(id string, prefix string) (bool, *model.Response) {
@@ -157,24 +161,27 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 	return rp, nil
 }
 
-func StringInterfaceToJSON(objmap map[string]interface{}) string {
+func interfaceToJSON(objmap interface{}) string {
 	b, _ := json.Marshal(objmap)
+	if b == nil {
+		return ""
+	}
 	return string(b)
 }
 
-func StringInterfaceFromJSON(data io.Reader) map[string]interface{} {
+func interfaceFromJSON(data io.Reader) interface{} {
 	decoder := json.NewDecoder(data)
 
-	var objmap map[string]interface{}
+	var objmap interface{}
 	if err := decoder.Decode(&objmap); err != nil {
-		return make(map[string]interface{})
+		return ""
 	}
 	return objmap
 }
 
 func (c *ClientPP) closeBody(r *http.Response) {
 	if r.Body != nil {
-		_, _ = io.Copy(ioutil.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, r.Body)
 		_ = r.Body.Close()
 	}
 }

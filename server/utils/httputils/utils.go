@@ -7,13 +7,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 )
 
 func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error) {
@@ -93,7 +94,7 @@ func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
 	if in == nil {
 		return []byte{}, nil
 	}
-	return ioutil.ReadAll(&io.LimitedReader{R: in, N: limit})
+	return io.ReadAll(&io.LimitedReader{R: in, N: limit})
 }
 
 func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {
@@ -117,5 +118,27 @@ func GetFromURL(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
+}
+
+func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, actingUserID, sessionToken string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		actingUserID := req.Header.Get("Mattermost-User-Id")
+		if actingUserID == "" {
+			WriteUnauthorizedError(w, errors.New("not authorized"))
+			return
+		}
+		sessionID := req.Header.Get("MM_SESSION_ID")
+		if sessionID == "" {
+			WriteUnauthorizedError(w, errors.New("no user session"))
+			return
+		}
+		session, err := mm.Session.Get(sessionID)
+		if err != nil {
+			WriteUnauthorizedError(w, err)
+			return
+		}
+
+		f(w, req, actingUserID, session.Token)
+	}
 }

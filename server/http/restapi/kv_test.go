@@ -20,7 +20,7 @@ import (
 func TestKV(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mocked := mock_appservices.NewMockService(ctrl)
-	conf := config.NewTestConfigurator(&config.Config{})
+	conf := config.NewTestConfigurator(config.Config{})
 	r := mux.NewRouter()
 	Init(r, nil, conf, nil, mocked)
 
