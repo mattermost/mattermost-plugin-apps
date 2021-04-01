@@ -18,6 +18,8 @@ const addManifestCommand = `/apps debug-add-manifest --url ${baseURL}/plugins/${
 const installAppCommand = '/apps install --app-id http-hello --app-secret 1234';
 
 describe('Apps bindings - Channel header', () => {
+    let testTeam;
+
     before(() => {
         const newSettings = {
             PluginSettings: {
@@ -31,11 +33,11 @@ describe('Apps bindings - Channel header', () => {
         };
 
         cy.apiUpdateConfig(newSettings);
-        cy.apiInitSetup();
+        cy.apiInitSetup().then(({team}) => {testTeam = team});
     });
 
     it('MM-32330 Bindings - Channel header submit', () => {
-        cy.visit('/');
+        cy.visit(`/${testTeam.name}/channels/town-square`);
 
         // # Install the http-hello app
         installHTTPHello();
@@ -51,6 +53,16 @@ describe('Apps bindings - Channel header', () => {
 
         // * Verify ephemeral message
         verifyEphemeralMessage('Successfully sent survey');
+
+        // # Visit http-hello DM channel
+        cy.get('a.SidebarLink[aria-label*="http-hello"]').click();
+
+        // * Verify survey content
+        cy.getLastPostId().then((postID) => {
+            const postIDSelector = '#post_' + postID;
+            cy.get(`${postIDSelector} .attachment .attachment__title`).should('have.text', 'Survey');
+            cy.get(`${postIDSelector} .attachment .post-message__text-container`).should('have.text', 'The message');
+        })
     });
 });
 
