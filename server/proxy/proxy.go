@@ -88,6 +88,10 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) error {
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
+	}
+
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
@@ -102,7 +106,6 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) err
 			ActingUserID: app.BotUserID,
 		}),
 	}
-
 	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
 	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
