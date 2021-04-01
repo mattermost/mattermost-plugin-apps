@@ -33,7 +33,9 @@ describe('Apps bindings - Channel header', () => {
         };
 
         cy.apiUpdateConfig(newSettings);
-        cy.apiInitSetup().then(({team}) => {testTeam = team});
+        cy.apiInitSetup().then(({team}) => {
+            testTeam = team;
+        });
     });
 
     it('MM-32330 Bindings - Channel header submit', () => {
@@ -62,17 +64,17 @@ describe('Apps bindings - Channel header', () => {
             const postIDSelector = '#post_' + postID;
             cy.get(`${postIDSelector} .attachment .attachment__title`).should('have.text', 'Survey');
             cy.get(`${postIDSelector} .attachment .post-message__text-container`).should('have.text', 'The message');
-        })
+        });
     });
 });
 
 const runCommand = (command: string) => {
     cy.get('#post_textbox').clear().type(command);
     cy.get('#post_textbox').type('{enter}');
-}
+};
 
 const installHTTPHello = () => {
     runCommand(addManifestCommand);
     runCommand(installAppCommand);
     cy.get('#interactiveDialogSubmit').click();
-}
+};

@@ -46,8 +46,8 @@
     "yargs": "16.0.3"
   },
   "scripts": {
-    "check": "eslint --ext .js . --quiet --cache",
-    "fix": "eslint --ext .js . --quiet --fix --cache",
+    "check": "eslint --ext .ts --ignore-pattern *d.ts . --quiet --cache",
+    "fix": "eslint --ext .ts --ignore-pattern *d.ts . --quiet --fix --cache",
     "cypress:open": "cypress open",
     "test": "cypress run"
   }
