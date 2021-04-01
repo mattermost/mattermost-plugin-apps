@@ -4,13 +4,14 @@
 package proxy
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
@@ -87,7 +88,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	return nil
 }
 
-func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) error {
+func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
@@ -97,14 +98,25 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) err
 		return err
 	}
 
+	var datav interface{}
+	err = json.Unmarshal(data, &datav)
+	if err != nil {
+		// if the data can not be decoded as JSON, send it "as is", as a string.
+		datav = string(data)
+	}
+
 	// TODO: do we need to customize the Expand & State for the webhook Call?
 	creq := &apps.CallRequest{
 		Call: apps.Call{
-			Path: config.PathWebhook + path,
+			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
 			ActingUserID: app.BotUserID,
 		}),
+		Values: map[string]interface{}{
+			"data": datav,
+			"path": webhookPath,
+		},
 	}
 	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
 	creq.Context, err = expander.ExpandForApp(app, creq.Expand)

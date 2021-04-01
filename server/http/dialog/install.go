@@ -16,6 +16,7 @@ import (
 
 type installDialogState struct {
 	AppID         apps.AppID
+	ChannelID     string
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
@@ -67,8 +68,9 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	}
 
 	stateData, _ := json.Marshal(installDialogState{
-		AppID:  m.AppID,
-		TeamID: commandArgs.TeamId,
+		AppID:     m.AppID,
+		TeamID:    commandArgs.TeamId,
+		ChannelID: commandArgs.ChannelId,
 	})
 
 	return model.OpenDialogRequest{
@@ -135,7 +137,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	cc := &apps.Context{
-		TeamID: stateData.TeamID,
+		TeamID:    stateData.TeamID,
+		ChannelID: stateData.ChannelID,
 	}
 	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 

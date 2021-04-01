@@ -89,12 +89,11 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
-	installRequest := &apps.CallRequest{
+	creq := &apps.CallRequest{
 		Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
 		Context: cc,
 	}
-
-	resp := p.Call(sessionID, actingUserID, installRequest)
+	resp := p.Call(sessionID, actingUserID, creq)
 	if resp.Type == apps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
@@ -176,7 +175,6 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 			}
 		}
 	}
-
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
 	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {

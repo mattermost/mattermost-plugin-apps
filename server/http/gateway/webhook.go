@@ -35,6 +35,7 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 	data, err := httputils.LimitReadAll(req.Body, conf.MaxWebhookSize)
 	if err != nil {
 		httputils.WriteError(w, err)
+		return
 	}
 
 	vars := mux.Vars(req)

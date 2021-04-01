@@ -33,14 +33,15 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc("/{appid}/"+apps.StaticFolder+"/{name}",
 		httputils.CheckAuthorized(mm, g.static)).Methods(http.MethodGet)
 
+	// Incoming remote webhooks
+	subrouter.HandleFunc("/{appid}"+apps.PathWebhook+"/{path}",
+		g.handleWebhook).Methods(http.MethodPost)
+
 	// Remote OAuth2
 	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Connect,
 		httputils.CheckAuthorized(mm, g.remoteOAuth2Connect)).Methods(http.MethodGet)
 	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Complete,
 		httputils.CheckAuthorized(mm, g.remoteOAuth2Complete)).Methods(http.MethodGet)
-
-	// Incoming remote webhooks
-	subrouter.HandleFunc("/{appid}"+config.PathWebhook+"/{path}", g.handleWebhook).Methods(http.MethodPost)
 }
 
 func appIDVar(r *http.Request) apps.AppID {
