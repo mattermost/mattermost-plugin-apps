@@ -88,7 +88,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, path string) error {
-	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
