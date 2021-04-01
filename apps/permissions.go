@@ -62,8 +62,10 @@ func (p Permission) Markdown() md.MD {
 }
 
 func (p Permissions) IsValid() error {
+	// Check for permission dependencies. (P1, P2, ..., PN) means P1 requires
+	// (depends on) P2...PN.
 	for _, pp := range []Permissions{
-		{PermissionRemoteOAuth2, PermissionActAsBot, PermissionActAsUser},
+		{PermissionRemoteOAuth2, PermissionActAsBot, PermissionActAsUser, PermissionActAsAdmin},
 		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
 	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {
