@@ -18,8 +18,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in *apps.InInstallApp) (*apps.App, md.MD, error) {
-	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
+	session, err := utils.LoadSession(p.mm, sessionID, actingUserID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	err = utils.EnsureSysAdmin(p.mm, actingUserID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -43,18 +48,18 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 	}
 	app.GrantedPermissions = m.RequestedPermissions
 	app.GrantedLocations = m.RequestedLocations
-	if in.AppSecret != "" {
-		app.Secret = in.AppSecret
+	if secret != "" {
+		app.Secret = secret
 	}
 
 	conf := p.conf.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
-	client.SetToken(string(sessionToken))
+	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
+	asAdmin.SetToken(session.Token)
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) {
 		var bot *model.Bot
 		var token *model.UserAccessToken
-		bot, token, err = p.ensureBot(m, cc.ActingUserID, string(sessionToken))
+		bot, token, err = p.ensureBot(m, cc.ActingUserID, asAdmin)
 		if err != nil {
 			return nil, "", err
 		}
@@ -66,13 +71,13 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(app, in.OAuth2TrustedApp, cc.ActingUserID, string(sessionToken))
+		oAuthApp, err = p.ensureOAuthApp(app, trusted, cc.ActingUserID, asAdmin)
 		if err != nil {
 			return nil, "", err
 		}
-		app.OAuth2ClientID = oAuthApp.Id
-		app.OAuth2ClientSecret = oAuthApp.ClientSecret
-		app.OAuth2TrustedApp = in.OAuth2TrustedApp
+		app.MattermostOAuth2.ClientID = oAuthApp.Id
+		app.MattermostOAuth2.ClientSecret = oAuthApp.ClientSecret
+		app.Trusted = trusted
 	}
 
 	err = p.store.App.Save(app)
@@ -81,11 +86,11 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 	}
 
 	installRequest := &apps.CallRequest{
-		Call:    *apps.DefaultInstallCall.WithOverrides(app.OnInstall),
+		Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
 		Context: cc,
 	}
 
-	resp := p.Call(sessionToken, installRequest)
+	resp := p.Call(sessionID, actingUserID, installRequest)
 	if resp.Type == apps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
@@ -94,13 +99,9 @@ func (p *Proxy) InstallApp(cc *apps.Context, sessionToken apps.SessionToken, in 
 	return app, resp.Markdown, nil
 }
 
-func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, sessionToken string) (*model.OAuthApp, error) {
-	conf := p.conf.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
-	client.SetToken(sessionToken)
-
-	if app.OAuth2ClientID != "" {
-		oauthApp, response := client.GetOAuthApp(app.OAuth2ClientID)
+func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin *model.Client4) (*model.OAuthApp, error) {
+	if app.MattermostOAuth2.ClientID != "" {
+		oauthApp, response := asAdmin.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if response.StatusCode == http.StatusOK && response.Error == nil {
 			_ = p.mm.Post.DM(app.BotUserID, actingUserID, &model.Post{
 				Message: fmt.Sprintf("Using existing OAuth2 App `%s`.", oauthApp.Id),
@@ -110,10 +111,10 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, 
 		}
 	}
 
-	oauth2CallbackURL := p.conf.GetConfig().PluginURL + config.AppsPath + "/" + string(app.AppID) + config.PathOAuth2 + config.PathMattermostComplete
+	oauth2CallbackURL := p.conf.GetConfig().AppPath(app.AppID) + config.PathMattermostOAuth2Complete
 
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
-	oauthApp, response := client.CreateOAuthApp(&model.OAuthApp{
+	oauthApp, response := asAdmin.CreateOAuthApp(&model.OAuthApp{
 		CreatorId:    actingUserID,
 		Name:         app.DisplayName,
 		Description:  app.Description,
@@ -135,11 +136,7 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID, 
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID, sessionToken string) (*model.Bot, *model.UserAccessToken, error) {
-	conf := p.conf.GetConfig()
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
-	client.SetToken(sessionToken)
-
+func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *model.Client4) (*model.Bot, *model.UserAccessToken, error) {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(manifest.AppID)),
 		DisplayName: manifest.DisplayName,

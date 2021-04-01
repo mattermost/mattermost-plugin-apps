@@ -4,7 +4,10 @@
 		"title": "Connect to Google",
 		"icon": "http://localhost:8080/static/icon.png",
 		"call": {
-			"path": "/connect"
+			"path": "/connect",
+			"expand": {
+				"oauth2_app": "all"
+			}
 		}
 	}
 }

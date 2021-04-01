@@ -34,7 +34,7 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Context) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := store.SortApps(p.store.App.AsMap())
 
 	all := make([][]*apps.Binding, len(allApps))
@@ -43,17 +43,17 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 	for i, app := range allApps {
 		wg.Add(1)
 
-		go func(debugSessionToken apps.SessionToken, cc *apps.Context, app *apps.App, i int) {
+		go func(sessionID, actingUserID string, cc *apps.Context, app *apps.App, i int) {
 			defer wg.Done()
 
-			bindings, err := p.GetBindingsForApp(debugSessionToken, cc, app)
+			bindings, err := p.GetBindingsForApp(sessionID, actingUserID, cc, app)
 			if err != nil {
 				p.mm.Log.Debug("Failed to get binding for app", "error", err.Error(), "appID", app.AppID)
 				return
 			}
 
 			all[i] = bindings
-		}(debugSessionToken, cc, app, i)
+		}(sessionID, actingUserID, cc, app, i)
 	}
 
 	wg.Wait()
@@ -68,7 +68,7 @@ func (p *Proxy) GetBindings(debugSessionToken apps.SessionToken, cc *apps.Contex
 
 // GetBindingsForApp fetches bindings for a specific apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindingsForApp(debugSessionToken apps.SessionToken, cc *apps.Context, app *apps.App) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Context, app *apps.App) ([]*apps.Binding, error) {
 	if !p.AppIsEnabled(app) {
 		return nil, nil
 	}
@@ -79,13 +79,13 @@ func (p *Proxy) GetBindingsForApp(debugSessionToken apps.SessionToken, cc *apps.
 	appCC.BotAccessToken = app.BotAccessToken
 
 	// TODO PERF: Add caching
-	bindingsCall := apps.DefaultBindingsCall.WithOverrides(app.Bindings)
+	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
 	bindingsRequest := &apps.CallRequest{
 		Call:    *bindingsCall,
 		Context: &appCC,
 	}
 
-	resp := p.Call(debugSessionToken, bindingsRequest)
+	resp := p.Call(sessionID, actingUserID, bindingsRequest)
 	if resp == nil || resp.Type != apps.CallResponseTypeOK {
 		// TODO Log error (chance to flood the logs)
 		// p.mm.Log.Debug("Response is nil or unexpected type.")

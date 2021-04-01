@@ -3,9 +3,9 @@ package apps
 import (
 	"unicode"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 // AppID is a globally unique identifier that represents a Mattermost App.
@@ -33,18 +33,25 @@ type App struct {
 	// Secret is used to issue JWT when sending requests to HTTP apps.
 	Secret string `json:"secret,omitempty"`
 
-	// App's Mattermost OAuth2 credentials. An Mattermost server OAuth2 app is
-	// created (or updated) when a Mattermost App is installed on the instance.
-	OAuth2ClientID     string `json:"oauth2_client_id,omitempty"`
-	OAuth2ClientSecret string `json:"oauth2_client_secret,omitempty"`
-	OAuth2TrustedApp   bool   `json:"oauth2_trusted_app,omitempty"`
-
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
 	// instance.
 	BotUserID      string `json:"bot_user_id,omitempty"`
 	BotUsername    string `json:"bot_username,omitempty"`
 	BotAccessToken string `json:"bot_access_token,omitempty"`
+
+	// Trusted means that Mattermost will issue the Apps' users their tokens as
+	// needed, without asking for the user's consent.
+	Trusted bool `json:"trusted,omitempty"`
+
+	// MattermostOAuth2 contains App's Mattermost OAuth2 credentials. An
+	// Mattermost server OAuth2 app is created (or updated) when a Mattermost
+	// App is installed on the instance.
+	MattermostOAuth2 OAuth2App `json:"mattermost_oauth2,omitempty"`
+
+	// RemoteOAuth2 contains App's remote OAuth2 credentials. Use
+	// mmclient.StoreOAuth2App to update.
+	RemoteOAuth2 OAuth2App `json:"remote_oauth2,omitempty"`
 
 	// In V1, GrantedPermissions are simply copied from RequestedPermissions
 	// upon the sysadmin's consent, during installing the App.
@@ -56,6 +63,14 @@ type App struct {
 	// In V1, GrantedLocations are simply copied from RequestedLocations upon
 	// the sysadmin's consent, during installing the App.
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
+}
+
+// OAuth2App contains the setored settings for an "OAuth2 app" used by the App.
+// It is used to describe the OAuth2 connections both to Mattermost, and
+// optionally to a 3rd party remote system.
+type OAuth2App struct {
+	ClientID     string `json:"client_id,omitempty"`
+	ClientSecret string `json:"client_secret,omitempty"`
 }
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.
@@ -73,11 +88,11 @@ const (
 
 func (id AppID) IsValid() error {
 	if len(id) < MinAppIDLength {
-		return errors.Errorf("appID %s too short, should be %d bytes", id, MinAppIDLength)
+		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
 	}
 
 	if len(id) > MaxAppIDLength {
-		return errors.Errorf("appID %s too long, should be %d bytes", id, MaxAppIDLength)
+		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
 	}
 
 	for _, c := range id {
@@ -93,7 +108,7 @@ func (id AppID) IsValid() error {
 			continue
 		}
 
-		return errors.Errorf("invalid character '%c' in appID %q", c, id)
+		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
 	}
 
 	return nil
@@ -103,7 +118,7 @@ const VersionFormat = "v00_00_000"
 
 func (v AppVersion) IsValid() error {
 	if len(v) > len(VersionFormat) {
-		return errors.Errorf("version %s too long, should be in %s format", v, VersionFormat)
+		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
 	}
 
 	for _, c := range v {
@@ -119,7 +134,7 @@ func (v AppVersion) IsValid() error {
 			continue
 		}
 
-		return errors.Errorf("invalid character '%c' in appVersion", c)
+		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
 	}
 
 	return nil
@@ -149,6 +164,6 @@ func (at AppType) IsValid() error {
 	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin:
 		return nil
 	default:
-		return errors.Errorf("%s is not a valid app type", at)
+		return utils.NewInvalidError("%s is not a valid app type", at)
 	}
 }

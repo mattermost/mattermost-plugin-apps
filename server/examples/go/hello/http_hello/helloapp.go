@@ -45,8 +45,8 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 	r := router.PathPrefix(config.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	handle(r, apps.DefaultInstallCallPath, h.Install)
-	handle(r, apps.DefaultBindingsCallPath, h.GetBindings)
+	handle(r, apps.DefaultOnInstall.Path, h.Install)
+	handle(r, apps.DefaultBindings.Path, h.GetBindings)
 	handle(r, hello.PathSendSurvey+"/{type}", h.SendSurvey)
 	handle(r, hello.PathSendSurveyModal+"/{type}", h.SendSurveyModal)
 	handle(r, hello.PathSendSurveyCommandToModal+"/{type}", h.SendSurveyCommandToModal)

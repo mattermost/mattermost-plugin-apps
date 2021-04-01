@@ -79,7 +79,7 @@ func TestDeleteSub(t *testing.T) {
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
-	subKey := "sub_user_joined_channel_channel-id"
+	subKey := "sub.user_joined_channel.channel-id"
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
@@ -157,7 +157,7 @@ func TestGetSubs(t *testing.T) {
 
 	storedSubsBytes, _ := json.Marshal(storedSubs)
 
-	subKey := "sub_user_joined_channel_channel-id"
+	subKey := "sub.user_joined_channel.channel-id"
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
@@ -253,7 +253,7 @@ func TestStoreSub(t *testing.T) {
 	emptySubsWithToStore := []*apps.Subscription{&toStore}
 	emptySubsWithToStoreBytes, _ := json.Marshal(emptySubsWithToStore)
 
-	subKey := "sub_user_joined_channel_channel-id"
+	subKey := "sub.user_joined_channel.channel-id"
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		mockAPI.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
@@ -303,43 +303,43 @@ func TestSubsKey(t *testing.T) {
 			apps.SubjectUserCreated,
 			"team-id",
 			"channel-id",
-			"sub_user_created",
+			"sub.user_created",
 		},
 		string(apps.SubjectUserJoinedChannel): {
 			apps.SubjectUserJoinedChannel,
 			"team-id",
 			"channel-id",
-			"sub_user_joined_channel_channel-id",
+			"sub.user_joined_channel.channel-id",
 		},
 		string(apps.SubjectUserLeftChannel): {
 			apps.SubjectUserLeftChannel,
 			"team-id",
 			"channel-id",
-			"sub_user_left_channel_channel-id",
+			"sub.user_left_channel.channel-id",
 		},
 		string(apps.SubjectUserJoinedTeam): {
 			apps.SubjectUserJoinedTeam,
 			"team-id",
 			"channel-id",
-			"sub_user_joined_team_team-id",
+			"sub.user_joined_team.team-id",
 		},
 		string(apps.SubjectUserLeftTeam): {
 			apps.SubjectUserLeftTeam,
 			"team-id",
 			"channel-id",
-			"sub_user_left_team_team-id",
+			"sub.user_left_team.team-id",
 		},
 		string(apps.SubjectChannelCreated): {
 			apps.SubjectChannelCreated,
 			"team-id",
 			"channel-id",
-			"sub_channel_created_team-id",
+			"sub.channel_created.team-id",
 		},
 		string(apps.SubjectPostCreated): {
 			apps.SubjectPostCreated,
 			"team-id",
 			"channel-id",
-			"sub_post_created_channel-id",
+			"sub.post_created.channel-id",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

@@ -35,8 +35,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		_, _ = w.Write(resp.ToJSON())
 	}()
 
-	actingUserID = r.Header.Get("Mattermost-User-ID")
-
+	actingUserID = actingID(r)
 	if actingUserID == "" {
 		err = errors.New("user not logged in")
 		status = http.StatusUnauthorized

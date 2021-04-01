@@ -71,13 +71,13 @@ func App() *apps.App {
 func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
-	case apps.DefaultBindingsCallPath:
+	case apps.DefaultBindings.Path:
 		cr = &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 			Data: hello.Bindings(),
 		}
 
-	case apps.DefaultInstallCallPath:
+	case apps.DefaultOnInstall.Path:
 		cr = h.Install(c)
 
 	default:
@@ -189,7 +189,7 @@ func (h *helloapp) Survey(c *apps.CallRequest, callType apps.CallType) *apps.Cal
 		}
 		return &apps.CallResponse{
 			Type:     apps.CallResponseTypeOK,
-			Markdown: "<><> TODO",
+			Markdown: "<>/<> TODO",
 		}
 	default:
 		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))
