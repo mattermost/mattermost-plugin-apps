@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -36,47 +37,76 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := store.SortApps(p.store.App.AsMap())
 
-	all := []*apps.Binding{}
-	for _, app := range allApps {
-		if !p.AppIsEnabled(app) {
-			continue
-		}
-		appID := app.AppID
-		appCC := *cc
-		appCC.AppID = appID
-		appCC.BotAccessToken = app.BotAccessToken
+	all := make([][]*apps.Binding, len(allApps))
+	var wg sync.WaitGroup
 
-		// TODO PERF: Add caching
-		// TODO PERF: Fan out the calls, wait for all to complete
-		bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
-		bindingsRequest := &apps.CallRequest{
-			Call:    *bindingsCall,
-			Context: &appCC,
-		}
+	for i, app := range allApps {
+		wg.Add(1)
 
-		resp := p.Call(sessionID, actingUserID, bindingsRequest)
-		if resp == nil || resp.Type != apps.CallResponseTypeOK {
-			// TODO Log error (chance to flood the logs)
-			// p.mm.Log.Debug("Response is nil or unexpected type.")
-			// if resp != nil && resp.Type == apps.CallResponseTypeError {
-			// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
-			// }
-			continue
-		}
+		go func(sessionID, actingUserID string, cc *apps.Context, app *apps.App, i int) {
+			defer wg.Done()
 
-		var bindings = []*apps.Binding{}
-		b, _ := json.Marshal(resp.Data)
-		err := json.Unmarshal(b, &bindings)
-		if err != nil {
-			// TODO Log error (chance to flood the logs)
-			// p.mm.Log.Debug("Bindings are not of the right type.")
-			continue
-		}
+			bindings, err := p.GetBindingsForApp(sessionID, actingUserID, cc, app)
+			if err != nil {
+				p.mm.Log.Debug("Failed to get binding for app", "error", err.Error(), "appID", app.AppID)
+				return
+			}
 
-		all = mergeBindings(all, p.scanAppBindings(app, bindings, ""))
+			all[i] = bindings
+		}(sessionID, actingUserID, cc, app, i)
 	}
 
-	return all, nil
+	wg.Wait()
+
+	ret := []*apps.Binding{}
+	for _, b := range all {
+		ret = mergeBindings(ret, b)
+	}
+
+	return ret, nil
+}
+
+// GetBindingsForApp fetches bindings for a specific apps.
+// We should avoid unnecessary logging here as this route is called very often.
+func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Context, app *apps.App) ([]*apps.Binding, error) {
+	if !p.AppIsEnabled(app) {
+		return nil, nil
+	}
+
+	appID := app.AppID
+	appCC := *cc
+	appCC.AppID = appID
+	appCC.BotAccessToken = app.BotAccessToken
+
+	// TODO PERF: Add caching
+	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
+	bindingsRequest := &apps.CallRequest{
+		Call:    *bindingsCall,
+		Context: &appCC,
+	}
+
+	resp := p.Call(sessionID, actingUserID, bindingsRequest)
+	if resp == nil || resp.Type != apps.CallResponseTypeOK {
+		// TODO Log error (chance to flood the logs)
+		// p.mm.Log.Debug("Response is nil or unexpected type.")
+		// if resp != nil && resp.Type == apps.CallResponseTypeError {
+		// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
+		// }
+		return nil, nil
+	}
+
+	var bindings = []*apps.Binding{}
+	b, _ := json.Marshal(resp.Data)
+	err := json.Unmarshal(b, &bindings)
+	if err != nil {
+		// TODO Log error (chance to flood the logs)
+		// p.mm.Log.Debug("Bindings are not of the right type.")
+		return nil, nil
+	}
+
+	bindings = p.scanAppBindings(app, bindings, "")
+
+	return bindings, nil
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -93,7 +92,7 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error)
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.NopCloser(bytes.NewReader(bb)), nil
+	return io.NopCloser(bytes.NewReader(bb)), nil
 }
 
 func (h *helloapp) GetStatic(path string) (io.ReadCloser, int, error) {

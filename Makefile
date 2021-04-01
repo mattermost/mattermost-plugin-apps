@@ -24,8 +24,8 @@ BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
 LDFLAGS += -X "main.BuildDate=$(BUILD_DATE)"
 LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
 LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
-GOBUILD = $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)'
-GOTEST = $(GO) test $(GOFLAGS) $(GO_TEST_FLAGS) -ldflags '$(LDFLAGS)'
+GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
+GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
 GO_PACKAGES = $(shell go list ./...)
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
