@@ -52,7 +52,9 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		app.Secret = secret
 	}
 
-	// <>/<> Generate the initial webhook secret
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+		app.WebhookSecret = model.NewId()
+	}
 
 	conf := p.conf.GetConfig()
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)

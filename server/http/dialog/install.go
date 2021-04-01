@@ -25,7 +25,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, whSecret, pluginURL string, c
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
 	for _, permission := range m.RequestedPermissions {
-		intro += md.Markdownf("- %s\n", permission.Markdown())
+		intro += md.Markdownf("- %s\n", permission)
 	}
 	intro += md.Bold(
 		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", m.DisplayName)) + "\n"
