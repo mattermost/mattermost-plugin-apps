@@ -36,7 +36,7 @@ type Service interface {
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
 	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
-	GetRemoteOAuth2RedirectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
+	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)

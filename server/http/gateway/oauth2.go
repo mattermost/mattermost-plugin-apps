@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
+func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	vars := mux.Vars(req)
 
 	appID := vars["app_id"]
@@ -19,13 +19,13 @@ func (g *gateway) remoteOAuth2Redirect(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	redirectURL, err := g.proxy.GetRemoteOAuth2RedirectURL(sessionID, actingUserID, apps.AppID(appID))
+	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, apps.AppID(appID))
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 
-	http.Redirect(w, req, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, req, connectURL, http.StatusTemporaryRedirect)
 }
 
 func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {

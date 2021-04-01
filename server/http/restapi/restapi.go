@@ -66,6 +66,9 @@ func sessionID(r *http.Request) string {
 }
 
 func appIDVar(r *http.Request) apps.AppID {
-	s, _ := mux.Vars(r)["appid"]
-	return apps.AppID(s)
+	s, ok := mux.Vars(r)["appid"]
+	if ok {
+		return apps.AppID(s)
+	}
+	return ""
 }

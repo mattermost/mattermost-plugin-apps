@@ -80,7 +80,7 @@ type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
 	// mmclient.StoreOAuth2App
 	OAuth2App
-	RedirectURL string `json:"redirect_url,omitempty"`
+	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`
 
 	User interface{} `json:"user,omitempty"`

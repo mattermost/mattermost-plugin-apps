@@ -34,8 +34,8 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 		httputils.CheckAuthorized(mm, p.static)).Methods(http.MethodGet)
 
 	// Remote OAuth2
-	subrouter.HandleFunc("/{app_id}"+config.PathRemoteOAuth2Redirect,
-		httputils.CheckAuthorized(mm, p.remoteOAuth2Redirect)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{app_id}"+config.PathRemoteOAuth2Connect,
+		httputils.CheckAuthorized(mm, p.remoteOAuth2Connect)).Methods(http.MethodGet)
 	subrouter.HandleFunc("/{app_id}"+config.PathRemoteOAuth2Complete,
 		httputils.CheckAuthorized(mm, p.remoteOAuth2Complete)).Methods(http.MethodGet)
 }

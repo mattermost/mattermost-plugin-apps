@@ -55,12 +55,12 @@ type Manifest struct {
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
 
-	// GetOAuth2RedirectURL is called when the App's "connect to 3rd party" link
+	// GetOAuth2ConnectURL is called when the App's "connect to 3rd party" link
 	// is clicked, to be redirected to the OAuth flow. It must return Data set
 	// to the remote OAuth2 redirect URL. It should also use the
 	// mmclient.CreateOAuth2State API to create a 1-time secret that will be
 	// used to validate OAuth2 complete callback.
-	GetOAuth2RedirectURL *Call `json:"get_oauth2_redirect_url,omitempty"`
+	GetOAuth2ConnectURL *Call `json:"get_oauth2_connect_url,omitempty"`
 
 	// OnOAuth2Complete gets called upon successful completion of the remote
 	// (3rd party) OAuth2 flow, and after the "state" has already been
@@ -104,8 +104,8 @@ var DefaultBindings = &Call{
 	Path: "/bindings",
 }
 
-var DefaultGetOAuth2RedirectURL = &Call{
-	Path: "/oauth2/redirect",
+var DefaultGetOAuth2ConnectURL = &Call{
+	Path: "/oauth2/connect",
 	Expand: &Expand{
 		ActingUser:            ExpandSummary,
 		ActingUserAccessToken: ExpandAll,

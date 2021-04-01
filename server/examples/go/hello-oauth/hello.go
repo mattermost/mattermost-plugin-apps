@@ -50,8 +50,8 @@ func main() {
 
 	// Google OAuth2 handlers
 
-	// Handle an OAuth2 connect request redirect.
-	http.HandleFunc("/oauth2/redirect", oauth2Redirect)
+	// Handle an OAuth2 connect URL request.
+	http.HandleFunc("/oauth2/connect", oauth2Connect)
 
 	// Handle a successful OAuth2 connection.
 	http.HandleFunc("/oauth2/complete", oauth2Complete)
@@ -109,11 +109,11 @@ func connect(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.RedirectURL),
+		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
 	})
 }
 
-func oauth2Redirect(w http.ResponseWriter, req *http.Request) {
+func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 

@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) GetRemoteOAuth2RedirectURL(sessionID, actingUserID string, appID apps.AppID) (string, error) {
+func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", err
@@ -17,7 +17,7 @@ func (p *Proxy) GetRemoteOAuth2RedirectURL(sessionID, actingUserID string, appID
 	}
 
 	creq := &apps.CallRequest{
-		Call: *app.GetOAuth2RedirectURL.WithOverrides(apps.DefaultGetOAuth2RedirectURL),
+		Call: *app.GetOAuth2ConnectURL.WithOverrides(apps.DefaultGetOAuth2ConnectURL),
 		Type: apps.CallTypeSubmit,
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{
@@ -32,12 +32,12 @@ func (p *Proxy) GetRemoteOAuth2RedirectURL(sessionID, actingUserID string, appID
 	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
 		return "", errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
-	redirectURL, ok := cresp.Data.(string)
+	connectURL, ok := cresp.Data.(string)
 	if !ok {
-		return "", errors.Errorf("oauth2: unexpected data type from the app: %T, expected string (redirect URL)", cresp.Data)
+		return "", errors.Errorf("oauth2: unexpected data type from the app: %T, expected string (connect URL)", cresp.Data)
 	}
 
-	return redirectURL, nil
+	return connectURL, nil
 }
 
 func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error {

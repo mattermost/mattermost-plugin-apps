@@ -32,9 +32,9 @@ const (
 	PathApps = "/apps"
 
 	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
-	PathMattermostOAuth2Redirect = "/oauth2/mattermost/redirect"
+	PathMattermostOAuth2Connect  = "/oauth2/mattermost/connect"
 	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
-	PathRemoteOAuth2Redirect     = "/oauth2/remote/redirect"
+	PathRemoteOAuth2Connect      = "/oauth2/remote/connect"
 	PathRemoteOAuth2Complete     = "/oauth2/remote/complete"
 
 	// Static assets are served from {PluginURL}/static/...
