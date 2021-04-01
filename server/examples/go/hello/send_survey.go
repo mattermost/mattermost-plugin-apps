@@ -128,14 +128,9 @@ func NewSendSurveyPartialFormResponse(c *apps.CallRequest, callType apps.CallTyp
 func (h *HelloApp) SendSurvey(c *apps.CallRequest) (md.MD, error) {
 	bot := mmclient.AsBot(c.Context)
 	userID := c.Context.ActingUserID
-	if c.Values[fieldUserID] != nil {
-		option := apps.SelectOption{}
-		b, _ := json.Marshal(c.Values[fieldUserID])
-		err := json.Unmarshal(b, &option)
-		if err != nil {
-			return "", err
-		}
-		userID = option.Value
+	submission := extractSurveyFormValues(c)
+	if submission.UserID.Value != "" {
+		userID = submission.UserID.Value
 	}
 
 	message := c.GetValue(fieldMessage, "Hello")

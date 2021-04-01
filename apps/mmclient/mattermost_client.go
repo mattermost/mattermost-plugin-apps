@@ -40,6 +40,7 @@ func NewClient(userID, token, mattermostSiteURL string) *Client {
 	}
 	client.Client4.SetOAuthToken(token)
 	client.ClientPP.AuthToken = token
+	client.ClientPP.AuthType = "Bearer"
 	return &client
 }
 
@@ -90,7 +91,7 @@ func (client *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionRespo
 	var res *model.Response
 
 	subResponse, res = client.ClientPP.Subscribe(sub)
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
 		}

@@ -23,7 +23,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 	var api4Resp *model.Response
 	teams, api4Resp = adminClient.GetAllTeams("", 0, 1)
 	if api4Resp.Error != nil {
-		return "", api4Resp.Error
+		return "", errors.Wrap(api4Resp.Error, "failed to fetch teams")
 	}
 	if len(teams) == 0 {
 		return "", errors.New("no team found to create the Hallo სამყარო channel")
@@ -50,7 +50,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 			Type:        model.CHANNEL_OPEN,
 		})
 		if api4Resp.Error != nil {
-			return "", api4Resp.Error
+			return "", errors.Wrap(api4Resp.Error, "failed to create hello channel")
 		}
 
 		bot.DM(c.Context.ActingUserID, "Created ~%s channel.", appID)
@@ -59,11 +59,11 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 	// Add the Bot user to the team and the channel.
 	_, api4Resp = adminClient.AddTeamMember(team.Id, c.Context.App.BotUserID)
 	if api4Resp.Error != nil {
-		return "", api4Resp.Error
+		return "", errors.Wrap(api4Resp.Error, "failed to add bot to team")
 	}
 	_, api4Resp = adminClient.AddChannelMember(channel.Id, c.Context.App.BotUserID)
 	if api4Resp.Error != nil {
-		return "", api4Resp.Error
+		return "", errors.Wrap(api4Resp.Error, "failed to add bot to channel")
 	}
 
 	bot.DM(c.Context.ActingUserID, "Added bot to channel.")
@@ -90,7 +90,7 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 		},
 	})
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to subscribe")
 	}
 
 	bot.DM(c.Context.ActingUserID, "Subscribed to %s in channel.", apps.SubjectUserJoinedChannel)
