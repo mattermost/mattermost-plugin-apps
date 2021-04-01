@@ -7,6 +7,6 @@
     "types": ["node", "cypress", "cypress-wait-until", "@types/testing-library__cypress"]
   },
   "include": [
-    "**/*.ts", "support/index.js"
+    "**/*.ts", "support/index.ts"
   ]
 }
