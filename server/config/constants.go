@@ -38,7 +38,11 @@ const (
 	PathRemoteOAuth2Complete     = "/oauth2/remote/complete"
 
 	// Static assets are served from {PluginURL}/static/...
-	PathStatic  = "/" + apps.StaticFolder
+	PathStatic = "/" + apps.StaticFolder
+
+	// Root path for incoming webhooks from remote (3rd party) systems. Each
+	// webhook URL should be in the form:
+	// "{PluginURL}/apps/{AppID}/webhook/{PATH}...".
 	PathWebhook = "/webhook"
 
 	// Marketplace sub-paths.

@@ -17,11 +17,9 @@ import (
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
 	appID := ""
 	appSecret := ""
-	appWebhookSecret := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&appID, "app-id", "", "ID of the app")
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
-	fs.StringVar(&appWebhookSecret, "app-webhook-secret", "", "App webhook secret")
 	if err := fs.Parse(params.current); err != nil {
 		return errorOut(params, err)
 	}
@@ -38,16 +36,16 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return errorOut(params, errors.Wrap(err, "manifest not found"))
 	}
 
-	return s.installApp(m, appSecret, appWebhookSecret, params)
+	return s.installApp(m, appSecret, params)
 }
 
-func (s *service) installApp(m *apps.Manifest, appSecret, appWebhookSecret string, params *params) (*model.CommandResponse, error) {
+func (s *service) installApp(m *apps.Manifest, appSecret string, params *params) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
 	err := s.mm.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(m, appSecret, appWebhookSecret, conf.PluginURL, params.commandArgs))
+		dialog.NewInstallAppDialog(m, appSecret, conf.PluginURL, params.commandArgs))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}

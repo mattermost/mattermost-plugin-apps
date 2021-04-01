@@ -21,7 +21,7 @@ type installDialogState struct {
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(m *apps.Manifest, secret, whSecret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
 	for _, permission := range m.RequestedPermissions {
@@ -43,15 +43,6 @@ func NewInstallAppDialog(m *apps.Manifest, secret, whSecret, pluginURL string, c
 			SubType:     "password",
 			HelpText:    "TODO: How to obtain the App Secret",
 			Default:     secret,
-		})
-		elements = append(elements, model.DialogElement{
-			DisplayName: "App webhook secret:",
-			Name:        "webhooksecret",
-			Type:        "text",
-			SubType:     "password",
-			Optional:    true,
-			HelpText:    "TODO: How to obtain the App Webhook Secret",
-			Default:     whSecret,
 		})
 	}
 
