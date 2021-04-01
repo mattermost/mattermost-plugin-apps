@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -34,14 +35,46 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 		proxy: proxy,
 	}
 
-	conf := configService.GetConfig()
+	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
+
+	subCommands := s.getSubCommands()
+	var subTrigger []string
+	for t, c := range subCommands {
+		if c.debug && !developerMode {
+			continue
+		}
+
+		subTrigger = append(subTrigger, t)
+	}
+
+	sort.Strings(subTrigger)
+
+	helpText := "Available commands: "
+	for i, t := range subTrigger {
+		if i == 0 {
+			helpText += t
+		} else {
+			helpText += ", " + t
+		}
+	}
+
+	autoComplete := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
+
+	for _, t := range subTrigger {
+		c := subCommands[t]
+		if c.debug && !developerMode {
+			continue
+		}
+
+		autoComplete.AddCommand(c.autoComplete)
+	}
+
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
-		DisplayName:      conf.BuildConfig.Manifest.Name,
-		Description:      conf.BuildConfig.Manifest.Description,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Cloud Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
+		AutocompleteData: autoComplete,
 	})
 	if err != nil {
 		return nil, err
