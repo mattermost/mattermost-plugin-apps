@@ -18,7 +18,10 @@
 			}
 		],
 		"call": {
-			"path": "/configure"
+			"path": "/configure",
+			"expand": {
+				"admin_access_token": "all"
+			}
 		}
 	}
 }

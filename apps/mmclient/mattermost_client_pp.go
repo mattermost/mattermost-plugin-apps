@@ -130,12 +130,12 @@ func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
 	return s, model.BuildResponse(r)
 }
 
-func (c *ClientPP) StoreOAuth2App(clientID, clientSecret string) *model.Response {
+func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) *model.Response {
 	data := utils.ToJSON(apps.OAuth2App{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	})
-	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2App), data) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2App)+"/"+string(appID), data) // nolint:bodyclose
 	if appErr != nil {
 		return model.BuildErrorResponse(r, appErr)
 	}

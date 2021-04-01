@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -29,7 +27,7 @@ func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request) {
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2App(actingID(r), oapp)
+	err = a.appServices.StoreOAuth2App(appIDVar(r), actingID(r), oapp)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -37,13 +35,12 @@ func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *restapi) oauth2StoreUser(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["appid"]
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2User(apps.AppID(id), actingID(r), data)
+	err = a.appServices.StoreOAuth2User(appIDVar(r), actingID(r), data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -51,9 +48,8 @@ func (a *restapi) oauth2StoreUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *restapi) oauth2GetUser(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["appid"]
 	v := map[string]interface{}{}
-	err := a.appServices.GetOAuth2User(apps.AppID(id), actingID(r), &v)
+	err := a.appServices.GetOAuth2User(appIDVar(r), actingID(r), &v)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

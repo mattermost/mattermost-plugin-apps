@@ -47,6 +47,8 @@ func (p Permission) Markdown() md.MD {
 	switch p {
 	case PermissionUserJoinedChannelNotification:
 		m = "Be notified when users join channels"
+	case PermissionActAsAdmin:
+		m = "Use Mattermost REST API as a sysadmin"
 	case PermissionActAsUser:
 		m = "Use Mattermost REST API as connected users"
 	case PermissionActAsBot:

@@ -82,8 +82,8 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
-	asBot := mmclient.AsBot(creq.Context)
-	asBot.StoreOAuth2App(clientID, clientSecret)
+	asAdmin := mmclient.AsAdmin(creq.Context)
+	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: "updated OAuth client credentials",

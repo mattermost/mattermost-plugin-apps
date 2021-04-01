@@ -49,7 +49,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", a.kvDelete).Methods("DELETE")
 
 	subrouter.HandleFunc(mmclient.PathOAuth2CreateState, a.oauth2CreateState).Methods("PUT", "POST")
-	subrouter.HandleFunc(mmclient.PathOAuth2App, a.oauth2StoreApp).Methods("PUT", "POST")
+	subrouter.HandleFunc(mmclient.PathOAuth2App+"/{appid}", a.oauth2StoreApp).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2StoreUser).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2GetUser).Methods("GET")
 
@@ -63,4 +63,9 @@ func actingID(r *http.Request) string {
 
 func sessionID(r *http.Request) string {
 	return r.Header.Get("MM_SESSION_ID")
+}
+
+func appIDVar(r *http.Request) apps.AppID {
+	s, _ := mux.Vars(r)["appid"]
+	return apps.AppID(s)
 }

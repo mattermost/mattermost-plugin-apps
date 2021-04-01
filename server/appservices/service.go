@@ -34,7 +34,7 @@ type Service interface {
 	// Remote (3rd party) OAuth2
 
 	CreateOAuth2State(actingUserID string) (string, error)
-	StoreOAuth2App(botUserID string, oapp apps.OAuth2App) error
+	StoreOAuth2App(_ apps.AppID, actingUserID string, oapp apps.OAuth2App) error
 	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
 	// ref can be either a []byte, or anything else will be JSON marshaled.
 	StoreOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error

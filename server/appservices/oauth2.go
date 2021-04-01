@@ -12,16 +12,18 @@ func (a *AppServices) CreateOAuth2State(actingUserID string) (string, error) {
 	return a.store.OAuth2.CreateState(actingUserID)
 }
 
-func (a *AppServices) StoreOAuth2App(botUserID string, oapp apps.OAuth2App) error {
-	app, err := a.findBot(botUserID)
+func (a *AppServices) StoreOAuth2App( appID apps.AppID, actingUserID string,oapp apps.OAuth2App) error {
+	err := utils.EnsureSysAdmin(a.mm, actingUserID)
+	if err != nil {
+		return err
+	}
+
+	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
-	}
-	if err = a.ensureFromBot(botUserID); err != nil {
-		return err
 	}
 
 	app.RemoteOAuth2 = oapp
@@ -59,13 +61,4 @@ func (a *AppServices) GetOAuth2User(appID apps.AppID, actingUserID string, ref i
 		return err
 	}
 	return a.store.OAuth2.GetUser(appID, actingUserID, ref)
-}
-
-func (a *AppServices) findBot(botUserID string) (*apps.App, error) {
-	for _, app := range a.store.App.AsMap() {
-		if app.BotUserID == botUserID {
-			return app, nil
-		}
-	}
-	return nil, utils.ErrNotFound
 }
