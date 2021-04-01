@@ -68,7 +68,7 @@ type ListedApp struct {
 
 const (
 	MinAppIDLength = 3
-	MaxAppIDLength = 25
+	MaxAppIDLength = 32
 )
 
 func (id AppID) IsValid() error {
