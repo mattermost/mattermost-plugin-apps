@@ -53,7 +53,9 @@ type Expand struct {
 	// DisplayName, Name
 	Channel ExpandLevel `json:"channel,omitempty"`
 
-	// Not currently implemented
+	// User: every user mentioned in a post. All for model.User, summary for
+	// BotDescription, DeleteAt, Email, FirstName, Id, IsBot, LastName, Locale,
+	// Nickname, Roles, Timezone, Username.
 	Mentioned ExpandLevel `json:"mentioned,omitempty"`
 
 	// Post, RootPost: all for model.Post, summary for Id, Type, UserId,

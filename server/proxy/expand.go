@@ -102,6 +102,9 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 		e.User = user
 	}
+	if expand.Mentioned != "" && expand.Post != "" && e.Post != nil {
+		e.Mentioned = e.getExplicitMentions(e.Post)
+	}
 
 	clone.ExpandedContext = apps.ExpandedContext{
 		BotAccessToken: app.BotAccessToken,
@@ -113,7 +116,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		RootPost:   stripPost(e.RootPost, expand.RootPost),
 		Team:       stripTeam(e.Team, expand.Team),
 		User:       stripUser(e.User, expand.User),
-		// TODO Mentioned
+		Mentioned:  stripUsers(e.Mentioned, expand.Mentioned),
 	}
 
 	// TODO: use the appropriate user's OAuth2 token once re-implemented, for
@@ -126,6 +129,14 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	}
 
 	return &clone, nil
+}
+
+func stripUsers(users []*model.User, level apps.ExpandLevel) []*model.User {
+	strippedUsers := make([]*model.User, 0, len(users))
+	for _, user := range users {
+		strippedUsers = append(strippedUsers, stripUser(user, level))
+	}
+	return strippedUsers
 }
 
 func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
