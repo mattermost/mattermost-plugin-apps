@@ -62,6 +62,7 @@ func NewSendSurveyFormResponse(c *apps.CallRequest) *apps.CallResponse {
 					Name:                 fieldUserID,
 					Type:                 apps.FieldTypeUser,
 					Description:          "User to send the survey to",
+					IsRequired:           true,
 					Label:                "user",
 					ModalLabel:           "User",
 					AutocompleteHint:     "enter user ID or @user",
