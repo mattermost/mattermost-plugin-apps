@@ -57,9 +57,10 @@ type Manifest struct {
 
 	// GetOAuth2ConnectURL is called when the App's "connect to 3rd party" link
 	// is clicked, to be redirected to the OAuth flow. It must return Data set
-	// to the remote OAuth2 redirect URL. It should also use the
-	// mmclient.CreateOAuth2State API to create a 1-time secret that will be
-	// used to validate OAuth2 complete callback.
+	// to the remote OAuth2 redirect URL. A "state" string is created by the
+	// proxy, and is passed to the app as a value. The state is  a 1-time secret
+	// that is included in the connect URL, and will be used to validate OAuth2
+	// complete callback.
 	GetOAuth2ConnectURL *Call `json:"get_oauth2_connect_url,omitempty"`
 
 	// OnOAuth2Complete gets called upon successful completion of the remote

@@ -16,6 +16,11 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
+	state, err := p.store.OAuth2.CreateState(actingUserID)
+	if err != nil {
+		return "", err
+	}
+
 	creq := &apps.CallRequest{
 		Call: *app.GetOAuth2ConnectURL.WithOverrides(apps.DefaultGetOAuth2ConnectURL),
 		Type: apps.CallTypeSubmit,
@@ -24,6 +29,9 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 				ActingUserID: actingUserID,
 			},
 		),
+		Values: map[string]interface{}{
+			"state": state,
+		},
 	}
 	cresp := p.Call(sessionID, actingUserID, creq)
 	if cresp.Type == apps.CallResponseTypeError {

@@ -79,7 +79,7 @@ func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) *model.Respo
 
 	err := json.NewDecoder(r.Body).Decode(ref)
 	if err != nil {
-		return model.BuildErrorResponse(r, model.NewAppError("CreateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
+		return model.BuildErrorResponse(r, model.NewAppError("KVGet", "", nil, err.Error(), http.StatusInternalServerError))
 	}
 	return model.BuildResponse(r)
 }
@@ -113,20 +113,6 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionRe
 
 	subResponse := apps.SubscriptionResponseFromJSON(r.Body)
 	return subResponse, model.BuildResponse(r)
-}
-
-func (c *ClientPP) CreateOAuth2State() (string, *model.Response) {
-	r, appErr := c.DoAPIPOST(c.apipath(PathOAuth2CreateState), "{}") // nolint:bodyclose
-	if appErr != nil {
-		return "", model.BuildErrorResponse(r, appErr)
-	}
-	defer c.closeBody(r)
-	s := ""
-	err := json.NewDecoder(r.Body).Decode(&s)
-	if err != nil {
-		return "", model.BuildErrorResponse(r, model.NewAppError("CreateOAuth2State", "", nil, err.Error(), http.StatusInternalServerError))
-	}
-	return s, model.BuildResponse(r)
 }
 
 func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) *model.Response {

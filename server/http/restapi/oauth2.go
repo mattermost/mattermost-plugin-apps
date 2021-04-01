@@ -11,15 +11,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) oauth2CreateState(w http.ResponseWriter, r *http.Request) {
-	state, err := a.appServices.CreateOAuth2State(actingID(r))
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-	httputils.WriteJSON(w, state)
-}
-
 func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request) {
 	oapp := apps.OAuth2App{}
 	err := json.NewDecoder(r.Body).Decode(&oapp)

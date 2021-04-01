@@ -112,17 +112,6 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionResponse
 	return subResponse, nil
 }
 
-func (c *Client) CreateOAuth2State() (string, error) {
-	state, res := c.ClientPP.CreateOAuth2State()
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if res.Error != nil {
-			return "", res.Error
-		}
-		return "", fmt.Errorf("returned with status %d", res.StatusCode)
-	}
-	return state, nil
-}
-
 func (c *Client) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) error {
 	res := c.ClientPP.StoreOAuth2App(appID, clientID, clientSecret)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {

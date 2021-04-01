@@ -78,7 +78,6 @@ func main() {
 func configure(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
-
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
@@ -90,7 +89,16 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config {
+func connect(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
+	})
+}
+
+func oauth2Config(creq *apps.CallRequest) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     creq.Context.OAuth2.ClientID,
 		ClientSecret: creq.Context.OAuth2.ClientSecret,
@@ -104,25 +112,13 @@ func oauth2Config(asBot *mmclient.Client, creq *apps.CallRequest) *oauth2.Config
 	}
 }
 
-func connect(w http.ResponseWriter, req *http.Request) {
-	creq := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&creq)
-
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
-	})
-}
-
 func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
+	state, _ := creq.Values["state"].(string)
 
-	asBot := mmclient.AsBot(creq.Context)
-	asActingUser := mmclient.AsActingUser(creq.Context)
+	url := oauth2Config(&creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 
-	state, _ := asActingUser.CreateOAuth2State()
-
-	url := oauth2Config(asBot, &creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
 		Data: url,
@@ -134,11 +130,11 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 	code, _ := creq.Values["code"].(string)
 
-	asBot := mmclient.AsBot(creq.Context)
-	asActingUser := mmclient.AsActingUser(creq.Context)
+	token, _ := oauth2Config(&creq).Exchange(context.Background(), code)
 
-	token, _ := oauth2Config(asBot, &creq).Exchange(context.Background(), code)
+	asActingUser := mmclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
+
 	json.NewEncoder(w).Encode(apps.CallResponse{})
 }
 
@@ -146,9 +142,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	asBot := mmclient.AsBot(creq.Context)
-
-	oauthConfig := oauth2Config(asBot, &creq)
+	oauthConfig := oauth2Config(&creq)
 	token := oauth2.Token{}
 	remarshal(&token, creq.Context.OAuth2.User)
 	ctx := context.Background()

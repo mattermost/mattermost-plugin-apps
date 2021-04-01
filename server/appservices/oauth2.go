@@ -5,13 +5,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (a *AppServices) CreateOAuth2State(actingUserID string) (string, error) {
-	if err := a.ensureFromUser(actingUserID); err != nil {
-		return "", err
-	}
-	return a.store.OAuth2.CreateState(actingUserID)
-}
-
 func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
 	err := utils.EnsureSysAdmin(a.mm, actingUserID)
 	if err != nil {

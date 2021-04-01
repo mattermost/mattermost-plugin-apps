@@ -48,7 +48,8 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(mmclient.PathKV+"/{key}", a.kvDelete).Methods("DELETE")
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", a.kvDelete).Methods("DELETE")
 
-	subrouter.HandleFunc(mmclient.PathOAuth2CreateState, a.oauth2CreateState).Methods("PUT", "POST")
+	// TODO appid should come from OAuth2 user session, see
+	// https://mattermost.atlassian.net/browse/MM-34377
 	subrouter.HandleFunc(mmclient.PathOAuth2App+"/{appid}", a.oauth2StoreApp).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2StoreUser).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2GetUser).Methods("GET")
