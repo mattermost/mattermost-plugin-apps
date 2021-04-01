@@ -66,11 +66,18 @@ type ListedApp struct {
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }
 
-const MaxAppID = 32
+const (
+	MinAppIDLength = 3
+	MaxAppIDLength = 32
+)
 
 func (id AppID) IsValid() error {
-	if len(id) > MaxAppID {
-		return errors.Errorf("appID %s too long, should be %d bytes", id, MaxAppID)
+	if len(id) < MinAppIDLength {
+		return errors.Errorf("appID %s too short, should be %d bytes", id, MinAppIDLength)
+	}
+
+	if len(id) > MaxAppIDLength {
+		return errors.Errorf("appID %s too long, should be %d bytes", id, MaxAppIDLength)
 	}
 
 	for _, c := range id {
