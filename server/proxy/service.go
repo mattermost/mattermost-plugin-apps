@@ -54,8 +54,8 @@ type Service interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 
 	InvalidateCache(cc *apps.Context, appID apps.AppID) error
-	CacheDeleteAll(apps.AppID) error
-	CacheDeleteAllApps() []error
+	CacheEmpty(apps.AppID) error
+	CacheEmptyApps() []error
 }
 
 var _ Service = (*Proxy)(nil)

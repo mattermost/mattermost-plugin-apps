@@ -781,7 +781,7 @@ func TestGetBindings(t *testing.T) {
 		UserID:       testUserID,
 		ChannelID:    testChannelID,
 	}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
 	require.Equal(t, bindings[3:], out)
 }
@@ -822,7 +822,7 @@ func TestDeleteBindingsForApp(t *testing.T) {
 	}
 	api.On("AppsCacheDelete", string(appID), key4).Return(nil)
 
-	_, err := proxy.GetBindings("", cc)
+	_, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
 
 	err = proxy.InvalidateCache(cc, appID)
@@ -857,7 +857,7 @@ func TestDeleteAllBindingsForAllApps(t *testing.T) {
 	defer api.AssertExpectations(t)
 
 	api.On("AppsCacheDeleteAll", string(appID)).Return(nil)
-	errors := proxy.CacheDeleteAllApps()
+	errors := proxy.CacheEmptyApps()
 
 	assert.Equal(t, len(errors), 0)
 }

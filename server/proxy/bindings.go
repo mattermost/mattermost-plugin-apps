@@ -87,30 +87,36 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	appCC.AppID = appID
 	appCC.BotAccessToken = app.BotAccessToken
 
-	// TODO PERF: Add caching
-	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
-	bindingsRequest := &apps.CallRequest{
-		Call:    *bindingsCall,
-		Context: &appCC,
-	}
-
-	resp := p.Call(sessionID, actingUserID, bindingsRequest)
-	if resp == nil || resp.Type != apps.CallResponseTypeOK {
-		// TODO Log error (chance to flood the logs)
-		// p.mm.Log.Debug("Response is nil or unexpected type.")
-		// if resp != nil && resp.Type == apps.CallResponseTypeError {
-		// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
-		// }
-		return nil, nil
-	}
-
+	var err error
 	var bindings = []*apps.Binding{}
-	b, _ := json.Marshal(resp.Data)
-	err := json.Unmarshal(b, &bindings)
-	if err != nil {
-		// TODO Log error (chance to flood the logs)
-		// p.mm.Log.Debug("Bindings are not of the right type.")
-		return nil, nil
+	bindings, err = p.CacheGetAll(cc, appID);
+	if err != nil || len(bindings) == 0 {
+		bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
+		bindingsRequest := &apps.CallRequest{
+			Call:    *bindingsCall,
+			Context: &appCC,
+		}
+
+		resp := p.Call(sessionID, actingUserID, bindingsRequest)
+		if resp == nil || resp.Type != apps.CallResponseTypeOK {
+			// TODO Log error (chance to flood the logs)
+			// p.mm.Log.Debug("Response is nil or unexpected type.")
+			// if resp != nil && resp.Type == apps.CallResponseTypeError {
+			// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
+			// }
+			return nil, nil
+		}
+
+		b, _ := json.Marshal(resp.Data)
+		err := json.Unmarshal(b, &bindings)
+		if err == nil {
+			if storeErr := p.CacheSet(cc, appID, bindings); storeErr != nil { // store the bindings to the cache
+				p.mm.Log.Error(fmt.Sprintf("failed to store bindings to cache for %s: %v", appID, storeErr))
+			}
+		} else {
+			// TODO Log error (chance to flood the logs)
+			// p.mm.Log.Debug("Bindings are not of the right type.")
+		}
 	}
 
 	bindings = p.scanAppBindings(app, bindings, "")
@@ -141,7 +147,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			//p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
 			continue
 		}
 
@@ -252,16 +258,16 @@ func (p *Proxy) CacheDelete(appID apps.AppID, key string) (error) {
 	return p.mm.AppsCache.Delete(string(appID), key);
 }
 
-func (p *Proxy) CacheDeleteAll(appID apps.AppID) (error) {
+func (p *Proxy) CacheEmpty(appID apps.AppID) (error) {
 	return p.mm.AppsCache.DeleteAll(string(appID));
 }
 
-func (p *Proxy) CacheDeleteAllApps() []error {
+func (p *Proxy) CacheEmptyApps() []error {
 	errors := []error{}
 
 	allApps := store.SortApps(p.store.App.AsMap())
 	for _, app := range allApps {
-		if err := p.CacheDeleteAll(app.Manifest.AppID); err != nil {
+		if err := p.CacheEmpty(app.Manifest.AppID); err != nil {
 			errors = append(errors, err)
 		}
 	}
