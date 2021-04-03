@@ -141,7 +141,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			// p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
 			continue
 		}
 
@@ -176,10 +176,8 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 			b.Bindings = scanned
 		}
-
 		out = append(out, &b)
 	}
-
 	return out
 }
 
@@ -300,12 +298,15 @@ func (p *Proxy) CacheBuildKey(userId string, channelId string) string {
 	return key
 }
 
-func (p *Proxy) InvalidateCache(appID apps.AppID, userID string, channelID string) error {
-	if userID == "" {
+func (p *Proxy) InvalidateCache(cc *apps.Context, appID apps.AppID) error {
+	userID := cc.ActingUserID
+	channelID := cc.ChannelID
+
+	if cc.ActingUserID == "" {
 		userID = KEY_ALL_USERS
 	}
 
-	if channelID == "" {
+	if cc.ChannelID == "" {
 		channelID = KEY_ALL_CHANNELS
 	}
 

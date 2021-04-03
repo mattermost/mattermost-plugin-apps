@@ -30,19 +30,23 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 	httputils.WriteJSON(w, bindings)
 }
 
-func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request, actingUserID string, token string) {
+func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
 	vars := mux.Vars(req)
-
 	appID := vars["appid"]
-	activeUserID := vars["userid"]
 	channelID := vars["channelid"]
+
+	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		ChannelID:    channelID,
+		UserID:       actingUserID,
+	})
 
 	if appID == "" {
 		httputils.WriteError(w, errors.New("appid not specified"))
 		return
 	}
 
-	if err := a.proxy.InvalidateCache(apps.AppID(appID), activeUserID, channelID); err != nil {
+	if err := a.proxy.InvalidateCache(cc, apps.AppID(appID)); err != nil {
 		httputils.WriteError(w, err)
 	}
 }
