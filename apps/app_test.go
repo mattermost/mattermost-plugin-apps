@@ -1,44 +1,36 @@
-// +build !e2e
-
 package apps
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestAppConfigMap(t *testing.T) {
-	m := &Manifest{
-		AppID:                "app-id",
-		DisplayName:          "display-name",
-		Description:          "description",
-		HomepageURL:          "homepage-url",
-		HTTPRootURL:          "root_url",
-		RequestedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
-		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
+func TestAppIDIsValid(t *testing.T) {
+	t.Parallel()
+
+	for id, valid := range map[string]bool{
+		"":                                  false,
+		"a":                                 false,
+		"ab":                                false,
+		"abc":                               true,
+		"abcdefghijklmnopqrstuvwxyzabcdef":  true,
+		"abcdefghijklmnopqrstuvwxyzabcdefg": false,
+		"../path":                           false,
+		"/etc/passwd":                       false,
+		"com.mattermost.app-0.9":            true,
+		"CAPS-ARE-FINE":                     true,
+		"....DOTS.ALSO.......":              true,
+		"----SLASHES-ALSO----":              true,
+		"___AND_UNDERSCORES____":            true,
+	} {
+		t.Run(id, func(t *testing.T) {
+			err := AppID(id).IsValid()
+			if valid {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
 	}
-
-	a1 := &App{
-		Manifest:           m,
-		Secret:             "1234",
-		OAuth2ClientID:     "id",
-		OAuth2ClientSecret: "4321",
-		OAuth2TrustedApp:   true,
-		BotUserID:          "bot-user-id",
-		BotUsername:        "bot_username",
-		BotAccessToken:     "bot_access_token",
-		GrantedPermissions: Permissions{PermissionActAsUser, PermissionActAsBot},
-		GrantedLocations:   Locations{LocationChannelHeader, LocationCommand},
-	}
-
-	t.Run("App", func(t *testing.T) {
-		map1 := a1.ConfigMap()
-		// require.EqualValues(t, nil, map1)
-		a2 := AppFromConfigMap(map1)
-		require.EqualValues(t, a1, a2)
-
-		map2 := a2.ConfigMap()
-		require.EqualValues(t, map1, map2)
-	})
 }

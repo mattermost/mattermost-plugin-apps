@@ -4,131 +4,70 @@
 package command
 
 import (
-	"fmt"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/js/aws_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
-	_ = s.api.Mattermost.KV.DeleteAll()
-	_ = s.api.Configurator.StoreConfig(&api.StoredConfig{})
+	_ = s.mm.KV.DeleteAll()
+	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, md.MD("Deleted all KV records and emptied the config."))
 }
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
-	bindings, err := s.api.Proxy.GetBindings(apps.NewCommandContext(params.commandArgs))
+	bindings, err := s.proxy.GetBindings(
+		params.commandArgs.Session.Id,
+		params.commandArgs.UserId,
+		s.newCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
 	}
 	return out(params, md.JSONBlock(bindings))
 }
 
-func (s *service) executeDebugInstallHTTPHello(params *params) (*model.CommandResponse, error) {
-	params.current = []string{
-		"--app-secret", http_hello.AppSecret,
-		"--url", s.api.Configurator.GetConfig().PluginURL + api.HelloHTTPPath + http_hello.PathManifest,
-		"--force",
-	}
-	return s.executeInstall(params)
-}
-
-func (s *service) executeDebugInstallBuiltinHello(params *params) (*model.CommandResponse, error) {
-	manifest := builtin_hello.Manifest()
-
-	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-		return errorOut(params, errors.New("forbidden"))
+func (s *service) executeDebugAddManifest(params *params) (*model.CommandResponse, error) {
+	manifestURL := ""
+	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
+	fs.StringVar(&manifestURL, "url", "", "manifest URL")
+	if err := fs.Parse(params.current); err != nil {
+		return errorOut(params, err)
 	}
 
-	app, _, err := s.api.Admin.ProvisionApp(
-		&apps.Context{
-			ActingUserID: params.commandArgs.UserId,
-		},
-		apps.SessionToken(params.commandArgs.Session.Token),
-		&apps.InProvisionApp{
-			Manifest: manifest,
-			Force:    true,
-		},
-	)
+	if manifestURL == "" {
+		return errorOut(params, errors.New("you must add a `--url`"))
+	}
+
+	data, err := httputils.GetFromURL(manifestURL)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	conf := s.api.Configurator.GetConfig()
-
-	// Finish the installation when the Dialog is submitted, see
-	// <plugin>/http/dialog/install.go
-	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(manifest, "", conf.PluginURL, params.commandArgs))
-	if err != nil {
-		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
-	}
-
-	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
+	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
+	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	if err != nil {
+		return errorOut(params, err)
+	}
 	return &model.CommandResponse{
-		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + app.BotUsername,
-		Text:         fmt.Sprintf("redirected to the DM with @%s to continue installing **%s**", app.BotUsername, manifest.DisplayName),
+		Text:         string(out),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
 
-func (s *service) executeDebugInstallAWSHello(params *params) (*model.CommandResponse, error) {
-	manifest := aws_hello.Manifest()
-
-	if !s.api.Mattermost.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-		return errorOut(params, errors.New("forbidden"))
-	}
-
-	s.api.Mattermost.Log.Error(fmt.Sprintf("manifest = %v", manifest))
-	app, _, err := s.api.Admin.ProvisionApp(
-		&apps.Context{
-			ActingUserID: params.commandArgs.UserId,
-		},
-		apps.SessionToken(params.commandArgs.Session.Token),
-		&apps.InProvisionApp{
-			Manifest: manifest,
-			Force:    true,
-		},
-	)
-	s.api.Mattermost.Log.Error(fmt.Sprintf("app = %v", app))
-
-	if err != nil {
-		return errorOut(params, err)
-	}
-
-	conf := s.api.Configurator.GetConfig()
-
-	// Finish the installation when the Dialog is submitted, see
-	// <plugin>/http/dialog/install.go
-	err = s.api.Mattermost.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(manifest, "", conf.PluginURL, params.commandArgs))
-	if err != nil {
-		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
-	}
-
-	s.api.Mattermost.Log.Error(fmt.Sprintf("before get team = %v", params.commandArgs.TeamId))
-
-	team, err := s.api.Mattermost.Team.Get(params.commandArgs.TeamId)
-	if err != nil {
-		return errorOut(params, err)
-	}
-	s.api.Mattermost.Log.Error(fmt.Sprintf("after get team = %v", team))
-
-	return &model.CommandResponse{
-		GotoLocation: params.commandArgs.SiteURL + "/" + team.Name + "/messages/@" + app.BotUsername,
-		Text:         fmt.Sprintf("%s. redirected to the DM with @%s to continue installing **%s**", "text", app.BotUsername, manifest.DisplayName),
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
+	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: commandArgs.UserId,
+		UserID:       commandArgs.UserId,
+		TeamID:       commandArgs.TeamId,
+		ChannelID:    commandArgs.ChannelId,
+	})
 }

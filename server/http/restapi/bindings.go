@@ -4,22 +4,24 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID string) {
-	query := req.URL.Query()
-	bindings, err := a.api.Proxy.GetBindings(&apps.Context{
-		TeamID:            query.Get(api.PropTeamID),
-		ChannelID:         query.Get(api.PropChannelID),
-		ActingUserID:      actingUserID,
-		UserID:            actingUserID,
-		PostID:            query.Get(api.PropPostID),
-		MattermostSiteURL: a.api.Configurator.GetConfig().MattermostSiteURL,
+func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+	q := req.URL.Query()
+	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		TeamID:       q.Get(config.PropTeamID),
+		ChannelID:    q.Get(config.PropChannelID),
+		PostID:       q.Get(config.PropPostID),
+		UserAgent:    q.Get(config.PropUserAgent),
+		UserID:       actingUserID,
 	})
+
+	bindings, err := a.proxy.GetBindings(sessionID(req), actingID(req), cc)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 

@@ -5,13 +5,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 )
 
-func (h *HelloApp) UserJoinedChannel(call *apps.Call) {
+func (h *HelloApp) UserJoinedChannel(call *apps.CallRequest) {
 	go func() {
 		bot := mmclient.AsBot(call.Context)
 
 		err := sendSurvey(bot, call.Context.UserID, "welcome to channel")
 		if err != nil {
-			h.API.Mattermost.Log.Error("error sending survey", "err", err.Error())
+			h.mm.Log.Error("error sending survey", "err", err.Error())
 		}
 	}()
 }

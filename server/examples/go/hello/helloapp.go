@@ -1,8 +1,6 @@
 package hello
 
-import (
-	"github.com/mattermost/mattermost-plugin-apps/server/api"
-)
+import pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 const (
 	fieldUserID   = "userID"
@@ -15,15 +13,18 @@ const (
 	PathSendSurveyModal          = "/send-modal"
 	PathSendSurveyCommandToModal = "/send-command-modal"
 	PathSubscribeChannel         = "/subscribe"
+	PathUnsubscribeChannel       = "/unsubscribe"
 	PathSurvey                   = "/survey"
 	PathUserJoinedChannel        = "/user-joined-channel"
 	PathSubmitSurvey             = "/survey-submit"
 )
 
 type HelloApp struct {
-	API *api.Service
+	mm *pluginapi.Client
 }
 
-func NewHelloApp(api *api.Service) *HelloApp {
-	return &HelloApp{api}
+func NewHelloApp(mm *pluginapi.Client) *HelloApp {
+	return &HelloApp{
+		mm: mm,
+	}
 }
