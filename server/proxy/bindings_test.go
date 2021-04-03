@@ -5,10 +5,12 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -254,7 +256,7 @@ func TestMergeBindings(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			out := mergeBindings(tc.bb1, tc.bb2)
-			require.EqualValues(t, tc.expected, out)
+			EqualBindings(t, tc.expected, out)
 		})
 	}
 }
@@ -360,7 +362,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			api.On("AppsCacheGet", "app1", key1).Return(bindingsBytes, nil)
 
 			cc := &apps.Context{}
-			out, err := proxy.GetBindings("", cc)
+			out, err := proxy.GetBindings("", "", cc)
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -553,9 +555,9 @@ func TestGetBindingsCommands(t *testing.T) {
 	proxy, _ := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
-	require.EqualValues(t, expected, out)
+	EqualBindings(t, expected, out)
 }
 
 func TestDuplicateCommand(t *testing.T) {
@@ -647,9 +649,9 @@ func TestDuplicateCommand(t *testing.T) {
 	proxy, _ := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
-	require.EqualValues(t, expected, out)
+	EqualBindings(t, expected, out)
 }
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) (*Proxy, *plugintest.API) {
@@ -673,12 +675,12 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	for _, test := range testData {
 		appList[test.app.AppID] = test.app
 
-		// cr := &apps.CallResponse{
-		// 	Type: apps.CallResponseTypeOK,
-		// 	Data: test.bindings,
-		// }
-		//bb, _ := json.Marshal(cr)
-		//reader := ioutil.NopCloser(bytes.NewReader(bb))
+		cr := &apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
+			Data: test.bindings,
+		}
+		bb, _ := json.Marshal(cr)
+		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		//up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
@@ -950,4 +952,18 @@ func TestSetBindings(t *testing.T) {
 	err := proxy.CacheSet(context1, appID, bindings)
 
 	assert.NoError(t, err)
+}
+
+// EqualBindings asserts that two slices of bindings are equal ignoring the order of the elements.
+// If there are duplicate elements, the number of appearances of each of them in both lists should match.
+//
+// EqualBindings calls t.Fail if the elements not match.
+func EqualBindings(t *testing.T, expected, actual []*apps.Binding) {
+	opt := cmpopts.SortSlices(func(a *apps.Binding, b *apps.Binding) bool {
+		return a.AppID < b.AppID
+	})
+
+	if diff := cmp.Diff(expected, actual, opt); diff != "" {
+		t.Errorf("Bindings mismatch (-expected +actual):\n%s", diff)
+	}
 }

@@ -1,0 +1,16 @@
+{
+	"app_id": "hello-oauth2",
+	"version":"demo",
+	"display_name": "Hello, OAuth2!",
+	"app_type": "http",
+	"root_url": "http://localhost:8080",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello-oauth2",
+	"requested_permissions": [
+		"act_as_admin",
+		"act_as_user",
+		"remote_oauth2"
+	],
+	"requested_locations": [
+		"/command"
+	]
+}

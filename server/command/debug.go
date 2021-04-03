@@ -4,9 +4,8 @@
 package command
 
 import (
-	"encoding/json"
-
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -24,7 +23,8 @@ func (s *service) executeDebugClean(params *params) (*model.CommandResponse, err
 
 func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
 	bindings, err := s.proxy.GetBindings(
-		apps.SessionToken(params.commandArgs.Session.Token),
+		params.commandArgs.Session.Id,
+		params.commandArgs.UserId,
 		s.newCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
@@ -40,17 +40,21 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, err)
 	}
 
-	data, err := httputils.GetFromURL(manifestURL)
-	if err != nil {
-		return nil, err
+	if manifestURL == "" {
+		return errorOut(params, errors.New("you must add a `--url`"))
 	}
-	m := apps.Manifest{}
-	err = json.Unmarshal(data, &m)
+
+	data, err := httputils.GetFromURL(manifestURL)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, apps.SessionToken(params.commandArgs.Session.Token), &m)
+	m, err := apps.ManifestFromJSON(data)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
 	if err != nil {
 		return errorOut(params, err)
 	}

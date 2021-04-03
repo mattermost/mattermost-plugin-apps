@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -51,7 +50,7 @@ func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
 	}
 
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't read file")
 	}
@@ -79,7 +78,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			}
 			defer manifestFile.Close()
 
-			data, err := ioutil.ReadAll(manifestFile)
+			data, err := io.ReadAll(manifestFile)
 			if err != nil {
 				return nil, errors.Wrap(err, "can't read manifest.json file")
 			}

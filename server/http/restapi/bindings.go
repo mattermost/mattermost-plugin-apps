@@ -21,9 +21,9 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		UserID:       actingUserID,
 	})
 
-	bindings, err := a.proxy.GetBindings(apps.SessionToken(token), cc)
+	bindings, err := a.proxy.GetBindings(sessionID(req), actingID(req), cc)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 
@@ -33,16 +33,16 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request, actingUserID string, token string) {
 	vars := mux.Vars(req)
 
-	appID := vars["app_id"]
-	userID := vars["user_id"]
-	channelID := vars["channel_id"]
+	appID := vars["appid"]
+	activeUserID := vars["userid"]
+	channelID := vars["channelid"]
 
 	if appID == "" {
-		httputils.WriteBadRequestError(w, errors.New("app_id not specified"))
+		httputils.WriteError(w, errors.New("appid not specified"))
 		return
 	}
 
-	if err := a.proxy.InvalidateCache(apps.AppID(appID), userID, channelID); err != nil {
-		httputils.WriteInternalServerError(w, err)
+	if err := a.proxy.InvalidateCache(apps.AppID(appID), activeUserID, channelID); err != nil {
+		httputils.WriteError(w, err)
 	}
 }

@@ -6,7 +6,6 @@ package httputils
 
 import (
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 )
 
 func TestLimitReadCloser(t *testing.T) {
-	inner := ioutil.NopCloser(strings.NewReader("01234567890"))
+	inner := io.NopCloser(strings.NewReader("01234567890"))
 
 	totalRead := utils.ByteSize(0)
 	r := &LimitReadCloser{
