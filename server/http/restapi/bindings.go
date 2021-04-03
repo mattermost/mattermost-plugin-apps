@@ -38,7 +38,6 @@ func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request
 	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
 		ActingUserID: actingUserID,
 		ChannelID:    channelID,
-		UserID:       actingUserID,
 	})
 
 	if appID == "" {
