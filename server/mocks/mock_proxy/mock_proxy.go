@@ -78,32 +78,46 @@ func (mr *MockServiceMockRecorder) AppIsEnabled(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppIsEnabled", reflect.TypeOf((*MockService)(nil).AppIsEnabled), arg0)
 }
 
-// CacheDeleteAll mocks base method.
-func (m *MockService) CacheDeleteAll(arg0 apps.AppID) error {
+// CacheEmpty mocks base method.
+func (m *MockService) CacheEmpty(arg0 apps.AppID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CacheDeleteAll", arg0)
+	ret := m.ctrl.Call(m, "CacheEmpty", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CacheDeleteAll indicates an expected call of CacheDeleteAll.
-func (mr *MockServiceMockRecorder) CacheDeleteAll(arg0 interface{}) *gomock.Call {
+// CacheEmpty indicates an expected call of CacheEmpty.
+func (mr *MockServiceMockRecorder) CacheEmpty(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDeleteAll", reflect.TypeOf((*MockService)(nil).CacheDeleteAll), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheEmpty", reflect.TypeOf((*MockService)(nil).CacheEmpty), arg0)
 }
 
-// CacheDeleteAllApps mocks base method.
-func (m *MockService) CacheDeleteAllApps() []error {
+// CacheEmptyApps mocks base method.
+func (m *MockService) CacheEmptyApps() []error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CacheDeleteAllApps")
+	ret := m.ctrl.Call(m, "CacheEmptyApps")
 	ret0, _ := ret[0].([]error)
 	return ret0
 }
 
-// CacheDeleteAllApps indicates an expected call of CacheDeleteAllApps.
-func (mr *MockServiceMockRecorder) CacheDeleteAllApps() *gomock.Call {
+// CacheEmptyApps indicates an expected call of CacheEmptyApps.
+func (mr *MockServiceMockRecorder) CacheEmptyApps() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDeleteAllApps", reflect.TypeOf((*MockService)(nil).CacheDeleteAllApps))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheEmptyApps", reflect.TypeOf((*MockService)(nil).CacheEmptyApps))
+}
+
+// CacheInvalidateBindings mocks base method.
+func (m *MockService) CacheInvalidateBindings(arg0 *apps.Context, arg1 apps.AppID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CacheInvalidateBindings", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CacheInvalidateBindings indicates an expected call of CacheInvalidateBindings.
+func (mr *MockServiceMockRecorder) CacheInvalidateBindings(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheInvalidateBindings", reflect.TypeOf((*MockService)(nil).CacheInvalidateBindings), arg0, arg1)
 }
 
 // Call mocks base method.
@@ -282,20 +296,6 @@ func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 boo
 func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4)
-}
-
-// InvalidateCache mocks base method.
-func (m *MockService) InvalidateCache(arg0 apps.AppID, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InvalidateCache", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InvalidateCache indicates an expected call of InvalidateCache.
-func (mr *MockServiceMockRecorder) InvalidateCache(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvalidateCache", reflect.TypeOf((*MockService)(nil).InvalidateCache), arg0, arg1, arg2)
 }
 
 // Notify mocks base method.

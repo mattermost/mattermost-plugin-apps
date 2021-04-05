@@ -654,7 +654,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller, useCache bool) (*Proxy, *plugintest.API) {
 	testAPI := &plugintest.API{}
-	//testAPI.On("LogDebug", mock.Anything).Return(nil)
+	// testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
@@ -693,10 +693,10 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 			upstreams[test.app.Manifest.AppID] = up
 			appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 
-			key1 := p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
-			key2 := p.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
-			key3 := p.CacheBuildKey(KEY_ALL_USERS, testChannelID)
-			key4 := p.CacheBuildKey(testUserID, testChannelID)
+			key1 := p.CacheBuildKey(BindingsCachePrefix, BindingsCacheKeyAllUsers, BindingsCacheKeyAllChannels)
+			key2 := p.CacheBuildKey(BindingsCachePrefix, testUserID, BindingsCacheKeyAllChannels)
+			key3 := p.CacheBuildKey(BindingsCachePrefix, BindingsCacheKeyAllUsers, testChannelID)
+			key4 := p.CacheBuildKey(BindingsCachePrefix, testUserID, testChannelID)
 
 			bindingsBytes := [][]byte{}
 			testAPI.On("AppsCacheGet", string(test.app.AppID), key1).Return(bindingsBytes, nil)
@@ -761,10 +761,10 @@ func TestGetBindings(t *testing.T) {
 	proxy, api := newTestProxyForBindings(testData, controller, true /* useCache */)
 	defer api.AssertExpectations(t)
 
-	key1 := proxy.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS)
-	key2 := proxy.CacheBuildKey(testUserID, KEY_ALL_CHANNELS)
-	key3 := proxy.CacheBuildKey(KEY_ALL_USERS, testChannelID)
-	key4 := proxy.CacheBuildKey(testUserID, testChannelID)
+	key1 := proxy.CacheBuildKey(BindingsCachePrefix, BindingsCacheKeyAllUsers, BindingsCacheKeyAllChannels)
+	key2 := proxy.CacheBuildKey(BindingsCachePrefix, testUserID, BindingsCacheKeyAllChannels)
+	key3 := proxy.CacheBuildKey(BindingsCachePrefix, BindingsCacheKeyAllUsers, testChannelID)
+	key4 := proxy.CacheBuildKey(BindingsCachePrefix, testUserID, testChannelID)
 
 	bindingsBytes := [][]byte{}
 	api.On("AppsCacheGet", string(appID), key1).Return(bindingsBytes, nil)
@@ -813,7 +813,7 @@ func TestDeleteBindingsForApp(t *testing.T) {
 	proxy, api := newTestProxyForBindings(testData, controller, false /* useCache */)
 	defer api.AssertExpectations(t)
 
-	key4 := proxy.CacheBuildKey(testUserID, testChannelID)
+	key4 := proxy.CacheBuildKey(BindingsCachePrefix, testUserID, testChannelID)
 	cc := &apps.Context{
 		AppID:        appID,
 		ActingUserID: testUserID,
@@ -825,7 +825,7 @@ func TestDeleteBindingsForApp(t *testing.T) {
 	_, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
 
-	err = proxy.InvalidateCache(cc, appID)
+	err = proxy.CacheInvalidateBindings(cc, appID)
 	require.NoError(t, err)
 }
 

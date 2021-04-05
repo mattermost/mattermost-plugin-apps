@@ -43,7 +43,7 @@ const (
 	// Marketplace sub-paths.
 	PathMarketplace = "/marketplace"
 
-	PathInvalidateCache = "/invalidatecache"
+	PathCacheInvalidateBindings = "/cacheinvalidatebindings"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )

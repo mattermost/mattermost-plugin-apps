@@ -30,7 +30,7 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 	httputils.WriteJSON(w, bindings)
 }
 
-func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (a *restapi) handleCacheInvalidateBindings(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
 	vars := mux.Vars(req)
 	appID := vars["appid"]
 	channelID := vars["channelid"]
@@ -45,7 +45,7 @@ func (a *restapi) handleInvalidateCache(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	if err := a.proxy.InvalidateCache(cc, apps.AppID(appID)); err != nil {
+	if err := a.proxy.CacheInvalidateBindings(cc, apps.AppID(appID)); err != nil {
 		httputils.WriteError(w, err)
 	}
 }

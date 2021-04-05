@@ -1,8 +1,11 @@
 package proxy
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"unicode/utf8"
 
@@ -12,9 +15,10 @@ import (
 )
 
 const (
-	KEY_VALUE_KEY_MAX_RUNES       = 50
-	KEY_ALL_USERS                 = "ALL_USERS"
-	KEY_ALL_CHANNELS              = "ALL_CHANNELS"
+	CacheKeyValueMaxRunes       = 50
+	BindingsCacheKeyAllUsers    = "ALL_USERS"
+	BindingsCacheKeyAllChannels = "ALL_CHANNELS"
+	BindingsCachePrefix         = "bindings"
 )
 
 func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
@@ -89,7 +93,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 
 	var err error
 	var bindings = []*apps.Binding{}
-	bindings, err = p.CacheGetAll(cc, appID);
+	bindings, err = p.CacheGetAllBindings(cc, appID)
 	if err != nil || len(bindings) == 0 {
 		bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
 		bindingsRequest := &apps.CallRequest{
@@ -110,7 +114,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		b, _ := json.Marshal(resp.Data)
 		err := json.Unmarshal(b, &bindings)
 		if err == nil {
-			if storeErr := p.CacheSet(cc, appID, bindings); storeErr != nil { // store the bindings to the cache
+			if storeErr := p.CacheSetBindings(cc, appID, bindings); storeErr != nil { // store the bindings to the cache
 				p.mm.Log.Error(fmt.Sprintf("failed to store bindings to cache for %s: %v", appID, storeErr))
 			}
 		} else {
@@ -189,16 +193,16 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 	return out
 }
 
-func (p *Proxy) CacheSet(cc *apps.Context, appID apps.AppID, bindings []*apps.Binding) error {
+func (p *Proxy) CacheSetBindings(cc *apps.Context, appID apps.AppID, bindings []*apps.Binding) error {
 	groupedBindingsMap := map[string][][]byte{}
 
 	for _, binding := range bindings {
-		userID := KEY_ALL_USERS
+		userID := BindingsCacheKeyAllUsers
 		if binding.DependsOnUser && cc.ActingUserID != "" {
 			userID = cc.ActingUserID
 		}
 
-		channelID := KEY_ALL_CHANNELS
+		channelID := BindingsCacheKeyAllChannels
 		if binding.DependsOnChannel && cc.ChannelID != "" {
 			channelID = cc.ChannelID
 		}
@@ -208,7 +212,7 @@ func (p *Proxy) CacheSet(cc *apps.Context, appID apps.AppID, bindings []*apps.Bi
 			return errors.Wrapf(err, "failed to marshal value")
 		}
 
-		key := p.CacheBuildKey(userID, channelID)
+		key := p.CacheBuildKey(BindingsCachePrefix, userID, channelID)
 		bindingsForKey := groupedBindingsMap[key]
 		bindingsForKey = append(bindingsForKey, valueBytes)
 		groupedBindingsMap[key] = bindingsForKey
@@ -222,12 +226,12 @@ func (p *Proxy) CacheSet(cc *apps.Context, appID apps.AppID, bindings []*apps.Bi
 	return nil
 }
 
-func (p *Proxy) CacheGetAll(cc *apps.Context, appID apps.AppID) ([]*apps.Binding, error) {
+func (p *Proxy) CacheGetAllBindings(cc *apps.Context, appID apps.AppID) ([]*apps.Binding, error) {
 	bindings := []*apps.Binding{}
 
-	keys := p.CacheBuildKeys(cc.ActingUserID, cc.ChannelID)
+	keys := p.CacheBuildBindingsKeys(BindingsCachePrefix, cc.ActingUserID, cc.ChannelID)
 	for _, key := range keys {
-		tbindings, err := p.CacheGet(cc, appID, key)
+		tbindings, err := p.CacheGetBinding(cc, appID, key)
 		if err != nil {
 			return nil, err
 		}
@@ -237,7 +241,7 @@ func (p *Proxy) CacheGetAll(cc *apps.Context, appID apps.AppID) ([]*apps.Binding
 	return bindings, nil
 }
 
-func (p *Proxy) CacheGet(cc *apps.Context, appID apps.AppID, key string) ([]*apps.Binding, error) {
+func (p *Proxy) CacheGetBinding(cc *apps.Context, appID apps.AppID, key string) ([]*apps.Binding, error) {
 	bindings := []*apps.Binding{}
 
 	var retErr error
@@ -256,12 +260,12 @@ func (p *Proxy) CacheGet(cc *apps.Context, appID apps.AppID, key string) ([]*app
 	return bindings, retErr
 }
 
-func (p *Proxy) CacheDelete(appID apps.AppID, key string) (error) {
-	return p.mm.AppsCache.Delete(string(appID), key);
+func (p *Proxy) CacheDelete(appID apps.AppID, key string) error {
+	return p.mm.AppsCache.Delete(string(appID), key)
 }
 
-func (p *Proxy) CacheEmpty(appID apps.AppID) (error) {
-	return p.mm.AppsCache.DeleteAll(string(appID));
+func (p *Proxy) CacheEmpty(appID apps.AppID) error {
+	return p.mm.AppsCache.DeleteAll(string(appID))
 }
 
 func (p *Proxy) CacheEmptyApps() []error {
@@ -277,47 +281,48 @@ func (p *Proxy) CacheEmptyApps() []error {
 	return errors
 }
 
-func (p *Proxy) CacheBuildKeys(userID string, channelID string) []string {
+func (p *Proxy) CacheBuildBindingsKeys(prefix string, userID string, channelID string) []string {
 	keys := []string{}
 
-	keys = append(keys, p.CacheBuildKey(KEY_ALL_USERS, KEY_ALL_CHANNELS))
+	keys = append(keys, p.CacheBuildKey(prefix, BindingsCacheKeyAllUsers, BindingsCacheKeyAllChannels))
 
 	if userID != "" {
-		keys = append(keys, p.CacheBuildKey(userID, KEY_ALL_CHANNELS))
+		keys = append(keys, p.CacheBuildKey(prefix, userID, BindingsCacheKeyAllChannels))
 	}
 
 	if channelID != "" {
-		keys = append(keys, p.CacheBuildKey(KEY_ALL_USERS, channelID))
+		keys = append(keys, p.CacheBuildKey(prefix, BindingsCacheKeyAllUsers, channelID))
 	}
 
 	if userID != "" && channelID != "" {
-		keys = append(keys, p.CacheBuildKey(userID, channelID))
+		keys = append(keys, p.CacheBuildKey(prefix, userID, channelID))
 	}
 	return keys
 }
 
-func (p *Proxy) CacheBuildKey(userId string, channelId string) string {
-	key := fmt.Sprintf("%s:%s", userId, channelId)
+func (p *Proxy) CacheBuildKey(keyParts ...string) string {
+	keyPartsHash := md5.Sum([]byte(strings.Join(keyParts, ":"))) // nolint:gosec
+	key := base64.RawURLEncoding.EncodeToString(keyPartsHash[:])
 
-	if utf8.RuneCountInString(key) > KEY_VALUE_KEY_MAX_RUNES {
-		return key[:KEY_VALUE_KEY_MAX_RUNES]
+	if utf8.RuneCountInString(key) > CacheKeyValueMaxRunes {
+		return key[:CacheKeyValueMaxRunes]
 	}
 
 	return key
 }
 
-func (p *Proxy) InvalidateCache(cc *apps.Context, appID apps.AppID) error {
+func (p *Proxy) CacheInvalidateBindings(cc *apps.Context, appID apps.AppID) error {
 	userID := cc.ActingUserID
 	channelID := cc.ChannelID
 
 	if cc.ActingUserID == "" {
-		userID = KEY_ALL_USERS
+		userID = BindingsCacheKeyAllUsers
 	}
 
 	if cc.ChannelID == "" {
-		channelID = KEY_ALL_CHANNELS
+		channelID = BindingsCacheKeyAllChannels
 	}
 
-	key := p.CacheBuildKey(userID, channelID)
+	key := p.CacheBuildKey(BindingsCachePrefix, userID, channelID)
 	return p.CacheDelete(appID, key)
 }

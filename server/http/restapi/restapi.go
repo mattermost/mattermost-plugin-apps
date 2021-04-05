@@ -54,7 +54,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2StoreUser).Methods("PUT", "POST")
 	subrouter.HandleFunc(mmclient.PathOAuth2User+"/{appid}", a.oauth2GetUser).Methods("GET")
 
-	subrouter.HandleFunc(config.PathInvalidateCache+"/{appid}/{channelid}", httputils.CheckAuthorized(mm, a.handleInvalidateCache)).Methods(http.MethodGet)
+	subrouter.HandleFunc(config.PathCacheInvalidateBindings+"/{appid}/{channelid}", httputils.CheckAuthorized(mm, a.handleCacheInvalidateBindings)).Methods(http.MethodGet)
 
 	subrouter.HandleFunc(config.PathMarketplace,
 		httputils.CheckAuthorized(mm, a.handleGetMarketplace)).Methods(http.MethodGet)

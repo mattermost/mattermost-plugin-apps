@@ -53,7 +53,7 @@ type Service interface {
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 
-	InvalidateCache(cc *apps.Context, appID apps.AppID) error
+	CacheInvalidateBindings(cc *apps.Context, appID apps.AppID) error
 	CacheEmpty(apps.AppID) error
 	CacheEmptyApps() []error
 }
