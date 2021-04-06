@@ -19,22 +19,35 @@ type params struct {
 }
 
 type commandHandler struct {
-	f     func(*params) (*model.CommandResponse, error)
-	debug bool
+	f            func(*params) (*model.CommandResponse, error)
+	debug        bool
+	autoComplete *model.AutocompleteData
+}
+
+func (s *service) getSubCommands() map[string]commandHandler {
+	debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
+	debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
+
+	installAC := model.NewAutocompleteData("install", "", "Install a registered app")
+	installAC.AddNamedTextArgument("app-id", "ID of the app to install", "appID", "", true)
+	installAC.AddNamedTextArgument("app-secret", "Secret used to secure connection to App", "App Secret", "", false)
+
+	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
+	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
+
+	return map[string]commandHandler{
+		"debug-bindings":     {s.executeDebugBindings, true, model.NewAutocompleteData("debug-bindings", "", "List bindings")},
+		"debug-clean":        {s.executeDebugClean, true, model.NewAutocompleteData("debug-clean", "", "Delete all KV data")},
+		"debug-add-manifest": {s.executeDebugAddManifest, true, debugAddManifestAC},
+		"info":               {s.executeInfo, false, model.NewAutocompleteData("info", "", "Display debugging information")},
+		"list":               {s.executeList, false, model.NewAutocompleteData("list", "", "List installed and registered apps")},
+		"install":            {s.executeInstall, false, installAC},
+		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false, uninstallAC},
+	}
 }
 
 func (s *service) handleMain(in *params, developerMode bool) (*model.CommandResponse, error) {
-	subcommands := map[string]commandHandler{
-		"debug-bindings":     {s.executeDebugBindings, true},
-		"debug-clean":        {s.executeDebugClean, true},
-		"debug-add-manifest": {s.executeDebugAddManifest, true},
-		"info":               {s.executeInfo, false},
-		"list":               {s.executeList, false},
-		"install":            {s.executeInstall, false},
-		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false},
-	}
-
-	return runSubcommand(subcommands, in, developerMode)
+	return runSubcommand(s.getSubCommands(), in, developerMode)
 }
 
 func runSubcommand(subcommands map[string]commandHandler, params *params, developerMode bool) (*model.CommandResponse, error) {

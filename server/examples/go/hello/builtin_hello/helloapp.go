@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -72,13 +71,13 @@ func App() *apps.App {
 func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
-	case apps.DefaultBindingsCallPath:
+	case apps.DefaultBindings.Path:
 		cr = &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 			Data: hello.Bindings(),
 		}
 
-	case apps.DefaultInstallCallPath:
+	case apps.DefaultOnInstall.Path:
 		cr = h.Install(c)
 
 	default:
@@ -93,7 +92,7 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error)
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.NopCloser(bytes.NewReader(bb)), nil
+	return io.NopCloser(bytes.NewReader(bb)), nil
 }
 
 func (h *helloapp) GetStatic(path string) (io.ReadCloser, int, error) {
@@ -190,7 +189,7 @@ func (h *helloapp) Survey(c *apps.CallRequest, callType apps.CallType) *apps.Cal
 		}
 		return &apps.CallResponse{
 			Type:     apps.CallResponseTypeOK,
-			Markdown: "<><> TODO",
+			Markdown: "<>/<> TODO",
 		}
 	default:
 		return apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))

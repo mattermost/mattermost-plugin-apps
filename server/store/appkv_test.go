@@ -1,6 +1,6 @@
 // +build !e2e
 
-package appservices
+package store
 
 import (
 	"strings"
@@ -21,19 +21,20 @@ func TestKVKey(t *testing.T) {
 		},
 		{
 			namespace: "test_ns",
-			id:        "test_id",
-			expected:  ("_E17qMxGaOyuJqYQs5PB8PtHS7A/VBevAGLPmHSVthG1nH7DdU"),
+			id:        "test_id1",
+			expected:  ("kv.D0ABymH0H8Mr9u3m10a-ow/DXm7v7FXNWbB31V8ph-F_Q"),
 		},
 		{
 			namespace: "test_ns",
 			prefix:    "test_prefix",
-			id:        "test_id",
-			expected:  ("iGXV5w_xPrIPpq84ntMkm_99yls/VBevAGLPmHSVthG1nH7DdU"),
+			id:        "test_id2",
+			expected:  ("kv.pDHhAKgqD9f_UeD7gpEABw/H1FeDBrxovdZ95Lzh3BB8g"),
 		},
 	} {
-		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "_")
+		name := strings.Join([]string{tc.namespace, tc.prefix, tc.id}, "-")
+		s := appKVStore{}
 		t.Run(name, func(t *testing.T) {
-			key := kvKey(tc.namespace, tc.prefix, tc.id)
+			key := s.kvKey(tc.namespace, tc.prefix, tc.id)
 			require.Equal(t, tc.expected, key)
 		})
 	}

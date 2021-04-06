@@ -21,21 +21,33 @@ type gateway struct {
 }
 
 func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service) {
-	p := &gateway{
+	g := &gateway{
 		conf:  conf,
 		mm:    mm,
 		proxy: proxy,
 	}
 
-	subrouter := router.PathPrefix(config.AppsPath).Subrouter()
+	subrouter := router.PathPrefix(config.PathApps).Subrouter()
 
 	// Static
-	subrouter.HandleFunc("/{app_id}/"+apps.StaticAssetsFolder+"/{name}",
-		httputils.CheckAuthorized(mm, p.static)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{appid}/"+apps.StaticFolder+"/{name}",
+		httputils.CheckAuthorized(mm, g.static)).Methods(http.MethodGet)
 
-	// OAuth2
-	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthRedirect,
-		httputils.CheckAuthorized(mm, p.remoteOAuth2Redirect)).Methods(http.MethodGet)
-	subrouter.HandleFunc("/{app_id}"+apps.PathOAuthComplete,
-		httputils.CheckAuthorized(mm, p.remoteOAuth2Complete)).Methods(http.MethodGet)
+	// Incoming remote webhooks
+	subrouter.HandleFunc("/{appid}"+apps.PathWebhook+"/{path}",
+		g.handleWebhook).Methods(http.MethodPost)
+
+	// Remote OAuth2
+	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Connect,
+		httputils.CheckAuthorized(mm, g.remoteOAuth2Connect)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Complete,
+		httputils.CheckAuthorized(mm, g.remoteOAuth2Complete)).Methods(http.MethodGet)
+}
+
+func appIDVar(r *http.Request) apps.AppID {
+	s, ok := mux.Vars(r)["appid"]
+	if ok {
+		return apps.AppID(s)
+	}
+	return ""
 }
