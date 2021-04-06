@@ -32,7 +32,7 @@ type Proxy struct {
 }
 
 type Service interface {
-	Call(apps.SessionToken, *apps.CallRequest) *apps.CallResponse
+	Call(apps.SessionToken, *apps.CallRequest) *apps.ProxyCallResponse
 	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
 	GetBindings(apps.SessionToken, *apps.Context) ([]*apps.Binding, error)
 	Notify(cc *apps.Context, subj apps.Subject) error

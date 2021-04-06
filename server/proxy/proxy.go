@@ -16,14 +16,20 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.CallResponse {
+func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.ProxyCallResponse {
 	app, err := p.store.App.Get(c.Context.AppID)
+
+	metadata := apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 
 	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context, c.Context.AppID)
@@ -31,18 +37,15 @@ func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, debugSessionToken)
 	cc, err = expander.ExpandForApp(app, c.Expand)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	clone := *c
 	clone.Context = cc
 
 	callResponse := upstream.Call(up, &clone)
-	callResponse.AppMetadata = apps.AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
-	}
 
-	return callResponse
+	proxyCallResponse := apps.NewProxyCallResponse(callResponse, metadata)
+	return proxyCallResponse
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
