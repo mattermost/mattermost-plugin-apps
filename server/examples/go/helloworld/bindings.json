@@ -19,6 +19,7 @@
 			"bindings": [
 				{
 					"icon": "http://localhost:8080/static/icon.png",
+                    "label": "helloworld",
 					"description": "Hello World app",
 					"hint":        "[send]",
 					"bindings": [
