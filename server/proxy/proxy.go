@@ -4,8 +4,10 @@
 package proxy
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 
@@ -84,6 +86,45 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		}
 	}
 	return nil
+}
+
+func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
+	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
+	}
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+
+	var datav interface{}
+	err = json.Unmarshal(data, &datav)
+	if err != nil {
+		// if the data can not be decoded as JSON, send it "as is", as a string.
+		datav = string(data)
+	}
+
+	// TODO: do we need to customize the Expand & State for the webhook Call?
+	creq := &apps.CallRequest{
+		Call: apps.Call{
+			Path: path.Join(apps.PathWebhook, webhookPath),
+		},
+		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
+			ActingUserID: app.BotUserID,
+		}),
+		Values: map[string]interface{}{
+			"data": datav,
+			"path": webhookPath,
+		},
+	}
+	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
+	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
+	if err != nil {
+		return err
+	}
+
+	return upstream.Notify(up, creq)
 }
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {

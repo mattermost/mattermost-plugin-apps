@@ -50,15 +50,24 @@ type Config struct {
 	MattermostSiteURL      string
 	PluginURL              string
 	PluginURLPath          string
+
+	// Maximum size of incoming remote webhook messages
+	MaxWebhookSize int64
 }
 
 func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
+	if cc == nil {
+		cc = &apps.Context{}
+	}
 	cc.BotUserID = c.BotUserID
 	cc.MattermostSiteURL = c.MattermostSiteURL
 	return cc
 }
 
 func (c Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
+	if cc == nil {
+		cc = &apps.Context{}
+	}
 	cc = c.SetContextDefaults(cc)
 	cc.AppID = appID
 	cc.AppPath = path.Join(c.PluginURLPath, PathApps, string(appID))

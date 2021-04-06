@@ -70,13 +70,13 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 		if expand.AdminAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 			}
 			clone.ExpandedContext.AdminAccessToken = e.session.Token
 		}
 		if expand.ActingUserAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 			}
 			clone.ExpandedContext.ActingUserAccessToken = e.session.Token
 		}

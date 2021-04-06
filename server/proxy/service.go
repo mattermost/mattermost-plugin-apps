@@ -38,6 +38,7 @@ type Service interface {
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
+	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
