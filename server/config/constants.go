@@ -24,25 +24,24 @@ const (
 	// Top-level path(s) for HTTP example apps.
 	HelloHTTPPath = "/example/hello"
 
-	// Top-level path for the REST APIs exposed by the plugin itself.
-	APIPath = "/api/v1"
+	// Path to the Call API
+	// <>/<> TODO: ticket migrate to gateway
+	PathCall = "/call"
 
-	// Top-level path for the Apps namespaces, followed by /AppID/subpath.
-	AppsPath = "/apps"
+	// Top-level path for the Apps namespaces, followed by /{AppID}/...
+	PathApps = "/apps"
 
-	// OAuth2 sub-paths.
-	PathOAuth2         = "/oauth2"          // convention for Mattermost Apps, comes from OAuther
-	PathOAuth2Complete = "/oauth2/complete" // convention for Mattermost Apps, comes from OAuther
+	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
+	PathMattermostOAuth2Connect  = "/oauth2/mattermost/connect"
+	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
+	PathRemoteOAuth2Connect      = "/oauth2/remote/connect"
+	PathRemoteOAuth2Complete     = "/oauth2/remote/complete"
+
+	// Static assets are served from {PluginURL}/static/...
+	PathStatic = "/" + apps.StaticFolder
 
 	// Marketplace sub-paths.
 	PathMarketplace = "/marketplace"
-
-	// Other sub-paths.
-	CallPath        = "/call"
-	KVPath          = "/kv"
-	SubscribePath   = "/subscribe"
-	UnsubscribePath = "/unsubscribe"
-	StaticAssetPath = "/" + apps.StaticAssetsFolder
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
 )
@@ -54,12 +53,28 @@ const (
 	PropUserAgent = "user_agent_type"
 )
 
-// KV namespace
+// KV namespace. The use of '.' in the prefixes is to avoid conflicts with
+// base64 URL encoding that already uses '-' and '_'.
 const (
-	KeyCallOnce     = "CallOnce"
-	KeyClusterMutex = "Cluster_Mutex"
+	// KVAppPrefix is the Apps namespace. Short, maximize the app keyspace
+	KVAppPrefix = "kv."
 
-	PrefixSubs          = "sub_"
-	PrefixInstalledApp  = "app_"
-	PrefixLocalManifest = "man_"
+	// KVOAuth2Prefix is used to store OAuth2-related information (state,
+	// tokens)
+	KVOAuth2Prefix      = "o."
+	KVOAuth2StatePrefix = "s."
+
+	// KVSubPrefix is used for keys storing subscriptions.
+	KVSubPrefix = "sub."
+
+	// KVInstalledAppPrefix is used to store App records.
+	KVInstalledAppPrefix = "app."
+
+	// KVLocalManifestPrefix is used to store locally-listed manifests.
+	KVLocalManifestPrefix = "man."
+
+	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
+	// usually upon a Mattermost instance startup.
+	KVCallOnceKey     = "CallOnce"
+	KVClusterMutexKey = "Cluster_Mutex"
 )

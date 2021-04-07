@@ -5,36 +5,37 @@
 package mock_upstream
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	io "io"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-// MockUpstream is a mock of Upstream interface
+// MockUpstream is a mock of Upstream interface.
 type MockUpstream struct {
 	ctrl     *gomock.Controller
 	recorder *MockUpstreamMockRecorder
 }
 
-// MockUpstreamMockRecorder is the mock recorder for MockUpstream
+// MockUpstreamMockRecorder is the mock recorder for MockUpstream.
 type MockUpstreamMockRecorder struct {
 	mock *MockUpstream
 }
 
-// NewMockUpstream creates a new mock instance
+// NewMockUpstream creates a new mock instance.
 func NewMockUpstream(ctrl *gomock.Controller) *MockUpstream {
 	mock := &MockUpstream{ctrl: ctrl}
 	mock.recorder = &MockUpstreamMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUpstream) EXPECT() *MockUpstreamMockRecorder {
 	return m.recorder
 }
 
-// GetStatic mocks base method
+// GetStatic mocks base method.
 func (m *MockUpstream) GetStatic(arg0 string) (io.ReadCloser, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetStatic", arg0)
@@ -44,13 +45,13 @@ func (m *MockUpstream) GetStatic(arg0 string) (io.ReadCloser, int, error) {
 	return ret0, ret1, ret2
 }
 
-// GetStatic indicates an expected call of GetStatic
+// GetStatic indicates an expected call of GetStatic.
 func (mr *MockUpstreamMockRecorder) GetStatic(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockUpstream)(nil).GetStatic), arg0)
 }
 
-// Roundtrip mocks base method
+// Roundtrip mocks base method.
 func (m *MockUpstream) Roundtrip(arg0 *apps.CallRequest, arg1 bool) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Roundtrip", arg0, arg1)
@@ -59,7 +60,7 @@ func (m *MockUpstream) Roundtrip(arg0 *apps.CallRequest, arg1 bool) (io.ReadClos
 	return ret0, ret1
 }
 
-// Roundtrip indicates an expected call of Roundtrip
+// Roundtrip indicates an expected call of Roundtrip.
 func (mr *MockUpstreamMockRecorder) Roundtrip(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Roundtrip", reflect.TypeOf((*MockUpstream)(nil).Roundtrip), arg0, arg1)

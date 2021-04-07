@@ -3,13 +3,14 @@
 Here is an example of an HTTP App ([source](/server/examples/go/helloworld)),
 written in Go and runnable on http://localhost:8080. 
 
-- In its `manifest.json` it declares itself an HTTP application.
+- It contains a `manifest.json`, declares itself an HTTP application that acts
+  as a bot and attaches to locations in UI.
+- In its `bindings` function it attaches `send-modal` to a button in the channel
+  header, and `send` to a /helloworld command
 - It contains a `send` function that sends a parameterized message back to the
   user. 
 - It contains a `send-modal` function that forces displaying the `send` form as
   a Modal.
-- In its `bindings` function it attaches `send-modal` to a button in the channel
-  header, and `send` to a /helloworld command
 
 To install "Hello, World" on a locally-running instance of Mattermost follow
 these steps (go 1.16 is required):

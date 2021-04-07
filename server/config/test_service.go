@@ -4,31 +4,37 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-type testConfigurator struct {
-	config *Config
+type TestConfigurator struct {
+	config   Config
+	mmconfig model.Config
 }
 
-var _ Service = (*testConfigurator)(nil)
+var _ Service = (*TestConfigurator)(nil)
 
-func NewTestConfigurator(config *Config) Service {
-	return &testConfigurator{
+func NewTestConfigurator(config Config) *TestConfigurator {
+	return &TestConfigurator{
 		config: config,
 	}
 }
 
-func (c *testConfigurator) GetConfig() Config {
-	return *c.config
+func (c TestConfigurator) WithMattermostConfig(mmconfig model.Config) *TestConfigurator {
+	c.mmconfig = mmconfig
+	return &c
 }
 
-func (c *testConfigurator) GetMattermostConfig() *model.Config {
-	return &model.Config{}
+func (c *TestConfigurator) GetConfig() Config {
+	return c.config
 }
 
-func (c *testConfigurator) Reconfigure(StoredConfig, ...Configurable) error {
+func (c *TestConfigurator) GetMattermostConfig() *model.Config {
+	return &c.mmconfig
+}
+
+func (c *TestConfigurator) Reconfigure(StoredConfig, ...Configurable) error {
 	return nil
 }
 
-func (c *testConfigurator) StoreConfig(sc StoredConfig) error {
+func (c *TestConfigurator) StoreConfig(sc StoredConfig) error {
 	c.config.StoredConfig = sc
 	return nil
 }

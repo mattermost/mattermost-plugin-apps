@@ -7,7 +7,6 @@ package restapi
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -86,7 +85,7 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"), "MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
 	// Install the PP and enable it
-	pluginBytes, err := ioutil.ReadFile(bundle)
+	pluginBytes, err := os.ReadFile(bundle)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
 

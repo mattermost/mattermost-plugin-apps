@@ -111,7 +111,7 @@ func (h *helloapp) Survey(w http.ResponseWriter, req *http.Request, claims *apps
 		}
 		out = &apps.CallResponse{
 			Type:     apps.CallResponseTypeOK,
-			Markdown: "<><> TODO",
+			Markdown: "<>/<> TODO",
 		}
 	default:
 		out = apps.NewErrorCallResponse(errors.Errorf("Unexpected call type: \"%s\"", callType))

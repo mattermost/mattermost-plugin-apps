@@ -32,12 +32,15 @@ type Proxy struct {
 }
 
 type Service interface {
-	Call(apps.SessionToken, *apps.CallRequest) *apps.CallResponse
-	GetAsset(apps.AppID, string) (io.ReadCloser, int, error)
-	GetBindings(apps.SessionToken, *apps.Context) ([]*apps.Binding, error)
+	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse
+	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
+	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
+	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
+	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
 
-	AddLocalManifest(*apps.Context, apps.SessionToken, *apps.Manifest) (md.MD, error)
+	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
 	DisableApp(cc *apps.Context, app *apps.App) (md.MD, error)
 	EnableApp(cc *apps.Context, app *apps.App) (md.MD, error)
@@ -45,9 +48,9 @@ type Service interface {
 	GetInstalledApps() []*apps.App
 	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
-	InstallApp(*apps.Context, apps.SessionToken, *apps.InInstallApp) (*apps.App, md.MD, error)
+	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(appID apps.AppID, sessionToken apps.SessionToken, actingUserID string) error
+	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }

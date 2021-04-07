@@ -6,10 +6,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -19,7 +21,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -193,7 +194,7 @@ func TestMergeBindings(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			out := mergeBindings(tc.bb1, tc.bb2)
-			require.EqualValues(t, tc.expected, out)
+			EqualBindings(t, tc.expected, out)
 		})
 	}
 }
@@ -292,7 +293,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			proxy := newTestProxyForBindings(testData, ctrl)
 
 			cc := &apps.Context{}
-			out, err := proxy.GetBindings("", cc)
+			out, err := proxy.GetBindings("", "", cc)
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -485,9 +486,9 @@ func TestGetBindingsCommands(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
-	require.EqualValues(t, expected, out)
+	EqualBindings(t, expected, out)
 }
 
 func TestDuplicateCommand(t *testing.T) {
@@ -579,9 +580,9 @@ func TestDuplicateCommand(t *testing.T) {
 	proxy := newTestProxyForBindings(testData, ctrl)
 
 	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", cc)
+	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
-	require.EqualValues(t, expected, out)
+	EqualBindings(t, expected, out)
 }
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
@@ -589,7 +590,13 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	s := store.NewService(mm, config.NewTestConfigurator(&config.Config{}))
+	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: model.NewString("test.mattermost.com"),
+		},
+	})
+
+	s := store.NewService(mm, conf)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -604,7 +611,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 			Data: test.bindings,
 		}
 		bb, _ := json.Marshal(cr)
-		reader := ioutil.NopCloser(bytes.NewReader(bb))
+		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
@@ -614,13 +621,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 	appStore.EXPECT().AsMap().Return(appList)
 
-	conf := mock_config.NewMockService(ctrl)
-	conf.EXPECT().GetMattermostConfig().Return(&model.Config{
-		ServiceSettings: model.ServiceSettings{
-			SiteURL: model.NewString("test.mattermost.com"),
-		},
-	}).AnyTimes()
-
 	p := &Proxy{
 		mm:               mm,
 		store:            s,
@@ -629,4 +629,18 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	}
 
 	return p
+}
+
+// EqualBindings asserts that two slices of bindings are equal ignoring the order of the elements.
+// If there are duplicate elements, the number of appearances of each of them in both lists should match.
+//
+// EqualBindings calls t.Fail if the elements not match.
+func EqualBindings(t *testing.T, expected, actual []*apps.Binding) {
+	opt := cmpopts.SortSlices(func(a *apps.Binding, b *apps.Binding) bool {
+		return a.AppID < b.AppID
+	})
+
+	if diff := cmp.Diff(expected, actual, opt); diff != "" {
+		t.Errorf("Bindings mismatch (-expected +actual):\n%s", diff)
+	}
 }

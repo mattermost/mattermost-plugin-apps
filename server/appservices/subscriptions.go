@@ -9,7 +9,7 @@ import (
 )
 
 func (a *AppServices) Subscribe(actingUserID string, sub *apps.Subscription) error {
-	err := utils.EnsureSysadmin(a.mm, actingUserID)
+	err := utils.EnsureSysAdmin(a.mm, actingUserID)
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func (a *AppServices) Subscribe(actingUserID string, sub *apps.Subscription) err
 }
 
 func (a *AppServices) Unsubscribe(actingUserID string, sub *apps.Subscription) error {
-	err := utils.EnsureSysadmin(a.mm, actingUserID)
+	err := utils.EnsureSysAdmin(a.mm, actingUserID)
 	if err != nil {
 		return err
 	}

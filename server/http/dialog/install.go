@@ -16,6 +16,7 @@ import (
 
 type installDialogState struct {
 	AppID         apps.AppID
+	ChannelID     string
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
@@ -25,7 +26,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
 	for _, permission := range m.RequestedPermissions {
-		intro += md.Markdownf("- %s\n", permission.Markdown())
+		intro += md.Markdownf("- %s\n", permission)
 	}
 	intro += md.Bold(
 		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", m.DisplayName)) + "\n"
@@ -67,8 +68,9 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	}
 
 	stateData, _ := json.Marshal(installDialogState{
-		AppID:  m.AppID,
-		TeamID: commandArgs.TeamId,
+		AppID:     m.AppID,
+		TeamID:    commandArgs.TeamId,
+		ChannelID: commandArgs.ChannelId,
 	})
 
 	return model.OpenDialogRequest{
@@ -92,7 +94,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := utils.EnsureSysadmin(d.mm, actingUserID); err != nil {
+	if err := utils.EnsureSysAdmin(d.mm, actingUserID); err != nil {
 		respondWithError(w, http.StatusForbidden, err)
 		return
 	}
@@ -102,14 +104,8 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
 		return
 	}
-	session, err := d.mm.Session.Get(sessionID)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, err)
-		return
-	}
-
 	var dialogRequest model.SubmitDialogRequest
-	err = json.NewDecoder(req.Body).Decode(&dialogRequest)
+	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err)
 		return
@@ -140,19 +136,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app, out, err := d.proxy.InstallApp(
-		&apps.Context{
-			ActingUserID: actingUserID,
-			AppID:        stateData.AppID,
-			TeamID:       stateData.TeamID,
-		},
-		apps.SessionToken(session.Token),
-		&apps.InInstallApp{
-			AppID:            stateData.AppID,
-			OAuth2TrustedApp: noUserConsentForOAuth2,
-			AppSecret:        secret,
-		},
-	)
+	cc := &apps.Context{
+		TeamID:    stateData.TeamID,
+		ChannelID: stateData.ChannelID,
+	}
+	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
+
+	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return

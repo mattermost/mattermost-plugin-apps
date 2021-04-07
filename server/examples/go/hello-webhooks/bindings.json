@@ -1,0 +1,31 @@
+{
+	"type": "ok",
+	"data": [
+		{
+			"location": "/command",
+			"bindings": [
+				{
+					"icon": "http://localhost:8080/static/icon.png",
+					"description": "Hello Webhooks App",
+					"hint": "[ send ]",
+					"bindings": [
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						},
+						{
+							"location": "info",
+							"label": "info",
+							"call": {
+								"path": "/info"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

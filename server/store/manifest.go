@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,7 +84,7 @@ func (s *manifestStore) initGlobal(awscli aws.Client, bucket string, manifestsFi
 		case len(parts) == 2 && parts[0] == "s3":
 			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[1]))
 		case len(parts) == 2 && parts[0] == "file":
-			data, err = ioutil.ReadFile(filepath.Join(assetPath, parts[1]))
+			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httputils.GetFromURL(loc)
 		default:
@@ -146,7 +145,7 @@ func (s *manifestStore) Configure(conf config.Config) {
 
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
-		err := s.mm.KV.Get(config.PrefixLocalManifest+key, &m)
+		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
 			s.mm.Log.Error(
@@ -212,7 +211,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return nil
 	}
 
-	_, err = s.mm.KV.Set(config.PrefixLocalManifest+sha, m)
+	_, err = s.mm.KV.Set(config.KVLocalManifestPrefix+sha, m)
 	if err != nil {
 		return err
 	}
@@ -243,7 +242,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 		return err
 	}
 
-	err = s.mm.KV.Delete(config.PrefixLocalManifest + prevSHA)
+	err = s.mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
 	if err != nil {
 		s.mm.Log.Warn("failed to delete previous Manifest KV value", "err", err.Error())
 	}
@@ -254,7 +253,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	conf := s.conf.GetConfig()
 	sha := conf.LocalManifests[string(appID)]
 
-	err := s.mm.KV.Delete(config.PrefixLocalManifest + sha)
+	err := s.mm.KV.Delete(config.KVLocalManifestPrefix + sha)
 	if err != nil {
 		return err
 	}

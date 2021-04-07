@@ -5,17 +5,21 @@ package proxy
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-func (p *Proxy) AddLocalManifest(cc *apps.Context, sessionToken apps.SessionToken, m *apps.Manifest) (md.MD, error) {
+func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error) {
 	if err := m.IsValid(); err != nil {
 		return "", err
 	}
 
-	// TODO check if acting user is a sysadmin
+	err := utils.EnsureSysAdmin(p.mm, actingUserID)
+	if err != nil {
+		return "", err
+	}
 
-	err := p.store.Manifest.StoreLocal(m)
+	err = p.store.Manifest.StoreLocal(m)
 	if err != nil {
 		return "", err
 	}

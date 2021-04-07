@@ -24,6 +24,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -106,7 +107,7 @@ func (p *Plugin) OnActivate() error {
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
 	assetBucket := apps.S3BucketNameWithDefaults("")
-	mutex, err := cluster.NewMutex(p.API, config.KeyClusterMutex)
+	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
@@ -121,6 +122,7 @@ func (p *Plugin) OnActivate() error {
 	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
+		gateway.Init,
 		http_hello.Init,
 	)
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy)
@@ -158,29 +160,86 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	_ = p.proxy.Notify(apps.NewUserContext(user), apps.SubjectUserCreated)
+	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID: user.Id,
+		ExpandedContext: apps.ExpandedContext{
+			User: user,
+		},
+	})
+	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(apps.NewTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	_ = p.proxy.Notify(apps.NewPostContext(post), apps.SubjectPostCreated)
+	_ = p.proxy.Notify(
+		p.newPostCreatedContext(post), apps.SubjectPostCreated)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.proxy.Notify(apps.NewChannelContext(ch), apps.SubjectChannelCreated)
+	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID:    ch.CreatorId,
+		ChannelID: ch.Id,
+		TeamID:    ch.TeamId,
+		ExpandedContext: apps.ExpandedContext{
+			Channel: ch,
+		},
+	})
+	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
+}
+
+func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserID:     post.UserId,
+		PostID:     post.Id,
+		RootPostID: post.RootId,
+		ChannelID:  post.ChannelId,
+		ExpandedContext: apps.ExpandedContext{
+			Post: post,
+		},
+	})
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		UserID:       tm.UserId,
+		TeamID:       tm.TeamId,
+		ExpandedContext: apps.ExpandedContext{
+			ActingUser: actingUser,
+		},
+	})
+}
+
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
+	actingUserID := ""
+	if actingUser != nil {
+		actingUserID = actingUser.Id
+	}
+	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+		ActingUserID: actingUserID,
+		UserID:       cm.UserId,
+		ChannelID:    cm.ChannelId,
+		ExpandedContext: apps.ExpandedContext{
+			ActingUser: actingUser,
+		},
+	})
 }
