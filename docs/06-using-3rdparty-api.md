@@ -74,7 +74,7 @@ The Hello OAuth2! creates 3 commands: `/helloworld configure|connect|send`.
 			"bindings": [
 				{
 					"icon": "http://localhost:8080/static/icon.png",
-                    "label": "helloworld",
+					"label": "helloworld",
 					"description": "Hello remote (3rd party) OAuth2 App",
 					"hint": "[configure | connect | send]",
 					"bindings": [

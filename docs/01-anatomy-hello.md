@@ -81,7 +81,7 @@ The Hello App creates a Channel Header button, and adds a `/helloworld send` com
 			"bindings": [
 				{
 					"icon": "http://localhost:8080/static/icon.png",
-                    "label": "helloworld",
+					"label": "helloworld",
 					"description": "Hello World app",
 					"hint":        "[send]",
 					"bindings": [
