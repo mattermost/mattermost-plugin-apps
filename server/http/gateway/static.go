@@ -31,6 +31,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID,
 		return
 	}
 
+	copyHeader(w.Header(), req.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteError(w, err)
@@ -39,5 +40,13 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID,
 	if err := body.Close(); err != nil {
 		httputils.WriteError(w, err)
 		return
+	}
+}
+
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
 	}
 }
