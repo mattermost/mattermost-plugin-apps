@@ -270,6 +270,20 @@ func (mr *MockServiceMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockService)(nil).Notify), arg0, arg1)
 }
 
+// NotifyRemoteWebhook mocks base method.
+func (m *MockService) NotifyRemoteWebhook(arg0 *apps.App, arg1 []byte, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// NotifyRemoteWebhook indicates an expected call of NotifyRemoteWebhook.
+func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
+}
+
 // SynchronizeInstalledApps mocks base method.
 func (m *MockService) SynchronizeInstalledApps() error {
 	m.ctrl.T.Helper()
