@@ -142,10 +142,10 @@ type ProxyCallResponse struct {
 	*CallResponse
 
 	// Used to provide info about the App to client, e.g. the bot user id
-	AppMetadata AppMetadataForClient `json:"app_metadata"`
+	AppMetadata *AppMetadataForClient `json:"app_metadata"`
 }
 
-func NewProxyCallResponse(response *CallResponse, metadata AppMetadataForClient) *ProxyCallResponse {
+func NewProxyCallResponse(response *CallResponse, metadata *AppMetadataForClient) *ProxyCallResponse {
 	return &ProxyCallResponse{
 		response,
 		metadata,

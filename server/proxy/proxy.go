@@ -18,15 +18,16 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
+func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
 	if creq.Context == nil || creq.Context.AppID == "" {
-		return apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+		return apps.NewProxyCallResponse(resp, nil)
 	}
 	creq.Context.ActingUserID = actingUserID
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 
-	metadata := apps.AppMetadataForClient{
+	metadata := &apps.AppMetadataForClient{
 		BotUserID:   app.BotUserID,
 		BotUsername: app.BotUsername,
 	}
