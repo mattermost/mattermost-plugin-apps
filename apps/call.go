@@ -51,9 +51,6 @@ type CallRequest struct {
 	// of significance.
 	Call
 
-	// Type of the request, see CallType type for more information.
-	Type CallType `json:"type"`
-
 	// Values are all values entered by the user.
 	Values map[string]interface{} `json:"values,omitempty"`
 
