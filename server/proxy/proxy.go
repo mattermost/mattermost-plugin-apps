@@ -115,7 +115,6 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		}),
 		Values: map[string]interface{}{
 			"data": datav,
-			"path": webhookPath,
 		},
 	}
 	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
