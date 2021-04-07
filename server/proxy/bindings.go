@@ -136,11 +136,6 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			continue
 		}
 
-		if locPrefix == apps.LocationCommand {
-			b.Location = apps.Location(app.Manifest.AppID)
-			b.Label = string(app.Manifest.AppID)
-		}
-
 		if fql.IsTop() {
 			if locationsUsed[appB.Location] {
 				continue

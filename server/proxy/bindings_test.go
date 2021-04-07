@@ -320,8 +320,8 @@ func TestGetBindingsCommands(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "ignored",
-							Label:       "ignored",
+							Location:    "base command location",
+							Label:       "base command label",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
@@ -384,8 +384,8 @@ func TestGetBindingsCommands(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "ignored",
-							Label:       "ignored",
+							Location:    "app2 base command location",
+							Label:       "app2 base command label",
 							Icon:        "app2 base command icon",
 							Hint:        "app2 base command hint",
 							Description: "app2 base command description",
@@ -411,8 +411,8 @@ func TestGetBindingsCommands(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "app1",
-					Label:       "app1",
+					Location:    "base command location",
+					Label:       "base command label",
 					Icon:        "base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
@@ -460,8 +460,8 @@ func TestGetBindingsCommands(t *testing.T) {
 				},
 				{
 					AppID:       apps.AppID("app2"),
-					Location:    "app2",
-					Label:       "app2",
+					Location:    "app2 base command location",
+					Label:       "app2 base command label",
 					Icon:        "app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
@@ -509,8 +509,8 @@ func TestDuplicateCommand(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "",
-							Label:       "",
+							Location:    "base command location",
+							Label:       "base command label",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
@@ -556,8 +556,8 @@ func TestDuplicateCommand(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "app1",
-					Label:       "app1",
+					Location:    "base command location",
+					Label:       "base command label",
 					Icon:        "base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
