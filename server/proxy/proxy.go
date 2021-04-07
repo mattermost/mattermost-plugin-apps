@@ -18,19 +18,26 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
+func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
 	if creq.Context == nil || creq.Context.AppID == "" {
-		return apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+		return apps.NewProxyCallResponse(resp, nil)
 	}
 	creq.Context.ActingUserID = actingUserID
 
 	app, err := p.store.App.Get(creq.Context.AppID)
+
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 
 	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
@@ -38,12 +45,15 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	clone := *creq
 	clone.Context = cc
 
-	return upstream.Call(up, &clone)
+	callResponse := upstream.Call(up, &clone)
+
+	proxyCallResponse := apps.NewProxyCallResponse(callResponse, metadata)
+	return proxyCallResponse
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {

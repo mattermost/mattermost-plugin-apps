@@ -32,7 +32,7 @@ type Proxy struct {
 }
 
 type Service interface {
-	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse
+	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
 	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
