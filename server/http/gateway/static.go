@@ -11,7 +11,9 @@ import (
 )
 
 func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
-	if appIDVar(req) == "" {
+	appID := appIDVar(req)
+
+	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
@@ -25,7 +27,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID,
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := g.proxy.GetAsset(appIDVar(req), assetName)
+	body, status, err := g.proxy.GetAsset(appID, assetName)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
