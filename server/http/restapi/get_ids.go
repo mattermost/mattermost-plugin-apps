@@ -14,7 +14,7 @@ func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	b, _ := json.Marshal(ids)
-	w.Write(b)
+	_, _ = w.Write(b)
 }
 
 func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request) {
@@ -26,5 +26,5 @@ func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	b, _ := json.Marshal(ids)
-	w.Write(b)
+	_, _ = w.Write(b)
 }

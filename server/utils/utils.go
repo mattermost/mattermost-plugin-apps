@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -59,4 +60,9 @@ func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.S
 		return nil, NewUnauthorizedError("user ID mismatch")
 	}
 	return session, nil
+}
+
+func DumpObject(c interface{}) {
+	b, _ := json.MarshalIndent(c, "", "    ")
+	fmt.Printf("%s\n", string(b))
 }
