@@ -62,6 +62,7 @@ func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.S
 	return session, nil
 }
 
+// DumpObject pretty prints any object to the standard output. Only used for debug.
 func DumpObject(c interface{}) {
 	b, _ := json.MarshalIndent(c, "", "    ")
 	fmt.Printf("%s\n", string(b))
