@@ -39,6 +39,10 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleSubscribe).Methods("POST")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, a.handleUnsubscribe).Methods("POST")
 
+	// Bot and OAuthApps checks
+	subrouter.HandleFunc(mmclient.PathBotIDs, a.handleGetBotIDs).Methods("GET")
+	subrouter.HandleFunc(mmclient.PathOAuthAppIDs, a.handleGetOAuthAppIDs).Methods("GET")
+
 	// KV APIs
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", a.kvGet).Methods("GET")
 	subrouter.HandleFunc(mmclient.PathKV+"/{key}", a.kvGet).Methods("GET")
