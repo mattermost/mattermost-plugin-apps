@@ -10,7 +10,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	upstream "github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	md "github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -35,18 +34,6 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
-}
-
-// AddBuiltinUpstream mocks base method.
-func (m *MockService) AddBuiltinUpstream(arg0 apps.AppID, arg1 upstream.Upstream) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddBuiltinUpstream", arg0, arg1)
-}
-
-// AddBuiltinUpstream indicates an expected call of AddBuiltinUpstream.
-func (mr *MockServiceMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBuiltinUpstream", reflect.TypeOf((*MockService)(nil).AddBuiltinUpstream), arg0, arg1)
 }
 
 // AddLocalManifest mocks base method.

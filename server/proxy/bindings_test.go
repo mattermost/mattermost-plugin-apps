@@ -23,8 +23,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
+	mock_detector "github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream_detector"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 )
 
 type bindingTestData struct {
@@ -601,7 +601,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	s.App = appStore
 
 	appList := map[apps.AppID]*apps.App{}
-	upstreams := map[apps.AppID]upstream.Upstream{}
+	upstreamDetector := mock_detector.NewMockDetector(ctrl)
 
 	for _, test := range testData {
 		appList[test.app.AppID] = test.app
@@ -615,7 +615,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
-		upstreams[test.app.Manifest.AppID] = up
+		upstreamDetector.EXPECT().UpstreamForApp(test.app).Return(up, nil)
 		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
@@ -624,7 +624,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	p := &Proxy{
 		mm:               mm,
 		store:            s,
-		builtinUpstreams: upstreams,
+		upstreamDetector: upstreamDetector,
 		conf:             conf,
 	}
 

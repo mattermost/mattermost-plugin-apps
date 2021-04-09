@@ -19,7 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream/detector"
 )
 
 func TestAppMetadataForClient(t *testing.T) {
@@ -65,7 +65,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
-	upstreams := map[apps.AppID]upstream.Upstream{}
+	upsDetector := detector.NewDetector(nil, "")
 	for _, app := range testApps {
 		cr := &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
@@ -75,14 +75,14 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
-		upstreams[app.Manifest.AppID] = up
+		upsDetector.AddBuiltinUpstream(app.Manifest.AppID, up)
 		appStore.EXPECT().Get(app.AppID).Return(app, nil)
 	}
 
 	p := &Proxy{
+		upstreamDetector: upsDetector,
 		mm:               mm,
 		store:            s,
-		builtinUpstreams: upstreams,
 		conf:             conf,
 	}
 

@@ -13,8 +13,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -35,7 +33,12 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
-	up, err := p.upstreamForApp(app)
+
+	if !p.AppIsEnabled(app) {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID)), metadata)
+	}
+
+	up, err := p.upstreamDetector.UpstreamForApp(app)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
@@ -75,13 +78,16 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if err != nil {
 			return err
 		}
+		if !p.AppIsEnabled(app) {
+			return errors.Errorf("%s is disabled", app.AppID)
+		}
 		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
 		if err != nil {
 			return err
 		}
 		callRequest.Context.Subject = subj
 
-		up, err := p.upstreamForApp(app)
+		up, err := p.upstreamDetector.UpstreamForApp(app)
 		if err != nil {
 			return err
 		}
@@ -103,7 +109,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamDetector.UpstreamForApp(app)
 	if err != nil {
 		return err
 	}
@@ -145,33 +151,13 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
-	up, err := p.upstreamForApp(app)
+	if !p.AppIsEnabled(app) {
+		return nil, http.StatusInternalServerError, errors.Errorf("%s is disabled", app.AppID)
+	}
+	up, err := p.upstreamDetector.UpstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
 	return up.GetStatic(path)
-}
-
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
-	if !p.AppIsEnabled(app) {
-		return nil, errors.Errorf("%s is disabled", app.AppID)
-	}
-	switch app.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewUpstream(app), nil
-
-	case apps.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		up := p.builtinUpstreams[app.AppID]
-		if up == nil {
-			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
-		}
-		return up, nil
-
-	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
-	}
 }

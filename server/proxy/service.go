@@ -15,14 +15,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/upstream/detector"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type Proxy struct {
 	callOnceMutex *cluster.Mutex
 
-	builtinUpstreams map[apps.AppID]upstream.Upstream
+	upstreamDetector detector.Detector
 
 	mm            *pluginapi.Client
 	conf          config.Service
@@ -51,15 +51,14 @@ type Service interface {
 	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
 	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
-
-	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
 
 var _ Service = (*Proxy)(nil)
 
 func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex) *Proxy {
+	upstreamDetector := detector.NewDetector(aws, s3AssetBucket)
 	return &Proxy{
-		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
+		upstreamDetector: upstreamDetector,
 		mm:               mm,
 		conf:             conf,
 		store:            store,
@@ -67,13 +66,6 @@ func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store
 		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
 	}
-}
-
-func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
-	if p.builtinUpstreams == nil {
-		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
-	}
-	p.builtinUpstreams[appID] = up
 }
 
 func WriteCallError(w http.ResponseWriter, statusCode int, err error) {

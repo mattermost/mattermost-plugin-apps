@@ -51,6 +51,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				creq := &apps.CallRequest{
 					Call:   *app.OnVersionChanged,
 					Values: map[string]interface{}{},
+					Context: &apps.Context{
+						AppID: app.AppID,
+					},
 				}
 				for k, v := range values {
 					creq.Values[k] = v
