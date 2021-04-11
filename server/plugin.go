@@ -20,7 +20,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
@@ -64,7 +63,6 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	mmconf := p.mm.Configuration.GetConfig()
 	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
@@ -99,9 +97,6 @@ func (p *Plugin) OnActivate() error {
 	}
 	// app store
 	appstore := p.store.App
-	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		appstore.InitBuiltin(builtin_hello.App())
-	}
 	appstore.Configure(conf)
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
@@ -113,9 +108,6 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
-	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
-	}
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 

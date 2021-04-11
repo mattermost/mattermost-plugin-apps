@@ -52,6 +52,10 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		app.Secret = secret
 	}
 
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+		app.WebhookSecret = model.NewId()
+	}
+
 	conf := p.conf.GetConfig()
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
@@ -85,12 +89,11 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
-	installRequest := &apps.CallRequest{
+	creq := &apps.CallRequest{
 		Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
 		Context: cc,
 	}
-
-	resp := p.Call(sessionID, actingUserID, installRequest)
+	resp := p.Call(sessionID, actingUserID, creq)
 	if resp.Type == apps.CallResponseTypeError {
 		return nil, "", errors.Wrap(resp, "install failed")
 	}

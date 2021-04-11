@@ -14,6 +14,17 @@ aliases:
     - "/go/pkg/mod"
 
 jobs:
+  check-mocks:
+    docker:
+      - image: circleci/golang:1.16.0
+    steps:
+      - checkout
+      - run:
+          name: Checking if generated mocks are up to date
+          command: |
+            make mock
+            git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
+
   test-e2e-postgres11:
     docker:
       - image: circleci/golang:1.16.0
@@ -58,12 +69,17 @@ workflows:
               only:
                 - master
     jobs:
+      - check-mocks
       - plugin-ci/lint
       - plugin-ci/test
       - test-e2e-postgres11
       - plugin-ci/build
   ci:
     jobs:
+      -  check-mocks:
+          filters:
+            tags:
+              only: /^v.*/
       - plugin-ci/lint:
           filters:
             tags:
@@ -86,6 +102,7 @@ workflows:
               only: master
           context: plugin-ci
           requires:
+            - check-mocks
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11
@@ -98,6 +115,7 @@ workflows:
               ignore: /.*/
           context: matterbuild-github-token
           requires:
+            - check-mocks
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11

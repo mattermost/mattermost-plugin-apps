@@ -16,6 +16,7 @@ import (
 
 type installDialogState struct {
 	AppID         apps.AppID
+	ChannelID     string
 	TeamID        string
 	LogRootPostID string
 	LogChannelID  string
@@ -25,7 +26,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	intro := md.Bold(
 		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
 	for _, permission := range m.RequestedPermissions {
-		intro += md.Markdownf("- %s\n", permission.Markdown())
+		intro += md.Markdownf("- %s\n", permission)
 	}
 	intro += md.Bold(
 		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", m.DisplayName)) + "\n"
@@ -67,8 +68,9 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	}
 
 	stateData, _ := json.Marshal(installDialogState{
-		AppID:  m.AppID,
-		TeamID: commandArgs.TeamId,
+		AppID:     m.AppID,
+		TeamID:    commandArgs.TeamId,
+		ChannelID: commandArgs.ChannelId,
 	})
 
 	return model.OpenDialogRequest{
@@ -134,12 +136,13 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cc := apps.Context{
-		TeamID: stateData.TeamID,
+	cc := &apps.Context{
+		TeamID:    stateData.TeamID,
+		ChannelID: stateData.ChannelID,
 	}
-	d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, &cc)
+	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, &cc, noUserConsentForOAuth2, secret)
+	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return

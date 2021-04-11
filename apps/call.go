@@ -51,9 +51,6 @@ type CallRequest struct {
 	// of significance.
 	Call
 
-	// Type of the request, see CallType type for more information.
-	Type CallType `json:"type"`
-
 	// Values are all values entered by the user.
 	Values map[string]interface{} `json:"values,omitempty"`
 
@@ -131,6 +128,25 @@ type CallResponse struct {
 
 	// Used in CallResponseTypeForm
 	Form *Form `json:"form,omitempty"`
+}
+
+// ProxyCallResponse contains everything the CallResponse struct contains, plus some additional
+// data for the client, such as information about the App's bot account.
+//
+// Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
+// decorate the response using the ProxyCallResponse to provide additional information.
+type ProxyCallResponse struct {
+	*CallResponse
+
+	// Used to provide info about the App to client, e.g. the bot user id
+	AppMetadata *AppMetadataForClient `json:"app_metadata"`
+}
+
+func NewProxyCallResponse(response *CallResponse, metadata *AppMetadataForClient) *ProxyCallResponse {
+	return &ProxyCallResponse{
+		response,
+		metadata,
+	}
 }
 
 func NewErrorCallResponse(err error) *CallResponse {

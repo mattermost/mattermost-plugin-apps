@@ -33,6 +33,9 @@ type App struct {
 	// Secret is used to issue JWT when sending requests to HTTP apps.
 	Secret string `json:"secret,omitempty"`
 
+	// WebhookSecret is used to validate an incoming webhook secret.
+	WebhookSecret string `json:"webhook_secret,omitempty"`
+
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
 	// instance.
@@ -79,6 +82,11 @@ type ListedApp struct {
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
+}
+
+type AppMetadataForClient struct {
+	BotUserID   string `json:"bot_user_id,omitempty"`
+	BotUsername string `json:"bot_username,omitempty"`
 }
 
 const (

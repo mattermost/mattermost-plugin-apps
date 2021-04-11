@@ -3,23 +3,19 @@ package gateway
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
-
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
-	vars := mux.Vars(req)
+	appID := appIDVar(req)
 
-	appID := vars["app_id"]
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
-	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, apps.AppID(appID))
+	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -29,9 +25,8 @@ func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, 
 }
 
 func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
-	vars := mux.Vars(req)
+	appID := appIDVar(req)
 
-	appID := vars["app_id"]
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
@@ -43,7 +38,7 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, apps.AppID(appID), urlValues)
+	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, appID, urlValues)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -59,7 +54,7 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 			</script>
 		</head>
 		<body>
-			<p>Completed connecting to Google. Please close this window.</p>
+			<p>Completed connecting your account. Please close this window.</p>
 		</body>
 	</html>
 	`))

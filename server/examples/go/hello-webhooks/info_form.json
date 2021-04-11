@@ -1,0 +1,13 @@
+{
+	"type": "form",
+	"form": {
+		"title": "Display the webhook URL",
+		"icon": "http://localhost:8080/static/icon.png",
+		"call": {
+			"path": "/info",
+			"expand": {
+				"app": "all"
+			}
+		}
+	}
+}
