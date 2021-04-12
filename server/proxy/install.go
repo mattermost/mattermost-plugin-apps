@@ -175,6 +175,7 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 			}
 		}
 	}
+
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
 	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {

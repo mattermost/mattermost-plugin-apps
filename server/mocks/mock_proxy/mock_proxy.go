@@ -79,10 +79,10 @@ func (mr *MockServiceMockRecorder) AppIsEnabled(arg0 interface{}) *gomock.Call {
 }
 
 // Call mocks base method.
-func (m *MockService) Call(arg0, arg1 string, arg2 *apps.CallRequest) *apps.CallResponse {
+func (m *MockService) Call(arg0, arg1 string, arg2 *apps.CallRequest) *apps.ProxyCallResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Call", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*apps.CallResponse)
+	ret0, _ := ret[0].(*apps.ProxyCallResponse)
 	return ret0
 }
 

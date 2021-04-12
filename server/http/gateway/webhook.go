@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"crypto/subtle"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -26,7 +27,7 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		httputils.WriteError(w, err)
 		return
 	}
-	if secret != app.WebhookSecret {
+	if subtle.ConstantTimeCompare([]byte(secret), []byte(app.WebhookSecret)) != 1 {
 		httputils.WriteError(w, utils.NewInvalidError("webhook secret mismatched"))
 		return
 	}
