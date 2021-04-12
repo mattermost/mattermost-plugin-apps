@@ -8,7 +8,7 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.5
 	github.com/gorilla/mux v1.8.0
-	github.com/mattermost/mattermost-plugin-api v0.0.15-0.20210303034931-22355254f0ea
+	github.com/mattermost/mattermost-plugin-api v0.0.15-0.20210412182722-d9da2519fbdb
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210412025446-e37e902ddf33
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
@@ -18,5 +18,3 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
 	google.golang.org/api v0.42.0
 )
-
-replace github.com/mattermost/mattermost-server/v5 => github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210412025446-e37e902ddf33
