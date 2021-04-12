@@ -67,6 +67,14 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionUserJoinedChannelNotification,
 				apps.PermissionActAsUser,
 				apps.PermissionActAsBot,
+				apps.PermissionActAsAdmin,
+			},
+			OnInstall: &apps.Call{
+				Path: "/install",
+				Expand: &apps.Expand{
+					AdminAccessToken: apps.ExpandAll,
+					App:              apps.ExpandAll,
+				},
 			},
 			RequestedLocations: apps.Locations{
 				apps.LocationChannelHeader,
