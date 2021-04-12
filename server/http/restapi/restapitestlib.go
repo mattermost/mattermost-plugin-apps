@@ -59,7 +59,7 @@ func Setup(t testing.TB) *TestHelper {
 	th.LocalClientPP = th.CreateLocalClient("TODO")
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, _, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
 	require.Nil(t, err)
 
 	rtoken, _ := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
