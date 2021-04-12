@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-type installDialogState struct {
+type InstallDialogState struct {
 	AppID         apps.AppID
 	ChannelID     string
 	TeamID        string
@@ -67,7 +67,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 		})
 	}
 
-	stateData, _ := json.Marshal(installDialogState{
+	stateData, _ := json.Marshal(InstallDialogState{
 		AppID:     m.AppID,
 		TeamID:    commandArgs.TeamId,
 		ChannelID: commandArgs.ChannelId,
@@ -129,7 +129,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	v = dialogRequest.Submission["secret"]
 	secret, _ := v.(string)
 
-	stateData := installDialogState{}
+	stateData := InstallDialogState{}
 	err = json.Unmarshal([]byte(dialogRequest.State), &stateData)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err)

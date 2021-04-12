@@ -1,3 +1,5 @@
+// +build !app
+
 package aws
 
 import (

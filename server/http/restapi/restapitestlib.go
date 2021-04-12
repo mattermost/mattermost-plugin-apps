@@ -1,6 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
-// +build e2e
+// +build e2e app
 
 package restapi
 
@@ -32,6 +32,7 @@ type TestHelper struct {
 	SystemAdminClientPP *mmclient.ClientPP
 	BotClientPP         *mmclient.ClientPP
 	LocalClientPP       *mmclient.ClientPP
+	Client              *mmclient.Client
 }
 
 func (th *TestHelper) TearDown() {
@@ -43,15 +44,21 @@ func Setup(t testing.TB) *TestHelper {
 
 	serverTestHelper := api4.Setup(t)
 	serverTestHelper.InitBasic()
+	serverTestHelper.InitLogin()
+
+	url := fmt.Sprintf("http://localhost:%v", serverTestHelper.App.Srv().ListenAddr.Port)
 
 	// enable bot creation by default
 	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
-		*cfg.ServiceSettings.SiteURL = "http://localhost:8065"
+		*cfg.ServiceSettings.EnableOAuthServiceProvider = true
+		*cfg.ServiceSettings.EnableUserAccessTokens = true
+		*cfg.ServiceSettings.SiteURL = url
 	})
 
 	th.ServerTestHelper = serverTestHelper
 
+	th.Client = mmclient.NewClient(th.ServerTestHelper.SystemAdminUser.Id, th.ServerTestHelper.SystemAdminClient.AuthToken, url)
 	th.ClientPP = th.CreateClientPP()
 	th.SystemAdminClientPP = th.CreateClientPP()
 	th.SystemAdminClientPP.AuthToken = th.ServerTestHelper.SystemAdminClient.AuthToken

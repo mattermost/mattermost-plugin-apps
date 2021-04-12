@@ -1,6 +1,6 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
-// +build !e2e
+// +build !e2e,!app
 
 package httputils
 

@@ -254,6 +254,13 @@ test-e2e: dist
 	@echo Running e2e tests
 	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e $(GO_PACKAGES)
 
+.PHONY: test-app-e2e
+test-app-e2e: dist
+	@echo Running app
+	LOCAL=true $(shell pwd)/tests/mattermost-app-test http://localhost:3000 :3000 &
+	APPS_INVOKE_AWS_ACCESS_KEY=test APPS_INVOKE_AWS_SECRET_KEY=test PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=app $(GO_PACKAGES)
+	pkill mattermost-app-test
+
 ## Creates a coverage report for the server code.
 .PHONY: coverage
 coverage: webapp/node_modules

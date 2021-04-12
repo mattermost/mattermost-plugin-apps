@@ -112,6 +112,9 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 }
 
 func (s *service) StoreConfig(sc StoredConfig) error {
+	if strings.HasPrefix(*s.mattermostConfig.ServiceSettings.SiteURL, "http://localhost:") {
+		return nil
+	}
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
 	err := s.Reconfigure(sc)
 	if err != nil {

@@ -195,3 +195,26 @@ func (c *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
 
 	return channel, nil
 }
+
+func (client *Client) ExecuteCommand(channelID, command string) (*model.CommandResponse, error) {
+	commandResponse, res := client.Client4.ExecuteCommand(channelID, command)
+	if res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return nil, res.Error
+		}
+		return nil, fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	return commandResponse, nil
+}
+
+func (client *Client) GetChannelID() (string, error) {
+	channels, res := client.Client4.GetAllChannels(0, 1, "")
+	if res.StatusCode != http.StatusOK {
+		if res.Error != nil {
+			return "", res.Error
+		}
+		return "", fmt.Errorf("returned with status %d", res.StatusCode)
+	}
+	channel := (*channels)[0]
+	return channel.Id, nil
+}

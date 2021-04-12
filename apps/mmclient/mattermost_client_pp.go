@@ -11,6 +11,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -235,4 +237,48 @@ func (c *ClientPP) apipath(p string) string {
 
 func (c *ClientPP) kvpath(prefix, id string) string {
 	return c.apipath(path.Join("/kv", prefix, id))
+}
+
+func (c *ClientPP) SubmitDialog(dialogRequest model.SubmitDialogRequest) *model.Response {
+	b, _ := json.Marshal(dialogRequest)
+
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+config.InteractiveDialogPath+dialog.InstallPath, string(b)) // nolint:bodyclose
+	if appErr != nil {
+		return model.BuildErrorResponse(r, appErr)
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r)
+}
+
+func (c *ClientPP) GetBindings() ([]*apps.Binding, error) {
+	r, appErr := c.DoAPIGET(c.GetPluginRoute(AppsPluginName)+PathAPI+apps.DefaultBindings.Path, "") // nolint:bodyclose
+	if appErr != nil {
+		return nil, appErr
+	}
+	defer c.closeBody(r)
+	bindings := []*apps.Binding{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&bindings); err != nil {
+		return nil, err
+	}
+
+	return bindings, nil
+}
+
+func (c *ClientPP) Call(call *apps.CallRequest) (*apps.CallResponse, error) {
+	b, _ := json.Marshal(call)
+
+	r, appErr := c.DoAPIPOST(c.GetPluginRoute(AppsPluginName)+PathAPI+config.PathCall, string(b)) // nolint:bodyclose
+	if appErr != nil {
+		return nil, appErr
+	}
+	defer c.closeBody(r)
+	var resp *apps.CallResponse
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
