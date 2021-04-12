@@ -196,8 +196,8 @@ func (c *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
 	return channel, nil
 }
 
-func (client *Client) ExecuteCommand(channelID, command string) (*model.CommandResponse, error) {
-	commandResponse, res := client.Client4.ExecuteCommand(channelID, command)
+func (c *Client) ExecuteCommand(channelID, command string) (*model.CommandResponse, error) {
+	commandResponse, res := c.Client4.ExecuteCommand(channelID, command)
 	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return nil, res.Error
@@ -207,8 +207,8 @@ func (client *Client) ExecuteCommand(channelID, command string) (*model.CommandR
 	return commandResponse, nil
 }
 
-func (client *Client) GetChannelID() (string, error) {
-	channels, res := client.Client4.GetAllChannels(0, 1, "")
+func (c *Client) GetChannelID() (string, error) {
+	channels, res := c.Client4.GetAllChannels(0, 1, "")
 	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return "", res.Error
