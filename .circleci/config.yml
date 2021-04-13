@@ -297,7 +297,10 @@ workflows:
             tags:
               only: /^v.*/
       - e2e-cypress-tests-pinned
-      - e2e-cypress-tests-master
+      - e2e-cypress-tests-master:
+          filters:
+            branches:
+              only: master
       - plugin-ci/build:
           filters:
             tags:
