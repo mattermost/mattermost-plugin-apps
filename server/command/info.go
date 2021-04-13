@@ -12,7 +12,7 @@ import (
 
 func (s *service) executeInfo(params *params) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
-	resp := md.Markdownf("Mattermost Cloud Apps plugin version: %s, "+
+	resp := md.Markdownf("Mattermost Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
 		conf.Version,
 		conf.BuildHashShort,
