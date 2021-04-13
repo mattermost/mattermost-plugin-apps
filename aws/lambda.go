@@ -4,7 +4,6 @@
 package aws
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 
@@ -14,11 +13,7 @@ import (
 )
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
-func (c *client) InvokeLambda(name, invocationType string, request interface{}) ([]byte, error) {
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error marshaling request payload")
-	}
+func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]byte, error) {
 
 	result, err := c.lambda.Invoke(&lambda.InvokeInput{
 		FunctionName:   aws.String(name),
