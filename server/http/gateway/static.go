@@ -44,9 +44,6 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, actingUserID,
 }
 
 func copyHeader(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
-	}
+	headerKey := "Content-Type"
+	dst.Add(headerKey, src.Get(headerKey))
 }
