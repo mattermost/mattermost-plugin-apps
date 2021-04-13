@@ -14,7 +14,6 @@ import (
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
 func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]byte, error) {
-
 	result, err := c.lambda.Invoke(&lambda.InvokeInput{
 		FunctionName:   aws.String(name),
 		InvocationType: aws.String(invocationType),
