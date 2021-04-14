@@ -176,6 +176,19 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 		}
 	}
 
+	user, res := client.GetUser(fullBot.UserId, "")
+	if user == nil {
+		return nil, nil, errors.Wrap(res.Error, "failed to get bot user")
+	}
+
+	if !strings.Contains(user.Roles, model.SYSTEM_POST_ALL_ROLE_ID) {
+		newRoles := user.Roles + " " + model.SYSTEM_POST_ALL_ROLE_ID
+		updated, res := client.UpdateUserRoles(fullBot.UserId, newRoles)
+		if !updated {
+			return nil, nil, errors.Wrap(res.Error, "failed to update bot user's roles")
+		}
+	}
+
 	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
 	if response.StatusCode != http.StatusOK {
 		if response.Error != nil {
