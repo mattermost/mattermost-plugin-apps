@@ -104,8 +104,7 @@ type Manifest struct {
 var DefaultOnInstall = &Call{
 	Path: "/install",
 	Expand: &Expand{
-		App:              ExpandAll,
-		AdminAccessToken: ExpandAll,
+		App: ExpandAll,
 	},
 }
 
