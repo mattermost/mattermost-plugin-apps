@@ -16,7 +16,7 @@ const manifestStr = `
   "name": "Cloud Apps",
   "description": "Cloud Apps Registry and API proxy.",
   "version": "0.1.0",
-  "min_server_version": "5.26.0",
+  "min_server_version": "5.35.0",
   "server": {
     "executables": {
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
