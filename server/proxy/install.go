@@ -194,7 +194,7 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 			}
 		}
 
-		token, response = client.CreateUserAccessToken(fullBot.UserId, fmt.Sprintf("Mattermost App Token for %s", manifest.DisplayName))
+		token, response = client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
 		if response.StatusCode != http.StatusOK {
 			if response.Error != nil {
 				return nil, nil, errors.Wrap(response.Error, "failed to create bot user's access token")
