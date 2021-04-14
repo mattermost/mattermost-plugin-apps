@@ -60,9 +60,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
 
-	var bot *model.Bot
-	var token *model.UserAccessToken
-	bot, token, err = p.ensureBot(m, cc.ActingUserID, asAdmin)
+	bot, token, err := p.ensureBot(m, cc.ActingUserID, asAdmin)
 	if err != nil {
 		return nil, "", err
 	}
