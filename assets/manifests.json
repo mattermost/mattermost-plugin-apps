@@ -1,5 +1,4 @@
 {
-    "awsHello": "file:example-aws-hello.json",
     "zendesk": "0.0.1",
     "com.mattermost.servicenow": "0.1.0"
 }
