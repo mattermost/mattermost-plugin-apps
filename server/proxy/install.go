@@ -176,29 +176,29 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 	var token *model.UserAccessToken
 	if manifest.RequestedPermissions.Contains(apps.PermissionActAsBot) {
 		user, response = client.GetUser(fullBot.UserId, "")
+		if response.Error != nil {
+			return nil, nil, errors.Wrap(response.Error, "failed to get bot user")
+		}
 		if user == nil {
-			if response.Error != nil {
-				return nil, nil, errors.Wrap(response.Error, "failed to get bot user")
-			}
 			return nil, nil, errors.Errorf("failed to get bot user, status code = %v", response.StatusCode)
 		}
 
 		if !strings.Contains(user.Roles, model.SYSTEM_POST_ALL_ROLE_ID) {
-			newRoles := user.Roles + " " + model.SYSTEM_POST_ALL_ROLE_ID
+			newRoles := fmt.Sprintf("%s %s", user.Roles, model.SYSTEM_POST_ALL_ROLE_ID)
 			updated, res := client.UpdateUserRoles(fullBot.UserId, newRoles)
+			if res.Error != nil {
+				return nil, nil, errors.Wrap(res.Error, "failed to update bot user's roles")
+			}
 			if !updated {
-				if res.Error != nil {
-					return nil, nil, errors.Wrap(res.Error, "failed to update bot user's roles")
-				}
 				return nil, nil, errors.Errorf("failed to update bot user's roles, status code = %v", res.StatusCode)
 			}
 		}
 
 		token, response = client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
+		if response.Error != nil {
+			return nil, nil, errors.Wrap(response.Error, "failed to create bot user's access token")
+		}
 		if response.StatusCode != http.StatusOK {
-			if response.Error != nil {
-				return nil, nil, errors.Wrap(response.Error, "failed to create bot user's access token")
-			}
 			return nil, nil, fmt.Errorf("failed to create bot user's access token, status code = %v", response.StatusCode)
 		}
 	}
