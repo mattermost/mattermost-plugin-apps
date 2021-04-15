@@ -1,10 +1,10 @@
 {
     "app_id": "awsHello",
-    "version": "v0_0_1",
+    "version": "0.0.1",
     "app_type": "aws_lambda",
     "display_name": "AWS Hello App display name",
     "description": "AWS Hello App description",
-    "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/server/examples/js/aws_hello",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/js/aws_hello",
     "requested_permissions": [
         "user_joined_channel_notification",
         "act_as_user",
