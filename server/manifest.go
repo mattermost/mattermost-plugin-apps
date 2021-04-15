@@ -13,9 +13,9 @@ var manifest *model.Manifest
 const manifestStr = `
 {
   "id": "com.mattermost.apps",
-  "name": "Cloud Apps",
-  "description": "Cloud Apps Registry and API proxy.",
-  "version": "0.1.0",
+  "name": "Apps",
+  "description": "Apps Registry and API proxy.",
+  "version": "0.2.0",
   "min_server_version": "5.26.0",
   "server": {
     "executables": {
@@ -26,7 +26,7 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "Provide keyID and secret to the AWS account, if left empty apps will be installed in the MM cloud",
+    "header": "",
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-apps).",
     "settings": []
   }

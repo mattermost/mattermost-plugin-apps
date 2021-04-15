@@ -72,7 +72,7 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
 		AutoComplete:     true,
-		AutoCompleteDesc: "Manage Cloud Apps",
+		AutoCompleteDesc: "Manage Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
 		AutocompleteData: autoComplete,
 	})
