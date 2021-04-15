@@ -24,7 +24,7 @@ type Context struct {
 	Subject Subject `json:"subject,omitempty"`
 
 	// BotUserID of the App.
-	BotUserID string `json:"bot_user_id,omitempty"`
+	BotUserID string `json:"bot_user_id"`
 
 	// ActingUserID is primarily (or exclusively?) for calls originating from
 	// user submissions.
