@@ -33,6 +33,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 		return
 	}
 
+	copyHeader(w.Header(), req.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteError(w, err)
@@ -42,4 +43,9 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 		httputils.WriteError(w, err)
 		return
 	}
+}
+
+func copyHeader(dst, src http.Header) {
+	headerKey := "Content-Type"
+	dst.Add(headerKey, src.Get(headerKey))
 }
