@@ -1,6 +1,6 @@
 # Hello World!
 
-Here is an example of an HTTP App ([source](/server/examples/go/helloworld)),
+Here is an example of an HTTP App ([source](/examples/go/helloworld)),
 written in Go and runnable on http://localhost:8080. 
 
 - It contains a `manifest.json`, declares itself an HTTP application that acts
@@ -15,7 +15,7 @@ written in Go and runnable on http://localhost:8080.
 To install "Hello, World" on a locally-running instance of Mattermost follow
 these steps (go 1.16 is required):
 ```sh
-cd .../mattermost-plugin-apps/server/examples/go/helloworld
+cd .../mattermost-plugin-apps/examples/go/helloworld
 go run . 
 ```
 

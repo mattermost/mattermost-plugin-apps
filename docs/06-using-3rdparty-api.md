@@ -7,7 +7,7 @@ systems. There are 2 examples here to illustrate the [OAuth2](#hello-oauth2) and
 
 ## Hello OAuth2!
 
-Here is an example of an HTTP App ([source](/server/examples/go/hello-oauth2)),
+Here is an example of an HTTP App ([source](/examples/go/hello-oauth2)),
 written in Go and runnable on http://localhost:8080. 
 
 - It contains a `manifest.json`, declares itself an HTTP application, requests
@@ -20,7 +20,7 @@ written in Go and runnable on http://localhost:8080.
 To install "Hello, OAuth2" on a locally-running instance of Mattermost follow
 these steps (go 1.16 is required):
 ```sh
-cd .../mattermost-plugin-apps/server/examples/go/hello-oauth2
+cd .../mattermost-plugin-apps/examples/go/hello-oauth2
 go run . 
 ```
 
@@ -50,7 +50,7 @@ Hello OAuth2! is an HTTP App, it requests the *permissions* to act as an Admin t
 	"display_name": "Hello, OAuth2!",
 	"app_type": "http",
 	"root_url": "http://localhost:8080",
-	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello-oauth2",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
 	"requested_permissions": [
 		"act_as_admin",
 		"act_as_user",
