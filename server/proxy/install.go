@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/clients"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
@@ -57,7 +58,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	}
 
 	conf := p.conf.GetConfig()
-	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
+	asAdmin := p.clients.NewClient4(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
 
 	bot, token, err := p.ensureBot(m, cc.ActingUserID, asAdmin)
@@ -100,7 +101,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	return app, resp.Markdown, nil
 }
 
-func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin *model.Client4) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin clients.Client4) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, response := asAdmin.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if response.StatusCode == http.StatusOK && response.Error == nil {
@@ -137,7 +138,7 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID s
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *model.Client4) (*model.Bot, *model.UserAccessToken, error) {
+func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client clients.Client4) (*model.Bot, *model.UserAccessToken, error) {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(manifest.AppID)),
 		DisplayName: manifest.DisplayName,

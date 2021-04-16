@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/clients"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
@@ -38,6 +39,7 @@ type Plugin struct {
 	aws  aws.Client
 
 	store       *store.Service
+	clients     clients.ClientService
 	appservices appservices.Service
 	proxy       proxy.Service
 
@@ -107,7 +109,9 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
+	p.clients = clients.NewClientService()
+
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, p.clients, assetBucket, mutex)
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 
