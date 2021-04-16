@@ -20,6 +20,13 @@ const (
 	// receive permissions to any resources, need to be added explicitly.
 	PermissionActAsBot Permission = "act_as_bot"
 
+	// PermissionPostAllAsBot means that the Bot User will be assigned the role
+	// of `system_post_all`. This makes it so the bot can create posts in direct message
+	// and group message channels. Without this permission, the bot must be explicitly added to
+	// public and private channels by the app, and the bot would not be able to create posts
+	// in direct message or group message channels.
+	PermissionPostAllAsBot Permission = "post_all_as_bot"
+
 	// PermissionActAsUser means that the app is allowed to connect users'
 	// OAuth2 accounts, and then use user API tokens.
 	PermissionActAsUser Permission = "act_as_user"

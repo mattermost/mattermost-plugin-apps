@@ -183,7 +183,7 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 			return nil, nil, errors.Errorf("failed to get bot user, status code = %v", response.StatusCode)
 		}
 
-		if !strings.Contains(user.Roles, model.SYSTEM_POST_ALL_ROLE_ID) {
+		if manifest.RequestedPermissions.Contains(apps.PermissionPostAllAsBot) && !strings.Contains(user.Roles, model.SYSTEM_POST_ALL_ROLE_ID) {
 			newRoles := fmt.Sprintf("%s %s", user.Roles, model.SYSTEM_POST_ALL_ROLE_ID)
 			updated, res := client.UpdateUserRoles(fullBot.UserId, newRoles)
 			if res.Error != nil {
