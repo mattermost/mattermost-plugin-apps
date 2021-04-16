@@ -2,7 +2,7 @@
     "id": "com.mattermost.apps",
     "name": "Apps",
     "description": "Apps Registry and API proxy.",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "min_server_version": "5.26.0",
     "server": {
         "executables": {
