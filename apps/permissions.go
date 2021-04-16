@@ -64,6 +64,8 @@ func (p Permission) String() md.MD {
 		m = "use Mattermost REST API as connected users"
 	case PermissionActAsBot:
 		m = "use Mattermost REST API as the app's bot user"
+	case PermissionPostAllAsBot:
+		m = "allow the bot user to post in any channel"
 	case PermissionRemoteOAuth2:
 		m = "use a remote (3rd party) OAuth2 and store secrets"
 	case PermissionRemoteWebhooks:
@@ -81,6 +83,7 @@ func (p Permissions) IsValid() error {
 		{PermissionRemoteWebhooks, PermissionActAsBot},
 		{PermissionRemoteOAuth2, PermissionActAsUser, PermissionActAsAdmin},
 		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
+		{PermissionPostAllAsBot, PermissionActAsBot},
 	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {
 			continue
