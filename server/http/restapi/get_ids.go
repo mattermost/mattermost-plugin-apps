@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request) {
+func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request, _, _ string) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {
@@ -17,7 +17,7 @@ func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(b)
 }
 
-func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request) {
+func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request, _, _ string) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {
