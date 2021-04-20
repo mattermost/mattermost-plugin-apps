@@ -168,9 +168,9 @@ func send(w http.ResponseWriter, req *http.Request) {
 	})
 
 	// Store new token if refreshed
-	tok, err := tokenSource.Token()
-	if err != nil && tok.AccessToken != token.AccessToken {
-		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, tok)
+	newToken, err := tokenSource.Token()
+	if err != nil && newToken.AccessToken != token.AccessToken {
+		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
 	}
 }
 
