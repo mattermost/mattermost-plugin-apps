@@ -58,7 +58,7 @@ func (p *Plugin) OnActivate() error {
 		Username:    config.BotUsername,
 		DisplayName: config.BotDisplayName,
 		Description: config.BotDescription,
-	}, pluginapi.ProfileImagePath("assets/mm-appsbot.png"))
+	}, pluginapi.ProfileImagePath("assets/profile.png"))
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
