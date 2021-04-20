@@ -17,6 +17,8 @@ This is a precursor to our "Mattermost Apps" and "Mattermost Apps Marketplace" w
 
 Join the "Integrations and Apps" channel to provide thoughts and feedback.
 
+[App developer documentation](./docs/index.md).
+
 ## Running the tests
 
 `mattermost-plugin-apps` has two types of tests: unit tests and end to end tests.
