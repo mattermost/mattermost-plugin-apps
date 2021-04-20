@@ -38,6 +38,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(config.PathCall, a.handleCall).Methods("POST")
 	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleSubscribe).Methods("POST")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, a.handleUnsubscribe).Methods("POST")
+	subrouter.HandleFunc(mmclient.PathRefreshBindings, a.handleRefreshBindings).Methods("POST")
 
 	// Bot and OAuthApps checks
 	subrouter.HandleFunc(mmclient.PathBotIDs,
