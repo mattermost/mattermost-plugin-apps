@@ -40,6 +40,9 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 
+	// Clear any ExpandedContext as it should always be set by an expander for security reasons
+	creq.Context.ExpandedContext = apps.ExpandedContext{}
+
 	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)

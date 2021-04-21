@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -47,6 +49,11 @@ func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled
+			marketApp.Labels = []model.MarketplaceLabel{{
+				Name:        "Experimental",
+				Description: "Apps are marked as experimental and not meant for production use. Please use with caution.",
+				URL:         "",
+			}}
 		}
 		out = append(out, marketApp)
 	}

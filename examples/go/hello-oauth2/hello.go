@@ -166,6 +166,12 @@ func send(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: md.MD(message),
 	})
+
+	// Store new token if refreshed
+	newToken, err := tokenSource.Token()
+	if err != nil && newToken.AccessToken != token.AccessToken {
+		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
+	}
 }
 
 func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
