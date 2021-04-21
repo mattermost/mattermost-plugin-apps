@@ -93,7 +93,8 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
 
-	enableOAuthServiceProvider := s.mm.Configuration.GetConfig().ServiceSettings.EnableOAuthServiceProvider
+	conf := s.conf.GetMattermostConfig()
+	enableOAuthServiceProvider := conf.ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
 		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` need to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
 	}
