@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-// EnableApp is never called. Context vetting needs to be done via p.CleanUserCallContext, either in EnableApp or its caller.
+// EnableApp is never called. Context vetting needs to be done by the caller via p.CleanUserCallContext, though we're temporarily doing it here instead.
 func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {
@@ -21,6 +21,11 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 
 	if !app.Disabled {
 		return "no change.", nil
+	}
+
+	cc, err = p.CleanUserCallContext(cc.ActingUserID, cc)
+	if err != nil {
+		return "", err
 	}
 
 	app.Disabled = false
@@ -54,6 +59,11 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 
 	if app.Disabled {
 		return "no change.", nil
+	}
+
+	cc, err = p.CleanUserCallContext(cc.ActingUserID, cc)
+	if err != nil {
+		return "", err
 	}
 
 	app.Disabled = true
