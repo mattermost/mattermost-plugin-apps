@@ -27,6 +27,7 @@ describe('Apps bindings - Channel header', () => {
             },
             ServiceSettings: {
                 EnableOAuthServiceProvider: true,
+                EnableBotAccountCreation: true,
                 EnableTesting: true,
                 EnableDeveloper: true,
             },
