@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -35,6 +37,11 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
+	cc, err := p.CleanUserCallContext(actingUserID, cc)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid call context for user")
+	}
+
 	allApps := store.SortApps(p.store.App.AsMap())
 
 	all := make([][]*apps.Binding, len(allApps))

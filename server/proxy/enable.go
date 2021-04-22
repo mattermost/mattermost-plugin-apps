@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
+// EnableApp is never called. Context vetting needs to be done via p.CleanUserCallContext, either in EnableApp or its caller.
 func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {
@@ -28,17 +29,21 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 		return "", err
 	}
 
-	resp := p.Call("", "", &apps.CallRequest{
-		Call:    *app.OnEnable,
-		Context: cc,
-	})
-	if resp.Type == apps.CallResponseTypeError {
-		p.mm.Log.Warn("OnEnable failed, app enabled anyway", "err", resp.Error(), "app_id", app.AppID)
+	var message md.MD
+	if app.OnEnable != nil {
+		resp := p.Call("", cc.ActingUserID, &apps.CallRequest{
+			Call:    *app.OnEnable,
+			Context: cc,
+		})
+		if resp.Type == apps.CallResponseTypeError {
+			p.mm.Log.Warn("OnEnable failed, app enabled anyway", "err", resp.Error(), "app_id", app.AppID)
+		}
+		message = resp.Markdown
 	}
 
 	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
 
-	return md.Markdownf("%s is now enabled:\n%s", app.DisplayName, resp.Markdown), nil
+	return md.Markdownf("%s is now enabled:\n%s", app.DisplayName, message), nil
 }
 
 func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
@@ -52,12 +57,17 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	}
 
 	app.Disabled = true
-	resp := p.Call("", "", &apps.CallRequest{
-		Call:    *app.OnDisable,
-		Context: cc,
-	})
-	if resp.Type == apps.CallResponseTypeError {
-		p.mm.Log.Warn("OnDisable failed, app disabled anyway", "err", resp.Error(), "app_id", app.AppID)
+
+	var message md.MD
+	if app.OnDisable != nil {
+		resp := p.Call("", cc.ActingUserID, &apps.CallRequest{
+			Call:    *app.OnDisable,
+			Context: cc,
+		})
+		if resp.Type == apps.CallResponseTypeError {
+			p.mm.Log.Warn("OnDisable failed, app disabled anyway", "err", resp.Error(), "app_id", app.AppID)
+		}
+		message = resp.Markdown
 	}
 
 	err = p.store.App.Save(app)
@@ -67,7 +77,7 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 
 	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
 
-	return md.Markdownf("%s is now disabled:\n%s", app.DisplayName, resp.Markdown), nil
+	return md.Markdownf("%s is now disabled:\n%s", app.DisplayName, message), nil
 }
 
 func (p *Proxy) AppIsEnabled(app *apps.App) bool {

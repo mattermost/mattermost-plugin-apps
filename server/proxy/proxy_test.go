@@ -39,14 +39,259 @@ func TestAppMetadataForClient(t *testing.T) {
 	p := newTestProxy(testApps, ctrl)
 	c := &apps.CallRequest{
 		Context: &apps.Context{
-			AppID: "app1",
+			ContextFromUserAgent: apps.ContextFromUserAgent{
+				AppID: "app1",
+			},
 		},
 	}
 
-	resp := p.Call("", "", c)
+	resp := p.Call("session_id", "acting_user_id", c)
 	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
+	})
+}
+
+func TestCleanUserCallContext(t *testing.T) {
+	t.Run("no context params passed", func(t *testing.T) {
+		testAPI := &plugintest.API{}
+		testAPI.On("LogDebug", mock.Anything).Return(nil)
+		mm := pluginapi.NewClient(testAPI)
+
+		p := Proxy{
+			mm: mm,
+		}
+
+		userID := "some_user_id"
+		cc := &apps.Context{
+			ContextFromUserAgent: apps.ContextFromUserAgent{},
+		}
+
+		out, err := p.CleanUserCallContext(userID, cc)
+		require.NotNil(t, err)
+		require.Nil(t, out)
+	})
+
+	t.Run("post id provided in context", func(t *testing.T) {
+		t.Run("user is a member of post's channel", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			postID := "some_post_id"
+			channelID := "some_channel_id"
+			teamID := "some_team_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					PostID:    postID,
+					ChannelID: "ignored_channel_id",
+					TeamID:    "ignored_team_id",
+				},
+			}
+
+			testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+				Id:        postID,
+				ChannelId: channelID,
+			}, nil)
+
+			testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+				ChannelId: channelID,
+				UserId:    userID,
+			}, nil)
+
+			testAPI.On("GetChannel", channelID).Return(&model.Channel{
+				Id:     channelID,
+				TeamId: teamID,
+			}, nil)
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.Nil(t, err)
+			require.NotNil(t, out)
+			expected := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					PostID:    postID,
+					ChannelID: channelID,
+					TeamID:    teamID,
+				},
+			}
+			require.Equal(t, expected, out)
+		})
+
+		t.Run("user is not a member of post's channel", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			postID := "some_post_id"
+			channelID := "some_channel_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					PostID:    postID,
+					ChannelID: "ignored_channel_id",
+					TeamID:    "ignored_team_id",
+				},
+			}
+
+			testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+				Id:        postID,
+				ChannelId: channelID,
+			}, nil)
+
+			testAPI.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
+				Message: "user is not a member of the specified channel",
+			})
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.NotNil(t, err)
+			require.Nil(t, out)
+		})
+	})
+
+	t.Run("channel id provided in context", func(t *testing.T) {
+		t.Run("user is a member of the channel", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			channelID := "some_channel_id"
+			teamID := "some_team_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					ChannelID: channelID,
+					TeamID:    "ignored_team_id",
+				},
+			}
+
+			testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+				ChannelId: channelID,
+				UserId:    userID,
+			}, nil)
+
+			testAPI.On("GetChannel", channelID).Return(&model.Channel{
+				Id:     channelID,
+				TeamId: teamID,
+			}, nil)
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.Nil(t, err)
+			require.NotNil(t, out)
+			expected := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					ChannelID: channelID,
+					TeamID:    teamID,
+				},
+			}
+			require.Equal(t, expected, out)
+		})
+
+		t.Run("user is not a member of the channel", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			channelID := "some_channel_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					ChannelID: channelID,
+					TeamID:    "ignored_team_id",
+				},
+			}
+
+			testAPI.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
+				Message: "user is not a member of the specified channel",
+			})
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.NotNil(t, err)
+			require.Nil(t, out)
+		})
+	})
+
+	t.Run("team id provided in context", func(t *testing.T) {
+		t.Run("user is a member of the team", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			teamID := "some_team_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					TeamID: teamID,
+				},
+			}
+
+			testAPI.On("GetTeamMember", teamID, userID).Return(&model.TeamMember{
+				TeamId: teamID,
+				UserId: userID,
+			}, nil)
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.Nil(t, err)
+			require.NotNil(t, out)
+			expected := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					TeamID: teamID,
+				},
+			}
+			require.Equal(t, expected, out)
+		})
+
+		t.Run("user is not a member of the team", func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testAPI.On("LogDebug", mock.Anything).Return(nil)
+			mm := pluginapi.NewClient(testAPI)
+
+			p := Proxy{
+				mm: mm,
+			}
+
+			userID := "some_user_id"
+			teamID := "some_team_id"
+
+			cc := &apps.Context{
+				ContextFromUserAgent: apps.ContextFromUserAgent{
+					TeamID: teamID,
+				},
+			}
+
+			testAPI.On("GetTeamMember", teamID, userID).Return(nil, &model.AppError{
+				Message: "user is not a member of the specified team",
+			})
+
+			out, err := p.CleanUserCallContext(userID, cc)
+			require.NotNil(t, err)
+			require.Nil(t, out)
+		})
 	})
 }
 

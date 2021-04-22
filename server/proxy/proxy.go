@@ -27,9 +27,12 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 
-	metadata := &apps.AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
+	var metadata *apps.AppMetadataForClient
+	if app != nil {
+		metadata = &apps.AppMetadataForClient{
+			BotUserID:   app.BotUserID,
+			BotUsername: app.BotUsername,
+		}
 	}
 
 	if err != nil {
@@ -54,9 +57,11 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	clone.Context = cc
 
 	callResponse := upstream.Call(up, &clone)
+	if callResponse.Type == "" {
+		callResponse.Type = apps.CallResponseTypeOK
+	}
 
-	proxyCallResponse := apps.NewProxyCallResponse(callResponse, metadata)
-	return proxyCallResponse
+	return apps.NewProxyCallResponse(callResponse, metadata)
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
@@ -177,4 +182,68 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	default:
 		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
 	}
+}
+
+func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Context, error) {
+	ctx := &apps.Context{
+		ContextFromUserAgent: cc.ContextFromUserAgent,
+	}
+
+	var postID, channelID, teamID string
+
+	switch {
+	case ctx.PostID != "":
+		postID = ctx.PostID
+
+		post, err := p.mm.Post.GetPost(postID)
+		if err != nil {
+			return nil, err
+		}
+
+		channelID = post.ChannelId
+
+		_, err = p.mm.Channel.GetMember(channelID, userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
+		}
+
+		c, err := p.mm.Channel.Get(channelID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
+		}
+
+		teamID = c.TeamId
+
+	case ctx.ChannelID != "":
+		channelID = ctx.ChannelID
+
+		_, err := p.mm.Channel.GetMember(ctx.ChannelID, userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, ctx.ChannelID)
+		}
+
+		c, err := p.mm.Channel.Get(channelID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
+		}
+
+		teamID = c.TeamId
+
+	case ctx.TeamID != "":
+		teamID = ctx.TeamID
+
+		_, err := p.mm.Team.GetMember(teamID, userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get team membership. user=%v team=%v", userID, teamID)
+		}
+
+	default:
+		return nil, errors.Errorf("no user post, channel, or team context provided. user=%v", userID)
+	}
+
+	ctx.PostID = postID
+	ctx.ChannelID = channelID
+	ctx.TeamID = teamID
+
+	return ctx, nil
 }
