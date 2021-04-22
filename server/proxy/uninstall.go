@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -64,6 +63,6 @@ func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) e
 
 	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	p.dispatchRefreshBindingsEvent(actingUserID)
 	return nil
 }
