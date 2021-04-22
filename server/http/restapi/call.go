@@ -23,6 +23,8 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID
 		return
 	}
 
+	cc = a.conf.GetConfig().SetContextDefaults(cc)
+
 	call.Context = cc
 	res := a.proxy.Call(sessionID, actingUserID, call)
 	httputils.WriteJSON(w, res)

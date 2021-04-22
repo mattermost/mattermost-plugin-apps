@@ -68,12 +68,12 @@ func TestCleanUserCallContext(t *testing.T) {
 		}
 
 		out, err := p.CleanUserCallContext(userID, cc)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, out)
 	})
 
 	t.Run("post id provided in context", func(t *testing.T) {
-		t.Run("user is a member of post's channel", func(t *testing.T) {
+		t.Run("user is a member of the post's channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
 			mm := pluginapi.NewClient(testAPI)
@@ -111,7 +111,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			}, nil)
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, out)
 			expected := &apps.Context{
 				ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -123,7 +123,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			require.Equal(t, expected, out)
 		})
 
-		t.Run("user is not a member of post's channel", func(t *testing.T) {
+		t.Run("user is not a member of the post's channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
 			mm := pluginapi.NewClient(testAPI)
@@ -154,7 +154,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.NotNil(t, err)
+			require.Error(t, err, "user is not a member of the specified channel")
 			require.Nil(t, out)
 		})
 	})
@@ -191,7 +191,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			}, nil)
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, out)
 			expected := &apps.Context{
 				ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -226,7 +226,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.NotNil(t, err)
+			require.Error(t, err, "user is not a member of the specified channel")
 			require.Nil(t, out)
 		})
 	})
@@ -256,7 +256,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			}, nil)
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, out)
 			expected := &apps.Context{
 				ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -289,7 +289,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.NotNil(t, err)
+			require.Error(t, err, "user is not a member of the specified team")
 			require.Nil(t, out)
 		})
 	})
