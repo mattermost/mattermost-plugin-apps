@@ -89,6 +89,9 @@ func TestCleanUserCallContext(t *testing.T) {
 
 			cc := &apps.Context{
 				ContextFromUserAgent: apps.ContextFromUserAgent{
+					AppID:     "app1",
+					UserAgent: "webapp",
+					Location:  "/command",
 					PostID:    postID,
 					ChannelID: "ignored_channel_id",
 					TeamID:    "ignored_team_id",
@@ -115,6 +118,9 @@ func TestCleanUserCallContext(t *testing.T) {
 			require.NotNil(t, out)
 			expected := &apps.Context{
 				ContextFromUserAgent: apps.ContextFromUserAgent{
+					AppID:     "app1",
+					UserAgent: "webapp",
+					Location:  "/command",
 					PostID:    postID,
 					ChannelID: channelID,
 					TeamID:    teamID,
@@ -293,6 +299,146 @@ func TestCleanUserCallContext(t *testing.T) {
 			require.Nil(t, out)
 		})
 	})
+
+	t.Run("values not related to the user's context are removed", func(t *testing.T) {
+		testAPI := &plugintest.API{}
+		testAPI.On("LogDebug", mock.Anything).Return(nil)
+		mm := pluginapi.NewClient(testAPI)
+
+		p := Proxy{
+			mm: mm,
+		}
+
+		userID := "some_user_id"
+		postID := "some_post_id"
+		channelID := "some_channel_id"
+		teamID := "some_team_id"
+
+		cc := &apps.Context{
+			ContextFromUserAgent: apps.ContextFromUserAgent{
+				PostID:    postID,
+				ChannelID: "ignored_channel_id",
+				TeamID:    "ignored_team_id",
+			},
+			Subject:           "ignored_subject",
+			BotUserID:         "ignored_bot_id",
+			ActingUserID:      "ignored_acting_user_id",
+			UserID:            "ignored_user_id",
+			MattermostSiteURL: "ignored_site_url",
+			AppPath:           "ignored_app_path",
+			ExpandedContext: apps.ExpandedContext{
+				BotAccessToken:        "ignored_bot_access_token",
+				ActingUser:            &model.User{},
+				ActingUserAccessToken: "ignored_user_access_token",
+				AdminAccessToken:      "ignored_admin_access_token",
+				OAuth2:                apps.OAuth2Context{},
+				App:                   &apps.App{},
+				Channel:               &model.Channel{},
+				Mentioned:             []*model.User{{}},
+				Post:                  &model.Post{},
+				RootPost:              &model.Post{},
+				Team:                  &model.Team{},
+				User:                  &model.User{},
+			},
+		}
+
+		testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+			Id:        postID,
+			ChannelId: channelID,
+		}, nil)
+
+		testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+			ChannelId: channelID,
+			UserId:    userID,
+		}, nil)
+
+		testAPI.On("GetChannel", channelID).Return(&model.Channel{
+			Id:     channelID,
+			TeamId: teamID,
+		}, nil)
+
+		out, err := p.CleanUserCallContext(userID, cc)
+		require.NoError(t, err)
+		require.NotNil(t, out)
+		expected := &apps.Context{
+			ContextFromUserAgent: apps.ContextFromUserAgent{
+				PostID:    postID,
+				ChannelID: channelID,
+				TeamID:    teamID,
+			},
+		}
+		require.Equal(t, expected, out)
+	})
+}
+
+func TestCleanUserCallContextIgnoredValues(t *testing.T) {
+	testAPI := &plugintest.API{}
+	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	mm := pluginapi.NewClient(testAPI)
+
+	p := Proxy{
+		mm: mm,
+	}
+
+	userID := "some_user_id"
+	postID := "some_post_id"
+	channelID := "some_channel_id"
+	teamID := "some_team_id"
+
+	cc := &apps.Context{
+		ContextFromUserAgent: apps.ContextFromUserAgent{
+			PostID:    postID,
+			ChannelID: "ignored_channel_id",
+			TeamID:    "ignored_team_id",
+		},
+		Subject:           "ignored_subject",
+		BotUserID:         "ignored_bot_id",
+		ActingUserID:      "ignored_acting_user_id",
+		UserID:            "ignored_user_id",
+		MattermostSiteURL: "ignored_site_url",
+		AppPath:           "ignored_app_path",
+		ExpandedContext: apps.ExpandedContext{
+			BotAccessToken:        "ignored_bot_access_token",
+			ActingUser:            &model.User{},
+			ActingUserAccessToken: "ignored_user_access_token",
+			AdminAccessToken:      "ignored_admin_access_token",
+			OAuth2:                apps.OAuth2Context{},
+			App:                   &apps.App{},
+			Channel:               &model.Channel{},
+			Mentioned:             []*model.User{{}},
+			Post:                  &model.Post{},
+			RootPost:              &model.Post{},
+			Team:                  &model.Team{},
+			User:                  &model.User{},
+		},
+	}
+
+	testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+		Id:        postID,
+		ChannelId: channelID,
+	}, nil)
+
+	testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+		ChannelId: channelID,
+		UserId:    userID,
+	}, nil)
+
+	testAPI.On("GetChannel", channelID).Return(&model.Channel{
+		Id:     channelID,
+		TeamId: teamID,
+	}, nil)
+
+	out, err := p.CleanUserCallContext(userID, cc)
+	require.NoError(t, err)
+	require.NotNil(t, out)
+	expected := &apps.Context{
+		ContextFromUserAgent: apps.ContextFromUserAgent{
+			PostID:    postID,
+			ChannelID: channelID,
+			TeamID:    teamID,
+		},
+	}
+	require.Equal(t, expected, out)
 }
 
 func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
