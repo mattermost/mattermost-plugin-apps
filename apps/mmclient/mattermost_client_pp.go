@@ -27,10 +27,9 @@ const (
 	PathAPI = "/api/v1"
 
 	// Other sub-paths.
-	PathKV              = "/kv"
-	PathSubscribe       = "/subscribe"
-	PathUnsubscribe     = "/unsubscribe"
-	PathRefreshBindings = "/refresh_bindings"
+	PathKV          = "/kv"
+	PathSubscribe   = "/subscribe"
+	PathUnsubscribe = "/unsubscribe"
 
 	PathBotIDs      = "/bot-ids"
 	PathOAuthAppIDs = "/oauth-app-ids"
