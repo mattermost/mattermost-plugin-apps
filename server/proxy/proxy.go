@@ -189,15 +189,15 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 }
 
 func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Context, error) {
-	ctx := &apps.Context{
+	cc = &apps.Context{
 		ContextFromUserAgent: cc.ContextFromUserAgent,
 	}
 
 	var postID, channelID, teamID string
 
 	switch {
-	case ctx.PostID != "":
-		postID = ctx.PostID
+	case cc.PostID != "":
+		postID = cc.PostID
 
 		post, err := p.mm.Post.GetPost(postID)
 		if err != nil {
@@ -218,12 +218,12 @@ func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Con
 
 		teamID = c.TeamId
 
-	case ctx.ChannelID != "":
-		channelID = ctx.ChannelID
+	case cc.ChannelID != "":
+		channelID = cc.ChannelID
 
-		_, err := p.mm.Channel.GetMember(ctx.ChannelID, userID)
+		_, err := p.mm.Channel.GetMember(cc.ChannelID, userID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, ctx.ChannelID)
+			return nil, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, cc.ChannelID)
 		}
 
 		c, err := p.mm.Channel.Get(channelID)
@@ -233,8 +233,8 @@ func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Con
 
 		teamID = c.TeamId
 
-	case ctx.TeamID != "":
-		teamID = ctx.TeamID
+	case cc.TeamID != "":
+		teamID = cc.TeamID
 
 		_, err := p.mm.Team.GetMember(teamID, userID)
 		if err != nil {
@@ -245,9 +245,9 @@ func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Con
 		return nil, errors.Errorf("no post, channel, or team context provided. user=%v", userID)
 	}
 
-	ctx.PostID = postID
-	ctx.ChannelID = channelID
-	ctx.TeamID = teamID
+	cc.PostID = postID
+	cc.ChannelID = channelID
+	cc.TeamID = teamID
 
-	return ctx, nil
+	return cc, nil
 }
