@@ -31,7 +31,7 @@ func (a *restapi) handleGetBindingsHTTP(w http.ResponseWriter, req *http.Request
 }
 
 func (a *restapi) handleGetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
-	cc, err := a.proxy.CleanUserCallContext(actingUserID, cc)
+	cc, err := cleanUserCallContext(a.mm, actingUserID, cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid call context for user")
 	}
