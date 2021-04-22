@@ -242,7 +242,7 @@ func (p *Proxy) CleanUserCallContext(userID string, cc *apps.Context) (*apps.Con
 		}
 
 	default:
-		return nil, errors.Errorf("no user post, channel, or team context provided. user=%v", userID)
+		return nil, errors.Errorf("no post, channel, or team context provided. user=%v", userID)
 	}
 
 	ctx.PostID = postID
