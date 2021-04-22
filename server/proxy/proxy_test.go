@@ -154,7 +154,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Error(t, err, "user is not a member of the specified channel")
+			require.Error(t, err)
 			require.Nil(t, out)
 		})
 	})
@@ -226,7 +226,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Error(t, err, "user is not a member of the specified channel")
+			require.Error(t, err)
 			require.Nil(t, out)
 		})
 	})
@@ -289,7 +289,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			})
 
 			out, err := p.CleanUserCallContext(userID, cc)
-			require.Error(t, err, "user is not a member of the specified team")
+			require.Error(t, err)
 			require.Nil(t, out)
 		})
 	})

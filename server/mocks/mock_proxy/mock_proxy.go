@@ -92,6 +92,21 @@ func (mr *MockServiceMockRecorder) Call(arg0, arg1, arg2 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1, arg2)
 }
 
+// CleanUserCallContext mocks base method.
+func (m *MockService) CleanUserCallContext(arg0 string, arg1 *apps.Context) (*apps.Context, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanUserCallContext", arg0, arg1)
+	ret0, _ := ret[0].(*apps.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CleanUserCallContext indicates an expected call of CleanUserCallContext.
+func (mr *MockServiceMockRecorder) CleanUserCallContext(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanUserCallContext", reflect.TypeOf((*MockService)(nil).CleanUserCallContext), arg0, arg1)
+}
+
 // CompleteRemoteOAuth2 mocks base method.
 func (m *MockService) CompleteRemoteOAuth2(arg0, arg1 string, arg2 apps.AppID, arg3 map[string]interface{}) error {
 	m.ctrl.T.Helper()

@@ -23,7 +23,11 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
 		return apps.NewProxyCallResponse(resp, nil)
 	}
-	creq.Context.ActingUserID = actingUserID
+
+	if actingUserID != "" {
+		creq.Context.ActingUserID = actingUserID
+		creq.Context.UserID = actingUserID
+	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 
