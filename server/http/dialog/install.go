@@ -144,6 +144,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
+		d.mm.Log.Warn("Failed to install app", "app_id", cc.AppID, "error", err.Error())
 		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
