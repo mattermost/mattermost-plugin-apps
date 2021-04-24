@@ -1,6 +1,7 @@
 package apps
 
 type FieldType string
+type TextFieldSubtype string
 
 const (
 	// Text field. "subtype":"textarea" for multi-line text input (Modal only?).
@@ -22,6 +23,14 @@ const (
 
 	// A mattermost channel reference (~name).
 	FieldTypeChannel FieldType = "channel"
+
+	TextFieldSubtypeInput     TextFieldSubtype = "input"
+	TextFieldSubtypeTextarea  TextFieldSubtype = "textarea"
+	TextFieldSubtypeNumber    TextFieldSubtype = "number"
+	TextFieldSubtypeEmail     TextFieldSubtype = "email"
+	TextFieldSubtypeTelephone TextFieldSubtype = "tel"
+	TextFieldSubtypeURL       TextFieldSubtype = "url"
+	TextFieldSubtypePassword  TextFieldSubtype = "password"
 )
 
 type SelectOption struct {
@@ -38,6 +47,7 @@ type Field struct {
 
 	Type       FieldType `json:"type"`
 	IsRequired bool      `json:"is_required,omitempty"`
+	ReadOnly   bool      `json:"readonly,omitempty"`
 
 	// Present (default) value of the field
 	Value interface{} `json:"value,omitempty"`
@@ -72,7 +82,7 @@ type Field struct {
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
 	// Text props
-	TextSubtype   string `json:"subtype,omitempty"`
-	TextMinLength int    `json:"min_length,omitempty"`
-	TextMaxLength int    `json:"max_length,omitempty"`
+	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`
+	TextMinLength int              `json:"min_length,omitempty"`
+	TextMaxLength int              `json:"max_length,omitempty"`
 }
