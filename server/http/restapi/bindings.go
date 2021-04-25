@@ -7,10 +7,11 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetBindingsHTTP(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
+func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	q := req.URL.Query()
 	cc := &apps.Context{
 		ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -21,27 +22,19 @@ func (a *restapi) handleGetBindingsHTTP(w http.ResponseWriter, req *http.Request
 		},
 	}
 
-	bindings, err := a.handleGetBindings(sessionID, actingUserID, cc)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-
-	httputils.WriteJSON(w, bindings)
-}
-
-func (a *restapi) handleGetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
 	cc, err := cleanUserCallContext(a.mm, actingUserID, cc)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid call context for user")
+		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
+		return
 	}
 
 	cc = a.conf.GetConfig().SetContextDefaults(cc)
 
 	bindings, err := a.proxy.GetBindings(sessionID, actingUserID, cc)
 	if err != nil {
-		return nil, err
+		httputils.WriteError(w, err)
+		return
 	}
 
-	return bindings, nil
+	httputils.WriteJSON(w, bindings)
 }

@@ -1,9 +1,15 @@
 package restapi
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -345,11 +351,8 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	a := &restapi{
-		proxy: proxy,
-		conf:  conf,
-		mm:    mm,
-	}
+	router := mux.NewRouter()
+	Init(router, mm, conf, proxy, nil)
 
 	cc := &apps.Context{
 		ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -364,9 +367,28 @@ func TestHandleCallInvalidContext(t *testing.T) {
 		Message: "user is not a member of the specified team",
 	})
 
-	res, err := a.handleCall("some_session_id", "some_user_id", call)
-	require.Error(t, err)
-	require.Nil(t, res)
+	b := new(bytes.Buffer)
+	err := json.NewEncoder(b).Encode(call)
+	require.NoError(t, err)
+
+	u := "/api/v1/call"
+	req, err := http.NewRequest("POST", u, b)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+
+	req.Header.Add("Mattermost-User-Id", "some_user_id")
+	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	router.ServeHTTP(recorder, req)
+
+	resp := recorder.Result()
+	require.NotNil(t, resp)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	resBody, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.NotNil(t, b)
+	require.Contains(t, string(resBody), "user is not a member of the specified team")
 }
 
 func TestHandleCallValidContext(t *testing.T) {
@@ -378,11 +400,8 @@ func TestHandleCallValidContext(t *testing.T) {
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	a := &restapi{
-		proxy: proxy,
-		mm:    mm,
-		conf:  conf,
-	}
+	router := mux.NewRouter()
+	Init(router, mm, conf, proxy, nil)
 
 	cc := &apps.Context{
 		ContextFromUserAgent: apps.ContextFromUserAgent{
@@ -402,7 +421,21 @@ func TestHandleCallValidContext(t *testing.T) {
 
 	conf.EXPECT().GetConfig().Return(config.Config{})
 
-	res, err := a.handleCall("some_session_id", "some_user_id", call)
+	b := new(bytes.Buffer)
+	err := json.NewEncoder(b).Encode(call)
 	require.NoError(t, err)
-	require.NotNil(t, res)
+
+	u := "/api/v1/call"
+	req, err := http.NewRequest("POST", u, b)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+
+	req.Header.Add("Mattermost-User-Id", "some_user_id")
+	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	router.ServeHTTP(recorder, req)
+
+	resp := recorder.Result()
+	require.NotNil(t, resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
