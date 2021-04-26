@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	q := req.URL.Query()
 	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
 		ActingUserID: actingUserID,
@@ -19,9 +19,9 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, ac
 		UserID:       actingUserID,
 	})
 
-	bindings, err := a.proxy.GetBindings(apps.SessionToken(token), cc)
+	bindings, err := a.proxy.GetBindings(sessionID, actingID(req), cc)
 	if err != nil {
-		httputils.WriteInternalServerError(w, err)
+		httputils.WriteError(w, err)
 		return
 	}
 

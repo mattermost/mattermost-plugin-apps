@@ -17,11 +17,10 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/builtin_hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/http"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/http/gateway"
@@ -64,7 +63,6 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	mmconf := p.mm.Configuration.GetConfig()
 	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
@@ -99,23 +97,17 @@ func (p *Plugin) OnActivate() error {
 	}
 	// app store
 	appstore := p.store.App
-	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		appstore.InitBuiltin(builtin_hello.App())
-	}
 	appstore.Configure(conf)
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
 	assetBucket := apps.S3BucketNameWithDefaults("")
-	mutex, err := cluster.NewMutex(p.API, config.KeyClusterMutex)
+	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
 	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
-	if pluginapi.IsConfiguredForDevelopment(mmconf) {
-		p.proxy.AddBuiltinUpstream(builtin_hello.AppID, builtin_hello.New(p.mm))
-	}
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 
@@ -186,6 +178,16 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
+	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.GetConfig().BotUserID))
+	if err != nil {
+		p.mm.Log.Error("Error while checking if the message should be processed", "err", err.Error())
+		return
+	}
+
+	if !shouldProcessMessage {
+		return
+	}
+
 	_ = p.proxy.Notify(
 		p.newPostCreatedContext(post), apps.SubjectPostCreated)
 }

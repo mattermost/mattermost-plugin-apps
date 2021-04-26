@@ -2,12 +2,12 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
-	"github.com/pkg/errors"
 )
 
 func ToJSON(in interface{}) string {
@@ -38,9 +38,32 @@ func FindDir(dir string) (string, bool) {
 	return found, true
 }
 
-func EnsureSysadmin(mm *pluginapi.Client, userID string) error {
+func EnsureSysAdmin(mm *pluginapi.Client, userID string) error {
 	if !mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
-		return errors.Wrapf(ErrUnauthorized, "user must be a sysadmin")
+		return NewUnauthorizedError("user must be a sysadmin")
 	}
 	return nil
+}
+
+func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.Session, error) {
+	if actingUserID == "" {
+		return nil, ErrUnauthorized
+	}
+	if sessionID == "" {
+		return nil, NewUnauthorizedError("no user session")
+	}
+	session, err := mm.Session.Get(sessionID)
+	if err != nil {
+		return nil, NewUnauthorizedError(err)
+	}
+	if session.UserId != actingUserID {
+		return nil, NewUnauthorizedError("user ID mismatch")
+	}
+	return session, nil
+}
+
+// DumpObject pretty prints any object to the standard output. Only used for debug.
+func DumpObject(c interface{}) {
+	b, _ := json.MarshalIndent(c, "", "    ")
+	fmt.Printf("%s\n", string(b))
 }

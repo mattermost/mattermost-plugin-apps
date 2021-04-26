@@ -66,16 +66,26 @@ func (s *service) GetMattermostConfig() *model.Config {
 	s.lock.RUnlock()
 
 	if mmconf == nil {
-		mmconf = s.mm.Configuration.GetConfig()
-		s.lock.Lock()
-		s.mattermostConfig = mmconf
-		s.lock.Unlock()
+		mmconf = s.reloadMattermostConfig()
 	}
+
+	return mmconf
+}
+
+func (s *service) reloadMattermostConfig() *model.Config {
+	mmconf := s.mm.Configuration.GetConfig()
+
+	s.lock.Lock()
+	s.mattermostConfig = mmconf
+	s.lock.Unlock()
+
 	return mmconf
 }
 
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
-	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
+	mmconf := s.reloadMattermostConfig()
+
+	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
 	}
@@ -93,6 +103,11 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
+
+	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
+	if mmconf.FileSettings.MaxFileSize != nil {
+		newConfig.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
+	}
 
 	s.lock.Lock()
 	s.conf = &newConfig

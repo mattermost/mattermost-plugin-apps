@@ -5,9 +5,22 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
+// Where static assets are.
+const StaticFolder = "static"
+
+// Root Call path for incoming webhooks from remote (3rd party) systems. Each
+// webhook URL should be in the form:
+// "{PluginURL}/apps/{AppID}/webhook/{PATH}/.../?secret=XYZ", and it will invoke a
+// Call with "/webhook/{PATH}"."
+const PathWebhook = "/webhook"
+
 type Manifest struct {
+	// The AppID is a globally unique identifier that represents your app. IDs must be at least
+	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.
 	AppID   AppID      `json:"app_id"`
 	AppType AppType    `json:"app_type"`
 	Version AppVersion `json:"version"`
@@ -17,6 +30,14 @@ type Manifest struct {
 
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
+
+	// Callbacks
+
+	// Bindings must be implemented by the Apps to add any UX elements to the
+	// Mattermost UI. The default values for its fields are,
+	//  "path":"/bindings",
+	Bindings *Call `json:"bindings,omitempty"`
+
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
 	// display. The default values for its fields are,
@@ -38,14 +59,26 @@ type Manifest struct {
 	// explicitly provided in the manifest.
 	OnUninstall *Call `json:"on_uninstall,omitempty"`
 
-	// Bindings must be implemented by the Apps to add any UX elements to the
-	// Mattermost UI. The default values for its fields are,
-	//  "path":"/bindings",
-	Bindings *Call `json:"bindings,omitempty"`
-
 	// OnEnable, OnDisable are not yet supported
 	OnDisable *Call `json:"on_disable,omitempty"`
 	OnEnable  *Call `json:"on_enable,omitempty"`
+
+	// GetOAuth2ConnectURL is called when the App's "connect to 3rd party" link
+	// is clicked, to be redirected to the OAuth flow. It must return Data set
+	// to the remote OAuth2 redirect URL. A "state" string is created by the
+	// proxy, and is passed to the app as a value. The state is  a 1-time secret
+	// that is included in the connect URL, and will be used to validate OAuth2
+	// complete callback.
+	GetOAuth2ConnectURL *Call `json:"get_oauth2_connect_url,omitempty"`
+
+	// OnOAuth2Complete gets called upon successful completion of the remote
+	// (3rd party) OAuth2 flow, and after the "state" has already been
+	// validated. It gets passed the URL query as Values. The App should obtain
+	// the OAuth2 user token, and store it persistently for future use using
+	// mmclient.StoreOAuth2User.
+	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
+
+	// Requested Access
 
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
@@ -53,6 +86,8 @@ type Manifest struct {
 	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
+
+	// App type-specific fields
 
 	// For HTTP Apps all paths are relative to the RootURL.
 	HTTPRootURL string `json:"root_url,omitempty"`
@@ -66,21 +101,33 @@ type Manifest struct {
 	AWSLambda []AWSLambdaFunction `json:"aws_lambda,omitempty"`
 }
 
-const (
-	DefaultInstallCallPath  = "/install"
-	DefaultBindingsCallPath = "/bindings"
-)
-
-var DefaultInstallCall = &Call{
-	Path: DefaultInstallCallPath,
+var DefaultOnInstall = &Call{
+	Path: "/install",
 	Expand: &Expand{
-		App:              ExpandAll,
-		AdminAccessToken: ExpandAll,
+		App: ExpandAll,
 	},
 }
 
-var DefaultBindingsCall = &Call{
-	Path: DefaultBindingsCallPath,
+var DefaultBindings = &Call{
+	Path: "/bindings",
+}
+
+var DefaultGetOAuth2ConnectURL = &Call{
+	Path: "/oauth2/connect",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+	},
+}
+
+var DefaultOnOAuth2Complete = &Call{
+	Path: "/oauth2/complete",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+	},
 }
 
 func (m Manifest) IsValid() error {
@@ -88,6 +135,7 @@ func (m Manifest) IsValid() error {
 		m.AppID.IsValid,
 		m.Version.IsValid,
 		m.AppType.IsValid,
+		m.RequestedPermissions.IsValid,
 	} {
 		if err := f(); err != nil {
 			return err
@@ -98,12 +146,12 @@ func (m Manifest) IsValid() error {
 	case AppTypeHTTP:
 		_, err := url.Parse(m.HTTPRootURL)
 		if err != nil {
-			return errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL)
+			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
 		}
 
 	case AppTypeAWSLambda:
 		if len(m.AWSLambda) == 0 {
-			return errors.New("must provide at least 1 function in aws_lambda")
+			return utils.NewInvalidError("must provide at least 1 function in aws_lambda")
 		}
 		for _, l := range m.AWSLambda {
 			err := l.IsValid()
@@ -122,9 +170,11 @@ func ManifestFromJSON(data []byte) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = m.IsValid()
 	if err != nil {
 		return nil, err
 	}
+
 	return &m, nil
 }

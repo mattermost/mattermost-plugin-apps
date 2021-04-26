@@ -4,8 +4,10 @@
 package proxy
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 
@@ -16,27 +18,45 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
-func (p *Proxy) Call(debugSessionToken apps.SessionToken, c *apps.CallRequest) *apps.CallResponse {
-	app, err := p.store.App.Get(c.Context.AppID)
+func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
+	if creq.Context == nil || creq.Context.AppID == "" {
+		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
+		return apps.NewProxyCallResponse(resp, nil)
+	}
+	creq.Context.ActingUserID = actingUserID
+
+	app, err := p.store.App.Get(creq.Context.AppID)
+
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 
-	cc := p.conf.GetConfig().SetContextDefaultsForApp(c.Context, c.Context.AppID)
+	// Clear any ExpandedContext as it should always be set by an expander for security reasons
+	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, debugSessionToken)
-	cc, err = expander.ExpandForApp(app, c.Expand)
+	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
+
+	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
+	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
-	clone := *c
+	clone := *creq
 	clone.Context = cc
 
-	return upstream.Call(up, &clone)
+	callResponse := upstream.Call(up, &clone)
+
+	proxyCallResponse := apps.NewProxyCallResponse(callResponse, metadata)
+	return proxyCallResponse
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
@@ -81,6 +101,44 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	return nil
 }
 
+func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
+	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
+	}
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+
+	var datav interface{}
+	err = json.Unmarshal(data, &datav)
+	if err != nil {
+		// if the data can not be decoded as JSON, send it "as is", as a string.
+		datav = string(data)
+	}
+
+	// TODO: do we need to customize the Expand & State for the webhook Call?
+	creq := &apps.CallRequest{
+		Call: apps.Call{
+			Path: path.Join(apps.PathWebhook, webhookPath),
+		},
+		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
+			ActingUserID: app.BotUserID,
+		}),
+		Values: map[string]interface{}{
+			"data": datav,
+		},
+	}
+	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
+	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
+	if err != nil {
+		return err
+	}
+
+	return upstream.Notify(up, creq)
+}
+
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -112,11 +170,11 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	case apps.AppTypeBuiltin:
 		up := p.builtinUpstreams[app.AppID]
 		if up == nil {
-			return nil, errors.Errorf("builtin app not found: %s", app.AppID)
+			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
 		}
 		return up, nil
 
 	default:
-		return nil, errors.Errorf("not a valid app type: %s", app.AppType)
+		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
 	}
 }

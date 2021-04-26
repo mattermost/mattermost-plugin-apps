@@ -1,0 +1,39 @@
+{
+	"type": "ok",
+	"data": [
+		{
+			"location": "/command",
+			"bindings": [
+				{
+					"icon": "http://localhost:8080/static/icon.png",
+					"label": "hello-oauth2",
+					"description": "Hello remote (3rd party) OAuth2 App",
+					"hint": "[configure | connect | send]",
+					"bindings": [
+						{
+							"location": "configure",
+							"label": "configure",
+							"call": {
+								"path": "/configure"
+							}
+						},
+						{
+							"location": "connect",
+							"label": "connect",
+							"call": {
+								"path": "/connect"
+							}
+						},
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -13,7 +13,7 @@ import (
 )
 
 func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
-	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {
 		return "", err
 	}
@@ -28,7 +28,7 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 		return "", err
 	}
 
-	resp := p.Call("", &apps.CallRequest{
+	resp := p.Call("", "", &apps.CallRequest{
 		Call:    *app.OnEnable,
 		Context: cc,
 	})
@@ -42,7 +42,7 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 }
 
 func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
-	err := utils.EnsureSysadmin(p.mm, cc.ActingUserID)
+	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +52,7 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	}
 
 	app.Disabled = true
-	resp := p.Call("", &apps.CallRequest{
+	resp := p.Call("", "", &apps.CallRequest{
 		Call:    *app.OnDisable,
 		Context: cc,
 	})

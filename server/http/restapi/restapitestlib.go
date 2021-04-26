@@ -7,15 +7,14 @@ package restapi
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v5/api4"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
@@ -60,7 +59,7 @@ func Setup(t testing.TB) *TestHelper {
 	th.LocalClientPP = th.CreateLocalClient("TODO")
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, _, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
 	require.Nil(t, err)
 
 	rtoken, _ := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
@@ -86,7 +85,7 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"), "MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
 	// Install the PP and enable it
-	pluginBytes, err := ioutil.ReadFile(bundle)
+	pluginBytes, err := os.ReadFile(bundle)
 	require.NoError(t, err)
 	require.NotNil(t, pluginBytes)
 

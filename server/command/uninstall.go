@@ -19,7 +19,7 @@ func (s *service) executeUninstall(params *params) (*model.CommandResponse, erro
 
 	id := params.current[0]
 
-	err := s.proxy.UninstallApp(apps.AppID(id), apps.SessionToken(params.commandArgs.Session.Token), params.commandArgs.UserId)
+	err := s.proxy.UninstallApp(params.commandArgs.Session.Id, params.commandArgs.UserId, apps.AppID(id))
 	if err != nil {
 		return errorOut(params, err)
 	}

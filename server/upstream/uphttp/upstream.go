@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -46,10 +47,10 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 
 func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
 	if call == nil {
-		return nil, errors.New("empty call is not valid")
+		return nil, utils.NewInvalidError("empty call")
 	}
 	if len(call.Path) == 0 || call.Path[0] != '/' {
-		return nil, errors.Errorf("not a valid call path: %q", call.Path)
+		return nil, utils.NewInvalidError("invalid call path: %q", call.Path)
 	}
 	return u.post(call.Context.ActingUserID, u.rootURL+call.Path, call)
 }
@@ -91,7 +92,7 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 }
 
 func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticAssetsFolder, path)
+	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
 	/* #nosec G107 */
 	resp, err := http.Get(url) // nolint:bodyclose
 	if err != nil {
