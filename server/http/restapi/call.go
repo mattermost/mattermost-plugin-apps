@@ -27,7 +27,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		"app_id", call.Context.AppID,
 		"acting_user_id", call.Context.ActingUserID,
 		"type", res.Type,
-		"path", res.Call.Path,
+		"path", call.Path,
 	)
 
 	httputils.WriteJSON(w, res)
