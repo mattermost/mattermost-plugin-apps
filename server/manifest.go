@@ -15,7 +15,10 @@ const manifestStr = `
   "id": "com.mattermost.apps",
   "name": "Apps",
   "description": "Apps Registry and API proxy.",
-  "version": "0.3.0",
+  "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
+  "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.4.0",
+  "version": "0.4.0",
   "min_server_version": "5.26.0",
   "server": {
     "executables": {

@@ -39,9 +39,10 @@ type App struct {
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
 	// instance.
-	BotUserID      string `json:"bot_user_id,omitempty"`
-	BotUsername    string `json:"bot_username,omitempty"`
-	BotAccessToken string `json:"bot_access_token,omitempty"`
+	BotUserID        string `json:"bot_user_id,omitempty"`
+	BotUsername      string `json:"bot_username,omitempty"`
+	BotAccessToken   string `json:"bot_access_token,omitempty"`
+	BotAccessTokenID string `json:"bot_access_token_id,omitempty"`
 
 	// Trusted means that Mattermost will issue the Apps' users their tokens as
 	// needed, without asking for the user's consent.
