@@ -31,6 +31,9 @@ type Manifest struct {
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
 
+	// IconPath is a relative path in the static assets folder of an png image, which is used to represent the App.
+	IconPath string `json:"icon_path,omitempty"`
+
 	// Callbacks
 
 	// Bindings must be implemented by the Apps to add any UX elements to the

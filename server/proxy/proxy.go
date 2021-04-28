@@ -150,6 +150,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	app, err := p.store.App.Get(appID)
+	// app, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Cause(err) == utils.ErrNotFound {
