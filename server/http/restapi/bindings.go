@@ -3,11 +3,8 @@ package restapi
 import (
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
@@ -22,12 +19,7 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, se
 		},
 	}
 
-	cc, err := cleanUserCallContext(a.mm, actingUserID, cc)
-	if err != nil {
-		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
-		return
-	}
-
+	cc = cleanUserCallContext(a.mm, actingUserID, cc)
 	cc = a.conf.GetConfig().SetContextDefaults(cc)
 
 	bindings, err := a.proxy.GetBindings(sessionID, actingUserID, cc)
