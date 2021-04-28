@@ -56,19 +56,20 @@ const (
 // KV namespace. The use of '.' in the prefixes is to avoid conflicts with
 // base64 URL encoding that already uses '-' and '_'.
 const (
-	// KVAppPrefix is the Apps namespace. Short, maximize the app keyspace
+	// KVAppPrefix is the Apps namespace. Must be under 4 characters long.
 	KVAppPrefix = "kv."
 
 	// KVOAuth2Prefix is used to store OAuth2-related information (state,
-	// tokens)
+	// tokens). Prefixes that are used in hashkey must be no more than 4
+	// characters long.
 	KVOAuth2Prefix      = "o."
 	KVOAuth2StatePrefix = "s."
 
-	// KVSubPrefix is used for keys storing subscriptions.
-	KVSubPrefix = "sub."
-
 	// KVInstalledAppPrefix is used to store App records.
 	KVInstalledAppPrefix = "app."
+
+	// KVSubPrefix is used for keys storing subscriptions.
+	KVSubPrefix = "sub."
 
 	// KVLocalManifestPrefix is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man."

@@ -74,7 +74,7 @@ func TestOAuth2User(t *testing.T) {
 		Test1, Test2 string
 	}
 	entity := Entity{"test-1", "test-2"}
-	key := "o.irDEwsVnw27_BLcSdalBHw/0b5gbIzU3EJop1tKRix-tQ"
+	key := "o.M1>]Y&O9jL+k2lBKuDFA9aQ=</<B0k.Len6V#gQ?bE*:UQ"
 	data := `{"Test1":"test-1","Test2":"test-2"}`
 	// CreateState
 	testAPI.On("KVSetWithOptions", mock.Anything, mock.Anything, mock.Anything).Once().Run(func(args mock.Arguments) {

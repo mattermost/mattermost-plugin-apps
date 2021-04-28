@@ -4,10 +4,11 @@
 package store
 
 import (
-	"crypto/md5" // nolint:gosec
-	"encoding/base64"
+	"encoding/ascii85"
 	"fmt"
 	"path"
+
+	"golang.org/x/crypto/sha3"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -53,13 +54,7 @@ func (s *Service) hashkey(globalPrefix, namespace, prefix, id string) string {
 	if id == "" || namespace == "" {
 		return ""
 	}
-
-	namespacePrefixHash := md5.Sum([]byte(namespace + prefix)) // nolint:gosec
-	idHash := md5.Sum([]byte(id))                              // nolint:gosec
-	key := globalPrefix + path.Join(
-		base64.RawURLEncoding.EncodeToString(namespacePrefixHash[:]),
-		base64.RawURLEncoding.EncodeToString(idHash[:]))
-
+	key := hashkey(globalPrefix, namespace, prefix, id)
 	if len(key) > model.KEY_VALUE_KEY_MAX_RUNES {
 		s.mm.Log.Info(fmt.Sprintf("AppKV key truncated by %v characters", len(key)-model.KEY_VALUE_KEY_MAX_RUNES),
 			"namespace", namespace,
@@ -69,4 +64,20 @@ func (s *Service) hashkey(globalPrefix, namespace, prefix, id string) string {
 	}
 
 	return key
+}
+
+func hashkey(globalPrefix, namespace, prefix, id string) string {
+	namespacePrefixHash := make([]byte, 20)
+	sha3.ShakeSum128(namespacePrefixHash, []byte(namespace+prefix))
+
+	idHash := make([]byte, 16)
+	sha3.ShakeSum128(idHash, []byte(id))
+
+	encodedPrefix := make([]byte, ascii85.MaxEncodedLen(len(namespacePrefixHash)))
+	_ = ascii85.Encode(encodedPrefix, namespacePrefixHash)
+
+	encodedID := make([]byte, ascii85.MaxEncodedLen(len(idHash)))
+	_ = ascii85.Encode(encodedID, idHash)
+
+	return globalPrefix + path.Join(string(encodedPrefix), string(encodedID))
 }
