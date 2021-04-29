@@ -3,6 +3,8 @@ package gateway
 import (
 	"io"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -12,16 +14,19 @@ import (
 
 func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) {
 	appID := appIDVar(req)
-
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
 	vars := mux.Vars(req)
-	assetName := vars["name"]
+	assetName := path.Clean(vars["name"])
+	if assetName == "." || strings.Contains(assetName, "/..") {
+		httputils.WriteError(w, utils.NewInvalidError("bad path: %s", vars["name"]))
+		return
+	}
 	if assetName == "" {
-		httputils.WriteError(w, utils.NewInvalidError("asset name not specified"))
+		httputils.WriteError(w, utils.NewInvalidError("asset name is not specified"))
 		return
 	}
 
