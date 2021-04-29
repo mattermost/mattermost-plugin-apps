@@ -79,11 +79,11 @@ const (
 	// ephemeral state data.
 	KVOAuth2StatePrefix = ".o"
 
-	// KVInstalledAppPrefix is used to store App records.
-	KVInstalledAppPrefix = "app."
-
 	// KVSubPrefix is used for keys storing subscriptions.
 	KVSubPrefix = "sub."
+
+	// KVInstalledAppPrefix is used to store App records.
+	KVInstalledAppPrefix = "app."
 
 	// KVLocalManifestPrefix is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man."
