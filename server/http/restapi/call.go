@@ -22,5 +22,14 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		res.Type = apps.CallResponseTypeOK
 	}
 
+	a.mm.Log.Debug(
+		"Received call response",
+		"app_id", call.Context.AppID,
+		"acting_user_id", call.Context.ActingUserID,
+		"error", res.ErrorText,
+		"type", res.Type,
+		"path", call.Path,
+	)
+
 	httputils.WriteJSON(w, res)
 }
