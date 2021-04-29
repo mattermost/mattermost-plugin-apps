@@ -26,6 +26,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request) {
 		"Received call response",
 		"app_id", call.Context.AppID,
 		"acting_user_id", call.Context.ActingUserID,
+		"error", res.ErrorText,
 		"type", res.Type,
 		"path", call.Path,
 	)

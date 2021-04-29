@@ -94,12 +94,13 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	}
 
 	resp := p.Call(sessionID, actingUserID, bindingsRequest)
-	if resp == nil || resp.Type != apps.CallResponseTypeOK {
-		if resp != nil && resp.Type == apps.CallResponseTypeError {
-			logger.Debugf("Error getting bindings. Error: " + resp.Error())
-		} else {
-			logger.Debugf("Bindings response is nil or unexpected type.")
-		}
+	if resp == nil || (resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK) {
+		logger.Debugf("Bindings response is nil or unexpected type.")
+		return nil, nil
+	}
+
+	if resp.Type == apps.CallResponseTypeError {
+		logger.Debugf("Error getting bindings. Error: " + resp.Error())
 		return nil, nil
 	}
 
