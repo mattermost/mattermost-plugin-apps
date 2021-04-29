@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -13,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -21,42 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 )
-
-func TestHandleGetBindingsInvalidContext(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	proxy := mock_proxy.NewMockService(ctrl)
-	conf := mock_config.NewMockService(ctrl)
-
-	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
-
-	router := mux.NewRouter()
-	Init(router, mm, conf, proxy, nil)
-
-	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(nil, &model.AppError{
-		Message: "user is not a member of the specified team",
-	})
-
-	recorder := httptest.NewRecorder()
-	u := "/api/v1/bindings?team_id=some_team_id"
-	req, err := http.NewRequest("GET", u, nil)
-	require.NoError(t, err)
-
-	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
-	router.ServeHTTP(recorder, req)
-
-	resp := recorder.Result()
-	require.NotNil(t, resp)
-	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-	b, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.NotNil(t, b)
-	require.Contains(t, string(b), "user is not a member of the specified team")
-}
 
 func TestHandleGetBindingsValidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -71,24 +35,30 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	router := mux.NewRouter()
 	Init(router, mm, conf, proxy, nil)
 
-	cc := &apps.Context{
+	expected := &apps.Context{
 		ContextFromUserAgent: apps.ContextFromUserAgent{
-			TeamID: "some_team_id",
+			PostID:    "some_post_id",
+			ChannelID: "some_channel_id",
+			TeamID:    "some_team_id",
+			UserAgent: "webapp",
 		},
 	}
 
 	bindings := []*apps.Binding{{Location: apps.LocationCommand}}
 
-	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(&model.TeamMember{
-		TeamId: "some_team_id",
-		UserId: "some_user_id",
-	}, nil)
-
-	proxy.EXPECT().GetBindings("some_session_id", "some_user_id", cc).Return(bindings, nil)
+	proxy.EXPECT().GetBindings("some_session_id", "some_user_id", expected).Return(bindings, nil)
 	conf.EXPECT().GetConfig().Return(config.Config{})
 
+	query := url.Values{
+		"post_id":         {"some_post_id"},
+		"channel_id":      {"some_channel_id"},
+		"team_id":         {"some_team_id"},
+		"user_agent_type": {"webapp"},
+	}
+	q := query.Encode()
+
 	recorder := httptest.NewRecorder()
-	u := "/api/v1/bindings?team_id=some_team_id"
+	u := "/api/v1/bindings?" + q
 	req, err := http.NewRequest("GET", u, nil)
 	require.NoError(t, err)
 
