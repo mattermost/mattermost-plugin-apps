@@ -237,7 +237,7 @@ func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 
 **oauth2Complete** is called upon the successful completion (including the
 validation of the "state"). It is responsible for creating an OAuth2 token, and
-storing it in the Mattermost OAuth2 user store.
+storing it in the Mattermost OAuth2 user store. The connected user's bindings will be automatically refreshed when the OAuth2 process is complete.
 
 ```go
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {

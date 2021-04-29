@@ -90,7 +90,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 	return app, resp.Markdown, nil
 }
 

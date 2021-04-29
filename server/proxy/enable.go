@@ -4,10 +4,7 @@
 package proxy
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -36,7 +33,7 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 		p.mm.Log.Warn("OnEnable failed, app enabled anyway", "err", resp.Error(), "app_id", app.AppID)
 	}
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return md.Markdownf("%s is now enabled:\n%s", app.DisplayName, resp.Markdown), nil
 }
@@ -65,7 +62,7 @@ func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 		return "", err
 	}
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return md.Markdownf("%s is now disabled:\n%s", app.DisplayName, resp.Markdown), nil
 }
