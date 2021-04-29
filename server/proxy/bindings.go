@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/logger"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -171,4 +174,8 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 	}
 
 	return out
+}
+
+func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
+	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
 }
