@@ -21,7 +21,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 
 	vars := mux.Vars(req)
 	assetName := path.Clean(vars["name"])
-	if assetName == "." || strings.Contains(assetName, "/..") {
+	if assetName == "." || strings.HasPrefix(assetName, "../") {
 		httputils.WriteError(w, utils.NewInvalidError("bad path: %s", vars["name"]))
 		return
 	}
