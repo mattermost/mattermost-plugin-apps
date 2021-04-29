@@ -21,7 +21,7 @@ func Bindings() []*apps.Binding {
 				{
 					Location:    "send",
 					Label:       "Survey a user",
-					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+					Icon:        "https://github.com/mattermost/mattermost-plugin-apps/raw/master/assets/profile.png",
 					Hint:        "Send survey to a user",
 					Description: "Send a customized emotional response survey to a user",
 					Call:        modal,
@@ -51,7 +51,7 @@ func Bindings() []*apps.Binding {
 			Location: apps.LocationCommand,
 			Bindings: []*apps.Binding{
 				{
-					Icon:        "https://raw.githubusercontent.com/mattermost/mattermost-plugin-jira/master/assets/icon.svg",
+					Icon:        "https://github.com/mattermost/mattermost-plugin-apps/raw/master/assets/profile.png",
 					Description: "The Hello app!",
 					Hint:        "[message|manage]",
 					Bindings: []*apps.Binding{

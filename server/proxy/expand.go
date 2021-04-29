@@ -263,10 +263,15 @@ func stripApp(app *apps.App, level apps.ExpandLevel) *apps.App {
 		return nil
 	}
 
-	clone := *app
-	clone.Secret = ""
-	clone.MattermostOAuth2.ClientSecret = ""
-	clone.RemoteOAuth2 = apps.OAuth2App{}
+	clone := apps.App{
+		Manifest: apps.Manifest{
+			AppID:   app.AppID,
+			Version: app.Version,
+		},
+		WebhookSecret: app.WebhookSecret,
+		BotUserID:     app.BotUserID,
+		BotUsername:   app.BotUsername,
+	}
 
 	switch level {
 	case apps.ExpandAll, apps.ExpandSummary:
