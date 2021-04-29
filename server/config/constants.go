@@ -53,17 +53,31 @@ const (
 	PropUserAgent = "user_agent_type"
 )
 
-// KV namespace. The use of '.' in the prefixes is to avoid conflicts with
-// base64 URL encoding that already uses '-' and '_'.
+// KV namespace
+//
+// Keys starting with a '.' are reserved for app-specific keys in the "hashkey"
+// format. Hashkeys have the following format (see service_test.go#TestHashkey
+// for examples):
+//
+//  - global prefix of ".X" where X is exactly 1 byte (2 bytes)
+//  - bot user ID (26 bytes)
+//  - app-specific prefix, limited to 2 non-space ASCII characters, right-filled
+//   with ' ' to 2 bytes.
+//  - app-specific key hash: 16 bytes, ascii85 (20 bytes)
+//
+// All other keys must start with an ASCII letter. '.' is usually used as the
+// terminator since it is not used in the base64 representation.
 const (
-	// KVAppPrefix is the Apps namespace. Must be under 4 characters long.
-	KVAppPrefix = "kv."
+	// KVAppPrefix is the Apps global namespace.
+	KVAppPrefix = ".k"
 
-	// KVOAuth2Prefix is used to store OAuth2-related information (state,
-	// tokens). Prefixes that are used in hashkey must be no more than 4
-	// characters long.
-	KVOAuth2Prefix      = "o."
-	KVOAuth2StatePrefix = "s."
+	// KVUserPrefix is the global namespase used to store OAuth2 user
+	// records.
+	KVUserPrefix = ".u"
+
+	// KVOAuth2StatePrefix is the global namespase used to store OAuth2
+	// ephemeral state data.
+	KVOAuth2StatePrefix = ".o"
 
 	// KVInstalledAppPrefix is used to store App records.
 	KVInstalledAppPrefix = "app."

@@ -74,7 +74,7 @@ func TestOAuth2User(t *testing.T) {
 		Test1, Test2 string
 	}
 	entity := Entity{"test-1", "test-2"}
-	key := "o.M1>]Y&O9jL+k2lBKuDFA9aQ=</<B0k.Len6V#gQ?bE*:UQ"
+	key := ".ubotUserIDis26bytes90123456  <B0k.Len6V#gQ?bE*:UQ"
 	data := `{"Test1":"test-1","Test2":"test-2"}`
 	// CreateState
 	testAPI.On("KVSetWithOptions", mock.Anything, mock.Anything, mock.Anything).Once().Run(func(args mock.Arguments) {
@@ -82,12 +82,12 @@ func TestOAuth2User(t *testing.T) {
 		setData, _ := args.Get(1).([]byte)
 		require.Equal(t, data, string(setData))
 	}).Return(true, nil)
-	err := s.SaveUser("namespace-app-id", userID, &entity)
+	err := s.SaveUser("botUserIDis26bytes90123456", userID, &entity)
 	require.NoError(t, err)
 
 	testAPI.On("KVGet", key).Once().Return([]byte(data), nil)
 	r := Entity{}
-	err = s.GetUser("namespace-app-id", userID, &r)
+	err = s.GetUser("botUserIDis26bytes90123456", userID, &r)
 	require.NoError(t, err)
 	require.Equal(t, entity, r)
 }

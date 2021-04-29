@@ -5,9 +5,9 @@ package store
 
 import (
 	"encoding/ascii85"
-	"fmt"
-	"path"
+	"strings"
 
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -50,34 +50,63 @@ func NewService(mm *pluginapi.Client, conf config.Service) *Service {
 	return s
 }
 
-func (s *Service) hashkey(globalPrefix, namespace, prefix, id string) string {
-	if id == "" || namespace == "" {
-		return ""
-	}
-	key := hashkey(globalPrefix, namespace, prefix, id)
-	if len(key) > model.KEY_VALUE_KEY_MAX_RUNES {
-		s.mm.Log.Info(fmt.Sprintf("AppKV key truncated by %v characters", len(key)-model.KEY_VALUE_KEY_MAX_RUNES),
-			"namespace", namespace,
-			"prefix", prefix,
-			"id", id)
-		return key[:model.KEY_VALUE_KEY_MAX_RUNES]
+func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {
+	gns := []byte(globalNamespace)
+	b := []byte(botUserID)
+	k := []byte(key)
+
+	ns := []byte(appNamespace)
+	switch len(ns) {
+	case 0:
+		ns = []byte{' ', ' '}
+	case 1:
+		ns = []byte{ns[0], ' '}
+	case 2:
+		// nothing to do
+	default:
+		return "", errors.Errorf("prefix %q is longer than the limit of 2 ASCII characters", appNamespace)
 	}
 
-	return key
+	switch {
+	case len(k) == 0:
+		return "", errors.New("key must not be empty")
+	case len(b) != 26:
+		return "", errors.Errorf("botUserID %q must be exactly 26 ASCII characters", botUserID)
+	case len(gns) != 2 || gns[0] != '.':
+		return "", errors.Errorf("global prefix %q is not 2 ASCII characters starting with a '.'", globalNamespace)
+	}
+
+	hashed := hashkey(gns, b, ns, k)
+	if len(hashed) > model.KEY_VALUE_KEY_MAX_RUNES {
+		return "", errors.Errorf("hashed key is too long (%v bytes), global namespace: %q, botUserID: %q, app namespace: %q, key: %q",
+			len(hashed), globalNamespace, botUserID, appNamespace, key)
+	}
+	return hashed, nil
 }
 
-func hashkey(globalPrefix, namespace, prefix, id string) string {
-	namespacePrefixHash := make([]byte, 20)
-	sha3.ShakeSum128(namespacePrefixHash, []byte(namespace+prefix))
-
+func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 	idHash := make([]byte, 16)
-	sha3.ShakeSum128(idHash, []byte(id))
-
-	encodedPrefix := make([]byte, ascii85.MaxEncodedLen(len(namespacePrefixHash)))
-	_ = ascii85.Encode(encodedPrefix, namespacePrefixHash)
-
+	sha3.ShakeSum128(idHash, id)
 	encodedID := make([]byte, ascii85.MaxEncodedLen(len(idHash)))
 	_ = ascii85.Encode(encodedID, idHash)
 
-	return globalPrefix + path.Join(string(encodedPrefix), string(encodedID))
+	key := make([]byte, 0, model.KEY_VALUE_KEY_MAX_RUNES)
+	key = append(key, globalNamespace...)
+	key = append(key, botUserID...)
+	key = append(key, appNamespace...)
+	key = append(key, encodedID...)
+	return string(key)
+}
+
+func parseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
+	k := []byte(key)
+	if len(k) != model.KEY_VALUE_KEY_MAX_RUNES {
+		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KEY_VALUE_KEY_MAX_RUNES)
+	}
+	gns := k[0:2]
+	b := k[2:28]
+	ns := k[28:30]
+	h := k[30:50]
+
+	return string(gns), string(b), strings.TrimSpace(string(ns)), string(h), nil
 }
