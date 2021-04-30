@@ -152,7 +152,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
 			var v interface{}
-			err := e.store.OAuth2.GetUser(app.AppID, e.ActingUserID, &v)
+			err := e.store.OAuth2.GetUser(app.BotUserID, e.ActingUserID, &v)
 			if err != nil && errors.Cause(err) != utils.ErrNotFound {
 				return nil, errors.Wrapf(err, "failed to expand OAuth user %s", e.UserID)
 			}
