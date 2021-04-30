@@ -170,27 +170,6 @@ func (p *Proxy) ensureBot(app *apps.App, actingUserID string, client *model.Clie
 	app.BotUsername = fullBot.Username
 
 	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) {
-		if user == nil {
-			user, response = client.GetUser(fullBot.UserId, "")
-			if response.Error != nil {
-				return errors.Wrap(response.Error, "failed to get bot user")
-			}
-			if user == nil {
-				return errors.Errorf("failed to get bot user, status code = %v", response.StatusCode)
-			}
-		}
-
-		if !strings.Contains(user.Roles, model.SYSTEM_POST_ALL_ROLE_ID) {
-			newRoles := fmt.Sprintf("%s %s", user.Roles, model.SYSTEM_POST_ALL_ROLE_ID)
-			updated, res := client.UpdateUserRoles(fullBot.UserId, newRoles)
-			if res.Error != nil {
-				return errors.Wrap(res.Error, "failed to update bot user's roles")
-			}
-			if !updated {
-				return errors.Errorf("failed to update bot user's roles, status code = %v", res.StatusCode)
-			}
-		}
-
 		var token *model.UserAccessToken
 		if app.BotAccessTokenID != "" {
 			token, response = client.GetUserAccessToken(app.BotAccessTokenID)
