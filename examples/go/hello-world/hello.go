@@ -26,7 +26,7 @@ func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
-	// Returns the Channel Header and Command bindings for the App.
+	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings", writeJSON(bindingsData))
 
 	// The form for sending a Hello message.
@@ -36,10 +36,9 @@ func main() {
 	http.HandleFunc("/send/submit", send)
 
 	// Forces the send form to be displayed as a modal.
-	// TODO: ticket: this should be unnecessary.
 	http.HandleFunc("/send-modal/submit", writeJSON(formData))
 
-	// Serves the icon for the App.
+	// Serves the icon for the app.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
 	http.ListenAndServe(":8080", nil)
