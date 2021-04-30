@@ -86,6 +86,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := &apps.Context{
+				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					AppID:     "app1",
 					UserAgent: "webapp",
@@ -167,6 +168,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := &apps.Context{
+				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    teamID,
@@ -230,6 +232,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := &apps.Context{
+				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
@@ -325,6 +328,7 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	err := a.cleanUserAgentContext(userID, cc)
 	require.NoError(t, err)
 	expected := &apps.Context{
+		ActingUserID: "some_user_id",
 		UserAgentContext: apps.UserAgentContext{
 			PostID:    postID,
 			ChannelID: channelID,
@@ -389,7 +393,13 @@ func TestHandleCallValidContext(t *testing.T) {
 	conf := mock_config.NewMockService(ctrl)
 
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testAPI.On("LogDebug",
+		"Received call response",
+		"app_id", apps.AppID("app1"),
+		"acting_user_id", "some_user_id",
+		"error", "",
+		"type", apps.CallResponseTypeOK,
+		"path", "/path/submit").Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
 	router := mux.NewRouter()
@@ -397,10 +407,14 @@ func TestHandleCallValidContext(t *testing.T) {
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
+			AppID:  "app1",
 			TeamID: "some_team_id",
 		},
 	}
 	call := &apps.CallRequest{
+		Call: apps.Call{
+			Path: "/path/submit",
+		},
 		Context: cc,
 	}
 
@@ -409,7 +423,24 @@ func TestHandleCallValidContext(t *testing.T) {
 		UserId: "some_user_id",
 	}, nil)
 
-	proxy.EXPECT().Call("some_session_id", "some_user_id", call).Return(&apps.ProxyCallResponse{})
+	expected := &apps.CallRequest{
+		Call: apps.Call{
+			Path: "/path/submit",
+		},
+		Context: &apps.Context{
+			ActingUserID: "some_user_id",
+			UserAgentContext: apps.UserAgentContext{
+				AppID:  "app1",
+				TeamID: "some_team_id",
+			},
+		},
+	}
+
+	proxy.EXPECT().Call("some_session_id", "some_user_id", expected).Return(&apps.ProxyCallResponse{
+		CallResponse: &apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
+		},
+	})
 
 	conf.EXPECT().GetConfig().Return(config.Config{})
 

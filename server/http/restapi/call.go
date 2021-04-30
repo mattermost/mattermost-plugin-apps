@@ -102,6 +102,7 @@ func (a *restapi) cleanUserAgentContext(userID string, cc *apps.Context) error {
 	cc.PostID = postID
 	cc.ChannelID = channelID
 	cc.TeamID = teamID
+	cc.ActingUserID = userID
 
 	return nil
 }
