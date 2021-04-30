@@ -1,6 +1,7 @@
 package apps
 
 type FieldType string
+type TextFieldSubtype string
 
 const (
 	// Text field. "subtype":"textarea" for multi-line text input (Modal only?).
@@ -22,6 +23,14 @@ const (
 
 	// A mattermost channel reference (~name).
 	FieldTypeChannel FieldType = "channel"
+
+	TextFieldSubtypeInput     TextFieldSubtype = "input"
+	TextFieldSubtypeTextarea  TextFieldSubtype = "textarea"
+	TextFieldSubtypeNumber    TextFieldSubtype = "number"
+	TextFieldSubtypeEmail     TextFieldSubtype = "email"
+	TextFieldSubtypeTelephone TextFieldSubtype = "tel"
+	TextFieldSubtypeURL       TextFieldSubtype = "url"
+	TextFieldSubtypePassword  TextFieldSubtype = "password"
 )
 
 type SelectOption struct {
@@ -38,6 +47,7 @@ type Field struct {
 
 	Type       FieldType `json:"type"`
 	IsRequired bool      `json:"is_required,omitempty"`
+	ReadOnly   bool      `json:"readonly,omitempty"`
 
 	// Present (default) value of the field
 	Value interface{} `json:"value,omitempty"`
@@ -61,6 +71,9 @@ type Field struct {
 	// TODO: ModalLabel should default to Label, Name
 	ModalLabel string `json:"modal_label"`
 
+	// SelectIsMulti designates whether a select field is a multiselect
+	SelectIsMulti bool `json:"multiselect,omitempty"`
+
 	// SelectRefresh means that a change in the value of this select triggers
 	// reloading the form. Values of the fields with inputs that are not
 	// included in the refreshed form are lost. Not yet implemented for /command
@@ -72,7 +85,7 @@ type Field struct {
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
 	// Text props
-	TextSubtype   string `json:"subtype,omitempty"`
-	TextMinLength int    `json:"min_length,omitempty"`
-	TextMaxLength int    `json:"max_length,omitempty"`
+	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`
+	TextMinLength int              `json:"min_length,omitempty"`
+	TextMaxLength int              `json:"max_length,omitempty"`
 }

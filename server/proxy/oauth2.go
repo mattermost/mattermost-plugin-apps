@@ -66,7 +66,6 @@ func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.
 	}
 
 	creq := &apps.CallRequest{
-
 		Call:    *apps.DefaultOnOAuth2Complete.WithOverrides(app.OnOAuth2Complete),
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID, nil),
 		Values:  urlValues,
@@ -79,5 +78,6 @@ func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
+	p.dispatchRefreshBindingsEvent(actingUserID)
 	return nil
 }
