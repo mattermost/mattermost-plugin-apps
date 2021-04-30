@@ -137,8 +137,10 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	cc := &apps.Context{
-		TeamID:    stateData.TeamID,
-		ChannelID: stateData.ChannelID,
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    stateData.TeamID,
+			ChannelID: stateData.ChannelID,
+		},
 	}
 	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
