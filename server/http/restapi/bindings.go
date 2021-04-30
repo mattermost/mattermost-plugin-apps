@@ -11,7 +11,7 @@ import (
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	q := req.URL.Query()
 	cc := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),
 			PostID:    q.Get(config.PropPostID),

@@ -137,7 +137,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	cc := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID:    stateData.TeamID,
 			ChannelID: stateData.ChannelID,
 		},

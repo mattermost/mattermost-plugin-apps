@@ -34,15 +34,15 @@ type Context struct {
 	AppPath string `json:"app_path"`
 
 	// Data accepted from the user agent
-	ContextFromUserAgent
+	UserAgentContext
 
 	// More data as requested by call.Expand
 	ExpandedContext
 }
 
-// ContextFromUserAgent is a subset of fields from Context that are accepted from the user agent
-// The values are vetted, and all fields present in the provided Context that are not in ContextFromUserAgent are discarded when the Call comes from an acting user.
-type ContextFromUserAgent struct {
+// UserAgentContext is a subset of fields from Context that are accepted from the user agent
+// The values are vetted, and all fields present in the provided Context that are not in UserAgentContext are discarded when the Call comes from an acting user.
+type UserAgentContext struct {
 	// The optional IDs of Mattermost entities associated with the call: Team,
 	// Channel, Post, RootPost.
 	TeamID     string `json:"team_id"`

@@ -36,7 +36,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	Init(router, mm, conf, proxy, nil)
 
 	expected := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			PostID:    "some_post_id",
 			ChannelID: "some_channel_id",
 			TeamID:    "some_team_id",

@@ -39,7 +39,7 @@ func TestAppMetadataForClient(t *testing.T) {
 	p := newTestProxy(testApps, ctrl)
 	c := &apps.CallRequest{
 		Context: &apps.Context{
-			ContextFromUserAgent: apps.ContextFromUserAgent{
+			UserAgentContext: apps.UserAgentContext{
 				AppID: "app1",
 			},
 		},

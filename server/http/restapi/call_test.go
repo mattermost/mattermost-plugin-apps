@@ -23,7 +23,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 )
 
-func TestCleanUserCallContext(t *testing.T) {
+func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
 		testAPI := &plugintest.API{}
 		testAPI.On("LogDebug", mock.Anything).Return(nil)
@@ -35,12 +35,11 @@ func TestCleanUserCallContext(t *testing.T) {
 
 		userID := "some_user_id"
 		cc := &apps.Context{
-			ContextFromUserAgent: apps.ContextFromUserAgent{},
+			UserAgentContext: apps.UserAgentContext{},
 		}
 
-		out, err := cleanUserCallContext(a.mm, userID, cc)
+		err := a.cleanUserAgentContext(userID, cc)
 		require.Error(t, err)
-		require.Nil(t, out)
 	})
 
 	t.Run("post id provided in context", func(t *testing.T) {
@@ -59,7 +58,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			teamID := "some_team_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					AppID:     "app1",
 					UserAgent: "webapp",
 					Location:  "/command",
@@ -84,11 +83,10 @@ func TestCleanUserCallContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			require.NotNil(t, out)
 			expected := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					AppID:     "app1",
 					UserAgent: "webapp",
 					Location:  "/command",
@@ -97,7 +95,7 @@ func TestCleanUserCallContext(t *testing.T) {
 					TeamID:    teamID,
 				},
 			}
-			require.Equal(t, expected, out)
+			require.Equal(t, expected, cc)
 		})
 
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
@@ -114,7 +112,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			channelID := "some_channel_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					PostID:    postID,
 					ChannelID: "ignored_channel_id",
 					TeamID:    "ignored_team_id",
@@ -130,9 +128,8 @@ func TestCleanUserCallContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
-			require.Nil(t, out)
 		})
 	})
 
@@ -151,7 +148,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			teamID := "some_team_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    "ignored_team_id",
 				},
@@ -167,16 +164,15 @@ func TestCleanUserCallContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			require.NotNil(t, out)
 			expected := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    teamID,
 				},
 			}
-			require.Equal(t, expected, out)
+			require.Equal(t, expected, cc)
 		})
 
 		t.Run("user is not a member of the channel", func(t *testing.T) {
@@ -192,7 +188,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			channelID := "some_channel_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    "ignored_team_id",
 				},
@@ -202,9 +198,8 @@ func TestCleanUserCallContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
-			require.Nil(t, out)
 		})
 	})
 
@@ -222,7 +217,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			teamID := "some_team_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
 			}
@@ -232,15 +227,14 @@ func TestCleanUserCallContext(t *testing.T) {
 				UserId: userID,
 			}, nil)
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			require.NotNil(t, out)
 			expected := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
 			}
-			require.Equal(t, expected, out)
+			require.Equal(t, expected, cc)
 		})
 
 		t.Run("user is not a member of the team", func(t *testing.T) {
@@ -256,7 +250,7 @@ func TestCleanUserCallContext(t *testing.T) {
 			teamID := "some_team_id"
 
 			cc := &apps.Context{
-				ContextFromUserAgent: apps.ContextFromUserAgent{
+				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
 			}
@@ -265,14 +259,13 @@ func TestCleanUserCallContext(t *testing.T) {
 				Message: "user is not a member of the specified team",
 			})
 
-			out, err := cleanUserCallContext(a.mm, userID, cc)
+			err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
-			require.Nil(t, out)
 		})
 	})
 }
 
-func TestCleanUserCallContextIgnoredValues(t *testing.T) {
+func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
@@ -287,7 +280,7 @@ func TestCleanUserCallContextIgnoredValues(t *testing.T) {
 	teamID := "some_team_id"
 
 	cc := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			PostID:    postID,
 			ChannelID: "ignored_channel_id",
 			TeamID:    "ignored_team_id",
@@ -329,17 +322,16 @@ func TestCleanUserCallContextIgnoredValues(t *testing.T) {
 		TeamId: teamID,
 	}, nil)
 
-	out, err := cleanUserCallContext(a.mm, userID, cc)
+	err := a.cleanUserAgentContext(userID, cc)
 	require.NoError(t, err)
-	require.NotNil(t, out)
 	expected := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			PostID:    postID,
 			ChannelID: channelID,
 			TeamID:    teamID,
 		},
 	}
-	require.Equal(t, expected, out)
+	require.Equal(t, expected, cc)
 }
 
 func TestHandleCallInvalidContext(t *testing.T) {
@@ -355,7 +347,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	Init(router, mm, conf, proxy, nil)
 
 	cc := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID: "some_team_id",
 		},
 	}
@@ -404,7 +396,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	Init(router, mm, conf, proxy, nil)
 
 	cc := &apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID: "some_team_id",
 		},
 	}

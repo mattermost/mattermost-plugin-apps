@@ -194,7 +194,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
 	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID:    ch.TeamId,
 			ChannelID: ch.Id,
 		},
@@ -208,7 +208,7 @@ func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.
 
 func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
 			ChannelID:  post.ChannelId,
@@ -226,7 +226,7 @@ func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.Us
 		actingUserID = actingUser.Id
 	}
 	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
 		ActingUserID: actingUserID,
@@ -243,7 +243,7 @@ func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *mo
 		actingUserID = actingUser.Id
 	}
 	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
 		ActingUserID: actingUserID,

@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
-// TODO: Context vetting needs to be done by the caller via cleanUserCallContext.
+// TODO: Context vetting needs to be done by the caller via cleanUserAgentContext.
 func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {
@@ -46,7 +46,7 @@ func (p *Proxy) EnableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	return md.Markdownf("%s is now enabled:\n%s", app.DisplayName, message), nil
 }
 
-// TODO: Context vetting needs to be done by the caller via cleanUserCallContext.
+// TODO: Context vetting needs to be done by the caller via cleanUserAgentContext.
 func (p *Proxy) DisableApp(cc *apps.Context, app *apps.App) (md.MD, error) {
 	err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
 	if err != nil {

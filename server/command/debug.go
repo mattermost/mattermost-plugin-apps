@@ -65,7 +65,7 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 
 func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
 	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ContextFromUserAgent: apps.ContextFromUserAgent{
+		UserAgentContext: apps.UserAgentContext{
 			TeamID:    commandArgs.TeamId,
 			ChannelID: commandArgs.ChannelId,
 		},
