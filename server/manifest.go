@@ -14,7 +14,7 @@ const manifestStr = `
 {
   "id": "com.mattermost.apps",
   "name": "Apps",
-  "description": "Apps Registry and API proxy.",
+  "description": "This plugin powers the Mattermost Apps Framework and is required for any Apps to run",
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
   "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
   "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.5.0",
@@ -29,7 +29,7 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "",
+    "header": "To create your own Mattermost App, check out [the documentation](https://developers.mattermost.com/integrate/apps/)",
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-apps).",
     "settings": []
   }
