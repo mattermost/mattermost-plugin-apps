@@ -1,8 +1,10 @@
 package gateway
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 
@@ -20,13 +22,13 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 	}
 
 	vars := mux.Vars(req)
-	assetName := path.Clean(vars["name"])
-	if assetName == "." || strings.HasPrefix(assetName, "../") {
-		httputils.WriteError(w, utils.NewInvalidError("bad path: %s", vars["name"]))
+	if len(vars) == 0 {
+		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
 		return
 	}
-	if assetName == "" {
-		httputils.WriteError(w, utils.NewInvalidError("asset name is not specified"))
+	assetName, err := cleanStaticPath(vars["name"])
+	if err != nil {
+		httputils.WriteError(w, err)
 		return
 	}
 
@@ -53,4 +55,28 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 func copyHeader(dst, src http.Header) {
 	headerKey := "Content-Type"
 	dst.Add(headerKey, src.Get(headerKey))
+}
+
+func cleanStaticPath(got string) (unescaped string, err error) {
+	if got == "" {
+		return "", utils.NewInvalidError("asset name is not specified")
+	}
+	for escaped := got; ; escaped = unescaped {
+		unescaped, err = url.PathUnescape(escaped)
+		if err != nil {
+			return "", err
+		}
+		if unescaped == escaped {
+			break
+		}
+	}
+	if unescaped[0] == '/' {
+		return "", utils.NewInvalidError("asset names may not start with a '/'")
+	}
+
+	assetName := path.Clean(unescaped)
+	if assetName == "." || strings.HasPrefix(assetName, "../") {
+		return "", utils.NewInvalidError("bad path: %s", got)
+	}
+	return assetName, nil
 }
