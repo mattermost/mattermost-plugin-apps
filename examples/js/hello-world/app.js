@@ -94,9 +94,9 @@ app.post('/send/submit', (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
-    const user_message = call.values.message;
-    if (user_message) {
-        message += ' ...and ' + user_message + '!';
+    const submitted_message = call.values.message;
+    if (submitted_message) {
+        message += ' ...and ' + submitted_message + '!';
     }
 
     const users = [
