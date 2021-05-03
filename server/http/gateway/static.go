@@ -35,6 +35,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 
 	body, status, err := g.proxy.GetAsset(appID, assetName)
 	if err != nil {
+		g.mm.Log.Debug("Failed to get asset", "app_id", appID, "asset_name", assetName, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}

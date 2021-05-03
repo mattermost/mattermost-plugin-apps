@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/logger"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -76,6 +77,10 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil, nil
 	}
 
+	logger := logger.New(&p.mm.Log).With(logger.LogContext{
+		"app_id": cc.AppID,
+	})
+
 	appID := app.AppID
 	appCC := *cc
 	appCC.AppID = appID
@@ -89,12 +94,13 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	}
 
 	resp := p.Call(sessionID, actingUserID, bindingsRequest)
-	if resp == nil || resp.Type != apps.CallResponseTypeOK {
-		// TODO Log error (chance to flood the logs)
-		// p.mm.Log.Debug("Response is nil or unexpected type.")
-		// if resp != nil && resp.Type == apps.CallResponseTypeError {
-		// 	p.mm.Log.Debug("Error getting bindings. Error: " + resp.Error())
-		// }
+	if resp == nil || (resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK) {
+		logger.Debugf("Bindings response is nil or unexpected type.")
+		return nil, nil
+	}
+
+	if resp.Type == apps.CallResponseTypeError {
+		logger.Debugf("Error getting bindings. Error: " + resp.Error())
 		return nil, nil
 	}
 
@@ -102,8 +108,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	b, _ := json.Marshal(resp.Data)
 	err := json.Unmarshal(b, &bindings)
 	if err != nil {
-		// TODO Log error (chance to flood the logs)
-		// p.mm.Log.Debug("Bindings are not of the right type.")
+		logger.Debugf("Bindings are not of the right type.")
 		return nil, nil
 	}
 

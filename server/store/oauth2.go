@@ -12,7 +12,6 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
@@ -20,8 +19,8 @@ import (
 type OAuth2Store interface {
 	CreateState(actingUserID string) (string, error)
 	ValidateStateOnce(urlState, actingUserID string) error
-	SaveUser(_ apps.AppID, mattermostUserID string, ref interface{}) error
-	GetUser(_ apps.AppID, mattermostUserID string, ref interface{}) error
+	SaveUser(botUserID, mattermostUserID string, ref interface{}) error
+	GetUser(botUserID, mattermostUserID string, ref interface{}) error
 }
 
 type oauth2Store struct {
@@ -62,18 +61,22 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 	return nil
 }
 
-func (s *oauth2Store) SaveUser(appID apps.AppID, mattermostUserID string, ref interface{}) error {
-	if appID == "" || mattermostUserID == "" {
-		return utils.NewInvalidError("namespace and mattermost user ID must be provided")
+func (s *oauth2Store) SaveUser(botUserID, mattermostUserID string, ref interface{}) error {
+	if botUserID == "" || mattermostUserID == "" {
+		return utils.NewInvalidError("bot and user IDs must be provided")
 	}
-	_, err := s.mm.KV.Set(s.userKey(string(appID), mattermostUserID), ref)
+	userkey, err := s.hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+	if err != nil {
+		return err
+	}
+	_, err = s.mm.KV.Set(userkey, ref)
 	return err
 }
 
-func (s *oauth2Store) GetUser(appID apps.AppID, mattermostUserID string, ref interface{}) error {
-	return s.mm.KV.Get(s.userKey(string(appID), mattermostUserID), ref)
-}
-
-func (s *oauth2Store) userKey(namespace, mattermostUserID string) string {
-	return s.hashkey(config.KVOAuth2Prefix, namespace, "remote_user", mattermostUserID)
+func (s *oauth2Store) GetUser(botUserID, mattermostUserID string, ref interface{}) error {
+	userkey, err := s.hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+	if err != nil {
+		return err
+	}
+	return s.mm.KV.Get(userkey, ref)
 }

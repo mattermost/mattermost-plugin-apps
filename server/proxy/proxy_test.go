@@ -39,11 +39,13 @@ func TestAppMetadataForClient(t *testing.T) {
 	p := newTestProxy(testApps, ctrl)
 	c := &apps.CallRequest{
 		Context: &apps.Context{
-			AppID: "app1",
+			UserAgentContext: apps.UserAgentContext{
+				AppID: "app1",
+			},
 		},
 	}
 
-	resp := p.Call("", "", c)
+	resp := p.Call("session_id", "acting_user_id", c)
 	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
