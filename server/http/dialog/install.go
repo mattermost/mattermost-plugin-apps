@@ -47,25 +47,25 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 		})
 	}
 
-	if m.RequestedPermissions.Contains(apps.PermissionActAsUser) {
-		elements = append(elements, model.DialogElement{
-			DisplayName: "Require user consent to use REST API first time they use the app:",
-			Name:        "consent",
-			Type:        "radio",
-			Default:     "require",
-			HelpText:    "please indicate if user consent is required to allow the app to act on their behalf",
-			Options: []*model.PostActionOptions{
-				{
-					Text:  "Require user consent",
-					Value: "require",
-				},
-				{
-					Text:  "Do not require user consent",
-					Value: "notrequire",
-				},
-			},
-		})
-	}
+	// if m.RequestedPermissions.Contains(apps.PermissionActAsUser) {
+	// 	elements = append(elements, model.DialogElement{
+	// 		DisplayName: "Require user consent to use REST API first time they use the app:",
+	// 		Name:        "consent",
+	// 		Type:        "radio",
+	// 		Default:     "require",
+	// 		HelpText:    "please indicate if user consent is required to allow the app to act on their behalf",
+	// 		Options: []*model.PostActionOptions{
+	// 			{
+	// 				Text:  "Require user consent",
+	// 				Value: "require",
+	// 			},
+	// 			{
+	// 				Text:  "Do not require user consent",
+	// 				Value: "notrequire",
+	// 			},
+	// 		},
+	// 	})
+	// }
 
 	stateData, _ := json.Marshal(installDialogState{
 		AppID:     m.AppID,
@@ -137,13 +137,16 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 
 	cc := &apps.Context{
-		TeamID:    stateData.TeamID,
-		ChannelID: stateData.ChannelID,
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    stateData.TeamID,
+			ChannelID: stateData.ChannelID,
+		},
 	}
 	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
 	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
+		d.mm.Log.Warn("Failed to install app", "app_id", cc.AppID, "error", err.Error())
 		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}

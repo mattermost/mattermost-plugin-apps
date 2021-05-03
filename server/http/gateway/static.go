@@ -29,10 +29,12 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 
 	body, status, err := g.proxy.GetAsset(appID, assetName)
 	if err != nil {
+		g.mm.Log.Debug("Failed to get asset", "app_id", appID, "asset_name", assetName, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}
 
+	copyHeader(w.Header(), req.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteError(w, err)
@@ -42,4 +44,9 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 		httputils.WriteError(w, err)
 		return
 	}
+}
+
+func copyHeader(dst, src http.Header) {
+	headerKey := "Content-Type"
+	dst.Add(headerKey, src.Get(headerKey))
 }

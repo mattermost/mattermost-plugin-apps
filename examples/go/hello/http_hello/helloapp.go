@@ -12,9 +12,9 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -67,6 +67,14 @@ func (h *helloapp) handleManifest(w http.ResponseWriter, req *http.Request) {
 				apps.PermissionUserJoinedChannelNotification,
 				apps.PermissionActAsUser,
 				apps.PermissionActAsBot,
+				apps.PermissionActAsAdmin,
+			},
+			OnInstall: &apps.Call{
+				Path: "/install",
+				Expand: &apps.Expand{
+					AdminAccessToken: apps.ExpandAll,
+					App:              apps.ExpandAll,
+				},
 			},
 			RequestedLocations: apps.Locations{
 				apps.LocationChannelHeader,

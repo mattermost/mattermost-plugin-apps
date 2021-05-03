@@ -23,13 +23,20 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
 		return apps.NewProxyCallResponse(resp, nil)
 	}
-	creq.Context.ActingUserID = actingUserID
+
+	if actingUserID != "" {
+		creq.Context.ActingUserID = actingUserID
+		creq.Context.UserID = actingUserID
+	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 
-	metadata := &apps.AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
+	var metadata *apps.AppMetadataForClient
+	if app != nil {
+		metadata = &apps.AppMetadataForClient{
+			BotUserID:   app.BotUserID,
+			BotUsername: app.BotUsername,
+		}
 	}
 
 	if err != nil {
@@ -39,6 +46,9 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
+
+	// Clear any ExpandedContext as it should always be set by an expander for security reasons
+	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
 	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
@@ -51,9 +61,11 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	clone.Context = cc
 
 	callResponse := upstream.Call(up, &clone)
+	if callResponse.Type == "" {
+		callResponse.Type = apps.CallResponseTypeOK
+	}
 
-	proxyCallResponse := apps.NewProxyCallResponse(callResponse, metadata)
-	return proxyCallResponse
+	return apps.NewProxyCallResponse(callResponse, metadata)
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {

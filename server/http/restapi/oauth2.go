@@ -39,7 +39,7 @@ func (a *restapi) oauth2StoreUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *restapi) oauth2GetUser(w http.ResponseWriter, r *http.Request) {
-	v := map[string]interface{}{}
+	var v interface{}
 	err := a.appServices.GetOAuth2User(appIDVar(r), actingID(r), &v)
 	if err != nil {
 		httputils.WriteError(w, err)

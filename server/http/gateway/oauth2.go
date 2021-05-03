@@ -17,6 +17,7 @@ func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, 
 
 	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, appID)
 	if err != nil {
+		g.mm.Log.Warn("Failed to get remote OuAuth2 connect URL", "app_id", appID, "acting_user_id", actingUserID, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}
@@ -40,6 +41,7 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 
 	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, appID, urlValues)
 	if err != nil {
+		g.mm.Log.Warn("Failed to complete remote OuAuth2", "app_id", appID, "acting_user_id", actingUserID, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}
