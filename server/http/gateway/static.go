@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
