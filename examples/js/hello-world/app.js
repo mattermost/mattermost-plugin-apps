@@ -90,13 +90,13 @@ app.get('/static/icon.png', (req, res) => {
 
 app.use(express.json());
 
-app.post('/send/submit', (req, res) => {
+app.post('/send/submit', async (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
-    const submitted_message = call.values.message;
-    if (submitted_message) {
-        message += ' ...and ' + submitted_message + '!';
+    const submittedMessage = call.values.message;
+    if (submittedMessage) {
+        message += ' ...and ' + submittedMessage + '!';
     }
 
     const users = [
@@ -115,23 +115,26 @@ app.post('/send/submit', (req, res) => {
     };
 
     // Get the DM channel between the user and the bot
-    const mattermost_site_url = call.context.mattermost_site_url;
+    const mattermostSiteURL = call.context.mattermost_site_url;
 
-    fetch(mattermost_site_url + '/api/v4/channels/direct', options).
-        then((mm_res) => mm_res.json()).
-        then((channel) => {
-            const post = {
-                channel_id: channel.id,
-                message,
-            };
+    const channel = await fetch(mattermostSiteURL + '/api/v4/channels/direct', options).
+        then((res) => res.json())
 
-            // Create a post
-            options.body = JSON.stringify(post);
+    const post = {
+        channel_id: channel.id,
+        message,
+    };
 
-            fetch(mattermost_site_url + '/api/v4/posts', options);
-        });
+    // Create a post
+    options.body = JSON.stringify(post);
 
-    res.json({});
+    fetch(mattermostSiteURL + '/api/v4/posts', options);
+
+
+    res.json({
+        type: 'ok',
+        markdown: 'Created a post in your DM channel.'
+    });
 });
 
 app.listen(port, host, () => {
