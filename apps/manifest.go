@@ -127,6 +127,7 @@ var DefaultOnOAuth2Complete = &Call{
 		ActingUser:            ExpandSummary,
 		ActingUserAccessToken: ExpandAll,
 		OAuth2App:             ExpandAll,
+		OAuth2User:            ExpandAll,
 	},
 }
 

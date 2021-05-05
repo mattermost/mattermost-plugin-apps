@@ -5,9 +5,9 @@ import (
 )
 
 type AppKVStore interface {
-	Set(namespace, prefix, id string, ref interface{}) (bool, error)
-	Get(namespace, prefix, id string, ref interface{}) error
-	Delete(namespace, prefix, id string) error
+	Set(botUserID, prefix, id string, ref interface{}) (bool, error)
+	Get(botUserID, prefix, id string, ref interface{}) error
+	Delete(botUserID, prefix, id string) error
 }
 
 type appKVStore struct {
@@ -17,18 +17,26 @@ type appKVStore struct {
 var _ AppKVStore = (*appKVStore)(nil)
 
 // TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
-func (s *appKVStore) Set(namespace, prefix, id string, ref interface{}) (bool, error) {
-	return s.mm.KV.Set(s.kvKey(namespace, prefix, id), ref)
+func (s *appKVStore) Set(botUserID, prefix, id string, ref interface{}) (bool, error) {
+	key, err := s.hashkey(config.KVAppPrefix, botUserID, prefix, id)
+	if err != nil {
+		return false, err
+	}
+	return s.mm.KV.Set(key, ref)
 }
 
-func (s *appKVStore) Get(namespace, prefix, id string, ref interface{}) error {
-	return s.mm.KV.Get(s.kvKey(namespace, prefix, id), ref)
+func (s *appKVStore) Get(botUserID, prefix, id string, ref interface{}) error {
+	key, err := s.hashkey(config.KVAppPrefix, botUserID, prefix, id)
+	if err != nil {
+		return err
+	}
+	return s.mm.KV.Get(key, ref)
 }
 
-func (s *appKVStore) Delete(namespace, prefix, id string) error {
-	return s.mm.KV.Delete(s.kvKey(namespace, prefix, id))
-}
-
-func (s *appKVStore) kvKey(namespace, prefix, id string) string {
-	return s.hashkey(config.KVAppPrefix, namespace, prefix, id)
+func (s *appKVStore) Delete(botUserID, prefix, id string) error {
+	key, err := s.hashkey(config.KVAppPrefix, botUserID, prefix, id)
+	if err != nil {
+		return err
+	}
+	return s.mm.KV.Delete(key)
 }

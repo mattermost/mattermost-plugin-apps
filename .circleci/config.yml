@@ -77,7 +77,7 @@ jobs:
           POSTGRES_USER: mmuser
           POSTGRES_PASSWORD: mostest
           POSTGRES_DB: mattermost_test
-      - image: jhillyerd/inbucket:release-1.2.0
+      - image: mattermost/inbucket:release-1.2.0
       - image: minio/minio:RELEASE.2019-10-11T00-38-09Z
         command: "server /data"
         environment:
@@ -173,7 +173,7 @@ jobs:
           POSTGRES_USER: mmuser
           POSTGRES_PASSWORD: mostest
           POSTGRES_DB: mattermost_test
-      - image: jhillyerd/inbucket:release-1.2.0
+      - image: mattermost/inbucket:release-1.2.0
       - image: minio/minio:RELEASE.2019-10-11T00-38-09Z
         command: "server /data"
         environment:
