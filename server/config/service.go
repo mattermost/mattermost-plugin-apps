@@ -105,6 +105,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
+	newConfig.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
 	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {

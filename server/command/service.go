@@ -37,13 +37,11 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 		proxy:   proxy,
 		httpOut: httpOut,
 	}
-
-	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
-
+	conf := configService.GetConfig()
 	subCommands := s.getSubCommands()
 	var subTrigger []string
 	for t, c := range subCommands {
-		if c.debug && !developerMode {
+		if c.debug && !conf.DeveloperMode {
 			continue
 		}
 
@@ -65,7 +63,7 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 
 	for _, t := range subTrigger {
 		c := subCommands[t]
-		if c.debug && !developerMode {
+		if c.debug && !conf.DeveloperMode {
 			continue
 		}
 
@@ -119,9 +117,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	params.current = split[1:]
 
-	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
-
-	return s.handleMain(params, developerMode)
+	return s.handleMain(params)
 }
 
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {

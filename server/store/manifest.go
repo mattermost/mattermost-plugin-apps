@@ -48,6 +48,8 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
+// InitGlobal reads in the list of known (i.e. marketplace listed) app
+// manifests.
 func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string, httpOut httpout.Service) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
@@ -67,6 +69,7 @@ func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string, httpOut htt
 		return err
 	}
 
+	conf := s.conf.GetConfig()
 	var data []byte
 	for appID, loc := range manifestLocations {
 		parts := strings.SplitN(loc, ":", 2)
@@ -78,7 +81,7 @@ func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string, httpOut htt
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
-			data, err = httpOut.GetFromURL(loc, false)
+			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode)
 		default:
 			s.mm.Log.Error("failed to load global manifest",
 				"err", fmt.Sprintf("%s is invalid", loc),
