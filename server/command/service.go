@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -21,18 +22,20 @@ type Service interface {
 }
 
 type service struct {
-	mm    *pluginapi.Client
-	conf  config.Service
-	proxy proxy.Service
+	mm      *pluginapi.Client
+	conf    config.Service
+	proxy   proxy.Service
+	httpOut httpout.Service
 }
 
 var _ Service = (*service)(nil)
 
-func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service) (Service, error) {
+func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
-		mm:    mm,
-		conf:  configService,
-		proxy: proxy,
+		mm:      mm,
+		conf:    configService,
+		proxy:   proxy,
+		httpOut: httpOut,
 	}
 
 	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
@@ -93,7 +96,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
 
-	conf := s.conf.GetMattermostConfig()
+	conf := s.conf.GetMattermostConfig().Config()
 	enableOAuthServiceProvider := conf.ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
 		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))

@@ -7,7 +7,6 @@ import (
 	"crypto/sha1" // nolint:gosec
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,8 +17,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
 type ManifestStore interface {
@@ -28,7 +27,7 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitGlobal(_ aws.Client, bucket string) error
+	InitGlobal(_ aws.Client, bucket string, _ httpout.Service) error
 	StoreLocal(*apps.Manifest) error
 }
 
@@ -49,7 +48,7 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string) error {
+func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string, httpOut httpout.Service) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
@@ -61,16 +60,9 @@ func (s *manifestStore) InitGlobal(awscli aws.Client, bucket string) error {
 	}
 	defer f.Close()
 
-	return s.initGlobal(awscli, bucket, f, assetPath)
-}
-
-// initGlobal reads in the list of known (i.e. marketplace listed) app
-// manifests.
-func (s *manifestStore) initGlobal(awscli aws.Client, bucket string, manifestsFile io.Reader, assetPath string) error {
 	global := map[apps.AppID]*apps.Manifest{}
-
 	manifestLocations := map[apps.AppID]string{}
-	err := json.NewDecoder(manifestsFile).Decode(&manifestLocations)
+	err = json.NewDecoder(f).Decode(&manifestLocations)
 	if err != nil {
 		return err
 	}
@@ -86,7 +78,7 @@ func (s *manifestStore) initGlobal(awscli aws.Client, bucket string, manifestsFi
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
-			data, err = httputils.GetFromURL(loc)
+			data, err = httpOut.GetFromURL(loc, false)
 		default:
 			s.mm.Log.Error("failed to load global manifest",
 				"err", fmt.Sprintf("%s is invalid", loc),

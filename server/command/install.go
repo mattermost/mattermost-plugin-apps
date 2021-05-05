@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/services/configservice"
 )
 
 type TestConfigurator struct {
@@ -26,8 +27,8 @@ func (c *TestConfigurator) GetConfig() Config {
 	return c.config
 }
 
-func (c *TestConfigurator) GetMattermostConfig() *model.Config {
-	return &c.mmconfig
+func (c *TestConfigurator) GetMattermostConfig() configservice.ConfigService {
+	return &mattermostConfigService{&c.mmconfig}
 }
 
 func (c *TestConfigurator) Reconfigure(StoredConfig, ...Configurable) error {

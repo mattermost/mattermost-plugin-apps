@@ -171,7 +171,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	}
 	switch app.AppType {
 	case apps.AppTypeHTTP:
-		return uphttp.NewUpstream(app), nil
+		return uphttp.NewUpstream(app, p.httpOut), nil
 
 	case apps.AppTypeAWSLambda:
 		return upawslambda.NewUpstream(app, p.aws, p.s3AssetBucket), nil
