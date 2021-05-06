@@ -44,6 +44,6 @@ func (s *service) GetFromURL(url string, trusted bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer _ = resp.Body.Close()
 	return io.ReadAll(resp.Body)
 }
