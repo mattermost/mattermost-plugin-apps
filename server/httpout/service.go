@@ -34,7 +34,7 @@ func NewService(conf config.Service) Service {
 	}
 }
 
-func (s *service) Configure(x config.Config) {
+func (s *service) Configure(_ config.Config) {
 	s.HTTPService = httpservice.MakeHTTPService(s.conf.GetMattermostConfig())
 }
 
