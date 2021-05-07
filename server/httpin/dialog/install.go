@@ -34,7 +34,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 		}
 	}
 	if len(m.RequestedLocations) != 0 {
-		consent += "\n- Add the following to the **Mattermost User Interface**:\n"
+		consent += "\n- Add the following elements to the **Mattermost User Interface**:\n"
 		for _, l := range m.RequestedLocations {
 			consent += fmt.Sprintf("  - %s\n", l.Markdown())
 		}
