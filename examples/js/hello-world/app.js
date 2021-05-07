@@ -118,7 +118,7 @@ app.post('/send/submit', async (req, res) => {
     const mattermostSiteURL = call.context.mattermost_site_url;
 
     const channel = await fetch(mattermostSiteURL + '/api/v4/channels/direct', options).
-        then((res) => res.json())
+        then((r) => r.json());
 
     const post = {
         channel_id: channel.id,
@@ -128,7 +128,7 @@ app.post('/send/submit', async (req, res) => {
     // Create a post
     options.body = JSON.stringify(post);
 
-    fetch(mattermostSiteURL + '/api/v4/posts', options);
+    await fetch(mattermostSiteURL + '/api/v4/posts', options);
 
 
     res.json({
