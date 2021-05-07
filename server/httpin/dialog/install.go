@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -11,7 +12,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
 type installDialogState struct {
@@ -23,27 +23,39 @@ type installDialogState struct {
 }
 
 func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
-	intro := md.Bold(
-		md.Markdownf("Application %s requires the following permissions:", m.DisplayName)) + "\n"
-	for _, permission := range m.RequestedPermissions {
-		intro += md.Markdownf("- %s\n", permission)
+	consent := ""
+	if m.AppType == apps.AppTypeHTTP {
+		consent += fmt.Sprintf("- Access **Remote HTTP API** at `%s` \n", m.HTTPRootURL)
 	}
-	intro += md.Bold(
-		md.Markdownf("\nApplication %s requires to add the following to the Mattermost user interface:", m.DisplayName)) + "\n"
-	for _, l := range m.RequestedLocations {
-		intro += md.Markdownf("- %s\n", l.Markdown())
+	if len(m.RequestedPermissions) != 0 {
+		consent += "- Access **Mattermost API** with the following permissions:\n"
+		for _, permission := range m.RequestedPermissions {
+			consent += fmt.Sprintf("  - %s\n", permission.String())
+		}
 	}
-	intro += "\n---\n"
+	if len(m.RequestedLocations) != 0 {
+		consent += "\n- Add the following to the **Mattermost User Interface**:\n"
+		for _, l := range m.RequestedLocations {
+			consent += fmt.Sprintf("  - %s\n", l.Markdown())
+		}
+	}
+	if consent != "" {
+		header := fmt.Sprintf("Application **%s** requires admin consent to:\n\n", m.DisplayName)
+		consent = header + consent + "---\n"
+	}
 
 	elements := []model.DialogElement{}
 	if m.AppType == apps.AppTypeHTTP {
 		elements = append(elements, model.DialogElement{
-			DisplayName: "App secret:",
+			DisplayName: "JWT Secret:",
 			Name:        "secret",
 			Type:        "text",
 			SubType:     "password",
-			HelpText:    "TODO: How to obtain the App Secret",
-			Default:     secret,
+			HelpText: fmt.Sprintf("The JWT Secret authenticates HTTP messages sent to the App. "+
+				"It should be obtained from the App itself, %s.",
+				m.HomepageURL),
+			Default:  secret,
+			Optional: true,
 		})
 	}
 
@@ -78,7 +90,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 		URL:       pluginURL + config.InteractiveDialogPath + InstallPath,
 		Dialog: model.Dialog{
 			Title:            "Install App - " + m.DisplayName,
-			IntroductionText: intro.String(),
+			IntroductionText: consent,
 			Elements:         elements,
 			SubmitLabel:      "Approve and Install",
 			NotifyOnCancel:   true,
