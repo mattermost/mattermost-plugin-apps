@@ -40,7 +40,7 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 		}
 	}
 	if consent != "" {
-		header := fmt.Sprintf("Application **%s** requires admin consent to:\n\n", m.DisplayName)
+		header := fmt.Sprintf("Application **%s** requires system administrator's consent to:\n\n", m.DisplayName)
 		consent = header + consent + "---\n"
 	}
 
