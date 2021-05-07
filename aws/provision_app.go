@@ -43,6 +43,7 @@ func (c *client) provisionApp(provisionData *ProvisionData, shouldUpdate bool) e
 		if err := c.UploadS3(bucket, asset.Key, asset.File); err != nil {
 			return errors.Wrapf(err, "can't provision asset - %s of the app - %s", asset.Key, provisionData.Manifest.AppID)
 		}
+		asset.File.Close()
 	}
 
 	if err := c.provisionFunctions(provisionData.Manifest, provisionData.LambdaFunctions, shouldUpdate); err != nil {
@@ -71,6 +72,7 @@ func (c *client) provisionFunctions(manifest *apps.Manifest, functions map[strin
 				return errors.Wrapf(err, "can't create function  %s", function.Name)
 			}
 		}
+		function.Bundle.Close()
 	}
 
 	return nil

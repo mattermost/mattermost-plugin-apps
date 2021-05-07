@@ -104,6 +104,7 @@ ifneq ($(HAS_SERVER),)
 	mockgen -destination server/mocks/mock_upstream_detector/mock_upstream_detector.go github.com/mattermost/mattermost-plugin-apps/server/upstream/detector Detector
 	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store AppStore
 	mockgen -destination server/mocks/mock_store/mock_appkv.go github.com/mattermost/mattermost-plugin-apps/server/store AppKVStore
+	mockgen -destination server/mocks/mock_config/mock_config.go github.com/mattermost/mattermost-plugin-apps/server/config Service
 endif
 
 ## Generates mock golang interfaces for testing

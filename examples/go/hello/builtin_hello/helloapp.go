@@ -12,7 +12,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/examples/go/hello"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )

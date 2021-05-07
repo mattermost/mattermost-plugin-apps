@@ -17,7 +17,7 @@ func TestKVE2E(t *testing.T) {
 
 	t.Run("test KV API", func(t *testing.T) {
 		id := "testId"
-		prefix := "prefix-test"
+		prefix := "PT"
 		in := map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
