@@ -22,11 +22,11 @@ func TestAppInstallCommand(t *testing.T) {
 	defer th.TearDown()
 
 	appID := "test"
-	channelID, err := th.Client.GetChannelID()
+	channelID, err := th.Client.GetChannelID(th.ServerTestHelper.BasicTeam.Id, th.ServerTestHelper.App.Session().UserId)
 
 	require.NoError(t, err)
 
-	command := fmt.Sprintf("/apps install --app-id %s", appID)
+	command := fmt.Sprintf("/apps install %s", appID)
 	response, err := th.Client.ExecuteCommand(channelID, command)
 	require.NoError(t, err)
 	require.Equal(t, "please continue by filling out the interactive form", response.Text)
@@ -64,10 +64,12 @@ func TestAppInstallCommand(t *testing.T) {
 				Path: "/oks/ok/bla",
 			},
 			Context: &apps.Context{
-				AppID:     apps.AppID(appID),
-				Location:  apps.LocationCommand,
-				UserID:    th.ServerTestHelper.App.Session().UserId,
-				ChannelID: channelID,
+				UserAgentContext: apps.UserAgentContext{
+					AppID:     apps.AppID(appID),
+					Location:  apps.LocationCommand,
+					ChannelID: channelID,
+				},
+				UserID: th.ServerTestHelper.App.Session().UserId,
 			},
 		}
 		callResponse, err := client.Call(call)

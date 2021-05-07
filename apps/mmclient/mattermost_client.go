@@ -207,14 +207,14 @@ func (c *Client) ExecuteCommand(channelID, command string) (*model.CommandRespon
 	return commandResponse, nil
 }
 
-func (c *Client) GetChannelID() (string, error) {
-	channels, res := c.Client4.GetAllChannels(0, 1, "")
+func (c *Client) GetChannelID(teamID, userID string) (string, error) {
+	channels, res := c.Client4.GetChannelsForTeamForUser(teamID, c.userID, false, "")
 	if res.StatusCode != http.StatusOK {
 		if res.Error != nil {
 			return "", res.Error
 		}
 		return "", fmt.Errorf("returned with status %d", res.StatusCode)
 	}
-	channel := (*channels)[0]
+	channel := channels[0]
 	return channel.Id, nil
 }

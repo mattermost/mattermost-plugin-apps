@@ -8,13 +8,16 @@ import (
 )
 
 func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
-	if appIDVar(req) == "" {
+	appID := appIDVar(req)
+
+	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
-	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, appIDVar(req))
+	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, appID)
 	if err != nil {
+		g.mm.Log.Warn("Failed to get remote OuAuth2 connect URL", "app_id", appID, "acting_user_id", actingUserID, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}
@@ -23,7 +26,9 @@ func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, 
 }
 
 func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
-	if appIDVar(req) == "" {
+	appID := appIDVar(req)
+
+	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
@@ -34,8 +39,9 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, appIDVar(req), urlValues)
+	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, appID, urlValues)
 	if err != nil {
+		g.mm.Log.Warn("Failed to complete remote OuAuth2", "app_id", appID, "acting_user_id", actingUserID, "error", err.Error())
 		httputils.WriteError(w, err)
 		return
 	}
@@ -50,7 +56,7 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 			</script>
 		</head>
 		<body>
-			<p>Completed connecting to Google. Please close this window.</p>
+			<p>Completed connecting your account. Please close this window.</p>
 		</body>
 	</html>
 	`))

@@ -4,7 +4,7 @@
 // Package apps provides the data types, constants, and convenience functions
 // for the Mattermost Apps API.
 //
-// Main documentation: https://github.com/mattermost/mattermost-plugin-apps/blob/master/docs/00-toc.md
+// Main documentation: https://developers.mattermost.com/integrate/apps/
 //
 // Function
 //

@@ -4,16 +4,36 @@ orbs:
   plugin-ci: mattermost/plugin-ci@volatile
 
 aliases:
-- &restore_cache
+- &restore_go_cache
   restore_cache:
     key: go-mod-v1-{{ checksum "go.sum" }}
-- &save_cache
+- &save_go_cache
   save_cache:
     key: go-mod-v1-{{ checksum "go.sum" }}
     paths:
     - "/go/pkg/mod"
+- &restore_cypress_cache
+  restore_cache:
+    key: cypress-cache-{{ checksum "e2e/package-lock.json" }}
+- &save_cypress_cache
+  save_cache:
+    key: cypress-cache-{{ checksum "e2e/package-lock.json" }}
+    paths:
+      - ./tests-e2e/node_modules
+      - /home/circleci/.cache/Cypress
 
 jobs:
+  check-mocks:
+    docker:
+      - image: circleci/golang:1.16.0
+    steps:
+      - checkout
+      - run:
+          name: Checking if generated mocks are up to date
+          command: |
+            make mock
+            git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
+
   test-e2e-postgres11:
     docker:
       - image: circleci/golang:1.16.0
@@ -40,12 +60,205 @@ jobs:
           # Keep the commit in sync with go.mod
           command: |
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout 5a7759f4d63b
-      - *restore_cache
+            cd mattermost-server && git checkout e37e902ddf33
+      - *restore_go_cache
       - run:
           name: Running e2e tests
           command: MM_SERVER_PATH=$(pwd)/mattermost-server make test-e2e
-      - *save_cache
+      - *save_go_cache
+  e2e-cypress-tests-pinned:
+    resource_class: large
+    docker:
+      - image: circleci/golang:1.16.0-node-browsers
+        environment:
+          TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
+      - image: circleci/postgres:10-alpine-ram
+        environment:
+          POSTGRES_USER: mmuser
+          POSTGRES_PASSWORD: mostest
+          POSTGRES_DB: mattermost_test
+      - image: mattermost/inbucket:release-1.2.0
+      - image: minio/minio:RELEASE.2019-10-11T00-38-09Z
+        command: "server /data"
+        environment:
+          MINIO_ACCESS_KEY: minioaccesskey
+          MINIO_SECRET_KEY: miniosecretkey
+          MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
+      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+        environment:
+          http.host: "0.0.0.0"
+          http.port: 9200
+          http.cors.enabled: "true"
+          http.cors.allow-origin: "http://localhost:1358,http://127.0.0.1:1358"
+          http.cors.allow-headers: "X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization"
+          http.cors.allow-credentials: "true"
+          transport.host: "127.0.0.1"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      - image: mattermost/mattermost-enterprise-edition:$MM_DOCKER_IMAGE_TAG
+        environment:
+          DB_HOST: localhost
+          DB_PORT_NUMBER: 5432
+          MM_DBNAME: mattermost_test
+          MM_USERNAME: mmuser
+          MM_PASSWORD: mostest
+          CI_INBUCKET_HOST: localhost
+          CI_INBUCKET_PORT: 10080
+          CI_MINIO_HOST: minio
+          IS_CI: true
+          MM_CLUSTERSETTINGS_READONLYCONFIG: false
+          MM_EMAILSETTINGS_SMTPSERVER: localhost
+          MM_EMAILSETTINGS_SMTPPORT: 10025
+          MM_ELASTICSEARCHSETTINGS_CONNECTIONURL: http://localhost:9200
+          MM_EXPERIMENTALSETTINGS_USENEWSAMLLIBRARY: true
+          MM_SQLSETTINGS_DATASOURCE: "postgres://mmuser:mostest@localhost:5432/mattermost_test?sslmode=disable&connect_timeout=10"
+          MM_SQLSETTINGS_DRIVERNAME: postgres
+          MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+          MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+          MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+          MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
+          MM_FEATUREFLAGS_AppsEnabled: true
+    environment:
+      MM_DOCKER_IMAGE_TAG: 16a4a41
+      TYPE: NONE
+      PULL_REQUEST:
+      HEADLESS: true
+      DASHBOARD_ENABLE: false
+      FULL_REPORT: false
+      MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+      MM_ADMIN_EMAIL: sysadmin@sample.mattermost.com
+      MM_ADMIN_USERNAME: sysadmin
+      MM_ADMIN_PASSWORD: Sys@dmin-sample1
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Wait for Inbucket
+          command: |
+            until curl --max-time 5 --output - localhost:10080; do echo waiting for Inbucket; sleep 5; done;
+      - run:
+          name: Wait for Elasticsearch
+          command: |
+            until curl --max-time 5 --output - localhost:9200; do echo waiting for Elasticsearch; sleep 5; done;
+      - run:
+          name: Create admin user
+          command: |
+            STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
+            if test $STATUSCODE -ne 201; then exit 1; fi
+      - checkout
+      - *restore_go_cache
+      - run:
+          name: Install Apps plugin
+          command: make deploy
+      - *save_go_cache
+      - *restore_cypress_cache
+      - run:
+          name: Run Cypress Tests
+          no_output_timeout: 30m
+          command: |
+            export FAILURE_MESSAGE="At least one test has failed."
+            export RESULTS_OUTPUT="results-output.txt"
+            cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
+      - *save_cypress_cache
+      - store_artifacts:
+          path: e2e/cypress/screenshots
+      - store_artifacts:
+          path: e2e/cypress/videos
+  e2e-cypress-tests-master:
+    resource_class: large
+    docker:
+      - image: circleci/golang:1.16.0-node-browsers
+        environment:
+          TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
+      - image: circleci/postgres:10-alpine-ram
+        environment:
+          POSTGRES_USER: mmuser
+          POSTGRES_PASSWORD: mostest
+          POSTGRES_DB: mattermost_test
+      - image: mattermost/inbucket:release-1.2.0
+      - image: minio/minio:RELEASE.2019-10-11T00-38-09Z
+        command: "server /data"
+        environment:
+          MINIO_ACCESS_KEY: minioaccesskey
+          MINIO_SECRET_KEY: miniosecretkey
+          MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
+      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+        environment:
+          http.host: "0.0.0.0"
+          http.port: 9200
+          http.cors.enabled: "true"
+          http.cors.allow-origin: "http://localhost:1358,http://127.0.0.1:1358"
+          http.cors.allow-headers: "X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization"
+          http.cors.allow-credentials: "true"
+          transport.host: "127.0.0.1"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      - image: mattermost/mattermost-enterprise-edition:$MM_DOCKER_IMAGE_TAG
+        environment:
+          DB_HOST: localhost
+          DB_PORT_NUMBER: 5432
+          MM_DBNAME: mattermost_test
+          MM_USERNAME: mmuser
+          MM_PASSWORD: mostest
+          CI_INBUCKET_HOST: localhost
+          CI_INBUCKET_PORT: 10080
+          CI_MINIO_HOST: minio
+          IS_CI: true
+          MM_CLUSTERSETTINGS_READONLYCONFIG: false
+          MM_EMAILSETTINGS_SMTPSERVER: localhost
+          MM_EMAILSETTINGS_SMTPPORT: 10025
+          MM_ELASTICSEARCHSETTINGS_CONNECTIONURL: http://localhost:9200
+          MM_EXPERIMENTALSETTINGS_USENEWSAMLLIBRARY: true
+          MM_SQLSETTINGS_DATASOURCE: "postgres://mmuser:mostest@localhost:5432/mattermost_test?sslmode=disable&connect_timeout=10"
+          MM_SQLSETTINGS_DRIVERNAME: postgres
+          MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+          MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+          MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+          MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
+          MM_FEATUREFLAGS_AppsEnabled: true
+    environment:
+      MM_DOCKER_IMAGE_TAG: 16a4a41
+      TYPE: NONE
+      PULL_REQUEST:
+      HEADLESS: true
+      DASHBOARD_ENABLE: false
+      FULL_REPORT: false
+      MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+      MM_ADMIN_EMAIL: sysadmin@sample.mattermost.com
+      MM_ADMIN_USERNAME: sysadmin
+      MM_ADMIN_PASSWORD: Sys@dmin-sample1
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Wait for Inbucket
+          command: |
+            until curl --max-time 5 --output - localhost:10080; do echo waiting for Inbucket; sleep 5; done;
+      - run:
+          name: Wait for Elasticsearch
+          command: |
+            until curl --max-time 5 --output - localhost:9200; do echo waiting for Elasticsearch; sleep 5; done;
+      - run:
+          name: Create admin user
+          command: |
+            STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
+            if test $STATUSCODE -ne 201; then exit 1; fi
+      - checkout
+      - *restore_go_cache
+      - run:
+          name: Install Apps plugin
+          command: make deploy
+      - *save_go_cache
+      - *restore_cypress_cache
+      - run:
+          name: Run Cypress Tests
+          no_output_timeout: 30m
+          command: |
+            export FAILURE_MESSAGE="At least one test has failed."
+            export RESULTS_OUTPUT="results-output.txt"
+            cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
+      - *save_cypress_cache
+      - store_artifacts:
+          path: e2e/cypress/screenshots
+      - store_artifacts:
+          path: e2e/cypress/videos
+
 
 workflows:
   version: 2
@@ -58,12 +271,19 @@ workflows:
               only:
                 - master
     jobs:
+      - check-mocks
       - plugin-ci/lint
       - plugin-ci/test
+      - e2e-cypress-tests-pinned
+      - e2e-cypress-tests-master
       - test-e2e-postgres11
       - plugin-ci/build
   ci:
     jobs:
+      -  check-mocks:
+          filters:
+            tags:
+              only: /^v.*/
       - plugin-ci/lint:
           filters:
             tags:
@@ -76,6 +296,11 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+      - e2e-cypress-tests-pinned
+      - e2e-cypress-tests-master:
+          filters:
+            branches:
+              only: master
       - plugin-ci/build:
           filters:
             tags:
@@ -86,9 +311,12 @@ workflows:
               only: master
           context: plugin-ci
           requires:
+            - check-mocks
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11
+            - e2e-cypress-tests-pinned
+            - e2e-cypress-tests-master
             - plugin-ci/build
       - plugin-ci/deploy-release-github:
           filters:
@@ -98,6 +326,7 @@ workflows:
               ignore: /.*/
           context: matterbuild-github-token
           requires:
+            - check-mocks
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11

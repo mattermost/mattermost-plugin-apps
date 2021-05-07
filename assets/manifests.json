@@ -1,6 +1,5 @@
 {
-    "awsHello": "file:example-aws-hello.json",
-    "zendesk": "0.0.1",
-    "com.mattermost.servicenow": "0.1.0",
+    "com.mattermost.servicenow": "0.2.0",
+    "com.mattermost.zendesk": "0.2.1",
     "test": "http://localhost:3000/manifest"
 }

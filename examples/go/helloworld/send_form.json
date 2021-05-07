@@ -1,0 +1,17 @@
+{
+	"type": "form",
+	"form": {
+		"title": "Hello, world!",
+		"icon": "http://localhost:8080/static/icon.png",
+		"fields": [
+			{
+				"type": "text",
+				"name": "message",
+				"label": "message"
+			}
+		],
+		"call": {
+			"path": "/send"
+		}
+	}
+}

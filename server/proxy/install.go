@@ -60,17 +60,9 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
 
-	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) {
-		var bot *model.Bot
-		var token *model.UserAccessToken
-		bot, token, err = p.ensureBot(m, cc.ActingUserID, asAdmin)
-		if err != nil {
-			return nil, "", err
-		}
-
-		app.BotUserID = bot.UserId
-		app.BotUsername = bot.Username
-		app.BotAccessToken = token.Token
+	err = p.ensureBot(app, cc.ActingUserID, asAdmin)
+	if err != nil {
+		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
@@ -98,7 +90,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", errors.Wrap(resp, "install failed")
 	}
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: cc.ActingUserID})
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 	return app, resp.Markdown, nil
 }
 
@@ -139,48 +131,65 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID s
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *model.Client4) (*model.Bot, *model.UserAccessToken, error) {
+func (p *Proxy) ensureBot(app *apps.App, actingUserID string, client *model.Client4) error {
 	bot := &model.Bot{
-		Username:    strings.ToLower(string(manifest.AppID)),
-		DisplayName: manifest.DisplayName,
-		Description: fmt.Sprintf("Bot account for `%s` App.", manifest.DisplayName),
+		Username:    strings.ToLower(string(app.AppID)),
+		DisplayName: app.DisplayName,
+		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
 	var fullBot *model.Bot
+	var response *model.Response
 	user, _ := client.GetUserByUsername(bot.Username, "")
 	if user == nil {
-		var response *model.Response
 		fullBot, response = client.CreateBot(bot)
 
 		if response.StatusCode != http.StatusCreated {
 			if response.Error != nil {
-				return nil, nil, response.Error
+				return response.Error
 			}
-			return nil, nil, errors.New("could not create bot")
+			return errors.New("could not create bot")
 		}
 	} else {
 		if !user.IsBot {
-			return nil, nil, errors.New("a user already owns the bot username")
+			return errors.New("a user already owns the bot username")
 		}
 
 		fullBot = model.BotFromUser(user)
-		if fullBot.DeleteAt != 0 {
-			var response *model.Response
+		if user.DeleteAt != 0 {
 			fullBot, response = client.EnableBot(fullBot.UserId)
 			if response.StatusCode != http.StatusOK {
 				if response.Error != nil {
-					return nil, nil, response.Error
+					return response.Error
 				}
-				return nil, nil, errors.New("could not enable bot")
+				return errors.New("could not enable bot")
 			}
 		}
 	}
-	token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
-	if response.StatusCode != http.StatusOK {
-		if response.Error != nil {
-			return nil, nil, response.Error
+	app.BotUserID = fullBot.UserId
+	app.BotUsername = fullBot.Username
+
+	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) {
+		var token *model.UserAccessToken
+		if app.BotAccessTokenID != "" {
+			token, response = client.GetUserAccessToken(app.BotAccessTokenID)
+			if response.Error != nil {
+				return errors.Wrap(response.Error, "failed to create bot user's access token")
+			}
+			if response.StatusCode != http.StatusOK {
+				return fmt.Errorf("failed to create bot user's access token, status code = %v", response.StatusCode)
+			}
+		} else {
+			token, response = client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
+			if response.Error != nil {
+				return errors.Wrap(response.Error, "failed to create bot user's access token")
+			}
+			if response.StatusCode != http.StatusOK {
+				return fmt.Errorf("failed to create bot user's access token, status code = %v", response.StatusCode)
+			}
 		}
-		return nil, nil, fmt.Errorf("could not create token, status code = %v", response.StatusCode)
+		app.BotAccessToken = token.Token
+		app.BotAccessTokenID = token.Id
 	}
 
 	_ = p.mm.Post.DM(fullBot.UserId, actingUserID, &model.Post{
@@ -188,5 +197,5 @@ func (p *Proxy) ensureBot(manifest *apps.Manifest, actingUserID string, client *
 			fullBot.Username, fullBot.UserId),
 	})
 
-	return fullBot, token, nil
+	return nil
 }

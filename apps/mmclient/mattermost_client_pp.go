@@ -33,6 +33,9 @@ const (
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
 
+	PathBotIDs      = "/bot-ids"
+	PathOAuthAppIDs = "/oauth-app-ids"
+
 	PathOAuth2App         = "/oauth2/app"
 	PathOAuth2User        = "/oauth2/user"
 	PathOAuth2CreateState = "/oauth2/create-state"

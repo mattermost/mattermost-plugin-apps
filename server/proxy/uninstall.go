@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
@@ -46,15 +45,26 @@ func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) e
 		success, response := asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID)
 		if !success {
 			if response.Error != nil {
-				return errors.Wrapf(response.Error, "failed to delete Mattermost OAuth2 App - %s", app.AppID)
+				return errors.Wrapf(response.Error, "failed to delete Mattermost OAuth2 for %s", app.AppID)
 			}
 			return errors.Errorf("failed to delete Mattermost OAuth2 App - returned with status code %d", response.StatusCode)
 		}
 	}
 
-	// delete the bot account
-	if err := p.mm.Bot.DeletePermanently(app.BotUserID); err != nil {
-		return errors.Wrapf(err, "can't delete bot account for App - %s", app.AppID)
+	// disable the bot account
+	if app.BotAccessTokenID != "" {
+		success, response := asAdmin.RevokeUserAccessToken(app.BotAccessTokenID)
+		if !success {
+			if response.Error != nil {
+				return errors.Wrapf(response.Error, "failed to revoke bot access token for %s", app.AppID)
+			}
+			return errors.Errorf("failed to revoke bot access token for %s, returned with status code %d", app.AppID, response.StatusCode)
+		}
+	}
+
+	_, err = p.mm.Bot.UpdateActive(app.BotUserID, false)
+	if err != nil {
+		return errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
 	// delete app from proxy plugin, not removing the data
@@ -64,6 +74,6 @@ func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) e
 
 	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)
 
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	p.dispatchRefreshBindingsEvent(actingUserID)
 	return nil
 }

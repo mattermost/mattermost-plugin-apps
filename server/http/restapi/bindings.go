@@ -8,18 +8,20 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
 
-func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, actingUserID, token string) {
+func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	q := req.URL.Query()
-	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
-		ActingUserID: actingUserID,
-		TeamID:       q.Get(config.PropTeamID),
-		ChannelID:    q.Get(config.PropChannelID),
-		PostID:       q.Get(config.PropPostID),
-		UserAgent:    q.Get(config.PropUserAgent),
-		UserID:       actingUserID,
-	})
+	cc := &apps.Context{
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    q.Get(config.PropTeamID),
+			ChannelID: q.Get(config.PropChannelID),
+			PostID:    q.Get(config.PropPostID),
+			UserAgent: q.Get(config.PropUserAgent),
+		},
+	}
 
-	bindings, err := a.proxy.GetBindings(sessionID(req), actingID(req), cc)
+	cc = a.conf.GetConfig().SetContextDefaults(cc)
+
+	bindings, err := a.proxy.GetBindings(sessionID, actingUserID, cc)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

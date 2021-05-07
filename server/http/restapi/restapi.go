@@ -35,9 +35,17 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 	subrouter.HandleFunc(apps.DefaultBindings.Path,
 		httputils.CheckAuthorized(mm, a.handleGetBindings)).Methods("GET")
 
-	subrouter.HandleFunc(config.PathCall, a.handleCall).Methods("POST")
+	subrouter.HandleFunc(config.PathCall,
+		httputils.CheckAuthorized(mm, a.handleCall)).Methods("POST")
+
 	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleSubscribe).Methods("POST")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, a.handleUnsubscribe).Methods("POST")
+
+	// Bot and OAuthApps checks
+	subrouter.HandleFunc(mmclient.PathBotIDs,
+		httputils.CheckAuthorized(mm, a.handleGetBotIDs)).Methods("GET")
+	subrouter.HandleFunc(mmclient.PathOAuthAppIDs,
+		httputils.CheckAuthorized(mm, a.handleGetOAuthAppIDs)).Methods("GET")
 
 	// KV APIs
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", a.kvGet).Methods("GET")
@@ -60,10 +68,6 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 func actingID(r *http.Request) string {
 	return r.Header.Get("Mattermost-User-Id")
-}
-
-func sessionID(r *http.Request) string {
-	return r.Header.Get("MM_SESSION_ID")
 }
 
 func appIDVar(r *http.Request) apps.AppID {
