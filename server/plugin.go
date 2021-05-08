@@ -5,7 +5,6 @@ package main
 
 import (
 	gohttp "net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -16,7 +15,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
@@ -76,15 +74,8 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized config service")
 
-	accessKey := os.Getenv(awsapps.CloudLambdaAccessEnvVar)
-	if accessKey == "" {
-		p.mm.Log.Warn(awsapps.CloudLambdaAccessEnvVar + " is not set. AWS apps won't work.")
-	}
-	secretKey := os.Getenv(awsapps.CloudLambdaSecretEnvVar)
-	if secretKey == "" {
-		p.mm.Log.Warn(awsapps.CloudLambdaSecretEnvVar + " is not set. AWS apps won't work.")
-	}
-	p.aws, err = awsclient.MakeClient(accessKey, secretKey, &p.mm.Log)
+	conf := p.conf.GetConfig()
+	p.aws, err = awsclient.MakeClient(conf.AWSLambdaAccessKey, conf.AWSLambdaSecretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -95,12 +86,10 @@ func (p *Plugin) OnActivate() error {
 
 	p.store = store.NewService(p.mm, p.conf)
 	// manifest store
-	conf := p.conf.GetConfig()
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
-	manifestBucket := awsapps.S3BucketName()
-	err = mstore.InitGlobal(p.aws, manifestBucket, p.httpOut)
+	err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
@@ -111,13 +100,12 @@ func (p *Plugin) OnActivate() error {
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
-	assetBucket := awsapps.S3BucketName()
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
 	p.mm.Log.Debug("initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)

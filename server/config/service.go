@@ -2,11 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"net/url"
-	"strings"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -87,29 +83,10 @@ func (s *service) reloadMattermostConfig() *model.Config {
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 
-	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
-	if mattermostSiteURL == nil {
-		return errors.New("plugin requires Mattermost Site URL to be set")
-	}
-	mattermostURL, err := url.Parse(*mattermostSiteURL)
+	newConfig := s.GetConfig()
+	err := newConfig.Reconfigure(stored, mmconf)
 	if err != nil {
 		return err
-	}
-	pluginURLPath := "/plugins/" + s.BuildConfig.Manifest.Id
-	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
-
-	newConfig := s.GetConfig()
-	newConfig.StoredConfig = stored
-
-	newConfig.MattermostSiteURL = *mattermostSiteURL
-	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
-	newConfig.PluginURL = pluginURL
-	newConfig.PluginURLPath = pluginURLPath
-	newConfig.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-
-	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
-	if mmconf.FileSettings.MaxFileSize != nil {
-		newConfig.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
 	}
 
 	s.lock.Lock()
