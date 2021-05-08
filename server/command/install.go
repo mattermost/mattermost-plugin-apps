@@ -15,10 +15,8 @@ import (
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
-	appID := ""
 	appSecret := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
-	fs.StringVar(&appID, "app-id", "", "ID of the app")
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
 	if err := fs.Parse(params.current); err != nil {
 		return errorOut(params, err)
@@ -28,9 +26,12 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		return errorOut(params, utils.ErrForbidden)
 	}
 
-	if appID == "" {
-		return errorOut(params, errors.New("must select an App ID"))
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("you need to specify the app id"))
 	}
+
+	appID := params.current[0]
+
 	m, err := s.proxy.GetManifest(apps.AppID(appID))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "manifest not found"))

@@ -29,7 +29,7 @@ func (s *service) getSubCommands() map[string]commandHandler {
 	debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
 
 	installAC := model.NewAutocompleteData("install", "", "Install a registered app")
-	installAC.AddNamedTextArgument("app-id", "ID of the app to install", "appID", "", true)
+	installAC.AddTextArgument("ID of the app to install", "appID", "")
 	installAC.AddNamedTextArgument("app-secret", "Secret used to secure connection to App", "App Secret", "", false)
 
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
