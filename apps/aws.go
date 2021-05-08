@@ -15,21 +15,27 @@ const (
 
 	// appsS3BucketEnvVarName determines an environment variable.
 	// Variable saves address of apps S3 bucket name
-	AWSS3BucketEnvVar = "MM_APPS_S3_BUCKET"
+	AWSS3BucketEnvVar     = "MM_APPS_S3_BUCKET"
+	AWSLambdaAccessEnvVar = "MM_APPS_LAMBDA_ACCESS_KEY" // nolint:gosec
+	AWSLambdaSecretEnvVar = "MM_APPS_LAMBDA_SECRET_KEY" // nolint:gosec
 
-	// defaultBucketName is the default s3 bucket name used to store app data.
+	// to be deprecated
+	CloudLambdaAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
+	CloudLambdaSecretEnvVar = "APPS_LAMBDA_SECRET_KEY"     // nolint:gosec
+
+	// DefaultS3Bucket is the default s3 bucket name used to store app data.
 	AWSDefaultS3Bucket = "mattermost-apps-bucket"
 )
 
-// AWSLambdaFunction describes a distinct AWS Lambda function defined by the
-// app, and what path should be mapped to it.
+// AWSLambda describes a distinct AWS Lambda function defined by the app, and what
+// path should be mapped to it.
 //
 // cmd/appsctl will create or update the manifest's aws_lambda functions in the
 // AWS Lambda service.
 //
 // upawslambda will use the manifest's aws_lambda functions to find the closest
 // match for the call's path, and then to invoke the AWS Lambda function.
-type AWSLambdaFunction struct {
+type AWSLambda struct {
 	// The lambda function with its Path the longest-matching prefix of the
 	// call's Path will be invoked for a call.
 	Path string `json:"path"`
@@ -40,7 +46,7 @@ type AWSLambdaFunction struct {
 	Runtime string `json:"runtime"`
 }
 
-func (f AWSLambdaFunction) IsValid() error {
+func (f AWSLambda) IsValid() error {
 	if f.Path == "" {
 		return utils.NewInvalidError("aws_lambda path must not be empty")
 	}
@@ -56,7 +62,7 @@ func (f AWSLambdaFunction) IsValid() error {
 	return nil
 }
 
-// LambdaName generates function name for a specific app, name can be 64
+// AWSLambdaName generates function name for a specific app, name can be 64
 // characters long.
 func LambdaName(appID AppID, version AppVersion, function string) string {
 	// Sanitized any dots used in appID and version as lambda function names can not contain dots

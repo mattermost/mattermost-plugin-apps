@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package aws
+package main
 
 import (
 	"bytes"
@@ -10,14 +10,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/aws"
 )
 
-func (c *client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
-	provisionData, err := GetProvisionDataFromFile(path, c.logger)
+func ProvisionAppFromFile(c aws.Client, path string, shouldUpdate bool) error {
+	provisionData, err := GetProvisionDataFromFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "can't get Provision data from file %s", path)
 	}
-	return c.provisionApp(provisionData, shouldUpdate)
+	return provisionApp(c, provisionData, shouldUpdate)
 }
 
 // provisionApp gets a release URL parses the release and creates an App in AWS
@@ -36,8 +37,8 @@ func (c *client) ProvisionAppFromFile(path string, shouldUpdate bool) error {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func (c *client) provisionApp(provisionData *ProvisionData, shouldUpdate bool) error {
-	bucket := apps.S3BucketNameWithDefaults("")
+func provisionApp(c aws.Client, provisionData *ProvisionData, shouldUpdate bool) error {
+	bucket := apps.AWSDefaultS3Bucket
 	// provision assets
 	for _, asset := range provisionData.StaticFiles {
 		if err := c.UploadS3(bucket, asset.Key, asset.File); err != nil {
@@ -46,17 +47,17 @@ func (c *client) provisionApp(provisionData *ProvisionData, shouldUpdate bool) e
 		asset.File.Close()
 	}
 
-	if err := c.provisionFunctions(provisionData.Manifest, provisionData.LambdaFunctions, shouldUpdate); err != nil {
+	if err := provisionFunctions(c, provisionData.Manifest, provisionData.LambdaFunctions, shouldUpdate); err != nil {
 		return errors.Wrapf(err, "can't provision functions of the app - %s", provisionData.Manifest.AppID)
 	}
 
-	if err := c.provisionManifest(bucket, provisionData.Manifest, provisionData.ManifestKey); err != nil {
+	if err := provisionManifest(c, bucket, provisionData.Manifest, provisionData.ManifestKey); err != nil {
 		return errors.Wrapf(err, "can't save manifest fo the app %s to S3", provisionData.Manifest.AppID)
 	}
 	return nil
 }
 
-func (c *client) provisionFunctions(manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
+func provisionFunctions(c aws.Client, manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
 	policyName, err := c.MakeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrap(err, "can't make lambda function default policy")
@@ -79,7 +80,7 @@ func (c *client) provisionFunctions(manifest *apps.Manifest, functions map[strin
 }
 
 // provisionManifest saves manifest file in S3
-func (c *client) provisionManifest(bucket string, manifest *apps.Manifest, key string) error {
+func provisionManifest(c aws.Client, bucket string, manifest *apps.Manifest, key string) error {
 	data, err := json.Marshal(manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", manifest.AppID)

@@ -98,7 +98,7 @@ type Manifest struct {
 	// Cloud;
 	// - define path->function mappings, aka "routes". The function with the
 	// path matching as the longest prefix is used to handle a Call request.
-	AWSLambda []AWSLambdaFunction `json:"aws_lambda,omitempty"`
+	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
 }
 
 var DefaultOnInstall = &Call{

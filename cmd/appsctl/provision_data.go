@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package aws
+package main
 
 import (
 	"archive/zip"
@@ -44,7 +44,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
+func GetProvisionDataFromFile(path string) (*ProvisionData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -55,11 +55,11 @@ func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
 		return nil, errors.Wrap(err, "can't read file")
 	}
 
-	return getProvisionData(b, log)
+	return getProvisionData(b)
 }
 
 // getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
+func getProvisionData(b []byte) (*ProvisionData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -111,14 +111,10 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			if log != nil {
-				log.Debug("Found function bundle", "file", file.Name)
-			}
+			log.Debug("Found function bundle", "file", file.Name)
 
 		default:
-			if log != nil {
-				log.Info("Unknown file found in app bundle", "file", file.Name)
-			}
+			log.Info("Unknown file found in app bundle", "file", file.Name)
 		}
 	}
 

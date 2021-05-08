@@ -75,13 +75,13 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized config service")
 
-	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
+	accessKey := os.Getenv(apps.CloudLambdaAccessEnvVar)
 	if accessKey == "" {
-		p.mm.Log.Warn("APPS_INVOKE_AWS_ACCESS_KEY is not set. AWS apps won't work.")
+		p.mm.Log.Warn(apps.CloudLambdaAccessEnvVar + " is not set. AWS apps won't work.")
 	}
-	secretKey := os.Getenv("APPS_INVOKE_AWS_SECRET_KEY")
+	secretKey := os.Getenv(apps.CloudLambdaSecretEnvVar)
 	if secretKey == "" {
-		p.mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
+		p.mm.Log.Warn(apps.CloudLambdaSecretEnvVar + " is not set. AWS apps won't work.")
 	}
 	p.aws, err = aws.MakeClient(accessKey, secretKey, &p.mm.Log)
 	if err != nil {

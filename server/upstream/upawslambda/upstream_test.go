@@ -12,7 +12,7 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	lambdas := []apps.AWSLambdaFunction{
+	lambdas := []apps.AWSLambda{
 		{
 			Path: "/topic",
 			Name: "topic",

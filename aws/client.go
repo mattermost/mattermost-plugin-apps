@@ -42,8 +42,6 @@ type Client interface {
 	CreateS3Bucket(bucket string) error
 	UploadS3(bucket, key string, body io.Reader) error
 	ExistsS3Bucket(name string) (bool, error)
-
-	ProvisionAppFromFile(path string, shouldUpdate bool) error
 }
 
 type client struct {
