@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package main
+package awsapps
 
 import (
 	"archive/zip"
@@ -16,7 +16,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-const bundleStaticAssetsFolder = "static/"
+type Logger interface {
+	Error(message string, keyValuePairs ...interface{})
+	Warn(message string, keyValuePairs ...interface{})
+	Info(message string, keyValuePairs ...interface{})
+	Debug(message string, keyValuePairs ...interface{})
+}
 
 // ProvisionData contains all the necessary data for provisioning an app
 type ProvisionData struct {
@@ -44,7 +49,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string) (*ProvisionData, error) {
+func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -55,11 +60,11 @@ func GetProvisionDataFromFile(path string) (*ProvisionData, error) {
 		return nil, errors.Wrap(err, "can't read file")
 	}
 
-	return getProvisionData(b)
+	return getProvisionData(b, log)
 }
 
 // getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte) (*ProvisionData, error) {
+func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -97,8 +102,8 @@ func getProvisionData(b []byte) (*ProvisionData, error) {
 				Bundle: lambdaFunctionFile,
 			})
 
-		case strings.HasPrefix(file.Name, bundleStaticAssetsFolder):
-			assetName := strings.TrimPrefix(file.Name, bundleStaticAssetsFolder)
+		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
+			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
 			if assetName == "" {
 				continue
 			}
@@ -111,10 +116,14 @@ func getProvisionData(b []byte) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			log.Debug("Found function bundle", "file", file.Name)
+			if log != nil {
+				log.Debug("Found function bundle", "file", file.Name)
+			}
 
 		default:
-			log.Info("Unknown file found in app bundle", "file", file.Name)
+			if log != nil {
+				log.Info("Unknown file found in app bundle", "file", file.Name)
+			}
 		}
 	}
 
@@ -147,7 +156,7 @@ func getProvisionData(b []byte) (*ProvisionData, error) {
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
 		Manifest:        mani,
-		ManifestKey:     apps.ManifestS3Name(mani.AppID, mani.Version),
+		ManifestKey:     S3ManifestName(mani.AppID, mani.Version),
 	}
 	if err := pd.IsValid(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
@@ -159,7 +168,7 @@ func generateAssetNames(manifest *apps.Manifest, assets []AssetData) map[string]
 	generatedAssets := make(map[string]AssetData, len(assets))
 	for _, asset := range assets {
 		generatedAssets[asset.Key] = AssetData{
-			Key:  apps.AssetS3Name(manifest.AppID, manifest.Version, asset.Key),
+			Key:  S3StaticName(manifest.AppID, manifest.Version, asset.Key),
 			File: asset.File,
 		}
 	}
@@ -169,7 +178,7 @@ func generateAssetNames(manifest *apps.Manifest, assets []AssetData) map[string]
 func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) map[string]FunctionData {
 	generatedFunctions := make(map[string]FunctionData, len(functions))
 	for _, function := range functions {
-		name := apps.LambdaName(manifest.AppID, manifest.Version, function.Name)
+		name := LambdaName(manifest.AppID, manifest.Version, function.Name)
 		generatedFunctions[function.Name] = FunctionData{
 			Name:    name,
 			Bundle:  function.Bundle,

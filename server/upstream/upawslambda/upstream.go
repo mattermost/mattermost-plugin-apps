@@ -14,7 +14,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
@@ -23,7 +24,7 @@ import (
 // reused between requests, nor cached.
 type Upstream struct {
 	app       *apps.App
-	awsClient aws.Client
+	awsClient awsclient.Client
 	bucket    string
 }
 
@@ -45,7 +46,7 @@ type invocationResponse struct {
 	Body       string `json:"body"`
 }
 
-func NewUpstream(app *apps.App, awsClient aws.Client, bucket string) *Upstream {
+func NewUpstream(app *apps.App, awsClient awsclient.Client, bucket string) *Upstream {
 	return &Upstream{
 		app:       app,
 		awsClient: awsClient,
@@ -87,7 +88,7 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 }
 
 func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := apps.AssetS3Name(u.app.AppID, u.app.Version, path)
+	key := awsapps.S3StaticName(u.app.AppID, u.app.Version, path)
 	data, err := u.awsClient.GetS3(u.bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
@@ -122,7 +123,7 @@ func match(callPath string, app *apps.App) string {
 	for _, f := range app.AWSLambda {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				matchedName = apps.LambdaName(app.AppID, app.Version, f.Name)
+				matchedName = awsapps.LambdaName(app.AppID, app.Version, f.Name)
 				matchedPath = f.Path
 			}
 		}

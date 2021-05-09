@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package main
+package awsapps
 
 import (
 	"bytes"
@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 )
 
-func ProvisionAppFromFile(c aws.Client, path string, shouldUpdate bool) error {
-	provisionData, err := GetProvisionDataFromFile(path)
+func ProvisionAppFromFile(c awsclient.Client, path string, shouldUpdate bool, log Logger) error {
+	provisionData, err := GetProvisionDataFromFile(path, log)
 	if err != nil {
 		return errors.Wrapf(err, "can't get Provision data from file %s", path)
 	}
@@ -37,8 +37,8 @@ func ProvisionAppFromFile(c aws.Client, path string, shouldUpdate bool) error {
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func provisionApp(c aws.Client, provisionData *ProvisionData, shouldUpdate bool) error {
-	bucket := apps.AWSDefaultS3Bucket
+func provisionApp(c awsclient.Client, provisionData *ProvisionData, shouldUpdate bool) error {
+	bucket := DefaultS3Bucket
 	// provision assets
 	for _, asset := range provisionData.StaticFiles {
 		if err := c.UploadS3(bucket, asset.Key, asset.File); err != nil {
@@ -57,7 +57,7 @@ func provisionApp(c aws.Client, provisionData *ProvisionData, shouldUpdate bool)
 	return nil
 }
 
-func provisionFunctions(c aws.Client, manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
+func provisionFunctions(c awsclient.Client, manifest *apps.Manifest, functions map[string]FunctionData, shouldUpdate bool) error {
 	policyName, err := c.MakeLambdaFunctionDefaultPolicy()
 	if err != nil {
 		return errors.Wrap(err, "can't make lambda function default policy")
@@ -80,7 +80,7 @@ func provisionFunctions(c aws.Client, manifest *apps.Manifest, functions map[str
 }
 
 // provisionManifest saves manifest file in S3
-func provisionManifest(c aws.Client, bucket string, manifest *apps.Manifest, key string) error {
+func provisionManifest(c awsclient.Client, bucket string, manifest *apps.Manifest, key string) error {
 	data, err := json.Marshal(manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", manifest.AppID)

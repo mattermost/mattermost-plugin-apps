@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -28,7 +28,7 @@ type Proxy struct {
 	mm            *pluginapi.Client
 	conf          config.Service
 	store         *store.Service
-	aws           aws.Client
+	aws           awsclient.Client
 	httpOut       httpout.Service
 	s3AssetBucket string
 }
@@ -59,7 +59,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, aws awsclient.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,

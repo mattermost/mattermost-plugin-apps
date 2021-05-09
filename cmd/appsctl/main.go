@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 )
 
 var (
@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func createAWSClient() (aws.Client, error) {
+func createAWSClient() (awsclient.Client, error) {
 	accessKey := os.Getenv("APPS_PROVISION_AWS_ACCESS_KEY")
 	secretKey := os.Getenv("APPS_PROVISION_AWS_SECRET_KEY")
 
@@ -46,5 +46,5 @@ func createAWSClient() (aws.Client, error) {
 		return nil, errors.New("no AWS secret key was provided. Please set APPS_PROVISION_AWS_SECRET_KEY")
 	}
 
-	return aws.MakeClient(accessKey, secretKey, &log)
+	return awsclient.MakeClient(accessKey, secretKey, &log)
 }

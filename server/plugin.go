@@ -16,7 +16,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
+	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
+	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
@@ -36,7 +37,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
-	aws  aws.Client
+	aws  awsclient.Client
 
 	store       *store.Service
 	appservices appservices.Service
@@ -75,15 +76,15 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized config service")
 
-	accessKey := os.Getenv(apps.CloudLambdaAccessEnvVar)
+	accessKey := os.Getenv(awsapps.CloudLambdaAccessEnvVar)
 	if accessKey == "" {
-		p.mm.Log.Warn(apps.CloudLambdaAccessEnvVar + " is not set. AWS apps won't work.")
+		p.mm.Log.Warn(awsapps.CloudLambdaAccessEnvVar + " is not set. AWS apps won't work.")
 	}
-	secretKey := os.Getenv(apps.CloudLambdaSecretEnvVar)
+	secretKey := os.Getenv(awsapps.CloudLambdaSecretEnvVar)
 	if secretKey == "" {
-		p.mm.Log.Warn(apps.CloudLambdaSecretEnvVar + " is not set. AWS apps won't work.")
+		p.mm.Log.Warn(awsapps.CloudLambdaSecretEnvVar + " is not set. AWS apps won't work.")
 	}
-	p.aws, err = aws.MakeClient(accessKey, secretKey, &p.mm.Log)
+	p.aws, err = awsclient.MakeClient(accessKey, secretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -98,7 +99,7 @@ func (p *Plugin) OnActivate() error {
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
-	manifestBucket := apps.S3BucketNameWithDefaults("")
+	manifestBucket := awsapps.S3BucketName("")
 	err = mstore.InitGlobal(p.aws, manifestBucket, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
@@ -110,7 +111,7 @@ func (p *Plugin) OnActivate() error {
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
-	assetBucket := apps.S3BucketNameWithDefaults("")
+	assetBucket := awsapps.S3BucketName("")
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
