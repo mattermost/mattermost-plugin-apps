@@ -56,7 +56,7 @@ var provisionBucketCmd = &cobra.Command{
 			return err
 		}
 
-		name := awsapps.S3BucketName("")
+		name := awsapps.S3BucketName()
 		exists, err := awsClient.ExistsS3Bucket(name)
 		if err != nil {
 			return err

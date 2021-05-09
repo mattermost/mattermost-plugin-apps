@@ -99,7 +99,7 @@ func (p *Plugin) OnActivate() error {
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
-	manifestBucket := awsapps.S3BucketName("")
+	manifestBucket := awsapps.S3BucketName()
 	err = mstore.InitGlobal(p.aws, manifestBucket, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
@@ -111,7 +111,7 @@ func (p *Plugin) OnActivate() error {
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
-	assetBucket := awsapps.S3BucketName("")
+	assetBucket := awsapps.S3BucketName()
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")

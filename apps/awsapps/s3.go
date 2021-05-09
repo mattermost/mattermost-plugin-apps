@@ -30,11 +30,8 @@ func S3StaticName(appID apps.AppID, version apps.AppVersion, name string) string
 	return fmt.Sprintf("%s/%s_%s_app/%s", apps.StaticFolder, appID, version, sanitizedName)
 }
 
-func S3BucketName(name string) string {
-	if name != "" {
-		return name
-	}
-	name = os.Getenv(S3BucketEnvVar)
+func S3BucketName() string {
+	name := os.Getenv(S3BucketEnvVar)
 	if name != "" {
 		return name
 	}
