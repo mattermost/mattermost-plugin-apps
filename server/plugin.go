@@ -133,6 +133,7 @@ func (p *Plugin) OnActivate() error {
 		}
 		p.mm.Log.Debug("updated the installed apps metadata")
 	}
+	p.mm.Log.Debug("updated the installed apps metadata")
 
 	return nil
 }
