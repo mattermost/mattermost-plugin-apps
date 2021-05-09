@@ -52,14 +52,14 @@ func (l Location) Markdown() md.MD {
 		return md.MD(l)
 	}
 
-	switch Location(tokens[0]) {
+	switch Location("/" + tokens[0]) {
 	case LocationPostMenu:
 		return "Post Menu items"
 	case LocationChannelHeader:
 		return "Channel Header buttons"
 	case LocationCommand:
 		if len(tokens) < 2 {
-			return "Arbitrary /-commands"
+			return "Slash commands"
 		}
 		return md.Markdownf("`/%s` command", strings.Join(tokens[1:], " "))
 	}

@@ -21,10 +21,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/http"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/dialog"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/gateway"
-	"github.com/mattermost/mattermost-plugin-apps/server/http/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -42,7 +43,9 @@ type Plugin struct {
 	proxy       proxy.Service
 
 	command command.Service
-	http    http.Service
+
+	httpIn  httpin.Service
+	httpOut httpout.Service
 }
 
 func NewPlugin(buildConfig config.BuildConfig) *Plugin {
@@ -70,6 +73,7 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
+	p.mm.Log.Debug("initialized config service")
 
 	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
 	if accessKey == "" {
@@ -83,6 +87,10 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
+	p.mm.Log.Debug("initialized AWS Client")
+
+	p.httpOut = httpout.NewService(p.conf)
+	p.mm.Log.Debug("initialized outgoing HTTP")
 
 	p.store = store.NewService(p.mm, p.conf)
 	// manifest store
@@ -91,13 +99,14 @@ func (p *Plugin) OnActivate() error {
 	mstore.Configure(conf)
 	// TODO: uses the default bucket name, do we need it customizeable?
 	manifestBucket := apps.S3BucketNameWithDefaults("")
-	err = mstore.InitGlobal(p.aws, manifestBucket)
+	err = mstore.InitGlobal(p.aws, manifestBucket, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
 	// app store
 	appstore := p.store.App
 	appstore.Configure(conf)
+	p.mm.Log.Debug("initialized the persistent store")
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
@@ -107,25 +116,31 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex)
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex, p.httpOut)
+	p.mm.Log.Debug("initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
+	p.mm.Log.Debug("initialized the app REST APIs")
 
-	p.http = http.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.command, err = command.MakeService(p.mm, p.conf, p.proxy)
+	p.mm.Log.Debug("initialized incoming HTTP")
+
+	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
+	p.mm.Log.Debug("initialized slash commands")
 
 	err = p.proxy.SynchronizeInstalledApps()
 	if err != nil {
 		p.mm.Log.Error("failed to update apps", "err", err.Error())
 	}
+	p.mm.Log.Debug("updated the installed apps metadata")
 
 	return nil
 }
@@ -148,7 +163,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
-	p.http.ServeHTTP(c, w, req)
+	p.httpIn.ServeHTTP(c, w, req)
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {

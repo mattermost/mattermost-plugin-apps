@@ -10,6 +10,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/services/configservice"
 )
 
 type Configurable interface {
@@ -19,7 +20,7 @@ type Configurable interface {
 // Configurator should be abbreviated as `cfg`
 type Service interface {
 	GetConfig() Config
-	GetMattermostConfig() *model.Config
+	GetMattermostConfig() configservice.ConfigService
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
 }
@@ -60,7 +61,7 @@ func (s *service) GetConfig() Config {
 	return *conf
 }
 
-func (s *service) GetMattermostConfig() *model.Config {
+func (s *service) GetMattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
@@ -68,8 +69,9 @@ func (s *service) GetMattermostConfig() *model.Config {
 	if mmconf == nil {
 		mmconf = s.reloadMattermostConfig()
 	}
-
-	return mmconf
+	return &mattermostConfigService{
+		mmconf: mmconf,
+	}
 }
 
 func (s *service) reloadMattermostConfig() *model.Config {
@@ -103,6 +105,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
+	newConfig.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
 	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {

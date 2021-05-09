@@ -45,6 +45,8 @@ type Config struct {
 	StoredConfig
 	BuildConfig
 
+	DeveloperMode bool
+
 	BotUserID              string
 	MattermostSiteHostname string
 	MattermostSiteURL      string

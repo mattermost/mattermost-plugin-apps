@@ -40,7 +40,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.AppID = app.AppID
 
 	if e.MattermostSiteURL == "" {
-		mmconf := e.conf.GetMattermostConfig()
+		mmconf := e.conf.GetMattermostConfig().Config()
 		if mmconf.ServiceSettings.SiteURL != nil {
 			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
 		}

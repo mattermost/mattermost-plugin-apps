@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
-	model "github.com/mattermost/mattermost-server/v5/model"
+	configservice "github.com/mattermost/mattermost-server/v5/services/configservice"
 )
 
 // MockService is a mock of Service interface.
@@ -50,10 +50,10 @@ func (mr *MockServiceMockRecorder) GetConfig() *gomock.Call {
 }
 
 // GetMattermostConfig mocks base method.
-func (m *MockService) GetMattermostConfig() *model.Config {
+func (m *MockService) GetMattermostConfig() configservice.ConfigService {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMattermostConfig")
-	ret0, _ := ret[0].(*model.Config)
+	ret0, _ := ret[0].(configservice.ConfigService)
 	return ret0
 }
 
