@@ -21,7 +21,7 @@ const (
 
 	// to be deprecated
 	CloudLambdaAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
-	CloudLambdaSecretEnvVar = "APPS_LAMBDA_SECRET_KEY"     // nolint:gosec
+	CloudLambdaSecretEnvVar = "APPS_INVOKE_AWS_SECRET_KEY" // nolint:gosec
 
 	// DefaultS3Bucket is the default s3 bucket name used to store app data.
 	AWSDefaultS3Bucket = "mattermost-apps-bucket"
