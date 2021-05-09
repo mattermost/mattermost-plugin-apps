@@ -30,6 +30,112 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
+type params struct {
+	pluginContext *plugin.Context
+	commandArgs   *model.CommandArgs
+	current       []string
+}
+
+type commandHandler struct {
+	f            func(*params) (*model.CommandResponse, error)
+	devOnly      bool
+	autoComplete *model.AutocompleteData
+}
+
+func (s *service) allCommands() map[string]commandHandler {
+	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
+	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
+
+	all := map[string]commandHandler{
+		"info": {
+			f:            s.executeInfo,
+			autoComplete: model.NewAutocompleteData("info", "", "Display debugging information"),
+		},
+		"list": {
+			f:            s.executeList,
+			autoComplete: model.NewAutocompleteData("list", "", "List installed and registered apps"),
+		},
+		"uninstall": {
+			f:            s.checkSystemAdmin(s.executeUninstall),
+			autoComplete: uninstallAC,
+		},
+	}
+
+	conf := s.conf.GetConfig()
+
+	if conf.DeveloperMode {
+		debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
+		debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
+
+		all["debug-bindings"] = commandHandler{
+			f:            s.executeDebugBindings,
+			devOnly:      true,
+			autoComplete: model.NewAutocompleteData("debug-bindings", "", "List bindings"),
+		}
+		all["debug-clean"] = commandHandler{
+			f:            s.executeDebugClean,
+			devOnly:      true,
+			autoComplete: model.NewAutocompleteData("debug-clean", "", "Delete all KV data"),
+		}
+		// TODO ticket: change to watch-manifest
+		all["debug-add-manifest"] = commandHandler{
+			f:            s.executeDebugAddManifest,
+			devOnly:      true,
+			autoComplete: debugAddManifestAC,
+		}
+	}
+
+	all["install"] = s.installCommand(conf)
+
+	return all
+}
+
+func (s *service) installCommand(conf config.Config) commandHandler {
+	h := commandHandler{
+		f: s.checkSystemAdmin(s.executeInstall),
+		autoComplete: &model.AutocompleteData{
+			Trigger:  "install",
+			HelpText: "Install an App.",
+			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
+			Arguments: []*model.AutocompleteArg{
+				{
+					Name:     "app-secret",
+					HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
+					Type:     model.AutocompleteArgTypeText,
+					Data: &model.AutocompleteTextArg{
+						Hint: "secret string",
+					},
+				},
+			},
+		},
+	}
+
+	if conf.CloudMode {
+		// install only by ID (from the marketplace) in cloud mode
+		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+			HelpText: "ID of the app to install",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "secret string",
+			},
+			Required: true,
+		})
+	} else {
+		// install from URL in the on-prem mode
+		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+			Name:     "url",
+			HelpText: "URL of the App's manifest",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "URL",
+			},
+			Required: true,
+		})
+	}
+
+	return h
+}
+
 func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
 		mm:      mm,
@@ -37,37 +143,18 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 		proxy:   proxy,
 		httpOut: httpOut,
 	}
-	conf := configService.GetConfig()
-	subCommands := s.getSubCommands()
-	var subTrigger []string
-	for t, c := range subCommands {
-		if c.debug && !conf.DeveloperMode {
-			continue
-		}
-
-		subTrigger = append(subTrigger, t)
+	subCommands := s.allCommands()
+	var subs []string
+	for t := range subCommands {
+		subs = append(subs, t)
 	}
+	sort.Strings(subs)
+	helpText := "Available commands: " + strings.Join(subs, ", ")
 
-	sort.Strings(subTrigger)
-
-	helpText := "Available commands: "
-	for i, t := range subTrigger {
-		if i == 0 {
-			helpText += t
-		} else {
-			helpText += ", " + t
-		}
-	}
-
-	autoComplete := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
-
-	for _, t := range subTrigger {
-		c := subCommands[t]
-		if c.debug && !conf.DeveloperMode {
-			continue
-		}
-
-		autoComplete.AddCommand(c.autoComplete)
+	// Add autocomplete for the subcommands alphabetically
+	ac := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
+	for _, t := range subs {
+		ac.AddCommand(subCommands[t].autoComplete)
 	}
 
 	err := mm.SlashCommand.Register(&model.Command{
@@ -75,7 +162,7 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
-		AutocompleteData: autoComplete,
+		AutocompleteData: ac,
 	})
 	if err != nil {
 		return nil, err
@@ -120,6 +207,42 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	return s.handleMain(params)
 }
 
+func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
+	return s.runSubcommand(s.allCommands(), in)
+}
+
+func (s *service) runSubcommand(subcommands map[string]commandHandler, params *params) (*model.CommandResponse, error) {
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("expected a (sub-)command"))
+	}
+	if params.current[0] == "help" {
+		return out(params, md.MD("TODO usage"))
+	}
+
+	c, ok := subcommands[params.current[0]]
+	if !ok {
+		return errorOut(params, errors.Errorf("unknown command: %s", params.current[0]))
+	}
+
+	conf := s.conf.GetConfig()
+	if c.devOnly && !conf.DeveloperMode {
+		return errorOut(params, errors.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.", params.current[0]))
+	}
+
+	p := *params
+	p.current = params.current[1:]
+	return c.f(&p)
+}
+
+func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse, error)) func(*params) (*model.CommandResponse, error) {
+	return func(p *params) (*model.CommandResponse, error) {
+		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+			return errorOut(p, errors.New("you need to be a system admin to run this command"))
+		}
+
+		return handler(p)
+	}
+}
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
 	return &model.CommandResponse{

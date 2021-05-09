@@ -88,10 +88,11 @@ func (p *Plugin) OnActivate() error {
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
-	// TODO: uses the default bucket name, do we need it customizeable?
-	err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+	if conf.CloudMode {
+		err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+		}
 	}
 	// app store
 	appstore := p.store.App
@@ -125,11 +126,13 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized slash commands")
 
-	err = p.proxy.SynchronizeInstalledApps()
-	if err != nil {
-		p.mm.Log.Error("failed to update apps", "err", err.Error())
+	if conf.CloudMode {
+		err = p.proxy.SynchronizeInstalledApps()
+		if err != nil {
+			p.mm.Log.Error("failed to update apps", "err", err.Error())
+		}
+		p.mm.Log.Debug("updated the installed apps metadata")
 	}
-	p.mm.Log.Debug("updated the installed apps metadata")
 
 	return nil
 }

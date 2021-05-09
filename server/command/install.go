@@ -11,28 +11,51 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 )
 
 func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
 	appSecret := ""
+	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
-	if err := fs.Parse(params.current); err != nil {
+	fs.StringVar(&manifestURL, "url", "", "App's manifest URL")
+	err := fs.Parse(params.current)
+	if err != nil {
 		return errorOut(params, err)
 	}
 
-	if !s.mm.User.HasPermissionTo(params.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-		return errorOut(params, utils.ErrForbidden)
+	var m *apps.Manifest
+	var appID apps.AppID
+	conf := s.conf.GetConfig()
+	if conf.CloudMode {
+		if len(params.current) == 0 {
+			return errorOut(params, errors.New("you must specify the app id"))
+		}
+		appID = apps.AppID(params.current[0])
+	} else {
+		if manifestURL == "" {
+			return errorOut(params, errors.New("you must add a `--url`"))
+		}
+		// Trust the URL only in dev mode
+		var data []byte
+		data, err = s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+		if err != nil {
+			return errorOut(params, err)
+		}
+		m, err = apps.ManifestFromJSON(data)
+		if err != nil {
+			return errorOut(params, err)
+		}
+
+		_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+		if err != nil {
+			return errorOut(params, err)
+		}
+		appID = m.AppID
 	}
 
-	if len(params.current) == 0 {
-		return errorOut(params, errors.New("you need to specify the app id"))
-	}
-
-	appID := params.current[0]
-
-	m, err := s.proxy.GetManifest(apps.AppID(appID))
+	// Get the manifest from the store, even if redundant
+	m, err = s.proxy.GetManifest(appID)
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "manifest not found"))
 	}
