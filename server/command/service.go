@@ -110,7 +110,7 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 		},
 	}
 
-	if conf.CloudMode {
+	if conf.MattermostCloudMode {
 		// install only by ID (from the marketplace) in cloud mode
 		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
 			HelpText: "ID of the app to install",

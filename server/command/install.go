@@ -27,7 +27,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	var m *apps.Manifest
 	var appID apps.AppID
 	conf := s.conf.GetConfig()
-	if conf.CloudMode {
+	if conf.MattermostCloudMode {
 		if len(params.current) == 0 {
 			return errorOut(params, errors.New("you must specify the app id"))
 		}

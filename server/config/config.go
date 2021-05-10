@@ -51,8 +51,8 @@ type Config struct {
 	StoredConfig
 	BuildConfig
 
-	DeveloperMode bool
-	CloudMode     bool
+	DeveloperMode       bool
+	MattermostCloudMode bool
 
 	BotUserID              string
 	MattermostSiteHostname string
@@ -117,12 +117,12 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config) error {
 
 	// use CloudLambdaAccessEnvVar for now to detect the Cloud mode
 	cloudLambdaAccessKey := os.Getenv(awsapps.CloudLambdaAccessEnvVar)
-	c.CloudMode = false
+	c.MattermostCloudMode = false
 	if cloudLambdaAccessKey != "" {
-		c.CloudMode = true
+		c.MattermostCloudMode = true
 	}
 
-	if c.CloudMode {
+	if c.MattermostCloudMode {
 		c.AWSLambdaAccessKey = os.Getenv(awsapps.CloudLambdaAccessEnvVar)
 		c.AWSLambdaSecretKey = os.Getenv(awsapps.CloudLambdaSecretEnvVar)
 		if c.AWSLambdaAccessKey == "" || c.AWSLambdaSecretKey == "" {

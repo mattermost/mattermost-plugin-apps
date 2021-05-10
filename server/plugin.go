@@ -88,7 +88,7 @@ func (p *Plugin) OnActivate() error {
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
-	if conf.CloudMode {
+	if conf.MattermostCloudMode {
 		err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
@@ -126,7 +126,7 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized slash commands")
 
-	if conf.CloudMode {
+	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
 			p.mm.Log.Error("failed to synchronize apps metadata", "err", err.Error())
