@@ -63,9 +63,9 @@ type Config struct {
 	// Maximum size of incoming remote webhook messages
 	MaxWebhookSize int64
 
-	AWSLambdaAccessKey string
-	AWSLambdaSecretKey string
-	AWSS3Bucket        string
+	AWSAccessKey string
+	AWSSecretKey string
+	AWSS3Bucket  string
 }
 
 func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
@@ -115,22 +115,22 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config) error {
 
 	c.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
-	// use CloudLambdaAccessEnvVar for now to detect the Cloud mode
-	cloudLambdaAccessKey := os.Getenv(awsapps.CloudLambdaAccessEnvVar)
+	// use CloudAccessEnvVar for now to detect the Cloud mode
+	cloudAccessKey := os.Getenv(awsapps.CloudAccessEnvVar)
 	c.MattermostCloudMode = false
-	if cloudLambdaAccessKey != "" {
+	if cloudAccessKey != "" {
 		c.MattermostCloudMode = true
 	}
 
 	if c.MattermostCloudMode {
-		c.AWSLambdaAccessKey = os.Getenv(awsapps.CloudLambdaAccessEnvVar)
-		c.AWSLambdaSecretKey = os.Getenv(awsapps.CloudLambdaSecretEnvVar)
-		if c.AWSLambdaAccessKey == "" || c.AWSLambdaSecretKey == "" {
-			return errors.Errorf("%s and %s must be set in cloud mode.", awsapps.CloudLambdaAccessEnvVar, awsapps.CloudLambdaSecretEnvVar)
+		c.AWSAccessKey = os.Getenv(awsapps.CloudAccessEnvVar)
+		c.AWSSecretKey = os.Getenv(awsapps.CloudSecretEnvVar)
+		if c.AWSAccessKey == "" || c.AWSSecretKey == "" {
+			return errors.Errorf("%s and %s must be set in cloud mode.", awsapps.CloudAccessEnvVar, awsapps.CloudSecretEnvVar)
 		}
 	} else {
-		c.AWSLambdaAccessKey = os.Getenv(awsapps.LambdaAccessEnvVar)
-		c.AWSLambdaSecretKey = os.Getenv(awsapps.LambdaSecretEnvVar)
+		c.AWSAccessKey = os.Getenv(awsapps.AccessEnvVar)
+		c.AWSSecretKey = os.Getenv(awsapps.SecretEnvVar)
 	}
 	c.AWSS3Bucket = awsapps.S3BucketName()
 

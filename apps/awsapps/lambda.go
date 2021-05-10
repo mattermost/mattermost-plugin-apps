@@ -12,12 +12,12 @@ import (
 const (
 	MaxLambdaName = 64
 
-	LambdaAccessEnvVar = "MM_APPS_LAMBDA_ACCESS_KEY" // nolint:gosec
-	LambdaSecretEnvVar = "MM_APPS_LAMBDA_SECRET_KEY" // nolint:gosec
+	AccessEnvVar = "MM_APPS_AWS_ACCESS_KEY" // nolint:gosec
+	SecretEnvVar = "MM_APPS_AWS_SECRET_KEY" // nolint:gosec
 
 	// to be deprecated
-	CloudLambdaAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
-	CloudLambdaSecretEnvVar = "APPS_INVOKE_AWS_SECRET_KEY" // nolint:gosec
+	CloudAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
+	CloudSecretEnvVar = "APPS_INVOKE_AWS_SECRET_KEY" // nolint:gosec
 )
 
 // LambdaName generates function name for a specific app, name can be 64

@@ -75,7 +75,7 @@ func (p *Plugin) OnActivate() error {
 	p.mm.Log.Debug("initialized config service")
 
 	conf := p.conf.GetConfig()
-	p.aws, err = awsclient.MakeClient(conf.AWSLambdaAccessKey, conf.AWSLambdaSecretKey, &p.mm.Log)
+	p.aws, err = awsclient.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
