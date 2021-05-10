@@ -129,11 +129,11 @@ func (p *Plugin) OnActivate() error {
 	if conf.CloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.mm.Log.Error("failed to update apps", "err", err.Error())
+			p.mm.Log.Error("failed to synchronize apps metadata", "err", err.Error())
+		} else {
+			p.mm.Log.Debug("synchronized the installed apps metadata")
 		}
-		p.mm.Log.Debug("updated the installed apps metadata")
 	}
-	p.mm.Log.Debug("updated the installed apps metadata")
 
 	return nil
 }

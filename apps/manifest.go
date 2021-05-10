@@ -101,8 +101,10 @@ type Manifest struct {
 	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
 }
 
-// AWSLambda describes a distinct AWS Lambda function defined by the app, and what
-// path should be mapped to it.
+// AWSLambda describes a distinct AWS Lambda function defined by the app, and
+// what path should be mapped to it. See
+// https://developers.mattermost.com/integrate/apps/deployment/#making-your-app-runnable-as-an-aws-lambda-function
+// for more information.
 //
 // cmd/appsctl will create or update the manifest's aws_lambda functions in the
 // AWS Lambda service.
