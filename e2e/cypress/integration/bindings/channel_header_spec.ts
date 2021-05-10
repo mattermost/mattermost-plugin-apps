@@ -14,7 +14,7 @@ const baseURL = Cypress.config('baseUrl');
 const pluginID = Cypress.config('pluginID');
 const helloManifestRoute = 'example/hello/mattermost-app.json';
 
-const installAppCommand = '/apps install --url ${baseURL}/plugins/${pluginID}/${helloManifestRoute} --app-secret 1234';
+const installAppCommand = `/apps install --url ${baseURL}/plugins/${pluginID}/${helloManifestRoute} --app-secret 1234`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;
