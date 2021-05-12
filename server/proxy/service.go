@@ -51,7 +51,7 @@ type Service interface {
 	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
-	SynchronizeInstalledApps() error
+	SynchronizeMarketplaceApps() error
 	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)

@@ -284,18 +284,18 @@ func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
 }
 
-// SynchronizeInstalledApps mocks base method.
-func (m *MockService) SynchronizeInstalledApps() error {
+// SynchronizeMarketplaceApps mocks base method.
+func (m *MockService) SynchronizeMarketplaceApps() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SynchronizeInstalledApps")
+	ret := m.ctrl.Call(m, "SynchronizeMarketplaceApps")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SynchronizeInstalledApps indicates an expected call of SynchronizeInstalledApps.
-func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
+// SynchronizeMarketplaceApps indicates an expected call of SynchronizeMarketplaceApps.
+func (mr *MockServiceMockRecorder) SynchronizeMarketplaceApps() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynchronizeInstalledApps", reflect.TypeOf((*MockService)(nil).SynchronizeInstalledApps))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynchronizeMarketplaceApps", reflect.TypeOf((*MockService)(nil).SynchronizeMarketplaceApps))
 }
 
 // UninstallApp mocks base method.

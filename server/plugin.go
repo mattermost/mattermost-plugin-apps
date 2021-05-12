@@ -88,11 +88,9 @@ func (p *Plugin) OnActivate() error {
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
-	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
-		}
+	err = mstore.InitMarketplace(p.aws, conf.AWSS3Bucket, p.httpOut)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 	}
 	// app store
 	appstore := p.store.App
@@ -126,13 +124,11 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.mm.Log.Debug("initialized slash commands")
 
-	if conf.MattermostCloudMode {
-		err = p.proxy.SynchronizeInstalledApps()
-		if err != nil {
-			p.mm.Log.Error("failed to synchronize apps metadata", "err", err.Error())
-		} else {
-			p.mm.Log.Debug("synchronized the installed apps metadata")
-		}
+	err = p.proxy.SynchronizeMarketplaceApps()
+	if err != nil {
+		p.mm.Log.Error("failed to synchronize apps metadata", "err", err.Error())
+	} else {
+		p.mm.Log.Debug("synchronized the installed apps metadata")
 	}
 
 	return nil

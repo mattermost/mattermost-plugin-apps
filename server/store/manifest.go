@@ -28,7 +28,7 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitGlobal(_ awsclient.Client, bucket string, _ httpout.Service) error
+	InitMarketplace(_ awsclient.Client, bucket string, _ httpout.Service) error
 	StoreLocal(*apps.Manifest) error
 }
 
@@ -49,9 +49,9 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-// InitGlobal reads in the list of known (i.e. marketplace listed) app
+// InitMarketplace reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string, httpOut httpout.Service) error {
+func (s *manifestStore) InitMarketplace(awscli awsclient.Client, bucket string, httpOut httpout.Service) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
