@@ -91,7 +91,7 @@ func (c Config) AppPath(appID apps.AppID) string {
 	return c.PluginURL + PathApps + "/" + string(appID)
 }
 
-func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config) error {
+func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -115,24 +115,28 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config) error {
 
 	c.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
-	// use CloudAccessEnvVar for now to detect the Cloud mode
-	cloudAccessKey := os.Getenv(awsapps.CloudAccessEnvVar)
-	c.MattermostCloudMode = false
-	if cloudAccessKey != "" {
-		c.MattermostCloudMode = true
-	}
+	c.AWSAccessKey = os.Getenv(awsapps.AccessEnvVar)
+	c.AWSSecretKey = os.Getenv(awsapps.SecretEnvVar)
+	c.AWSS3Bucket = awsapps.S3BucketName()
+
+	c.MattermostCloudMode = license != nil &&
+		license.Features != nil &&
+		license.Features.Cloud != nil &&
+		*license.Features.Cloud
 
 	if c.MattermostCloudMode {
-		c.AWSAccessKey = os.Getenv(awsapps.CloudAccessEnvVar)
-		c.AWSSecretKey = os.Getenv(awsapps.CloudSecretEnvVar)
-		if c.AWSAccessKey == "" || c.AWSSecretKey == "" {
-			return errors.Errorf("%s and %s must be set in cloud mode.", awsapps.CloudAccessEnvVar, awsapps.CloudSecretEnvVar)
+		legacyAccessKey := os.Getenv(awsapps.CloudAccessEnvVar)
+		if legacyAccessKey != "" {
+			c.AWSAccessKey = legacyAccessKey
 		}
-	} else {
-		c.AWSAccessKey = os.Getenv(awsapps.AccessEnvVar)
-		c.AWSSecretKey = os.Getenv(awsapps.SecretEnvVar)
+		legacySecretKey := os.Getenv(awsapps.CloudSecretEnvVar)
+		if legacySecretKey != "" {
+			c.AWSSecretKey = legacySecretKey
+		}
+		if c.AWSAccessKey == "" || c.AWSSecretKey == "" {
+			return errors.New("AWS access credentials must be set in cloud mode.")
+		}
 	}
-	c.AWSS3Bucket = awsapps.S3BucketName()
 
 	return nil
 }

@@ -84,7 +84,15 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	mmconf := s.reloadMattermostConfig()
 
 	newConfig := s.GetConfig()
-	err := newConfig.Reconfigure(stored, mmconf)
+
+	// GetLicense silently drops an RPC error
+	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
+	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
+	license := s.mm.System.GetLicense()
+	if license == nil {
+		license = s.mm.System.GetLicense()
+	}
+	err := newConfig.Reconfigure(stored, mmconf, license)
 	if err != nil {
 		return err
 	}
