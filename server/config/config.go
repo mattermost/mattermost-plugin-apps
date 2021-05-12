@@ -134,7 +134,7 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 			c.AWSSecretKey = legacySecretKey
 		}
 		if c.AWSAccessKey == "" || c.AWSSecretKey == "" {
-			return errors.New("AWS access credentials must be set in cloud mode.")
+			return errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
 	}
 
