@@ -14,9 +14,9 @@ import (
 
 const PrevVersion = "prev_version"
 
-// SynchronizeMarketplaceApps synchronizes installed apps with known manifests,
+// SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
-func (p *Proxy) SynchronizeMarketplaceApps() error {
+func (p *Proxy) SynchronizeInstalledApps() error {
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
 

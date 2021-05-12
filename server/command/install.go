@@ -33,29 +33,25 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 		}
 		appID = apps.AppID(params.current[0])
 	} else {
-		switch {
-		case len(params.current) > 0:
-			appID = apps.AppID(params.current[0])
-		case manifestURL != "":
-			// Trust the URL only in dev mode
-			var data []byte
-			data, err = s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
-			if err != nil {
-				return errorOut(params, err)
-			}
-			m, err = apps.ManifestFromJSON(data)
-			if err != nil {
-				return errorOut(params, err)
-			}
-
-			_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
-			if err != nil {
-				return errorOut(params, err)
-			}
-			appID = m.AppID
-		default:
-			return errorOut(params, errors.New("you must specify the App ID or its manifest URL`"))
+		if manifestURL == "" {
+			return errorOut(params, errors.New("you must add a `--url`"))
 		}
+		// Trust the URL only in dev mode
+		var data []byte
+		data, err = s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+		if err != nil {
+			return errorOut(params, err)
+		}
+		m, err = apps.ManifestFromJSON(data)
+		if err != nil {
+			return errorOut(params, err)
+		}
+
+		_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+		if err != nil {
+			return errorOut(params, err)
+		}
+		appID = m.AppID
 	}
 
 	// Get the manifest from the store, even if redundant
