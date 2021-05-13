@@ -75,11 +75,21 @@ func (p *Plugin) OnActivate() error {
 	p.mm.Log.Debug("initialized config service")
 
 	conf := p.conf.GetConfig()
-	p.aws, err = awsclient.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, &p.mm.Log)
+	p.aws, err = awsclient.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
-	p.mm.Log.Debug("initialized AWS Client")
+	last4 := func(s string) string {
+		out := []byte(s)
+		for i := range out {
+			if i < len(out)-4 {
+				out[i] = '*'
+			}
+		}
+		return string(out)
+	}
+	p.mm.Log.Debug("initialized AWS Client: region %q, S3 bucket: %q, credentials: %q %q",
+		conf.AWSRegion, conf.AWSS3Bucket, last4(conf.AWSAccessKey), last4(conf.AWSSecretKey))
 
 	p.httpOut = httpout.NewService(p.conf)
 	p.mm.Log.Debug("initialized outgoing HTTP")

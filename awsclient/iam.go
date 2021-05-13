@@ -38,7 +38,7 @@ type rolePrincipal struct {
 	Service string
 }
 
-func (c *client) MakeLambdaFunctionDefaultPolicy() (string, error) {
+func (c *client) EnsureLambdaRoleAndPolicy(log Logger) (string, error) {
 	// Builds our policy document for IAM.
 	policy := policyDocument{
 		Version: "2012-10-17",
@@ -59,7 +59,7 @@ func (c *client) MakeLambdaFunctionDefaultPolicy() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "can't marshal policy")
 	}
-	policyName := "my_cool_policy_name"
+	policyName := "mattermost-apps-lambda-policy"
 
 	arn := ""
 	out, err := c.iam.CreatePolicy(&iam.CreatePolicyInput{
@@ -88,15 +88,16 @@ func (c *client) MakeLambdaFunctionDefaultPolicy() (string, error) {
 	} else {
 		arn = *out.Policy.Arn
 	}
+	log.Info("ensured IAM policy " + arn)
 
-	role, err := c.createRole(arn)
+	role, err := c.createRole(arn, log)
 	if err != nil {
 		return "", errors.Wrap(err, "can't create role")
 	}
 	return role, nil
 }
 
-func (c *client) createRole(policyARN string) (string, error) {
+func (c *client) createRole(policyARN string, log Logger) (string, error) {
 	rolePolicy := rolePolicyDocument{
 		Version: "2012-10-17",
 		Statement: []rolePolicyStatementEntry{
@@ -113,11 +114,11 @@ func (c *client) createRole(policyARN string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "can't marshal role policy")
 	}
-	roleName := "my_cool_role_name1"
+	roleName := "mattermost_apps_lambda_role"
 	roleARN := ""
 	out, err := c.iam.CreateRole(&iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(string(b)),
-		RoleName:                 &roleName,
+		RoleName:                 aws.String(roleName),
 	})
 	if err != nil {
 		awsErr, ok := err.(awserr.Error)
@@ -147,5 +148,6 @@ func (c *client) createRole(policyARN string) (string, error) {
 			return "", errors.Wrap(err, "can't attach role policy")
 		}
 	}
+	log.Info("ensured IAM role " + roleARN)
 	return roleARN, nil
 }

@@ -38,7 +38,8 @@ var provisionAppCmd = &cobra.Command{
 			return err
 		}
 
-		err = awsapps.ProvisionAppFromFile(awsClient, args[0], shouldUpdate, &log)
+		bucket := awsapps.S3BucketName()
+		err = awsapps.ProvisionAppFromFile(awsClient, bucket, args[0], shouldUpdate, &log)
 		if err != nil {
 			return err
 		}

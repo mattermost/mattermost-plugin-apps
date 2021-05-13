@@ -63,6 +63,7 @@ type Config struct {
 	// Maximum size of incoming remote webhook messages
 	MaxWebhookSize int64
 
+	AWSRegion    string
 	AWSAccessKey string
 	AWSSecretKey string
 	AWSS3Bucket  string
@@ -117,6 +118,7 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 
 	c.AWSAccessKey = os.Getenv(awsapps.AccessEnvVar)
 	c.AWSSecretKey = os.Getenv(awsapps.SecretEnvVar)
+	c.AWSRegion = awsapps.Region()
 	c.AWSS3Bucket = awsapps.S3BucketName()
 
 	c.MattermostCloudMode = license != nil &&
@@ -124,12 +126,16 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 		license.Features.Cloud != nil &&
 		*license.Features.Cloud
 
+	// On community.mattermost.com license is not suitable for checking, resort
+	// to the presence of legacy environment variable to trigger it.
+	legacyAccessKey := os.Getenv(awsapps.DeprecatedCloudAccessEnvVar)
+	if legacyAccessKey != "" {
+		c.MattermostCloudMode = true
+		c.AWSAccessKey = legacyAccessKey
+	}
+
 	if c.MattermostCloudMode {
-		legacyAccessKey := os.Getenv(awsapps.CloudAccessEnvVar)
-		if legacyAccessKey != "" {
-			c.AWSAccessKey = legacyAccessKey
-		}
-		legacySecretKey := os.Getenv(awsapps.CloudSecretEnvVar)
+		legacySecretKey := os.Getenv(awsapps.DeprecatedCloudSecretEnvVar)
 		if legacySecretKey != "" {
 			c.AWSSecretKey = legacySecretKey
 		}

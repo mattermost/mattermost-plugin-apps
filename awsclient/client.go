@@ -23,9 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
-// DefaultRegion describes default region in aws
-const DefaultRegion = "us-east-1"
-
 // Client is an authenticated client for interacting with AWS resources.
 type Client interface {
 	// Proxy methods
@@ -37,7 +34,7 @@ type Client interface {
 
 	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
 	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
-	MakeLambdaFunctionDefaultPolicy() (string, error)
+	EnsureLambdaRoleAndPolicy(Logger) (string, error)
 
 	CreateS3Bucket(bucket string) error
 	UploadS3(bucket, key string, body io.Reader) error
@@ -64,9 +61,9 @@ type Logger interface {
 	Debug(message string, keyValuePairs ...interface{})
 }
 
-func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Client, error) {
+func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger) (Client, error) {
 	awsConfig := &aws.Config{
-		Region:      aws.String(DefaultRegion),
+		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
 	}
 
@@ -80,16 +77,20 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Clien
 			if r.HTTPResponse != nil && r.HTTPRequest != nil {
 				var buffer bytes.Buffer
 
-				buffer.WriteString(fmt.Sprintf("[aws] %s %s (%s)", r.HTTPRequest.Method, r.HTTPRequest.URL.String(), r.HTTPResponse.Status))
+				buffer.WriteString(fmt.Sprintf("[aws] %s %s (%s) ", r.HTTPRequest.Method, r.HTTPRequest.URL.String(), r.HTTPResponse.Status))
+				buffer.WriteString(fmt.Sprintf("aws-service-id: %s. aws-operation-name: %s ", r.ClientInfo.ServiceID, r.Operation.Name))
 
 				paramBytes, err := json.Marshal(r.Params)
 				if err != nil {
-					buffer.WriteString(fmt.Sprintf("error: %s", err.Error()))
+					buffer.WriteString(fmt.Sprintf("error: %s ", err.Error()))
 				} else {
-					buffer.WriteString(fmt.Sprintf("params: %s", string(paramBytes)))
+					pstr := string(paramBytes)
+					if len(pstr) > 1000 {
+						pstr = pstr[:1000] + "..."
+					}
+					buffer.WriteString(fmt.Sprintf("params: %s ", pstr))
 				}
 
-				buffer.WriteString(fmt.Sprintf("aws-service-id: %s. aws-operation-name: %s", r.ClientInfo.ServiceID, r.Operation.Name))
 				logger.Debug(buffer.String())
 			}
 		})
@@ -98,7 +99,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey string, logger Logger) (Clien
 	c := &client{
 		accessKeyID:     awsAccessKeyID,
 		secretAccessKey: awsSecretAccessKey,
-		lambda:          lambda.New(awsSession, aws.NewConfig().WithLogLevel(aws.LogDebugWithRequestErrors)),
+		lambda:          lambda.New(awsSession, awsConfig),
 		iam:             iam.New(awsSession),
 		s3Down:          s3manager.NewDownloader(awsSession),
 		s3Uploader:      s3manager.NewUploader(awsSession),

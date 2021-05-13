@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
@@ -169,6 +170,12 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	if !p.AppIsEnabled(app) {
 		return nil, errors.Errorf("%s is disabled", app.AppID)
 	}
+	conf := p.conf.GetConfig()
+	err := isAppTypeSupported(conf, &app.Manifest)
+	if err != nil {
+		return nil, err
+	}
+
 	switch app.AppType {
 	case apps.AppTypeHTTP:
 		return uphttp.NewUpstream(app, p.httpOut), nil
@@ -184,6 +191,16 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		return up, nil
 
 	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
+		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
+}
+
+func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
+	if conf.DeveloperMode {
+		return nil
+	}
+	if conf.MattermostCloudMode != (m.AppType == apps.AppTypeAWSLambda) {
+		return utils.NewForbiddenError("AWS lambda apps are supported only in Mattermost Cloud")
+	}
+	return nil
 }

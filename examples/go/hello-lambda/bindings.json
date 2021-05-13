@@ -1,0 +1,25 @@
+{
+	"type": "ok",
+	"data": [
+		{
+			"location": "/command",
+			"bindings": [
+				{
+					"icon": "/static/icon.png",
+					"label": "hello-lambda",
+					"description": "Hello Lambda app",
+					"hint":        "[send]",
+					"bindings": [
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

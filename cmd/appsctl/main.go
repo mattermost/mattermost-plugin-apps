@@ -7,15 +7,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 )
 
 var (
 	verbose bool
+	quiet   bool
 )
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose (debug) output")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet (errors only) output")
 }
 
 func main() {
@@ -28,23 +31,29 @@ var rootCmd = &cobra.Command{
 	Use:   "appsctl",
 	Short: "A tool to manage Mattermost apps.",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.SetLevel(logrus.InfoLevel)
 		if verbose {
 			log.SetLevel(logrus.DebugLevel)
+		}
+		if quiet {
+			log.SetLevel(logrus.ErrorLevel)
 		}
 	},
 }
 
 func createAWSClient() (awsclient.Client, error) {
-	accessKey := os.Getenv("APPS_PROVISION_AWS_ACCESS_KEY")
-	secretKey := os.Getenv("APPS_PROVISION_AWS_SECRET_KEY")
-
+	region := os.Getenv(awsapps.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", awsapps.RegionEnvVar)
+	}
+	accessKey := os.Getenv(awsapps.ProvisionAccessEnvVar)
 	if accessKey == "" {
-		return nil, errors.New("no AWS access key was provided. Please set APPS_PROVISION_AWS_ACCESS_KEY")
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", awsapps.ProvisionAccessEnvVar)
 	}
-
+	secretKey := os.Getenv(awsapps.ProvisionSecretEnvVar)
 	if secretKey == "" {
-		return nil, errors.New("no AWS secret key was provided. Please set APPS_PROVISION_AWS_SECRET_KEY")
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", awsapps.ProvisionSecretEnvVar)
 	}
 
-	return awsclient.MakeClient(accessKey, secretKey, &log)
+	return awsclient.MakeClient(accessKey, secretKey, region, &log)
 }

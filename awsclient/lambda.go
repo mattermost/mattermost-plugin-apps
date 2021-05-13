@@ -50,12 +50,9 @@ func (c *client) CreateLambda(zipFile io.Reader, function, handler, runtime, res
 
 	result, err := c.lambda.CreateFunction(createArgs)
 	if err != nil {
-		if _, ok := err.(*lambda.ResourceConflictException); !ok {
-			return errors.Wrapf(err, "Can't create function res = %v\n", result)
-		}
+		return errors.Wrapf(err, "can't create function, %+v\n", result)
 	}
-	c.logger.Info(fmt.Sprintf("function named %s was created with result - %v", function, result))
-
+	c.logger.Info(fmt.Sprintf("created function %s", function))
 	return nil
 }
 
@@ -64,14 +61,11 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 		return errors.New("you must supply a zip file and the function name")
 	}
 
-	exists := false
 	_, err := c.lambda.GetFunction(&lambda.GetFunctionInput{FunctionName: &function})
-	if _, ok := err.(*lambda.ResourceNotFoundException); ok {
-		exists = true
-	} else {
-		return errors.Wrap(err, "Failed go get function")
-	}
-	if !exists {
+	if err != nil {
+		if _, ok := err.(*lambda.ResourceNotFoundException); !ok {
+			return errors.Wrap(err, "failed go get function")
+		}
 		return c.CreateLambda(zipFile, function, handler, runtime, resource)
 	}
 
@@ -79,14 +73,13 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 	if err != nil {
 		return errors.Wrap(err, "could not read zip file")
 	}
-	c.logger.Info("Updating existing function", "name", function)
-	result, err := c.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
+	_, err = c.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
 		ZipFile:      contents,
 		FunctionName: &function,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to update function %v", function)
 	}
-	c.logger.Info(fmt.Sprintf("function named %s was updated", function), "result", result.String())
+	c.logger.Info(fmt.Sprintf("updated function %s", function))
 	return nil
 }

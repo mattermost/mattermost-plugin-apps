@@ -34,6 +34,12 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
+	conf := p.conf.GetConfig()
+	err = isAppTypeSupported(conf, m)
+	if err != nil {
+		return nil, "", err
+	}
+
 	app, err := p.store.App.Get(cc.AppID)
 	if err != nil {
 		if errors.Cause(err) != utils.ErrNotFound {
@@ -56,7 +62,6 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		app.WebhookSecret = model.NewId()
 	}
 
-	conf := p.conf.GetConfig()
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
 

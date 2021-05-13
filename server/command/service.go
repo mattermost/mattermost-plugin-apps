@@ -106,7 +106,7 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			HelpText: "ID of the app to install",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
-				Hint: "secret string",
+				Hint: "App ID",
 			},
 			Required: true,
 		})
@@ -128,7 +128,7 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 		HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
 		Type:     model.AutocompleteArgTypeText,
 		Data: &model.AutocompleteTextArg{
-			Hint: "secret string",
+			Hint: "Secret string",
 		},
 	})
 

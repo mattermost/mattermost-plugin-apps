@@ -90,17 +90,22 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			if err := json.Unmarshal(data, &mani); err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
+			if log != nil {
+				log.Info("found manifest", "file", file.Name)
+			}
 
 		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
-
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
 			})
+			if log != nil {
+				log.Info("found lambda function bundle", "file", file.Name)
+			}
 
 		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
 			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
@@ -111,18 +116,17 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
-
 			assets = append(assets, AssetData{
 				Key:  assetName,
 				File: assetFile,
 			})
 			if log != nil {
-				log.Debug("Found function bundle", "file", file.Name)
+				log.Info("found static asset", "file", file.Name)
 			}
 
 		default:
 			if log != nil {
-				log.Info("Unknown file found in app bundle", "file", file.Name)
+				log.Info("ignored unknown file", "file", file.Name)
 			}
 		}
 	}

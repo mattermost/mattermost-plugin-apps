@@ -8,15 +8,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-const (
-	// S3BucketEnvVar is the environment variable containing the S3 bucket name
-	// used to host Apps' assets.
-	S3BucketEnvVar = "MM_APPS_S3_BUCKET"
-
-	// DefaultS3Bucket is the default S3 bucket name.
-	DefaultS3Bucket = "mattermost-apps-bucket"
-)
-
 // ManifestS3Name generates key for a specific manifest in S3,
 // key can be 1024 characters long.
 func S3ManifestName(appID apps.AppID, version apps.AppVersion) string {

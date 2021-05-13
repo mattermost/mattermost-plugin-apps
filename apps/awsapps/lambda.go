@@ -9,16 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-const (
-	MaxLambdaName = 64
-
-	AccessEnvVar = "MM_APPS_AWS_ACCESS_KEY" // nolint:gosec
-	SecretEnvVar = "MM_APPS_AWS_SECRET_KEY" // nolint:gosec
-
-	// to be deprecated
-	CloudAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
-	CloudSecretEnvVar = "APPS_INVOKE_AWS_SECRET_KEY" // nolint:gosec
-)
+const MaxLambdaName = 64
 
 // LambdaName generates function name for a specific app, name can be 64
 // characters long.
