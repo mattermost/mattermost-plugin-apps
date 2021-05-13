@@ -136,7 +136,7 @@ ifneq ($(HAS_WEBAPP),)
 PACKAGE_JSON = webapp/package.json
 endif
 
-webapp/node_modules: $(PACKAGE_JSON)
+webapp/node_modules: $(wildcard webapp/package.json)
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) install
 	touch $@
