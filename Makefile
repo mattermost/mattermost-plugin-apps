@@ -132,10 +132,6 @@ endif
 endif
 
 ## Ensures NPM dependencies are installed without having to run this all the time.
-ifneq ($(HAS_WEBAPP),)
-PACKAGE_JSON = webapp/package.json
-endif
-
 webapp/node_modules: $(wildcard webapp/package.json)
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) install
