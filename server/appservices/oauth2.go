@@ -2,7 +2,9 @@ package appservices
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
@@ -39,6 +41,7 @@ func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
+	a.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	return a.store.OAuth2.SaveUser(app.BotUserID, actingUserID, ref)
 }
 
