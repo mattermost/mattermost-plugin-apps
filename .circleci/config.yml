@@ -60,7 +60,7 @@ jobs:
           # Keep the commit in sync with go.mod
           command: |
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout e37e902ddf33
+            cd mattermost-server && git checkout 5c16de58a020
       - *restore_go_cache
       - run:
           name: Running e2e tests
@@ -118,7 +118,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: 16a4a41
+      MM_DOCKER_IMAGE_TAG: c9841fc
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true
@@ -214,7 +214,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: 16a4a41
+      MM_DOCKER_IMAGE_TAG: c9841fc
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true

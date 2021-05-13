@@ -10,7 +10,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -43,7 +42,8 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, errors.New("you must add a `--url`"))
 	}
 
-	data, err := httputils.GetFromURL(manifestURL)
+	// Inside a debug command: all URLs are trusted.
+	data, err := s.httpOut.GetFromURL(manifestURL, true)
 	if err != nil {
 		return errorOut(params, err)
 	}

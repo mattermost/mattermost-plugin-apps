@@ -9,7 +9,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/gorilla/mux v1.8.0
 	github.com/mattermost/mattermost-plugin-api v0.0.15
-	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210413123336-5f2c26dbda0a
+	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210503144558-5c16de58a020
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3

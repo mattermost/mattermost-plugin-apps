@@ -46,11 +46,11 @@ func (s *service) getSubCommands() map[string]commandHandler {
 	}
 }
 
-func (s *service) handleMain(in *params, developerMode bool) (*model.CommandResponse, error) {
-	return runSubcommand(s.getSubCommands(), in, developerMode)
+func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
+	return s.runSubcommand(s.getSubCommands(), in)
 }
 
-func runSubcommand(subcommands map[string]commandHandler, params *params, developerMode bool) (*model.CommandResponse, error) {
+func (s *service) runSubcommand(subcommands map[string]commandHandler, params *params) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
@@ -63,7 +63,8 @@ func runSubcommand(subcommands map[string]commandHandler, params *params, develo
 		return errorOut(params, errors.Errorf("unknown command: %s", params.current[0]))
 	}
 
-	if c.debug && !developerMode {
+	conf := s.conf.GetConfig()
+	if c.debug && !conf.DeveloperMode {
 		return errorOut(params, errors.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.", params.current[0]))
 	}
 
