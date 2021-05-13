@@ -4,6 +4,7 @@ const fetch = require('node-fetch');
 const express = require('express');
 
 const app = express();
+app.use(express.json());
 const host = 'localhost';
 const port = 8080;
 
@@ -87,8 +88,6 @@ app.post(['/send/form', '/send-modal/submit'], (req, res) => {
 app.get('/static/icon.png', (req, res) => {
     res.sendFile(__dirname + '/icon.png');
 });
-
-app.use(express.json());
 
 app.post('/send/submit', async (req, res) => {
     const call = req.body;
