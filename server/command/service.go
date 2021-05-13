@@ -97,16 +97,6 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			Trigger:  "install",
 			HelpText: "Install an App.",
 			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
-			Arguments: []*model.AutocompleteArg{
-				{
-					Name:     "app-secret",
-					HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
-					Type:     model.AutocompleteArgTypeText,
-					Data: &model.AutocompleteTextArg{
-						Hint: "secret string",
-					},
-				},
-			},
 		},
 	}
 
@@ -132,6 +122,15 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			Required: true,
 		})
 	}
+
+	h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+		Name:     "app-secret",
+		HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
+		Type:     model.AutocompleteArgTypeText,
+		Data: &model.AutocompleteTextArg{
+			Hint: "secret string",
+		},
+	})
 
 	return h
 }
