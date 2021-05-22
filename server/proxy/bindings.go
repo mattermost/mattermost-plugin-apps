@@ -40,26 +40,16 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
 	allApps := store.SortApps(p.store.App.AsMap())
-
 	all := make([][]*apps.Binding, len(allApps))
-	var wg sync.WaitGroup
 
+	var wg sync.WaitGroup
 	for i, app := range allApps {
 		wg.Add(1)
-
-		go func(sessionID, actingUserID string, cc *apps.Context, app *apps.App, i int) {
+		go func(app *apps.App, i int) {
 			defer wg.Done()
-
-			bindings, err := p.GetBindingsForApp(sessionID, actingUserID, cc, app)
-			if err != nil {
-				p.mm.Log.Debug("Failed to get binding for app", "error", err.Error(), "appID", app.AppID)
-				return
-			}
-
-			all[i] = bindings
-		}(sessionID, actingUserID, cc, app, i)
+			all[i] = p.GetBindingsForApp(sessionID, actingUserID, cc, app)
+		}(app, i)
 	}
-
 	wg.Wait()
 
 	ret := []*apps.Binding{}
@@ -72,9 +62,9 @@ func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([
 
 // GetBindingsForApp fetches bindings for a specific apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Context, app *apps.App) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Context, app *apps.App) []*apps.Binding {
 	if !p.AppIsEnabled(app) {
-		return nil, nil
+		return nil
 	}
 
 	logger := logger.New(&p.mm.Log).With(logger.LogContext{
@@ -96,12 +86,12 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	resp := p.Call(sessionID, actingUserID, bindingsRequest)
 	if resp == nil || (resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK) {
 		logger.Debugf("Bindings response is nil or unexpected type.")
-		return nil, nil
+		return nil
 	}
 
 	if resp.Type == apps.CallResponseTypeError {
 		logger.Debugf("Error getting bindings. Error: " + resp.Error())
-		return nil, nil
+		return nil
 	}
 
 	var bindings = []*apps.Binding{}
@@ -109,12 +99,12 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	err := json.Unmarshal(b, &bindings)
 	if err != nil {
 		logger.Debugf("Bindings are not of the right type.")
-		return nil, nil
+		return nil
 	}
 
 	bindings = p.scanAppBindings(app, bindings, "")
 
-	return bindings, nil
+	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
