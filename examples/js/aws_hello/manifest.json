@@ -1,7 +1,8 @@
 {
 	"app_id": "awsHello",
 	"name": "awsHello",
-	"lambda_functions": [{
+	"aws_lambda": [{
+		"path": "/",
 		"name": "on_activate",
 		"handler": "index.handler",
 		"runtime": "nodejs12.x"
