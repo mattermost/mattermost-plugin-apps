@@ -67,3 +67,13 @@ func DumpObject(c interface{}) {
 	b, _ := json.MarshalIndent(c, "", "    ")
 	fmt.Printf("%s\n", string(b))
 }
+
+func LastN(s string, n int) string {
+	out := []byte(s)
+	for i := range out {
+		if i < len(out)-n {
+			out[i] = '*'
+		}
+	}
+	return string(out)
+}

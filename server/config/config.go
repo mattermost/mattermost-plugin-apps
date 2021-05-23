@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
@@ -116,10 +116,10 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 
 	c.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
-	c.AWSAccessKey = os.Getenv(awsapps.AccessEnvVar)
-	c.AWSSecretKey = os.Getenv(awsapps.SecretEnvVar)
-	c.AWSRegion = awsapps.Region()
-	c.AWSS3Bucket = awsapps.S3BucketName()
+	c.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
+	c.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
+	c.AWSRegion = upaws.Region()
+	c.AWSS3Bucket = upaws.S3BucketName()
 
 	c.MattermostCloudMode = license != nil &&
 		license.Features != nil &&
@@ -128,14 +128,14 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 
 	// On community.mattermost.com license is not suitable for checking, resort
 	// to the presence of legacy environment variable to trigger it.
-	legacyAccessKey := os.Getenv(awsapps.DeprecatedCloudAccessEnvVar)
+	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
 	if legacyAccessKey != "" {
 		c.MattermostCloudMode = true
 		c.AWSAccessKey = legacyAccessKey
 	}
 
 	if c.MattermostCloudMode {
-		legacySecretKey := os.Getenv(awsapps.DeprecatedCloudSecretEnvVar)
+		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
 		if legacySecretKey != "" {
 			c.AWSSecretKey = legacySecretKey
 		}

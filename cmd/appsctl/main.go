@@ -7,8 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 var (
@@ -41,19 +42,25 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func createAWSClient() (awsclient.Client, error) {
-	region := os.Getenv(awsapps.RegionEnvVar)
-	if region == "" {
-		return nil, errors.Errorf("no AWS region was provided. Please set %s", awsapps.RegionEnvVar)
-	}
-	accessKey := os.Getenv(awsapps.ProvisionAccessEnvVar)
-	if accessKey == "" {
-		return nil, errors.Errorf("no AWS access key was provided. Please set %s", awsapps.ProvisionAccessEnvVar)
-	}
-	secretKey := os.Getenv(awsapps.ProvisionSecretEnvVar)
-	if secretKey == "" {
-		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", awsapps.ProvisionSecretEnvVar)
+func createAWSClient(invoke bool) (awsclient.Client, error) {
+	accessVar, secretVar := upaws.ProvisionAccessEnvVar, upaws.ProvisionSecretEnvVar
+	if invoke {
+		accessVar, secretVar = upaws.AccessEnvVar, upaws.SecretEnvVar
 	}
 
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(accessVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", accessVar)
+	}
+	secretKey := os.Getenv(secretVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", secretVar)
+	}
+
+	log.Debug("using AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
 	return awsclient.MakeClient(accessKey, secretKey, region, &log)
 }

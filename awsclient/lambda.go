@@ -26,9 +26,9 @@ func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]by
 }
 
 // CreateLambda method creates lambda function
-func (c *client) CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error {
-	if zipFile == nil || function == "" || handler == "" || resource == "" || runtime == "" {
-		return errors.Errorf("you must supply a zip file, function name, handler, ARN and runtime - %p %s %s %s %s", zipFile, function, handler, resource, runtime)
+func (c *client) CreateLambda(zipFile io.Reader, name, handler, runtime, roleARN string) error {
+	if zipFile == nil || name == "" || handler == "" || roleARN == "" || runtime == "" {
+		return errors.Errorf("you must supply a zip file, function name, handler, role ARN and runtime - %p %q %q %q %q", zipFile, name, handler, roleARN, runtime)
 	}
 
 	contents, err := io.ReadAll(zipFile)
@@ -42,17 +42,17 @@ func (c *client) CreateLambda(zipFile io.Reader, function, handler, runtime, res
 
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         createCode,
-		FunctionName: &function,
-		Handler:      &handler,
-		Role:         &resource,
-		Runtime:      &runtime,
+		FunctionName: aws.String(name),
+		Handler:      aws.String(handler),
+		Role:         aws.String(roleARN),
+		Runtime:      aws.String(runtime),
 	}
 
 	result, err := c.lambda.CreateFunction(createArgs)
 	if err != nil {
 		return errors.Wrapf(err, "can't create function, %+v\n", result)
 	}
-	c.logger.Info(fmt.Sprintf("created function %s", function))
+	c.logger.Info(fmt.Sprintf("created function %s", name))
 	return nil
 }
 

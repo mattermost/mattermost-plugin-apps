@@ -15,11 +15,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type ManifestStore interface {
@@ -280,7 +280,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 
 // getFromS3 returns a manifest file for an app from the S3
 func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
-	name := awsapps.S3ManifestName(appID, version)
+	name := upaws.S3ManifestName(appID, version)
 	data, err := awscli.GetS3(bucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)

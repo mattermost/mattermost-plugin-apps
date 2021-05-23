@@ -48,6 +48,16 @@ func (c *client) CreateS3Bucket(bucket string) error {
 	return nil
 }
 
+func (c *client) DeleteS3Bucket(bucket string) error {
+	_, err := c.s3.DeleteBucket(&s3.DeleteBucketInput{
+		Bucket: aws.String(bucket),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to delete bucket")
+	}
+	return nil
+}
+
 // ExistsS3Bucket return true if a bucket with the given name exists.
 // Otherwise it returns false.
 func (c *client) ExistsS3Bucket(name string) (bool, error) {

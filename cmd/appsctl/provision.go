@@ -3,11 +3,13 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
 var (
-	shouldUpdate bool
+	shouldUpdate      bool
+	invokePolicyName  string
+	executePolicyName string
 )
 
 func init() {
@@ -17,10 +19,11 @@ func init() {
 
 	provisionCmd.AddCommand(
 		provisionAppCmd,
-		provisionBucketCmd,
 	)
 
 	provisionAppCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with causion in production.")
+	provisionAppCmd.Flags().StringVar(&invokePolicyName, "invoke-policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
+	provisionAppCmd.Flags().StringVar(&executePolicyName, "execute-policy", "TODO", "TODO.")
 }
 
 var provisionCmd = &cobra.Command{
@@ -33,47 +36,16 @@ var provisionAppCmd = &cobra.Command{
 	Short: "Provision a Mattermost app",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		awsClient, err := createAWSClient()
+		awsClient, err := createAWSClient(false)
 		if err != nil {
 			return err
 		}
 
-		bucket := awsapps.S3BucketName()
-		err = awsapps.ProvisionAppFromFile(awsClient, bucket, args[0], shouldUpdate, &log)
+		bucket := upaws.S3BucketName()
+		err = upaws.ProvisionAppFromFile(awsClient, bucket, executePolicyName, invokePolicyName, args[0], shouldUpdate, &log)
 		if err != nil {
 			return err
 		}
-
-		return nil
-	},
-}
-
-var provisionBucketCmd = &cobra.Command{
-	Use:   "bucket",
-	Short: "Provision the central s3 bucket used to store app data",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		awsClient, err := createAWSClient()
-		if err != nil {
-			return err
-		}
-
-		name := awsapps.S3BucketName()
-		exists, err := awsClient.ExistsS3Bucket(name)
-		if err != nil {
-			return err
-		}
-
-		if exists {
-			log.Infof("Bucket %v already exists", name)
-			return nil
-		}
-
-		err = awsClient.CreateS3Bucket(name)
-		if err != nil {
-			return err
-		}
-
-		log.Infof("Created bucket %s", name)
 
 		return nil
 	},

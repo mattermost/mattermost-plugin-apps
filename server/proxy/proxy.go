@@ -13,10 +13,10 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
@@ -181,7 +181,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		return uphttp.NewUpstream(app, p.httpOut), nil
 
 	case apps.AppTypeAWSLambda:
-		return upawslambda.NewUpstream(app, p.aws, p.s3AssetBucket), nil
+		return upaws.NewUpstream(app, p.aws, p.s3AssetBucket), nil
 
 	case apps.AppTypeBuiltin:
 		up := p.builtinUpstreams[app.AppID]

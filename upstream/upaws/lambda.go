@@ -1,4 +1,4 @@
-package awsapps
+package upaws
 
 import (
 	"crypto/sha256"

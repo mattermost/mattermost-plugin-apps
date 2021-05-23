@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package upawslambda
+package upaws
 
 import (
 	"bytes"
@@ -14,10 +14,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/awsapps"
 	"github.com/mattermost/mattermost-plugin-apps/awsclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // Upstream wraps an awsClient to make requests to the App. It should not be
@@ -55,13 +54,21 @@ func NewUpstream(app *apps.App, awsClient awsclient.Client, bucket string) *Upst
 }
 
 func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	typ := lambda.InvocationTypeRequestResponse
-	if async {
-		typ = lambda.InvocationTypeEvent
-	}
 	name := match(call.Path, u.app)
 	if name == "" {
 		return nil, utils.ErrNotFound
+	}
+
+	return u.InvokeFunction(name, call, async)
+}
+
+// InvokeFunction is a public method used in appsctl, but is not a part of the
+// upstream.Upstream interface. It invokes a function with a specified name,
+// with no conversion.
+func (u *Upstream) InvokeFunction(name string, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	typ := lambda.InvocationTypeRequestResponse
+	if async {
+		typ = lambda.InvocationTypeEvent
 	}
 
 	payload, err := callToInvocationPayload(call)
@@ -88,7 +95,7 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 }
 
 func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := awsapps.S3StaticName(u.app.AppID, u.app.Version, path)
+	key := S3StaticName(u.app.AppID, u.app.Version, path)
 	data, err := u.awsClient.GetS3(u.bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
@@ -123,7 +130,7 @@ func match(callPath string, app *apps.App) string {
 	for _, f := range app.AWSLambda {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				matchedName = awsapps.LambdaName(app.AppID, app.Version, f.Name)
+				matchedName = LambdaName(app.AppID, app.Version, f.Name)
 				matchedPath = f.Path
 			}
 		}

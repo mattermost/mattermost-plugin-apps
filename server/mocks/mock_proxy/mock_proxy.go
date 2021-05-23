@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	upstream "github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	md "github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
+	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // MockService is a mock of Service interface.
