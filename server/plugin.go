@@ -73,9 +73,16 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
-	p.mm.Log.Debug("initialized config service")
-
 	conf := p.conf.GetConfig()
+	mode := "Self-managed"
+	if conf.MattermostCloudMode {
+		mode = "Mattermost Cloud"
+	}
+	if conf.DeveloperMode {
+		mode += ", Developer Mode"
+	}
+	p.mm.Log.Debug("initialized config service: " + mode)
+
 	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
