@@ -1,6 +1,9 @@
 package upaws
 
-import "os"
+import (
+	"os"
+	"text/template"
+)
 
 const (
 	AccessEnvVar          = "MM_APPS_AWS_ACCESS_KEY"           // nolint:gosec
@@ -29,7 +32,7 @@ const (
 	DefaultGroupName       = "mattermost-apps-invoke-group"
 )
 
-const ExecuteRolePolicyDocument = `{
+const AssumeRolePolicyDocument = `{
 	"Version": "2012-10-17",
 	"Statement": [
 		{
@@ -41,6 +44,50 @@ const ExecuteRolePolicyDocument = `{
 		}
 	]
 }`
+
+const InitialInvokePolicyDocument = `{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "AllowS3",
+			"Effect": "Allow",
+			"Action": [
+				"s3:GetObject"
+			],
+			"Resource": [
+				"arn:aws:s3:::{{.Bucket}}/manifests/*",
+				"arn:aws:s3:::{{.Bucket}}/static/*"
+			]
+		}
+	]
+}`
+
+type PolicyDocument struct {
+	Version   string
+	Statement []PolicyStatement
+}
+
+type PolicyStatement struct {
+	Sid      string
+	Effect   string
+	Action   []string
+	Resource []string
+}
+
+var InvokePolicyDocumentTemplate = template.Must(template.New("InvokePolicyDocument").Parse(InitialInvokePolicyDocument))
+
+func DefaultAllowLambdaStatement(in PolicyStatement) PolicyStatement {
+	if in.Sid == "" {
+		in.Sid = "AllowLambda"
+	}
+	if in.Effect == "" {
+		in.Effect = "Allow"
+	}
+	if len(in.Action) == 0 {
+		in.Action = []string{"lambda:InvokeFunction"}
+	}
+	return in
+}
 
 func Region() string {
 	name := os.Getenv(RegionEnvVar)

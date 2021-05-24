@@ -4,6 +4,9 @@
 package upaws
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
 
@@ -30,7 +33,7 @@ type InitResult struct {
 	AccessKeySecret string
 }
 
-func InitApps(asAdmin Client, log Logger, params InitParams) (r *InitResult, err error) {
+func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult, err error) {
 	r = &InitResult{}
 	exists, err := asAdmin.ExistsS3Bucket(params.Bucket)
 	if err != nil {
@@ -88,21 +91,10 @@ func InitApps(asAdmin Client, log Logger, params InitParams) (r *InitResult, err
 			return ARN(*p.Arn), nil
 		},
 		func(name Name) (ARN, error) {
-			return asAdmin.CreatePolicy(name, `{
-				"Version": "2012-10-17",
-				"Statement": [
-					{
-						"Sid": "AllowLamda",
-						"Effect": "Allow",
-						"Action": [
-							"lambda:InvokeFunction"
-						],
-						"Resource": [
-							"arn:aws:lambda:::function:ping"
-						]
-					}
-				]
-			}`)
+			out := &bytes.Buffer{}
+			err = InvokePolicyDocumentTemplate.Execute(out, params)
+			fmt.Printf("<>/<> %s\n", out.String())
+			return asAdmin.CreatePolicy(name, out.String())
 		})
 	if err != nil {
 		return nil, err
@@ -133,74 +125,4 @@ func InitApps(asAdmin Client, log Logger, params InitParams) (r *InitResult, err
 	log.Info("attached AWSLambdaBasicExecutionRole policy to role", "roleName", params.ExecuteRole)
 
 	return r, nil
-}
-
-func CleanApps(asAdmin Client, accessKeyID string, log Logger) error {
-	delete := func(typ string, name Name, del func(Name) error) error {
-		err := del(name)
-		if err != nil {
-			if errors.Cause(err) != utils.ErrNotFound {
-				return err
-			}
-			log.Info("not found "+typ, "key", name)
-		} else {
-			log.Info("deleted "+typ, "key", name)
-		}
-		return nil
-	}
-
-	var err error
-	err = asAdmin.RemoveUserFromGroup(DefaultUserName, DefaultGroupName)
-	switch {
-	case err == nil:
-		log.Info("removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
-	case errors.Cause(err) == utils.ErrNotFound:
-		// nothing to do
-	default:
-		return err
-	}
-
-	policy, err := asAdmin.FindPolicy(DefaultPolicyName)
-	if err == nil {
-		err = asAdmin.DetachGroupPolicy(DefaultGroupName, ARN(*policy.Arn))
-		switch {
-		case err == nil:
-			log.Info("detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
-		case errors.Cause(err) == utils.ErrNotFound:
-			// nothing to do
-		default:
-			return err
-		}
-	}
-
-	err = delete("access keys", DefaultUserName, func(name Name) error {
-		return asAdmin.DeleteAccessKeys(name, accessKeyID)
-	})
-	if err != nil {
-		return err
-	}
-
-	err = delete("group", DefaultGroupName, asAdmin.DeleteGroup)
-	if err != nil {
-		return err
-	}
-	err = delete("user", DefaultUserName, asAdmin.DeleteUser)
-	if err != nil {
-		return err
-	}
-	if policy != nil {
-		err := asAdmin.DeletePolicy(ARN(*policy.Arn))
-		if err != nil {
-			if errors.Cause(err) != utils.ErrNotFound {
-				return err
-			}
-			log.Info("not found policy", "ARN", *policy.Arn)
-		} else {
-			log.Info("deleted policy", "ARN", *policy.Arn)
-		}
-	}
-
-	// TODO clean up the Lambda functions and S3 objects
-
-	return nil
 }

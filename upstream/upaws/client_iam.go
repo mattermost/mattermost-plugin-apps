@@ -220,7 +220,7 @@ func (c *client) FindPolicy(policyName Name) (*iam.Policy, error) {
 	return p, nil
 }
 
-func (c *client) getPolicyVersionDocument(p *iam.Policy) (string, map[string]interface{}, error) {
+func (c *client) getPolicyVersionDocument(p *iam.Policy) (string, *PolicyDocument, error) {
 	out, err := c.iam.GetPolicyVersion(&iam.GetPolicyVersionInput{
 		PolicyArn: p.Arn,
 		VersionId: p.DefaultVersionId,
@@ -237,12 +237,12 @@ func (c *client) getPolicyVersionDocument(p *iam.Policy) (string, map[string]int
 		return "", nil, errors.Wrap(err, "can't decode policy document"+*p.Arn)
 	}
 
-	resp := map[string]interface{}{}
+	resp := PolicyDocument{}
 	err = json.Unmarshal([]byte(doc), &resp)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "can't decode policy document"+*p.Arn)
 	}
-	return doc, resp, nil
+	return doc, &resp, nil
 }
 
 func (c *client) AddResourcesToPolicyDocument(p *iam.Policy, toAdd []ARN) (string, error) {
@@ -272,30 +272,27 @@ func (c *client) AddResourcesToPolicyDocument(p *iam.Policy, toAdd []ARN) (strin
 		return "", err
 	}
 
-	statements, _ := doc["Statement"].([]interface{})
-	if len(statements) != 1 {
-		return "", errors.Errorf("expected 1 statement in invoke policy, got %v", len(statements))
+	var statement PolicyStatement
+	found := -1
+	for i, s := range doc.Statement {
+		if s.Sid == "AllowLambda" {
+			statement = s
+			found = i
+			break
+		}
 	}
-	s, ok := statements[0].(map[string]interface{})
-	if !ok {
-		return "", errors.Errorf("expected statement as an object, got %T", statements[0])
-	}
-	resources, ok := s["Resource"].([]interface{})
-	if !ok {
-		return "", errors.Errorf("expected resource as an array, got %T", s["Resource"])
-	}
+	statement = DefaultAllowLambdaStatement(statement)
 
 	changed := false
 NEXT_ADD:
 	for _, a := range toAdd {
-		for _, rint := range resources {
-			r, _ := rint.(string)
+		for _, r := range statement.Resource {
 			if r == string(a) {
 				continue NEXT_ADD
 			}
 		}
 
-		resources = append(resources, string(a))
+		statement.Resource = append(statement.Resource, string(a))
 		changed = true
 	}
 	if !changed {
@@ -303,8 +300,11 @@ NEXT_ADD:
 		return orig, nil
 	}
 
-	s["Resource"] = resources
-	doc["Statement"] = []interface{}{s}
+	if found < 0 {
+		doc.Statement = append(doc.Statement, statement)
+	} else {
+		doc.Statement[found] = statement
+	}
 	data, err := json.Marshal(doc)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to encode new policy version for %s", *p.Arn)
@@ -340,7 +340,7 @@ func (c *client) FindRole(name Name) (ARN, error) {
 func (c *client) CreateRole(name Name) (ARN, error) {
 	out, err := c.iam.CreateRole(&iam.CreateRoleInput{
 		RoleName:                 name.AWSString(),
-		AssumeRolePolicyDocument: aws.String(ExecuteRolePolicyDocument),
+		AssumeRolePolicyDocument: aws.String(AssumeRolePolicyDocument),
 	})
 	if err != nil {
 		awsErr, ok := err.(awserr.Error)

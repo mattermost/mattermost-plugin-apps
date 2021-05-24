@@ -51,10 +51,10 @@ var initAWSCmd = &cobra.Command{
 				return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 			}
 
-			return upaws.CleanApps(asAdmin, accessKeyID, &log)
+			return upaws.CleanAWS(asAdmin, accessKeyID, &log)
 		}
 
-		out, err := upaws.InitApps(asAdmin, &log, upaws.InitParams{
+		out, err := upaws.InitializeAWS(asAdmin, &log, upaws.InitParams{
 			Bucket:                upaws.S3BucketName(),
 			User:                  upaws.Name(userName),
 			Group:                 upaws.Name(groupName),
