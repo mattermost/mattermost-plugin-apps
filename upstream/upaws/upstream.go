@@ -58,13 +58,17 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 		return nil, utils.ErrNotFound
 	}
 
-	return u.InvokeFunction(name, call, async)
+	crString, err := u.InvokeFunction(name, async, call)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(strings.NewReader(crString)), nil
 }
 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) InvokeFunction(name string, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) InvokeFunction(name string, async bool, call *apps.CallRequest) (string, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent
@@ -72,25 +76,24 @@ func (u *Upstream) InvokeFunction(name string, call *apps.CallRequest, async boo
 
 	payload, err := callToInvocationPayload(call)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
+		return "", errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
 	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
 	if async || err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var resp invocationResponse
 	err = json.Unmarshal(bb, &resp)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error marshaling request payload")
+		return "", errors.Wrap(err, "Error marshaling request payload")
 	}
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
+		return "", errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
 	}
 
-	return io.NopCloser(strings.NewReader(resp.Body)), nil
+	return resp.Body, nil
 }
 
 func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {

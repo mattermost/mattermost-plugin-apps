@@ -41,7 +41,15 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func createAWSClient(invoke bool) (upaws.Client, error) {
+func AsProvisioner() (upaws.Client, error) {
+	return createClient(false)
+}
+
+func AsTest() (upaws.Client, error) {
+	return createClient(false)
+}
+
+func createClient(invoke bool) (upaws.Client, error) {
 	accessVar, secretVar := upaws.ProvisionAccessEnvVar, upaws.ProvisionSecretEnvVar
 	if invoke {
 		accessVar, secretVar = upaws.AccessEnvVar, upaws.SecretEnvVar

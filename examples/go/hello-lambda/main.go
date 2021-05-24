@@ -21,6 +21,9 @@ var manifestHTTPData []byte
 //go:embed manifest.json
 var manifestAWSData []byte
 
+//go:embed pong.json
+var pongData []byte
+
 //go:embed bindings.json
 var bindingsData []byte
 
@@ -39,6 +42,9 @@ func main() {
 	} else {
 		http.HandleFunc("/manifest.json", writeJSON(manifestAWSData))
 	}
+
+	// Returns "PONG". Used for `appsctl test aws`.
+	http.HandleFunc("/ping", writeJSON(pongData))
 
 	// Returns the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", writeJSON(bindingsData))

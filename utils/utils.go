@@ -18,6 +18,14 @@ func ToJSON(in interface{}) string {
 	return string(bb)
 }
 
+func Pretty(in interface{}) string {
+	bb, err := json.MarshalIndent(in, "", "  ")
+	if err != nil {
+		return ""
+	}
+	return string(bb)
+}
+
 // FindDir looks for the given directory in nearby ancestors relative to the current working
 // directory as well as the directory of the executable, falling back to `./` if not found.
 func FindDir(dir string) (string, bool) {

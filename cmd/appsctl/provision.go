@@ -38,13 +38,13 @@ var provisionAppCmd = &cobra.Command{
 	Short: "Provision a Mattermost app",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		awsClient, err := createAWSClient(false)
+		asProvisioner, err := AsProvisioner()
 		if err != nil {
 			return err
 		}
 
 		bucket := upaws.S3BucketName()
-		out, err := upaws.ProvisionAppFromFile(awsClient, args[0], &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], &log, upaws.ProvisionAppParams{
 			Bucket:           bucket,
 			InvokePolicyName: upaws.Name(invokePolicyName),
 			ExecuteRoleName:  upaws.Name(executeRoleName),

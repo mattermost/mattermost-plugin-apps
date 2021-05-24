@@ -5,7 +5,6 @@ package upaws
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
@@ -93,7 +92,6 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 		func(name Name) (ARN, error) {
 			out := &bytes.Buffer{}
 			err = InvokePolicyDocumentTemplate.Execute(out, params)
-			fmt.Printf("<>/<> %s\n", out.String())
 			return asAdmin.CreatePolicy(name, out.String())
 		})
 	if err != nil {
