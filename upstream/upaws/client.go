@@ -69,7 +69,7 @@ type Client interface {
 	FindRole(name Name) (ARN, error)
 	FindUser(name Name) (ARN, error)
 	RemoveUserFromGroup(u, g Name) error
-	UploadS3(bucket, key string, body io.Reader) error
+	UploadS3(bucket, key string, body io.Reader, publicRead bool) (string, error)
 }
 
 type client struct {
@@ -80,6 +80,7 @@ type client struct {
 	s3         s3iface.S3API
 
 	logger Logger
+	region string
 }
 
 type Logger interface {
@@ -131,6 +132,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger
 		s3Uploader: s3manager.NewUploader(awsSession),
 		s3:         s3.New(awsSession),
 		logger:     logger,
+		region:     region,
 	}
 
 	return c, nil

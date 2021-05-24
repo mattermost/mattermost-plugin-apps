@@ -6,6 +6,7 @@ package upaws
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 
@@ -31,15 +32,33 @@ func (c *client) GetS3(bucket, item string) ([]byte, error) {
 }
 
 // UploadS3 uploads file to a specific S3 bucket
-func (c *client) UploadS3(bucket, key string, body io.Reader) error {
-	if _, err := c.s3Uploader.Upload(&s3manager.UploadInput{
+func (c *client) UploadS3(bucket, key string, body io.Reader, publicRead bool) (string, error) {
+	_, err := c.s3Uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Body:   body,
-	}); err != nil {
-		return errors.Wrap(err, "failed to upload file")
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to upload file")
 	}
-	return nil
+
+	if publicRead {
+		_, err = c.s3.PutObjectAcl(&s3.PutObjectAclInput{
+			ACL:    aws.String("public-read"),
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	u := url.URL{
+		Scheme: `https`,
+		Host:   fmt.Sprintf(`s3-%s.amazonaws.com`, c.region),
+		Path:   fmt.Sprintf(`/%s/%s`, bucket, key),
+	}
+	return u.String(), nil
 }
 
 func (c *client) CreateS3Bucket(bucket string) error {

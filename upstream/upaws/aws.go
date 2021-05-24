@@ -20,7 +20,7 @@ const (
 	DefaultRegion = "us-east-1"
 )
 
-const LambdaExecutionPolicyARN = `arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`
+const LambdaExecutionPolicyARN = ARN(`arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`)
 
 const (
 	DefaultExecuteRoleName = "mattermost-apps-execute-lambda-role"

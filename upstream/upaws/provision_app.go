@@ -6,7 +6,9 @@ package upaws
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
 )
 
@@ -18,10 +20,14 @@ type ProvisionAppParams struct {
 }
 
 type ProvisionAppResult struct {
-	InvokePolicyDoc string
-	LambdaARNs      []ARN
-	ManifestURL     string
-	S3              []ARN
+	InvokePolicyDoc  string
+	InvokePolicyARN  ARN
+	ExecuteRoleARN   ARN
+	ExecutePolicyARN ARN
+	LambdaARNs       []ARN
+	StaticARNs       []ARN
+	ManifestURL      string
+	Manifest         apps.Manifest
 }
 
 func ProvisionAppFromFile(c Client, path string, log Logger, params ProvisionAppParams) (*ProvisionAppResult, error) {
@@ -49,43 +55,51 @@ func ProvisionAppFromFile(c Client, path string, log Logger, params ProvisionApp
 //      |-- __pycache__
 //      |-- certifi/
 func provisionApp(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams) (*ProvisionAppResult, error) {
-	var err error
-	out := ProvisionAppResult{}
+	out := ProvisionAppResult{
+		Manifest: *pd.Manifest,
+	}
 
-	err = provisionS3StaticAssets(c, log, pd, params)
+	err := provisionS3StaticAssets(c, log, pd, params, &out)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't save manifest fo the app %s to S3", pd.Manifest.AppID)
 	}
 
-	out.LambdaARNs, out.InvokePolicyDoc, err = provisionLambdaFunctions(c, log, pd, params)
+	err = provisionLambdaFunctions(c, log, pd, params, &out)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't provision functions of the app - %s", pd.Manifest.AppID)
 	}
 
-	err = provisionS3Manifest(c, log, pd, params)
+	err = provisionS3Manifest(c, log, pd, params, &out)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't save manifest fo the app %s to S3", pd.Manifest.AppID)
 	}
+
 	return &out, nil
 }
 
-func provisionS3StaticAssets(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams) error {
+func provisionS3StaticAssets(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+	var arns []ARN
 	for _, asset := range pd.StaticFiles {
-		if err := c.UploadS3(params.Bucket, asset.Key, asset.File); err != nil {
+		_, err := c.UploadS3(params.Bucket, asset.Key, asset.File, false)
+		if err != nil {
 			return errors.Wrapf(err, "failed to upload to S3: %s", asset.Key)
 		}
 		asset.File.Close()
+		arn := ARN(fmt.Sprintf("arn:aws:s3:::%s/%s", params.Bucket, asset.Key))
+		arns = append(arns, arn)
 		log.Info("uploaded static asset to S3.", "bucket", params.Bucket, "key", asset.Key)
 	}
+
+	out.StaticARNs = arns
 	return nil
 }
 
-func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams) ([]ARN, string, error) {
+func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
 	executeRoleARN, err := c.FindRole(params.ExecuteRoleName)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
-	log.Info("Found execute role, provisioning functions.", "ARN", executeRoleARN)
+	log.Info("found execute role, provisioning functions.", "ARN", executeRoleARN)
 
 	createdARNs := []ARN{}
 	for _, function := range pd.LambdaFunctions {
@@ -93,12 +107,12 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 		if params.ShouldUpdate {
 			lambdaARN, err = c.CreateOrUpdateLambda(function.Bundle, function.Name, function.Handler, function.Runtime, executeRoleARN)
 			if err != nil {
-				return nil, "", errors.Wrapf(err, "can't create or update function %s", function.Name)
+				return errors.Wrapf(err, "can't create or update function %s", function.Name)
 			}
 		} else {
 			lambdaARN, err = c.CreateLambda(function.Bundle, function.Name, function.Handler, function.Runtime, executeRoleARN)
 			if err != nil {
-				return nil, "", errors.Wrapf(err, "can't create function  %s", function.Name)
+				return errors.Wrapf(err, "can't create function  %s", function.Name)
 			}
 		}
 		createdARNs = append(createdARNs, lambdaARN)
@@ -107,30 +121,40 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 
 	invokePolicy, err := c.FindPolicy(params.InvokePolicyName)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
-	invokePolicyARN := *invokePolicy.Arn
-	log.Info("Found invoke policy, updating.", "ARN", invokePolicyARN)
+	invokePolicyARN := ARN(*invokePolicy.Arn)
+	log.Info("found invoke policy, updating.", "ARN", invokePolicyARN)
 
 	newDoc, err := c.AddResourcesToPolicyDocument(invokePolicy, createdARNs)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 
-	return createdARNs, newDoc, nil
+	out.LambdaARNs = createdARNs
+	out.InvokePolicyDoc = newDoc
+	out.InvokePolicyARN = invokePolicyARN
+	out.ExecuteRoleARN = executeRoleARN
+	out.ExecutePolicyARN = LambdaExecutionPolicyARN
+	return nil
 }
 
-// provisionManifest saves manifest file in S3
-func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams) error {
-	log.Info("uploading manifest to S3", "key", pd.ManifestKey)
+// provisionS3Manifest saves manifest file in S3.
+func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
 	data, err := json.Marshal(pd.Manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", pd.Manifest.AppID)
 	}
 	buffer := bytes.NewBuffer(data)
 
-	if err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer); err != nil {
+	// Make the manifest publicly visible.
+	url, err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer, true)
+	if err != nil {
 		return errors.Wrapf(err, "can't upload manifest file for the app - %s", pd.Manifest.AppID)
 	}
+
+	out.Manifest = *pd.Manifest
+	out.ManifestURL = url
+	log.Info("uploaded manifest to S3 (public-read).", "bucket", params.Bucket, "key", pd.ManifestKey)
 	return nil
 }

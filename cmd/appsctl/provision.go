@@ -54,7 +54,17 @@ var provisionAppCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("<><> %+v\n", out)
+		fmt.Printf("\n'%s' is now provisioned to AWS.\n", out.Manifest.DisplayName)
+		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
+			len(out.LambdaARNs), len(out.StaticARNs))
+
+		fmt.Printf("You can now install it in Mattermost using:\n")
+		fmt.Printf("  /apps install --url %s\n\n", out.ManifestURL)
+
+		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
+		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
+		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
+		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
 
 		return nil
 	},
