@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
@@ -28,7 +27,7 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitGlobal(_ awsclient.Client, bucket string, _ httpout.Service) error
+	InitGlobal(_ upaws.Client, bucket string, _ httpout.Service) error
 	StoreLocal(*apps.Manifest) error
 }
 
@@ -51,7 +50,7 @@ var _ ManifestStore = (*manifestStore)(nil)
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) InitGlobal(awscli awsclient.Client, bucket string, httpOut httpout.Service) error {
+func (s *manifestStore) InitGlobal(awscli upaws.Client, bucket string, httpOut httpout.Service) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
@@ -279,7 +278,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 }
 
 // getFromS3 returns a manifest file for an app from the S3
-func (s *manifestStore) getFromS3(awscli awsclient.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
+func (s *manifestStore) getFromS3(awscli upaws.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := upaws.S3ManifestName(appID, version)
 	data, err := awscli.GetS3(bucket, name)
 	if err != nil {

@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package awsclient
+package upaws
 
 import (
 	"bytes"
@@ -23,6 +23,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
 )
 
+type ARN string
+
+func (arn ARN) AWSString() *string {
+	return aws.String(string(arn))
+}
+
+type Name string
+
+func (n Name) AWSString() *string {
+	return aws.String(string(n))
+}
+
 // Client is an authenticated client for interacting with AWS resources. It
 // provides a thin layer on top of aws-sdk-go, and contains all AWS
 // dependencies.
@@ -32,26 +44,31 @@ type Client interface {
 	InvokeLambda(name string, invocationType string, payload []byte) ([]byte, error)
 
 	// Admin methods
-	AddUserToGroup(u, g string) error
-	AttachGroupPolicy(g, p string) error
-	CreateAccessKey(u string) (string, string, error)
-	CreateGroup(name string) (string, error)
-	CreateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
-	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime, resource string) error
-	CreatePolicy(name, data string) (arn string, _ error)
+	AddResourcesToPolicyDocument(*iam.Policy, []ARN) (string, error)
+	AddUserToGroup(u, g Name) error
+	AttachGroupPolicy(g Name, p ARN) error
+	AttachRolePolicy(roleName Name, policyARN ARN) error
+	CreateAccessKey(user Name) (string, string, error)
+	CreateGroup(name Name) (ARN, error)
+	CreateLambda(zipFile io.Reader, function, handler, runtime string, role ARN) (ARN, error)
+	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime string, role ARN) (ARN, error)
+	CreatePolicy(name Name, data string) (ARN, error)
+	CreateRole(name Name) (ARN, error)
 	CreateS3Bucket(bucket string) error
-	CreateUser(name string) (string, error)
-	DeleteAccessKeys(u string) error
-	DeleteGroup(name string) error
-	DeletePolicy(name string) error
+	CreateUser(name Name) (ARN, error)
+	DeleteAccessKeys(user Name, accessKeyID string) error
+	DeleteGroup(Name) error
+	DeletePolicy(ARN) error
+	DeleteRole(name Name) error
 	DeleteS3Bucket(name string) error
-	DeleteUser(name string) error
-	DetachGroupPolicy(g, p string) error
+	DeleteUser(name Name) error
+	DetachGroupPolicy(g Name, p ARN) error
 	ExistsS3Bucket(name string) (bool, error)
-	FindGroup(name string) (string, error)
-	FindPolicy(policyName string) (*iam.Policy, error)
-	FindUser(name string) (string, error)
-	RemoveUserFromGroup(u, g string) error
+	FindGroup(name Name) (ARN, error)
+	FindPolicy(policyName Name) (*iam.Policy, error)
+	FindRole(name Name) (ARN, error)
+	FindUser(name Name) (ARN, error)
+	RemoveUserFromGroup(u, g Name) error
 	UploadS3(bucket, key string, body io.Reader) error
 }
 

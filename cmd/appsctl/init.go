@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
-var initParams upaws.InitParams
 var shouldClean bool
+var shouldCreate bool
+var shouldCreateAccessKey bool
+var userName string
+var policyName string
+var groupName string
 
 func init() {
 	rootCmd.AddCommand(
@@ -18,11 +24,11 @@ func init() {
 
 	initCmd.AddCommand(initAWSCmd)
 	initAWSCmd.Flags().BoolVar(&shouldClean, "clean", false, "Destroy all default AWS resources, including the S3 bucket.")
-	initAWSCmd.Flags().BoolVar(&initParams.ShouldCreate, "create", false, "Create resources (user, group, policy, bucket) that don't already exist, using the default configuration.")
-	initAWSCmd.Flags().BoolVar(&initParams.ShouldCreateAccessKey, "create-access-key", false, "Create new access key for the user (or you can safely do it in AWS Console).")
-	initAWSCmd.Flags().StringVar(&initParams.User, "user", upaws.DefaultUserName, "Username to use for invoking the AWS App from Mattermost Server.")
-	initAWSCmd.Flags().StringVar(&initParams.Policy, "policy", upaws.DefaultPolicyName, "Name of the policy to control access of AWS services directly by Mattermost Server (user).")
-	initAWSCmd.Flags().StringVar(&initParams.Group, "group", upaws.DefaultGroupName, "Name of the user group connecting the invoking user to the invoke policy.")
+	initAWSCmd.Flags().BoolVar(&shouldCreate, "create", false, "Create resources (user, group, policy, bucket) that don't already exist, using the default configuration.")
+	initAWSCmd.Flags().BoolVar(&shouldCreateAccessKey, "create-access-key", false, "Create new access key for the user (or you can safely do it in AWS Console).")
+	initAWSCmd.Flags().StringVar(&userName, "user", upaws.DefaultUserName, "Username to use for invoking the AWS App from Mattermost Server.")
+	initAWSCmd.Flags().StringVar(&policyName, "policy", upaws.DefaultPolicyName, "Name of the policy to control access of AWS services directly by Mattermost Server (user).")
+	initAWSCmd.Flags().StringVar(&groupName, "group", upaws.DefaultGroupName, "Name of the user group connecting the invoking user to the invoke policy.")
 }
 
 var initCmd = &cobra.Command{
@@ -39,13 +45,24 @@ var initAWSCmd = &cobra.Command{
 			return err
 		}
 
-		initParams.Bucket = upaws.S3BucketName()
-
 		if shouldClean {
-			return upaws.CleanApps(asAdmin, &log)
+			accessKeyID := os.Getenv(upaws.AccessEnvVar)
+			if accessKeyID == "" {
+				return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+			}
+
+			return upaws.CleanApps(asAdmin, accessKeyID, &log)
 		}
 
-		out, err := upaws.InitApps(asAdmin, initParams, &log)
+		out, err := upaws.InitApps(asAdmin, &log, upaws.InitParams{
+			Bucket:                upaws.S3BucketName(),
+			User:                  upaws.Name(userName),
+			Group:                 upaws.Name(groupName),
+			Policy:                upaws.Name(policyName),
+			ExecuteRole:           upaws.Name(executeRoleName),
+			ShouldCreate:          shouldCreate,
+			ShouldCreateAccessKey: shouldCreateAccessKey,
+		})
 		if err != nil {
 			return err
 		}
@@ -57,10 +74,10 @@ var initAWSCmd = &cobra.Command{
 		fmt.Printf("Policy:\t%q\n", out.PolicyARN)
 		fmt.Printf("Bucket:\t%q\n", out.Bucket)
 
-		if initParams.ShouldCreateAccessKey {
+		if shouldCreateAccessKey {
 			fmt.Printf("\nPlease store the Access Key securely, it will not be viewable again.\n\n")
-			fmt.Printf("Access Key ID:\t%s\n", out.AccessKeyID)
-			fmt.Printf("Access Key Secret:\t%s\n", out.AccessKeySecret)
+			fmt.Printf("export %s='%s'\n", upaws.AccessEnvVar, out.AccessKeyID)
+			fmt.Printf("export %s='%s'\n", upaws.SecretEnvVar, out.AccessKeySecret)
 		}
 
 		return nil

@@ -16,13 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-type Logger interface {
-	Error(message string, keyValuePairs ...interface{})
-	Warn(message string, keyValuePairs ...interface{})
-	Info(message string, keyValuePairs ...interface{})
-	Debug(message string, keyValuePairs ...interface{})
-}
-
 // ProvisionData contains all the necessary data for provisioning an app
 type ProvisionData struct {
 	// StaticFiles key is the name of the static file in the /static folder

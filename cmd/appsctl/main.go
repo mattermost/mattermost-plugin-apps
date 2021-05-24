@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -42,7 +41,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func createAWSClient(invoke bool) (awsclient.Client, error) {
+func createAWSClient(invoke bool) (upaws.Client, error) {
 	accessVar, secretVar := upaws.ProvisionAccessEnvVar, upaws.ProvisionSecretEnvVar
 	if invoke {
 		accessVar, secretVar = upaws.AccessEnvVar, upaws.SecretEnvVar
@@ -62,5 +61,5 @@ func createAWSClient(invoke bool) (awsclient.Client, error) {
 	}
 
 	log.Debug("using AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
-	return awsclient.MakeClient(accessKey, secretKey, region, &log)
+	return upaws.MakeClient(accessKey, secretKey, region, &log)
 }

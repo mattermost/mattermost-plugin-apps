@@ -7,37 +7,30 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-)
-
-const LambdaExecutionPolicy = `arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`
-
-const (
-	DefaultPolicyName = "mattermost-apps-invoke-policy"
-	DefaultUserName   = "mattermost-apps-invoke"
-	DefaultGroupName  = "mattermost-apps-invoke-group"
 )
 
 type InitParams struct {
 	Bucket                string
-	Policy                string
-	User                  string
-	Group                 string
+	Policy                Name
+	User                  Name
+	Group                 Name
+	ExecuteRole           Name
 	ShouldCreate          bool
 	ShouldCreateAccessKey bool
 }
 
 type InitResult struct {
 	Bucket          string
-	PolicyARN       string
-	UserARN         string
-	GroupARN        string
+	PolicyARN       ARN
+	UserARN         ARN
+	GroupARN        ARN
+	ExecuteRoleARN  ARN
 	AccessKeyID     string
 	AccessKeySecret string
 }
 
-func InitApps(asAdmin awsclient.Client, params InitParams, log Logger) (r *InitResult, err error) {
+func InitApps(asAdmin Client, log Logger, params InitParams) (r *InitResult, err error) {
 	r = &InitResult{}
 	exists, err := asAdmin.ExistsS3Bucket(params.Bucket)
 	if err != nil {
@@ -49,8 +42,8 @@ func InitApps(asAdmin awsclient.Client, params InitParams, log Logger) (r *InitR
 	log.Info("using existing S3 bucket", "name", params.Bucket)
 	r.Bucket = params.Bucket
 
-	ensure := func(typ, name string, find, create func(string) (string, error)) (string, error) {
-		var arn string
+	ensure := func(typ string, name Name, find, create func(Name) (ARN, error)) (ARN, error) {
+		var arn ARN
 		arn, err = find(name)
 		if err != nil {
 			if errors.Cause(err) != utils.ErrNotFound || !params.ShouldCreate {
@@ -67,6 +60,7 @@ func InitApps(asAdmin awsclient.Client, params InitParams, log Logger) (r *InitR
 		return arn, nil
 	}
 
+	// Ensure user and group
 	r.UserARN, err = ensure("user", params.User, asAdmin.FindUser, asAdmin.CreateUser)
 	if err != nil {
 		return nil, err
@@ -78,22 +72,22 @@ func InitApps(asAdmin awsclient.Client, params InitParams, log Logger) (r *InitR
 		}
 		log.Info("created access key")
 	}
-
 	r.GroupARN, err = ensure("group", params.Group, asAdmin.FindGroup, asAdmin.CreateGroup)
 	if err != nil {
 		return nil, err
 	}
 
+	// Ensure invoke policy that provides user access to the App's resources.
 	r.PolicyARN, err = ensure("policy", params.Policy,
-		func(name string) (string, error) {
+		func(name Name) (ARN, error) {
 			var p *iam.Policy
 			p, err = asAdmin.FindPolicy(name)
 			if err != nil {
 				return "", err
 			}
-			return *p.Arn, nil
+			return ARN(*p.Arn), nil
 		},
-		func(name string) (string, error) {
+		func(name Name) (ARN, error) {
 			return asAdmin.CreatePolicy(name, `{
 				"Version": "2012-10-17",
 				"Statement": [
@@ -114,20 +108,35 @@ func InitApps(asAdmin awsclient.Client, params InitParams, log Logger) (r *InitR
 		return nil, err
 	}
 
+	// Connect user-group-policy
 	err = asAdmin.AttachGroupPolicy(params.Group, r.PolicyARN)
 	if err != nil {
 		return nil, err
 	}
+	log.Info("attached policy to group", "policyARN", r.PolicyARN, "groupName", params.Group)
 	err = asAdmin.AddUserToGroup(params.User, params.Group)
 	if err != nil {
 		return nil, err
 	}
+	log.Info("added user to group", "userName", params.User, "groupName", params.Group)
+
+	// Create an execution role for the Apps' Lambdas. It uses
+	// AWSLambdaBasicExecutionRole service execution policy.
+	r.ExecuteRoleARN, err = ensure("execute role", params.ExecuteRole, asAdmin.FindRole, asAdmin.CreateRole)
+	if err != nil {
+		return nil, err
+	}
+	err = asAdmin.AttachRolePolicy(params.ExecuteRole, LambdaExecutionPolicyARN)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("attached AWSLambdaBasicExecutionRole policy to role", "roleName", params.ExecuteRole)
 
 	return r, nil
 }
 
-func CleanApps(asAdmin awsclient.Client, log Logger) error {
-	delete := func(typ, name string, del func(string) error) error {
+func CleanApps(asAdmin Client, accessKeyID string, log Logger) error {
+	delete := func(typ string, name Name, del func(Name) error) error {
 		err := del(name)
 		if err != nil {
 			if errors.Cause(err) != utils.ErrNotFound {
@@ -153,7 +162,7 @@ func CleanApps(asAdmin awsclient.Client, log Logger) error {
 
 	policy, err := asAdmin.FindPolicy(DefaultPolicyName)
 	if err == nil {
-		err = asAdmin.DetachGroupPolicy(DefaultGroupName, *policy.Arn)
+		err = asAdmin.DetachGroupPolicy(DefaultGroupName, ARN(*policy.Arn))
 		switch {
 		case err == nil:
 			log.Info("detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
@@ -164,7 +173,9 @@ func CleanApps(asAdmin awsclient.Client, log Logger) error {
 		}
 	}
 
-	err = delete("access keys", DefaultUserName, asAdmin.DeleteAccessKeys)
+	err = delete("access keys", DefaultUserName, func(name Name) error {
+		return asAdmin.DeleteAccessKeys(name, accessKeyID)
+	})
 	if err != nil {
 		return err
 	}
@@ -178,9 +189,14 @@ func CleanApps(asAdmin awsclient.Client, log Logger) error {
 		return err
 	}
 	if policy != nil {
-		err = delete("policy", *policy.Arn, asAdmin.DeletePolicy)
+		err := asAdmin.DeletePolicy(ARN(*policy.Arn))
 		if err != nil {
-			return err
+			if errors.Cause(err) != utils.ErrNotFound {
+				return err
+			}
+			log.Info("not found policy", "ARN", *policy.Arn)
+		} else {
+			log.Info("deleted policy", "ARN", *policy.Arn)
 		}
 	}
 

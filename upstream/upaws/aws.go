@@ -20,6 +20,28 @@ const (
 	DefaultRegion = "us-east-1"
 )
 
+const LambdaExecutionPolicyARN = `arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`
+
+const (
+	DefaultExecuteRoleName = "mattermost-apps-execute-lambda-role"
+	DefaultPolicyName      = "mattermost-apps-invoke-policy"
+	DefaultUserName        = "mattermost-apps-invoke"
+	DefaultGroupName       = "mattermost-apps-invoke-group"
+)
+
+const ExecuteRolePolicyDocument = `{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Principal": {
+				"Service": "lambda.amazonaws.com"
+			},
+			"Action": "sts:AssumeRole"
+		}
+	]
+}`
+
 func Region() string {
 	name := os.Getenv(RegionEnvVar)
 	if name != "" {

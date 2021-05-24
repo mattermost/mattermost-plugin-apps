@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/awsclient"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -23,7 +22,7 @@ import (
 // reused between requests, nor cached.
 type Upstream struct {
 	app       *apps.App
-	awsClient awsclient.Client
+	awsClient Client
 	bucket    string
 }
 
@@ -45,7 +44,7 @@ type invocationResponse struct {
 	Body       string `json:"body"`
 }
 
-func NewUpstream(app *apps.App, awsClient awsclient.Client, bucket string) *Upstream {
+func NewUpstream(app *apps.App, awsClient Client, bucket string) *Upstream {
 	return &Upstream{
 		app:       app,
 		awsClient: awsClient,
