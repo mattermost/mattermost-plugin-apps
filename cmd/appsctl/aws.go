@@ -49,7 +49,7 @@ var awsCmd = &cobra.Command{
 }
 
 var awsInitCmd = &cobra.Command{
-	Use:   "aws",
+	Use:   "init",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		asProvisioner, err := AsProvisioner()
@@ -88,7 +88,7 @@ var awsInitCmd = &cobra.Command{
 }
 
 var awsCleanCmd = &cobra.Command{
-	Use:   "aws",
+	Use:   "clean",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		asProvisioner, err := AsProvisioner()
