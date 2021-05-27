@@ -83,13 +83,13 @@ func (s *manifestStore) InitGlobal(awscli upaws.Client, bucket string, httpOut h
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode)
 		default:
-			s.mm.Log.Error("failed to load global manifest",
+			s.mm.Log.Error("Failed to load global manifest",
 				"err", fmt.Sprintf("%s is invalid", loc),
 				"app_id", appID)
 			continue
 		}
 		if err != nil {
-			s.mm.Log.Error("failed to load global manifest",
+			s.mm.Log.Error("Failed to load global manifest",
 				"err", err.Error(),
 				"app_id", appID,
 				"loc", loc)
@@ -99,14 +99,14 @@ func (s *manifestStore) InitGlobal(awscli upaws.Client, bucket string, httpOut h
 		var m *apps.Manifest
 		m, err = apps.ManifestFromJSON(data)
 		if err != nil {
-			s.mm.Log.Error("failed to load global manifest",
+			s.mm.Log.Error("Failed to load global manifest",
 				"err", err.Error(),
 				"app_id", appID,
 				"loc", loc)
 			continue
 		}
 		if m.AppID != appID {
-			s.mm.Log.Error("failed to load global manifest",
+			s.mm.Log.Error("Failed to load global manifest",
 				"err", fmt.Sprintf("mismatched app ids while getting manifest %s != %s", m.AppID, appID),
 				"app_id", appID,
 				"loc", loc)
@@ -143,12 +143,10 @@ func (s *manifestStore) Configure(conf config.Config) {
 		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
-			s.mm.Log.Error(
-				fmt.Sprintf("failed to load local manifest for %s: %s", id, err.Error()))
+			s.mm.Log.Error("Failed to load local manifest for %s: %s", "app_id", id, "err", err.Error())
 
 		case m == nil:
-			s.mm.Log.Error(
-				fmt.Sprintf("failed to load local manifest for %s: not found", id))
+			s.mm.Log.Error("Failed to load local manifest - not found", "app_id", id)
 
 		default:
 			updatedLocal[apps.AppID(id)] = m
@@ -239,7 +237,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 
 	err = s.mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
 	if err != nil {
-		s.mm.Log.Warn("failed to delete previous Manifest KV value", "err", err.Error())
+		s.mm.Log.Warn("Failed to delete previous Manifest KV value", "err", err.Error())
 	}
 	return nil
 }

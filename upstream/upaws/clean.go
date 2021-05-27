@@ -13,22 +13,21 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 	delete := func(typ string, name Name, del func(Name) error) error {
 		err := del(name)
 		if err != nil {
-			if errors.Cause(err) != utils.ErrNotFound {
+			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Info("not found "+typ, "key", name)
+			log.Info("Not found "+typ, "key", name)
 		} else {
-			log.Info("deleted "+typ, "key", name)
+			log.Info("Deleted "+typ, "key", name)
 		}
 		return nil
 	}
 
-	var err error
-	err = asAdmin.RemoveUserFromGroup(DefaultUserName, DefaultGroupName)
+	err := asAdmin.RemoveUserFromGroup(DefaultUserName, DefaultGroupName)
 	switch {
 	case err == nil:
-		log.Info("removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
-	case errors.Cause(err) == utils.ErrNotFound:
+		log.Info("Removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
+	case errors.Is(err, utils.ErrNotFound):
 		// nothing to do
 	default:
 		return err
@@ -39,8 +38,8 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 		err = asAdmin.DetachGroupPolicy(DefaultGroupName, ARN(*policy.Arn))
 		switch {
 		case err == nil:
-			log.Info("detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
-		case errors.Cause(err) == utils.ErrNotFound:
+			log.Info("Detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
+		case errors.Is(err, utils.ErrNotFound):
 			// nothing to do
 		default:
 			return err
@@ -65,12 +64,12 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 	if policy != nil {
 		err := asAdmin.DeletePolicy(ARN(*policy.Arn))
 		if err != nil {
-			if errors.Cause(err) != utils.ErrNotFound {
+			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Info("not found policy", "ARN", *policy.Arn)
+			log.Info("Not found policy", "ARN", *policy.Arn)
 		} else {
-			log.Info("deleted policy", "ARN", *policy.Arn)
+			log.Info("Deleted policy", "ARN", *policy.Arn)
 		}
 	}
 

@@ -42,7 +42,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 
 	app, err := p.store.App.Get(cc.AppID)
 	if err != nil {
-		if errors.Cause(err) != utils.ErrNotFound {
+		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", err
 		}
 		app = &apps.App{}

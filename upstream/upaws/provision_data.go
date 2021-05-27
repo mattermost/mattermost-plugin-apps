@@ -84,7 +84,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 			if log != nil {
-				log.Info("found manifest", "file", file.Name)
+				log.Info("Found manifest", "file", file.Name)
 			}
 
 		case strings.HasSuffix(file.Name, ".zip"):
@@ -97,7 +97,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				Bundle: lambdaFunctionFile,
 			})
 			if log != nil {
-				log.Info("found lambda function bundle", "file", file.Name)
+				log.Info("Found lambda function bundle", "file", file.Name)
 			}
 
 		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
@@ -114,12 +114,12 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				File: assetFile,
 			})
 			if log != nil {
-				log.Info("found static asset", "file", file.Name)
+				log.Info("Found static asset", "file", file.Name)
 			}
 
 		default:
 			if log != nil {
-				log.Info("ignored unknown file", "file", file.Name)
+				log.Info("Ignored unknown file", "file", file.Name)
 			}
 		}
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 )
 
-func (s *service) executeInstall(params *params) (*model.CommandResponse, error) {
+func (s *service) executeInstall(params *commandParams) (*model.CommandResponse, error) {
 	appSecret := ""
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
@@ -63,7 +63,7 @@ func (s *service) executeInstall(params *params) (*model.CommandResponse, error)
 	return s.installApp(m, appSecret, params)
 }
 
-func (s *service) installApp(m *apps.Manifest, appSecret string, params *params) (*model.CommandResponse, error) {
+func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
 
 	// Finish the installation when the Dialog is submitted, see

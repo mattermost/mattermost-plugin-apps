@@ -81,18 +81,18 @@ func (p *Plugin) OnActivate() error {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.mm.Log.Debug("initialized config service: " + mode)
+	p.mm.Log.Debug("Initialized config service: " + mode)
 
 	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
-	p.mm.Log.Debug("initialized AWS Client",
+	p.mm.Log.Debug("Initialized AWS Client",
 		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
 		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.mm.Log.Debug("initialized outgoing HTTP")
+	p.mm.Log.Debug("Initialized outgoing HTTP")
 
 	p.store = store.NewService(p.mm, p.conf)
 	// manifest store
@@ -107,7 +107,7 @@ func (p *Plugin) OnActivate() error {
 	// app store
 	appstore := p.store.App
 	appstore.Configure(conf)
-	p.mm.Log.Debug("initialized the persistent store")
+	p.mm.Log.Debug("Initialized the persistent store")
 
 	// TODO: uses the default bucket name, same as for the manifests do we need
 	// it customizeable?
@@ -117,10 +117,10 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
-	p.mm.Log.Debug("initialized the app proxy")
+	p.mm.Log.Debug("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.mm.Log.Debug("initialized the app REST APIs")
+	p.mm.Log.Debug("Initialized the app REST APIs")
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
@@ -128,20 +128,20 @@ func (p *Plugin) OnActivate() error {
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.mm.Log.Debug("initialized incoming HTTP")
+	p.mm.Log.Debug("Initialized incoming HTTP")
 
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
-	p.mm.Log.Debug("initialized slash commands")
+	p.mm.Log.Debug("Initialized slash commands")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.mm.Log.Error("failed to synchronize apps metadata", "err", err.Error())
+			p.mm.Log.Error("Failed to synchronize apps metadata", "err", err.Error())
 		} else {
-			p.mm.Log.Debug("synchronized the installed apps metadata")
+			p.mm.Log.Debug("Synchronized the installed apps metadata")
 		}
 	}
 

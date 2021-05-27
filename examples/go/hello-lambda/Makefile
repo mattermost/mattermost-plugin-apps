@@ -5,7 +5,7 @@ all: run
 .PHONY: build-linux
 ## build-linux: build the executable for linux
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -o dist/hello-lambda
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/hello-lambda
 
 .PHONY: build
 ## build: build the executable for the local OS
@@ -15,7 +15,7 @@ build:
 .PHONY: run
 ## run: runs the app locally
 run: build
-	LOCAL=true ./dist/hello-lambda 
+	LOCAL=true ./dist/hello-lambda
 
 .PHONY: dist
 ## dist: creates the bundle file
