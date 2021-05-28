@@ -27,7 +27,8 @@ type ManifestStore interface {
 	AsMap() map[apps.AppID]*apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
-	InitGlobal(_ upaws.Client, bucket string, _ httpout.Service) error
+	GetFromS3(apps.AppID, apps.AppVersion) (*apps.Manifest, error)
+	InitGlobal(httpout.Service) error
 	StoreLocal(*apps.Manifest) error
 }
 
@@ -50,7 +51,7 @@ var _ ManifestStore = (*manifestStore)(nil)
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) InitGlobal(awscli upaws.Client, bucket string, httpOut httpout.Service) error {
+func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	bundlePath, err := s.mm.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
@@ -75,9 +76,9 @@ func (s *manifestStore) InitGlobal(awscli upaws.Client, bucket string, httpOut h
 		parts := strings.SplitN(loc, ":", 2)
 		switch {
 		case len(parts) == 1:
-			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[0]))
+			data, err = s.getDataFromS3(appID, apps.AppVersion(parts[0]))
 		case len(parts) == 2 && parts[0] == "s3":
-			data, err = s.getFromS3(awscli, bucket, appID, apps.AppVersion(parts[1]))
+			data, err = s.getDataFromS3(appID, apps.AppVersion(parts[1]))
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
@@ -275,12 +276,36 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	return s.conf.StoreConfig(sc)
 }
 
-// getFromS3 returns a manifest file for an app from the S3
-func (s *manifestStore) getFromS3(awscli upaws.Client, bucket string, appID apps.AppID, version apps.AppVersion) ([]byte, error) {
+// getFromS3 returns manifest data for an app from the S3
+func (s *manifestStore) getDataFromS3(appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := upaws.S3ManifestName(appID, version)
-	data, err := awscli.GetS3(bucket, name)
+	data, err := s.aws.GetS3(s.s3AssetBucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)
 	}
+
 	return data, nil
+}
+
+// GetFromS3 returns the manifest for an app from the S3
+func (s *manifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
+	data, err := s.getDataFromS3(appID, version)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get manifest data")
+	}
+
+	m, err := apps.ManifestFromJSON(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal manifest data")
+	}
+
+	if m.AppID != appID {
+		return nil, errors.New("mismatched app ID")
+	}
+
+	if m.Version != version {
+		return nil, errors.New("mismatched app version")
+	}
+
+	return m, nil
 }

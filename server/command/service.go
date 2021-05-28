@@ -38,6 +38,7 @@ type commandParams struct {
 
 type commandHandler struct {
 	f            func(*commandParams) (*model.CommandResponse, error)
+	subCommands  map[string]commandHandler
 	devOnly      bool
 	autoComplete *model.AutocompleteData
 }
@@ -97,17 +98,18 @@ func (s *service) allCommands() map[string]commandHandler {
 
 func (s *service) installCommand(conf config.Config) commandHandler {
 	h := commandHandler{
-		f: s.checkSystemAdmin(s.executeInstall),
 		autoComplete: &model.AutocompleteData{
 			Trigger:  "install",
 			HelpText: "Install an App.",
 			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
 		},
+		subCommands: map[string]commandHandler{},
 	}
 
 	if conf.MattermostCloudMode {
 		// install only by ID (from the marketplace) in cloud mode
-		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+		installMarketplaceAC := model.NewAutocompleteData("marketplace", "", "Install an App from the Mattermost Marketplace")
+		installMarketplaceAC.Arguments = append(installMarketplaceAC.Arguments, &model.AutocompleteArg{
 			HelpText: "ID of the app to install",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
@@ -115,10 +117,16 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			},
 			Required: true,
 		})
+
+		h.subCommands[installMarketplaceAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallMarketplace),
+			autoComplete: installMarketplaceAC,
+		}
 	} else {
+		installHTTPAC := model.NewAutocompleteData("http", "", "Install an App running as a HTTP server")
 		// install from URL in the on-prem mode
-		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
-			Name:     "url",
+		installHTTPAC.Arguments = append(installHTTPAC.Arguments, &model.AutocompleteArg{
+			Name:     "",
 			HelpText: "URL of the App's manifest",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
@@ -127,14 +135,42 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			Required: true,
 		})
 
-		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+		installHTTPAC.Arguments = append(installHTTPAC.Arguments, &model.AutocompleteArg{
 			Name:     "app-secret",
 			HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
 				Hint: "Secret string",
 			},
+			Required: false,
 		})
+		h.subCommands[installHTTPAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallHTTP),
+			autoComplete: installHTTPAC,
+		}
+
+		installAWSAC := model.NewAutocompleteData("aws", "", "Install an App running as an AWS lambda function")
+		installAWSAC.Arguments = append(installAWSAC.Arguments, &model.AutocompleteArg{
+			HelpText: "ID of the app to install",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "App ID",
+			},
+			Required: true,
+		})
+		installAWSAC.Arguments = append(installAWSAC.Arguments, &model.AutocompleteArg{
+			HelpText: "Version of the app to install",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "version",
+			},
+			Required: true,
+		})
+
+		h.subCommands[installAWSAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallAWS),
+			autoComplete: installAWSAC,
+		}
 	}
 
 	return h
@@ -157,9 +193,8 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 
 	// Add autocomplete for the subcommands alphabetically
 	ac := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
-	for _, t := range subs {
-		ac.AddCommand(subCommands[t].autoComplete)
-	}
+
+	AddACForSubCommands(subCommands, ac)
 
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
@@ -173,6 +208,21 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 	}
 
 	return s, nil
+}
+
+func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.AutocompleteData) {
+	var subs []string
+	for t := range subCommands {
+		subs = append(subs, t)
+	}
+	sort.Strings(subs)
+
+	for _, t := range subs {
+		if len(subCommands[t].subCommands) > 0 {
+			AddACForSubCommands(subCommands[t].subCommands, subCommands[t].autoComplete)
+		}
+		rootAC.AddCommand(subCommands[t].autoComplete)
+	}
 }
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
@@ -235,6 +285,11 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 
 	p := *params
 	p.current = params.current[1:]
+
+	if len(c.subCommands) > 0 {
+		return s.runSubcommand(c.subCommands, &p)
+	}
+
 	return c.f(&p)
 }
 

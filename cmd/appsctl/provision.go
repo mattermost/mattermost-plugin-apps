@@ -59,7 +59,7 @@ var provisionAppCmd = &cobra.Command{
 			len(out.LambdaARNs), len(out.StaticARNs))
 
 		fmt.Printf("You can now install it in Mattermost using:\n")
-		fmt.Printf("  /apps install --url %s\n\n", out.ManifestURL)
+		fmt.Printf("  /apps install aws %s %s\n\n", out.Manifest.AppID, out.Manifest.Version)
 
 		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
 		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
