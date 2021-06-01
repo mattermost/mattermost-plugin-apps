@@ -46,7 +46,7 @@ func AsProvisioner() (upaws.Client, error) {
 }
 
 func AsTest() (upaws.Client, error) {
-	return createClient(false)
+	return createClient(true)
 }
 
 func createClient(invoke bool) (upaws.Client, error) {

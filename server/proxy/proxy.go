@@ -196,11 +196,30 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 }
 
 func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
-	if conf.DeveloperMode {
+	supportedTypes := []apps.AppType{
+		apps.AppTypeBuiltin,
+	}
+	mode := "Mattermost Cloud"
+	switch {
+	case conf.DeveloperMode:
 		return nil
+
+	case conf.MattermostCloudMode:
+		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda)
+
+	case !conf.MattermostCloudMode:
+		// Self-managed
+		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda, apps.AppTypeHTTP)
+		mode = "Self-managed"
+
+	default:
+		return errors.New("unreachable")
 	}
-	if conf.MattermostCloudMode != (m.AppType == apps.AppTypeAWSLambda) {
-		return utils.NewForbiddenError("AWS lambda apps are supported only in Mattermost Cloud")
+
+	for _, t := range supportedTypes {
+		if m.AppType == t {
+			return nil
+		}
 	}
-	return nil
+	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", m.AppType, mode, supportedTypes)
 }

@@ -42,11 +42,12 @@ func main() {
 	localMode := os.Getenv("LOCAL") == "true"
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
+
+	manifestData := manifestAWSData
 	if localMode {
-		http.HandleFunc("/manifest.json", writeJSON(manifestHTTPData))
-	} else {
-		http.HandleFunc("/manifest.json", writeJSON(manifestAWSData))
-	}
+		manifestData = manifestHTTPData
+	} 
+	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Returns "PONG". Used for `appsctl test aws`.
 	http.HandleFunc("/ping", writeJSON(pongData))

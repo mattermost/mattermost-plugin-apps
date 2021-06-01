@@ -98,7 +98,7 @@ func (p *Plugin) OnActivate() error {
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
-	if conf.MattermostCloudMode {
+	if conf.MattermostCloudMode || conf.DeveloperMode {
 		err = mstore.InitGlobal(p.httpOut)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
