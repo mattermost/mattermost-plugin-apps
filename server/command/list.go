@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (s *service) executeList(params *params) (*model.CommandResponse, error) {
+func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
 	listed := s.proxy.GetListedApps("")
 	installed := s.proxy.GetInstalledApps()
 

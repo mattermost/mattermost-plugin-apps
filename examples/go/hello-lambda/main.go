@@ -30,6 +30,11 @@ var bindingsData []byte
 //go:embed send_form.json
 var formData []byte
 
+const (
+	host = "localhost"
+	port = 8080
+)
+
 //go:embed static
 var static embed.FS
 
@@ -56,6 +61,8 @@ func main() {
 	http.HandleFunc("/send/submit", send)
 
 	if localMode {
+		addr := fmt.Sprintf("%v:%v", host, port)
+		fmt.Printf(`hello-world app listening at http://%s`, addr)
 		http.ListenAndServe(":8080", nil)
 	} else {
 		lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
@@ -73,7 +80,10 @@ func send(w http.ResponseWriter, req *http.Request) {
 	}
 	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{})
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Type:     apps.CallResponseTypeOK,
+		Markdown: "Created a post in your DM channel.",
+	})
 }
 
 func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {

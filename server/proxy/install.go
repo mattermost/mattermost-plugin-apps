@@ -42,7 +42,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 
 	app, err := p.store.App.Get(cc.AppID)
 	if err != nil {
-		if errors.Cause(err) != utils.ErrNotFound {
+		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", err
 		}
 		app = &apps.App{}
@@ -86,17 +86,26 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
-	creq := &apps.CallRequest{
-		Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
-		Context: cc,
+	var message md.MD
+	if app.OnInstall != nil {
+		creq := &apps.CallRequest{
+			Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
+			Context: cc,
+		}
+		resp := p.Call(sessionID, actingUserID, creq)
+		if resp.Type == apps.CallResponseTypeError {
+			p.mm.Log.Warn("OnInstall failed, installing app anyway", "err", resp.Error(), "app_id", app.AppID)
+		}
+
+		message = resp.Markdown
 	}
-	resp := p.Call(sessionID, actingUserID, creq)
-	if resp.Type == apps.CallResponseTypeError {
-		return nil, "", errors.Wrap(resp, "install failed")
+
+	if message == "" {
+		message = md.MD(fmt.Sprintf("Successfully install %s", app.AppID))
 	}
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
-	return app, resp.Markdown, nil
+	return app, message, nil
 }
 
 func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin *model.Client4) (*model.OAuthApp, error) {

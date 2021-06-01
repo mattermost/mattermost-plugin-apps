@@ -89,7 +89,7 @@ var awsInitCmd = &cobra.Command{
 
 var awsCleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "Initialize AWS to deploy Mattermost Apps",
+	Short: "Delete group, user and policy used for Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		asProvisioner, err := AsProvisioner()
 		if err != nil {
@@ -138,7 +138,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 		r := string(data)
-		log.Debugf("received: %s", string(data))
+		log.Debugf("Received: %s", string(data))
 
 		if r != "static pong" {
 			return errors.Errorf("expected 'static pong', got '%s'", r)
@@ -172,7 +172,7 @@ var awsTestLambdaCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Debugf("received: %s", crString)
+		log.Debugf("Received: %s", crString)
 
 		cr := apps.CallResponse{}
 		_ = json.Unmarshal([]byte(crString), &cr)

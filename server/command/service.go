@@ -30,14 +30,15 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-type params struct {
+type commandParams struct {
 	pluginContext *plugin.Context
 	commandArgs   *model.CommandArgs
 	current       []string
 }
 
 type commandHandler struct {
-	f            func(*params) (*model.CommandResponse, error)
+	f            func(*commandParams) (*model.CommandResponse, error)
+	subCommands  map[string]commandHandler
 	devOnly      bool
 	autoComplete *model.AutocompleteData
 }
@@ -45,6 +46,7 @@ type commandHandler struct {
 func (s *service) allCommands() map[string]commandHandler {
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
+	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
 
 	all := map[string]commandHandler{
 		"info": {
@@ -66,6 +68,10 @@ func (s *service) allCommands() map[string]commandHandler {
 	if conf.DeveloperMode {
 		debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
 		debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
+		debugAddManifestAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+
+		debugCleanAC := model.NewAutocompleteData("debug-clean", "", "Delete all KV data")
+		debugCleanAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
 
 		all["debug-bindings"] = commandHandler{
 			f:            s.executeDebugBindings,
@@ -73,13 +79,13 @@ func (s *service) allCommands() map[string]commandHandler {
 			autoComplete: model.NewAutocompleteData("debug-bindings", "", "List bindings"),
 		}
 		all["debug-clean"] = commandHandler{
-			f:            s.executeDebugClean,
+			f:            s.checkSystemAdmin(s.executeDebugClean),
 			devOnly:      true,
-			autoComplete: model.NewAutocompleteData("debug-clean", "", "Delete all KV data"),
+			autoComplete: debugCleanAC,
 		}
 		// TODO ticket: change to watch-manifest
 		all["debug-add-manifest"] = commandHandler{
-			f:            s.executeDebugAddManifest,
+			f:            s.checkSystemAdmin(s.executeDebugAddManifest),
 			devOnly:      true,
 			autoComplete: debugAddManifestAC,
 		}
@@ -92,17 +98,18 @@ func (s *service) allCommands() map[string]commandHandler {
 
 func (s *service) installCommand(conf config.Config) commandHandler {
 	h := commandHandler{
-		f: s.checkSystemAdmin(s.executeInstall),
 		autoComplete: &model.AutocompleteData{
 			Trigger:  "install",
 			HelpText: "Install an App.",
 			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
 		},
+		subCommands: map[string]commandHandler{},
 	}
 
 	if conf.MattermostCloudMode {
 		// install only by ID (from the marketplace) in cloud mode
-		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
+		installMarketplaceAC := model.NewAutocompleteData("marketplace", "", "Install an App from the Mattermost Marketplace")
+		installMarketplaceAC.Arguments = append(installMarketplaceAC.Arguments, &model.AutocompleteArg{
 			HelpText: "ID of the app to install",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
@@ -110,10 +117,16 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			},
 			Required: true,
 		})
+
+		h.subCommands[installMarketplaceAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallMarketplace),
+			autoComplete: installMarketplaceAC,
+		}
 	} else {
+		installHTTPAC := model.NewAutocompleteData("http", "", "Install an App running as a HTTP server")
 		// install from URL in the on-prem mode
-		h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
-			Name:     "url",
+		installHTTPAC.Arguments = append(installHTTPAC.Arguments, &model.AutocompleteArg{
+			Name:     "",
 			HelpText: "URL of the App's manifest",
 			Type:     model.AutocompleteArgTypeText,
 			Data: &model.AutocompleteTextArg{
@@ -121,16 +134,44 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			},
 			Required: true,
 		})
-	}
 
-	h.autoComplete.Arguments = append(h.autoComplete.Arguments, &model.AutocompleteArg{
-		Name:     "app-secret",
-		HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
-		Type:     model.AutocompleteArgTypeText,
-		Data: &model.AutocompleteTextArg{
-			Hint: "Secret string",
-		},
-	})
+		installHTTPAC.Arguments = append(installHTTPAC.Arguments, &model.AutocompleteArg{
+			Name:     "app-secret",
+			HelpText: "(HTTP) App's JWT secret used to authenticate incoming messages from Mattermost.",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "Secret string",
+			},
+			Required: false,
+		})
+		h.subCommands[installHTTPAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallHTTP),
+			autoComplete: installHTTPAC,
+		}
+
+		installAWSAC := model.NewAutocompleteData("aws", "", "Install an App running as an AWS lambda function")
+		installAWSAC.Arguments = append(installAWSAC.Arguments, &model.AutocompleteArg{
+			HelpText: "ID of the app to install",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "App ID",
+			},
+			Required: true,
+		})
+		installAWSAC.Arguments = append(installAWSAC.Arguments, &model.AutocompleteArg{
+			HelpText: "Version of the app to install",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "version",
+			},
+			Required: true,
+		})
+
+		h.subCommands[installAWSAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallAWS),
+			autoComplete: installAWSAC,
+		}
+	}
 
 	return h
 }
@@ -152,9 +193,8 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 
 	// Add autocomplete for the subcommands alphabetically
 	ac := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
-	for _, t := range subs {
-		ac.AddCommand(subCommands[t].autoComplete)
-	}
+
+	AddACForSubCommands(subCommands, ac)
 
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
@@ -170,9 +210,24 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 	return s, nil
 }
 
+func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.AutocompleteData) {
+	var subs []string
+	for t := range subCommands {
+		subs = append(subs, t)
+	}
+	sort.Strings(subs)
+
+	for _, t := range subs {
+		if len(subCommands[t].subCommands) > 0 {
+			AddACForSubCommands(subCommands[t].subCommands, subCommands[t].autoComplete)
+		}
+		rootAC.AddCommand(subCommands[t].autoComplete)
+	}
+}
+
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error) {
-	params := &params{
+	params := &commandParams{
 		pluginContext: pluginContext,
 		commandArgs:   commandArgs,
 	}
@@ -206,11 +261,11 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	return s.handleMain(params)
 }
 
-func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
+func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
 	return s.runSubcommand(s.allCommands(), in)
 }
 
-func (s *service) runSubcommand(subcommands map[string]commandHandler, params *params) (*model.CommandResponse, error) {
+func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
@@ -230,11 +285,16 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *p
 
 	p := *params
 	p.current = params.current[1:]
+
+	if len(c.subCommands) > 0 {
+		return s.runSubcommand(c.subCommands, &p)
+	}
+
 	return c.f(&p)
 }
 
-func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse, error)) func(*params) (*model.CommandResponse, error) {
-	return func(p *params) (*model.CommandResponse, error) {
+func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandResponse, error)) func(*commandParams) (*model.CommandResponse, error) {
+	return func(p *commandParams) (*model.CommandResponse, error) {
 		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
 			return errorOut(p, errors.New("you need to be a system admin to run this command"))
 		}
@@ -242,7 +302,7 @@ func (s *service) checkSystemAdmin(handler func(*params) (*model.CommandResponse
 		return handler(p)
 	}
 }
-func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {
+func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
 	return &model.CommandResponse{
 		Text:         string(txt),
@@ -250,7 +310,7 @@ func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {
 	}, nil
 }
 
-func errorOut(params *params, err error) (*model.CommandResponse, error) {
+func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
 		md.Markdownf("Command failed. Error: **%s**\n", err.Error())
 	return &model.CommandResponse{

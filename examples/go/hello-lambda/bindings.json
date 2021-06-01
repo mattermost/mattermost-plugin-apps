@@ -8,7 +8,7 @@
 					"icon": "/static/icon.png",
 					"label": "hello-lambda",
 					"description": "Hello Lambda app",
-					"hint":        "[send]",
+					"hint": "[send]",
 					"bindings": [
 						{
 							"location": "send",
