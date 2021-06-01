@@ -94,12 +94,12 @@ func (p *Plugin) OnActivate() error {
 	p.httpOut = httpout.NewService(p.conf)
 	p.mm.Log.Debug("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.conf)
+	p.store = store.NewService(p.mm, p.conf, p.aws, conf.AWSS3Bucket)
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
 	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(p.aws, conf.AWSS3Bucket, p.httpOut)
+		err = mstore.InitGlobal(p.httpOut)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 		}

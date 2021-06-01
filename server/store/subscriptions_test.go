@@ -25,7 +25,7 @@ func TestDeleteSub(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	s := NewService(apiClient, conf, nil, "")
 
 	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -132,7 +132,7 @@ func TestGetSubs(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	s := NewService(apiClient, conf, nil, "")
 
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
@@ -195,7 +195,7 @@ func TestStoreSub(t *testing.T) {
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf)
+	s := NewService(apiClient, conf, nil, "")
 
 	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",

@@ -13,51 +13,73 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 )
 
-func (s *service) executeInstall(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInstallMarketplace(params *commandParams) (*model.CommandResponse, error) {
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("you must specify the app id"))
+	}
+	appID := apps.AppID(params.current[0])
+
+	m, err := s.proxy.GetManifest(appID)
+	if err != nil {
+		return errorOut(params, errors.Wrap(err, "manifest not found"))
+	}
+
+	return s.installApp(m, "", params)
+}
+
+func (s *service) executeInstallAWS(params *commandParams) (*model.CommandResponse, error) {
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("you must specify the app id"))
+	}
+	appID := apps.AppID(params.current[0])
+
+	if len(params.current) < 2 {
+		return errorOut(params, errors.New("you must specify the app version"))
+	}
+	version := apps.AppVersion(params.current[1])
+
+	m, err := s.proxy.GetManifestFromS3(appID, version)
+	if err != nil {
+		return errorOut(params, errors.Wrap(err, "failed to get manifest from S3"))
+	}
+
+	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	return s.installApp(m, "", params)
+}
+
+func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandResponse, error) {
 	appSecret := ""
-	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
-	fs.StringVar(&manifestURL, "url", "", "App's manifest URL")
 	err := fs.Parse(params.current)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	var m *apps.Manifest
-	var appID apps.AppID
-	conf := s.conf.GetConfig()
-	if conf.MattermostCloudMode {
-		if len(params.current) == 0 {
-			return errorOut(params, errors.New("you must specify the app id"))
-		}
-		appID = apps.AppID(params.current[0])
-	} else {
-		if manifestURL == "" {
-			return errorOut(params, errors.New("you must add a `--url`"))
-		}
-		// Trust the URL only in dev mode
-		var data []byte
-		data, err = s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
-		if err != nil {
-			return errorOut(params, err)
-		}
-		m, err = apps.ManifestFromJSON(data)
-		if err != nil {
-			return errorOut(params, err)
-		}
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("you must specify a manifest URL"))
+	}
+	manifestURL := params.current[0]
 
-		_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
-		if err != nil {
-			return errorOut(params, err)
-		}
-		appID = m.AppID
+	// Trust the URL only in dev mode
+	conf := s.conf.GetConfig()
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	if err != nil {
+		return errorOut(params, err)
 	}
 
-	// Get the manifest from the store, even if redundant
-	m, err = s.proxy.GetManifest(appID)
+	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
-		return errorOut(params, errors.Wrap(err, "manifest not found"))
+		return errorOut(params, err)
+	}
+
+	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	if err != nil {
+		return errorOut(params, err)
 	}
 
 	return s.installApp(m, appSecret, params)

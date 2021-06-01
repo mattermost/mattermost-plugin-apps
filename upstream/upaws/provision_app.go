@@ -149,7 +149,7 @@ func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params Provisi
 	buffer := bytes.NewBuffer(data)
 
 	// Make the manifest publicly visible.
-	url, err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer, true)
+	url, err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer, false)
 	if err != nil {
 		return errors.Wrapf(err, "can't upload manifest file for the app - %s", pd.Manifest.AppID)
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
 type Service struct {
@@ -25,12 +26,17 @@ type Service struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
+
+	aws           upaws.Client
+	s3AssetBucket string
 }
 
-func NewService(mm *pluginapi.Client, conf config.Service) *Service {
+func NewService(mm *pluginapi.Client, conf config.Service, aws upaws.Client, s3AssetBucket string) *Service {
 	s := &Service{
-		mm:   mm,
-		conf: conf,
+		mm:            mm,
+		conf:          conf,
+		aws:           aws,
+		s3AssetBucket: s3AssetBucket,
 	}
 	s.App = &appStore{
 		Service: s,
