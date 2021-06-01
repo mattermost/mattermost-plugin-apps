@@ -36,7 +36,7 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	r = &InitResult{}
 	exists, err := asAdmin.ExistsS3Bucket(params.Bucket)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "bucket %s must exist, please create one using cli or the console", params.Bucket)
 	}
 	if !exists {
 		return nil, errors.Errorf("S3 bucket %q is not configured", params.Bucket)
@@ -49,11 +49,11 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 		arn, err = find(name)
 		if err != nil {
 			if errors.Cause(err) != utils.ErrNotFound || !params.ShouldCreate {
-				return "", err
+				return "", errors.Wrap(err, "failed to find "+typ)
 			}
 			arn, err = create(name)
 			if err != nil {
-				return "", err
+				return "", errors.Wrap(err, "failed to create "+typ)
 			}
 			log.Info("created "+typ, "ARN", arn)
 		} else {
@@ -101,12 +101,12 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	// Connect user-group-policy
 	err = asAdmin.AttachGroupPolicy(params.Group, r.PolicyARN)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to attach %s to %s", params.Policy, params.Group)
 	}
 	log.Info("attached policy to group", "policyARN", r.PolicyARN, "groupName", params.Group)
 	err = asAdmin.AddUserToGroup(params.User, params.Group)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to add user %s to %s", params.User, params.Group)
 	}
 	log.Info("added user to group", "userName", params.User, "groupName", params.Group)
 
@@ -118,7 +118,7 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	}
 	err = asAdmin.AttachRolePolicy(params.ExecuteRole, LambdaExecutionPolicyARN)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to attach %s to %s", LambdaExecutionPolicyARN, params.ExecuteRole)
 	}
 	log.Info("attached AWSLambdaBasicExecutionRole policy to role", "roleName", params.ExecuteRole)
 
