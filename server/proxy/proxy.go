@@ -153,7 +153,7 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Cause(err) == utils.ErrNotFound {
+		if errors.Is(err, utils.ErrNotFound) {
 			status = http.StatusNotFound
 		}
 		return nil, status, err

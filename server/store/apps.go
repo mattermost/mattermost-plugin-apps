@@ -59,12 +59,10 @@ func (s *appStore) Configure(conf config.Config) {
 		err := s.mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
 		switch {
 		case err != nil:
-			s.mm.Log.Error(
-				fmt.Sprintf("failed to load app %s: %s", id, err.Error()))
+			s.mm.Log.Error("Failed to load app", "app_id", id, "err", err.Error())
 
 		case app == nil:
-			s.mm.Log.Error(
-				fmt.Sprintf("failed to load app %s: key %s not found", id, config.KVInstalledAppPrefix+key))
+			s.mm.Log.Error("Failed to load app - key not found", "app_id", id, "key", config.KVInstalledAppPrefix+key)
 
 		default:
 			newInstalled[apps.AppID(id)] = app
@@ -170,7 +168,7 @@ func (s *appStore) Save(app *apps.App) error {
 
 	err = s.mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
 	if err != nil {
-		s.mm.Log.Warn("failed to delete previous App KV value", "err", err.Error())
+		s.mm.Log.Warn("Failed to delete previous App KV value", "err", err.Error())
 	}
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (s *service) executeInfo(params *params) (*model.CommandResponse, error) {
+func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
 	resp := md.Markdownf("Mattermost Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",

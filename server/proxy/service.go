@@ -50,6 +50,7 @@ type Service interface {
 	GetInstalledApps() []*apps.App
 	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
+	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
 	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error

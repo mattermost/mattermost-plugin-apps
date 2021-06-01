@@ -68,7 +68,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	}
 
 	logger := logger.New(&p.mm.Log).With(logger.LogContext{
-		"app_id": cc.AppID,
+		"app_id": app.AppID,
 	})
 
 	appID := app.AppID

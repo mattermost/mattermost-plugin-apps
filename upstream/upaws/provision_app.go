@@ -88,7 +88,7 @@ func provisionS3StaticAssets(c Client, log Logger, pd *ProvisionData, params Pro
 		asset.File.Close()
 		arn := ARN(fmt.Sprintf("arn:aws:s3:::%s/%s", params.Bucket, asset.Key))
 		arns = append(arns, arn)
-		log.Info("uploaded static asset to S3.", "bucket", params.Bucket, "key", asset.Key)
+		log.Info("Uploaded static asset to S3", "bucket", params.Bucket, "key", asset.Key)
 	}
 
 	out.StaticARNs = arns
@@ -100,7 +100,7 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 	if err != nil {
 		return err
 	}
-	log.Info("found execute role, provisioning functions.", "ARN", executeRoleARN)
+	log.Info("Found execute role, provisioning functions", "ARN", executeRoleARN)
 
 	createdARNs := []ARN{}
 	for _, function := range pd.LambdaFunctions {
@@ -125,7 +125,7 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 		return err
 	}
 	invokePolicyARN := ARN(*invokePolicy.Arn)
-	log.Info("found invoke policy, updating.", "ARN", invokePolicyARN)
+	log.Info("Found invoke policy, updating", "ARN", invokePolicyARN)
 
 	newDoc, err := c.AddResourcesToPolicyDocument(invokePolicy, createdARNs)
 	if err != nil {
@@ -149,13 +149,13 @@ func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params Provisi
 	buffer := bytes.NewBuffer(data)
 
 	// Make the manifest publicly visible.
-	url, err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer, true)
+	url, err := c.UploadS3(params.Bucket, pd.ManifestKey, buffer, false)
 	if err != nil {
 		return errors.Wrapf(err, "can't upload manifest file for the app - %s", pd.Manifest.AppID)
 	}
 
 	out.Manifest = *pd.Manifest
 	out.ManifestURL = url
-	log.Info("uploaded manifest to S3 (public-read).", "bucket", params.Bucket, "key", pd.ManifestKey)
+	log.Info("Uploaded manifest to S3 (public-read)", "bucket", params.Bucket, "key", pd.ManifestKey)
 	return nil
 }

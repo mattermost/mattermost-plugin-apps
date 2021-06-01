@@ -63,7 +63,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		},
 	})
 
-	s := store.NewService(mm, conf)
+	s := store.NewService(mm, conf, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

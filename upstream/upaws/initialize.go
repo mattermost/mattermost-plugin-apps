@@ -41,23 +41,24 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	if !exists {
 		return nil, errors.Errorf("S3 bucket %q is not configured", params.Bucket)
 	}
-	log.Info("using existing S3 bucket", "name", params.Bucket)
+	log.Info("Using existing S3 bucket", "name", params.Bucket)
 	r.Bucket = params.Bucket
 
 	ensure := func(typ string, name Name, find, create func(Name) (ARN, error)) (ARN, error) {
 		var arn ARN
 		arn, err = find(name)
 		if err != nil {
-			if errors.Cause(err) != utils.ErrNotFound || !params.ShouldCreate {
-				return "", errors.Wrap(err, "failed to find "+typ)
+			if !errors.Is(err, utils.ErrNotFound) || !params.ShouldCreate {
+				return "", errors.Wrapf(err, "failed to find %s %s", typ, name)
 			}
+
 			arn, err = create(name)
 			if err != nil {
-				return "", errors.Wrap(err, "failed to create "+typ)
+				return "", errors.Wrapf(err, "failed to create %s %s", typ, name)
 			}
-			log.Info("created "+typ, "ARN", arn)
+			log.Info("Created "+typ, "ARN", arn)
 		} else {
-			log.Info("using existing "+typ, "ARN", arn)
+			log.Info("Using existing "+typ, "ARN", arn)
 		}
 		return arn, nil
 	}
@@ -72,7 +73,7 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 		if err != nil {
 			return nil, err
 		}
-		log.Info("created access key")
+		log.Info("Created access key")
 	}
 	r.GroupARN, err = ensure("group", params.Group, asAdmin.FindGroup, asAdmin.CreateGroup)
 	if err != nil {
@@ -103,12 +104,12 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to attach %s to %s", params.Policy, params.Group)
 	}
-	log.Info("attached policy to group", "policyARN", r.PolicyARN, "groupName", params.Group)
+	log.Info("Attached policy to group", "policyARN", r.PolicyARN, "groupName", params.Group)
 	err = asAdmin.AddUserToGroup(params.User, params.Group)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to add user %s to %s", params.User, params.Group)
 	}
-	log.Info("added user to group", "userName", params.User, "groupName", params.Group)
+	log.Info("Added user to group", "userName", params.User, "groupName", params.Group)
 
 	// Create an execution role for the Apps' Lambdas. It uses
 	// AWSLambdaBasicExecutionRole service execution policy.
@@ -120,7 +121,7 @@ func InitializeAWS(asAdmin Client, log Logger, params InitParams) (r *InitResult
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to attach %s to %s", LambdaExecutionPolicyARN, params.ExecuteRole)
 	}
-	log.Info("attached AWSLambdaBasicExecutionRole policy to role", "roleName", params.ExecuteRole)
+	log.Info("Attached AWSLambdaBasicExecutionRole policy to role", "roleName", params.ExecuteRole)
 
 	return r, nil
 }
