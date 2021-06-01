@@ -101,7 +101,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Successfully install %s", app.AppID))
+		message = md.MD(fmt.Sprintf("Successfully installed %s", app.AppID))
 	}
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
