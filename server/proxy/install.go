@@ -93,6 +93,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 			Context: cc,
 		}
 		resp := p.Call(sessionID, actingUserID, creq)
+		// TODO fail on all errors except 404
 		if resp.Type == apps.CallResponseTypeError {
 			p.mm.Log.Warn("OnInstall failed, installing app anyway", "err", resp.Error(), "app_id", app.AppID)
 		}

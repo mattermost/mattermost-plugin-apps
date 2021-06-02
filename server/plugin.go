@@ -109,13 +109,10 @@ func (p *Plugin) OnActivate() error {
 	appstore.Configure(conf)
 	p.mm.Log.Debug("Initialized the persistent store")
 
-	// TODO: uses the default bucket name, same as for the manifests do we need
-	// it customizeable?
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-
 	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
 	p.mm.Log.Debug("Initialized the app proxy")
 
