@@ -13,12 +13,15 @@ import (
 func (s *service) executeInfo(params *params) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
 	resp := md.Markdownf("Mattermost Apps plugin version: %s, "+
-		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
+		"[%s](https://github.com/mattermost/%s/commit/%s), built %s, Cloud Mode: %t, Developer Mode: %t\n",
 		conf.Version,
 		conf.BuildHashShort,
 		config.Repository,
 		conf.BuildHash,
-		conf.BuildDate)
+		conf.BuildDate,
+		conf.MattermostCloudMode,
+		conf.DeveloperMode,
+	)
 
 	return out(params, resp)
 }
