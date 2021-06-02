@@ -81,5 +81,5 @@ func (conf Config) AppPath(appID apps.AppID) string {
 }
 
 func (conf Config) StaticPath(appID apps.AppID, name string) string {
-	return path.Join(conf.AppPath(appID), apps.StaticFolder, name)
+	return conf.AppPath(appID) + "/" + path.Join(apps.StaticFolder, name)
 }
