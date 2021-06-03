@@ -70,7 +70,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	}
 
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		icon, err := convertToStaticPath(conf, cc.AppID, callResponse.Form.Icon)
+		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
 		if err != nil {
 			p.mm.Log.Debug("Invalid icon path in form. Ignoring it.", "app_id", app.AppID, "icon", callResponse.Form.Icon, "error", err.Error())
 			callResponse.Form.Icon = ""
@@ -82,10 +82,10 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	return apps.NewProxyCallResponse(callResponse, metadata)
 }
 
-// convertToStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
+// normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
 // If icon is an absolute URL, it's not changed.
 // Otherwise assume it's a path to a static asset and the static path URL prepended.
-func convertToStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
+func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
 	if !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") {
 		cleanIcon, err := utils.CleanStaticPath(icon)
 		if err != nil {

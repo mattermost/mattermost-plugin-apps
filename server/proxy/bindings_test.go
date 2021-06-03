@@ -329,7 +329,7 @@ func TestGetBindingsCommands(t *testing.T) {
 								{
 									Location:    "message",
 									Label:       "message",
-									Icon:        "message command icon",
+									Icon:        "https://example.com/image.png",
 									Hint:        "message command hint",
 									Description: "message command description",
 								}, {
@@ -341,7 +341,7 @@ func TestGetBindingsCommands(t *testing.T) {
 								}, {
 									Location:    "manage",
 									Label:       "manage",
-									Icon:        "manage command icon",
+									Icon:        "../some/invalid/path",
 									Hint:        "manage command hint",
 									Description: "manage command description",
 									Bindings: []*apps.Binding{
@@ -421,7 +421,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							AppID:       apps.AppID("app1"),
 							Location:    "message",
 							Label:       "message",
-							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message command icon",
+							Icon:        "https://example.com/image.png",
 							Hint:        "message command hint",
 							Description: "message command description",
 						}, {
@@ -435,7 +435,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							AppID:       apps.AppID("app1"),
 							Location:    "manage",
 							Label:       "manage",
-							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/manage command icon",
+							Icon:        "",
 							Hint:        "manage command hint",
 							Description: "manage command description",
 							Bindings: []*apps.Binding{
@@ -587,7 +587,12 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testAPI.On("LogDebug", mock.AnythingOfType("string")).Return(nil)
+	testAPI.On("LogDebug", mock.AnythingOfType("string"),
+		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything,
+	).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.Config{

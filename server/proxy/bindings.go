@@ -154,7 +154,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 		}
 
 		if b.Icon != "" {
-			icon, err := convertToStaticPath(conf, app.AppID, b.Icon)
+			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
 				p.mm.Log.Debug("Invalid icon path in binding", "app_id", app.AppID, "icon", b.Icon, "error", err.Error())
 				b.Icon = ""

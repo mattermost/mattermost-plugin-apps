@@ -80,6 +80,7 @@ func (conf Config) AppURL(appID apps.AppID) string {
 	return conf.PluginURL + path.Join(PathApps, string(appID))
 }
 
+// StaticURL returns the URL to a static asset.
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
 }
