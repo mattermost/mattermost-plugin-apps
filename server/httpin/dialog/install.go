@@ -81,9 +81,10 @@ func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, co
 	// }
 
 	var iconURL string
-	if m.IconPath != "" {
-		iconURL = conf.StaticPath(m.AppID, m.IconPath)
+	if m.Icon != "" {
+		iconURL = conf.StaticPath(m.AppID, m.Icon)
 	}
+
 	stateData, _ := json.Marshal(installDialogState{
 		AppID:     m.AppID,
 		TeamID:    commandArgs.TeamId,

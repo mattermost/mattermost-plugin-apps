@@ -4,7 +4,6 @@
 package upawslambda
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -22,9 +21,7 @@ import (
 // Upstream wraps an awsClient to make requests to the App. It should not be
 // reused between requests, nor cached.
 type Upstream struct {
-	app       *apps.App
-	awsClient aws.Client
-	bucket    string
+	StaticUpstream
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
@@ -46,10 +43,9 @@ type invocationResponse struct {
 }
 
 func NewUpstream(app *apps.App, awsClient aws.Client, bucket string) *Upstream {
+	staticUp := NewStaticUpstream(&app.Manifest, awsClient, bucket)
 	return &Upstream{
-		app:       app,
-		awsClient: awsClient,
-		bucket:    bucket,
+		StaticUpstream: *staticUp,
 	}
 }
 
@@ -58,7 +54,8 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 	if async {
 		typ = lambda.InvocationTypeEvent
 	}
-	name := match(call.Path, u.app)
+
+	name := match(call.Path, u.manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
@@ -86,15 +83,6 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 	return io.NopCloser(strings.NewReader(resp.Body)), nil
 }
 
-func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := apps.AssetS3Name(u.app.AppID, u.app.Version, path)
-	data, err := u.awsClient.GetS3(u.bucket, key)
-	if err != nil {
-		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
-	}
-	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
-}
-
 func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(call)
 	if err != nil {
@@ -116,16 +104,17 @@ func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	return payload, nil
 }
 
-func match(callPath string, app *apps.App) string {
+func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range app.AWSLambda {
+	for _, f := range m.AWSLambda {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				matchedName = apps.LambdaName(app.AppID, app.Version, f.Name)
+				matchedName = apps.LambdaName(m.AppID, m.Version, f.Name)
 				matchedPath = f.Path
 			}
 		}
 	}
+
 	return matchedName
 }

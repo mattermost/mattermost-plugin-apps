@@ -38,12 +38,10 @@ func TestMatch(t *testing.T) {
 		{"/other/and-then-some", "testID_v00-00-000_other"},
 	} {
 		t.Run(tc.callPath, func(t *testing.T) {
-			matched := match(tc.callPath, &apps.App{
-				Manifest: apps.Manifest{
-					AppID:     "testID",
-					Version:   "v00.00.000",
-					AWSLambda: lambdas,
-				},
+			matched := match(tc.callPath, &apps.Manifest{
+				AppID:     "testID",
+				Version:   "v00.00.000",
+				AWSLambda: lambdas,
 			})
 			assert.Equal(t, tc.expected, matched)
 		})

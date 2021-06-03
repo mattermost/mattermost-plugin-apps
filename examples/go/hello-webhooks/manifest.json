@@ -3,6 +3,7 @@
 	"version": "demo",
 	"display_name": "Hello, Webhooks!",
 	"app_type": "http",
+    "icon": "icon.png",
 	"root_url": "http://localhost:8080",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-webhooks",
 	"requested_permissions": [

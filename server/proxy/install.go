@@ -206,7 +206,7 @@ func (p *Proxy) ensureBot(app *apps.App, actingUserID string, client *model.Clie
 }
 
 func (p *Proxy) updateBotIcon(app *apps.App) error {
-	iconPath := app.Manifest.IconPath
+	iconPath := app.Manifest.Icon
 
 	// If app doesn't have an icon, do nothing
 	if iconPath == "" {
