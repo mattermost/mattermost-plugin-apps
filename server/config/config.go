@@ -76,10 +76,11 @@ func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) 
 	return cc
 }
 
-func (conf Config) AppPath(appID apps.AppID) string {
+func (conf Config) AppURL(appID apps.AppID) string {
 	return conf.PluginURL + path.Join(PathApps, string(appID))
 }
 
-func (conf Config) StaticPath(appID apps.AppID, name string) string {
-	return conf.AppPath(appID) + "/" + path.Join(apps.StaticFolder, name)
+// StaticURL returns the URL to a static asset.
+func (conf Config) StaticURL(appID apps.AppID, name string) string {
+	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
 }
