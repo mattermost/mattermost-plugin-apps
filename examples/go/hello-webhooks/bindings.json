@@ -6,7 +6,7 @@
 			"bindings": [
 				{
 					"icon": "http://localhost:8080/static/icon.png",
-                    "label": "hello-webhooks",
+					"label": "hello-webhooks",
 					"description": "Hello Webhooks App",
 					"hint": "[ send ]",
 					"bindings": [
