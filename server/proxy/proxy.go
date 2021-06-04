@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -42,6 +43,17 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
+
+	if creq.Path == "" || creq.Path[0] != '/' {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("invalid call path: %q", creq.Path)), metadata)
+	}
+
+	cleanPath := path.Clean(creq.Path)
+	if strings.HasPrefix(cleanPath, "../") {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("bad path: %q", creq.Path)), metadata)
+	}
+	creq.Path = cleanPath
+
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
