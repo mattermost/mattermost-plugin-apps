@@ -82,6 +82,7 @@ type ListedApp struct {
 	Manifest  *Manifest                `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
+	IconURL   string                   `json:"icon_url,omitempty"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }
 

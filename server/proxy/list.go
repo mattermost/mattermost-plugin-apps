@@ -36,15 +36,22 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 }
 
 func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
+	conf := p.conf.GetConfig()
 	out := []*apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
+
 		marketApp := &apps.ListedApp{
 			Manifest: m,
 		}
+
+		if m.Icon != "" {
+			marketApp.IconURL = conf.StaticURL(m.AppID, m.Icon)
+		}
+
 		app, _ := p.store.App.Get(m.AppID)
 		if app != nil {
 			marketApp.Installed = true
