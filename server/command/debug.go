@@ -57,6 +57,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	if err != nil {
 		return errorOut(params, err)
 	}
+
 	return &model.CommandResponse{
 		Text:         string(out),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,

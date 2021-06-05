@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type installDialogState struct {
@@ -160,17 +161,20 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 			TeamID:    stateData.TeamID,
 			ChannelID: stateData.ChannelID,
 		},
+		ActingUserID: actingUserID,
 	}
 	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
+	_, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		d.mm.Log.Warn("Failed to install app", "app_id", cc.AppID, "error", err.Error())
 		respondWithError(w, http.StatusInternalServerError, err)
-		return
+
+		out = md.Markdownf("Install failed. Error: **%s**\n", err.Error())
 	}
 
-	_ = d.mm.Post.DM(app.BotUserID, actingUserID, &model.Post{
-		Message: out.String(),
+	d.mm.Post.SendEphemeralPost(actingUserID, &model.Post{
+		ChannelId: dialogRequest.ChannelId,
+		Message:   out.String(),
 	})
 }

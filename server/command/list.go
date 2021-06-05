@@ -26,7 +26,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 
 		status := "**Installed**"
 		if app.Disabled {
-			status += ", **Disabled**"
+			status = "Installed, Disabled"
 		}
 
 		version := string(app.Version)

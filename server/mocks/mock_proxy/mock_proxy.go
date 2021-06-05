@@ -107,33 +107,33 @@ func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 i
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0 *apps.Context, arg1 *apps.App) (md.MD, error) {
+func (m *MockService) DisableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1)
+	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DisableApp indicates an expected call of DisableApp.
-func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableApp", reflect.TypeOf((*MockService)(nil).DisableApp), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableApp", reflect.TypeOf((*MockService)(nil).DisableApp), arg0, arg1, arg2, arg3)
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0 *apps.Context, arg1 *apps.App) (md.MD, error) {
+func (m *MockService) EnableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1)
+	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // EnableApp indicates an expected call of EnableApp.
-func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2, arg3)
 }
 
 // GetAsset mocks base method.
@@ -314,15 +314,16 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0, arg1 string, arg2 apps.AppID) error {
+func (m *MockService) UninstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(md.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UninstallApp indicates an expected call of UninstallApp.
-func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UninstallApp", reflect.TypeOf((*MockService)(nil).UninstallApp), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UninstallApp", reflect.TypeOf((*MockService)(nil).UninstallApp), arg0, arg1, arg2, arg3)
 }

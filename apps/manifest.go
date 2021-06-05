@@ -43,12 +43,8 @@ type Manifest struct {
 
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
-	// display. The default values for its fields are,
-	//  "path":"/install",
-	//  "expand":{
-	//    "app":"all",
-	//	  "admin_access_token":"all"
-	//   }
+	// display. It is not called unless explicitly provided in
+	// the manifest.
 	OnInstall *Call `json:"on_install,omitempty"`
 
 	// OnVersionChanged gets invoked when the Mattermost-recommended version of
@@ -139,13 +135,6 @@ func (f AWSLambda) IsValid() error {
 		return utils.NewInvalidError("aws_lambda handler must not be empty")
 	}
 	return nil
-}
-
-var DefaultOnInstall = &Call{
-	Path: "/install",
-	Expand: &Expand{
-		App: ExpandAll,
-	},
 }
 
 var DefaultBindings = &Call{
