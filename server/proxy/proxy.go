@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -44,13 +43,13 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 
-	if creq.Path == "" || creq.Path[0] != '/' {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("invalid call path: %q", creq.Path)), metadata)
+	if creq.Path[0] != '/' {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path)), metadata)
 	}
 
-	cleanPath := path.Clean(creq.Path)
-	if strings.HasPrefix(cleanPath, "../") {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("bad path: %q", creq.Path)), metadata)
+	cleanPath, err := utils.CleanPath(creq.Path)
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
 	creq.Path = cleanPath
 

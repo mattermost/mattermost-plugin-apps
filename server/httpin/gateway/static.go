@@ -4,8 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
-	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -70,13 +68,15 @@ func cleanStaticPath(got string) (unescaped string, err error) {
 			break
 		}
 	}
+
 	if unescaped[0] == '/' {
 		return "", utils.NewInvalidError("asset names may not start with a '/'")
 	}
 
-	assetName := path.Clean(unescaped)
-	if assetName == "." || strings.HasPrefix(assetName, "../") {
-		return "", utils.NewInvalidError("bad path: %s", got)
+	cleanPath, err := utils.CleanPath(unescaped)
+	if err != nil {
+		return "", err
 	}
-	return assetName, nil
+
+	return cleanPath, nil
 }
