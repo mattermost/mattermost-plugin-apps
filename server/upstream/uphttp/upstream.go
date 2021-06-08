@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 )
@@ -21,10 +22,15 @@ import (
 type Upstream struct {
 	rootURL   string
 	appSecret string
+	httpOut   httpout.Service
 }
 
-func NewUpstream(app *apps.App) *Upstream {
-	return &Upstream{app.HTTPRootURL, app.Secret}
+func NewUpstream(app *apps.App, httpOut httpout.Service) *Upstream {
+	return &Upstream{
+		rootURL:   app.HTTPRootURL,
+		appSecret: app.Secret,
+		httpOut:   httpOut,
+	}
 }
 
 func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
@@ -57,7 +63,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (
 
 // post does not close resp.Body, it's the caller's responsibility
 func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
-	client := u.getClient()
+	client := u.httpOut.MakeClient(true)
 	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
 	if err != nil {
 		return nil, err
@@ -99,10 +105,6 @@ func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}
 	return resp.Body, resp.StatusCode, nil
-}
-
-func (u *Upstream) getClient() *http.Client {
-	return &http.Client{}
 }
 
 func createJWT(actingUserID, secret string) (string, error) {

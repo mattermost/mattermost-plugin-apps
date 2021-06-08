@@ -10,6 +10,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/services/configservice"
 )
 
 type Configurable interface {
@@ -19,7 +20,7 @@ type Configurable interface {
 // Configurator should be abbreviated as `cfg`
 type Service interface {
 	GetConfig() Config
-	GetMattermostConfig() *model.Config
+	GetMattermostConfig() configservice.ConfigService
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
 }
@@ -60,22 +61,33 @@ func (s *service) GetConfig() Config {
 	return *conf
 }
 
-func (s *service) GetMattermostConfig() *model.Config {
+func (s *service) GetMattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
 
 	if mmconf == nil {
-		mmconf = s.mm.Configuration.GetConfig()
-		s.lock.Lock()
-		s.mattermostConfig = mmconf
-		s.lock.Unlock()
+		mmconf = s.reloadMattermostConfig()
 	}
+	return &mattermostConfigService{
+		mmconf: mmconf,
+	}
+}
+
+func (s *service) reloadMattermostConfig() *model.Config {
+	mmconf := s.mm.Configuration.GetConfig()
+
+	s.lock.Lock()
+	s.mattermostConfig = mmconf
+	s.lock.Unlock()
+
 	return mmconf
 }
 
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
-	mattermostSiteURL := s.GetMattermostConfig().ServiceSettings.SiteURL
+	mmconf := s.reloadMattermostConfig()
+
+	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
 	}
@@ -93,6 +105,12 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
 	newConfig.PluginURL = pluginURL
 	newConfig.PluginURLPath = pluginURLPath
+	newConfig.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
+
+	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
+	if mmconf.FileSettings.MaxFileSize != nil {
+		newConfig.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
+	}
 
 	s.lock.Lock()
 	s.conf = &newConfig

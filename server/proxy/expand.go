@@ -40,7 +40,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.AppID = app.AppID
 
 	if e.MattermostSiteURL == "" {
-		mmconf := e.conf.GetMattermostConfig()
+		mmconf := e.conf.GetMattermostConfig().Config()
 		if mmconf.ServiceSettings.SiteURL != nil {
 			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
 		}
@@ -70,13 +70,13 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 		if expand.AdminAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 			}
 			clone.ExpandedContext.AdminAccessToken = e.session.Token
 		}
 		if expand.ActingUserAccessToken != "" {
 			if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser.Markdown())
+				return nil, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 			}
 			clone.ExpandedContext.ActingUserAccessToken = e.session.Token
 		}
@@ -152,7 +152,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 
 		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
 			var v interface{}
-			err := e.store.OAuth2.GetUser(app.AppID, e.ActingUserID, &v)
+			err := e.store.OAuth2.GetUser(app.BotUserID, e.ActingUserID, &v)
 			if err != nil && errors.Cause(err) != utils.ErrNotFound {
 				return nil, errors.Wrapf(err, "failed to expand OAuth user %s", e.UserID)
 			}
@@ -263,10 +263,15 @@ func stripApp(app *apps.App, level apps.ExpandLevel) *apps.App {
 		return nil
 	}
 
-	clone := *app
-	clone.Secret = ""
-	clone.MattermostOAuth2.ClientSecret = ""
-	clone.RemoteOAuth2 = apps.OAuth2App{}
+	clone := apps.App{
+		Manifest: apps.Manifest{
+			AppID:   app.AppID,
+			Version: app.Version,
+		},
+		WebhookSecret: app.WebhookSecret,
+		BotUserID:     app.BotUserID,
+		BotUsername:   app.BotUsername,
+	}
 
 	switch level {
 	case apps.ExpandAll, apps.ExpandSummary:

@@ -12,19 +12,12 @@ import (
 // can be included by adding a corresponding Expand attribute to the originating
 // Call.
 type Context struct {
-	// AppID is used for handling CallRequest internally.
-	AppID AppID `json:"app_id"`
-
-	// Fully qualified original Location of the user action (if applicable),
-	// e.g. "/command/helloworld/send" or "/channel_header/send".
-	Location Location `json:"location,omitempty"`
-
 	// Subject is a subject of notification, if the call originated from a
 	// subscription.
 	Subject Subject `json:"subject,omitempty"`
 
 	// BotUserID of the App.
-	BotUserID string `json:"bot_user_id,omitempty"`
+	BotUserID string `json:"bot_user_id"`
 
 	// ActingUserID is primarily (or exclusively?) for calls originating from
 	// user submissions.
@@ -34,6 +27,22 @@ type Context struct {
 	// implemented, it may be replaced by Mentions.
 	UserID string `json:"user_id,omitempty"`
 
+	// Top-level Mattermost site URL to use for REST API calls.
+	MattermostSiteURL string `json:"mattermost_site_url"`
+
+	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
+	AppPath string `json:"app_path"`
+
+	// Data accepted from the user agent
+	UserAgentContext
+
+	// More data as requested by call.Expand
+	ExpandedContext
+}
+
+// UserAgentContext is a subset of fields from Context that are accepted from the user agent
+// The values are vetted, and all fields present in the provided Context that are not in UserAgentContext are discarded when the Call comes from an acting user.
+type UserAgentContext struct {
 	// The optional IDs of Mattermost entities associated with the call: Team,
 	// Channel, Post, RootPost.
 	TeamID     string `json:"team_id"`
@@ -41,18 +50,16 @@ type Context struct {
 	PostID     string `json:"post_id,omitempty"`
 	RootPostID string `json:"root_post_id,omitempty"`
 
-	// Top-level Mattermost site URL to use for REST API calls.
-	MattermostSiteURL string `json:"mattermost_site_url"`
+	// AppID is used for handling CallRequest internally.
+	AppID AppID `json:"app_id"`
 
-	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
-	AppPath string `json:"app_path"`
+	// Fully qualified original Location of the user action (if applicable),
+	// e.g. "/command/helloworld/send" or "/channel_header/send".
+	Location Location `json:"location,omitempty"`
 
 	// UserAgent used to perform the call. It can be either "webapp" or "mobile".
 	// Non user interactions like notifications will have this field empty.
 	UserAgent string `json:"user_agent,omitempty"`
-
-	// More data as requested by call.Expand
-	ExpandedContext
 }
 
 // ExpandedContext contains authentication, and Mattermost entity data, as

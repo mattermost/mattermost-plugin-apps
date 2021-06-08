@@ -33,12 +33,16 @@ type App struct {
 	// Secret is used to issue JWT when sending requests to HTTP apps.
 	Secret string `json:"secret,omitempty"`
 
+	// WebhookSecret is used to validate an incoming webhook secret.
+	WebhookSecret string `json:"webhook_secret,omitempty"`
+
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
 	// instance.
-	BotUserID      string `json:"bot_user_id,omitempty"`
-	BotUsername    string `json:"bot_username,omitempty"`
-	BotAccessToken string `json:"bot_access_token,omitempty"`
+	BotUserID        string `json:"bot_user_id,omitempty"`
+	BotUsername      string `json:"bot_username,omitempty"`
+	BotAccessToken   string `json:"bot_access_token,omitempty"`
+	BotAccessTokenID string `json:"bot_access_token_id,omitempty"`
 
 	// Trusted means that Mattermost will issue the Apps' users their tokens as
 	// needed, without asking for the user's consent.
@@ -79,6 +83,11 @@ type ListedApp struct {
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
+}
+
+type AppMetadataForClient struct {
+	BotUserID   string `json:"bot_user_id,omitempty"`
+	BotUsername string `json:"bot_username,omitempty"`
 }
 
 const (

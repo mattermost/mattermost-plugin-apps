@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
@@ -28,16 +29,18 @@ type Proxy struct {
 	conf          config.Service
 	store         *store.Service
 	aws           aws.Client
+	httpOut       httpout.Service
 	s3AssetBucket string
 }
 
 type Service interface {
-	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse
+	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
 	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
+	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
@@ -60,7 +63,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex) *Proxy {
+func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
@@ -69,6 +72,7 @@ func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store
 		aws:              aws,
 		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
+		httpOut:          httpOut,
 	}
 }
 

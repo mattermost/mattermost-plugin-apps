@@ -1,0 +1,38 @@
+{
+	"type": "ok",
+	"data": [
+		{
+			"location": "/channel_header",
+			"bindings": [
+				{
+					"location": "send-button",
+					"icon": "http://localhost:8080/static/icon.png",
+					"label":"send hello message",
+					"call": {
+						"path": "/send-modal"
+					}
+				}
+			]
+		},
+		{
+			"location": "/command",
+			"bindings": [
+				{
+					"icon": "http://localhost:8080/static/icon.png",
+					"label": "helloworld",
+					"description": "Hello World app",
+					"hint": "[send]",
+					"bindings": [
+						{
+							"location": "send",
+							"label": "send",
+							"call": {
+								"path": "/send"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
 
@@ -44,7 +43,8 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 		return errorOut(params, errors.New("you must add a `--url`"))
 	}
 
-	data, err := httputils.GetFromURL(manifestURL)
+	// Inside a debug command: all URLs are trusted.
+	data, err := s.httpOut.GetFromURL(manifestURL, true)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -66,9 +66,11 @@ func (s *service) executeDebugAddManifest(params *params) (*model.CommandRespons
 
 func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
 	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    commandArgs.TeamId,
+			ChannelID: commandArgs.ChannelId,
+		},
 		ActingUserID: commandArgs.UserId,
 		UserID:       commandArgs.UserId,
-		TeamID:       commandArgs.TeamId,
-		ChannelID:    commandArgs.ChannelId,
 	})
 }

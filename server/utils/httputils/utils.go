@@ -109,16 +109,6 @@ func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error)
 	return false
 }
 
-func GetFromURL(url string) ([]byte, error) {
-	// nolint:gosec
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
-}
-
 func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, sessionID, actingUserID string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get("Mattermost-User-Id")

@@ -33,15 +33,15 @@ type ProvisionData struct {
 }
 
 type FunctionData struct {
-	Bundle  io.Reader `json:"-"`
-	Name    string    `json:"name"`
-	Handler string    `json:"handler"`
-	Runtime string    `json:"runtime"`
+	Bundle  io.ReadCloser `json:"-"`
+	Name    string        `json:"name"`
+	Handler string        `json:"handler"`
+	Runtime string        `json:"runtime"`
 }
 
 type AssetData struct {
-	File io.Reader `json:"-"`
-	Key  string    `json:"key"`
+	File io.ReadCloser `json:"-"`
+	Key  string        `json:"key"`
 }
 
 func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
@@ -91,7 +91,6 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
-			defer lambdaFunctionFile.Close()
 
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
@@ -107,7 +106,6 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
-			defer assetFile.Close()
 
 			assets = append(assets, AssetData{
 				Key:  assetName,

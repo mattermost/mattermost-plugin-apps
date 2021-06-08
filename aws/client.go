@@ -31,7 +31,7 @@ type Client interface {
 	// Proxy methods
 
 	GetS3(bucket, item string) ([]byte, error)
-	InvokeLambda(name string, invocationType string, request interface{}) ([]byte, error)
+	InvokeLambda(name string, invocationType string, payload []byte) ([]byte, error)
 
 	// Admin methods
 

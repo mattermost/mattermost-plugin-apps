@@ -12,6 +12,12 @@ import (
 // Where static assets are.
 const StaticFolder = "static"
 
+// Root Call path for incoming webhooks from remote (3rd party) systems. Each
+// webhook URL should be in the form:
+// "{PluginURL}/apps/{AppID}/webhook/{PATH}/.../?secret=XYZ", and it will invoke a
+// Call with "/webhook/{PATH}"."
+const PathWebhook = "/webhook"
+
 type Manifest struct {
 	// The AppID is a globally unique identifier that represents your app. IDs must be at least
 	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.
@@ -98,8 +104,7 @@ type Manifest struct {
 var DefaultOnInstall = &Call{
 	Path: "/install",
 	Expand: &Expand{
-		App:              ExpandAll,
-		AdminAccessToken: ExpandAll,
+		App: ExpandAll,
 	},
 }
 
@@ -122,6 +127,7 @@ var DefaultOnOAuth2Complete = &Call{
 		ActingUser:            ExpandSummary,
 		ActingUserAccessToken: ExpandAll,
 		OAuth2App:             ExpandAll,
+		OAuth2User:            ExpandAll,
 	},
 }
 

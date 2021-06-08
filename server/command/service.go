@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
 )
@@ -20,28 +22,60 @@ type Service interface {
 }
 
 type service struct {
-	mm    *pluginapi.Client
-	conf  config.Service
-	proxy proxy.Service
+	mm      *pluginapi.Client
+	conf    config.Service
+	proxy   proxy.Service
+	httpOut httpout.Service
 }
 
 var _ Service = (*service)(nil)
 
-func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service) (Service, error) {
+func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
-		mm:    mm,
-		conf:  configService,
-		proxy: proxy,
+		mm:      mm,
+		conf:    configService,
+		proxy:   proxy,
+		httpOut: httpOut,
+	}
+	conf := configService.GetConfig()
+	subCommands := s.getSubCommands()
+	var subTrigger []string
+	for t, c := range subCommands {
+		if c.debug && !conf.DeveloperMode {
+			continue
+		}
+
+		subTrigger = append(subTrigger, t)
 	}
 
-	conf := configService.GetConfig()
+	sort.Strings(subTrigger)
+
+	helpText := "Available commands: "
+	for i, t := range subTrigger {
+		if i == 0 {
+			helpText += t
+		} else {
+			helpText += ", " + t
+		}
+	}
+
+	autoComplete := model.NewAutocompleteData(config.CommandTrigger, "[command]", helpText)
+
+	for _, t := range subTrigger {
+		c := subCommands[t]
+		if c.debug && !conf.DeveloperMode {
+			continue
+		}
+
+		autoComplete.AddCommand(c.autoComplete)
+	}
+
 	err := mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
-		DisplayName:      conf.BuildConfig.Manifest.Name,
-		Description:      conf.BuildConfig.Manifest.Description,
 		AutoComplete:     true,
-		AutoCompleteDesc: "Manage Cloud Apps",
+		AutoCompleteDesc: "Manage Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
+		AutocompleteData: autoComplete,
 	})
 	if err != nil {
 		return nil, err
@@ -60,9 +94,15 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
 
-	enableOAuthServiceProvider := s.mm.Configuration.GetConfig().ServiceSettings.EnableOAuthServiceProvider
+	conf := s.conf.GetMattermostConfig().Config()
+	enableOAuthServiceProvider := conf.ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
-		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` need to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
+		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
+	}
+
+	enableBotAccounts := conf.ServiceSettings.EnableBotAccountCreation
+	if enableBotAccounts == nil || !*enableBotAccounts {
+		return errorOut(params, errors.Errorf("the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/bot_accounts and enable it.", commandArgs.SiteURL))
 	}
 
 	split := strings.Fields(commandArgs.Command)
@@ -77,9 +117,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	params.current = split[1:]
 
-	developerMode := pluginapi.IsConfiguredForDevelopment(s.mm.Configuration.GetConfig())
-
-	return s.handleMain(params, developerMode)
+	return s.handleMain(params)
 }
 
 func out(params *params, out md.Markdowner) (*model.CommandResponse, error) {

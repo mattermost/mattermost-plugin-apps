@@ -13,10 +13,13 @@ var manifest *model.Manifest
 const manifestStr = `
 {
   "id": "com.mattermost.apps",
-  "name": "Cloud Apps",
-  "description": "Cloud Apps Registry and API proxy.",
-  "version": "0.1.0",
-  "min_server_version": "5.26.0",
+  "name": "Apps",
+  "description": "This plugin powers the Mattermost Apps Framework and is required for any Apps to run",
+  "homepage_url": "https://mattermost.com/marketplace/app-framework",
+  "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.6.0",
+  "version": "0.6.0",
+  "min_server_version": "5.35.0",
   "server": {
     "executables": {
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
@@ -26,7 +29,7 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "Provide keyID and secret to the AWS account, if left empty apps will be installed in the MM cloud",
+    "header": "To create your own Mattermost App, check out [the documentation](https://developers.mattermost.com/integrate/apps/)",
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-apps).",
     "settings": []
   }

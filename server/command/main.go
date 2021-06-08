@@ -19,25 +19,38 @@ type params struct {
 }
 
 type commandHandler struct {
-	f     func(*params) (*model.CommandResponse, error)
-	debug bool
+	f            func(*params) (*model.CommandResponse, error)
+	debug        bool
+	autoComplete *model.AutocompleteData
 }
 
-func (s *service) handleMain(in *params, developerMode bool) (*model.CommandResponse, error) {
-	subcommands := map[string]commandHandler{
-		"debug-bindings":     {s.executeDebugBindings, true},
-		"debug-clean":        {s.executeDebugClean, true},
-		"debug-add-manifest": {s.executeDebugAddManifest, true},
-		"info":               {s.executeInfo, false},
-		"list":               {s.executeList, false},
-		"install":            {s.executeInstall, false},
-		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false},
+func (s *service) getSubCommands() map[string]commandHandler {
+	debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
+	debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
+
+	installAC := model.NewAutocompleteData("install", "", "Install a registered app")
+	installAC.AddTextArgument("ID of the app to install", "appID", "")
+	installAC.AddNamedTextArgument("app-secret", "Secret used to secure connection to App", "App Secret", "", false)
+
+	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
+	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
+
+	return map[string]commandHandler{
+		"debug-bindings":     {s.executeDebugBindings, true, model.NewAutocompleteData("debug-bindings", "", "List bindings")},
+		"debug-clean":        {s.executeDebugClean, true, model.NewAutocompleteData("debug-clean", "", "Delete all KV data")},
+		"debug-add-manifest": {s.executeDebugAddManifest, true, debugAddManifestAC},
+		"info":               {s.executeInfo, false, model.NewAutocompleteData("info", "", "Display debugging information")},
+		"list":               {s.executeList, false, model.NewAutocompleteData("list", "", "List installed and registered apps")},
+		"install":            {s.executeInstall, false, installAC},
+		"uninstall":          {s.checkSystemAdmin(s.executeUninstall), false, uninstallAC},
 	}
-
-	return runSubcommand(subcommands, in, developerMode)
 }
 
-func runSubcommand(subcommands map[string]commandHandler, params *params, developerMode bool) (*model.CommandResponse, error) {
+func (s *service) handleMain(in *params) (*model.CommandResponse, error) {
+	return s.runSubcommand(s.getSubCommands(), in)
+}
+
+func (s *service) runSubcommand(subcommands map[string]commandHandler, params *params) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
@@ -50,7 +63,8 @@ func runSubcommand(subcommands map[string]commandHandler, params *params, develo
 		return errorOut(params, errors.Errorf("unknown command: %s", params.current[0]))
 	}
 
-	if c.debug && !developerMode {
+	conf := s.conf.GetConfig()
+	if c.debug && !conf.DeveloperMode {
 		return errorOut(params, errors.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.", params.current[0]))
 	}
 
