@@ -110,16 +110,13 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 			return nil
 		}
 
-		var bindings = []*apps.Binding{}
 		b, _ := json.Marshal(resp.Data)
 		err := json.Unmarshal(b, &bindings)
 		if err != nil {
 			logger.Debugf("Bindings are not of the right type.")
 			return nil
-		} else {
-			if storeErr := p.CacheSetBindings(cc, appID, bindings); storeErr != nil { // store the bindings to the cache
-				p.mm.Log.Error(fmt.Sprintf("failed to store bindings to cache for %s: %v", appID, storeErr))
-			}
+		} else if storeErr := p.CacheSetBindings(cc, appID, bindings); storeErr != nil { // store the bindings to the cache
+			p.mm.Log.Error(fmt.Sprintf("failed to store bindings to cache for %s: %v", appID, storeErr))
 		}
 
 		bindings = p.scanAppBindings(app, bindings, "")

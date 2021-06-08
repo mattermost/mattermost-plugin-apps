@@ -3,9 +3,11 @@ package restapi
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/pkg/errors"
 )
 
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
@@ -37,7 +39,9 @@ func (a *restapi) handleCacheInvalidateBindings(w http.ResponseWriter, req *http
 
 	cc := a.conf.GetConfig().SetContextDefaults(&apps.Context{
 		ActingUserID: actingUserID,
-		ChannelID:    channelID,
+		UserAgentContext: apps.UserAgentContext{
+			ChannelID: channelID,
+		},
 	})
 
 	if appID == "" {

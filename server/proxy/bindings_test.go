@@ -776,10 +776,12 @@ func TestGetBindings(t *testing.T) {
 	api.On("AppsCacheGet", string(appID), key4).Return(bindingsBytes, nil)
 
 	cc := &apps.Context{
-		AppID:        appID,
 		ActingUserID: testUserID,
-		UserID:       testUserID,
-		ChannelID:    testChannelID,
+		UserAgentContext: apps.UserAgentContext{
+			AppID:     appID,
+			ChannelID: testChannelID,
+		},
+		UserID: testUserID,
 	}
 	out, err := proxy.GetBindings("", "", cc)
 	require.NoError(t, err)
@@ -815,10 +817,12 @@ func TestDeleteBindingsForApp(t *testing.T) {
 
 	key4 := proxy.CacheBuildKey(BindingsCachePrefix, testUserID, testChannelID)
 	cc := &apps.Context{
-		AppID:        appID,
 		ActingUserID: testUserID,
-		UserID:       testUserID,
-		ChannelID:    testChannelID,
+		UserAgentContext: apps.UserAgentContext{
+			AppID:     appID,
+			ChannelID: testChannelID,
+		},
+		UserID: testUserID,
 	}
 	api.On("AppsCacheDelete", string(appID), key4).Return(nil)
 
