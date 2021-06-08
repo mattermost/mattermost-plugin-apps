@@ -65,7 +65,7 @@ package apps
 //              "bindings": [
 //                  {
 //                      "location": "send-button",
-//                      "icon": "http://localhost:8080/static/icon.png",
+//                      "icon": "icon.png",
 //                      "label":"send hello message",
 //                      "call": {
 //                          "path": "/send-modal"
@@ -77,7 +77,7 @@ package apps
 //              "location": "/command",
 //              "bindings": [
 //                  {
-//                      "icon": "http://localhost:8080/static/icon.png",
+//                      "icon": "icon.png",
 //                      "description": "Hello World app",
 //                      "hint":        "[send]",
 //                      "bindings": [

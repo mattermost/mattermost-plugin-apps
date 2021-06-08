@@ -57,25 +57,30 @@ type Config struct {
 	MaxWebhookSize int64
 }
 
-func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
+func (conf Config) SetContextDefaults(cc *apps.Context) *apps.Context {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cc.BotUserID = c.BotUserID
-	cc.MattermostSiteURL = c.MattermostSiteURL
+	cc.BotUserID = conf.BotUserID
+	cc.MattermostSiteURL = conf.MattermostSiteURL
 	return cc
 }
 
-func (c Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
+func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cc = c.SetContextDefaults(cc)
+	cc = conf.SetContextDefaults(cc)
 	cc.AppID = appID
-	cc.AppPath = path.Join(c.PluginURLPath, PathApps, string(appID))
+	cc.AppPath = path.Join(conf.PluginURLPath, PathApps, string(appID))
 	return cc
 }
 
-func (c Config) AppPath(appID apps.AppID) string {
-	return c.PluginURL + PathApps + "/" + string(appID)
+func (conf Config) AppURL(appID apps.AppID) string {
+	return conf.PluginURL + path.Join(PathApps, string(appID))
+}
+
+// StaticURL returns the URL to a static asset.
+func (conf Config) StaticURL(appID apps.AppID, name string) string {
+	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
 }

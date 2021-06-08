@@ -8,10 +8,12 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/upawslambda"
 	"github.com/mattermost/mattermost-plugin-apps/server/upstream/uphttp"
@@ -50,7 +52,8 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	// Clear any ExpandedContext as it should always be set by an expander for security reasons
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
-	cc := p.conf.GetConfig().SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
+	conf := p.conf.GetConfig()
+	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
@@ -61,11 +64,38 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	clone.Context = cc
 
 	callResponse := upstream.Call(up, &clone)
+
 	if callResponse.Type == "" {
 		callResponse.Type = apps.CallResponseTypeOK
 	}
 
+	if callResponse.Form != nil && callResponse.Form.Icon != "" {
+		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
+		if err != nil {
+			p.mm.Log.Debug("Invalid icon path in form. Ignoring it.", "app_id", app.AppID, "icon", callResponse.Form.Icon, "error", err.Error())
+			callResponse.Form.Icon = ""
+		} else {
+			callResponse.Form.Icon = icon
+		}
+	}
+
 	return apps.NewProxyCallResponse(callResponse, metadata)
+}
+
+// normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
+// If icon is an absolute URL, it's not changed.
+// Otherwise assume it's a path to a static asset and the static path URL prepended.
+func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
+	if !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") {
+		cleanIcon, err := utils.CleanStaticPath(icon)
+		if err != nil {
+			return "", errors.Wrap(err, "invalid icon path")
+		}
+
+		icon = conf.StaticURL(appID, cleanIcon)
+	}
+
+	return icon, nil
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
