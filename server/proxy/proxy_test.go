@@ -43,6 +43,9 @@ func TestAppMetadataForClient(t *testing.T) {
 				AppID: "app1",
 			},
 		},
+		Call: apps.Call{
+			Path: "/",
+		},
 	}
 
 	resp := p.Call("session_id", "acting_user_id", c)
