@@ -47,10 +47,6 @@ type Form struct {
 	// In Autocomplete, it is ignored.
 	SubmitButtons string `json:"submit_buttons,omitempty"`
 
-	// Adds a default "Cancel" button in the modal view
-	CancelButton  bool `json:"cancel_button,omitempty"`
-	SubmitOnCanel bool `json:"submit_on_cancel,omitempty"`
-
 	// Fields is the list of fields in the form.
 	Fields []*Field `json:"fields,omitempty"`
 }

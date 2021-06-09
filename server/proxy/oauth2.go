@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error) {

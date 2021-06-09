@@ -14,8 +14,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
@@ -34,9 +34,15 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
+	conf := p.conf.GetConfig()
+	err = isAppTypeSupported(conf, m)
+	if err != nil {
+		return nil, "", err
+	}
+
 	app, err := p.store.App.Get(cc.AppID)
 	if err != nil {
-		if errors.Cause(err) != utils.ErrNotFound {
+		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", err
 		}
 		app = &apps.App{}
@@ -56,7 +62,6 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		app.WebhookSecret = model.NewId()
 	}
 
-	conf := p.conf.GetConfig()
 	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
 	asAdmin.SetToken(session.Token)
 
@@ -81,17 +86,27 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		return nil, "", err
 	}
 
-	creq := &apps.CallRequest{
-		Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
-		Context: cc,
+	var message md.MD
+	if app.OnInstall != nil {
+		creq := &apps.CallRequest{
+			Call:    *apps.DefaultOnInstall.WithOverrides(app.OnInstall),
+			Context: cc,
+		}
+		resp := p.Call(sessionID, actingUserID, creq)
+		// TODO fail on all errors except 404
+		if resp.Type == apps.CallResponseTypeError {
+			p.mm.Log.Warn("OnInstall failed, installing app anyway", "err", resp.Error(), "app_id", app.AppID)
+		}
+
+		message = resp.Markdown
 	}
-	resp := p.Call(sessionID, actingUserID, creq)
-	if resp.Type == apps.CallResponseTypeError {
-		return nil, "", errors.Wrap(resp, "install failed")
+
+	if message == "" {
+		message = md.MD(fmt.Sprintf("Successfully installed %s", app.AppID))
 	}
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
-	return app, resp.Markdown, nil
+	return app, message, nil
 }
 
 func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin *model.Client4) (*model.OAuthApp, error) {

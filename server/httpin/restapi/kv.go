@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request) {

@@ -68,7 +68,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	}
 
 	logger := logger.New(&p.mm.Log).With(logger.LogContext{
-		"app_id": cc.AppID,
+		"app_id": app.AppID,
 	})
 
 	appID := app.AppID
@@ -89,6 +89,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
+	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
 		logger.Debugf("Error getting bindings. Error: " + resp.Error())
 		return nil
@@ -113,6 +114,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 	out := []*apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
+	conf := p.conf.GetConfig()
 
 	for _, appB := range bindings {
 		// clone just in case
@@ -150,6 +152,16 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			locationsUsed[appB.Location] = true
 			labelsUsed[appB.Label] = true
 			b.AppID = app.Manifest.AppID
+		}
+
+		if b.Icon != "" {
+			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
+			if err != nil {
+				p.mm.Log.Debug("Invalid icon path in binding", "app_id", app.AppID, "icon", b.Icon, "error", err.Error())
+				b.Icon = ""
+			} else {
+				b.Icon = icon
+			}
 		}
 
 		if len(b.Bindings) != 0 {

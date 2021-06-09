@@ -2,7 +2,7 @@
 	"type": "form",
 	"form": {
 		"title": "Send a Google-connected 'hello, world!' message",
-		"icon": "http://localhost:8080/static/icon.png",
+		"icon": "icon.png",
 		"call": {
 			"path": "/send",
 			"expand": {

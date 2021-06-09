@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type SurveyFormSubmission struct {
