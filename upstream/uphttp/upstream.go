@@ -15,8 +15,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type Upstream struct {

@@ -63,7 +63,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				return nil
 			})
 			if err != nil {
-				p.mm.Log.Error("failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
+				p.mm.Log.Error("Failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
 			}
 		}
 	}

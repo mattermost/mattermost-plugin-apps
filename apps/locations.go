@@ -3,7 +3,7 @@ package apps
 import (
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 const (

@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package upawslambda
+package upaws
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	lambdas := []apps.AWSLambdaFunction{
+	lambdas := []apps.AWSLambda{
 		{
 			Path: "/topic",
 			Name: "topic",

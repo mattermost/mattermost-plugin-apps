@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type gateway struct {

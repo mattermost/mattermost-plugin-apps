@@ -3,7 +3,7 @@ package restapi
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (a *restapi) handleGetMarketplace(w http.ResponseWriter, req *http.Request, _, _ string) {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (md.MD, error) {

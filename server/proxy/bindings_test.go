@@ -24,7 +24,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
 )
 
 type bindingTestData struct {
@@ -604,7 +604,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		},
 	})
 
-	s := store.NewService(mm, confService)
+	s := store.NewService(mm, confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

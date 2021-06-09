@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {

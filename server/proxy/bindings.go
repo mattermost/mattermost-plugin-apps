@@ -68,7 +68,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	}
 
 	logger := logger.New(&p.mm.Log).With(logger.LogContext{
-		"app_id": cc.AppID,
+		"app_id": app.AppID,
 	})
 
 	appID := app.AppID
@@ -89,6 +89,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
+	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
 		logger.Debugf("Error getting bindings. Error: " + resp.Error())
 		return nil

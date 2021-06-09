@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // Where static assets are.
@@ -98,7 +98,44 @@ type Manifest struct {
 	// Cloud;
 	// - define path->function mappings, aka "routes". The function with the
 	// path matching as the longest prefix is used to handle a Call request.
-	AWSLambda []AWSLambdaFunction `json:"aws_lambda,omitempty"`
+	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
+}
+
+// AWSLambda describes a distinct AWS Lambda function defined by the app, and
+// what path should be mapped to it. See
+// https://developers.mattermost.com/integrate/apps/deployment/#making-your-app-runnable-as-an-aws-lambda-function
+// for more information.
+//
+// cmd/appsctl will create or update the manifest's aws_lambda functions in the
+// AWS Lambda service.
+//
+// upawslambda will use the manifest's aws_lambda functions to find the closest
+// match for the call's path, and then to invoke the AWS Lambda function.
+type AWSLambda struct {
+	// The lambda function with its Path the longest-matching prefix of the
+	// call's Path will be invoked for a call.
+	Path string `json:"path"`
+
+	// TODO @iomodo
+	Name    string `json:"name"`
+	Handler string `json:"handler"`
+	Runtime string `json:"runtime"`
+}
+
+func (f AWSLambda) IsValid() error {
+	if f.Path == "" {
+		return utils.NewInvalidError("aws_lambda path must not be empty")
+	}
+	if f.Name == "" {
+		return utils.NewInvalidError("aws_lambda name must not be empty")
+	}
+	if f.Runtime == "" {
+		return utils.NewInvalidError("aws_lambda runtime must not be empty")
+	}
+	if f.Handler == "" {
+		return utils.NewInvalidError("aws_lambda handler must not be empty")
+	}
+	return nil
 }
 
 var DefaultOnInstall = &Call{

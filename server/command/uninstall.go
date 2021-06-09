@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (s *service) executeUninstall(params *params) (*model.CommandResponse, error) {
+func (s *service) executeUninstall(params *commandParams) (*model.CommandResponse, error) {
 	if len(params.current) == 0 {
 		return errorOut(params, errors.New("you need to specify the app id"))
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type expander struct {
@@ -153,7 +153,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
 			var v interface{}
 			err := e.store.OAuth2.GetUser(app.BotUserID, e.ActingUserID, &v)
-			if err != nil && errors.Cause(err) != utils.ErrNotFound {
+			if err != nil && !errors.Is(err, utils.ErrNotFound) {
 				return nil, errors.Wrapf(err, "failed to expand OAuth user %s", e.UserID)
 			}
 			clone.ExpandedContext.OAuth2.User = v
