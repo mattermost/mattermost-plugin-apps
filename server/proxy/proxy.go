@@ -179,7 +179,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 }
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	app, err := p.store.App.Get(appID)
+	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -187,12 +187,28 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
-	up, err := p.upstreamForApp(app)
+	up, err := p.staticUpstreamForManifest(m)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
 	return up.GetStatic(path)
+}
+
+func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpstream, error) {
+	switch m.AppType {
+	case apps.AppTypeHTTP:
+		return uphttp.NewStaticUpstream(m, p.httpOut), nil
+
+	case apps.AppTypeAWSLambda:
+		return upaws.NewStaticUpstream(m, p.aws, p.s3AssetBucket), nil
+
+	case apps.AppTypeBuiltin:
+		return nil, errors.New("static assets are not supported for builtin apps")
+
+	default:
+		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
+	}
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {

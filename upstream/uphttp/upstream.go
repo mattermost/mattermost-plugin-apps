@@ -5,7 +5,6 @@ package uphttp
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -15,21 +14,23 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type Upstream struct {
-	rootURL   string
+	StaticUpstream
 	appSecret string
-	httpOut   httpout.Service
 }
 
+var _ upstream.Upstream = (*Upstream)(nil)
+
 func NewUpstream(app *apps.App, httpOut httpout.Service) *Upstream {
+	staticUp := NewStaticUpstream(&app.Manifest, httpOut)
 	return &Upstream{
-		rootURL:   app.HTTPRootURL,
-		appSecret: app.Secret,
-		httpOut:   httpOut,
+		StaticUpstream: *staticUp,
+		appSecret:      app.Secret,
 	}
 }
 
@@ -95,16 +96,6 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	}
 
 	return resp, nil
-}
-
-func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
-	/* #nosec G107 */
-	resp, err := http.Get(url) // nolint:bodyclose
-	if err != nil {
-		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
-	}
-	return resp.Body, resp.StatusCode, nil
 }
 
 func createJWT(actingUserID, secret string) (string, error) {

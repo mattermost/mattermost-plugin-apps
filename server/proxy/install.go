@@ -184,6 +184,11 @@ func (p *Proxy) ensureBot(app *apps.App, actingUserID string, client *model.Clie
 	app.BotUserID = fullBot.UserId
 	app.BotUsername = fullBot.Username
 
+	err := p.updateBotIcon(app)
+	if err != nil {
+		return errors.Wrap(err, "failed set bot icon")
+	}
+
 	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) {
 		var token *model.UserAccessToken
 		if app.BotAccessTokenID != "" {
@@ -211,6 +216,28 @@ func (p *Proxy) ensureBot(app *apps.App, actingUserID string, client *model.Clie
 		Message: fmt.Sprintf("Using bot account @%s (`%s`).",
 			fullBot.Username, fullBot.UserId),
 	})
+
+	return nil
+}
+
+func (p *Proxy) updateBotIcon(app *apps.App) error {
+	iconPath := app.Manifest.Icon
+
+	// If app doesn't have an icon, do nothing
+	if iconPath == "" {
+		return nil
+	}
+
+	asset, _, err := p.GetAsset(app.AppID, iconPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to get app icon")
+	}
+	defer asset.Close()
+
+	err = p.mm.User.SetProfileImage(app.BotUserID, asset)
+	if err != nil {
+		return errors.Wrap(err, "update profile icon")
+	}
 
 	return nil
 }

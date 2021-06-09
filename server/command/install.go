@@ -91,7 +91,7 @@ func (s *service) installApp(m *apps.Manifest, appSecret string, params *command
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
 	err := s.mm.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(m, appSecret, conf.PluginURL, params.commandArgs))
+		dialog.NewInstallAppDialog(m, appSecret, conf, params.commandArgs))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
 	}
