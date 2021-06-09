@@ -97,7 +97,7 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
 }
 
-func (conf Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
+func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
