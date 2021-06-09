@@ -31,6 +31,9 @@ type Manifest struct {
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
 
+	// Icon is a relative path in the static assets folder of an png image, which is used to represent the App.
+	Icon string `json:"icon,omitempty"`
+
 	// Callbacks
 
 	// Bindings must be implemented by the Apps to add any UX elements to the
@@ -176,6 +179,13 @@ func (m Manifest) IsValid() error {
 		m.RequestedPermissions.IsValid,
 	} {
 		if err := f(); err != nil {
+			return err
+		}
+	}
+
+	if m.Icon != "" {
+		_, err := utils.CleanStaticPath(m.Icon)
+		if err != nil {
 			return err
 		}
 	}

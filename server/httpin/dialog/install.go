@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 
 	"github.com/pkg/errors"
 
@@ -22,7 +23,7 @@ type installDialogState struct {
 	LogChannelID  string
 }
 
-func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs *model.CommandArgs) model.OpenDialogRequest {
+func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, commandArgs *model.CommandArgs) model.OpenDialogRequest {
 	consent := ""
 	if m.AppType == apps.AppTypeHTTP {
 		consent += fmt.Sprintf("- Access **Remote HTTP API** at `%s` \n", m.HTTPRootURL)
@@ -79,6 +80,11 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 	// 	})
 	// }
 
+	var iconURL string
+	if m.Icon != "" {
+		iconURL = conf.StaticURL(m.AppID, m.Icon)
+	}
+
 	stateData, _ := json.Marshal(installDialogState{
 		AppID:     m.AppID,
 		TeamID:    commandArgs.TeamId,
@@ -87,10 +93,11 @@ func NewInstallAppDialog(m *apps.Manifest, secret, pluginURL string, commandArgs
 
 	return model.OpenDialogRequest{
 		TriggerId: commandArgs.TriggerId,
-		URL:       pluginURL + config.InteractiveDialogPath + InstallPath,
+		URL:       conf.PluginURL + path.Join(config.InteractiveDialogPath, InstallPath),
 		Dialog: model.Dialog{
 			Title:            "Install App - " + m.DisplayName,
 			IntroductionText: consent,
+			IconURL:          iconURL,
 			Elements:         elements,
 			SubmitLabel:      "Approve and Install",
 			NotifyOnCancel:   true,

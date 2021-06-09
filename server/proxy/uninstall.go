@@ -72,6 +72,13 @@ func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) e
 		return errors.Wrapf(err, "can't delete app - %s", app.AppID)
 	}
 
+	// in on-prem mode the manifest need to be deleted as every install add a manifest anyway
+	if !conf.MattermostCloudMode {
+		if err := p.store.Manifest.DeleteLocal(app.AppID); err != nil {
+			return errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
+		}
+	}
+
 	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(actingUserID)

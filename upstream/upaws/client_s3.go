@@ -105,7 +105,7 @@ func S3ManifestName(appID apps.AppID, version apps.AppVersion) string {
 	return fmt.Sprintf("manifests/%s_%s.json", appID, version)
 }
 
-// GenerateAssetS3Name generates key for a specific asset in S3,
+// S3StaticName generates key for a specific asset in S3,
 // key can be 1024 characters long.
 func S3StaticName(appID apps.AppID, version apps.AppVersion, name string) string {
 	sanitizedName := strings.ReplaceAll(name, " ", "-")

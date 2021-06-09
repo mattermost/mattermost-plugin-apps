@@ -21,6 +21,7 @@ import (
 // Upstream wraps an awsClient to make requests to the App. It should not be
 // reused between requests, nor cached.
 type Upstream struct {
+	StaticUpstream
 	app       *apps.App
 	awsClient Client
 	bucket    string
@@ -45,15 +46,14 @@ type invocationResponse struct {
 }
 
 func NewUpstream(app *apps.App, awsClient Client, bucket string) *Upstream {
+	staticUp := NewStaticUpstream(&app.Manifest, awsClient, bucket)
 	return &Upstream{
-		app:       app,
-		awsClient: awsClient,
-		bucket:    bucket,
+		StaticUpstream: *staticUp,
 	}
 }
 
 func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(call.Path, u.app)
+	name := match(call.Path, u.manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
@@ -126,16 +126,17 @@ func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
 	return payload, nil
 }
 
-func match(callPath string, app *apps.App) string {
+func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range app.AWSLambda {
+	for _, f := range m.AWSLambda {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
-				matchedName = LambdaName(app.AppID, app.Version, f.Name)
+				matchedName = LambdaName(m.AppID, m.Version, f.Name)
 				matchedPath = f.Path
 			}
 		}
 	}
+
 	return matchedName
 }
