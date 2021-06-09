@@ -69,30 +69,35 @@ type Config struct {
 	AWSS3Bucket  string
 }
 
-func (c Config) SetContextDefaults(cc *apps.Context) *apps.Context {
+func (conf Config) SetContextDefaults(cc *apps.Context) *apps.Context {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cc.BotUserID = c.BotUserID
-	cc.MattermostSiteURL = c.MattermostSiteURL
+	cc.BotUserID = conf.BotUserID
+	cc.MattermostSiteURL = conf.MattermostSiteURL
 	return cc
 }
 
-func (c Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
+func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cc = c.SetContextDefaults(cc)
+	cc = conf.SetContextDefaults(cc)
 	cc.AppID = appID
-	cc.AppPath = path.Join(c.PluginURLPath, PathApps, string(appID))
+	cc.AppPath = path.Join(conf.PluginURLPath, PathApps, string(appID))
 	return cc
 }
 
-func (c Config) AppPath(appID apps.AppID) string {
-	return c.PluginURL + PathApps + "/" + string(appID)
+func (conf Config) AppURL(appID apps.AppID) string {
+	return conf.PluginURL + path.Join(PathApps, string(appID))
 }
 
-func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
+// StaticURL returns the URL to a static asset.
+func (conf Config) StaticURL(appID apps.AppID, name string) string {
+	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
+}
+
+func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -102,26 +107,26 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 		return err
 	}
 
-	c.StoredConfig = stored
+	conf.StoredConfig = stored
 
-	c.MattermostSiteURL = *mattermostSiteURL
-	c.MattermostSiteHostname = mattermostURL.Hostname()
-	c.PluginURLPath = "/plugins/" + c.BuildConfig.Manifest.Id
-	c.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + c.PluginURLPath
+	conf.MattermostSiteURL = *mattermostSiteURL
+	conf.MattermostSiteHostname = mattermostURL.Hostname()
+	conf.PluginURLPath = "/plugins/" + conf.BuildConfig.Manifest.Id
+	conf.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + conf.PluginURLPath
 
-	c.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
+	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {
-		c.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
+		conf.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
 	}
 
-	c.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
+	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
-	c.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
-	c.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
-	c.AWSRegion = upaws.Region()
-	c.AWSS3Bucket = upaws.S3BucketName()
+	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
+	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
+	conf.AWSRegion = upaws.Region()
+	conf.AWSS3Bucket = upaws.S3BucketName()
 
-	c.MattermostCloudMode = license != nil &&
+	conf.MattermostCloudMode = license != nil &&
 		license.Features != nil &&
 		license.Features.Cloud != nil &&
 		*license.Features.Cloud
@@ -130,16 +135,16 @@ func (c *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license 
 	// to the presence of legacy environment variable to trigger it.
 	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
 	if legacyAccessKey != "" {
-		c.MattermostCloudMode = true
-		c.AWSAccessKey = legacyAccessKey
+		conf.MattermostCloudMode = true
+		conf.AWSAccessKey = legacyAccessKey
 	}
 
-	if c.MattermostCloudMode {
+	if conf.MattermostCloudMode {
 		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
 		if legacySecretKey != "" {
-			c.AWSSecretKey = legacySecretKey
+			conf.AWSSecretKey = legacySecretKey
 		}
-		if c.AWSAccessKey == "" || c.AWSSecretKey == "" {
+		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
 			return errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
 	}

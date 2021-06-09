@@ -329,7 +329,7 @@ func TestGetBindingsCommands(t *testing.T) {
 								{
 									Location:    "message",
 									Label:       "message",
-									Icon:        "message command icon",
+									Icon:        "https://example.com/image.png",
 									Hint:        "message command hint",
 									Description: "message command description",
 								}, {
@@ -341,7 +341,7 @@ func TestGetBindingsCommands(t *testing.T) {
 								}, {
 									Location:    "manage",
 									Label:       "manage",
-									Icon:        "manage command icon",
+									Icon:        "../some/invalid/path",
 									Hint:        "manage command hint",
 									Description: "manage command description",
 									Bindings: []*apps.Binding{
@@ -413,7 +413,7 @@ func TestGetBindingsCommands(t *testing.T) {
 					AppID:       apps.AppID("app1"),
 					Location:    "base command location",
 					Label:       "base command label",
-					Icon:        "base command icon",
+					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
 					Bindings: []*apps.Binding{
@@ -421,21 +421,21 @@ func TestGetBindingsCommands(t *testing.T) {
 							AppID:       apps.AppID("app1"),
 							Location:    "message",
 							Label:       "message",
-							Icon:        "message command icon",
+							Icon:        "https://example.com/image.png",
 							Hint:        "message command hint",
 							Description: "message command description",
 						}, {
 							AppID:       apps.AppID("app1"),
 							Location:    "message-modal",
 							Label:       "message-modal",
-							Icon:        "message-modal command icon",
+							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message-modal command icon",
 							Hint:        "message-modal command hint",
 							Description: "message-modal command description",
 						}, {
 							AppID:       apps.AppID("app1"),
 							Location:    "manage",
 							Label:       "manage",
-							Icon:        "manage command icon",
+							Icon:        "",
 							Hint:        "manage command hint",
 							Description: "manage command description",
 							Bindings: []*apps.Binding{
@@ -443,14 +443,14 @@ func TestGetBindingsCommands(t *testing.T) {
 									AppID:       apps.AppID("app1"),
 									Location:    "subscribe",
 									Label:       "subscribe",
-									Icon:        "subscribe command icon",
+									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/subscribe command icon",
 									Hint:        "subscribe command hint",
 									Description: "subscribe command description",
 								}, {
 									AppID:       apps.AppID("app1"),
 									Location:    "unsubscribe",
 									Label:       "unsubscribe",
-									Icon:        "unsubscribe command icon",
+									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/unsubscribe command icon",
 									Hint:        "unsubscribe command hint",
 									Description: "unsubscribe command description",
 								},
@@ -462,7 +462,7 @@ func TestGetBindingsCommands(t *testing.T) {
 					AppID:       apps.AppID("app2"),
 					Location:    "app2 base command location",
 					Label:       "app2 base command label",
-					Icon:        "app2 base command icon",
+					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
 					Bindings: []*apps.Binding{
@@ -470,7 +470,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							AppID:       apps.AppID("app2"),
 							Location:    "connect",
 							Label:       "connect",
-							Icon:        "connect command icon",
+							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/connect command icon",
 							Hint:        "connect command hint",
 							Description: "connect command description",
 						},
@@ -558,7 +558,7 @@ func TestDuplicateCommand(t *testing.T) {
 					AppID:       apps.AppID("app1"),
 					Location:    "base command location",
 					Label:       "base command label",
-					Icon:        "base command icon",
+					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
 					Bindings: []*apps.Binding{
@@ -566,7 +566,7 @@ func TestDuplicateCommand(t *testing.T) {
 							AppID:    apps.AppID("app1"),
 							Location: "sub1",
 							Label:    "sub1",
-							Icon:     "sub1 icon 1",
+							Icon:     "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/sub1 icon 1",
 						},
 					},
 				},
@@ -587,16 +587,24 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testAPI.On("LogDebug", mock.AnythingOfType("string")).Return(nil)
+	testAPI.On("LogDebug", mock.AnythingOfType("string"),
+		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything,
+	).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
-	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+	conf := config.Config{
+		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
+	}
+	confService := config.NewTestConfigurator(conf).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
-			SiteURL: model.NewString("test.mattermost.com"),
+			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
 	})
 
-	s := store.NewService(mm, conf, nil, "")
+	s := store.NewService(mm, confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -625,7 +633,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		mm:               mm,
 		store:            s,
 		builtinUpstreams: upstreams,
-		conf:             conf,
+		conf:             confService,
 	}
 
 	return p

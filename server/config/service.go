@@ -91,6 +91,9 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	license := s.mm.System.GetLicense()
 	if license == nil {
 		license = s.mm.System.GetLicense()
+		if license == nil {
+			s.mm.Log.Warn("Failed to fetch license two times. Falling back to on-prem mode.")
+		}
 	}
 	err := newConfig.Reconfigure(stored, mmconf, license)
 	if err != nil {

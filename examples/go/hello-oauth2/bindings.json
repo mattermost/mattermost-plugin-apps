@@ -5,7 +5,7 @@
 			"location": "/command",
 			"bindings": [
 				{
-					"icon": "http://localhost:8080/static/icon.png",
+					"icon": "icon.png",
 					"label": "hello-oauth2",
 					"description": "Hello remote (3rd party) OAuth2 App",
 					"hint": "[configure | connect | send]",

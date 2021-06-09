@@ -1,4 +1,4 @@
-package gateway
+package utils
 
 import (
 	"testing"
@@ -39,7 +39,7 @@ func TestCleanStaticPath(t *testing.T) {
 		},
 	} {
 		t.Run(tc.p, func(t *testing.T) {
-			c, err := cleanStaticPath(tc.p)
+			c, err := CleanStaticPath(tc.p)
 			if tc.expectedError != "" {
 				require.NotNil(t, err)
 				require.Equal(t, tc.expectedError, err.Error())
