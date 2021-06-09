@@ -12,12 +12,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type Proxy struct {
@@ -28,7 +28,7 @@ type Proxy struct {
 	mm            *pluginapi.Client
 	conf          config.Service
 	store         *store.Service
-	aws           aws.Client
+	aws           upaws.Client
 	httpOut       httpout.Service
 	s3AssetBucket string
 }
@@ -50,6 +50,7 @@ type Service interface {
 	GetInstalledApps() []*apps.App
 	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
+	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
 	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
@@ -59,7 +60,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws aws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,

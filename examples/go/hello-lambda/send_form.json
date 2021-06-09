@@ -1,0 +1,17 @@
+{
+	"type": "form",
+	"form": {
+		"title": "Hello, AWS Lambda!",
+		"icon": "/static/icon.png",
+		"fields": [
+			{
+				"type": "text",
+				"name": "message",
+				"label": "message"
+			}
+		],
+		"call": {
+			"path": "/send"
+		}
+	}
+}

@@ -11,7 +11,7 @@ func (h *HelloApp) UserJoinedChannel(call *apps.CallRequest) {
 
 		err := sendSurvey(bot, call.Context.UserID, "welcome to channel")
 		if err != nil {
-			h.mm.Log.Error("error sending survey", "err", err.Error())
+			h.mm.Log.Error("Error sending survey", "err", err.Error())
 		}
 	}()
 }

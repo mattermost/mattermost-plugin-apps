@@ -6,7 +6,7 @@ package httputils
 import (
 	"io"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type LimitReadCloser struct {

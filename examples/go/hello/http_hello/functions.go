@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/pkg/errors"
 )
 

@@ -10,16 +10,16 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (s *service) executeDebugClean(params *params) (*model.CommandResponse, error) {
+func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
 	_ = s.mm.KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, md.MD("Deleted all KV records and emptied the config."))
 }
 
-func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, error) {
+func (s *service) executeDebugBindings(params *commandParams) (*model.CommandResponse, error) {
 	bindings, err := s.proxy.GetBindings(
 		params.commandArgs.Session.Id,
 		params.commandArgs.UserId,
@@ -30,7 +30,7 @@ func (s *service) executeDebugBindings(params *params) (*model.CommandResponse, 
 	return out(params, md.JSONBlock(bindings))
 }
 
-func (s *service) executeDebugAddManifest(params *params) (*model.CommandResponse, error) {
+func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
