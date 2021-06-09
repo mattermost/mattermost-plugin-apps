@@ -121,7 +121,7 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID s
 		}
 	}
 
-	oauth2CallbackURL := p.conf.GetConfig().AppPath(app.AppID) + config.PathMattermostOAuth2Complete
+	oauth2CallbackURL := p.conf.GetConfig().AppURL(app.AppID) + config.PathMattermostOAuth2Complete
 
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
 	oauthApp, response := asAdmin.CreateOAuthApp(&model.OAuthApp{

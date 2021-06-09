@@ -2,7 +2,7 @@
 	"type": "form",
 	"form": {
 		"title": "Send a test webhook message",
-		"icon": "http://localhost:8080/static/icon.png",
+		"icon": "icon.png",
 		"call": {
 			"path": "/send"
 		},

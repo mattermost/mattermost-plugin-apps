@@ -146,8 +146,8 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		if expand.OAuth2App != "" {
 			clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
 			clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
-			clone.ExpandedContext.OAuth2.ConnectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Connect
-			clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
+			clone.ExpandedContext.OAuth2.ConnectURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Connect
+			clone.ExpandedContext.OAuth2.CompleteURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Complete
 		}
 
 		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
