@@ -7,11 +7,11 @@ import (
 
 func CleanPath(p string) (string, error) {
 	if p == "" {
-		return "", NewInvalidError("invalid path: %q", p)
+		return "", NewInvalidError("path must not be empty: %s", p)
 	}
 
 	cleanPath := path.Clean(p)
-	if p == "." || strings.HasPrefix(cleanPath, "../") {
+	if cleanPath == "." || strings.HasPrefix(cleanPath, "../") {
 		return "", NewInvalidError("bad path: %q", p)
 	}
 

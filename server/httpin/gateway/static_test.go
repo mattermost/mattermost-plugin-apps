@@ -23,19 +23,19 @@ func TestCleanStaticPath(t *testing.T) {
 			expectedError: `asset names may not start with a '/': invalid input`,
 		}, {
 			p:             `X/../../Y/Z`,
-			expectedError: "bad path: X/../../Y/Z: invalid input",
+			expectedError: `bad path: "X/../../Y/Z": invalid input`,
 		}, {
 			p:             `X/Y/../../../Z`,
-			expectedError: "bad path: X/Y/../../../Z: invalid input",
+			expectedError: `bad path: "X/Y/../../../Z": invalid input`,
 		}, {
 			p:             `X%252F..%2F..%2525252FY`,
-			expectedError: "bad path: X%252F..%2F..%2525252FY: invalid input",
+			expectedError: `bad path: "X/../../Y": invalid input`,
 		}, {
 			p:             `%2FX%2F..%2F..%2FY`,
-			expectedError: "asset names may not start with a '/': invalid input",
+			expectedError: `asset names may not start with a '/': invalid input`,
 		}, {
 			p:             `X%252f..%252f..%252fmanifest`,
-			expectedError: "bad path: X%252f..%252f..%252fmanifest: invalid input",
+			expectedError: `bad path: "X/../../manifest": invalid input`,
 		},
 	} {
 		t.Run(tc.p, func(t *testing.T) {
