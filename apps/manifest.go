@@ -183,6 +183,13 @@ func (m Manifest) IsValid() error {
 		}
 	}
 
+	if m.Icon != "" {
+		_, err := utils.CleanStaticPath(m.Icon)
+		if err != nil {
+			return err
+		}
+	}
+
 	switch m.AppType {
 	case AppTypeHTTP:
 		_, err := url.Parse(m.HTTPRootURL)
