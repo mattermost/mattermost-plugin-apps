@@ -3,7 +3,6 @@ package gateway
 import (
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/gorilla/mux"
 
@@ -23,7 +22,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
 		return
 	}
-	assetName, err := cleanStaticPath(vars["name"])
+	assetName, err := utils.CleanStaticPath(vars["name"])
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -53,30 +52,4 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 func copyHeader(dst, src http.Header) {
 	headerKey := "Content-Type"
 	dst.Add(headerKey, src.Get(headerKey))
-}
-
-func cleanStaticPath(got string) (unescaped string, err error) {
-	if got == "" {
-		return "", utils.NewInvalidError("asset name is not specified")
-	}
-	for escaped := got; ; escaped = unescaped {
-		unescaped, err = url.PathUnescape(escaped)
-		if err != nil {
-			return "", err
-		}
-		if unescaped == escaped {
-			break
-		}
-	}
-
-	if unescaped[0] == '/' {
-		return "", utils.NewInvalidError("asset names may not start with a '/'")
-	}
-
-	cleanPath, err := utils.CleanPath(unescaped)
-	if err != nil {
-		return "", err
-	}
-
-	return cleanPath, nil
 }
