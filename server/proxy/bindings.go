@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -136,6 +137,18 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			continue
 		}
 
+		if fql.In(apps.LocationCommand) {
+			label := b.Label
+			if label == "" {
+				label = string(b.Location)
+			}
+
+			if strings.ContainsAny(label, " \t") {
+				//p.mm.Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
+				continue
+			}
+		}
+
 		if fql.IsTop() {
 			if locationsUsed[appB.Location] {
 				continue
@@ -172,6 +185,8 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 			b.Bindings = scanned
 		}
+
+		p.cleanForm(b.Form)
 
 		out = append(out, &b)
 	}
