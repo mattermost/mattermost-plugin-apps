@@ -44,6 +44,17 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
 	}
+
+	if creq.Path[0] != '/' {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path)), metadata)
+	}
+
+	cleanPath, err := utils.CleanPath(creq.Path)
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+	}
+	creq.Path = cleanPath
+
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
