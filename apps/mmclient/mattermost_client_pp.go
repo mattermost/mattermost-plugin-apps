@@ -2,13 +2,13 @@ package mmclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -27,6 +27,8 @@ const (
 	PathAPI = "/api/v1"
 
 	// Other sub-paths.
+	PathApps        = "/apps"
+	PathApp         = "/app"
 	PathKV          = "/kv"
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
@@ -41,7 +43,6 @@ const (
 
 type ClientPP struct {
 	URL        string       // The location of the server, for example  "http://localhost:8065"
-	APIURL     string       // The api location of the server, for example "http://localhost:8065/api/v4"
 	HTTPClient *http.Client // The http client
 	AuthToken  string
 	AuthType   string
@@ -52,11 +53,37 @@ type ClientPP struct {
 
 	// FalseString is the string value sent to the server for false boolean query parameters.
 	falseString string
+
+	fromPlugin bool
 }
 
 func NewAPIClientPP(url string) *ClientPP {
 	url = strings.TrimRight(url, "/")
-	return &ClientPP{url, url, &http.Client{}, "", "", map[string]string{}, "", ""}
+	return &ClientPP{url, &http.Client{}, "", "", map[string]string{}, "", "", false}
+}
+
+type pluginAPIRoundTripper struct {
+	api PluginAPI
+}
+
+func (p *pluginAPIRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := p.api.PluginHTTP(req)
+	if resp == nil {
+		return nil, errors.Errorf("Failed to make interplugin request")
+	}
+
+	return resp, nil
+}
+
+type PluginAPI interface {
+	PluginHTTP(*http.Request) *http.Response
+}
+
+func NewAPIClientPPFromPluginAPI(api PluginAPI) *ClientPP {
+	httpClient := &http.Client{}
+	httpClient.Transport = &pluginAPIRoundTripper{api}
+
+	return &ClientPP{"", httpClient, "", "", map[string]string{}, "", "", true}
 }
 
 func (c *ClientPP) SetOAuthToken(token string) {
@@ -154,24 +181,44 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Respo
 	return model.BuildResponse(r)
 }
 
+func (c *ClientPP) InstallApp(m apps.Manifest) error {
+	b, err := json.Marshal(&m)
+	if err != nil {
+		return err
+	}
+
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
 func (c *ClientPP) GetPluginsRoute() string {
 	return "/plugins"
 }
 
 func (c *ClientPP) GetPluginRoute(pluginID string) string {
-	return fmt.Sprintf(c.GetPluginsRoute()+"/%v", pluginID)
+	path := "/"
+	if !c.fromPlugin {
+		path += c.GetPluginsRoute() + "/"
+	}
+
+	return path + pluginID
 }
 
 func (c *ClientPP) DoAPIGET(url string, etag string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodGet, c.APIURL+url, "", etag)
+	return c.DoAPIRequest(http.MethodGet, c.URL+url, "", etag)
 }
 
 func (c *ClientPP) DoAPIPOST(url string, data string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodPost, c.APIURL+url, data, "")
+	return c.DoAPIRequest(http.MethodPost, c.URL+url, data, "")
 }
 
 func (c *ClientPP) DoAPIDELETE(url string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodDelete, c.APIURL+url, "", "")
+	return c.DoAPIRequest(http.MethodDelete, c.URL+url, "", "")
 }
 
 func (c *ClientPP) DoAPIRequest(method, url, data, etag string) (*http.Response, *model.AppError) {

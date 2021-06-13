@@ -64,6 +64,8 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	subrouter.HandleFunc(config.PathMarketplace,
 		httputils.CheckAuthorized(mm, a.handleGetMarketplace)).Methods(http.MethodGet)
+
+	subrouter.HandleFunc(mmclient.PathApps, httputils.CheckPlugin(a.handleInstallApp)).Methods("POST")
 }
 
 func actingID(r *http.Request) string {
