@@ -44,7 +44,7 @@ type commandHandler struct {
 	autoComplete *model.AutocompleteData
 }
 
-func (s *service) allCommands(conf config.Config) map[string]commandHandler {
+func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
 	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
@@ -200,7 +200,7 @@ func (s *service) Configure(conf config.Config) {
 }
 
 func (s *service) registerCommand(conf config.Config) error {
-	subCommands := s.allCommands(conf)
+	subCommands := s.allSubCommands(conf)
 	var subs []string
 	for t := range subCommands {
 		subs = append(subs, t)
@@ -277,7 +277,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
-	return s.runSubcommand(s.allCommands(conf), in)
+	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
 func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
