@@ -18,6 +18,7 @@ import (
 )
 
 type Service interface {
+	config.Configurable
 	ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error)
 }
 
@@ -43,7 +44,7 @@ type commandHandler struct {
 	autoComplete *model.AutocompleteData
 }
 
-func (s *service) allCommands() map[string]commandHandler {
+func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
 	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
@@ -78,8 +79,6 @@ func (s *service) allCommands() map[string]commandHandler {
 			autoComplete: disenableAC,
 		},
 	}
-
-	conf := s.conf.GetConfig()
 
 	if conf.DeveloperMode {
 		debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
@@ -199,7 +198,25 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 		proxy:   proxy,
 		httpOut: httpOut,
 	}
-	subCommands := s.allCommands()
+	conf := s.conf.GetConfig()
+
+	err := s.registerCommand(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *service) Configure(conf config.Config) {
+	err := s.registerCommand(conf)
+	if err != nil {
+		s.mm.Log.Warn("Failed to re-register command", "error", err.Error())
+	}
+}
+
+func (s *service) registerCommand(conf config.Config) error {
+	subCommands := s.allSubCommands(conf)
 	var subs []string
 	for t := range subCommands {
 		subs = append(subs, t)
@@ -212,18 +229,15 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 
 	AddACForSubCommands(subCommands, ac)
 
-	err := mm.SlashCommand.Register(&model.Command{
+	err := s.mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
 		AutocompleteData: ac,
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	return s, nil
+	return err
 }
 
 func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.AutocompleteData) {
@@ -278,7 +292,8 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 }
 
 func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
-	return s.runSubcommand(s.allCommands(), in)
+	conf := s.conf.GetConfig()
+	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
 func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
