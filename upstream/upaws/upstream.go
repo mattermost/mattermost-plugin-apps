@@ -22,9 +22,7 @@ import (
 // reused between requests, nor cached.
 type Upstream struct {
 	StaticUpstream
-	app       *apps.App
-	awsClient Client
-	bucket    string
+	app *apps.App
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)

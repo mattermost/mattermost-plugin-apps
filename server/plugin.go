@@ -154,7 +154,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
