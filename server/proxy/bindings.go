@@ -144,7 +144,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 
 			if strings.ContainsAny(label, " \t") {
-				//p.mm.Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
+				// p.mm.Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
 				continue
 			}
 		}
