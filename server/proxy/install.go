@@ -18,10 +18,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
-	err := utils.EnsureSysAdmin(p.mm, actingUserID)
-	if err != nil {
-		return nil, "", err
+func (p *Proxy) InstallApp(fromPlugin bool, sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
+	// If the request was made from a plugin, trust it
+	if !fromPlugin {
+		err := utils.EnsureSysAdmin(p.mm, actingUserID)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	m, err := p.store.Manifest.Get(cc.AppID)

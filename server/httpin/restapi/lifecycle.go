@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
-	"github.com/pkg/errors"
 )
 
 func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(sessionID, actingUserID, cc, false, "")
+	_, _, err = a.proxy.InstallApp(true, sessionID, actingUserID, cc, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

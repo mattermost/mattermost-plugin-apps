@@ -256,9 +256,9 @@ func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1, arg2 in
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 bool, arg4 string) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 bool, arg1, arg2 string, arg3 *apps.Context, arg4 bool, arg5 string) (*apps.App, md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(md.MD)
 	ret2, _ := ret[2].(error)
@@ -266,9 +266,9 @@ func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 boo
 }
 
 // InstallApp indicates an expected call of InstallApp.
-func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // Notify mocks base method.
