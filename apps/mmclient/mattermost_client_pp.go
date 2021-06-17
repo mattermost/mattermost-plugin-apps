@@ -2,6 +2,7 @@ package mmclient
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -181,13 +182,15 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Respo
 	return model.BuildResponse(r)
 }
 
-func (c *ClientPP) InstallApp(m apps.Manifest) error {
+func (c *ClientPP) InstallApp(m apps.Manifest, sessionID, actingUserID string) error {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		return err
 	}
 
-	r, appErr := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
+	query := fmt.Sprintf("?session_id=%v", sessionID)
+	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+query, string(b)) // nolint:bodyclose
 	if appErr != nil {
 		return appErr
 	}

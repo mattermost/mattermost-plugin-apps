@@ -18,30 +18,27 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(fromPlugin bool, sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
-	// If the request was made from a plugin, trust it
-	if !fromPlugin {
-		err := utils.EnsureSysAdmin(p.mm, actingUserID)
-		if err != nil {
-			return nil, "", err
-		}
+func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
+	err := utils.EnsureSysAdmin(p.mm, actingUserID)
+	if err != nil {
+		return nil, "", err
 	}
 
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
 
 	conf := p.conf.GetConfig()
 	err = isAppTypeSupported(conf, m)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "app type is not supported")
 	}
 
 	app, err := p.store.App.Get(cc.AppID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
-			return nil, "", err
+			return nil, "", errors.Wrap(err, "failed to find existing app")
 		}
 		app = &apps.App{}
 	}
