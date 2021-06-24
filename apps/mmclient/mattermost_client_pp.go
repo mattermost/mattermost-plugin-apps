@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -28,11 +29,14 @@ const (
 	PathAPI = "/api/v1"
 
 	// Other sub-paths.
-	PathApps        = "/apps"
-	PathApp         = "/app"
 	PathKV          = "/kv"
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
+
+	PathApps    = "/apps"
+	PathApp     = "/app"
+	PathEnable  = "/enable"
+	PathDisable = "/disable"
 
 	PathBotIDs      = "/bot-ids"
 	PathOAuthAppIDs = "/oauth-app-ids"
@@ -58,33 +62,15 @@ type ClientPP struct {
 	fromPlugin bool
 }
 
-func NewAPIClientPP(url string) *ClientPP {
+func NewAppsPluginAPIClient(url string) *ClientPP {
 	url = strings.TrimRight(url, "/")
 	return &ClientPP{url, &http.Client{}, "", "", map[string]string{}, "", "", false}
 }
 
-type pluginAPIRoundTripper struct {
-	api PluginAPI
-}
+func NewAppsPluginAPIClientFromPluginAPI(api upplugin.PluginHTTPAPI) *ClientPP {
+	httpClient := upplugin.MakePluginHTTPClient(api)
 
-func (p *pluginAPIRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp := p.api.PluginHTTP(req)
-	if resp == nil {
-		return nil, errors.Errorf("Failed to make interplugin request")
-	}
-
-	return resp, nil
-}
-
-type PluginAPI interface {
-	PluginHTTP(*http.Request) *http.Response
-}
-
-func NewAPIClientPPFromPluginAPI(api PluginAPI) *ClientPP {
-	httpClient := &http.Client{}
-	httpClient.Transport = &pluginAPIRoundTripper{api}
-
-	return &ClientPP{"", httpClient, "", "", map[string]string{}, "", "", true}
+	return &ClientPP{"", &httpClient, "", "", map[string]string{}, "", "", true}
 }
 
 func (c *ClientPP) SetOAuthToken(token string) {
@@ -191,6 +177,46 @@ func (c *ClientPP) InstallApp(m apps.Manifest, sessionID, actingUserID string) e
 	query := fmt.Sprintf("?session_id=%v", sessionID)
 	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
 	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+query, string(b)) // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
+func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, error) {
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
+	if appErr != nil {
+		return nil, appErr
+	}
+	defer c.closeBody(r)
+
+	var app apps.App
+	err := json.NewDecoder(r.Body).Decode(&app)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode response")
+	}
+
+	return &app, nil
+}
+
+func (c *ClientPP) EnableApp(appID apps.AppID, sessionID, actingUserID string) error {
+	query := fmt.Sprintf("?session_id=%v", sessionID)
+	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable+query, "") // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
+func (c *ClientPP) DisableApp(appID apps.AppID, sessionID, actingUserID string) error {
+	query := fmt.Sprintf("?session_id=%v", sessionID)
+	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable+query, "") // nolint:bodyclose
 	if appErr != nil {
 		return appErr
 	}

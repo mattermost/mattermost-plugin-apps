@@ -126,15 +126,41 @@ func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http
 	}
 }
 
-func CheckPlugin(next http.HandlerFunc) http.HandlerFunc {
+func CheckPlugin(next func(_ http.ResponseWriter, _ *http.Request, pluginID string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// All other plugins are allowed
 		pluginID := r.Header.Get("Mattermost-Plugin-ID")
 		if pluginID == "" {
-			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			WriteError(w, utils.ErrUnauthorized)
 			return
 		}
 
-		next(w, r)
+		next(w, r, pluginID)
+	}
+}
+
+func CheckPluginOrAdmin(next func(_ http.ResponseWriter, _ *http.Request, pluginID, sessionID, actingUserID string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// All other plugins are allowed
+		pluginID := r.Header.Get("Mattermost-Plugin-ID")
+		actingUserID := r.Header.Get("Mattermost-User-Id")
+		sessionID := r.Header.Get("MM_SESSION_ID")
+
+		if pluginID == "" && actingUserID == "" && sessionID == "" {
+			WriteError(w, utils.ErrUnauthorized)
+			return
+		}
+
+		if actingUserID != "" && sessionID == "" {
+			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user session"))
+			return
+		}
+
+		if actingUserID == "" && sessionID != "" {
+			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user"))
+			return
+		}
+
+		next(w, r, pluginID, sessionID, actingUserID)
 	}
 }

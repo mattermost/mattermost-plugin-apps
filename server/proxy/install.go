@@ -18,7 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
 	err := utils.EnsureSysAdmin(p.mm, actingUserID)
 	if err != nil {
 		return nil, "", err
@@ -51,6 +51,14 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	app.GrantedLocations = m.RequestedLocations
 	if secret != "" {
 		app.Secret = secret
+	}
+
+	if app.AppType == apps.AppTypePlugin {
+		if pluginID == "" {
+			return nil, "", errors.New("plugin apps require a coresponding pluginID")
+		}
+
+		app.PluginID = pluginID
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
@@ -213,7 +221,7 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 		return nil
 	}
 
-	asset, _, err := p.GetAsset(app.AppID, iconPath)
+	asset, _, err := p.getAssetForApp(app, iconPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app icon")
 	}

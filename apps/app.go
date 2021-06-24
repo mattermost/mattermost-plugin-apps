@@ -36,6 +36,9 @@ type App struct {
 	// WebhookSecret is used to validate an incoming webhook secret.
 	WebhookSecret string `json:"webhook_secret,omitempty"`
 
+	// PluginID is the
+	PluginID string `json:"plugin_id,omitempty"`
+
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
 	// is created (or updated) when a Mattermost App is installed on the
 	// instance.
@@ -167,11 +170,15 @@ const (
 	// go functions. No manifest, no Mattermost to App authentication are
 	// needed.
 	AppTypeBuiltin AppType = "builtin"
+
+	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
+	// Authentication is done via the plugin.Context.SourcePluginId field.
+	AppTypePlugin AppType = "plugin"
 )
 
 func (at AppType) IsValid() error {
 	switch at {
-	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin:
+	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypePlugin:
 		return nil
 	default:
 		return utils.NewInvalidError("%s is not a valid app type", at)
