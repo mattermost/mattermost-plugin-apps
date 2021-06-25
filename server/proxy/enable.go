@@ -9,11 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) EnableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) EnableApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -23,15 +22,9 @@ func (p *Proxy) EnableApp(sessionID, actingUserID string, cc *apps.Context, appI
 		return md.MD(fmt.Sprintf("%s is already enabled", app.DisplayName)), nil
 	}
 
-	conf := p.conf.GetConfig()
-	asAdmin, err := utils.ClientFromSession(p.mm, conf.MattermostSiteURL, sessionID, actingUserID)
+	_, err = client.EnableBot(app.BotUserID)
 	if err != nil {
-		return "", err
-	}
-
-	_, response := asAdmin.EnableBot(app.BotUserID)
-	if response.Error != nil {
-		return "", errors.Wrapf(response.Error, "failed to enable bot account for %s", app.AppID)
+		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
 
 	// Enable the app in the store first to allow calls to it
@@ -43,7 +36,7 @@ func (p *Proxy) EnableApp(sessionID, actingUserID string, cc *apps.Context, appI
 
 	var message md.MD
 	if app.OnEnable != nil {
-		resp := p.Call(sessionID, actingUserID, &apps.CallRequest{
+		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
@@ -60,12 +53,12 @@ func (p *Proxy) EnableApp(sessionID, actingUserID string, cc *apps.Context, appI
 
 	p.mm.Log.Info("Enabled an app", "app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(actingUserID)
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) DisableApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -78,7 +71,7 @@ func (p *Proxy) DisableApp(sessionID, actingUserID string, cc *apps.Context, app
 	// Call the app first as later it's disabled
 	var message md.MD
 	if app.OnDisable != nil {
-		resp := p.Call(sessionID, actingUserID, &apps.CallRequest{
+		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
 			Call:    *app.OnDisable,
 			Context: cc,
 		})
@@ -93,16 +86,10 @@ func (p *Proxy) DisableApp(sessionID, actingUserID string, cc *apps.Context, app
 		message = md.MD(fmt.Sprintf("Disabled %s", app.DisplayName))
 	}
 
-	conf := p.conf.GetConfig()
-	asAdmin, err := utils.ClientFromSession(p.mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return "", err
-	}
-
 	// disable app, not removing the data
-	_, response := asAdmin.DisableBot(app.BotUserID)
-	if response.Error != nil {
-		return "", errors.Wrapf(response.Error, "failed to disable bot account for %s", app.AppID)
+	_, err = client.DisableBot(app.BotUserID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
 	app.Disabled = true
@@ -113,7 +100,7 @@ func (p *Proxy) DisableApp(sessionID, actingUserID string, cc *apps.Context, app
 
 	p.mm.Log.Info("Disabled an app", "app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(actingUserID)
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return message, nil
 }

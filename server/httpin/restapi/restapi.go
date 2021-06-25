@@ -66,12 +66,12 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 		httputils.CheckAuthorized(mm, a.handleGetMarketplace)).Methods(http.MethodGet)
 
 	appsRouters := subrouter.PathPrefix(mmclient.PathApps).Subrouter()
-	appsRouters.HandleFunc("", httputils.CheckPlugin(a.handleInstallApp)).Methods("POST")
+	appsRouters.HandleFunc("", httputils.CheckPluginOrAdmin(a.handleInstallApp)).Methods("POST")
 
 	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
 	appRouter.HandleFunc("", httputils.CheckPluginOrAdmin(a.handleGetApp)).Methods("GET")
 	appRouter.HandleFunc(mmclient.PathEnable, httputils.CheckPluginOrAdmin(a.handleEnableApp)).Methods("POST")
-	appRouter.HandleFunc(mmclient.PathDisable, httputils.CheckPluginOrAdmin(a.handleDisableApp)).Methods("POST")
+	appRouter.HandleFunc(mmclient.PathDisable, httputils.CheckPluginOrAdmin(a.handleDisableApp)).Methods("POST", "GET")
 }
 
 func actingID(r *http.Request) string {

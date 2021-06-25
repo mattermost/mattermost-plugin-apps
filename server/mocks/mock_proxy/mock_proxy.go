@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
@@ -107,7 +108,7 @@ func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 i
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) DisableApp(arg0 proxy.MMClient, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -122,7 +123,7 @@ func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2, arg3 interface{}
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) EnableApp(arg0 proxy.MMClient, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -210,6 +211,35 @@ func (mr *MockServiceMockRecorder) GetListedApps(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0)
 }
 
+// GetMMHTTPClient mocks base method.
+func (m *MockService) GetMMHTTPClient(arg0, arg1 string) (proxy.MMClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMMHTTPClient", arg0, arg1)
+	ret0, _ := ret[0].(proxy.MMClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMMHTTPClient indicates an expected call of GetMMHTTPClient.
+func (mr *MockServiceMockRecorder) GetMMHTTPClient(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMMHTTPClient", reflect.TypeOf((*MockService)(nil).GetMMHTTPClient), arg0, arg1)
+}
+
+// GetMMPRCClient mocks base method.
+func (m *MockService) GetMMPRCClient() proxy.MMClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMMPRCClient")
+	ret0, _ := ret[0].(proxy.MMClient)
+	return ret0
+}
+
+// GetMMPRCClient indicates an expected call of GetMMPRCClient.
+func (mr *MockServiceMockRecorder) GetMMPRCClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMMPRCClient", reflect.TypeOf((*MockService)(nil).GetMMPRCClient))
+}
+
 // GetManifest mocks base method.
 func (m *MockService) GetManifest(arg0 apps.AppID) (*apps.Manifest, error) {
 	m.ctrl.T.Helper()
@@ -256,7 +286,7 @@ func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1, arg2 in
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 bool, arg4, arg5 string) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 proxy.MMClient, arg1 string, arg2 *apps.Context, arg3 bool, arg4, arg5 string) (*apps.App, md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*apps.App)
@@ -314,7 +344,7 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) UninstallApp(arg0 proxy.MMClient, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)

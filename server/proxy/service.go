@@ -44,18 +44,21 @@ type Service interface {
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
-	DisableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
-	EnableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	EnableApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	DisableApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
 	GetListedApps(filter string) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error)
+	InstallApp(client MMClient, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	UninstallApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+
+	GetMMHTTPClient(sessionID, actingUserID string) (MMClient, error)
+	GetMMPRCClient() MMClient
 }
 
 var _ Service = (*Proxy)(nil)

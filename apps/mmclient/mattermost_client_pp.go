@@ -2,7 +2,6 @@ package mmclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -168,15 +167,15 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Respo
 	return model.BuildResponse(r)
 }
 
-func (c *ClientPP) InstallApp(m apps.Manifest, sessionID, actingUserID string) error {
+// InstallApp installs a app using a given manfest.
+// sessionID and actingUserID might be empty.
+func (c *ClientPP) InstallApp(m apps.Manifest) error {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		return err
 	}
 
-	query := fmt.Sprintf("?session_id=%v", sessionID)
-	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
-	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+query, string(b)) // nolint:bodyclose
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
 	if appErr != nil {
 		return appErr
 	}
@@ -201,10 +200,8 @@ func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, error) {
 	return &app, nil
 }
 
-func (c *ClientPP) EnableApp(appID apps.AppID, sessionID, actingUserID string) error {
-	query := fmt.Sprintf("?session_id=%v", sessionID)
-	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
-	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable+query, "") // nolint:bodyclose
+func (c *ClientPP) EnableApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable, "") // nolint:bodyclose
 	if appErr != nil {
 		return appErr
 	}
@@ -213,10 +210,8 @@ func (c *ClientPP) EnableApp(appID apps.AppID, sessionID, actingUserID string) e
 	return nil
 }
 
-func (c *ClientPP) DisableApp(appID apps.AppID, sessionID, actingUserID string) error {
-	query := fmt.Sprintf("?session_id=%v", sessionID)
-	query += fmt.Sprintf("&acting_user_id=%v", actingUserID)
-	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable+query, "") // nolint:bodyclose
+func (c *ClientPP) DisableApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable, "") // nolint:bodyclose
 	if appErr != nil {
 		return appErr
 	}

@@ -231,7 +231,6 @@ func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpst
 		app, err := p.store.App.Get(m.AppID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get app for static asset")
-
 		}
 		return upplugin.NewStaticUpstream(app, &p.mm.Plugin), nil
 

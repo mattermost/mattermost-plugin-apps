@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -333,6 +334,22 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 		return handler(p)
 	}
 }
+
+func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
+	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    commandArgs.TeamId,
+			ChannelID: commandArgs.ChannelId,
+		},
+		ActingUserID: commandArgs.UserId,
+		UserID:       commandArgs.UserId,
+	})
+}
+
+func (s *service) newMMClient(commandArgs *model.CommandArgs) (proxy.MMClient, error) {
+	return s.proxy.GetMMHTTPClient(commandArgs.Session.Id, commandArgs.UserId)
+}
+
 func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
 

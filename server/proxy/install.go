@@ -5,7 +5,6 @@ package proxy
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,12 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
-	err := utils.EnsureSysAdmin(p.mm, actingUserID)
-	if err != nil {
-		return nil, "", err
-	}
-
+func (p *Proxy) InstallApp(client MMClient, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -65,19 +59,14 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 		app.WebhookSecret = model.NewId()
 	}
 
-	asAdmin, err := utils.ClientFromSession(p.mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return nil, "", err
-	}
-
-	err = p.ensureBot(app, asAdmin)
+	err = p.ensureBot(client, app)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(app, trusted, actingUserID, asAdmin)
+		oAuthApp, err = p.ensureOAuthApp(client, app, trusted, cc.ActingUserID)
 		if err != nil {
 			return nil, "", err
 		}
@@ -97,7 +86,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 			Call:    *app.OnInstall,
 			Context: cc,
 		}
-		resp := p.Call(sessionID, actingUserID, creq)
+		resp := p.Call(sessionID, cc.ActingUserID, creq)
 		// TODO fail on all errors except 404
 		if resp.Type == apps.CallResponseTypeError {
 			p.mm.Log.Warn("OnInstall failed, installing app anyway", "err", resp.Error(), "app_id", app.AppID)
@@ -112,15 +101,15 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 
 	p.mm.Log.Info("Installed an app", "app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(actingUserID)
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID string, asAdmin *model.Client4) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client MMClient, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
-		oauthApp, response := asAdmin.GetOAuthApp(app.MattermostOAuth2.ClientID)
-		if response.StatusCode == http.StatusOK && response.Error == nil {
+		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
+		if err == nil {
 			p.mm.Log.Debug("App install flow: CUsing existing OAuth2 App", "id", oauthApp.Id)
 
 			return oauthApp, nil
@@ -130,19 +119,17 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID s
 	oauth2CallbackURL := p.conf.GetConfig().AppURL(app.AppID) + config.PathMattermostOAuth2Complete
 
 	// For the POC this should work, but for the final product I would opt for a RPC method to register the App
-	oauthApp, response := asAdmin.CreateOAuthApp(&model.OAuthApp{
+	oauthApp := &model.OAuthApp{
 		CreatorId:    actingUserID,
 		Name:         app.DisplayName,
 		Description:  app.Description,
 		CallbackUrls: []string{oauth2CallbackURL},
 		Homepage:     app.HomepageURL,
 		IsTrusted:    noUserConsent,
-	})
-	if response.StatusCode != http.StatusCreated {
-		if response.Error != nil {
-			return nil, errors.Wrap(response.Error, "failed to create OAuth2 App")
-		}
-		return nil, errors.Errorf("failed to create OAuth2 App: received status code %v", response.StatusCode)
+	}
+	err := client.CreateOAuthApp(oauthApp)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create OAuth2 App")
 	}
 
 	p.mm.Log.Debug("App install flow: Created OAuth2 App", "id", oauthApp.Id)
@@ -150,24 +137,18 @@ func (p *Proxy) ensureOAuthApp(app *apps.App, noUserConsent bool, actingUserID s
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(app *apps.App, client *model.Client4) error {
+func (p *Proxy) ensureBot(client MMClient, app *apps.App) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
-	var fullBot *model.Bot
-	var response *model.Response
-	user, _ := client.GetUserByUsername(bot.Username, "")
+	user, _ := client.GetUserByUsername(bot.Username)
 	if user == nil {
-		fullBot, response = client.CreateBot(bot)
-		if response.StatusCode != http.StatusCreated {
-			if response.Error != nil {
-				return response.Error
-			}
-
-			return errors.New("could not create bot")
+		err := client.CreateBot(bot)
+		if err != nil {
+			return err
 		}
 
 		p.mm.Log.Debug("App install flow: Created Bot Account ", "username", bot.Username)
@@ -176,19 +157,17 @@ func (p *Proxy) ensureBot(app *apps.App, client *model.Client4) error {
 			return errors.New("a user already owns the bot username")
 		}
 
-		fullBot = model.BotFromUser(user)
+		// Check if disabled
 		if user.DeleteAt != 0 {
-			fullBot, response = client.EnableBot(fullBot.UserId)
-			if response.StatusCode != http.StatusOK {
-				if response.Error != nil {
-					return response.Error
-				}
-				return errors.New("could not enable bot")
+			var err error
+			bot, err = client.EnableBot(user.Id)
+			if err != nil {
+				return err
 			}
 		}
 	}
-	app.BotUserID = fullBot.UserId
-	app.BotUsername = fullBot.Username
+	app.BotUserID = bot.UserId
+	app.BotUsername = bot.Username
 
 	err := p.updateBotIcon(app)
 	if err != nil {
@@ -198,12 +177,9 @@ func (p *Proxy) ensureBot(app *apps.App, client *model.Client4) error {
 	// Create an access token on a fresh app install
 	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) &&
 		app.BotAccessTokenID == "" {
-		token, response := client.CreateUserAccessToken(fullBot.UserId, "Mattermost App Token")
-		if response.Error != nil {
-			return errors.Wrap(response.Error, "failed to create bot user's access token")
-		}
-		if response.StatusCode != http.StatusOK {
-			return fmt.Errorf("failed to create bot user's access token, status code = %v", response.StatusCode)
+		token, err := client.CreateUserAccessToken(bot.UserId, "Mattermost App Token")
+		if err != nil {
+			return errors.Wrap(err, "failed to create bot user's access token")
 		}
 
 		app.BotAccessToken = token.Token
