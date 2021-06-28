@@ -225,12 +225,12 @@ func (c *ClientPP) GetPluginsRoute() string {
 }
 
 func (c *ClientPP) GetPluginRoute(pluginID string) string {
-	path := "/"
-	if !c.fromPlugin {
-		path += c.GetPluginsRoute() + "/"
+	path := "/" + pluginID
+	if c.fromPlugin {
+		return path
 	}
 
-	return path + pluginID
+	return c.GetPluginsRoute() + path
 }
 
 func (c *ClientPP) DoAPIGET(url string, etag string) (*http.Response, *model.AppError) {
