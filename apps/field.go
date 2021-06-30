@@ -24,6 +24,9 @@ const (
 	// A mattermost channel reference (~name).
 	FieldTypeChannel FieldType = "channel"
 
+	// An arbitrary markdown text. Only visible on modals.
+	FieldTypeMarkdown FieldType = "markdown"
+
 	TextFieldSubtypeInput     TextFieldSubtype = "input"
 	TextFieldSubtypeTextarea  TextFieldSubtype = "textarea"
 	TextFieldSubtypeNumber    TextFieldSubtype = "number"
