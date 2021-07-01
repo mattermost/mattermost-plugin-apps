@@ -36,7 +36,7 @@ type App struct {
 	// WebhookSecret is used to validate an incoming webhook secret.
 	WebhookSecret string `json:"webhook_secret,omitempty"`
 
-	// PluginID is the
+	// PluginID is the ID of the plugin, which manages the app, if there is one.
 	PluginID string `json:"plugin_id,omitempty"`
 
 	// App's Mattermost Bot User credentials. An Mattermost server Bot Account
