@@ -32,10 +32,11 @@ const (
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
 
-	PathApps    = "/apps"
-	PathApp     = "/app"
-	PathEnable  = "/enable"
-	PathDisable = "/disable"
+	PathApps      = "/apps"
+	PathApp       = "/app"
+	PathEnable    = "/enable"
+	PathDisable   = "/disable"
+	PathUninstall = "/uninstall"
 
 	PathBotIDs      = "/bot-ids"
 	PathOAuthAppIDs = "/oauth-app-ids"
@@ -168,7 +169,6 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Respo
 }
 
 // InstallApp installs a app using a given manfest.
-// sessionID and actingUserID might be empty.
 func (c *ClientPP) InstallApp(m apps.Manifest) error {
 	b, err := json.Marshal(&m)
 	if err != nil {
@@ -184,8 +184,18 @@ func (c *ClientPP) InstallApp(m apps.Manifest) error {
 	return nil
 }
 
+func (c *ClientPP) UninstallApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIDELETE(c.apipath(PathApps) + "/" + string(appID) + PathUninstall) // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
 func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, error) {
-	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
+	r, appErr := c.DoAPIGET(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
 	if appErr != nil {
 		return nil, appErr
 	}

@@ -165,3 +165,44 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 }
+
+func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+	// Only check non-plugin requests
+	if pluginID == "" {
+		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		if err != nil {
+			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
+			return
+		}
+	}
+
+	appID := appIDVar(r)
+	if appID == "" {
+		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "app is required"))
+		return
+	}
+
+	var client proxy.MMClient
+	if pluginID != "" {
+		client = a.proxy.GetMMPRCClient()
+	} else {
+		var err error
+		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
+		if err != nil {
+			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
+			return
+		}
+	}
+
+	cc := &apps.Context{
+		ActingUserID: actingUserID,
+		UserID:       actingUserID,
+	}
+	cc = a.conf.GetConfig().SetContextDefaultsForApp(appID, cc)
+
+	_, err := a.proxy.UninstallApp(client, sessionID, cc, appID)
+	if err != nil {
+		httputils.WriteError(w, err)
+		return
+	}
+}
