@@ -31,7 +31,7 @@ func NewStaticUpstream(a *apps.App, api PluginHTTPAPI) *StaticUpstream {
 func (u *StaticUpstream) GetStatic(p string) (io.ReadCloser, int, error) {
 	url := path.Join("/"+u.pluginID, apps.PluginAppPath, apps.StaticFolder, p)
 
-	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec
+	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}

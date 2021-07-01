@@ -32,7 +32,7 @@ func NewStaticUpstream(m *apps.Manifest, httpOut httpout.Service) *StaticUpstrea
 func (u *StaticUpstream) GetStatic(path string) (io.ReadCloser, int, error) {
 	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
 
-	resp, err := http.Get(url) // nolint:bodyclose,gosec
+	resp, err := http.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}
