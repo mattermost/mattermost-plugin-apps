@@ -104,14 +104,14 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
-	bindings = p.scanAppBindings(app, bindings, "")
+	bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
 
 	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
+func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location, userAgent string) []*apps.Binding {
 	out := []*apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
@@ -133,7 +133,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			// p.mm.Log.Debug(fmt.Sprintf("location %s is not granted to app %s", fql, app.Manifest.AppID))
+			p.mm.Log.Debug("location is not granted to app", "location", fql, "appID", app.Manifest.AppID)
 			continue
 		}
 
@@ -144,7 +144,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 
 			if strings.ContainsAny(label, " \t") {
-				// p.mm.Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
+				p.mm.Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
 				continue
 			}
 		}
@@ -177,8 +177,17 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 
+		// First level of Channel Header
+		if fql == apps.LocationChannelHeader.Make(b.Location) {
+			// Must have an icon on webapp to show the icon
+			if b.Icon == "" && userAgent == "webapp" {
+				p.mm.Log.Debug("Channel header button for webapp without icon", "label", b.Label, "app_id", app.AppID)
+				continue
+			}
+		}
+
 		if len(b.Bindings) != 0 {
-			scanned := p.scanAppBindings(app, b.Bindings, fql)
+			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
 				continue
