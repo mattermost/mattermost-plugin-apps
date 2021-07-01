@@ -139,7 +139,7 @@ func CheckPlugin(next func(_ http.ResponseWriter, _ *http.Request, pluginID stri
 	}
 }
 
-func CheckPluginOrAdmin(next func(_ http.ResponseWriter, _ *http.Request, pluginID, sessionID, actingUserID string)) http.HandlerFunc {
+func CheckPluginOrUser(next func(_ http.ResponseWriter, _ *http.Request, pluginID, sessionID, actingUserID string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// All other plugins are allowed
 		pluginID := r.Header.Get("Mattermost-Plugin-ID")
