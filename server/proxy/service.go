@@ -58,7 +58,7 @@ type Service interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 
 	GetMMHTTPClient(sessionID, actingUserID string) (MMClient, error)
-	GetMMPRCClient() MMClient
+	GetMMRPCClient() MMClient
 }
 
 var _ Service = (*Proxy)(nil)

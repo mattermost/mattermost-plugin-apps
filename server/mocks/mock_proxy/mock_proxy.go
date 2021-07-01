@@ -226,18 +226,18 @@ func (mr *MockServiceMockRecorder) GetMMHTTPClient(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMMHTTPClient", reflect.TypeOf((*MockService)(nil).GetMMHTTPClient), arg0, arg1)
 }
 
-// GetMMPRCClient mocks base method.
-func (m *MockService) GetMMPRCClient() proxy.MMClient {
+// GetMMRPCClient mocks base method.
+func (m *MockService) GetMMRPCClient() proxy.MMClient {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMMPRCClient")
+	ret := m.ctrl.Call(m, "GetMMRPCClient")
 	ret0, _ := ret[0].(proxy.MMClient)
 	return ret0
 }
 
-// GetMMPRCClient indicates an expected call of GetMMPRCClient.
-func (mr *MockServiceMockRecorder) GetMMPRCClient() *gomock.Call {
+// GetMMRPCClient indicates an expected call of GetMMRPCClient.
+func (mr *MockServiceMockRecorder) GetMMRPCClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMMPRCClient", reflect.TypeOf((*MockService)(nil).GetMMPRCClient))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMMRPCClient", reflect.TypeOf((*MockService)(nil).GetMMRPCClient))
 }
 
 // GetManifest mocks base method.

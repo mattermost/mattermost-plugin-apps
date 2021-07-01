@@ -55,7 +55,7 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 
 	var client proxy.MMClient
 	if pluginID != "" {
-		client = a.proxy.GetMMPRCClient()
+		client = a.proxy.GetMMRPCClient()
 	} else {
 		var err error
 		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
@@ -96,7 +96,7 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 
 	var client proxy.MMClient
 	if pluginID != "" {
-		client = a.proxy.GetMMPRCClient()
+		client = a.proxy.GetMMRPCClient()
 	} else {
 		var err error
 		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
@@ -138,7 +138,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 
 	var client proxy.MMClient
 	if pluginID != "" {
-		client = a.proxy.GetMMPRCClient()
+		client = a.proxy.GetMMRPCClient()
 	} else {
 		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
 		if err != nil {
@@ -184,7 +184,7 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 
 	var client proxy.MMClient
 	if pluginID != "" {
-		client = a.proxy.GetMMPRCClient()
+		client = a.proxy.GetMMRPCClient()
 	} else {
 		var err error
 		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)

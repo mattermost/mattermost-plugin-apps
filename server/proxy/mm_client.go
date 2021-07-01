@@ -141,7 +141,7 @@ type rpcClient struct {
 	mm *pluginapi.Client
 }
 
-func (p *Proxy) GetMMPRCClient() MMClient {
+func (p *Proxy) GetMMRPCClient() MMClient {
 	return &rpcClient{p.mm}
 }
 
