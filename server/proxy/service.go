@@ -48,7 +48,7 @@ type Service interface {
 	DisableApp(client MMClient, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
-	GetListedApps(filter string) []*apps.ListedApp
+	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	InstallApp(client MMClient, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error)

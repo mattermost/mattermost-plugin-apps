@@ -39,12 +39,16 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp {
 	conf := p.conf.GetConfig()
 	out := []*apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
+			continue
+		}
+
+		if !includePluginApps && m.AppType == apps.AppTypePlugin {
 			continue
 		}
 

@@ -198,17 +198,17 @@ func (mr *MockServiceMockRecorder) GetInstalledApps() *gomock.Call {
 }
 
 // GetListedApps mocks base method.
-func (m *MockService) GetListedApps(arg0 string) []*apps.ListedApp {
+func (m *MockService) GetListedApps(arg0 string, arg1 bool) []*apps.ListedApp {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListedApps", arg0)
+	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1)
 	ret0, _ := ret[0].([]*apps.ListedApp)
 	return ret0
 }
 
 // GetListedApps indicates an expected call of GetListedApps.
-func (mr *MockServiceMockRecorder) GetListedApps(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1)
 }
 
 // GetMMHTTPClient mocks base method.
