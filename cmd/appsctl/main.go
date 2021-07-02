@@ -29,7 +29,7 @@ func main() {
 
 var rootCmd = &cobra.Command{
 	Use:   "appsctl",
-	Short: "A tool to manage Mattermost apps.",
+	Short: "A tool to manage Mattermost Apps.",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.SetLevel(logrus.InfoLevel)
 		if verbose {
