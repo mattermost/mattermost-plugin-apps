@@ -26,7 +26,6 @@ LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
 LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
 GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
 GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
-GO_PACKAGES = $(shell go list ./...)
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
@@ -253,13 +252,13 @@ endif
 .PHONY: test-e2e
 test-e2e: dist
 	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e $(GO_PACKAGES)
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
 coverage: webapp/node_modules
 ifneq ($(HAS_SERVER),)
-	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./server/...
+	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./...
 	$(GO) tool cover -html=server/coverage.txt
 endif
 
