@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -346,8 +347,8 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 	})
 }
 
-func (s *service) newMMClient(commandArgs *model.CommandArgs) (proxy.MMClient, error) {
-	return s.proxy.GetMMHTTPClient(commandArgs.Session.Id, commandArgs.UserId)
+func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
+	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId)
 }
 
 func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {

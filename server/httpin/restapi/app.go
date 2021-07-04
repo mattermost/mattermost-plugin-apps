@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -53,12 +53,12 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 		return
 	}
 
-	var client proxy.MMClient
+	var client mmclient.Client
 	if pluginID != "" {
-		client = a.proxy.GetMMRPCClient()
+		client = mmclient.NewRPCClient(a.mm)
 	} else {
 		var err error
-		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -94,12 +94,12 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 
-	var client proxy.MMClient
+	var client mmclient.Client
 	if pluginID != "" {
-		client = a.proxy.GetMMRPCClient()
+		client = mmclient.NewRPCClient(a.mm)
 	} else {
 		var err error
-		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -136,11 +136,11 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 
-	var client proxy.MMClient
+	var client mmclient.Client
 	if pluginID != "" {
-		client = a.proxy.GetMMRPCClient()
+		client = mmclient.NewRPCClient(a.mm)
 	} else {
-		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -182,12 +182,12 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 		return
 	}
 
-	var client proxy.MMClient
+	var client mmclient.Client
 	if pluginID != "" {
-		client = a.proxy.GetMMRPCClient()
+		client = mmclient.NewRPCClient(a.mm)
 	} else {
 		var err error
-		client, err = a.proxy.GetMMHTTPClient(sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return

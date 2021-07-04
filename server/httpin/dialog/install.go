@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -157,7 +158,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client, err := d.proxy.GetMMHTTPClient(sessionID, actingUserID)
+	client, err := mmclient.NewHTTPClient(d.mm, d.conf.GetConfig(), sessionID, actingUserID)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 		return

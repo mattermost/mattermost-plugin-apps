@@ -12,12 +12,13 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(client MMClient, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -106,7 +107,7 @@ func (p *Proxy) InstallApp(client MMClient, sessionID string, cc *apps.Context, 
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client MMClient, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client mmclient.Client, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
@@ -136,7 +137,7 @@ func (p *Proxy) ensureOAuthApp(client MMClient, app *apps.App, noUserConsent boo
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(client MMClient, app *apps.App) error {
+func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
