@@ -2,9 +2,9 @@ package appservices
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/plugins/mattermost-plugin-apps/server/config"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
