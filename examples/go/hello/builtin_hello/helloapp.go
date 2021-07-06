@@ -13,8 +13,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const (

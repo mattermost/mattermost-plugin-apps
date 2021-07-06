@@ -8,15 +8,15 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (s *service) executeList(params *params) (*model.CommandResponse, error) {
+func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
 	listed := s.proxy.GetListedApps("")
 	installed := s.proxy.GetInstalledApps()
 
-	txt := md.MD("| Name | Status | Version | Account | Locations | Permissions |\n")
-	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- |\n")
+	txt := md.MD("| Name | Status | Type | Version | Account | Locations | Permissions |\n")
+	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n")
 
 	for _, app := range installed {
 		m, _ := s.proxy.GetManifest(app.AppID)
@@ -28,7 +28,6 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 		if app.Disabled {
 			status += ", **Disabled**"
 		}
-		status += fmt.Sprintf(", type: `%s`", app.AppType)
 
 		version := string(app.Version)
 		if string(m.Version) != version {
@@ -49,11 +48,11 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 			}
 		}
 
-		name := fmt.Sprintf("**[%s](%s)** (`/%s`)",
+		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|\n",
-			name, status, version, account, app.GrantedLocations, app.GrantedPermissions)
+		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, app.AppType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
 	for _, l := range listed {
@@ -62,13 +61,14 @@ func (s *service) executeList(params *params) (*model.CommandResponse, error) {
 			continue
 		}
 
-		version := string(l.Manifest.Version)
-		status := fmt.Sprintf("type: `%s`", l.Manifest.AppType)
+		status := "Listed"
 
-		name := fmt.Sprintf("[%s](%s) (`/%s`)",
+		version := string(l.Manifest.Version)
+
+		name := fmt.Sprintf("[%s](%s) (`%s`)",
 			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|\n",
-			name, status, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
+		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, l.Manifest.AppType, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 	}
 
 	return out(params, txt)

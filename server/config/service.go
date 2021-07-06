@@ -2,11 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"net/url"
-	"strings"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -87,29 +83,21 @@ func (s *service) reloadMattermostConfig() *model.Config {
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 
-	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
-	if mattermostSiteURL == nil {
-		return errors.New("plugin requires Mattermost Site URL to be set")
+	newConfig := s.GetConfig()
+
+	// GetLicense silently drops an RPC error
+	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
+	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
+	license := s.mm.System.GetLicense()
+	if license == nil {
+		license = s.mm.System.GetLicense()
+		if license == nil {
+			s.mm.Log.Warn("Failed to fetch license two times. Falling back to on-prem mode.")
+		}
 	}
-	mattermostURL, err := url.Parse(*mattermostSiteURL)
+	err := newConfig.Reconfigure(stored, mmconf, license)
 	if err != nil {
 		return err
-	}
-	pluginURLPath := "/plugins/" + s.BuildConfig.Manifest.Id
-	pluginURL := strings.TrimRight(*mattermostSiteURL, "/") + pluginURLPath
-
-	newConfig := s.GetConfig()
-	newConfig.StoredConfig = stored
-
-	newConfig.MattermostSiteURL = *mattermostSiteURL
-	newConfig.MattermostSiteHostname = mattermostURL.Hostname()
-	newConfig.PluginURL = pluginURL
-	newConfig.PluginURLPath = pluginURLPath
-	newConfig.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-
-	newConfig.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
-	if mmconf.FileSettings.MaxFileSize != nil {
-		newConfig.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
 	}
 
 	s.lock.Lock()

@@ -2,7 +2,7 @@
 	"type": "form",
 	"form": {
 		"title": "Configures Google OAuth2 App credentials",
-		"icon": "http://localhost:8080/static/icon.png",
+		"icon": "icon.png",
 		"fields": [
 			{
 				"type": "text",

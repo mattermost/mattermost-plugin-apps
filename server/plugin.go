@@ -5,7 +5,6 @@ package main
 
 import (
 	gohttp "net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -16,7 +15,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/aws"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
@@ -28,6 +26,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -36,7 +36,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
-	aws  aws.Client
+	aws  upaws.Client
 
 	store       *store.Service
 	appservices appservices.Service
@@ -73,54 +73,51 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
-	p.mm.Log.Debug("initialized config service")
+	conf := p.conf.GetConfig()
+	mode := "Self-managed"
+	if conf.MattermostCloudMode {
+		mode = "Mattermost Cloud"
+	}
+	if conf.DeveloperMode {
+		mode += ", Developer Mode"
+	}
+	p.mm.Log.Debug("Initialized config service: " + mode)
 
-	accessKey := os.Getenv("APPS_INVOKE_AWS_ACCESS_KEY")
-	if accessKey == "" {
-		p.mm.Log.Warn("APPS_INVOKE_AWS_ACCESS_KEY is not set. AWS apps won't work.")
-	}
-	secretKey := os.Getenv("APPS_INVOKE_AWS_SECRET_KEY")
-	if secretKey == "" {
-		p.mm.Log.Warn("APPS_INVOKE_AWS_SECRET_KEY is not set. AWS apps won't work.")
-	}
-	p.aws, err = aws.MakeClient(accessKey, secretKey, &p.mm.Log)
+	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
-	p.mm.Log.Debug("initialized AWS Client")
+	p.mm.Log.Debug("Initialized AWS Client",
+		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
+		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.mm.Log.Debug("initialized outgoing HTTP")
+	p.mm.Log.Debug("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.conf)
+	p.store = store.NewService(p.mm, p.conf, p.aws, conf.AWSS3Bucket)
 	// manifest store
-	conf := p.conf.GetConfig()
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
-	// TODO: uses the default bucket name, do we need it customizeable?
-	manifestBucket := apps.S3BucketNameWithDefaults("")
-	err = mstore.InitGlobal(p.aws, manifestBucket, p.httpOut)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+	if conf.MattermostCloudMode {
+		err = mstore.InitGlobal(p.httpOut)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+		}
 	}
 	// app store
 	appstore := p.store.App
 	appstore.Configure(conf)
-	p.mm.Log.Debug("initialized the persistent store")
+	p.mm.Log.Debug("Initialized the persistent store")
 
-	// TODO: uses the default bucket name, same as for the manifests do we need
-	// it customizeable?
-	assetBucket := apps.S3BucketNameWithDefaults("")
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, assetBucket, mutex, p.httpOut)
-	p.mm.Log.Debug("initialized the app proxy")
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
+	p.mm.Log.Debug("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.mm.Log.Debug("initialized the app REST APIs")
+	p.mm.Log.Debug("Initialized the app REST APIs")
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
@@ -128,19 +125,22 @@ func (p *Plugin) OnActivate() error {
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.mm.Log.Debug("initialized incoming HTTP")
+	p.mm.Log.Debug("Initialized incoming HTTP")
 
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
-	p.mm.Log.Debug("initialized slash commands")
+	p.mm.Log.Debug("Initialized slash commands")
 
-	err = p.proxy.SynchronizeInstalledApps()
-	if err != nil {
-		p.mm.Log.Error("failed to update apps", "err", err.Error())
+	if conf.MattermostCloudMode {
+		err = p.proxy.SynchronizeInstalledApps()
+		if err != nil {
+			p.mm.Log.Error("Failed to synchronize apps metadata", "err", err.Error())
+		} else {
+			p.mm.Log.Debug("Synchronized the installed apps metadata")
+		}
 	}
-	p.mm.Log.Debug("updated the installed apps metadata")
 
 	return nil
 }
@@ -154,7 +154,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {

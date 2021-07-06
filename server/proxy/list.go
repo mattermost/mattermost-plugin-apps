@@ -16,6 +16,10 @@ func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
 }
 
+func (p *Proxy) GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
+	return p.store.Manifest.GetFromS3(appID, version)
+}
+
 func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return p.store.App.Get(appID)
 }
@@ -36,15 +40,22 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 }
 
 func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
+	conf := p.conf.GetConfig()
 	out := []*apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
+
 		marketApp := &apps.ListedApp{
 			Manifest: m,
 		}
+
+		if m.Icon != "" {
+			marketApp.IconURL = conf.StaticURL(m.AppID, m.Icon)
+		}
+
 		app, _ := p.store.App.Get(m.AppID)
 		if app != nil {
 			marketApp.Installed = true

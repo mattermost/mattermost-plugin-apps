@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) error {
@@ -70,6 +70,13 @@ func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) e
 	// delete app from proxy plugin, not removing the data
 	if err := p.store.App.Delete(app.AppID); err != nil {
 		return errors.Wrapf(err, "can't delete app - %s", app.AppID)
+	}
+
+	// in on-prem mode the manifest need to be deleted as every install add a manifest anyway
+	if !conf.MattermostCloudMode {
+		if err := p.store.Manifest.DeleteLocal(app.AppID); err != nil {
+			return errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
+		}
 	}
 
 	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)

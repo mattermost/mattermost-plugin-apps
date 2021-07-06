@@ -19,7 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
 )
 
 func TestAppMetadataForClient(t *testing.T) {
@@ -43,6 +43,9 @@ func TestAppMetadataForClient(t *testing.T) {
 				AppID: "app1",
 			},
 		},
+		Call: apps.Call{
+			Path: "/",
+		},
 	}
 
 	resp := p.Call("session_id", "acting_user_id", c)
@@ -63,7 +66,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		},
 	})
 
-	s := store.NewService(mm, conf)
+	s := store.NewService(mm, conf, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

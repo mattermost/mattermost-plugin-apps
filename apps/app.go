@@ -5,7 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // AppID is a globally unique identifier that represents a Mattermost App.
@@ -82,6 +82,7 @@ type ListedApp struct {
 	Manifest  *Manifest                `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
+	IconURL   string                   `json:"icon_url,omitempty"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }
 

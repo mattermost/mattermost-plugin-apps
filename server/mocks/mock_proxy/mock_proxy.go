@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	upstream "github.com/mattermost/mattermost-plugin-apps/server/upstream"
-	md "github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
+	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // MockService is a mock of Service interface.
@@ -223,6 +223,21 @@ func (m *MockService) GetManifest(arg0 apps.AppID) (*apps.Manifest, error) {
 func (mr *MockServiceMockRecorder) GetManifest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0)
+}
+
+// GetManifestFromS3 mocks base method.
+func (m *MockService) GetManifestFromS3(arg0 apps.AppID, arg1 apps.AppVersion) (*apps.Manifest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManifestFromS3", arg0, arg1)
+	ret0, _ := ret[0].(*apps.Manifest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManifestFromS3 indicates an expected call of GetManifestFromS3.
+func (mr *MockServiceMockRecorder) GetManifestFromS3(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifestFromS3", reflect.TypeOf((*MockService)(nil).GetManifestFromS3), arg0, arg1)
 }
 
 // GetRemoteOAuth2ConnectURL mocks base method.

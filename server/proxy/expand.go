@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type expander struct {
@@ -146,14 +146,14 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		if expand.OAuth2App != "" {
 			clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
 			clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
-			clone.ExpandedContext.OAuth2.ConnectURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Connect
-			clone.ExpandedContext.OAuth2.CompleteURL = conf.AppPath(app.AppID) + config.PathRemoteOAuth2Complete
+			clone.ExpandedContext.OAuth2.ConnectURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Connect
+			clone.ExpandedContext.OAuth2.CompleteURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Complete
 		}
 
 		if expand.OAuth2User != "" && e.OAuth2.User == nil && e.ActingUserID != "" {
 			var v interface{}
 			err := e.store.OAuth2.GetUser(app.BotUserID, e.ActingUserID, &v)
-			if err != nil && errors.Cause(err) != utils.ErrNotFound {
+			if err != nil && !errors.Is(err, utils.ErrNotFound) {
 				return nil, errors.Wrapf(err, "failed to expand OAuth user %s", e.UserID)
 			}
 			clone.ExpandedContext.OAuth2.User = v
