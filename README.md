@@ -5,19 +5,15 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mattermost/mattermost-plugin-apps)](https://goreportcard.com/report/github.com/mattermost/mattermost-plugin-apps)
 
 
-# Proof Of Concept - Mattermost Apps
+# Mattermost Apps
 
-This plugin is being developed to test some concepts of creating Apps, which do not rely on a Go executable being installed on the Mattermost server/cluster to extend functionality.  The Apps will not be able to use Go RPC to communicate with the Mattermost Server, only through the "App Plugin" which acts as a sort of proxy to the server's activity.
+This plugin was designed to some concepts of creating Apps, which do not rely on a Go executable being installed on the Mattermost server/cluster to extend functionality. The Apps created using this plugin are not able to use Go RPC to communicate with the Mattermost Server, only through the "App Plugin" which acts as a sort of proxy to the server's activity.
 
-Apps will generally be communicating with our REST API and authenticating via OAuth.
-
-This is a precursor to our "Mattermost Apps" and "Mattermost Apps Marketplace" we are currently researching.
+Productiion Apps communicate with our REST API and authenticate via OAuth.
 
 ## Getting Started
 
-Join the "Integrations and Apps" channel to provide thoughts and feedback.
-
-[App developer documentation](https://developers.mattermost.com/integrate/apps/).
+Join the [Integrations and Apps](https://community.mattermost.com/core/channels/integrations) channel to provide thoughts and feedback. Take a look at the [App developer documentation](https://developers.mattermost.com/integrate/apps/).
 
 ## Running the tests
 
@@ -35,7 +31,7 @@ make test
 
 To run the end to end test suite, you need to have the Mattermost server project downloaded and configured in your system. Check the [Developer Setup](https://developers.mattermost.com/contribute/server/developer-setup/) guide on how to configure a local server instance. The tests will search for a `mattermost-server` folder in the same directory where the `mattermost-plugin-apps` is.
 
-With the `mattermost-server` folder present, the only thing that needs to be done before running the tests themselves is to start the Mattermost docker development environment. The environment only needs to be started once, and then the tests can run as many times as needed. To start the docker environment, change to the `mattermost-server` project directory and run:
+With the `mattermost-server` folder present, the only thing that needs to be done before running the tests themselves is to start the Mattermost Docker development environment. The environment only needs to be started once, and then the tests can run as many times as needed. To start the Docker environment, change to the `mattermost-server` project directory and run:
 
 ```sh
 make start-docker
@@ -49,18 +45,17 @@ make test-e2e
 
 ## Installing AWS Apps
 
-To install an AWS App you need to set `APPS_INVOKE_AWS_ACCESS_KEY` and `APPS_INVOKE_AWS_SECRET_KEY`. These credentials should only allow the invocation of lambda function, not the creation.
+To install an AWS App you need to set `APPS_INVOKE_AWS_ACCESS_KEY` and `APPS_INVOKE_AWS_SECRET_KEY`. These credentials should only allow the invocation of the lambda function, not the creation.
 
 ## Provisioning
 
 To provision an App to AWS you first need to store your AWS access key in an environment variable called `APPS_PROVISION_AWS_ACCESS_KEY` and the secret key in `APPS_PROVISION_AWS_SECRET_KEY`.
 
-Only once you need to run `go run ./cmd/appsctl/ provision bucket` to create the s3 bucket.
+Only once you need to, run `go run ./cmd/appsctl/ provision bucket` to create the S3 bucket.
 
-To provision an app run `go run ./cmd/appsctl/ provision app /PATH/TO/YOUR/APP/BUNDLE`. Use `--update` to update the lambda functions if they already exist. This option should not be used in production.
+To provision an App run `go run ./cmd/appsctl/ provision app /PATH/TO/YOUR/APP/BUNDLE`. Use `--update` to update the lambda functions if they already exist. This option should not be used in production.
 
-To provision an app in the cloud environment pipeline will need bundle to be uploaded in S3 as well as the additional terraform data(function names, asset keys, etc.). To generate these terraform variables run `go run ./cmd/appsctl/ generate-terraform-data /PATH/TO/YOUR/APP/BUNDLE`. It will print the indented json directly in the console. Pipe as needed.
-
+To provision an App in the cloud environment, the pipeline will need the bundle to be uploaded in S3 as well as the additional terraform data (function names, asset keys, etc.). To generate these terraform variables run `go run ./cmd/appsctl/ generate-terraform-data /PATH/TO/YOUR/APP/BUNDLE`. It will print the indented JSON directly in the console; pipe as needed.
 
 ## Contacts
 
