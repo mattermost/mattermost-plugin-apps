@@ -15,7 +15,7 @@ This is a precursor to our "Mattermost Apps" and "Mattermost Apps Marketplace" w
 
 ## Getting Started
 
-Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss use cases for the App you're creating.
+Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the App you're creating.
 
 [App developer documentation](https://developers.mattermost.com/integrate/apps/).
 
