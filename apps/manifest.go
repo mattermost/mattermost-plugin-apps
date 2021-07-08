@@ -2,7 +2,6 @@ package apps
 
 import (
 	"encoding/json"
-	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -187,8 +186,7 @@ func (m Manifest) IsValid() error {
 		return utils.NewInvalidError(errors.New("homepage_url is empty"))
 	}
 
-	_, err := url.Parse(m.HomepageURL)
-	if err != nil {
+	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
 		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
 	}
 
@@ -205,7 +203,7 @@ func (m Manifest) IsValid() error {
 			return utils.NewInvalidError(errors.New("root_url must be set for HTTP apps"))
 		}
 
-		_, err := url.Parse(m.HTTPRootURL)
+		err := utils.IsValidHTTPURL(m.HTTPRootURL)
 		if err != nil {
 			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
 		}
