@@ -6,8 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func IsValidHTTPURL(rawUrl string) error {
-	u, err := url.ParseRequestURI(rawUrl)
+// IsValidHTTPURL checks if a given URL is a valid URL with a host and a http or http scheme.
+func IsValidHTTPURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
 	if err != nil {
 		return err
 	}
