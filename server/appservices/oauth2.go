@@ -42,7 +42,16 @@ func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
-	a.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	var oauth2user interface{}
+	_ = a.GetOAuth2User(appID, actingUserID, &oauth2user)
+
+	var refinterface interface{}
+	json.Unmarshal(ref.([]byte), &refinterface)
+	eq := reflect.DeepEqual(refinterface, oauth2user)
+	if !eq {
+		a.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	}
+
 	return a.store.OAuth2.SaveUser(app.BotUserID, actingUserID, ref)
 }
 
