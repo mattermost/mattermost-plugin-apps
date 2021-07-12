@@ -41,7 +41,7 @@ func (r *rpcClient) DeleteOAuthApp(appID string) error {
 	return r.mm.OAuth.Delete(appID)
 }
 
-// Bpt section
+// Bot section
 
 func (r *rpcClient) CreateBot(bot *model.Bot) error {
 	return r.mm.Bot.Create(bot)
