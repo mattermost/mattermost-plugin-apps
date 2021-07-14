@@ -10,8 +10,8 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/gorilla/mux v1.8.0
-	github.com/mattermost/mattermost-plugin-api v0.0.17-0.20210625110413-9356e375f808
-	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210706052421-e34c7eb24ed9
+	github.com/mattermost/mattermost-plugin-api v0.0.18
+	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210714130822-54b0ef574b5d
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3
