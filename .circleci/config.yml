@@ -118,7 +118,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: c9841fc
+      MM_DOCKER_IMAGE_TAG: 60677f1
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true
