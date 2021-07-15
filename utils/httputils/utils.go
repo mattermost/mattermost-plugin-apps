@@ -126,19 +126,6 @@ func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http
 	}
 }
 
-func CheckPlugin(next func(_ http.ResponseWriter, _ *http.Request, pluginID string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// All other plugins are allowed
-		pluginID := r.Header.Get("Mattermost-Plugin-ID")
-		if pluginID == "" {
-			WriteError(w, utils.ErrUnauthorized)
-			return
-		}
-
-		next(w, r, pluginID)
-	}
-}
-
 func CheckPluginOrUser(next func(_ http.ResponseWriter, _ *http.Request, pluginID, sessionID, actingUserID string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// All other plugins are allowed
