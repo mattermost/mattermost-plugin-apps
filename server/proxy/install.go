@@ -197,7 +197,7 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 		return nil
 	}
 
-	asset, _, err := p.getAssetForApp(app, iconPath)
+	asset, _, err := p.getStaticForApp(app, iconPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app icon")
 	}

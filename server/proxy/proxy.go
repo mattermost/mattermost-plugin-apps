@@ -190,7 +190,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 	return upstream.Notify(up, creq)
 }
 
-func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -207,7 +207,7 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 	return up.GetStatic(path)
 }
 
-func (p *Proxy) getAssetForApp(app *apps.App, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) getStaticForApp(app *apps.App, path string) (io.ReadCloser, int, error) {
 	up, err := p.staticUpstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err

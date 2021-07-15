@@ -137,22 +137,6 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2, arg3 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2, arg3)
 }
 
-// GetAsset mocks base method.
-func (m *MockService) GetAsset(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAsset", arg0, arg1)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetAsset indicates an expected call of GetAsset.
-func (mr *MockServiceMockRecorder) GetAsset(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAsset", reflect.TypeOf((*MockService)(nil).GetAsset), arg0, arg1)
-}
-
 // GetBindings mocks base method.
 func (m *MockService) GetBindings(arg0, arg1 string, arg2 *apps.Context) ([]*apps.Binding, error) {
 	m.ctrl.T.Helper()
@@ -254,6 +238,22 @@ func (m *MockService) GetRemoteOAuth2ConnectURL(arg0, arg1 string, arg2 apps.App
 func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteOAuth2ConnectURL", reflect.TypeOf((*MockService)(nil).GetRemoteOAuth2ConnectURL), arg0, arg1, arg2)
+}
+
+// GetStatic mocks base method.
+func (m *MockService) GetStatic(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetStatic indicates an expected call of GetStatic.
+func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockService)(nil).GetStatic), arg0, arg1)
 }
 
 // InstallApp mocks base method.
