@@ -21,6 +21,8 @@ require (
 )
 
 replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v8.0.0+incompatible
 	github.com/mattermost/mattermost-plugin-apps => ./
 	github.com/mattermost/mattermost-plugin-apps/upstream/upaws => ./upstream/upaws
+	github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless => ./upstream/upkubeless
 )

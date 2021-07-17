@@ -146,7 +146,6 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if err != nil {
 			return err
 		}
-
 		return upstream.Notify(up, app, callRequest)
 	}
 

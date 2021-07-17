@@ -171,10 +171,10 @@ func (s *manifestStore) Configure(conf config.Config) error {
 		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
-			s.mm.Log.Error("Failed to load local manifest for %s: %s", "app_id", id, "err", err.Error())
+			return errors.Wrapf(err, "failed to load local manifest for app id %s", id)
 
 		case m == nil:
-			s.mm.Log.Error("Failed to load local manifest - not found", "app_id", id)
+			return errors.Wrapf(utils.ErrNotFound, "failed to load local manifest for app id %s", id)
 
 		default:
 			updatedLocal[apps.AppID(id)] = m

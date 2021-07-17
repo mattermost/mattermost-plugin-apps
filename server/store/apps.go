@@ -70,10 +70,10 @@ func (s *appStore) Configure(conf config.Config) error {
 		err := s.mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
 		switch {
 		case err != nil:
-			s.mm.Log.Error("Failed to load app", "app_id", id, "err", err.Error())
+			return errors.Wrap(err, "failed to load app "+id)
 
 		case app == nil:
-			s.mm.Log.Error("Failed to load app - key not found", "app_id", id, "key", config.KVInstalledAppPrefix+key)
+			return errors.Wrapf(utils.ErrNotFound, "failed to load app id: %s, key: %s", id, config.KVInstalledAppPrefix+key)
 
 		default:
 			newInstalled[apps.AppID(id)] = app

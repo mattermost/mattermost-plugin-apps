@@ -102,6 +102,48 @@ type Manifest struct {
 	// - define path->function mappings, aka "routes". The function with the
 	// path matching as the longest prefix is used to handle a Call request.
 	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
+
+	KubelessFunctions []KubelessFunction `json:"kubeless_functions,omitempty"`
+}
+
+// KubelessFunction describes a distinct Kubeless function defined by the app, and
+// what path should be mapped to it.
+//
+// cmd/appsctl will create or update the functions in a kubeless service.
+//
+// upkubeless will find the closest match for the call's path, and then to
+// invoke the kubeless function.
+type KubelessFunction struct {
+	CallPath string `json:"call_path"` // for mapping incoming Call requests
+	Name     string `json:"handler"`   // (exported) function handler name
+	File     string `json:"file"`      // Function file path in the bundle, e.g. "tickets/create.py"
+	Checksum string `json:"checksum"`  // Checksum of the file
+	DepsFile string `json:"deps_file"` // Function dependencies (go.mod, packages.json, etc.)
+	Runtime  string `json:"runtime"`   // Function runtime to use
+	Timeout  string `json:"timeout"`   // Maximum timeout for the function to complete its execution
+}
+
+func (kf KubelessFunction) IsValid() error {
+	if kf.CallPath == "" {
+		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
+	}
+	if kf.Name == "" {
+		return utils.NewInvalidError("invalid Kubeless function: name must not be empty")
+	}
+	if kf.Runtime == "" {
+		return utils.NewInvalidError("invalid Kubeless function: runtime must not be empty")
+	}
+	_, err := utils.CleanPath(kf.File)
+	if err != nil {
+		return errors.Wrap(err, "invalid Kubeless function: invalid file")
+	}
+	if kf.DepsFile != "" {
+		_, err := utils.CleanPath(kf.DepsFile)
+		if err != nil {
+			return errors.Wrap(err, "invalid Kubeless function: invalid deps_file")
+		}
+	}
+	return nil
 }
 
 // AWSLambda describes a distinct AWS Lambda function defined by the app, and
@@ -205,6 +247,17 @@ func (m Manifest) IsValid() error {
 			err := l.IsValid()
 			if err != nil {
 				return errors.Wrapf(err, "%q is not valid", l.Name)
+			}
+		}
+
+	case AppTypeKubeless:
+		if len(m.KubelessFunctions) == 0 {
+			return utils.NewInvalidError("must provide at least 1 function in kubeless_functions")
+		}
+		for _, kf := range m.KubelessFunctions {
+			err := kf.IsValid()
+			if err != nil {
+				return errors.Wrapf(err, "invalid %q", kf.Name)
 			}
 		}
 	}
