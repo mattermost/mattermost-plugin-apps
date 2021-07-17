@@ -14,7 +14,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
 type Service struct {
@@ -26,20 +25,12 @@ type Service struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
-
-	aws           upaws.Client
-	s3AssetBucket string
 }
 
-func NewService(mm *pluginapi.Client, conf config.Service, aws upaws.Client, s3AssetBucket string) *Service {
+func MakeService(mm *pluginapi.Client, confService config.Service) (*Service, error) {
 	s := &Service{
-		mm:            mm,
-		conf:          conf,
-		aws:           aws,
-		s3AssetBucket: s3AssetBucket,
-	}
-	s.App = &appStore{
-		Service: s,
+		mm:   mm,
+		conf: confService,
 	}
 	s.AppKV = &appKVStore{
 		Service: s,
@@ -50,10 +41,18 @@ func NewService(mm *pluginapi.Client, conf config.Service, aws upaws.Client, s3A
 	s.Subscription = &subscriptionStore{
 		Service: s,
 	}
-	s.Manifest = &manifestStore{
-		Service: s,
+
+	var err error
+	s.App, err = makeAppStore(s)
+	if err != nil {
+		return nil, errors.New("failed to initialize App store")
 	}
-	return s
+
+	s.Manifest, err = makeManifestStore(s)
+	if err != nil {
+		return nil, errors.New("failed to initialize App store")
+	}
+	return s, nil
 }
 
 func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {

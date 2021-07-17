@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"sync"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
@@ -17,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -25,15 +27,16 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
-	mm            *pluginapi.Client
-	conf          config.Service
-	store         *store.Service
-	aws           upaws.Client
-	httpOut       httpout.Service
-	s3AssetBucket string
+	mm        *pluginapi.Client
+	conf      config.Service
+	store     *store.Service
+	httpOut   httpout.Service
+	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
 }
 
 type Service interface {
+	config.Configurable
+
 	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
 	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
@@ -60,17 +63,34 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
 		conf:             conf,
 		store:            store,
-		aws:              aws,
-		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
 	}
+}
+
+func (p *Proxy) Configure(conf config.Config) error {
+	p.upstreams.Delete(apps.AppTypeHTTP)
+	if isAppTypeSupported(conf, apps.AppTypeHTTP) == nil {
+		p.upstreams.Store(apps.AppTypeHTTP, uphttp.NewUpstream(p.httpOut))
+	}
+
+	p.upstreams.Delete(apps.AppTypeAWSLambda)
+	if isAppTypeSupported(conf, apps.AppTypeAWSLambda) == nil {
+		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, &p.mm.Log)
+		if err != nil {
+			// TODO log
+		} else {
+			p.upstreams.Store(apps.AppTypeAWSLambda, up)
+		}
+	}
+
+	return nil
 }
 
 func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {

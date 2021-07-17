@@ -21,8 +21,8 @@ import (
 // Upstream wraps an awsClient to make requests to the App. It should not be
 // reused between requests, nor cached.
 type Upstream struct {
-	StaticUpstream
-	app *apps.App
+	awsClient      Client
+	staticS3Bucket string
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
@@ -43,15 +43,28 @@ type invocationResponse struct {
 	Body       string `json:"body"`
 }
 
-func NewUpstream(app *apps.App, awsClient Client, bucket string) *Upstream {
-	staticUp := NewStaticUpstream(&app.Manifest, awsClient, bucket)
-	return &Upstream{
-		StaticUpstream: *staticUp,
+func MakeUpstream(accessKey, secret, region, staticS3bucket string, log Logger) (*Upstream, error) {
+	awsClient, err := MakeClient(accessKey, secret, region, log)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
+	return &Upstream{
+		awsClient:      awsClient,
+		staticS3Bucket: staticS3bucket,
+	}, nil
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(call.Path, u.manifest)
+func (u *Upstream) GetStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+	key := S3StaticName(app.Manifest.AppID, app.Manifest.Version, path)
+	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
+	}
+	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
+}
+
+func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	name := match(call.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
@@ -92,15 +105,6 @@ func (u *Upstream) InvokeFunction(name string, async bool, call *apps.CallReques
 	}
 
 	return resp.Body, nil
-}
-
-func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(u.app.AppID, u.app.Version, path)
-	data, err := u.awsClient.GetS3(u.bucket, key)
-	if err != nil {
-		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
-	}
-	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
 func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {

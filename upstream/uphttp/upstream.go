@@ -21,23 +21,21 @@ import (
 
 type Upstream struct {
 	StaticUpstream
-	appSecret string
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(app *apps.App, httpOut httpout.Service) *Upstream {
-	staticUp := NewStaticUpstream(&app.Manifest, httpOut)
+func NewUpstream(httpOut httpout.Service) *Upstream {
+	staticUp := NewStaticUpstream(httpOut)
 	return &Upstream{
 		StaticUpstream: *staticUp,
-		appSecret:      app.Secret,
 	}
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, call)
+			resp, _ := u.invoke(call.Context.BotUserID, app, call)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -45,39 +43,39 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(call.Context.ActingUserID, app, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
+func (u *Upstream) invoke(fromMattermostUserID string, app *apps.App, call *apps.CallRequest) (*http.Response, error) {
 	if call == nil {
 		return nil, utils.NewInvalidError("empty call")
 	}
 
-	return u.post(call.Context.ActingUserID, u.rootURL+call.Path, call)
-}
+	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + call.Path)
+	if err != nil {
+		return nil, err
+	}
 
-// post does not close resp.Body, it's the caller's responsibility
-func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
 	client := u.httpOut.MakeClient(true)
-	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
+	jwtoken, err := createJWT(fromMattermostUserID, app.Secret)
 	if err != nil {
 		return nil, err
 	}
 
 	piper, pipew := io.Pipe()
 	go func() {
-		encodeErr := json.NewEncoder(pipew).Encode(msg)
+		encodeErr := json.NewEncoder(pipew).Encode(call)
 		if encodeErr != nil {
 			_ = pipew.CloseWithError(encodeErr)
 		}
 		pipew.Close()
 	}()
 
-	req, err := http.NewRequest(http.MethodPost, url, piper)
+	req, err := http.NewRequest(http.MethodPost, callURL, piper)
 	if err != nil {
 		return nil, err
 	}

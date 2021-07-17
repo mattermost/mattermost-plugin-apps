@@ -50,9 +50,11 @@ func (mr *MockAppStoreMockRecorder) AsMap() *gomock.Call {
 }
 
 // Configure mocks base method.
-func (m *MockAppStore) Configure(arg0 config.Config) {
+func (m *MockAppStore) Configure(arg0 config.Config) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Configure", arg0)
+	ret := m.ctrl.Call(m, "Configure", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Configure indicates an expected call of Configure.

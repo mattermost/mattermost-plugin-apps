@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
@@ -104,6 +105,20 @@ func (m *MockService) CompleteRemoteOAuth2(arg0, arg1 string, arg2 apps.AppID, a
 func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteRemoteOAuth2", reflect.TypeOf((*MockService)(nil).CompleteRemoteOAuth2), arg0, arg1, arg2, arg3)
+}
+
+// Configure mocks base method.
+func (m *MockService) Configure(arg0 config.Config) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Configure", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Configure indicates an expected call of Configure.
+func (mr *MockServiceMockRecorder) Configure(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockService)(nil).Configure), arg0)
 }
 
 // DisableApp mocks base method.

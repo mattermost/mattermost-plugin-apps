@@ -35,7 +35,7 @@ func (p *Proxy) InstallApp(sessionID, actingUserID string, cc *apps.Context, tru
 	}
 
 	conf := p.conf.GetConfig()
-	err = isAppTypeSupported(conf, m)
+	err = isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, "", err
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/pkg/errors"
 )
 
 type AppStore interface {
@@ -40,6 +41,17 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
+func makeAppStore(s *Service) (*appStore, error) {
+	as := &appStore{
+		Service: s,
+	}
+	err := as.Configure(s.conf.GetConfig())
+	if err != nil {
+		return nil, err
+	}
+	return as, nil
+}
+
 func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Lock()
 	if s.builtinInstalled == nil {
@@ -51,7 +63,7 @@ func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf config.Config) {
+func (s *appStore) Configure(conf config.Config) error {
 	newInstalled := map[apps.AppID]*apps.App{}
 
 	for id, key := range conf.InstalledApps {
@@ -59,10 +71,10 @@ func (s *appStore) Configure(conf config.Config) {
 		err := s.mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
 		switch {
 		case err != nil:
-			s.mm.Log.Error("Failed to load app", "app_id", id, "err", err.Error())
+			return errors.Wrap(err, "failed to load app "+id)
 
 		case app == nil:
-			s.mm.Log.Error("Failed to load app - key not found", "app_id", id, "key", config.KVInstalledAppPrefix+key)
+			return errors.Wrapf(utils.ErrNotFound, "failed to load app id: %s, key: %s", id, config.KVInstalledAppPrefix+key)
 
 		default:
 			newInstalled[apps.AppID(id)] = app
@@ -72,6 +84,7 @@ func (s *appStore) Configure(conf config.Config) {
 	s.mutex.Lock()
 	s.installed = newInstalled
 	s.mutex.Unlock()
+	return nil
 }
 
 func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {

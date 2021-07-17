@@ -19,9 +19,9 @@ func CleanPath(p string) (string, error) {
 	return cleanPath, nil
 }
 
-func CleanStaticPath(got string) (unescaped string, err error) {
+func CleanURLPath(got string) (unescaped string, err error) {
 	if got == "" {
-		return "", NewInvalidError("asset name is not specified")
+		return "", NewInvalidError("empty path")
 	}
 	for escaped := got; ; escaped = unescaped {
 		unescaped, err = url.PathUnescape(escaped)
@@ -32,14 +32,33 @@ func CleanStaticPath(got string) (unescaped string, err error) {
 			break
 		}
 	}
-	if unescaped[0] == '/' {
-		return "", NewInvalidError("asset names may not start with a '/'")
-	}
-
 	cleanPath, err := CleanPath(unescaped)
 	if err != nil {
 		return "", err
 	}
 
 	return cleanPath, nil
+}
+
+func CleanStaticPath(got string) (unescaped string, err error) {
+	cleanPath, err := CleanURLPath(got)
+	if err != nil {
+		return "", err
+	}
+	if cleanPath[0] == '/' {
+		return "", NewInvalidError("asset names may not start with a '/'")
+	}
+	return cleanPath, nil
+}
+
+func CleanURL(got string) (string, error) {
+	u, err := url.Parse(got)
+	if err != nil {
+		return "", err
+	}
+	u.Path, err = CleanURLPath(u.Path)
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }

@@ -15,8 +15,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -74,7 +72,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	clone := *creq
 	clone.Context = cc
 
-	callResponse := upstream.Call(up, &clone)
+	callResponse := upstream.Call(up, app, &clone)
 
 	if callResponse.Type == "" {
 		callResponse.Type = apps.CallResponseTypeOK
@@ -138,7 +136,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if err != nil {
 			return err
 		}
-		return upstream.Notify(up, callRequest)
+		return upstream.Notify(up, app, callRequest)
 	}
 
 	for _, sub := range subs {
@@ -186,11 +184,11 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		return err
 	}
 
-	return upstream.Notify(up, creq)
+	return upstream.Notify(up, app, creq)
 }
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	m, err := p.store.Manifest.Get(appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -198,28 +196,12 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
-	up, err := p.staticUpstreamForManifest(m)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	return up.GetStatic(path)
-}
-
-func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpstream, error) {
-	switch m.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewStaticUpstream(m, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewStaticUpstream(m, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		return nil, errors.New("static assets are not supported for builtin apps")
-
-	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
-	}
+	return up.GetStatic(app, path)
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
@@ -227,31 +209,23 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		return nil, errors.Errorf("%s is disabled", app.AppID)
 	}
 	conf := p.conf.GetConfig()
-	err := isAppTypeSupported(conf, &app.Manifest)
+	err := isAppTypeSupported(conf, app.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	switch app.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewUpstream(app, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewUpstream(app, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		up := p.builtinUpstreams[app.AppID]
-		if up == nil {
-			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
-		}
-		return up, nil
-
-	default:
+	upv, ok := p.upstreams.Load(app.AppType)
+	if !ok {
 		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
+	up, ok := upv.(upstream.Upstream)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
+	}
+	return up, nil
 }
 
-func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
+func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 	supportedTypes := []apps.AppType{
 		apps.AppTypeBuiltin,
 	}
@@ -273,9 +247,9 @@ func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
 	}
 
 	for _, t := range supportedTypes {
-		if m.AppType == t {
+		if appType == t {
 			return nil
 		}
 	}
-	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", m.AppType, mode, supportedTypes)
+	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
 }

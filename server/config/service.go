@@ -7,10 +7,11 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/services/configservice"
+	"github.com/pkg/errors"
 )
 
 type Configurable interface {
-	Configure(Config)
+	Configure(Config) error
 }
 
 // Configurator should be abbreviated as `cfg`
@@ -105,7 +106,10 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.lock.Unlock()
 
 	for _, s := range services {
-		s.Configure(newConfig)
+		err = s.Configure(newConfig)
+		if err != nil {
+			return errors.Wrapf(err, "error configuring %T", s)
+		}
 	}
 
 	return nil

@@ -34,8 +34,9 @@ func NewService(conf config.Service) Service {
 	}
 }
 
-func (s *service) Configure(_ config.Config) {
+func (s *service) Configure(_ config.Config) error {
 	s.HTTPService = httpservice.MakeHTTPService(s.conf.GetMattermostConfig())
+	return nil
 }
 
 func (s *service) GetFromURL(url string, trusted bool) ([]byte, error) {

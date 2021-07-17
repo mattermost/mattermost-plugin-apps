@@ -45,9 +45,30 @@ type manifestStore struct {
 
 	global map[apps.AppID]*apps.Manifest
 	local  map[apps.AppID]*apps.Manifest
+
+	aws           upaws.Client
+	s3AssetBucket string
 }
 
 var _ ManifestStore = (*manifestStore)(nil)
+
+func makeManifestStore(s *Service) (*manifestStore, error) {
+	conf := s.conf.GetConfig()
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
+	}
+	s.mm.Log.Debug("Initialized Manifest store AWS access",
+		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
+		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
+
+	return &manifestStore{
+		Service:       s,
+		aws:           awsClient,
+		s3AssetBucket: conf.AWSS3Bucket,
+	}, nil
+
+}
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
@@ -136,7 +157,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	return &m, nil
 }
 
-func (s *manifestStore) Configure(conf config.Config) {
+func (s *manifestStore) Configure(conf config.Config) error {
 	updatedLocal := map[apps.AppID]*apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
@@ -144,10 +165,10 @@ func (s *manifestStore) Configure(conf config.Config) {
 		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
-			s.mm.Log.Error("Failed to load local manifest for %s: %s", "app_id", id, "err", err.Error())
+			return errors.Wrapf(err, "failed to load local manifest for app id %s", id)
 
 		case m == nil:
-			s.mm.Log.Error("Failed to load local manifest - not found", "app_id", id)
+			return errors.Wrapf(utils.ErrNotFound, "failed to load local manifest for app id %s", id)
 
 		default:
 			updatedLocal[apps.AppID(id)] = m
@@ -157,6 +178,7 @@ func (s *manifestStore) Configure(conf config.Config) {
 	s.mutex.Lock()
 	s.local = updatedLocal
 	s.mutex.Unlock()
+	return nil
 }
 
 func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {

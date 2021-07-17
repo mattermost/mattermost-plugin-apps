@@ -192,11 +192,8 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 	return s, nil
 }
 
-func (s *service) Configure(conf config.Config) {
-	err := s.registerCommand(conf)
-	if err != nil {
-		s.mm.Log.Warn("Failed to re-register command", "error", err.Error())
-	}
+func (s *service) Configure(conf config.Config) error {
+	return s.registerCommand(conf)
 }
 
 func (s *service) registerCommand(conf config.Config) error {

@@ -26,8 +26,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -36,13 +34,12 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
-	aws  upaws.Client
 
 	store       *store.Service
 	appservices appservices.Service
 	proxy       proxy.Service
-
-	command command.Service
+	
+	command     command.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
@@ -71,7 +68,7 @@ func (p *Plugin) OnActivate() error {
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
 	if err != nil {
-		return errors.Wrap(err, "failed to reconfigure configurator on startup")
+		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	conf := p.conf.GetConfig()
 	mode := "Self-managed"
@@ -81,43 +78,30 @@ func (p *Plugin) OnActivate() error {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.mm.Log.Debug("Initialized config service: " + mode)
-
-	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize AWS access")
-	}
-	p.mm.Log.Debug("Initialized AWS Client",
-		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
-		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
+	p.mm.Log.Debug("Initialized configuration service: " + mode + ".")
 
 	p.httpOut = httpout.NewService(p.conf)
 	p.mm.Log.Debug("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.conf, p.aws, conf.AWSS3Bucket)
-	// manifest store
-	mstore := p.store.Manifest
-	mstore.Configure(conf)
-	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(p.httpOut)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
-		}
+	p.store, err = store.MakeService(p.mm, p.conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize persistent store")
 	}
-	// app store
-	appstore := p.store.App
-	appstore.Configure(conf)
-	p.mm.Log.Debug("Initialized the persistent store")
+	p.mm.Log.Debug("Initialized store services.")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
-	p.mm.Log.Debug("Initialized the app proxy")
+	p.proxy = proxy.NewService(p.mm, p.conf, p.store, mutex, p.httpOut)
+	err = p.proxy.Configure(conf)
+	if err != nil {
+		return errors.Wrapf(err, "failed to initialize app proxy service")
+	}
+	p.mm.Log.Debug("Initialized app proxy service")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.mm.Log.Debug("Initialized the app REST APIs")
+	p.mm.Log.Debug("Initialized App API service")
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
 		dialog.Init,
@@ -125,7 +109,7 @@ func (p *Plugin) OnActivate() error {
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.mm.Log.Debug("Initialized incoming HTTP")
+	p.mm.Log.Debug("Initialized incoming HTTP service")
 
 	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
 	if err != nil {
