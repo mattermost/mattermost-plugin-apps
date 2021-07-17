@@ -91,7 +91,7 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 
 	asBot.CreatePost(&model.Post{
 		ChannelId: channelID,
-		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Values["path"], creq.Values["data"]),
+		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Path, creq.Values["data"]),
 	})
 
 	json.NewEncoder(w).Encode(apps.CallResponse{Type: apps.CallResponseTypeOK})
