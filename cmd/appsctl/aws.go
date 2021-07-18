@@ -127,13 +127,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID: "hello-lambda",
-			},
-		}
-
-		resp, _, err := upTest.GetStatic(app, "test.txt")
+		resp, _, err := upTest.GetStatic(helloApp, "test.txt")
 		if err != nil {
 			return err
 		}
