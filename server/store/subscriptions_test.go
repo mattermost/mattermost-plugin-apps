@@ -21,11 +21,13 @@ import (
 func TestDeleteSub(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
+	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf, nil, "")
+	s, err := MakeService(apiClient, conf)
+	require.NoError(t, err)
 
 	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -128,11 +130,13 @@ func TestDeleteSub(t *testing.T) {
 func TestGetSubs(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
+	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf, nil, "")
+	s, err := MakeService(apiClient, conf)
+	require.NoError(t, err)
 
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
@@ -191,11 +195,13 @@ func TestGetSubs(t *testing.T) {
 func TestStoreSub(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
+	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	apiClient := pluginapi.NewClient(mockAPI)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s := NewService(apiClient, conf, nil, "")
+	s, err := MakeService(apiClient, conf)
+	require.NoError(t, err)
 
 	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",

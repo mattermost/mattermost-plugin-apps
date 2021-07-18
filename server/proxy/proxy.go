@@ -20,42 +20,44 @@ import (
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
 	if creq.Context == nil || creq.Context.AppID == "" {
-		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
-		return apps.NewProxyCallResponse(resp, nil)
+		return apps.NewProxyCallResponse(
+			apps.NewErrorCallResponse(
+				utils.NewInvalidError("must provide Context and set the app ID")), nil)
 	}
 
+	app, err := p.store.App.Get(creq.Context.AppID)
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
+	}
+
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
+	cresp := p.callApp(app, sessionID, actingUserID, creq)
+	return apps.NewProxyCallResponse(cresp, metadata)
+}
+
+func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
 	if actingUserID != "" {
 		creq.Context.ActingUserID = actingUserID
 		creq.Context.UserID = actingUserID
 	}
 
-	app, err := p.store.App.Get(creq.Context.AppID)
-
-	var metadata *apps.AppMetadataForClient
-	if app != nil {
-		metadata = &apps.AppMetadataForClient{
-			BotUserID:   app.BotUserID,
-			BotUsername: app.BotUsername,
-		}
-	}
-
-	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
-	}
-
 	if creq.Path[0] != '/' {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path)), metadata)
+		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
 
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 	creq.Path = cleanPath
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 
 	// Clear any ExpandedContext as it should always be set by an expander for security reasons
@@ -67,7 +69,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 	clone := *creq
 	clone.Context = cc
@@ -88,7 +90,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		}
 	}
 
-	return apps.NewProxyCallResponse(callResponse, metadata)
+	return callResponse
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -205,6 +207,14 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+	if app.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
+		if !ok {
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
+		}
+		return u, nil
+	}
+
 	if !p.AppIsEnabled(app) {
 		return nil, errors.Errorf("%s is disabled", app.AppID)
 	}

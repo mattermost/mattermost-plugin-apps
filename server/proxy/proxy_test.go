@@ -57,7 +57,8 @@ func TestAppMetadataForClient(t *testing.T) {
 
 func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	// testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
@@ -66,7 +67,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		},
 	})
 
-	s := store.NewService(mm, conf, nil, "")
+	s, _ := store.MakeService(mm, conf)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -79,7 +80,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		reader := ioutil.NopCloser(bytes.NewReader(b))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[app.Manifest.AppID] = up
 		appStore.EXPECT().Get(app.AppID).Return(app, nil)
 	}

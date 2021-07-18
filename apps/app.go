@@ -163,8 +163,6 @@ const (
 	// authenticates to AWS, no authentication to the App is necessary.
 	AppTypeAWSLambda AppType = "aws_lambda"
 
-	AppTypeKubeless AppType = "kubeless"
-
 	// Builtin app. All functions and resources are served by directly invoking
 	// go functions. No manifest, no Mattermost to App authentication are
 	// needed.
@@ -173,7 +171,7 @@ const (
 
 func (at AppType) IsValid() error {
 	switch at {
-	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless:
+	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin:
 		return nil
 	default:
 		return utils.NewInvalidError("%s is not a valid app type", at)

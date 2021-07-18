@@ -52,7 +52,7 @@ var awsInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionClient()
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ var awsCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Delete group, user and policy used for Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionClient()
 		if err != nil {
 			return err
 		}
@@ -122,13 +122,18 @@ var awsTestS3Cmd = &cobra.Command{
 	Short: "test accessing a static S3 resource",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestUpstream()
 		if err != nil {
 			return err
 		}
 
-		up := upaws.NewUpstream(helloApp, asTest, upaws.S3BucketName())
-		resp, _, err := up.GetStatic("test.txt")
+		app := &apps.App{
+			Manifest: apps.Manifest{
+				AppID: "hello-lambda",
+			},
+		}
+
+		resp, _, err := upTest.GetStatic(app, "test.txt")
 		if err != nil {
 			return err
 		}
@@ -153,7 +158,7 @@ var awsTestLambdaCmd = &cobra.Command{
 	Short: "test accessing hello-lambda /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestUpstream()
 		if err != nil {
 			return err
 		}
@@ -163,22 +168,28 @@ var awsTestLambdaCmd = &cobra.Command{
 				AppID: "hello-lambda",
 			},
 		}
-		up := upaws.NewUpstream(app, asTest, "")
-		crString, err := up.InvokeFunction("hello-lambda_demo_go-function", false, &apps.CallRequest{
+		creq := &apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
-		})
+		}
+		resp, err := upTest.Roundtrip(app, creq, false)
 		if err != nil {
 			return err
 		}
-		log.Debugf("Received: %s", crString)
+		defer resp.Close()
 
-		cr := apps.CallResponse{}
-		_ = json.Unmarshal([]byte(crString), &cr)
+		data, err := io.ReadAll(resp)
+		if err != nil {
+			return err
+		}
+		log.Debugf("Received: %s", string(data))
+
+		cresp := apps.CallResponse{}
+		_ = json.Unmarshal(data, &cresp)
 		expected := apps.CallResponse{Markdown: "PONG", Type: apps.CallResponseTypeOK}
-		if cr != expected {
-			return errors.Errorf("invalid value received: %s", crString)
+		if cresp != expected {
+			return errors.Errorf("invalid value received: %s", string(data))
 		}
 
 		fmt.Println("OK")
@@ -205,7 +216,7 @@ with the default initial IAM configuration`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionClient()
 		if err != nil {
 			return err
 		}

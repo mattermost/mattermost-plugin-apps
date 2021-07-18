@@ -587,12 +587,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.AnythingOfType("string")).Return(nil)
-	testAPI.On("LogDebug", mock.AnythingOfType("string"),
-		mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything,
-	).Return(nil)
+	testAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.Config{
@@ -622,7 +617,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
 		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}

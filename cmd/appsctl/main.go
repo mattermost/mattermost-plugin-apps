@@ -41,31 +41,36 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func AsProvisioner() (upaws.Client, error) {
-	return createClient(false)
-}
-
-func AsTest() (upaws.Client, error) {
-	return createClient(true)
-}
-
-func createClient(invoke bool) (upaws.Client, error) {
-	accessVar, secretVar := upaws.ProvisionAccessEnvVar, upaws.ProvisionSecretEnvVar
-	if invoke {
-		accessVar, secretVar = upaws.AccessEnvVar, upaws.SecretEnvVar
-	}
-
+func makeTestUpstream() (*upaws.Upstream, error) {
 	region := os.Getenv(upaws.RegionEnvVar)
 	if region == "" {
 		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
 	}
-	accessKey := os.Getenv(accessVar)
+	accessKey := os.Getenv(upaws.AccessEnvVar)
 	if accessKey == "" {
-		return nil, errors.Errorf("no AWS access key was provided. Please set %s", accessVar)
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 	}
-	secretKey := os.Getenv(secretVar)
+	secretKey := os.Getenv(upaws.SecretEnvVar)
 	if secretKey == "" {
-		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", secretVar)
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
+	}
+
+	log.Debug("Using AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
+	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), &log)
+}
+
+func makeProvisionClient() (upaws.Client, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.ProvisionAccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.ProvisionAccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.ProvisionSecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
 	}
 
 	log.Debug("Using AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))

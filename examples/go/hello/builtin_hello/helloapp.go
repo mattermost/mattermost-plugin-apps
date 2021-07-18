@@ -68,7 +68,7 @@ func App() *apps.App {
 	}
 }
 
-func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
+func (h *helloapp) Roundtrip(_ *apps.App, c *apps.CallRequest, _ bool) (io.ReadCloser, error) {
 	cr := &apps.CallResponse{}
 	switch c.Path {
 	case apps.DefaultBindings.Path:
@@ -95,7 +95,7 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error)
 	return io.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) GetStatic(path string) (io.ReadCloser, int, error) {
+func (h *helloapp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 

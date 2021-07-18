@@ -10,10 +10,11 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/pkg/errors"
 )
 
 type AppStore interface {
@@ -40,17 +41,6 @@ type appStore struct {
 }
 
 var _ AppStore = (*appStore)(nil)
-
-func makeAppStore(s *Service) (*appStore, error) {
-	as := &appStore{
-		Service: s,
-	}
-	err := as.Configure(s.conf.GetConfig())
-	if err != nil {
-		return nil, err
-	}
-	return as, nil
-}
 
 func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Lock()

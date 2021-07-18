@@ -38,8 +38,8 @@ type Plugin struct {
 	store       *store.Service
 	appservices appservices.Service
 	proxy       proxy.Service
-	
-	command     command.Service
+
+	command command.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service

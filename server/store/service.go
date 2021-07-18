@@ -32,26 +32,27 @@ func MakeService(mm *pluginapi.Client, confService config.Service) (*Service, er
 		mm:   mm,
 		conf: confService,
 	}
-	s.AppKV = &appKVStore{
-		Service: s,
-	}
-	s.OAuth2 = &oauth2Store{
-		Service: s,
-	}
-	s.Subscription = &subscriptionStore{
-		Service: s,
+	s.AppKV = &appKVStore{Service: s}
+	s.OAuth2 = &oauth2Store{Service: s}
+	s.Subscription = &subscriptionStore{Service: s}
+
+	conf := config.Config{}
+	if confService != nil {
+		conf = confService.GetConfig()
 	}
 
-	var err error
-	s.App, err = makeAppStore(s)
+	appStore := &appStore{Service: s}
+	err := appStore.Configure(conf)
 	if err != nil {
 		return nil, errors.New("failed to initialize App store")
 	}
+	s.App = appStore
 
-	s.Manifest, err = makeManifestStore(s)
+	manifestStore, err := makeManifestStore(s)
 	if err != nil {
-		return nil, errors.New("failed to initialize App store")
+		return nil, errors.New("failed to initialize Manifest store")
 	}
+	s.Manifest = manifestStore
 	return s, nil
 }
 

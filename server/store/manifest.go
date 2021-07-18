@@ -53,6 +53,10 @@ type manifestStore struct {
 var _ ManifestStore = (*manifestStore)(nil)
 
 func makeManifestStore(s *Service) (*manifestStore, error) {
+	if s.conf == nil {
+		return &manifestStore{Service: s}, nil
+	}
+
 	conf := s.conf.GetConfig()
 	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log)
 	if err != nil {
@@ -67,7 +71,6 @@ func makeManifestStore(s *Service) (*manifestStore, error) {
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}, nil
-
 }
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
