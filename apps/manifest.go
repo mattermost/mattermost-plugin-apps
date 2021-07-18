@@ -208,7 +208,7 @@ func (m Manifest) IsValid() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
