@@ -56,7 +56,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	defer func() {
 		if err != nil {
-			p.mm.Log.Error("failed to activate", "error", err.Error())
+			p.mm.Log.Error("Failed to activate", "error", err.Error())
 		}
 	}()
 
@@ -135,7 +135,13 @@ func (p *Plugin) OnActivate() (err error) {
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() error {
+func (p *Plugin) OnConfigurationChange() (err error) {
+	defer func() {
+		if err != nil {
+			p.mm.Log.Error("Failed to reconfigure", "error", err.Error())
+		}
+	}()
+
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -144,7 +150,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command, p.proxy)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {

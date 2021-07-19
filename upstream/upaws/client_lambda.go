@@ -27,7 +27,7 @@ func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]by
 		Payload:        payload,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error calling function %s", name)
+		return nil, errors.Wrapf(err, "invoke AWS Lambda function %s", name)
 	}
 	return result.Payload, nil
 }
