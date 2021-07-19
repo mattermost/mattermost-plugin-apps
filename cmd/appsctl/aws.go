@@ -52,7 +52,7 @@ var awsInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := makeProvisionClient()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ var awsCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Delete group, user and policy used for Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := makeProvisionClient()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
@@ -110,11 +110,22 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a provisioned resource",
 }
 
-var helloApp = &apps.App{
-	Manifest: apps.Manifest{
-		AppID:   "hello-lambda",
-		Version: "demo",
-	},
+func helloApp() *apps.App {
+	return &apps.App{
+		Manifest: apps.Manifest{
+			AppID:   "hello-lambda",
+			AppType: apps.AppTypeAWSLambda,
+			Version: "demo",
+			AWSLambda: []apps.AWSLambda{
+				{
+					Path:    "/",
+					Name:    "go-function",
+					Handler: "hello-lambda",
+					Runtime: "go1.x",
+				},
+			},
+		},
+	}
 }
 
 var awsTestS3Cmd = &cobra.Command{
@@ -122,12 +133,12 @@ var awsTestS3Cmd = &cobra.Command{
 	Short: "test accessing a static S3 resource",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		upTest, err := makeTestUpstream()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(&helloApp.Manifest, "test.txt")
+		resp, _, err := upTest.GetStatic(&helloApp().Manifest, "test.txt")
 		if err != nil {
 			return err
 		}
@@ -152,22 +163,17 @@ var awsTestLambdaCmd = &cobra.Command{
 	Short: "test accessing hello-lambda /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		upTest, err := makeTestUpstream()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID: "hello-lambda",
-			},
-		}
 		creq := &apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
 		}
-		resp, err := upTest.Roundtrip(app, creq, false)
+		resp, err := upTest.Roundtrip(helloApp(), creq, false)
 		if err != nil {
 			return err
 		}
@@ -210,7 +216,7 @@ with the default initial IAM configuration`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		asProvisioner, err := makeProvisionClient()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
@@ -228,4 +234,40 @@ with the default initial IAM configuration`,
 		fmt.Printf("Success!\n\n%s\n", utils.Pretty(out))
 		return nil
 	},
+}
+
+func makeTestAWSUpstream() (*upaws.Upstream, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.AccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.SecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
+	}
+
+	log.Debug("Using test AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
+	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), &log)
+}
+
+func makeProvisionAWSClient() (upaws.Client, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.ProvisionAccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.ProvisionAccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.ProvisionSecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
+	}
+
+	log.Debug("Using admin AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
+	return upaws.MakeClient(accessKey, secretKey, region, &log, "Provisioner (appsctl)")
 }

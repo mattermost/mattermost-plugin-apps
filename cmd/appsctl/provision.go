@@ -38,7 +38,7 @@ var provisionAppCmd = &cobra.Command{
 	Short: "Provision a Mattermost app",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := makeProvisionClient()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
