@@ -599,7 +599,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		},
 	})
 
-	s, _ := store.MakeService(mm, confService)
+	s, _ := store.MakeService(mm, confService, nil)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

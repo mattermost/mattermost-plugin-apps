@@ -83,7 +83,7 @@ func (p *Plugin) OnActivate() error {
 	p.httpOut = httpout.NewService(p.conf)
 	p.mm.Log.Debug("Initialized outgoing HTTP")
 
-	p.store, err = store.MakeService(p.mm, p.conf)
+	p.store, err = store.MakeService(p.mm, p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}

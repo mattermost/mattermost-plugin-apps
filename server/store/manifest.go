@@ -66,7 +66,10 @@ func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}
-	mstore.Configure(conf)
+	err = mstore.Configure(conf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to configure")
+	}
 	if conf.MattermostCloudMode {
 		err = mstore.InitGlobal(s.httpOut)
 		if err != nil {

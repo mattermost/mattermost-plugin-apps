@@ -9,7 +9,7 @@ import (
 )
 
 func TestHashkey(t *testing.T) {
-	s, _ := MakeService(nil, nil)
+	s := &Service{}
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string

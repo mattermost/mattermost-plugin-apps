@@ -39,11 +39,7 @@ func MakeService(mm *pluginapi.Client, confService config.Service, httpOut httpo
 	s.OAuth2 = &oauth2Store{Service: s}
 	s.Subscription = &subscriptionStore{Service: s}
 
-	conf := config.Config{}
-	if confService != nil {
-		conf = confService.GetConfig()
-	}
-
+	conf := confService.GetConfig()
 	var err error
 	s.App, err = makeAppStore(s, conf)
 	if err != nil {
