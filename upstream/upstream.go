@@ -16,5 +16,5 @@ type Upstream interface {
 }
 
 type StaticUpstream interface {
-	GetStatic(app *apps.App, path string) (io.ReadCloser, int, error)
+	GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error)
 }

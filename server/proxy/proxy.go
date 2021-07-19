@@ -40,6 +40,10 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 }
 
 func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
+	if !p.AppIsEnabled(app) {
+		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
+	}
+
 	if actingUserID != "" {
 		creq.Context.ActingUserID = actingUserID
 		creq.Context.UserID = actingUserID
@@ -55,7 +59,7 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 	}
 	creq.Path = cleanPath
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app.Manifest)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
@@ -128,16 +132,21 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if err != nil {
 			return err
 		}
+		if !p.AppIsEnabled(app) {
+			return errors.Errorf("%s is disabled", app.AppID)
+		}
+
 		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
 		if err != nil {
 			return err
 		}
 		callRequest.Context.Subject = subj
 
-		up, err := p.upstreamForApp(app)
+		up, err := p.upstreamForApp(&app.Manifest)
 		if err != nil {
 			return err
 		}
+
 		return upstream.Notify(up, app, callRequest)
 	}
 
@@ -152,11 +161,14 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
+	if !p.AppIsEnabled(app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app.Manifest)
 	if err != nil {
 		return err
 	}
@@ -190,7 +202,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 }
 
 func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	app, err := p.store.App.Get(appID)
+	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -198,39 +210,36 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(m)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	return up.GetStatic(app, path)
+	return up.GetStatic(m, path)
 }
 
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
-	if app.AppType == apps.AppTypeBuiltin {
-		u, ok := p.builtinUpstreams[app.AppID]
+func (p *Proxy) upstreamForApp(m *apps.Manifest) (upstream.Upstream, error) {
+	if m.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[m.AppID]
 		if !ok {
-			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", m.AppID)
 		}
 		return u, nil
 	}
 
-	if !p.AppIsEnabled(app) {
-		return nil, errors.Errorf("%s is disabled", app.AppID)
-	}
 	conf := p.conf.GetConfig()
-	err := isAppTypeSupported(conf, app.AppType)
+	err := isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	upv, ok := p.upstreams.Load(app.AppType)
+	upv, ok := p.upstreams.Load(m.AppType)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
+		return nil, utils.NewInvalidError("invalid app type: %s", m.AppType)
 	}
 	up, ok := upv.(upstream.Upstream)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", m.AppType)
 	}
 	return up, nil
 }

@@ -27,8 +27,8 @@ func NewStaticUpstream(httpOut httpout.Service) *StaticUpstream {
 	}
 }
 
-func (u *StaticUpstream) GetStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", app.Manifest.HTTPRootURL, apps.StaticFolder, path)
+func (u *StaticUpstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", m.HTTPRootURL, apps.StaticFolder, path)
 	/* #nosec G107 */
 	resp, err := http.Get(url) // nolint:bodyclose
 	if err != nil {

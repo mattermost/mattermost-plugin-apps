@@ -95,7 +95,7 @@ func (h *helloapp) Roundtrip(_ *apps.App, c *apps.CallRequest, _ bool) (io.ReadC
 	return io.NopCloser(bytes.NewReader(bb)), nil
 }
 
-func (h *helloapp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error) {
+func (h *helloapp) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 
