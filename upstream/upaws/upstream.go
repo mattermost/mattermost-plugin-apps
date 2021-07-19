@@ -44,7 +44,7 @@ type invocationResponse struct {
 }
 
 func MakeUpstream(accessKey, secret, region, staticS3bucket string, log Logger) (*Upstream, error) {
-	awsClient, err := MakeClient(accessKey, secret, region, log)
+	awsClient, err := MakeClient(accessKey, secret, region, log, "App Proxy")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}

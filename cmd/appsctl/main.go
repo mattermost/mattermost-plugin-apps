@@ -74,5 +74,5 @@ func makeProvisionClient() (upaws.Client, error) {
 	}
 
 	log.Debug("Using AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
-	return upaws.MakeClient(accessKey, secretKey, region, &log)
+	return upaws.MakeClient(accessKey, secretKey, region, &log, "Provisioner (appsctl)")
 }

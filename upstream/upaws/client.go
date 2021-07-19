@@ -21,6 +21,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type ARN string
@@ -90,7 +92,7 @@ type Logger interface {
 	Debug(message string, keyValuePairs ...interface{})
 }
 
-func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger) (Client, error) {
+func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger, purpose string) (Client, error) {
 	awsConfig := &aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
@@ -123,6 +125,11 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger
 				logger.Debug(buffer.String())
 			}
 		})
+
+		logger.Debug("Initialized AWS access for "+purpose,
+			"region", region,
+			"access", utils.LastN(awsAccessKeyID, 7),
+			"secret", utils.LastN(awsSecretAccessKey, 4))
 	}
 
 	c := &client{

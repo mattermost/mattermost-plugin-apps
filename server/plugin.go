@@ -51,8 +51,14 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 	}
 }
 
-func (p *Plugin) OnActivate() error {
+func (p *Plugin) OnActivate() (err error) {
 	p.mm = pluginapi.NewClient(p.API)
+
+	defer func() {
+		if err != nil {
+			p.mm.Log.Error("failed to activate", "error", err.Error())
+		}
+	}()
 
 	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
@@ -85,7 +91,7 @@ func (p *Plugin) OnActivate() error {
 
 	p.store, err = store.MakeService(p.mm, p.conf, p.httpOut)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize persistent store")
+		return errors.Wrap(err, "failed to initialize store")
 	}
 	p.mm.Log.Debug("Initialized store services.")
 

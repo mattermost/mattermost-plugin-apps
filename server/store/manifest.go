@@ -53,13 +53,10 @@ type manifestStore struct {
 var _ ManifestStore = (*manifestStore)(nil)
 
 func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
-	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log)
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log, "Manifest store")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
-	s.mm.Log.Debug("Initialized Manifest store AWS access",
-		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
-		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
 
 	mstore := &manifestStore{
 		Service:       s,
@@ -174,10 +171,10 @@ func (s *manifestStore) Configure(conf config.Config) error {
 		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
-			return errors.Wrapf(err, "failed to load local manifest for app id %s", id)
+			s.mm.Log.Error("Failed to load local manifest for %s: %s", "app_id", id, "err", err.Error())
 
 		case m == nil:
-			return errors.Wrapf(utils.ErrNotFound, "failed to load local manifest for app id %s", id)
+			s.mm.Log.Error("Failed to load local manifest - not found", "app_id", id)
 
 		default:
 			updatedLocal[apps.AppID(id)] = m

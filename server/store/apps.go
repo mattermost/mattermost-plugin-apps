@@ -46,7 +46,7 @@ func makeAppStore(s *Service, conf config.Config) (*appStore, error) {
 	appStore := &appStore{Service: s}
 	err := appStore.Configure(conf)
 	if err != nil {
-		return nil, errors.New("failed to initialize App store")
+		return nil, errors.Wrap(err, "failed to initialize App store")
 	}
 	return appStore, nil
 }
@@ -70,10 +70,10 @@ func (s *appStore) Configure(conf config.Config) error {
 		err := s.mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
 		switch {
 		case err != nil:
-			return errors.Wrap(err, "failed to load app "+id)
+			s.mm.Log.Error("Failed to load app", "app_id", id, "err", err.Error())
 
 		case app == nil:
-			return errors.Wrapf(utils.ErrNotFound, "failed to load app id: %s, key: %s", id, config.KVInstalledAppPrefix+key)
+			s.mm.Log.Error("Failed to load app - key not found", "app_id", id, "key", config.KVInstalledAppPrefix+key)
 
 		default:
 			newInstalled[apps.AppID(id)] = app
