@@ -75,19 +75,21 @@ func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service,
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
-	p.upstreams.Delete(apps.AppTypeHTTP)
 	if isAppTypeSupported(conf, apps.AppTypeHTTP) == nil {
 		p.upstreams.Store(apps.AppTypeHTTP, uphttp.NewUpstream(p.httpOut))
+	} else {
+		p.upstreams.Delete(apps.AppTypeHTTP)
 	}
 
-	p.upstreams.Delete(apps.AppTypeAWSLambda)
 	if isAppTypeSupported(conf, apps.AppTypeAWSLambda) == nil {
 		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, &p.mm.Log)
 		if err != nil {
-			// TODO log
+			p.mm.Log.Debug("failed to initialize AWS upstream", "error", err.Error())
 		} else {
 			p.upstreams.Store(apps.AppTypeAWSLambda, up)
 		}
+	} else {
+		p.upstreams.Delete(apps.AppTypeAWSLambda)
 	}
 
 	return nil

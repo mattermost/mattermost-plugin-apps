@@ -57,7 +57,6 @@ func TestAppMetadataForClient(t *testing.T) {
 
 func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	// testAPI.On("LogDebug", mock.Anything).Return(nil)
 	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mm := pluginapi.NewClient(testAPI)
 

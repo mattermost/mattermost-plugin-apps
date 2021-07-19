@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 )
 
 type Service struct {
@@ -23,14 +24,16 @@ type Service struct {
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
 
-	mm   *pluginapi.Client
-	conf config.Service
+	mm      *pluginapi.Client
+	conf    config.Service
+	httpOut httpout.Service
 }
 
-func MakeService(mm *pluginapi.Client, confService config.Service) (*Service, error) {
+func MakeService(mm *pluginapi.Client, confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
-		mm:   mm,
-		conf: confService,
+		mm:      mm,
+		conf:    confService,
+		httpOut: httpOut,
 	}
 	s.AppKV = &appKVStore{Service: s}
 	s.OAuth2 = &oauth2Store{Service: s}
@@ -41,18 +44,16 @@ func MakeService(mm *pluginapi.Client, confService config.Service) (*Service, er
 		conf = confService.GetConfig()
 	}
 
-	appStore := &appStore{Service: s}
-	err := appStore.Configure(conf)
+	var err error
+	s.App, err = makeAppStore(s, conf)
 	if err != nil {
-		return nil, errors.New("failed to initialize App store")
+		return nil, err
 	}
-	s.App = appStore
 
-	manifestStore, err := makeManifestStore(s)
+	s.Manifest, err = makeManifestStore(s, conf)
 	if err != nil {
-		return nil, errors.New("failed to initialize Manifest store")
+		return nil, err
 	}
-	s.Manifest = manifestStore
 	return s, nil
 }
 

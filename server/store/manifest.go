@@ -52,12 +52,7 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func makeManifestStore(s *Service) (*manifestStore, error) {
-	if s.conf == nil {
-		return &manifestStore{Service: s}, nil
-	}
-
-	conf := s.conf.GetConfig()
+func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
@@ -66,11 +61,19 @@ func makeManifestStore(s *Service) (*manifestStore, error) {
 		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
 		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
 
-	return &manifestStore{
+	mstore := &manifestStore{
 		Service:       s,
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
-	}, nil
+	}
+	mstore.Configure(conf)
+	if conf.MattermostCloudMode {
+		err = mstore.InitGlobal(s.httpOut)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+		}
+	}
+	return mstore, nil
 }
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
