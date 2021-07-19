@@ -24,10 +24,10 @@ func Call(u Upstream, app *apps.App, call *apps.CallRequest) *apps.CallResponse 
 	}
 	defer r.Close()
 
-	cresp := apps.CallResponse{}
-	err = json.NewDecoder(r).Decode(&cresp)
+	cr := apps.CallResponse{}
+	err = json.NewDecoder(r).Decode(&cr)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	return &cresp
+	return &cr
 }
