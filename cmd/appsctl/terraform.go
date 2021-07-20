@@ -13,14 +13,21 @@ import (
 )
 
 func init() {
-	provisionCmd.AddCommand(
-		generateTerraformCmd,
+	rootCmd.AddCommand(
+		terraformCmd,
 	)
+
+	terraformCmd.AddCommand(terraformGenerateCmd)
 }
 
-var generateTerraformCmd = &cobra.Command{
-	Use:   "generate-terraform-data",
-	Short: "Generate data for terraform to provision aws apps",
+var terraformCmd = &cobra.Command{
+	Use:   "terraform",
+	Short: "Generate Terraform data for Mattermost Cloud",
+}
+
+var terraformGenerateCmd = &cobra.Command{
+	Use:   "generate-data",
+	Short: "Generate Terraform data for Mattermost Cloud",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := upaws.GetProvisionDataFromFile(args[0], &log)

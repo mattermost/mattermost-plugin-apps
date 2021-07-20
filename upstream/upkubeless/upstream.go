@@ -124,7 +124,7 @@ func (u *Upstream) InvokeFunction(app *apps.App, funcName string, creq *apps.Cal
 	return received, nil
 }
 
-func (u *Upstream) GetStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 

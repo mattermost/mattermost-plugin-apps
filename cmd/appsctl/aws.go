@@ -14,16 +14,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var shouldCreate bool
-var shouldCreateAccessKey bool
-var userName string
-var policyName string
-var groupName string
+var (
+	shouldCreate          bool
+	shouldCreateAccessKey bool
+	userName              string
+	policyName            string
+	groupName             string
+	shouldUpdate          bool
+	invokePolicyName      string
+	executeRoleName       string
+)
 
 func init() {
-	rootCmd.AddCommand(
-		awsCmd,
-	)
+	rootCmd.AddCommand(awsCmd)
 
 	// init
 	awsCmd.AddCommand(awsInitCmd)
@@ -32,6 +35,12 @@ func init() {
 	awsInitCmd.Flags().StringVar(&userName, "user", upaws.DefaultUserName, "Username to use for invoking the AWS App from Mattermost Server.")
 	awsInitCmd.Flags().StringVar(&policyName, "policy", upaws.DefaultPolicyName, "Name of the policy to control access of AWS services directly by Mattermost Server (user).")
 	awsInitCmd.Flags().StringVar(&groupName, "group", upaws.DefaultGroupName, "Name of the user group connecting the invoking user to the invoke policy.")
+
+	// provision
+	awsCmd.AddCommand(awsProvisionCmd)
+	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with causion in production.")
+	awsProvisionCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
+	awsProvisionCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
 
 	// clean
 	awsCmd.AddCommand(awsCleanCmd)
@@ -102,6 +111,43 @@ var awsCleanCmd = &cobra.Command{
 		}
 
 		return upaws.CleanAWS(asProvisioner, accessKeyID, &log)
+	},
+}
+
+var awsProvisionCmd = &cobra.Command{
+	Use:   "provision",
+	Short: "Provision a Mattermost app to AWS",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		asProvisioner, err := makeProvisionAWSClient()
+		if err != nil {
+			return err
+		}
+
+		bucket := upaws.S3BucketName()
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], &log, upaws.ProvisionAppParams{
+			Bucket:           bucket,
+			InvokePolicyName: upaws.Name(invokePolicyName),
+			ExecuteRoleName:  upaws.Name(executeRoleName),
+			ShouldUpdate:     shouldUpdate,
+		})
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("\n'%s' is now provisioned to AWS.\n", out.Manifest.DisplayName)
+		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
+			len(out.LambdaARNs), len(out.StaticARNs))
+
+		fmt.Printf("You can now install it in Mattermost using:\n")
+		fmt.Printf("  /apps install aws %s %s\n\n", out.Manifest.AppID, out.Manifest.Version)
+
+		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
+		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
+		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
+		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
+
+		return nil
 	},
 }
 
