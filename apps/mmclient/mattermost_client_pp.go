@@ -21,7 +21,7 @@ const (
 	AppsPluginName = "com.mattermost.apps"
 )
 
-// Paths for the REST APIs exposed by the proxy plugin itself
+// Paths for the REST APIs exposed by the Apps Plugin itself
 const (
 	// Top-level path
 	PathAPI = "/api/v1"

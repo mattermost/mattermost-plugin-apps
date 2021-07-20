@@ -49,6 +49,14 @@ func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
 	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
 
+	enableAC := model.NewAutocompleteData("enable", "", "Enable an app")
+	enableAC.AddTextArgument("ID of the app to enable", "appID", "")
+	enableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+
+	disenableAC := model.NewAutocompleteData("disable", "", "Disable an app")
+	disenableAC.AddTextArgument("ID of the app to disable", "appID", "")
+	disenableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+
 	all := map[string]commandHandler{
 		"info": {
 			f:            s.executeInfo,
@@ -61,6 +69,14 @@ func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 		"uninstall": {
 			f:            s.checkSystemAdmin(s.executeUninstall),
 			autoComplete: uninstallAC,
+		},
+		"enable": {
+			f:            s.checkSystemAdmin(s.executeEnable),
+			autoComplete: enableAC,
+		},
+		"disable": {
+			f:            s.checkSystemAdmin(s.executeDisable),
+			autoComplete: disenableAC,
 		},
 	}
 
@@ -319,6 +335,7 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 }
 func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
+
 	return &model.CommandResponse{
 		Text:         string(txt),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
@@ -328,6 +345,7 @@ func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, erro
 func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
 		md.Markdownf("Command failed. Error: **%s**\n", err.Error())
+
 	return &model.CommandResponse{
 		Text:         string(txt),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
