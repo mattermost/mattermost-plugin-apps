@@ -593,7 +593,8 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 	).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	conf := config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",

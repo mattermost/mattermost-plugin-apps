@@ -30,7 +30,8 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
 	Init(router, mm, conf, proxy, nil)

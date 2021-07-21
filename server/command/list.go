@@ -6,13 +6,24 @@ package command
 import (
 	"fmt"
 
+	"github.com/spf13/pflag"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
-	listed := s.proxy.GetListedApps("")
+	var includePluginApps bool
+	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
+	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")
+	err := fs.Parse(params.current)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
 	txt := md.MD("| Name | Status | Type | Version | Account | Locations | Permissions |\n")
@@ -21,6 +32,10 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	for _, app := range installed {
 		m, _ := s.proxy.GetManifest(app.AppID)
 		if m == nil {
+			continue
+		}
+
+		if !includePluginApps && m.AppType == apps.AppTypePlugin {
 			continue
 		}
 

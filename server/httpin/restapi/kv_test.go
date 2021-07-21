@@ -33,7 +33,8 @@ func TestKV(t *testing.T) {
 		&model.User{
 			IsBot: true,
 		}, nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	ctrl := gomock.NewController(t)
 	conf := config.NewTestConfigurator(config.Config{})

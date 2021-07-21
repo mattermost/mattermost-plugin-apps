@@ -11,8 +11,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -156,16 +158,23 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	client, err := mmclient.NewHTTPClient(d.mm, d.conf.GetConfig(), sessionID, actingUserID)
+	if err != nil {
+		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
+		return
+	}
+
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    stateData.TeamID,
 			ChannelID: stateData.ChannelID,
 		},
 		ActingUserID: actingUserID,
+		UserID:       actingUserID,
 	}
 	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	_, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
+	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret, "")
 	if err != nil {
 		d.mm.Log.Warn("Failed to install app", "app_id", cc.AppID, "error", err.Error())
 		respondWithError(w, http.StatusInternalServerError, err)

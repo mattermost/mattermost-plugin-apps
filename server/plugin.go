@@ -55,7 +55,7 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.mm = pluginapi.NewClient(p.API)
+	p.mm = pluginapi.NewClient(p.API, p.Driver)
 
 	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,

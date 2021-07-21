@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	mmclient "github.com/mattermost/mattermost-plugin-apps/mmclient"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
@@ -107,7 +108,7 @@ func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 i
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) DisableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -122,7 +123,7 @@ func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2, arg3 interface{}
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) EnableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -134,22 +135,6 @@ func (m *MockService) EnableApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps
 func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2, arg3)
-}
-
-// GetAsset mocks base method.
-func (m *MockService) GetAsset(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAsset", arg0, arg1)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetAsset indicates an expected call of GetAsset.
-func (mr *MockServiceMockRecorder) GetAsset(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAsset", reflect.TypeOf((*MockService)(nil).GetAsset), arg0, arg1)
 }
 
 // GetBindings mocks base method.
@@ -197,17 +182,17 @@ func (mr *MockServiceMockRecorder) GetInstalledApps() *gomock.Call {
 }
 
 // GetListedApps mocks base method.
-func (m *MockService) GetListedApps(arg0 string) []*apps.ListedApp {
+func (m *MockService) GetListedApps(arg0 string, arg1 bool) []*apps.ListedApp {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListedApps", arg0)
+	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1)
 	ret0, _ := ret[0].([]*apps.ListedApp)
 	return ret0
 }
 
 // GetListedApps indicates an expected call of GetListedApps.
-func (mr *MockServiceMockRecorder) GetListedApps(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1)
 }
 
 // GetManifest mocks base method.
@@ -255,10 +240,26 @@ func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1, arg2 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteOAuth2ConnectURL", reflect.TypeOf((*MockService)(nil).GetRemoteOAuth2ConnectURL), arg0, arg1, arg2)
 }
 
-// InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 bool, arg4 string) (*apps.App, md.MD, error) {
+// GetStatic mocks base method.
+func (m *MockService) GetStatic(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetStatic indicates an expected call of GetStatic.
+func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockService)(nil).GetStatic), arg0, arg1)
+}
+
+// InstallApp mocks base method.
+func (m *MockService) InstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 bool, arg4, arg5 string) (*apps.App, md.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(md.MD)
 	ret2, _ := ret[2].(error)
@@ -266,9 +267,9 @@ func (m *MockService) InstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 boo
 }
 
 // InstallApp indicates an expected call of InstallApp.
-func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // Notify mocks base method.
@@ -314,7 +315,7 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) UninstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)

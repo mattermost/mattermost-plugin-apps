@@ -35,7 +35,7 @@ func AsAdmin(cc *apps.Context) *Client {
 func NewClient(userID, token, mattermostSiteURL string) *Client {
 	c := Client{
 		userID:   userID,
-		ClientPP: NewAPIClientPP(mattermostSiteURL),
+		ClientPP: NewAppsPluginAPIClient(mattermostSiteURL),
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
 	c.Client4.SetOAuthToken(token)

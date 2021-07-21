@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -36,7 +37,7 @@ type Proxy struct {
 type Service interface {
 	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
+	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
@@ -44,16 +45,16 @@ type Service interface {
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
-	DisableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
-	EnableApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
-	GetListedApps(filter string) []*apps.ListedApp
+	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
+	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(sessionID, actingUserID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
