@@ -154,7 +154,7 @@ func match(callPath string, m *apps.Manifest) string {
 	for _, f := range m.KubelessFunctions {
 		if strings.HasPrefix(callPath, f.CallPath) {
 			if len(f.CallPath) > len(matchedPath) {
-				matchedName = FunctionName(m.AppID, m.Version, f.Name)
+				matchedName = FunctionName(m.AppID, m.Version, f.Handler)
 				matchedPath = f.CallPath
 			}
 		}

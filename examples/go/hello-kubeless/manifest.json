@@ -1,0 +1,22 @@
+{
+	"app_id": "hello-kubeless",
+	"version": "demo",
+	"display_name": "Hello, Kubeless!",
+	"app_type": "kubeless",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
+	"requested_permissions": [
+		"act_as_bot"
+	],
+	"requested_locations": [
+		"/command"
+	],
+	"kubeless_functions": [
+		{
+			"call_path": "/",
+			"handler": "Handler",
+			"file": "handler.go",
+			"deps_file": "go.mod",
+			"runtime": "go1.x"
+		}
+	]
+}

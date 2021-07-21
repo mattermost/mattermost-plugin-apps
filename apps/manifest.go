@@ -2,6 +2,7 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -115,7 +116,7 @@ type Manifest struct {
 // invoke the kubeless function.
 type KubelessFunction struct {
 	CallPath string `json:"call_path"` // for mapping incoming Call requests
-	Name     string `json:"handler"`   // (exported) function handler name
+	Handler  string `json:"handler"`   // (exported) function handler name
 	File     string `json:"file"`      // Function file path in the bundle, e.g. "tickets/create.py"
 	Checksum string `json:"checksum"`  // Checksum of the file
 	DepsFile string `json:"deps_file"` // Function dependencies (go.mod, packages.json, etc.)
@@ -124,11 +125,12 @@ type KubelessFunction struct {
 }
 
 func (kf KubelessFunction) IsValid() error {
+	fmt.Printf("<>/<> IsValid %s\n", utils.Pretty(kf))
 	if kf.CallPath == "" {
 		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
 	}
-	if kf.Name == "" {
-		return utils.NewInvalidError("invalid Kubeless function: name must not be empty")
+	if kf.Handler == "" {
+		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
 	}
 	if kf.Runtime == "" {
 		return utils.NewInvalidError("invalid Kubeless function: runtime must not be empty")
@@ -257,7 +259,7 @@ func (m Manifest) IsValid() error {
 		for _, kf := range m.KubelessFunctions {
 			err := kf.IsValid()
 			if err != nil {
-				return errors.Wrapf(err, "invalid %q", kf.Name)
+				return errors.Wrapf(err, "invalid function %q", kf.Handler)
 			}
 		}
 	}

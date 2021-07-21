@@ -4,12 +4,13 @@
 package upkubeless
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/go-getter"
 	kubelessAPI "github.com/kubeless/kubeless/pkg/apis/kubeless/v1beta1"
-	"github.com/kubeless/kubeless/pkg/client/clientset/versioned"
 	kubelessutil "github.com/kubeless/kubeless/pkg/utils"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -17,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // ProvisionApp creates all necessary functions in Kubeless, and outputs
@@ -25,19 +27,30 @@ import (
 // Its input is a zip file containing:
 //   |-- manifest.json
 //   |-- function files referenced in manifest.json...
-func ProvisionApp(kubelessClient versioned.Interface, bundlePath string, log Logger, shouldUpdate bool) (*apps.Manifest, error) {
+func ProvisionApp(bundlePath string, log Logger, shouldUpdate bool) (*apps.Manifest, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create temp directory to unpack the bundle")
 	}
 	defer os.RemoveAll(dir)
 
-	err = getter.Get(dir, bundlePath)
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to obtain current working directory")
+	}
+
+	getBundle := getter.Client{
+		Mode: getter.ClientModeDir,
+		Src:  bundlePath,
+		Dst:  dir,
+		Pwd:  pwd,
+		Ctx:  context.Background(),
+	}
+	err = getBundle.Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get bundle "+bundlePath)
 	}
 
-	// Load manifest.json
 	data, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load manifest.json")
@@ -46,7 +59,29 @@ func ProvisionApp(kubelessClient versioned.Interface, bundlePath string, log Log
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid manifest.json")
 	}
+	if log != nil {
+		log.Info("Loaded App bundle", "bundle", bundlePath, "app_id", m.AppID)
+	}
 
+	k8sClient := kubelessutil.GetClientOutOfCluster()
+	ns := namespace(m.AppID)
+	existing, _ := k8sClient.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
+	if existing == nil {
+		_, err := k8sClient.CoreV1().Namespaces().Create(
+			&v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: ns,
+				},
+			})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create kubernetes namespace %s", ns)
+		}
+	}
+
+	kubelessClient, err := kubelessutil.GetKubelessClientOutCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize Kubeless client")
+	}
 	// Provision functions.
 	for _, kf := range m.KubelessFunctions {
 		fName := FunctionName(m.AppID, m.Version, kf.CallPath)
@@ -61,11 +96,11 @@ func ProvisionApp(kubelessClient versioned.Interface, bundlePath string, log Log
 					"created-by": "Mattermost Kubeless Apps",
 					"function":   fName,
 				},
-				Namespace: namespace(m.AppID),
+				Namespace: ns,
 				Name:      fName,
 			},
 			Spec: kubelessAPI.FunctionSpec{
-				Handler: kf.File + "." + kf.Name,
+				Handler: kf.File + "." + kf.Handler,
 				Runtime: kf.Runtime,
 				Timeout: kf.Timeout,
 				ServiceSpec: v1.ServiceSpec{
@@ -93,11 +128,15 @@ func ProvisionApp(kubelessClient versioned.Interface, bundlePath string, log Log
 			}
 		}
 
+		fmt.Printf("<>/<> 1 %s\n", utils.Pretty(f))
+
 		if shouldUpdate {
 			_, err = kubelessutil.GetFunctionCustomResource(kubelessClient, f.Name, f.Namespace)
+			fmt.Printf("<>/<> 2 %v\n", err)
 			switch {
 			case err == nil:
 				err = kubelessutil.PatchFunctionCustomResource(kubelessClient, f)
+				fmt.Printf("<>/<> 3 %v\n", err)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to patch function "+f.Name)
 				}
@@ -112,6 +151,7 @@ func ProvisionApp(kubelessClient versioned.Interface, bundlePath string, log Log
 		}
 
 		err = kubelessutil.CreateFunctionCustomResource(kubelessClient, f)
+		fmt.Printf("<>/<> 4 %v\n", err)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create function "+f.Name)
 		}

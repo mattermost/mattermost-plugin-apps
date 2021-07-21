@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/mattermost/mattermost-plugin-api v0.0.15
 	github.com/mattermost/mattermost-plugin-apps/upstream/upaws v0.0.0-00010101000000-000000000000
+	github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless v0.0.0-00010101000000-000000000000
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210503144558-5c16de58a020
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
