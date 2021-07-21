@@ -74,7 +74,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 
-	p.mm.Log.Info("Uninstalled an app", "app_id", app.AppID)
+	p.mm.Log.Info("Uninstalled app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 

@@ -52,7 +52,7 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 		message = md.MD(fmt.Sprintf("Enabled %s", app.DisplayName))
 	}
 
-	p.mm.Log.Info("Enabled an app", "app_id", app.AppID)
+	p.mm.Log.Info("Enabled app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
@@ -99,7 +99,7 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	p.mm.Log.Info("Disabled an app", "app_id", app.AppID)
+	p.mm.Log.Info("Disabled app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 

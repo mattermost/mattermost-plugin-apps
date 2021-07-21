@@ -2,7 +2,6 @@ package apps
 
 import (
 	"encoding/json"
-	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -128,11 +127,11 @@ func (f AWSLambda) IsValid() error {
 	if f.Name == "" {
 		return utils.NewInvalidError("aws_lambda name must not be empty")
 	}
-	if f.Runtime == "" {
-		return utils.NewInvalidError("aws_lambda runtime must not be empty")
-	}
 	if f.Handler == "" {
 		return utils.NewInvalidError("aws_lambda handler must not be empty")
+	}
+	if f.Runtime == "" {
+		return utils.NewInvalidError("aws_lambda runtime must not be empty")
 	}
 	return nil
 }
@@ -172,6 +171,14 @@ func (m Manifest) IsValid() error {
 		}
 	}
 
+	if m.HomepageURL == "" {
+		return utils.NewInvalidError(errors.New("homepage_url is empty"))
+	}
+
+	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
+		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
+	}
+
 	if m.Icon != "" {
 		_, err := utils.CleanStaticPath(m.Icon)
 		if err != nil {
@@ -181,7 +188,11 @@ func (m Manifest) IsValid() error {
 
 	switch m.AppType {
 	case AppTypeHTTP:
-		_, err := url.Parse(m.HTTPRootURL)
+		if m.HTTPRootURL == "" {
+			return utils.NewInvalidError(errors.New("root_url must be set for HTTP apps"))
+		}
+
+		err := utils.IsValidHTTPURL(m.HTTPRootURL)
 		if err != nil {
 			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
 		}
