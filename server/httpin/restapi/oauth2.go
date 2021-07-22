@@ -1,8 +1,6 @@
 package restapi
 
 import (
-	// nolint:gosec
-
 	"encoding/json"
 	"io"
 	"net/http"

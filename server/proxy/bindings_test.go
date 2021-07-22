@@ -587,8 +587,9 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 	testAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",

@@ -24,7 +24,9 @@ func TestDeleteSub(t *testing.T) {
 	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
-	apiClient := pluginapi.NewClient(mockAPI)
+	mockDriver := &plugintest.Driver{}
+
+	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s, err := MakeService(apiClient, conf, nil)
 	require.NoError(t, err)
@@ -133,7 +135,9 @@ func TestGetSubs(t *testing.T) {
 	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
-	apiClient := pluginapi.NewClient(mockAPI)
+	mockDriver := &plugintest.Driver{}
+
+	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s, err := MakeService(apiClient, conf, nil)
 	require.NoError(t, err)
@@ -198,7 +202,9 @@ func TestStoreSub(t *testing.T) {
 	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
-	apiClient := pluginapi.NewClient(mockAPI)
+	mockDriver := &plugintest.Driver{}
+
+	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
 	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
 	s, err := MakeService(apiClient, conf, nil)
 	require.NoError(t, err)

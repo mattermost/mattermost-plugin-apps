@@ -64,6 +64,15 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 
 	subrouter.HandleFunc(config.PathMarketplace,
 		httputils.CheckAuthorized(mm, a.handleGetMarketplace)).Methods(http.MethodGet)
+
+	appsRouters := subrouter.PathPrefix(mmclient.PathApps).Subrouter()
+	appsRouters.HandleFunc("", httputils.CheckPluginIDOrUserSession(a.handleInstallApp)).Methods("POST")
+
+	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
+	appRouter.HandleFunc("", httputils.CheckPluginIDOrUserSession(a.handleGetApp)).Methods("GET")
+	appRouter.HandleFunc(mmclient.PathEnable, httputils.CheckPluginIDOrUserSession(a.handleEnableApp)).Methods("POST")
+	appRouter.HandleFunc(mmclient.PathDisable, httputils.CheckPluginIDOrUserSession(a.handleDisableApp)).Methods("POST")
+	appRouter.HandleFunc(mmclient.PathUninstall, httputils.CheckPluginIDOrUserSession(a.handleUninstallApp)).Methods("DELETE")
 }
 
 func actingID(r *http.Request) string {

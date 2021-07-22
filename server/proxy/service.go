@@ -13,12 +13,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -39,7 +41,7 @@ type Service interface {
 
 	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
+	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
@@ -47,16 +49,16 @@ type Service interface {
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool
-	DisableApp(cc *apps.Context, app *apps.App) (md.MD, error)
-	EnableApp(cc *apps.Context, app *apps.App) (md.MD, error)
+	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
-	GetListedApps(filter string) []*apps.ListedApp
+	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
+	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
+	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
@@ -75,23 +77,28 @@ func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service,
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
-	if isAppTypeSupported(conf, apps.AppTypeHTTP) == nil {
-		p.upstreams.Store(apps.AppTypeHTTP, uphttp.NewUpstream(p.httpOut))
-	} else {
-		p.upstreams.Delete(apps.AppTypeHTTP)
-	}
-
-	if isAppTypeSupported(conf, apps.AppTypeAWSLambda) == nil {
-		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, &p.mm.Log)
-		if err != nil {
-			p.mm.Log.Debug("failed to initialize AWS upstream", "error", err.Error())
+	newUpstream := func(appType apps.AppType, makeUpstream func() (upstream.Upstream, error)) {
+		if isAppTypeSupported(conf, appType) == nil {
+			up, err := makeUpstream()
+			if err != nil {
+				p.mm.Log.Debug("failed to initialize upstream", "error", err.Error(), "app_type", appType)
+			} else {
+				p.upstreams.Store(appType, up)
+			}
 		} else {
-			p.upstreams.Store(apps.AppTypeAWSLambda, up)
+			p.upstreams.Delete(appType)
 		}
-	} else {
-		p.upstreams.Delete(apps.AppTypeAWSLambda)
 	}
 
+	newUpstream(apps.AppTypeHTTP, func() (upstream.Upstream, error) {
+		return uphttp.NewUpstream(p.httpOut), nil
+	})
+	newUpstream(apps.AppTypeAWSLambda, func() (upstream.Upstream, error) {
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, &p.mm.Log)
+	})
+	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
+		return upplugin.NewUpstream(&p.mm.Plugin), nil
+	})
 	return nil
 }
 
