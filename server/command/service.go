@@ -47,10 +47,6 @@ type commandHandler struct {
 }
 
 func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
-	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
-	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
-	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
-
 	enableAC := model.NewAutocompleteData("enable", "", "Enable an app")
 	enableAC.AddTextArgument("ID of the app to enable", "appID", "")
 	enableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
@@ -67,10 +63,6 @@ func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 		"list": {
 			f:            s.executeList,
 			autoComplete: model.NewAutocompleteData("list", "", "List installed and registered apps"),
-		},
-		"uninstall": {
-			f:            s.checkSystemAdmin(s.executeUninstall),
-			autoComplete: uninstallAC,
 		},
 		"enable": {
 			f:            s.checkSystemAdmin(s.executeEnable),
@@ -108,9 +100,32 @@ func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 		}
 	}
 
+	all["uninstall"] = s.uninstallCommand(conf)
 	all["install"] = s.installCommand(conf)
 
 	return all
+}
+
+func (s *service) uninstallCommand(conf config.Config) commandHandler {
+	h := commandHandler{
+		autoComplete: &model.AutocompleteData{
+			Trigger:  "uninstall",
+			HelpText: "Uninstall an App.",
+			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
+		},
+		subCommands: map[string]commandHandler{},
+	}
+
+	installed := s.proxy.GetInstalledApps()
+	for _, app := range installed {
+		appAC := model.NewAutocompleteData(string(app.Manifest.AppID), "", "Uninstall "+app.Manifest.DisplayName)
+		h.subCommands[appAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeUninstall),
+			autoComplete: appAC,
+		}
+	}
+
+	return h
 }
 
 func (s *service) installCommand(conf config.Config) commandHandler {

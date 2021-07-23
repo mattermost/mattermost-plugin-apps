@@ -4,23 +4,25 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/pkg/errors"
+	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 )
 
 func (s *service) executeUninstall(params *commandParams) (*model.CommandResponse, error) {
-	if len(params.current) == 0 {
-		return errorOut(params, errors.New("you need to specify the app id"))
-	}
-
 	client, err := s.newMMClient(params.commandArgs)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
-	appID := apps.AppID(params.current[0])
+	cmd := strings.Fields(params.commandArgs.Command)
+	if len(cmd) != 3 {
+		return errorOut(params, errors.New("incorrect number of uninstall parameters"))
+	}
+
+	appID := apps.AppID(cmd[len(cmd)-1])
 
 	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
