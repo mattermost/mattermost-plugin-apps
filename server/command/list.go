@@ -9,24 +9,30 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
+	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+
 	var includePluginApps bool
 	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
 	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")
 	err := fs.Parse(params.current)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 
 	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
-	txt := md.MD("| Name | Status | Type | Version | Account | Locations | Permissions |\n")
+	txt := md.MD(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "apps.command.list.table.header",
+		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
+	}) + "\n")
 	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n")
 
 	for _, app := range installed {
@@ -39,14 +45,28 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 			continue
 		}
 
-		status := "**Installed**"
+		status := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "apps.command.list.status.installed",
+			Other: "**Installed**",
+		})
 		if app.Disabled {
-			status = "Installed, Disabled"
+			status = s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "apps.command.list.status.disabled",
+				Other: "Installed, Disabled",
+			})
 		}
 
 		version := string(app.Version)
 		if string(m.Version) != version {
-			version += fmt.Sprintf(", %s in marketplace", m.Version)
+			version += s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "apps.command.list.version.marketplace",
+					Other: ", {{.Version}} in marketplace",
+				},
+				TemplateData: map[string]string{
+					"Version": string(m.Version),
+				},
+			})
 		}
 
 		account := ""
@@ -76,7 +96,10 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 			continue
 		}
 
-		status := "Listed"
+		status := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "apps.command.list.listed",
+			Other: "Listed",
+		})
 
 		version := string(l.Manifest.Version)
 

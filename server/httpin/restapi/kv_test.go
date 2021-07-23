@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
@@ -44,8 +46,11 @@ func TestKV(t *testing.T) {
 	}
 	appService := appservices.NewService(mm, conf, mockStore)
 
+	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+	require.Nil(t, err)
+
 	r := mux.NewRouter()
-	Init(r, mm, conf, nil, appService)
+	Init(r, mm, conf, nil, appService, i18nBundle)
 
 	server := httptest.NewServer(r)
 	defer server.Close()

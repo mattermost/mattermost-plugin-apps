@@ -2,6 +2,7 @@ package mmclient
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -12,8 +13,8 @@ type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(mm *pluginapi.Client, conf config.Config, sessionID, actingUserID string) (Client, error) {
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
+func NewHTTPClient(mm *pluginapi.Client, conf config.Config, sessionID, actingUserID string, i18nBundle *i18n.Bundle) (Client, error) {
+	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID, i18nBundle)
 	if err != nil {
 		return nil, err
 	}

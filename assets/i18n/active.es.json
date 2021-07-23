@@ -1,0 +1,150 @@
+{
+  "apps.command.debug.addManifest.error.url": {
+    "hash": "sha1-cdb355c57a0b8e2db43426f83f43951edbf0bea0",
+    "other": "debes añadir una `--url`"
+  },
+  "apps.command.developersOnly": {
+    "hash": "sha1-68a12f8210f2a9917842f1abe53dd3ab410290d6",
+    "other": "{{.Command}} sólo está disponible en el modo desarrollador. Necesitas habilitar el `Modo Desarrollador` y los `Comandos de prueba` en la Consola del Sistema."
+  },
+  "apps.command.disable.error.appID": {
+    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
+    "other": "debes especificar un app id"
+  },
+  "apps.command.enable.error.appID": {
+    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
+    "other": "debes especificar un app id"
+  },
+  "apps.command.enableBot": {
+    "hash": "sha1-95a3ef7ee317de659ebdf08fb328994c0f47a1e2",
+    "other": "la configuración de sistema `Permitir la Creación de Cuentas Bot` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítela."
+  },
+  "apps.command.enableOAuth": {
+    "hash": "sha1-b9edb0134d5791e2814e4462ad265c1ac1daef94",
+    "other": "la configuración de sistema `Habilitar el Proveedor de Servicios de OAuth 2.0` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítela."
+  },
+  "apps.command.error": {
+    "hash": "sha1-957ab0b89c43f63d15af462469519f5465d08030",
+    "other": "El comando ha fallado. Error: **{{.Error}}**"
+  },
+  "apps.command.error.invalidArguments": {
+    "hash": "sha1-325bb7060ccf3f80d5d334a8104393160a1550e3",
+    "other": "argumentos no válidos para `command.Handler`. Por favor, contacte con su administrador del sistema."
+  },
+  "apps.command.error.mustBeAdmin": {
+    "hash": "sha1-3a26a3ec99453ca4e3da6b41fa393397954eded7",
+    "other": "debe ser un administrador del sistema para ejecutar este comando"
+  },
+  "apps.command.error.needSubCommand": {
+    "hash": "sha1-2403138799c253439c295946911e52855a6446b0",
+    "other": "se esperaba un (sub-)comando"
+  },
+  "apps.command.error.noSubCommand": {
+    "hash": "sha1-6c7ab4369ce4bb3763933b17eb856028b793a90b",
+    "other": "subcomando no especificado, no se hace nada"
+  },
+  "apps.command.info.rest": {
+    "hash": "sha1-9f0e3b41e099a97a84cd07448a48209b911debc5",
+    "other": "{{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
+  },
+  "apps.command.info.version": {
+    "hash": "sha1-172aa544e6a71500aea374d354961dfe5adec4d2",
+    "other": "Mattermost Apps plugin versión: {{.Version}}, "
+  },
+  "apps.command.install.appID": {
+    "hash": "sha1-375e94981f450b1996849add06bda8edb89d13b5",
+    "other": "debes especificar el app id"
+  },
+  "apps.command.install.aws.error.manifest": {
+    "hash": "sha1-a2f21d16d1d5dc6f41656a06167ade07b96e4b2c",
+    "other": "no se ha podido conseguir el manifiesto desde S3"
+  },
+  "apps.command.install.aws.error.version": {
+    "hash": "sha1-1aef7f34a027166d34be775d19d2d093d01f33d4",
+    "other": "debes especificar la versión de la app"
+  },
+  "apps.command.install.error.appID": {
+    "hash": "sha1-375e94981f450b1996849add06bda8edb89d13b5",
+    "other": "debes especificar el app id"
+  },
+  "apps.command.install.error.openDialog": {
+    "hash": "sha1-aebeaae36975e8601eb40c554bb987594d0c768a",
+    "other": "no se pudo abrir el diálogo interactivo"
+  },
+  "apps.command.install.fillDialog": {
+    "hash": "sha1-7913b45acc6785a334c72fdf1b1d55fc9b435324",
+    "other": "por favor, rellena el formulario interactivo para continuar"
+  },
+  "apps.command.install.http.error.url": {
+    "hash": "sha1-ad45e774b1e5bafc20627e9eb95cdd58d0e07c15",
+    "other": "debes especificar la URL del manifiesto"
+  },
+  "apps.command.install.marketplace.error.manifest": {
+    "hash": "sha1-19bad30cde3f6cd49d212bf1bf8199bd4589f734",
+    "other": "manifiesto no encontrado"
+  },
+  "apps.command.list.listed": {
+    "hash": "sha1-bcbe3886b5c26bd97bef30d4801b3e4db9bd0130",
+    "other": "Listado"
+  },
+  "apps.command.list.status.disabled": {
+    "hash": "sha1-8d7e420d19b7f5a6be1dbaa6f3b9d11521779b72",
+    "other": "Instalado, Desabilitado"
+  },
+  "apps.command.list.status.installed": {
+    "hash": "sha1-eeda7de85d17e0f162444c77df75bf7adf5773d8",
+    "other": "**Instalado**"
+  },
+  "apps.command.list.table.header": {
+    "hash": "sha1-46a8d9b0941d59ddf86f3768abb3c061bde51ef4",
+    "other": "| Nombre | Estado | Tipo | Versión | Cuenta | Lugares | Permisos |"
+  },
+  "apps.command.list.version.marketplace": {
+    "hash": "sha1-7a601ee4113787e82d98d40938ce136250ed1332",
+    "other": ", {{.Version}} en la tienda"
+  },
+  "apps.command.notSupported": {
+    "hash": "sha1-ddc23368f9798a05195921b2243c4c2806290ab0",
+    "other": "{{.Command}} no es un comando soportado y no debería de haber sido invocado. Por favor, contacte con su administrador de sistema."
+  },
+  "apps.command.uninstall.error.needAppId": {
+    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
+    "other": "debe especificar un app id"
+  },
+  "apps.command.unknown": {
+    "hash": "sha1-92bfa70a0b185634514f54297e37785b2688eaa9",
+    "other": "comando desconocido: {{.Command}}"
+  },
+  "apps.uninstall.default": {
+    "hash": "sha1-bec0e6be0a0e0e01c1841e7e86532b83ff213c6c",
+    "other": "{{.AppID}} desinstalada"
+  },
+  "apps.uninstall.error.delete": {
+    "hash": "sha1-1557f86ffc1bd2b55c454520f6ae4045ff28f686",
+    "other": "no se puede borrar la app - {{.AppID}}"
+  },
+  "apps.uninstall.error.deleteData": {
+    "hash": "sha1-b2cf96a2d4db88768353f1547ea47dc1764a110d",
+    "other": "no se puede borrar los datos de la app - {{.AppID}}"
+  },
+  "apps.uninstall.error.deleteManifest": {
+    "hash": "sha1-b4f5e063902a378d3b303ff7d6e6c5527c40aac2",
+    "other": "no se puede borrar el manifiesto de la app desinstalada - {{.AppID}}"
+  },
+  "apps.uninstall.error.deleteOAuth": {
+    "hash": "sha1-0e70bf93b766f29e2e0663be833a316efed96800",
+    "other": "error al borrar la aplicación OAuth asociada a {{.AppID}}"
+  },
+  "apps.uninstall.error.disableBot": {
+    "hash": "sha1-5a6615ed3f03ec8a0e86d9bf34d4e88bfe454440",
+    "other": "error al desabilitar la cuenta del bot asociada a {{.AppID}}"
+  },
+  "apps.uninstall.error.getApp": {
+    "hash": "sha1-6eb1cbf3d4c81ff5be50edfca2d780c4290ae4cb",
+    "other": "error al obtener la app. appID: {{.AppID}}"
+  },
+  "apps.uninstall.error.revokeBot": {
+    "hash": "sha1-465cd58fe6503946aee16825e8e5dd8fc02291e2",
+    "other": "error al revocar el token de accesso del bot asociado a {{.AppID}}"
+  }
+}

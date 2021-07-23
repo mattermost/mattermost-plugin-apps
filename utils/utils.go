@@ -6,8 +6,10 @@ import (
 	"os"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
+	nsi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 )
 
@@ -71,10 +73,14 @@ func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.S
 	return session, nil
 }
 
-func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actingUserID string) (*model.Client4, error) {
+func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actingUserID string, i18nBundle *i18n.Bundle) (*model.Client4, error) {
+	loc := i18nBundle.GetUserLocalizer(actingUserID)
 	session, err := LoadSession(mm, sessionID, actingUserID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load session")
+		return nil, errors.Wrap(err, i18nBundle.LocalizeDefaultMessage(loc, &nsi18n.Message{
+			ID:    "apps.command.list.table.header",
+			Other: "failed to load session",
+		}))
 	}
 
 	client := model.NewAPIv4Client(mattermostSiteURL)

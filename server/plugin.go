@@ -5,12 +5,14 @@ package main
 
 import (
 	gohttp "net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -46,6 +48,8 @@ type Plugin struct {
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
+
+	i18n *i18n.Bundle
 }
 
 func NewPlugin(buildConfig config.BuildConfig) *Plugin {
@@ -109,17 +113,23 @@ func (p *Plugin) OnActivate() error {
 	appstore.Configure(conf)
 	p.mm.Log.Debug("Initialized the persistent store")
 
+	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
+	if err != nil {
+		return err
+	}
+	p.i18n = i18nBundle
+
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut, p.i18n)
 	p.mm.Log.Debug("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 	p.mm.Log.Debug("Initialized the app REST APIs")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices, p.i18n,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
@@ -127,7 +137,7 @@ func (p *Plugin) OnActivate() error {
 	)
 	p.mm.Log.Debug("Initialized incoming HTTP")
 
-	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
+	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut, p.i18n)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}

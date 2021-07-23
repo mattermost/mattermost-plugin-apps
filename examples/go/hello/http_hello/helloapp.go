@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
@@ -33,13 +34,15 @@ const (
 type helloapp struct {
 	*hello.HelloApp
 	conf config.Service
+	i18n *i18n.Bundle
 }
 
 // Init hello app router
-func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service, i18nBundle *i18n.Bundle) {
 	h := helloapp{
 		HelloApp: hello.NewHelloApp(mm),
 		conf:     conf,
+		i18n:     i18nBundle,
 	}
 
 	r := router.PathPrefix(config.HelloHTTPPath).Subrouter()

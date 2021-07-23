@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -33,8 +35,11 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
+	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+	require.Nil(t, err)
+
 	router := mux.NewRouter()
-	Init(router, mm, conf, proxy, nil)
+	Init(router, mm, conf, proxy, nil, i18nBundle)
 
 	expected := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{

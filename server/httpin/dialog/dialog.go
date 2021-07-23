@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
@@ -23,13 +24,15 @@ type dialog struct {
 	mm    *pluginapi.Client
 	proxy proxy.Service
 	conf  config.Service
+	i18n  *i18n.Bundle
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service, i18nBundle *i18n.Bundle) {
 	d := dialog{
 		mm:    mm,
 		proxy: proxy,
 		conf:  conf,
+		i18n:  i18nBundle,
 	}
 
 	subrouter := router.PathPrefix(config.InteractiveDialogPath).Subrouter()

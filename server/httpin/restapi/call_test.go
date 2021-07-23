@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
@@ -356,8 +358,11 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
+	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+	require.Nil(t, err)
+
 	router := mux.NewRouter()
-	Init(router, mm, conf, proxy, nil)
+	Init(router, mm, conf, proxy, nil, i18nBundle)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
@@ -373,7 +378,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	})
 
 	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(call)
+	err = json.NewEncoder(b).Encode(call)
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
@@ -412,8 +417,11 @@ func TestHandleCallValidContext(t *testing.T) {
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
+	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+	require.Nil(t, err)
+
 	router := mux.NewRouter()
-	Init(router, mm, conf, proxy, nil)
+	Init(router, mm, conf, proxy, nil, i18nBundle)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
@@ -455,7 +463,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	conf.EXPECT().GetConfig().Return(config.Config{})
 
 	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(call)
+	err = json.NewEncoder(b).Encode(call)
 	require.NoError(t, err)
 
 	u := "/api/v1/call"

@@ -158,7 +158,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client, err := mmclient.NewHTTPClient(d.mm, d.conf.GetConfig(), sessionID, actingUserID)
+	client, err := mmclient.NewHTTPClient(d.mm, d.conf.GetConfig(), sessionID, actingUserID, d.i18n)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 		return

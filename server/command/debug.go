@@ -5,6 +5,7 @@ package command
 
 import (
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
@@ -25,37 +26,42 @@ func (s *service) executeDebugBindings(params *commandParams) (*model.CommandRes
 		params.commandArgs.UserId,
 		s.newCommandContext(params.commandArgs))
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 	return out(params, md.JSONBlock(bindings))
 }
 
 func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
+	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
 	if err := fs.Parse(params.current); err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 
 	if manifestURL == "" {
-		return errorOut(params, errors.New("you must add a `--url`"))
+		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "apps.command.debug.addManifest.error.url",
+			Other: "you must add a `--url`",
+		})))
 	}
 
 	// Inside a debug command: all URLs are trusted.
 	data, err := s.httpOut.GetFromURL(manifestURL, true)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 
 	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 
 	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, err)
 	}
 
 	return &model.CommandResponse{

@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
@@ -23,10 +24,10 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, appServices appservices.Service,
-	initf ...func(*mux.Router, *pluginapi.Client, config.Service, proxy.Service, appservices.Service)) Service {
+func NewService(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, appServices appservices.Service, i18nBundle *i18n.Bundle,
+	initf ...func(*mux.Router, *pluginapi.Client, config.Service, proxy.Service, appservices.Service, *i18n.Bundle)) Service {
 	for _, f := range initf {
-		f(router, mm, conf, proxy, appServices)
+		f(router, mm, conf, proxy, appServices, i18nBundle)
 	}
 	router.Handle("{anything:.*}", http.NotFoundHandler())
 

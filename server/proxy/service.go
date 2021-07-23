@@ -10,6 +10,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
@@ -32,6 +33,7 @@ type Proxy struct {
 	aws           upaws.Client
 	httpOut       httpout.Service
 	s3AssetBucket string
+	i18n          *i18n.Bundle
 }
 
 type Service interface {
@@ -61,7 +63,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service, i18nBundle *i18n.Bundle) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
@@ -71,6 +73,7 @@ func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, sto
 		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
+		i18n:             i18nBundle,
 	}
 }
 
