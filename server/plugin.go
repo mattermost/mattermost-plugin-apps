@@ -52,7 +52,7 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() (err error) {
-	p.mm = pluginapi.NewClient(p.API)
+	p.mm = pluginapi.NewClient(p.API, p.Driver)
 
 	defer func() {
 		if err != nil {

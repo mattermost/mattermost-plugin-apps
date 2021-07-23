@@ -67,7 +67,7 @@ func ProvisionApp(bundlePath string, log Logger, shouldUpdate bool) (*apps.Manif
 	ns := namespace(m.AppID)
 	existing, _ := k8sClient.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
 	if existing == nil {
-		_, err := k8sClient.CoreV1().Namespaces().Create(
+		_, err = k8sClient.CoreV1().Namespaces().Create(
 			&v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: ns,

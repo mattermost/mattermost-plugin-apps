@@ -5,7 +5,6 @@ package proxy
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -14,12 +13,7 @@ func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, 
 		return "", err
 	}
 
-	err := utils.EnsureSysAdmin(p.mm, actingUserID)
-	if err != nil {
-		return "", err
-	}
-
-	err = p.store.Manifest.StoreLocal(m)
+	err := p.store.Manifest.StoreLocal(m)
 	if err != nil {
 		return "", err
 	}

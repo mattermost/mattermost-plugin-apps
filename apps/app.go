@@ -169,11 +169,15 @@ const (
 	// go functions. No manifest, no Mattermost to App authentication are
 	// needed.
 	AppTypeBuiltin AppType = "builtin"
+
+	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
+	// Authentication is done via the plugin.Context.SourcePluginId field.
+	AppTypePlugin AppType = "plugin"
 )
 
 func (at AppType) IsValid() error {
 	switch at {
-	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless:
+	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless, AppTypePlugin:
 		return nil
 	default:
 		return utils.NewInvalidError("%s is not a valid app type", at)

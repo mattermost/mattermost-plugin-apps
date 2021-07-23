@@ -27,7 +27,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
 		testAPI := &plugintest.API{}
 		testAPI.On("LogDebug", mock.Anything).Return(nil)
-		mm := pluginapi.NewClient(testAPI)
+		testDriver := &plugintest.Driver{}
+		mm := pluginapi.NewClient(testAPI, testDriver)
 
 		a := &restapi{
 			mm: mm,
@@ -46,7 +47,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is a member of the post's channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -102,7 +104,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -138,7 +141,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is a member of the channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -180,7 +184,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the channel", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -209,7 +214,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is a member of the team", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -243,7 +249,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the team", func(t *testing.T) {
 			testAPI := &plugintest.API{}
 			testAPI.On("LogDebug", mock.Anything).Return(nil)
-			mm := pluginapi.NewClient(testAPI)
+			testDriver := &plugintest.Driver{}
+			mm := pluginapi.NewClient(testAPI, testDriver)
 
 			a := &restapi{
 				mm: mm,
@@ -271,7 +278,8 @@ func TestCleanUserAgentContext(t *testing.T) {
 func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	a := &restapi{
 		mm: mm,
@@ -345,7 +353,8 @@ func TestHandleCallInvalidContext(t *testing.T) {
 
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
 	Init(router, mm, conf, proxy, nil)
@@ -400,7 +409,8 @@ func TestHandleCallValidContext(t *testing.T) {
 		"error", "",
 		"type", apps.CallResponseTypeOK,
 		"path", "/path/submit").Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
 	Init(router, mm, conf, proxy, nil)

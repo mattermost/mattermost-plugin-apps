@@ -43,11 +43,6 @@ type invocationPayload struct {
 	Body       string            `json:"body"`
 }
 
-type invocationResponse struct {
-	StatusCode int    `json:"statusCode"`
-	Body       string `json:"body"`
-}
-
 func X() (versioned.Interface, error) {
 	return kubelessutil.GetKubelessClientOutCluster()
 }
@@ -117,9 +112,8 @@ func (u *Upstream) InvokeFunction(app *apps.App, funcName string, creq *apps.Cal
 		if strings.Contains(err.Error(), "status code 408") {
 			// Give a more meaninful error for timeout errors
 			return nil, errors.Wrap(err, "request timeout exceeded")
-		} else {
-			return nil, errors.New(strings.Replace(err.Error(), `\n`, "\n", -1))
 		}
+		return nil, errors.New(strings.Replace(err.Error(), `\n`, "\n", -1))
 	}
 	return received, nil
 }

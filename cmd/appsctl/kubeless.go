@@ -48,7 +48,7 @@ var kubelessProvisionCmd = &cobra.Command{
 			return err
 		}
 		if len(m.KubelessFunctions) == 0 {
-			return errors.New("\nno functions to provision, check manifest.json\n")
+			return errors.New("no functions to provision, check manifest.json")
 		}
 
 		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.KubelessFunctions))
@@ -73,6 +73,6 @@ The App needs to be built with 'make dist' in its own directory, then use
 	},
 }
 
-func makeTestKubelessUpstream() (*upkubeless.Upstream, error) {
-	return upkubeless.MakeUpstream()
-}
+// func makeTestKubelessUpstream() (*upkubeless.Upstream, error) {
+// 	return upkubeless.MakeUpstream()
+// }

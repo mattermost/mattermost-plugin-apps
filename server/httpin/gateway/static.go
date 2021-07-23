@@ -30,7 +30,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) 
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := g.proxy.GetAsset(appID, assetName)
+	body, status, err := g.proxy.GetStatic(appID, assetName)
 	if err != nil {
 		g.mm.Log.Debug("Failed to get asset", "app_id", appID, "asset_name", assetName, "error", err.Error())
 		httputils.WriteError(w, err)

@@ -57,8 +57,9 @@ func TestAppMetadataForClient(t *testing.T) {
 
 func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{

@@ -34,3 +34,30 @@ func TestAppIDIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestAppVersionIsValid(t *testing.T) {
+	t.Parallel()
+
+	for id, valid := range map[string]bool{
+		"":            true,
+		"v1.0.0":      true,
+		"1.0.0":       true,
+		"v1.0.0-rc1":  true,
+		"1.0.0-rc1":   true,
+		"CAPS-OK":     true,
+		".DOTS.":      true,
+		"-SLASHES-":   true,
+		"_OK_":        true,
+		"v00_00_0000": false,
+		"/":           false,
+	} {
+		t.Run(id, func(t *testing.T) {
+			err := AppVersion(id).IsValid()
+			if valid {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}

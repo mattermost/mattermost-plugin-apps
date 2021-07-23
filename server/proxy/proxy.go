@@ -200,7 +200,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 	return upstream.Notify(up, app, creq)
 }
 
-func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -209,6 +209,11 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
+
+	return p.getStatic(m, path)
+}
+
+func (p *Proxy) getStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
 	up, err := p.upstreamForApp(m)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -245,19 +250,21 @@ func (p *Proxy) upstreamForApp(m *apps.Manifest) (upstream.Upstream, error) {
 
 func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 	supportedTypes := []apps.AppType{
+		apps.AppTypeAWSLambda,
 		apps.AppTypeBuiltin,
+		apps.AppTypePlugin,
 	}
 	mode := "Mattermost Cloud"
+
 	switch {
 	case conf.DeveloperMode:
 		return nil
 
 	case conf.MattermostCloudMode:
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda)
 
 	case !conf.MattermostCloudMode:
 		// Self-managed
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda, apps.AppTypeHTTP)
+		supportedTypes = append(supportedTypes, apps.AppTypeHTTP)
 		mode = "Self-managed"
 
 	default:

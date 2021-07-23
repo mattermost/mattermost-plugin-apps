@@ -2,15 +2,16 @@ package mmclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -21,7 +22,7 @@ const (
 	AppsPluginName = "com.mattermost.apps"
 )
 
-// Paths for the REST APIs exposed by the proxy plugin itself
+// Paths for the REST APIs exposed by the Apps Plugin itself
 const (
 	// Top-level path
 	PathAPI = "/api/v1"
@@ -30,6 +31,12 @@ const (
 	PathKV          = "/kv"
 	PathSubscribe   = "/subscribe"
 	PathUnsubscribe = "/unsubscribe"
+
+	PathApps      = "/apps"
+	PathApp       = "/app"
+	PathEnable    = "/enable"
+	PathDisable   = "/disable"
+	PathUninstall = "/uninstall"
 
 	PathBotIDs      = "/bot-ids"
 	PathOAuthAppIDs = "/oauth-app-ids"
@@ -41,7 +48,6 @@ const (
 
 type ClientPP struct {
 	URL        string       // The location of the server, for example  "http://localhost:8065"
-	APIURL     string       // The api location of the server, for example "http://localhost:8065/api/v4"
 	HTTPClient *http.Client // The http client
 	AuthToken  string
 	AuthType   string
@@ -52,11 +58,19 @@ type ClientPP struct {
 
 	// FalseString is the string value sent to the server for false boolean query parameters.
 	falseString string
+
+	fromPlugin bool
 }
 
-func NewAPIClientPP(url string) *ClientPP {
+func NewAppsPluginAPIClient(url string) *ClientPP {
 	url = strings.TrimRight(url, "/")
-	return &ClientPP{url, url, &http.Client{}, "", "", map[string]string{}, "", ""}
+	return &ClientPP{url, &http.Client{}, "", "", map[string]string{}, "", "", false}
+}
+
+func NewAppsPluginAPIClientFromPluginAPI(api upplugin.PluginHTTPAPI) *ClientPP {
+	httpClient := upplugin.MakePluginHTTPClient(api)
+
+	return &ClientPP{"", &httpClient, "", "", map[string]string{}, "", "", true}
 }
 
 func (c *ClientPP) SetOAuthToken(token string) {
@@ -154,24 +168,91 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) *model.Respo
 	return model.BuildResponse(r)
 }
 
+// InstallApp installs a app using a given manfest.
+func (c *ClientPP) InstallApp(m apps.Manifest) error {
+	b, err := json.Marshal(&m)
+	if err != nil {
+		return err
+	}
+
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
+func (c *ClientPP) UninstallApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIDELETE(c.apipath(PathApps) + "/" + string(appID) + PathUninstall) // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
+func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, error) {
+	r, appErr := c.DoAPIGET(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
+	if appErr != nil {
+		return nil, appErr
+	}
+	defer c.closeBody(r)
+
+	var app apps.App
+	err := json.NewDecoder(r.Body).Decode(&app)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode response")
+	}
+
+	return &app, nil
+}
+
+func (c *ClientPP) EnableApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable, "") // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
+func (c *ClientPP) DisableApp(appID apps.AppID) error {
+	r, appErr := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable, "") // nolint:bodyclose
+	if appErr != nil {
+		return appErr
+	}
+	defer c.closeBody(r)
+
+	return nil
+}
+
 func (c *ClientPP) GetPluginsRoute() string {
 	return "/plugins"
 }
 
 func (c *ClientPP) GetPluginRoute(pluginID string) string {
-	return fmt.Sprintf(c.GetPluginsRoute()+"/%v", pluginID)
+	path := "/" + pluginID
+	if c.fromPlugin {
+		return path
+	}
+
+	return c.GetPluginsRoute() + path
 }
 
 func (c *ClientPP) DoAPIGET(url string, etag string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodGet, c.APIURL+url, "", etag)
+	return c.DoAPIRequest(http.MethodGet, c.URL+url, "", etag)
 }
 
 func (c *ClientPP) DoAPIPOST(url string, data string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodPost, c.APIURL+url, data, "")
+	return c.DoAPIRequest(http.MethodPost, c.URL+url, data, "")
 }
 
 func (c *ClientPP) DoAPIDELETE(url string) (*http.Response, *model.AppError) {
-	return c.DoAPIRequest(http.MethodDelete, c.APIURL+url, "", "")
+	return c.DoAPIRequest(http.MethodDelete, c.URL+url, "", "")
 }
 
 func (c *ClientPP) DoAPIRequest(method, url, data, etag string) (*http.Response, *model.AppError) {

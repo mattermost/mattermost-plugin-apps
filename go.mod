@@ -23,3 +23,5 @@ require (
 	k8s.io/api v0.0.0-20180308224125-73d903622b73
 	k8s.io/apimachinery v0.0.0-20180228050457-302974c03f7e
 )
+
+replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v8.0.0+incompatible

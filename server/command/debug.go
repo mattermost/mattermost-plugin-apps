@@ -57,19 +57,9 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	if err != nil {
 		return errorOut(params, err)
 	}
+
 	return &model.CommandResponse{
 		Text:         string(out),
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
-}
-
-func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    commandArgs.TeamId,
-			ChannelID: commandArgs.ChannelId,
-		},
-		ActingUserID: commandArgs.UserId,
-		UserID:       commandArgs.UserId,
-	})
 }
