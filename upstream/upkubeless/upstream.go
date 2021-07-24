@@ -151,14 +151,18 @@ func match(callPath string, m *apps.Manifest) string {
 }
 
 func FunctionName(appID apps.AppID, version apps.AppVersion, function string) string {
-	// Sanitized any dots used in appID and version as lambda function names can not contain dots
-	// While there are other non-valid characters, a dots is the most commonly used one
 	sanitizedAppID := strings.ReplaceAll(string(appID), ".", "-")
 	sanitizedVersion := strings.ReplaceAll(string(version), ".", "-")
 	sanitizedFunction := strings.ReplaceAll(function, " ", "-")
-	return fmt.Sprintf("%s_%s_%s", sanitizedAppID, sanitizedVersion, sanitizedFunction)
+	sanitizedFunction = strings.ReplaceAll(sanitizedFunction, "_", "-")
+	sanitizedFunction = strings.ReplaceAll(sanitizedFunction, ".", "-")
+	sanitizedFunction = strings.ToLower(sanitizedFunction)
+	return fmt.Sprintf("%s-%s-%s", sanitizedAppID, sanitizedVersion, sanitizedFunction)
 }
 
 func namespace(appID apps.AppID) string {
-	return "mattermost_app_" + string(appID)
+	sanitized := string(appID)
+	sanitized = strings.ReplaceAll(sanitized, "_", "-")
+	sanitized = strings.ReplaceAll(sanitized, ".", "-")
+	return "mattermost-app-" + sanitized
 }

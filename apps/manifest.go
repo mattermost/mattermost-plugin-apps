@@ -2,7 +2,6 @@ package apps
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -113,17 +112,33 @@ type Manifest struct {
 // upkubeless will find the closest match for the call's path, and then to
 // invoke the kubeless function.
 type KubelessFunction struct {
-	CallPath string `json:"call_path"` // for mapping incoming Call requests
-	Handler  string `json:"handler"`   // (exported) function handler name
-	File     string `json:"file"`      // Function file path in the bundle, e.g. "tickets/create.py"
-	Checksum string `json:"checksum"`  // Checksum of the file
-	DepsFile string `json:"deps_file"` // Function dependencies (go.mod, packages.json, etc.)
-	Runtime  string `json:"runtime"`   // Function runtime to use
-	Timeout  string `json:"timeout"`   // Maximum timeout for the function to complete its execution
+	// CallPath is used to match/map incoming Call requests.
+	CallPath string `json:"call_path"`
+
+	// Handler refers to the actual language function being invoked.
+	// TODO examples py, go
+	Handler string `json:"handler"`
+
+	// File is the file ath (relative, in the bundle) to the function (source?)
+	// file. Checksum is the expected checksum of the file.
+	File     string `json:"file"`
+	Checksum string `json:"checksum"`
+
+	// DepsFile is the path to the file with runtime-specific dependency list,
+	// e.g. go.mod.
+	DepsFile string `json:"deps_file"`
+
+	// Kubeless runtime to use.
+	Runtime string `json:"runtime"`
+
+	// Timeout for the function to complete its execution.
+	Timeout string `json:"timeout"`
+
+	// Port is the local ipv4 port that the function listens to, default 8080.
+	Port int32 `json:"port"`
 }
 
 func (kf KubelessFunction) IsValid() error {
-	fmt.Printf("<>/<> IsValid %s\n", utils.Pretty(kf))
 	if kf.CallPath == "" {
 		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
 	}
@@ -142,6 +157,9 @@ func (kf KubelessFunction) IsValid() error {
 		if err != nil {
 			return errors.Wrap(err, "invalid Kubeless function: invalid deps_file")
 		}
+	}
+	if kf.Port < 0 || kf.Port > 65535 {
+		return utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535")
 	}
 	return nil
 }

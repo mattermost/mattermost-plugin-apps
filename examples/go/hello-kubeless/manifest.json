@@ -13,10 +13,10 @@
 	"kubeless_functions": [
 		{
 			"call_path": "/",
-			"handler": "Handler",
+			"handler": "kubeless.Handler",
 			"file": "handler.go",
 			"deps_file": "go.mod",
-			"runtime": "go1.x"
+			"runtime": "go1.14"
 		}
 	]
 }

@@ -1,9 +1,8 @@
 .PHONY: dist
 ## dist: creates the bundle file
 dist: 
-	zip -r bundle.zip manifest.json handler.go go.mod
 	mkdir -p dist
-	mv bundle.zip ./dist
+	zip -r dist/bundle.zip manifest.json handler.go go.mod
 
 .PHONY: clean
 ## clean: deletes all
