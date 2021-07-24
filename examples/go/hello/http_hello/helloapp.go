@@ -39,7 +39,7 @@ type helloapp struct {
 // Init hello app router
 func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	h := helloapp{
-		HelloApp: hello.NewHelloApp(mm),
+		HelloApp: hello.NewHelloApp(mm, log),
 		conf:     conf,
 	}
 

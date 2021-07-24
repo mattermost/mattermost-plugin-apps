@@ -59,7 +59,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	defer func() {
 		if err != nil {
-			p.mm.Log.Error("Failed to activate", "error", err.Error())
+			p.log.WithError(err).Errorf("Failed to activate")
 		}
 	}()
 
@@ -94,9 +94,9 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.store, err = store.MakeService(p.mm, p.log, p.conf, p.httpOut)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize store")
+		return errors.Wrap(err, "failed to initialize persistent store")
 	}
-	p.mm.Log.Debug("Initialized store services.")
+	p.log.Debugf("Initialized persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
@@ -107,10 +107,10 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
-	p.mm.Log.Debug("Initialized app proxy service")
+	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.mm.Log.Debug("Initialized App API service")
+	p.log.Debugf("Initialized the app REST APIs")
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
 		dialog.Init,
@@ -141,7 +141,7 @@ func (p *Plugin) OnActivate() (err error) {
 func (p *Plugin) OnConfigurationChange() (err error) {
 	defer func() {
 		if err != nil {
-			p.mm.Log.Error("Failed to reconfigure", "error", err.Error())
+			p.log.WithError(err).Errorf("Failed to reconfigure")
 		}
 	}()
 
