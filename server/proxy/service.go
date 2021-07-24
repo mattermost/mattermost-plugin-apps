@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
@@ -101,6 +102,9 @@ func (p *Proxy) Configure(conf config.Config) error {
 	})
 	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&p.mm.Plugin), nil
+	})
+	newUpstream(apps.AppTypeKubeless, func() (upstream.Upstream, error) {
+		return upkubeless.MakeUpstream()
 	})
 	return nil
 }

@@ -29,9 +29,9 @@ type helloapp struct {
 
 var _ upstream.Upstream = (*helloapp)(nil)
 
-func New(mm *pluginapi.Client) *helloapp {
+func New(mm *pluginapi.Client, log utils.Logger) *helloapp {
 	return &helloapp{
-		HelloApp: hello.NewHelloApp(mm),
+		HelloApp: hello.NewHelloApp(mm, log),
 	}
 }
 
