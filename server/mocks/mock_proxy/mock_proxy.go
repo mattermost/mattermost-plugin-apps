@@ -329,6 +329,20 @@ func (mr *MockServiceMockRecorder) NotifyUserHasJoinedChannel(arg0 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasJoinedChannel", reflect.TypeOf((*MockService)(nil).NotifyUserHasJoinedChannel), arg0)
 }
 
+// NotifyUserHasJoinedTeam mocks base method.
+func (m *MockService) NotifyUserHasJoinedTeam(arg0 *apps.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NotifyUserHasJoinedTeam", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// NotifyUserHasJoinedTeam indicates an expected call of NotifyUserHasJoinedTeam.
+func (mr *MockServiceMockRecorder) NotifyUserHasJoinedTeam(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasJoinedTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasJoinedTeam), arg0)
+}
+
 // NotifyUserHasLeftChannel mocks base method.
 func (m *MockService) NotifyUserHasLeftChannel(arg0 *apps.Context) error {
 	m.ctrl.T.Helper()
@@ -341,6 +355,20 @@ func (m *MockService) NotifyUserHasLeftChannel(arg0 *apps.Context) error {
 func (mr *MockServiceMockRecorder) NotifyUserHasLeftChannel(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftChannel", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftChannel), arg0)
+}
+
+// NotifyUserHasLeftTeam mocks base method.
+func (m *MockService) NotifyUserHasLeftTeam(arg0 *apps.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NotifyUserHasLeftTeam", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// NotifyUserHasLeftTeam indicates an expected call of NotifyUserHasLeftTeam.
+func (mr *MockServiceMockRecorder) NotifyUserHasLeftTeam(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftTeam), arg0)
 }
 
 // SynchronizeInstalledApps mocks base method.

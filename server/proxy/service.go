@@ -47,6 +47,8 @@ type Service interface {
 	NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error
 	NotifyUserHasJoinedChannel(cc *apps.Context) error
 	NotifyUserHasLeftChannel(cc *apps.Context) error
+	NotifyUserHasJoinedTeam(cc *apps.Context) error
+	NotifyUserHasLeftTeam(cc *apps.Context) error
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
 	AppIsEnabled(app *apps.App) bool

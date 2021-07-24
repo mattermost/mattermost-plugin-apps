@@ -159,41 +159,30 @@ func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 }
 
 func (p *Proxy) NotifyUserHasJoinedChannel(cc *apps.Context) error {
-	userSubs, err := p.store.Subscription.Get(apps.SubjectUserJoinedChannel, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get user_joined_channel subscriptions")
-	}
-
-	botSubs, err := p.store.Subscription.Get(apps.SubjectBotJoinedChannel, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get bot_joined_channel subscriptions")
-	}
-
-	subs := userSubs
-	appsMap := p.store.App.AsMap()
-	for _, sub := range botSubs {
-		app := appsMap[sub.AppID]
-		if app == nil {
-			continue
-		}
-
-		if app.BotUserID == cc.UserID {
-			subs = append(subs, sub)
-		}
-	}
-
-	return p.notify(cc, subs)
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
 }
 
 func (p *Proxy) NotifyUserHasLeftChannel(cc *apps.Context) error {
-	userSubs, err := p.store.Subscription.Get(apps.SubjectUserLeftChannel, cc.TeamID, cc.ChannelID)
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserHasJoinedTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserHasLeftTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subject) error {
+	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get user_left_channel subscriptions")
+		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
 	}
 
-	botSubs, err := p.store.Subscription.Get(apps.SubjectBotLeftChannel, cc.TeamID, cc.ChannelID)
+	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get bot_left_channel subscriptions")
+		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
 	}
 
 	subs := userSubs

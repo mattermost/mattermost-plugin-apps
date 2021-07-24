@@ -308,6 +308,164 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 			},
 		},
 		{
+			name: "user_joined_team no subscriptions",
+			subs: map[string][]apps.Subscription{
+				"sub.user_joined_team.some_team_id": {},
+				"sub.bot_joined_team":               {},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cc := &apps.Context{
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasJoinedTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "user_joined_team",
+			subs: map[string][]apps.Subscription{
+				"sub.user_joined_team.some_team_id": {
+					{
+						AppID:   app1.AppID,
+						Subject: apps.SubjectUserJoinedTeam,
+						Call:    apps.NewCall("/notify/user_joined_team"),
+					},
+				},
+				"sub.bot_joined_team": {},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cr := &apps.CallResponse{
+					Type: apps.CallResponseTypeOK,
+				}
+				sendCallResponse("/notify/user_joined_team", cr, up[0])
+
+				cc := &apps.Context{
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasJoinedTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "bot_joined_team",
+			subs: map[string][]apps.Subscription{
+				"sub.user_joined_team.some_team_id": {},
+				"sub.bot_joined_team": {
+					{
+						AppID:   app1.AppID,
+						Subject: apps.SubjectBotJoinedTeam,
+						Call:    apps.NewCall("/notify/bot_joined_team1"),
+					},
+					{
+						AppID:   app2.AppID,
+						Subject: apps.SubjectBotJoinedTeam,
+						Call:    apps.NewCall("/notify/bot_joined_team2"),
+					},
+				},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cr := &apps.CallResponse{
+					Type: apps.CallResponseTypeOK,
+				}
+				sendCallResponse("/notify/bot_joined_team1", cr, up[0])
+
+				cc := &apps.Context{
+					UserID: app1.BotUserID,
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasJoinedTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "user_left_team no subscriptions",
+			subs: map[string][]apps.Subscription{
+				"sub.user_left_team.some_team_id": {},
+				"sub.bot_left_team":               {},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cc := &apps.Context{
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasLeftTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "user_left_team",
+			subs: map[string][]apps.Subscription{
+				"sub.user_left_team.some_team_id": {
+					{
+						AppID:   app1.AppID,
+						Subject: apps.SubjectUserLeftChannel,
+						Call:    apps.NewCall("/notify/user_left_team"),
+					},
+				},
+				"sub.bot_left_team": {},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cr := &apps.CallResponse{
+					Type: apps.CallResponseTypeOK,
+				}
+				sendCallResponse("/notify/user_left_team", cr, up[0])
+
+				cc := &apps.Context{
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasLeftTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "bot_left_team",
+			subs: map[string][]apps.Subscription{
+				"sub.user_left_team.some_team_id": {},
+				"sub.bot_left_team": {
+					{
+						AppID:   app1.AppID,
+						Subject: apps.SubjectBotLeftTeam,
+						Call:    apps.NewCall("/notify/bot_left_team1"),
+					},
+					{
+						AppID:   app2.AppID,
+						Subject: apps.SubjectBotLeftTeam,
+						Call:    apps.NewCall("/notify/bot_left_team2"),
+					},
+				},
+			},
+			run: func(p *Proxy, up []*mock_upstream.MockUpstream) {
+				cr := &apps.CallResponse{
+					Type: apps.CallResponseTypeOK,
+				}
+				sendCallResponse("/notify/bot_left_team1", cr, up[0])
+
+				cc := &apps.Context{
+					UserID: app1.BotUserID,
+					UserAgentContext: apps.UserAgentContext{
+						TeamID: "some_team_id",
+					},
+				}
+
+				err := p.NotifyUserHasLeftTeam(cc)
+				require.NoError(t, err)
+			},
+		},
+		{
 			name: "channel_created",
 			subs: map[string][]apps.Subscription{
 				"sub.channel_created.some_team_id": {
