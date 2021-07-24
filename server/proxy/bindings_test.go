@@ -12,7 +12,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -25,6 +24,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -589,7 +589,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	testAPI := &plugintest.API{}
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
-	testAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	conf := config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
@@ -600,7 +599,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		},
 	})
 
-	s, _ := store.MakeService(mm, confService, nil)
+	s, _ := store.MakeService(mm, utils.NewTestLogger(), confService, nil)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -627,6 +626,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 	p := &Proxy{
 		mm:               mm,
+		log:              utils.NewTestLogger(),
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             confService,

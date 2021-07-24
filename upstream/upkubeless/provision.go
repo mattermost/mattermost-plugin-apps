@@ -27,7 +27,7 @@ import (
 // Its input is a zip file containing:
 //   |-- manifest.json
 //   |-- function files referenced in manifest.json...
-func ProvisionApp(bundlePath string, log Logger, shouldUpdate bool) (*apps.Manifest, error) {
+func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Manifest, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create temp directory to unpack the bundle")
@@ -60,7 +60,9 @@ func ProvisionApp(bundlePath string, log Logger, shouldUpdate bool) (*apps.Manif
 		return nil, errors.Wrap(err, "invalid manifest.json")
 	}
 	if log != nil {
-		log.Info("Loaded App bundle", "bundle", bundlePath, "app_id", m.AppID)
+		log.Infow("Loaded App bundle",
+			"bundle", bundlePath,
+			"app_id", m.AppID)
 	}
 
 	k8sClient := kubelessutil.GetClientOutOfCluster()

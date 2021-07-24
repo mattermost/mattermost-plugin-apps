@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -29,6 +30,7 @@ type service struct {
 	conf    config.Service
 	proxy   proxy.Service
 	httpOut httpout.Service
+	log     utils.Logger
 }
 
 var _ Service = (*service)(nil)
@@ -193,9 +195,10 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 	return h
 }
 
-func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
+func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
 		mm:      mm,
+		log:     log,
 		conf:    configService,
 		proxy:   proxy,
 		httpOut: httpOut,

@@ -26,6 +26,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -34,6 +35,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
+	log  utils.Logger
 
 	store       *store.Service
 	appservices appservices.Service
@@ -53,6 +55,7 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 
 func (p *Plugin) OnActivate() (err error) {
 	p.mm = pluginapi.NewClient(p.API, p.Driver)
+	p.log = utils.NewPluginLogger(p.mm)
 
 	defer func() {
 		if err != nil {
@@ -69,7 +72,7 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
+	p.conf = config.NewService(p.mm, p.log, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
@@ -84,12 +87,12 @@ func (p *Plugin) OnActivate() (err error) {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.mm.Log.Debug("Initialized configuration service: " + mode + ".")
+	p.log.Debugf("Initialized config service: %s", mode)
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.mm.Log.Debug("Initialized outgoing HTTP")
+	p.log.Debugf("Initialized outgoing HTTP")
 
-	p.store, err = store.MakeService(p.mm, p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.mm, p.log, p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize store")
 	}
@@ -99,7 +102,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.conf, p.store, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.store, mutex, p.httpOut)
 	err = p.proxy.Configure(conf)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
@@ -109,26 +112,26 @@ func (p *Plugin) OnActivate() (err error) {
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 	p.mm.Log.Debug("Initialized App API service")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.mm.Log.Debug("Initialized incoming HTTP service")
+	p.log.Debugf("Initialized incoming HTTP")
 
-	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
+	p.command, err = command.MakeService(p.mm, p.log, p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
-	p.mm.Log.Debug("Initialized slash commands")
+	p.log.Debugf("Initialized slash commands")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.mm.Log.Error("Failed to synchronize apps metadata", "err", err.Error())
+			p.log.WithError(err).Errorf("Failed to synchronize apps metadata")
 		} else {
-			p.mm.Log.Debug("Synchronized the installed apps metadata")
+			p.log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
 
@@ -191,7 +194,7 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
 	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.GetConfig().BotUserID))
 	if err != nil {
-		p.mm.Log.Error("Error while checking if the message should be processed", "err", err.Error())
+		p.log.WithError(err).Errorf("Error while checking if the message should be processed")
 		return
 	}
 

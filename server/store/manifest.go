@@ -53,7 +53,7 @@ type manifestStore struct {
 var _ ManifestStore = (*manifestStore)(nil)
 
 func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
-	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &s.mm.Log, "Manifest store")
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, s.log, "Manifest store")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -111,14 +111,12 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode)
 		default:
-			s.mm.Log.Error("Failed to load global manifest",
-				"err", fmt.Sprintf("%s is invalid", loc),
+			s.log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID)
 			continue
 		}
 		if err != nil {
-			s.mm.Log.Error("Failed to load global manifest",
-				"err", err.Error(),
+			s.log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
@@ -127,15 +125,14 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 		var m *apps.Manifest
 		m, err = apps.ManifestFromJSON(data)
 		if err != nil {
-			s.mm.Log.Error("Failed to load global manifest",
-				"err", err.Error(),
+			s.log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
 		}
 		if m.AppID != appID {
-			s.mm.Log.Error("Failed to load global manifest",
-				"err", fmt.Sprintf("mismatched app ids while getting manifest %s != %s", m.AppID, appID),
+			err = errors.Errorf("mismatched app ids while getting manifest %s != %s", m.AppID, appID)
+			s.log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
@@ -171,10 +168,12 @@ func (s *manifestStore) Configure(conf config.Config) error {
 		err := s.mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
 		switch {
 		case err != nil:
-			s.mm.Log.Error("Failed to load local manifest for %s: %s", "app_id", id, "err", err.Error())
+			s.log.WithError(err).Errorw("Failed to load local manifest",
+				"app_id", id)
 
 		case m == nil:
-			s.mm.Log.Error("Failed to load local manifest - not found", "app_id", id)
+			s.log.WithError(utils.ErrNotFound).Errorw("Failed to load local manifest",
+				"app_id", id)
 
 		default:
 			updatedLocal[apps.AppID(id)] = m
@@ -266,7 +265,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 
 	err = s.mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
 	if err != nil {
-		s.mm.Log.Warn("Failed to delete previous Manifest KV value", "err", err.Error())
+		s.log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
 	}
 	return nil
 }

@@ -1,14 +1,18 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 var (
 	verbose bool
 	quiet   bool
 )
+
+var log = utils.MustMakeCommandLogger(zapcore.InfoLevel)
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose (debug) output")
@@ -17,7 +21,7 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		log.WithError(err).Fatal("command failed")
+		log.WithError(err).Fatalf("command failed")
 	}
 }
 
@@ -25,12 +29,11 @@ var rootCmd = &cobra.Command{
 	Use:   "appsctl",
 	Short: "A tool to manage Mattermost Apps.",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.SetLevel(logrus.InfoLevel)
 		if verbose {
-			log.SetLevel(logrus.DebugLevel)
+			log = utils.MustMakeCommandLogger(zapcore.DebugLevel)
 		}
 		if quiet {
-			log.SetLevel(logrus.ErrorLevel)
+			log = utils.MustMakeCommandLogger(zapcore.ErrorLevel)
 		}
 	},
 }

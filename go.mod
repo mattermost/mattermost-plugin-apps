@@ -13,10 +13,10 @@ require (
 	github.com/mattermost/mattermost-plugin-api v0.0.18
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210714130822-54b0ef574b5d
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	google.golang.org/api v0.44.0

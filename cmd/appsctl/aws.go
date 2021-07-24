@@ -66,7 +66,7 @@ var awsInitCmd = &cobra.Command{
 			return err
 		}
 
-		out, err := upaws.InitializeAWS(asProvisioner, &log, upaws.InitParams{
+		out, err := upaws.InitializeAWS(asProvisioner, log, upaws.InitParams{
 			Bucket:                upaws.S3BucketName(),
 			User:                  upaws.Name(userName),
 			Group:                 upaws.Name(groupName),
@@ -110,7 +110,7 @@ var awsCleanCmd = &cobra.Command{
 			return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 		}
 
-		return upaws.CleanAWS(asProvisioner, accessKeyID, &log)
+		return upaws.CleanAWS(asProvisioner, accessKeyID, log)
 	},
 }
 
@@ -125,7 +125,7 @@ var awsProvisionCmd = &cobra.Command{
 		}
 
 		bucket := upaws.S3BucketName()
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], log, upaws.ProvisionAppParams{
 			Bucket:           bucket,
 			InvokePolicyName: upaws.Name(invokePolicyName),
 			ExecuteRoleName:  upaws.Name(executeRoleName),
@@ -267,7 +267,7 @@ with the default initial IAM configuration`,
 			return err
 		}
 
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, log, upaws.ProvisionAppParams{
 			Bucket:           upaws.S3BucketName(),
 			InvokePolicyName: upaws.Name(upaws.DefaultPolicyName),
 			ExecuteRoleName:  upaws.Name(upaws.DefaultExecuteRoleName),
@@ -296,8 +296,7 @@ func makeTestAWSUpstream() (*upaws.Upstream, error) {
 		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
 	}
 
-	log.Debug("Using test AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
-	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), &log)
+	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), log)
 }
 
 func makeProvisionAWSClient() (upaws.Client, error) {
@@ -314,6 +313,5 @@ func makeProvisionAWSClient() (upaws.Client, error) {
 		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
 	}
 
-	log.Debug("Using admin AWS credentials", "AccessKeyID", utils.LastN(accessKey, 7), "AccessKeySecretID", utils.LastN(secretKey, 4))
-	return upaws.MakeClient(accessKey, secretKey, region, &log, "Provisioner (appsctl)")
+	return upaws.MakeClient(accessKey, secretKey, region, log, "Provisioner (appsctl)")
 }

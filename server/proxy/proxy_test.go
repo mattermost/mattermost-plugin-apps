@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -20,6 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestAppMetadataForClient(t *testing.T) {
@@ -59,7 +59,6 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
-	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
@@ -67,7 +66,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		},
 	})
 
-	s, _ := store.MakeService(mm, conf, nil)
+	s, _ := store.MakeService(mm, utils.NewTestLogger(), conf, nil)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
@@ -30,6 +31,7 @@ type Proxy struct {
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
 	mm        *pluginapi.Client
+	log       utils.Logger
 	conf      config.Service
 	store     *store.Service
 	httpOut   httpout.Service
@@ -65,10 +67,11 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
+		log:              log,
 		conf:             conf,
 		store:            store,
 		callOnceMutex:    mutex,
@@ -94,7 +97,7 @@ func (p *Proxy) Configure(conf config.Config) error {
 		return uphttp.NewUpstream(p.httpOut), nil
 	})
 	newUpstream(apps.AppTypeAWSLambda, func() (upstream.Upstream, error) {
-		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, &p.mm.Log)
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, p.log)
 	})
 	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&p.mm.Plugin), nil

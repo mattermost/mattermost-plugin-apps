@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service struct {
@@ -25,13 +26,15 @@ type Service struct {
 	OAuth2       OAuth2Store
 
 	mm      *pluginapi.Client
+	log     utils.Logger
 	conf    config.Service
 	httpOut httpout.Service
 }
 
-func MakeService(mm *pluginapi.Client, confService config.Service, httpOut httpout.Service) (*Service, error) {
+func MakeService(mm *pluginapi.Client, log utils.Logger, confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
 		mm:      mm,
+		log:     log,
 		conf:    confService,
 		httpOut: httpOut,
 	}

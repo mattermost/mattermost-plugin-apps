@@ -43,7 +43,7 @@ var kubelessProvisionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		m, err := upkubeless.ProvisionApp(bundlePath, &log, shouldUpdate)
+		m, err := upkubeless.ProvisionApp(bundlePath, log, shouldUpdate)
 		if err != nil {
 			return err
 		}

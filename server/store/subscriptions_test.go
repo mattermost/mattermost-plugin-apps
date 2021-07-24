@@ -21,14 +21,13 @@ import (
 func TestDeleteSub(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
-	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	mockDriver := &plugintest.Driver{}
 
 	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, conf, nil)
+	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
+	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
 	toDelete := apps.Subscription{
@@ -132,14 +131,13 @@ func TestDeleteSub(t *testing.T) {
 func TestGetSubs(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
-	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	mockDriver := &plugintest.Driver{}
 
 	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, conf, nil)
+	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
+	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
 	emptySubs := []*apps.Subscription{}
@@ -199,14 +197,13 @@ func TestGetSubs(t *testing.T) {
 func TestStoreSub(t *testing.T) {
 	botID := "bot-id"
 	mockAPI := &plugintest.API{}
-	mockAPI.On("LogDebug", mock.AnythingOfType("string"), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	defer mockAPI.AssertExpectations(t)
 
 	mockDriver := &plugintest.Driver{}
 
 	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, conf, nil)
+	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
+	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
 	toStore := apps.Subscription{

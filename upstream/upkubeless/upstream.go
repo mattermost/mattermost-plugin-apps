@@ -27,13 +27,6 @@ type Upstream struct {
 	kubelessClient versioned.Interface
 }
 
-type Logger interface {
-	Error(message string, keyValuePairs ...interface{})
-	Warn(message string, keyValuePairs ...interface{})
-	Info(message string, keyValuePairs ...interface{})
-	Debug(message string, keyValuePairs ...interface{})
-}
-
 var _ upstream.Upstream = (*Upstream)(nil)
 
 type invocationPayload struct {
