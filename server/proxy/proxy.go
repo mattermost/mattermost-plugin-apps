@@ -19,6 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
@@ -116,6 +117,10 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		return err
 	}
 
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
 
 	notify := func(sub *apps.Subscription) error {
@@ -133,7 +138,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		if err != nil {
 			return err
 		}
-		callRequest.Context.Subject = subj
+		callRequest.Context.Subject = sub.Subject
 
 		up, err := p.upstreamForApp(app)
 		if err != nil {
@@ -149,7 +154,99 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 			continue
 		}
 	}
+
 	return nil
+}
+
+func (p *Proxy) NotifyUserHasJoinedChannel(cc *apps.Context) error {
+	userSubs, err := p.store.Subscription.Get(apps.SubjectUserJoinedChannel, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get user_joined_channel subscriptions")
+	}
+
+	botSubs, err := p.store.Subscription.Get(apps.SubjectBotJoinedChannel, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get bot_joined_channel subscriptions")
+	}
+
+	subs := userSubs
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app := appsMap[sub.AppID]
+		if app == nil {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyUserHasLeftChannel(cc *apps.Context) error {
+	userSubs, err := p.store.Subscription.Get(apps.SubjectUserLeftChannel, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get user_left_channel subscriptions")
+	}
+
+	botSubs, err := p.store.Subscription.Get(apps.SubjectBotLeftChannel, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get bot_left_channel subscriptions")
+	}
+
+	subs := userSubs
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app := appsMap[sub.AppID]
+		if app == nil {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
+	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get post_created subscriptions")
+	}
+
+	subs := []*apps.Subscription{}
+	subs = append(subs, postSubs...)
+
+	mentions := model.PossibleAtMentions(post.Message)
+	if len(mentions) > 0 {
+		appsMap := p.store.App.AsMap()
+		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		if err != nil && err != utils.ErrNotFound {
+			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+		}
+
+		for _, sub := range mentionSubs {
+			app := appsMap[sub.AppID]
+			if app == nil {
+				continue
+			}
+			for _, mention := range mentions {
+				if mention == app.BotUsername {
+					subs = append(subs, sub)
+				}
+			}
+		}
+	}
+
+	if len(subs) == 0 {
+		return nil
+	}
+
+	return p.notify(cc, subs)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {

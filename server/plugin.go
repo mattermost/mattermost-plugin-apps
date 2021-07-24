@@ -177,11 +177,11 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	_ = p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm, actingUser))
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	_ = p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm, actingUser))
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
@@ -203,8 +203,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	_ = p.proxy.Notify(
-		p.newPostCreatedContext(post), apps.SubjectPostCreated)
+	p.proxy.NotifyMessageHasBeenPosted(post, p.newPostCreatedContext(post))
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {

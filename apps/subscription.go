@@ -23,6 +23,8 @@ const (
 	// entities.
 	SubjectUserJoinedChannel Subject = "user_joined_channel"
 	SubjectUserLeftChannel   Subject = "user_left_channel"
+	SubjectBotJoinedChannel  Subject = "bot_joined_channel"
+	SubjectBotLeftChannel    Subject = "bot_left_channel"
 
 	// SubjectUserJoinedTeam and SubjectUserLeftTeam subscribes to respective
 	// plugin events, for the specified team. By default notifications include
@@ -42,6 +44,10 @@ const (
 	// RootPostID, ChannelID, but only Post is fully expanded. Expand can be
 	// used to expand other entities.
 	SubjectPostCreated Subject = "post_created"
+
+	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
+	// when the App's bot is mentioned in the post.
+	SubjectBotMentioned Subject = "bot_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
