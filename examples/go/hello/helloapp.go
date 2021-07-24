@@ -2,6 +2,7 @@ package hello
 
 import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
