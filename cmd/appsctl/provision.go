@@ -44,7 +44,7 @@ var provisionAppCmd = &cobra.Command{
 		}
 
 		bucket := upaws.S3BucketName()
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], log, upaws.ProvisionAppParams{
 			Bucket:           bucket,
 			InvokePolicyName: upaws.Name(invokePolicyName),
 			ExecuteRoleName:  upaws.Name(executeRoleName),

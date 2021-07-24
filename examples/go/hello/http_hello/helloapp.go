@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -36,7 +37,7 @@ type helloapp struct {
 }
 
 // Init hello app router
-func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	h := helloapp{
 		HelloApp: hello.NewHelloApp(mm),
 		conf:     conf,

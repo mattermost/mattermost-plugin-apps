@@ -57,7 +57,7 @@ var awsInitCmd = &cobra.Command{
 			return err
 		}
 
-		out, err := upaws.InitializeAWS(asProvisioner, &log, upaws.InitParams{
+		out, err := upaws.InitializeAWS(asProvisioner, log, upaws.InitParams{
 			Bucket:                upaws.S3BucketName(),
 			User:                  upaws.Name(userName),
 			Group:                 upaws.Name(groupName),
@@ -101,7 +101,7 @@ var awsCleanCmd = &cobra.Command{
 			return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 		}
 
-		return upaws.CleanAWS(asProvisioner, accessKeyID, &log)
+		return upaws.CleanAWS(asProvisioner, accessKeyID, log)
 	},
 }
 
@@ -210,7 +210,7 @@ with the default initial IAM configuration`,
 			return err
 		}
 
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, log, upaws.ProvisionAppParams{
 			Bucket:           upaws.S3BucketName(),
 			InvokePolicyName: upaws.Name(upaws.DefaultPolicyName),
 			ExecuteRoleName:  upaws.Name(upaws.DefaultExecuteRoleName),

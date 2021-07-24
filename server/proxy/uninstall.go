@@ -27,7 +27,8 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		}
 		resp := p.Call(sessionID, cc.ActingUserID, creq)
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnUninstall failed, uninstalling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnUninstall failed, uninstalling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
@@ -74,7 +75,8 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 
-	p.mm.Log.Info("Uninstalled app", "app_id", app.AppID)
+	p.log.Infow("Uninstalled app",
+		"app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
