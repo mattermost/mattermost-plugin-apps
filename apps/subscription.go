@@ -23,8 +23,12 @@ const (
 	// entities.
 	SubjectUserJoinedChannel Subject = "user_joined_channel"
 	SubjectUserLeftChannel   Subject = "user_left_channel"
-	SubjectBotJoinedChannel  Subject = "bot_joined_channel"
-	SubjectBotLeftChannel    Subject = "bot_left_channel"
+
+	// SubjectBotJoinedChannel and SubjectBotLeftChannel subscribes to
+	// SubjectUserJoinedChannel and SubjectUserLeftChanne plugin events,
+	// specifically when the App's bot is added or removed from the team
+	SubjectBotJoinedChannel Subject = "bot_joined_channel"
+	SubjectBotLeftChannel   Subject = "bot_left_channel"
 
 	// SubjectUserJoinedTeam and SubjectUserLeftTeam subscribes to respective
 	// plugin events, for the specified team. By default notifications include
@@ -32,8 +36,12 @@ const (
 	// Expand can be used to expand other entities.
 	SubjectUserJoinedTeam Subject = "user_joined_team"
 	SubjectUserLeftTeam   Subject = "user_left_team"
-	SubjectBotJoinedTeam  Subject = "bot_joined_team"
-	SubjectBotLeftTeam    Subject = "bot_left_team"
+
+	// SubjectBotJoinedTeam and SubjectBotLeftTeam subscribes to
+	// SubjectUserJoinedTeam and SubjectUserLeftTeam plugin events,
+	// specifically when the App's bot is added or removed from the team
+	SubjectBotJoinedTeam Subject = "bot_joined_team"
+	SubjectBotLeftTeam   Subject = "bot_left_team"
 
 	// SubjectChannelCreated subscribes to ChannelHasBeenCreated plugin events,
 	// for the specified team. By default notifications include UserID (creator),
