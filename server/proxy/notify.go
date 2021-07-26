@@ -180,8 +180,7 @@ func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	for _, sub := range subs {
 		err := notify(sub)
 		if err != nil {
-			// TODO log err
-			continue
+			p.mm.Log.Debug("Error sending subscription notification to app", "app_id", sub.AppID, "subject", sub.Subject, "err", err.Error())
 		}
 	}
 
