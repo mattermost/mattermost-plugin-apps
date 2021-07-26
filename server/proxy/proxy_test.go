@@ -36,7 +36,7 @@ func TestAppMetadataForClient(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	p, _ := newTestProxy(testApps, ctrl)
+	p := newTestProxy(testApps, ctrl)
 	c := &apps.CallRequest{
 		Context: &apps.Context{
 			UserAgentContext: apps.UserAgentContext{
@@ -55,7 +55,7 @@ func TestAppMetadataForClient(t *testing.T) {
 	})
 }
 
-func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) (*Proxy, *plugintest.API) {
+func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	testDriver := &plugintest.Driver{}
@@ -92,5 +92,5 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) (*Proxy, *plugi
 		conf:             conf,
 	}
 
-	return p, testAPI
+	return p
 }
