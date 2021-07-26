@@ -208,10 +208,10 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
 
-	subs := []*apps.Subscription{}
-	subs = append(subs, postSubs...)
-
+	subs := postSubs
 	mentions := model.PossibleAtMentions(post.Message)
+
+	botCanRead := map[string]bool{}
 	if len(mentions) > 0 {
 		appsMap := p.store.App.AsMap()
 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
@@ -226,7 +226,18 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 			}
 			for _, mention := range mentions {
 				if mention == app.BotUsername {
-					subs = append(subs, sub)
+					_, ok := botCanRead[app.BotUserID]
+					if ok {
+						// already processed this bot for this post
+						continue
+					}
+
+					canRead := p.canReadChannel(app.BotUserID, post.ChannelId)
+					botCanRead[app.BotUserID] = canRead
+
+					if canRead {
+						subs = append(subs, sub)
+					}
 				}
 			}
 		}
@@ -237,6 +248,10 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 	}
 
 	return p.notify(cc, subs)
+}
+
+func (p *Proxy) canReadChannel(userID, channelID string) bool {
+	return p.mm.User.HasPermissionToChannel(userID, channelID, model.PERMISSION_READ_CHANNEL)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
