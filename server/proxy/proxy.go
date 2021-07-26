@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -19,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
