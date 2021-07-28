@@ -1,0 +1,33 @@
+services:
+    mattermost:
+        environment:
+            # Change to DEBUG for verbose logging in Mattermost's terminal
+            MM_LOGSETTINGS_CONSOLELEVEL: INFO
+            # MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
+    node_app:
+        image: node:13
+        ports:
+            - "4000:4000"
+        working_dir: /app
+        environment:
+            MATTERMOST_SITEURL: http://mattermost:8066
+            NODE_HOST: node_app # Should be the same as the "service" name above
+            PORT: 4000
+
+        volumes:
+            - ./node_app:/app
+            # or
+            # - ../../path/to/my/app:/app
+        command: bash -c "npm i && npx nodemon"
+        # or
+        # command: bash -c "(install dependencies) && (run application)"
+
+        # You should only need the (install dependencies) step when your dependencies change.
+
+        # If you can't run your application in "watch" mode, you can manually restart your app without having to restart the Mattermost server.
+        # Instead of running `docker-compose up`, run these commands in two different terminals:
+        # `docker-compose up mattermost db`
+        # `docker-compose up node_app`
+        #
+        # Then you can press ctrl+c in the second terminal, and run `docker-compose up node_app` again to restart your app.
+        # It's probably best to have the app in its own terminal anyway, so the logging is more isolated.
