@@ -2,7 +2,7 @@
 ## dist: creates the bundle file
 dist: 
 	mkdir -p dist
-	zip -r dist/bundle.zip manifest.json handler.go go.mod
+	zip -r dist/bundle.zip manifest.json app.js package.json
 
 .PHONY: clean
 ## clean: deletes all
