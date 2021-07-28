@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
@@ -107,6 +108,9 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
+	p.proxy.AddBuiltinUpstream(
+		builtin.NewBuiltinApp(p.mm, p.conf, p.proxy, p.store),
+	)
 	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)

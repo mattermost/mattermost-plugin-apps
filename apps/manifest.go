@@ -18,6 +18,29 @@ const StaticFolder = "static"
 // Call with "/webhook/{PATH}"."
 const PathWebhook = "/webhook"
 
+var DefaultBindings = &Call{
+	Path: "/bindings",
+}
+
+var DefaultGetOAuth2ConnectURL = &Call{
+	Path: "/oauth2/connect",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+	},
+}
+
+var DefaultOnOAuth2Complete = &Call{
+	Path: "/oauth2/complete",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+		OAuth2User:            ExpandAll,
+	},
+}
+
 type Manifest struct {
 	// The AppID is a globally unique identifier that represents your app. IDs
 	// must be at least 3 characters, at most 32 characters and must contain
@@ -108,27 +131,19 @@ type Manifest struct {
 	Plugin *Plugin `json:"plugin,omitempty"`
 }
 
-var DefaultBindings = &Call{
-	Path: "/bindings",
-}
+func ManifestFromJSON(data []byte) (*Manifest, error) {
+	var m Manifest
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
 
-var DefaultGetOAuth2ConnectURL = &Call{
-	Path: "/oauth2/connect",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-	},
-}
+	err = m.IsValid()
+	if err != nil {
+		return nil, err
+	}
 
-var DefaultOnOAuth2Complete = &Call{
-	Path: "/oauth2/complete",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-		OAuth2User:            ExpandAll,
-	},
+	return &m, nil
 }
 
 type validator interface {
@@ -176,19 +191,20 @@ func (m Manifest) IsValid() error {
 	return nil
 }
 
-func ManifestFromJSON(data []byte) (*Manifest, error) {
-	var m Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
+func (m Manifest) Types() (out []AppType) {
+	if m.AWSLambda != nil {
+		out = append(out, AppTypeAWSLambda)
 	}
-
-	err = m.IsValid()
-	if err != nil {
-		return nil, err
+	if m.HTTP != nil {
+		out = append(out, AppTypeHTTP)
 	}
-
-	return &m, nil
+	if m.Kubeless != nil {
+		out = append(out, AppTypeKubeless)
+	}
+	if m.Plugin != nil {
+		out = append(out, AppTypePlugin)
+	}
+	return out
 }
 
 // AppID is a globally unique identifier that represents a Mattermost App.
