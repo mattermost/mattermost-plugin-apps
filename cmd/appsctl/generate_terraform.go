@@ -23,7 +23,7 @@ var generateTerraformCmd = &cobra.Command{
 	Short: "Generate data for terraform to provision aws apps",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, err := upaws.GetProvisionDataFromFile(args[0], &log)
+		data, err := upaws.GetProvisionDataFromFile(args[0], log)
 		if err != nil {
 			return errors.Wrap(err, "can't get provision data")
 		}

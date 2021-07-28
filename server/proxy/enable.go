@@ -42,7 +42,8 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnEnable failed, enabling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnEnable failed, enabling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
@@ -52,7 +53,7 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 		message = md.MD(fmt.Sprintf("Enabled %s", app.DisplayName))
 	}
 
-	p.mm.Log.Info("Enabled app", "app_id", app.AppID)
+	p.log.Infow("Enabled app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
@@ -77,7 +78,8 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnDisable failed, disabling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnDisable failed, disabling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
@@ -99,7 +101,8 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	p.mm.Log.Info("Disabled app", "app_id", app.AppID)
+	p.log.Infow("Disabled app",
+		"app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
