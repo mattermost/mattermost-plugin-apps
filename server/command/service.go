@@ -206,7 +206,6 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			f:            s.checkSystemAdmin(s.executeInstallKubeless),
 			autoComplete: installKubelessAC,
 		}
-
 	}
 
 	return h
