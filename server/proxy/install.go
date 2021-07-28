@@ -165,6 +165,17 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 				return err
 			}
 		}
+
+		_, err := client.GetBot(user.Id)
+		if err != nil {
+			err = client.CreateBot(bot)
+			if err != nil {
+				return err
+			}
+		} else {
+			bot.UserId = user.Id
+			bot.Username = user.Username
+		}
 	}
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username
