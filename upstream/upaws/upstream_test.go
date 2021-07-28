@@ -12,7 +12,7 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	lambdas := []apps.AWSLambda{
+	lambdas := []apps.AWSLambdaFunction{
 		{
 			Path: "/topic",
 			Name: "topic",
@@ -39,9 +39,11 @@ func TestMatch(t *testing.T) {
 	} {
 		t.Run(tc.callPath, func(t *testing.T) {
 			matched := match(tc.callPath, &apps.Manifest{
-				AppID:     "testID",
-				Version:   "v00.00.000",
-				AWSLambda: lambdas,
+				AppID:   "testID",
+				Version: "v00.00.000",
+				AWSLambda: &apps.AWSLambda{
+					Functions: lambdas,
+				},
 			})
 			assert.Equal(t, tc.expected, matched)
 		})

@@ -47,6 +47,9 @@ func (u *Upstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int,
 }
 
 func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.AWSLambda == nil {
+		return nil, errors.New("no 'aws_lambda' section in manifest.json")
+	}
 	name := match(call.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
@@ -86,7 +89,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq *apps.CallReques
 func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.AWSLambda {
+	for _, f := range m.AWSLambda.Functions {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				matchedName = LambdaName(m.AppID, m.Version, f.Name)

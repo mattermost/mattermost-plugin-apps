@@ -28,7 +28,10 @@ func NewStaticUpstream(httpOut httpout.Service) *StaticUpstream {
 }
 
 func (u *StaticUpstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", m.HTTPRootURL, apps.StaticFolder, path)
+	if m.HTTP == nil {
+		return nil, http.StatusInternalServerError, errors.New("App is not available as type http")
+	}
+	url := fmt.Sprintf("%s/%s/%s", m.HTTP.RootURL, apps.StaticFolder, path)
 
 	resp, err := http.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

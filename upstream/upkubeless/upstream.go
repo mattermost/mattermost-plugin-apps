@@ -40,6 +40,9 @@ func MakeUpstream() (*Upstream, error) {
 }
 
 func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.Kubeless == nil {
+		return nil, errors.New("no 'kubeless' section in manifest.json")
+	}
 	name := match(creq.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
@@ -129,7 +132,7 @@ func (u *Upstream) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int,
 func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.KubelessFunctions {
+	for _, f := range m.Kubeless.Functions {
 		if strings.HasPrefix(callPath, f.CallPath) {
 			if len(f.CallPath) > len(matchedPath) {
 				matchedName = FunctionName(m.AppID, m.Version, f.Handler)

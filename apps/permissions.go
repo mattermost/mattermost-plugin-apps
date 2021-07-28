@@ -68,6 +68,9 @@ func (p Permission) String() md.MD {
 }
 
 func (p Permissions) IsValid() error {
+	if len(p) == 0 {
+		return nil
+	}
 	// Check for permission dependencies. (P1, P2, ..., PN) means P1 requires
 	// (depends on) P2...PN.
 	for _, pp := range []Permissions{

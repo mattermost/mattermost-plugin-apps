@@ -134,7 +134,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range mani.AWSLambda {
+		for _, manifestFunction := range mani.AWSLambda.Functions {
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,
@@ -188,18 +188,18 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 }
 
 func (pd *ProvisionData) IsValid() error {
-	if pd.Manifest == nil {
-		return errors.New("no manifest")
+	if pd.Manifest == nil || pd.Manifest.AWSLambda == nil {
+		return errors.New("no manifest or AWS Lamda metadata")
 	}
 	if err := pd.Manifest.IsValid(); err != nil {
 		return err
 	}
 
-	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
-		return errors.New("different amount of functions in manifest and in the bundle")
+	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {
+		return errors.New("different number of functions in the manifest and in the bundle")
 	}
 
-	for _, function := range pd.Manifest.AWSLambda {
+	for _, function := range pd.Manifest.AWSLambda.Functions {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
 			return errors.Errorf("function %s was not found in the bundle", function)

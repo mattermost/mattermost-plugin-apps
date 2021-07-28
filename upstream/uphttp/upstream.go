@@ -33,6 +33,9 @@ func NewUpstream(httpOut httpout.Service) *Upstream {
 }
 
 func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.HTTP == nil {
+		return nil, errors.New("App is not available as type http")
+	}
 	if async {
 		go func() {
 			resp, _ := u.invoke(call.Context.BotUserID, app, call)
@@ -55,7 +58,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, app *apps.App, call *apps
 		return nil, utils.NewInvalidError("empty call")
 	}
 
-	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + call.Path)
+	callURL, err := utils.CleanURL(app.Manifest.HTTP.RootURL + call.Path)
 	if err != nil {
 		return nil, err
 	}

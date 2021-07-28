@@ -55,6 +55,9 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid manifest.json")
 	}
+	if m.Kubeless == nil {
+		return nil, errors.Wrap(err, "no 'kubeless' section in manifest.json")
+	}
 	if log != nil {
 		log.Debugw("Loaded App bundle",
 			"bundle", bundlePath,
@@ -67,7 +70,7 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 	}
 
 	// Provision functions.
-	for _, kf := range m.KubelessFunctions {
+	for _, kf := range m.Kubeless.Functions {
 		name := FunctionName(m.AppID, m.Version, kf.Handler)
 		ns := namespace(m.AppID)
 

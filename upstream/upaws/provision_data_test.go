@@ -46,7 +46,7 @@ func TestGetProvisionData(t *testing.T) {
 			runtime: "go1.x",
 		},
 	} {
-		function, ok := provisionData.LambdaFunctions[provisionData.Manifest.AWSLambda[i].Name]
+		function, ok := provisionData.LambdaFunctions[provisionData.Manifest.AWSLambda.Functions[i].Name]
 		require.True(t, ok)
 		require.Equal(t, tc.name, function.Name)
 		require.Equal(t, tc.handler, function.Handler)

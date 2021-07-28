@@ -52,8 +52,11 @@ func (u *Upstream) invoke(app *apps.App, fromMattermostUserID string, call *apps
 	if call == nil {
 		return nil, utils.NewInvalidError("empty call")
 	}
+	if app.Manifest.Plugin == nil {
+		return nil, errors.New("App is not available as type plugin")
+	}
 
-	return u.post(call.Context.ActingUserID, path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, call.Path), call)
+	return u.post(call.Context.ActingUserID, path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, call.Path), call)
 }
 
 // post does not close resp.Body, it's the caller's responsibility
