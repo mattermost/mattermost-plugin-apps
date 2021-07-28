@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/services/configservice"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
