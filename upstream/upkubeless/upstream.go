@@ -62,7 +62,6 @@ func (u *Upstream) InvokeFunction(app *apps.App, funcName string, creq *apps.Cal
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
-	fmt.Printf("<>/<> ServerlessRequest:%s\n", string(sreq))
 
 	req := clientset.CoreV1().RESTClient().Post().Body(bytes.NewBuffer(sreq))
 	req.SetHeader("Content-Type", "application/json")
@@ -104,7 +103,6 @@ func (u *Upstream) InvokeFunction(app *apps.App, funcName string, creq *apps.Cal
 		}
 		return nil, errors.New(strings.Replace(err.Error(), `\n`, "\n", -1))
 	}
-	fmt.Printf("<>/<> ServerlessResponse:%s\n", string(received))
 	resp, err := upstream.ServerlessResponseFromJSON(received)
 	if err != nil {
 		return nil, err
