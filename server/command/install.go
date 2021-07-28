@@ -85,6 +85,37 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 	return s.installApp(m, appSecret, params)
 }
 
+func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandResponse, error) {
+	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
+	err := fs.Parse(params.current)
+	if err != nil {
+		return errorOut(params, err)
+	}
+	if len(params.current) == 0 {
+		return errorOut(params, errors.New("you must specify a manifest URL"))
+	}
+	manifestURL := params.current[0]
+
+	// Trust the URL only in dev mode
+	conf := s.conf.GetConfig()
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	m, err := apps.ManifestFromJSON(data)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	return s.installApp(m, "", params)
+}
+
 func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
 	conf := s.conf.GetConfig()
 

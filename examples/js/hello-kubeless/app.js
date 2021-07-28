@@ -96,7 +96,7 @@ app.post('/send/submit', async (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
-    const submittedMessage = call.values.message;
+    const submittedMessage = call.values?.message;
     if (submittedMessage) {
         message += ' ...and ' + submittedMessage + '!';
     }
