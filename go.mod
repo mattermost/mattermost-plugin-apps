@@ -22,8 +22,8 @@ require (
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	google.golang.org/api v0.44.0
-	k8s.io/api v0.0.0-20180308224125-73d903622b73
 	k8s.io/apimachinery v0.0.0-20180228050457-302974c03f7e
+	k8s.io/client-go v7.0.0+incompatible
 )
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v8.0.0+incompatible

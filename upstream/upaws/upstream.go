@@ -52,7 +52,7 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 		return nil, utils.ErrNotFound
 	}
 
-	data, err := u.InvokeFunction(name, async, call)
+	data, err := u.invokeFunction(name, async, call)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) InvokeFunction(name string, async bool, creq *apps.CallRequest) ([]byte, error) {
+func (u *Upstream) invokeFunction(name string, async bool, creq *apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent

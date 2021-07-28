@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // invocationPayload is a scoped down version of

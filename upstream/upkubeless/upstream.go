@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	kubelessutil "github.com/kubeless/kubeless/pkg/utils"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -43,56 +45,66 @@ func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) 
 		return nil, utils.ErrNotFound
 	}
 
-	data, err := u.InvokeFunction(app, name, creq, async)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.NopCloser(bytes.NewReader(data)), nil
-}
-
-// InvokeFunction is a public method used in appsctl, but is not a part of the
-// upstream.Upstream interface. It invokes a function with a specified name,
-// with no conversion.
-func (u *Upstream) InvokeFunction(app *apps.App, funcName string, creq *apps.CallRequest, async bool) ([]byte, error) {
-	clientset := kubelessutil.GetClientOutOfCluster()
-
 	// Build the JSON request
-	sreq, err := upstream.ServerlessRequestFromCall(creq)
+	creqData, err := upstream.ServerlessRequestFromCall(creq)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
-	req := clientset.CoreV1().RESTClient().Post().Body(bytes.NewBuffer(sreq))
-	req.SetHeader("Content-Type", "application/json")
-	req.SetHeader("event-type", "application/json")
-
-	// Get the function's service URL
-	svc, err := clientset.CoreV1().Services(namespace(app.AppID)).Get(funcName, metav1.GetOptions{})
+	crespData, err := u.invoke(app, name, creq.Path, http.MethodPost, creqData, async)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find the service for %s", funcName)
+		return nil, err
+	}
+
+	return io.NopCloser(bytes.NewReader(crespData)), nil
+}
+
+func FunctionURL(appID apps.AppID, funcName string) (string, error) {
+	clientset := kubelessutil.GetClientOutOfCluster()
+	return functionURL(clientset, appID, funcName)
+}
+
+func functionURL(clientset kubernetes.Interface, appID apps.AppID, funcName string) (string, error) {
+	// Get the function's service URL
+	svc, err := clientset.CoreV1().Services(namespace(appID)).Get(funcName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to find the kubernetes service for function %s", funcName)
 	}
 	port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
 	if svc.Spec.Ports[0].Name != "" {
 		port = svc.Spec.Ports[0].Name
 	}
 
-	serviceURL := svc.ObjectMeta.SelfLink + ":" + port + "/proxy/" +
-		strings.TrimPrefix(creq.Path, "/")
-	// REST package removes trailing slash when building URLs
-	// Causing POST requests to be redirected with an empty body
-	// So we need to manually build the URL
-	req = req.AbsPath(serviceURL)
+	serviceURL := svc.ObjectMeta.SelfLink + ":" + port + "/proxy/"
+	return serviceURL, nil
+}
 
-	// Set event metadata
+func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method string, data []byte, async bool) ([]byte, error) {
+	clientset := kubelessutil.GetClientOutOfCluster()
+	fURL, err := functionURL(clientset, app.AppID, funcName)
+	if err != nil {
+		return nil, err
+	}
+	fURL += strings.TrimPrefix(requestPath, "/")
+
 	timestamp := time.Now().UTC()
 	eventID, err := kubelessutil.GetRandString(11)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate ID")
 	}
+
+	req := clientset.CoreV1().RESTClient().Post().Body(bytes.NewBuffer(data))
+
+	req.SetHeader("Content-Type", "application/json")
+	req.SetHeader("event-type", "application/json")
 	req.SetHeader("event-id", eventID)
 	req.SetHeader("event-time", timestamp.Format(time.RFC3339))
 	req.SetHeader("event-namespace", "mattermost")
+
+	// REST package removes trailing slash when building URLs
+	// Causing POST requests to be redirected with an empty body
+	// So we need to manually build the URL
+	req = req.AbsPath(fURL)
 
 	received, err := req.Do().Raw()
 	if err != nil {
