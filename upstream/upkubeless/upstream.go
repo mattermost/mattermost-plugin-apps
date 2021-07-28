@@ -113,7 +113,7 @@ func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method st
 			// Give a more meaninful error for timeout errors
 			return nil, errors.Wrap(err, "request timeout exceeded")
 		}
-		return nil, errors.New(strings.Replace(err.Error(), `\n`, "\n", -1))
+		return nil, errors.New(strings.ReplaceAll(err.Error(), `\n`, "\n"))
 	}
 	resp, err := upstream.ServerlessResponseFromJSON(received)
 	if err != nil {
