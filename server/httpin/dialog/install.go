@@ -176,7 +176,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 
 	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret, "")
 	if err != nil {
-		d.log.WithError(err).Warnw("Failed to install app", "app_id")
+		d.log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
 		respondWithError(w, http.StatusInternalServerError, err)
 
 		out = md.Markdownf("Install failed. Error: **%s**\n", err.Error())
