@@ -159,6 +159,21 @@ var DefaultOnOAuth2Complete = &Call{
 	},
 }
 
+func ManifestFromJSON(data []byte) (*Manifest, error) {
+	var m Manifest
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	err = m.IsValid()
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
 func (m Manifest) IsValid() error {
 	for _, f := range []func() error{
 		m.AppID.IsValid,
@@ -212,17 +227,9 @@ func (m Manifest) IsValid() error {
 	return nil
 }
 
-func ManifestFromJSON(data []byte) (*Manifest, error) {
-	var m Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
+func (m Manifest) Types() (out []AppType) {
+	if m.AWSLambda != nil {
+		out = append(out, AppTypeAWSLambda)
 	}
-
-	err = m.IsValid()
-	if err != nil {
-		return nil, err
-	}
-
-	return &m, nil
+	if m.HTTPRootURL
 }

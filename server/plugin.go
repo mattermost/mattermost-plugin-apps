@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
@@ -118,6 +119,11 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
+	// Initialize the list of installed apps.
+	p.proxy.AddBuiltinUpstream(
+		builtin.NewBuiltinApp(p.mm, p.conf, p.proxy, p.store),
+	)
+
 	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)

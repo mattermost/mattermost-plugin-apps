@@ -1,0 +1,167 @@
+package builtin
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"path"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/pkg/errors"
+)
+
+const (
+	AppID          = "apps"
+	AppDisplayName = "Mattermost Apps plugin"
+	AppDescription = "Install and manage Mattermost Apps"
+)
+
+const (
+	contextInstallAppID = "install_app_id"
+
+	fURL                = "url"
+	fConsentPermissions = "consent_permissions"
+	fConsentLocations   = "consent_locations"
+	fRequireUserConsent = "require_user_consent"
+	fSecret             = "secret"
+	fAppID              = "app"
+	fAppType            = "app_type"
+	fUserID             = "user"
+)
+
+const (
+	pDebugBindings      = "/debug-bindings"
+	pDebugClean         = "/debug-clean"
+	pInfo               = "/info"
+	pList               = "/list"
+	pInstallMarketplace = "/install-marketplace/"
+	pInstallURL         = "/install-url/"
+	pInstallS3          = "/install-s3/"
+	pInstallConsent     = "/install-consent"
+)
+
+type builtinApp struct {
+	conf  config.Service
+	mm    *pluginapi.Client
+	log   utils.Logger
+	proxy proxy.Service
+	store *store.Service
+}
+
+var _ upstream.Upstream = (*builtinApp)(nil)
+
+func NewBuiltinApp(mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, store *store.Service) *builtinApp {
+	return &builtinApp{
+		mm:    mm,
+		log:   log,
+		conf:  conf,
+		proxy: proxy,
+		store: store,
+	}
+}
+
+func Manifest(conf config.Config) apps.Manifest {
+	return apps.Manifest{
+		AppID:       AppID,
+		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
+		AppType:     apps.AppTypeBuiltin,
+		DisplayName: AppDisplayName,
+		Description: AppDescription,
+	}
+}
+
+func App(conf config.Config) *apps.App {
+	return &apps.App{
+		Manifest: apps.Manifest{
+			AppID:       AppID,
+			Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
+			AppType:     apps.AppTypeBuiltin,
+			DisplayName: AppDisplayName,
+			Description: AppDescription,
+		},
+		BotUserID:   conf.BotUserID,
+		BotUsername: config.BotUsername,
+		GrantedLocations: apps.Locations{
+			apps.LocationCommand,
+		},
+	}
+}
+
+func (a *builtinApp) Roundtrip(creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	var f func(*apps.CallRequest) *apps.CallResponse
+
+	switch creq.Path {
+	case apps.DefaultBindings.Path:
+		f = a.getBindings
+
+	case submitPath(pInfo):
+		f = a.info
+	case submitPath(pList):
+		f = a.list
+	case submitPath(pDebugClean):
+		f = a.debugClean
+
+	case formPath(pInstallMarketplace):
+		f = a.installMarketplaceForm
+	case lookupPath(pInstallMarketplace):
+		f = a.installMarketplaceLookup
+	case submitPath(pInstallMarketplace):
+		f = a.installMarketplaceSubmit
+
+	case formPath(pInstallConsent):
+		f = a.installConsentForm
+	case lookupPath(pInstallConsent):
+		f = a.installConsentLookup
+	case submitPath(pInstallConsent):
+		f = a.installCommandSubmit
+
+	default:
+		return nil, errors.Errorf("%s is not found", creq.Path)
+	}
+
+	cresp := f(creq)
+	data, err := json.Marshal(cresp)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.NopCloser(bytes.NewReader(data)), nil
+}
+
+func (a *builtinApp) GetStatic(path string) (io.ReadCloser, int, error) {
+	return nil, http.StatusNotFound, utils.ErrNotFound
+}
+
+func responseMD(format string, args ...interface{}) *apps.CallResponse {
+	return &apps.CallResponse{
+		Type:     apps.CallResponseTypeOK,
+		Markdown: md.Markdownf(format, args...),
+	}
+}
+
+func responseForm(form *apps.Form) *apps.CallResponse {
+	return &apps.CallResponse{
+		Type: apps.CallResponseTypeForm,
+		Data: form,
+	}
+}
+
+func submitPath(p string) string {
+	return path.Join(p, "submit")
+}
+
+func formPath(p string) string {
+	return path.Join(p, "form")
+}
+
+func lookupPath(p string) string {
+	return path.Join(p, "form")
+}
