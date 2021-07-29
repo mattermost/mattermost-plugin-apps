@@ -119,9 +119,9 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 	}
 }
 
-func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, fromPluginID, sessionID, actingUserID string) {
 	// Only check non-plugin requests
-	if pluginID == "" {
+	if fromPluginID == "" {
 		err := utils.EnsureSysAdmin(a.mm, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
@@ -136,8 +136,14 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 
+	deployAs := m.MustDeployAs()
+	if deployAs == "" {
+		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "install API does not yet support multiple deployment types"))
+		return
+	}
+
 	var client mmclient.Client
-	if pluginID != "" {
+	if fromPluginID != "" {
 		client = mmclient.NewRPCClient(a.mm)
 	} else {
 		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
@@ -159,7 +165,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(client, sessionID, cc, false, "")
+	_, _, err = a.proxy.InstallApp(m.AppID, client, sessionID, cc, false, "", deployAs)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

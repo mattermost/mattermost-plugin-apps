@@ -15,13 +15,11 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -109,7 +107,8 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
 	p.proxy.AddBuiltinUpstream(
-		builtin.NewBuiltinApp(p.mm, p.conf, p.proxy, p.store),
+		builtin.AppID,
+		builtin.NewBuiltinApp(p.mm, p.log, p.conf, p.proxy, p.store),
 	)
 	p.log.Debugf("Initialized the app proxy")
 
@@ -117,10 +116,8 @@ func (p *Plugin) OnActivate() (err error) {
 	p.log.Debugf("Initialized the app REST APIs")
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
-		dialog.Init,
 		restapi.Init,
 		gateway.Init,
-		http_hello.Init,
 	)
 	p.log.Debugf("Initialized incoming HTTP")
 

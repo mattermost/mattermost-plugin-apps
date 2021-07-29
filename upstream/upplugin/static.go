@@ -26,11 +26,11 @@ func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	}
 }
 
-func (u *StaticUpstream) GetStatic(m *apps.Manifest, assetPath string) (io.ReadCloser, int, error) {
-	if m.Plugin == nil {
-		return nil, http.StatusInternalServerError, errors.New("App is not available as type plugin")
+func (u *StaticUpstream) GetStatic(app *apps.App, assetPath string) (io.ReadCloser, int, error) {
+	if app.Manifest.Plugin == nil {
+		return nil, http.StatusInternalServerError, errors.New("app is not available as type plugin")
 	}
-	url := path.Join("/"+m.Plugin.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)
+	url := path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)
 
 	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

@@ -27,9 +27,9 @@ func TestAppMetadataForClient(t *testing.T) {
 		{
 			BotUserID:   "botid",
 			BotUsername: "botusername",
+			DeployType:  apps.DeployBuiltin,
 			Manifest: apps.Manifest{
 				AppID:       apps.AppID("app1"),
-				AppType:     apps.AppTypeBuiltin,
 				DisplayName: "App 1",
 			},
 		},

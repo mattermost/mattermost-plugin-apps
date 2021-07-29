@@ -110,7 +110,7 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 }
 
 func (p *Proxy) AppIsEnabled(app *apps.App) bool {
-	if app.AppType == apps.AppTypeBuiltin {
+	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}
 	if app.Disabled {

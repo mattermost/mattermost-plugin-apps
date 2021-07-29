@@ -34,7 +34,7 @@ const (
 	fRequireUserConsent = "require_user_consent"
 	fSecret             = "secret"
 	fAppID              = "app"
-	fAppType            = "app_type"
+	fDeployType         = "deployment_type"
 	fUserID             = "user"
 )
 
@@ -73,7 +73,6 @@ func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
-		AppType:     apps.AppTypeBuiltin,
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 	}
@@ -81,13 +80,8 @@ func Manifest(conf config.Config) apps.Manifest {
 
 func App(conf config.Config) *apps.App {
 	return &apps.App{
-		Manifest: apps.Manifest{
-			AppID:       AppID,
-			Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
-			AppType:     apps.AppTypeBuiltin,
-			DisplayName: AppDisplayName,
-			Description: AppDescription,
-		},
+		Manifest:    Manifest(conf),
+		DeployType:  apps.DeployBuiltin,
 		BotUserID:   conf.BotUserID,
 		BotUsername: config.BotUsername,
 		GrantedLocations: apps.Locations{
@@ -96,7 +90,7 @@ func App(conf config.Config) *apps.App {
 	}
 }
 
-func (a *builtinApp) Roundtrip(creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (a *builtinApp) Roundtrip(_ *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
 	var f func(*apps.CallRequest) *apps.CallResponse
 
 	switch creq.Path {
@@ -122,7 +116,7 @@ func (a *builtinApp) Roundtrip(creq *apps.CallRequest, async bool) (io.ReadClose
 	case lookupPath(pInstallConsent):
 		f = a.installConsentLookup
 	case submitPath(pInstallConsent):
-		f = a.installCommandSubmit
+		f = a.installConsentSubmit
 
 	default:
 		return nil, errors.Errorf("%s is not found", creq.Path)
@@ -136,7 +130,7 @@ func (a *builtinApp) Roundtrip(creq *apps.CallRequest, async bool) (io.ReadClose
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
-func (a *builtinApp) GetStatic(path string) (io.ReadCloser, int, error) {
+func (a *builtinApp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 

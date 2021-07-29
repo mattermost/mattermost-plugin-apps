@@ -112,22 +112,25 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// AppType-specific fields
+	// Deploy types, only those supported by the App should be populated.
 
-	// HTTP contains metadata for an app that implements AppTypeHTTP.
-	// The JSON name `http` must match the type.
+	// HTTP contains metadata for an app that is already, deployed externally
+	// and us accessed over HTTP. The JSON name `http` must match the type.
 	HTTP *HTTP `json:"http,omitempty"`
 
-	// AWSLambda contains metadata for an app that implements AppTypeAWSLambda.
-	// The JSON name `aws_lambda` must match the type.
+	// AWSLambda contains metadata for an app that can be deployed to AWS Lambda
+	// and S3 services, and is accessed using the AWS APIs. The JSON name
+	// `aws_lambda` must match the type.
 	AWSLambda *AWSLambda `json:"aws_lambda,omitempty"`
 
-	// Kubeless contains metadata for an app that implements AppTypeKubeless.
-	// The JSON name `kubeless` must match the type.
+	// Kubeless contains metadata for an app that can be deployed to Kubeless
+	// running on a Kubernetes cluster, and is accessed using the Kubernetes
+	// APIs and HTTP. The JSON name `kubeless` must match the type.
 	Kubeless *Kubeless `json:"kubeless,omitempty"`
 
-	// Plugin contains metadata for an app that implements AppTypePlugin. The
-	// JSON name `plugin` must match the type.
+	// Plugin contains metadata for an app that is implemented and is deployed
+	// and accessed as a local Plugin. The JSON name `plugin` must match the
+	// type.
 	Plugin *Plugin `json:"plugin,omitempty"`
 }
 
@@ -165,7 +168,7 @@ func (m Manifest) IsValid() error {
 		}
 	}
 
-	// At least one AppType must be supported
+	// At least one type of deployment must be supported.
 	if m.HTTP == nil &&
 		m.Plugin == nil &&
 		m.AWSLambda == nil &&
@@ -191,20 +194,45 @@ func (m Manifest) IsValid() error {
 	return nil
 }
 
-func (m Manifest) Types() (out []AppType) {
+func (m Manifest) MustDeployAs() DeployType {
+	tt := m.DeployTypes()
+	if len(tt) == 1 {
+		for t := range tt {
+			return t
+		}
+	}
+	return ""
+}
+
+func (m Manifest) DeployTypes() map[DeployType]interface{} {
+	out := map[DeployType]interface{}{}
 	if m.AWSLambda != nil {
-		out = append(out, AppTypeAWSLambda)
+		out[DeployAWSLambda] = m.AWSLambda
 	}
 	if m.HTTP != nil {
-		out = append(out, AppTypeHTTP)
+		out[DeployHTTP] = m.HTTP
 	}
 	if m.Kubeless != nil {
-		out = append(out, AppTypeKubeless)
+		out[DeployKubeless] = m.Kubeless
 	}
 	if m.Plugin != nil {
-		out = append(out, AppTypePlugin)
+		out[DeployPlugin] = m.Plugin
 	}
 	return out
+}
+
+func (m Manifest) SupportsDeploy(dtype DeployType) bool {
+	switch dtype {
+	case DeployAWSLambda:
+		return m.AWSLambda != nil && m.AWSLambda.IsValid() == nil
+	case DeployHTTP:
+		return m.HTTP != nil && m.HTTP.IsValid() == nil
+	case DeployKubeless:
+		return m.Kubeless != nil && m.Kubeless.IsValid() == nil
+	case DeployPlugin:
+		return m.Plugin != nil && m.Plugin.IsValid() == nil
+	}
+	return false
 }
 
 // AppID is a globally unique identifier that represents a Mattermost App.

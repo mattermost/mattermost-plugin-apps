@@ -12,9 +12,9 @@ import (
 // Upstream should be abbreviated as `up`.
 type Upstream interface {
 	StaticUpstream
-	Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error)
+	Roundtrip(_ *apps.App, _ *apps.CallRequest, async bool) (io.ReadCloser, error)
 }
 
 type StaticUpstream interface {
-	GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error)
+	GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error)
 }

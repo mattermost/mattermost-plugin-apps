@@ -5,10 +5,13 @@ package apps
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+// HTTP contains metadata for an app that is already, deployed externally
+// and us accessed over HTTP. The JSON name `http` must match the type.
 type HTTP struct {
 	// All call and static paths are relative to the RootURL.
 	RootURL string `json:"root_url,omitempty"`

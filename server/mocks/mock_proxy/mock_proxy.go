@@ -272,9 +272,9 @@ func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 bool, arg4 string) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 apps.AppID, arg1 mmclient.Client, arg2 string, arg3 *apps.Context, arg4 bool, arg5 string, arg6 apps.DeployType) (*apps.App, md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(md.MD)
 	ret2, _ := ret[2].(error)
@@ -282,9 +282,9 @@ func (m *MockService) InstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.C
 }
 
 // InstallApp indicates an expected call of InstallApp.
-func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // Notify mocks base method.

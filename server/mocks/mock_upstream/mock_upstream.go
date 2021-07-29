@@ -36,7 +36,7 @@ func (m *MockUpstream) EXPECT() *MockUpstreamMockRecorder {
 }
 
 // GetStatic mocks base method.
-func (m *MockUpstream) GetStatic(arg0 *apps.Manifest, arg1 string) (io.ReadCloser, int, error) {
+func (m *MockUpstream) GetStatic(arg0 *apps.App, arg1 string) (io.ReadCloser, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1)
 	ret0, _ := ret[0].(io.ReadCloser)

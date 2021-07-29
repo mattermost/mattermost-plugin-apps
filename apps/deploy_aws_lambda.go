@@ -1,10 +1,14 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+// AWSLambda contains metadata for an app that can be deployed to AWS Lambda
+// and S3 services, and is accessed using the AWS APIs. The JSON name
+// `aws_lambda` must match the type.
 type AWSLambda struct {
 	Functions []AWSLambdaFunction `json:"functions,omitempty"`
 }

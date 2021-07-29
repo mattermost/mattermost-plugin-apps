@@ -34,7 +34,7 @@ func NewUpstream(httpOut httpout.Service) *Upstream {
 
 func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if app.Manifest.HTTP == nil {
-		return nil, errors.New("App is not available as type http")
+		return nil, errors.New("app is not available as type http")
 	}
 	if async {
 		go func() {

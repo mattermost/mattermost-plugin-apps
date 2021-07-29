@@ -158,16 +158,18 @@ var awsTestCmd = &cobra.Command{
 
 func helloLambda() *apps.App {
 	return &apps.App{
+		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
-			AppType: apps.AppTypeAWSLambda,
 			Version: "demo",
-			AWSLambda: []apps.AWSLambda{
-				{
-					Path:    "/",
-					Name:    "go-function",
-					Handler: "hello-lambda",
-					Runtime: "go1.x",
+			AWSLambda: &apps.AWSLambda{
+				Functions: []apps.AWSLambdaFunction{
+					{
+						Path:    "/",
+						Name:    "go-function",
+						Handler: "hello-lambda",
+						Runtime: "go1.x",
+					},
 				},
 			},
 		},
@@ -184,7 +186,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(&helloLambda().Manifest, "test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}

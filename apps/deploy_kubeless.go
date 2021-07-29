@@ -6,6 +6,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+// Kubeless contains metadata for an app that can be deployed to Kubeless
+// running on a Kubernetes cluster, and is accessed using the Kubernetes APIs
+// and HTTP. The JSON name `kubeless` must match the type.
 type Kubeless struct {
 	Functions []KubelessFunction `json:"functions,omitempty"`
 }

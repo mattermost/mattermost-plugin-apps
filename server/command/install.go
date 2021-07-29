@@ -10,7 +10,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 )
 
 func (s *service) executeInstallMarketplace(params *commandParams) (*model.CommandResponse, error) {
@@ -117,18 +116,19 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 }
 
 func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
-	conf := s.conf.GetConfig()
+	// conf := s.conf.GetConfig()
 
-	// Finish the installation when the Dialog is submitted, see
-	// <plugin>/http/dialog/install.go
-	err := s.mm.Frontend.OpenInteractiveDialog(
-		dialog.NewInstallAppDialog(m, appSecret, conf, params.commandArgs))
-	if err != nil {
-		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
-	}
+	// // Finish the installation when the Dialog is submitted, see
+	// // <plugin>/http/dialog/install.go
+	// err := s.mm.Frontend.OpenInteractiveDialog(
+	// 	dialog.NewInstallAppDialog(m, appSecret, conf, params.commandArgs))
+	// if err != nil {
+	// 	return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))
+	// }
 
-	return &model.CommandResponse{
-		Text:         "please continue by filling out the interactive form",
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+	// return &model.CommandResponse{
+	// 	Text:         "please continue by filling out the interactive form",
+	// 	ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+	// }, nil
+	return nil, nil
 }

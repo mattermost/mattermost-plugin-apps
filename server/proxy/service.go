@@ -59,7 +59,7 @@ type Service interface {
 	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
+	InstallApp(_ apps.AppID, _ mmclient.Client, sessionID string, _ *apps.Context, trusted bool, secret string, _ apps.DeployType) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
 	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
 
@@ -81,29 +81,29 @@ func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, sto
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
-	newUpstream := func(appType apps.AppType, makeUpstream func() (upstream.Upstream, error)) {
-		if isAppTypeSupported(conf, appType) == nil {
+	newUpstream := func(dtype apps.DeployType, makeUpstream func() (upstream.Upstream, error)) {
+		if isDeploySupported(conf, dtype) == nil {
 			up, err := makeUpstream()
 			if err != nil {
-				p.mm.Log.Debug("failed to initialize upstream", "error", err.Error(), "app_type", appType)
+				p.mm.Log.Debug("failed to initialize upstream", "error", err.Error(), "app_type", dtype)
 			} else {
-				p.upstreams.Store(appType, up)
+				p.upstreams.Store(dtype, up)
 			}
 		} else {
-			p.upstreams.Delete(appType)
+			p.upstreams.Delete(dtype)
 		}
 	}
 
-	newUpstream(apps.AppTypeHTTP, func() (upstream.Upstream, error) {
+	newUpstream(apps.DeployHTTP, func() (upstream.Upstream, error) {
 		return uphttp.NewUpstream(p.httpOut), nil
 	})
-	newUpstream(apps.AppTypeAWSLambda, func() (upstream.Upstream, error) {
+	newUpstream(apps.DeployAWSLambda, func() (upstream.Upstream, error) {
 		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, p.log)
 	})
-	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
+	newUpstream(apps.DeployPlugin, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&p.mm.Plugin), nil
 	})
-	newUpstream(apps.AppTypeKubeless, func() (upstream.Upstream, error) {
+	newUpstream(apps.DeployKubeless, func() (upstream.Upstream, error) {
 		return upkubeless.MakeUpstream()
 	})
 	return nil

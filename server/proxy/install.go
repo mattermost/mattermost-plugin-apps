@@ -18,22 +18,29 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error) {
-	m, err := p.store.Manifest.Get(cc.AppID)
+// InstallApp installs an App.
+//  - client is a user-scoped(??) client to Mattermost??
+//  - sessionID is needed to pass down to the app in liue of a proper token
+//  - cc is the Context that will be passed down to the App's OnInstall callback.
+func (p *Proxy) InstallApp(appID apps.AppID, client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string, deploymentType apps.DeployType) (*apps.App, md.MD, error) {
+	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
 
 	conf := p.conf.GetConfig()
-	err = isAppTypeSupported(conf, m.AppType)
+	err = isDeploySupported(conf, deploymentType)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "app type is not supported")
+		return nil, "", errors.Wrap(err, "app type is not supported on this instance of Mattermost")
+	}
+	if !m.SupportsDeploy(deploymentType) {
+		return nil, "", errors.Errorf("app can not be accessed as %s", deploymentType)
 	}
 
-	app, err := p.store.App.Get(cc.AppID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
-			return nil, "", errors.Wrap(err, "failed to find existing app")
+			return nil, "", errors.Wrap(err, "failed to load existing app")
 		}
 		app = &apps.App{}
 	}
@@ -75,6 +82,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 
 	var message md.MD
 	if app.OnInstall != nil {
+		cc.AppID = appID
 		creq := &apps.CallRequest{
 			Call:    *app.OnInstall,
 			Context: cc,
@@ -193,7 +201,7 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 		return nil
 	}
 
-	asset, _, err := p.getStatic(&app.Manifest, iconPath)
+	asset, _, err := p.getStatic(app, iconPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app icon")
 	}

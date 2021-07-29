@@ -4,7 +4,6 @@
 package builtin
 
 import (
-	"github.com/hashicorp/go-getter"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -116,46 +115,48 @@ func (a *builtinApp) installHTTPForm(creq *apps.CallRequest) *apps.CallResponse 
 }
 
 func (a *builtinApp) installMarketplaceLookup(creq *apps.CallRequest) *apps.CallResponse {
-	name := creq.GetStringValue("name", "")
-	input := creq.GetStringValue("user_input", "")
+	// name := creq.GetStringValue("name", "")
+	// input := creq.GetStringValue("user_input", "")
 
-	switch name {
-	case fAppID:
-		marketplaceApps := a.proxy.ListMarketplaceApps(input)
-		var options []*apps.SelectOption
-		for _, mapp := range marketplaceApps {
-			if !mapp.Installed {
-				options = append(options, &apps.SelectOption{
-					Value: string(mapp.Manifest.AppID),
-					Label: mapp.Manifest.DisplayName,
-				})
-			}
-		}
-		return options
-	}
+	// switch name {
+	// case fAppID:
+	// 	marketplaceApps := a.proxy.ListMarketplaceApps(input)
+	// 	var options []*apps.SelectOption
+	// 	for _, mapp := range marketplaceApps {
+	// 		if !mapp.Installed {
+	// 			options = append(options, &apps.SelectOption{
+	// 				Value: string(mapp.Manifest.AppID),
+	// 				Label: mapp.Manifest.DisplayName,
+	// 			})
+	// 		}
+	// 	}
+	// 	return options
+	// }
 	return nil
 }
 
 func (a *builtinApp) installMarketplaceSubmit(creq *apps.CallRequest) *apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	m, err := a.store.Manifest.Get(appID)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
+	// appID := apps.AppID(creq.GetValue(fAppID, ""))
+	// m, err := a.store.Manifest.Get(appID)
+	// if err != nil {
+	// 	return apps.NewErrorCallResponse(err)
+	// }
 
-	return a.installAppFormManifest(m, creq)
+	// return a.installAppFormManifest(m, creq)
+	return nil
 }
 
 func (a *builtinApp) installURLSubmit(creq *apps.CallRequest) *apps.CallResponse {
-	url := creq.GetValue(fURL, "")
+	// url := creq.GetValue(fURL, "")
 
-	data, err := getter.Get(url)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
-	m, err := apps.ManifestFromJSON(data)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
-	return a.installAppFormManifest(m, creq)
+	// data, err := getter.Get(url)
+	// if err != nil {
+	// 	return apps.NewErrorCallResponse(err)
+	// }
+	// m, err := apps.ManifestFromJSON(data)
+	// if err != nil {
+	// 	return apps.NewErrorCallResponse(err)
+	// }
+	// return a.installAppFormManifest(m, creq)
+	return nil
 }
