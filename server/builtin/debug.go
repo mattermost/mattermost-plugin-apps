@@ -20,7 +20,7 @@ func (a *builtinApp) debugCommandBinding() *apps.Binding {
 
 func (a *builtinApp) debugClean(creq *apps.CallRequest) *apps.CallResponse {
 	// <>/<> !! TODO!!!
-	return responseMD("Deleted all KV records and emptied the config.")
+	return mdResponse("Deleted all KV records and emptied the config.")
 }
 
 // func (a *builtinApp) debugInstall(call *api.Call) (md.MD, error) {

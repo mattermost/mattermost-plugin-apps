@@ -22,19 +22,19 @@ import (
 //  - client is a user-scoped(??) client to Mattermost??
 //  - sessionID is needed to pass down to the app in liue of a proper token
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(appID apps.AppID, client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string, deploymentType apps.DeployType) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(appID apps.AppID, client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string, deployType apps.DeployType) (*apps.App, md.MD, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
 
 	conf := p.conf.GetConfig()
-	err = isDeploySupported(conf, deploymentType)
+	err = isDeploySupported(conf, deployType)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "app type is not supported on this instance of Mattermost")
 	}
-	if !m.SupportsDeploy(deploymentType) {
-		return nil, "", errors.Errorf("app can not be accessed as %s", deploymentType)
+	if !m.SupportsDeploy(deployType) {
+		return nil, "", errors.Errorf("app can not be accessed as %s", deployType)
 	}
 
 	app, err := p.store.App.Get(appID)

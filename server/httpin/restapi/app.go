@@ -138,7 +138,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, fromP
 
 	deployAs := m.MustDeployAs()
 	if deployAs == "" {
-		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "install API does not yet support multiple deployment types"))
+		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "install API does not yet support multiple deploy types"))
 		return
 	}
 

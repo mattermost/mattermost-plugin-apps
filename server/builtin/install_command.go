@@ -28,7 +28,7 @@ func (a *builtinApp) installCommandBinding() *apps.Binding {
 				Hint:        "[app ID]",
 				Description: "Installs an App from the Marketplace",
 				Call: &apps.Call{
-					Path: pInstallMarketplace,
+					Path: pInstallS3,
 				},
 			},
 		}
@@ -57,27 +57,8 @@ func (a *builtinApp) installCommandBinding() *apps.Binding {
 	return installCommand
 }
 
-func (a *builtinApp) installMarketplaceForm(creq *apps.CallRequest) *apps.CallResponse {
-	return responseForm(&apps.Form{
-		Title: "Install an App from marketplace",
-		Fields: []*apps.Field{
-			{
-				Name:                 fAppID,
-				Type:                 apps.FieldTypeDynamicSelect,
-				Description:          "select a Marketplace App",
-				Label:                fAppID,
-				AutocompleteHint:     "App ID",
-				AutocompletePosition: 1,
-			},
-		},
-		Call: &apps.Call{
-			Path: pInstallMarketplace,
-		},
-	})
-}
-
 func (a *builtinApp) installS3Form(creq *apps.CallRequest) *apps.CallResponse {
-	return responseForm(&apps.Form{
+	return formResponse(&apps.Form{
 		Title: "Install an App from AWS S3",
 		Fields: []*apps.Field{
 			{
@@ -95,8 +76,8 @@ func (a *builtinApp) installS3Form(creq *apps.CallRequest) *apps.CallResponse {
 	})
 }
 
-func (a *builtinApp) installHTTPForm(creq *apps.CallRequest) *apps.CallResponse {
-	return responseForm(&apps.Form{
+func (a *builtinApp) installURLForm(creq *apps.CallRequest) *apps.CallResponse {
+	return formResponse(&apps.Form{
 		Title: "Install an App from an HTTP URL",
 		Fields: []*apps.Field{
 			{
@@ -114,49 +95,50 @@ func (a *builtinApp) installHTTPForm(creq *apps.CallRequest) *apps.CallResponse 
 	})
 }
 
-func (a *builtinApp) installMarketplaceLookup(creq *apps.CallRequest) *apps.CallResponse {
-	// name := creq.GetStringValue("name", "")
-	// input := creq.GetStringValue("user_input", "")
+func (a *builtinApp) installLookup(creq *apps.CallRequest) *apps.CallResponse {
+	name := creq.GetValue("name", "")
+	input := creq.GetValue("user_input", "")
 
-	// switch name {
-	// case fAppID:
-	// 	marketplaceApps := a.proxy.ListMarketplaceApps(input)
-	// 	var options []*apps.SelectOption
-	// 	for _, mapp := range marketplaceApps {
-	// 		if !mapp.Installed {
-	// 			options = append(options, &apps.SelectOption{
-	// 				Value: string(mapp.Manifest.AppID),
-	// 				Label: mapp.Manifest.DisplayName,
-	// 			})
-	// 		}
-	// 	}
-	// 	return options
-	// }
+	switch name {
+	case fAppID:
+		marketplaceApps := a.proxy.GetListedApps(input, false)
+		var options []*apps.SelectOption
+		for _, mapp := range marketplaceApps {
+			if !mapp.Installed {
+				options = append(options, &apps.SelectOption{
+					Value: string(mapp.Manifest.AppID),
+					Label: mapp.Manifest.DisplayName,
+				})
+			}
+		}
+		return dataResponse(options)
+	}
 	return nil
 }
 
-func (a *builtinApp) installMarketplaceSubmit(creq *apps.CallRequest) *apps.CallResponse {
-	// appID := apps.AppID(creq.GetValue(fAppID, ""))
-	// m, err := a.store.Manifest.Get(appID)
-	// if err != nil {
-	// 	return apps.NewErrorCallResponse(err)
-	// }
+func (a *builtinApp) installS3Submit(creq *apps.CallRequest) *apps.CallResponse {
+	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	m, err := a.store.Manifest.Get(appID)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
 
-	// return a.installAppFormManifest(m, creq)
-	return nil
+	return formResponse(
+		a.newInstallConsentForm(m, creq))
 }
 
 func (a *builtinApp) installURLSubmit(creq *apps.CallRequest) *apps.CallResponse {
-	// url := creq.GetValue(fURL, "")
+	manifestURL := creq.GetValue(fURL, "")
+	conf := a.conf.GetConfig()
+	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+	m, err := apps.ManifestFromJSON(data)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
 
-	// data, err := getter.Get(url)
-	// if err != nil {
-	// 	return apps.NewErrorCallResponse(err)
-	// }
-	// m, err := apps.ManifestFromJSON(data)
-	// if err != nil {
-	// 	return apps.NewErrorCallResponse(err)
-	// }
-	// return a.installAppFormManifest(m, creq)
-	return nil
+	return formResponse(
+		a.newInstallConsentForm(m, creq))
 }

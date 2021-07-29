@@ -28,7 +28,14 @@ func (a *builtinApp) bindings(creq *apps.CallRequest) []*apps.Binding {
 	return []*apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Bindings: commands,
+			Bindings: []*apps.Binding{
+				{
+					Label:       "apps",
+					Location:    "apps",
+					Description: "Mattermost Apps",
+					Bindings:    commands,
+				},
+			},
 		},
 	}
 }

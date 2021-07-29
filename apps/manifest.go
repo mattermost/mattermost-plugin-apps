@@ -168,7 +168,7 @@ func (m Manifest) IsValid() error {
 		}
 	}
 
-	// At least one type of deployment must be supported.
+	// At least one deploy type must be supported.
 	if m.HTTP == nil &&
 		m.Plugin == nil &&
 		m.AWSLambda == nil &&
@@ -197,26 +197,23 @@ func (m Manifest) IsValid() error {
 func (m Manifest) MustDeployAs() DeployType {
 	tt := m.DeployTypes()
 	if len(tt) == 1 {
-		for t := range tt {
-			return t
-		}
+		return tt[0]
 	}
 	return ""
 }
 
-func (m Manifest) DeployTypes() map[DeployType]interface{} {
-	out := map[DeployType]interface{}{}
+func (m Manifest) DeployTypes() (out []DeployType) {
 	if m.AWSLambda != nil {
-		out[DeployAWSLambda] = m.AWSLambda
+		out = append(out, DeployAWSLambda)
 	}
 	if m.HTTP != nil {
-		out[DeployHTTP] = m.HTTP
+		out = append(out, DeployHTTP)
 	}
 	if m.Kubeless != nil {
-		out[DeployKubeless] = m.Kubeless
+		out = append(out, DeployKubeless)
 	}
 	if m.Plugin != nil {
-		out[DeployPlugin] = m.Plugin
+		out = append(out, DeployPlugin)
 	}
 	return out
 }

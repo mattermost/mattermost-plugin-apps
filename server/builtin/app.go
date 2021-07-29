@@ -11,6 +11,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -34,38 +35,40 @@ const (
 	fRequireUserConsent = "require_user_consent"
 	fSecret             = "secret"
 	fAppID              = "app"
-	fDeployType         = "deployment_type"
+	fIncludePlugins     = "include_plugins"
+	fDeployType         = "deploy_type"
 	fUserID             = "user"
 )
 
 const (
-	pDebugBindings      = "/debug-bindings"
-	pDebugClean         = "/debug-clean"
-	pInfo               = "/info"
-	pList               = "/list"
-	pInstallMarketplace = "/install-marketplace/"
-	pInstallURL         = "/install-url/"
-	pInstallS3          = "/install-s3/"
-	pInstallConsent     = "/install-consent"
+	pDebugBindings  = "/debug-bindings"
+	pDebugClean     = "/debug-clean"
+	pInfo           = "/info"
+	pList           = "/list"
+	pInstallURL     = "/install-url"
+	pInstallS3      = "/install-s3"
+	pInstallConsent = "/install-consent"
 )
 
 type builtinApp struct {
-	conf  config.Service
-	mm    *pluginapi.Client
-	log   utils.Logger
-	proxy proxy.Service
-	store *store.Service
+	conf    config.Service
+	mm      *pluginapi.Client
+	log     utils.Logger
+	proxy   proxy.Service
+	store   *store.Service
+	httpOut httpout.Service
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, store *store.Service) *builtinApp {
+func NewBuiltinApp(mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
 	return &builtinApp{
-		mm:    mm,
-		log:   log,
-		conf:  conf,
-		proxy: proxy,
-		store: store,
+		mm:      mm,
+		log:     log,
+		conf:    conf,
+		proxy:   proxy,
+		store:   store,
+		httpOut: httpOut,
 	}
 }
 
@@ -97,19 +100,31 @@ func (a *builtinApp) Roundtrip(_ *apps.App, creq *apps.CallRequest, async bool) 
 	case apps.DefaultBindings.Path:
 		f = a.getBindings
 
+	case formPath(pInfo),
+		formPath(pDebugClean):
+		f = emptyForm
+
 	case submitPath(pInfo):
 		f = a.info
-	case submitPath(pList):
-		f = a.list
 	case submitPath(pDebugClean):
 		f = a.debugClean
 
-	case formPath(pInstallMarketplace):
-		f = a.installMarketplaceForm
-	case lookupPath(pInstallMarketplace):
-		f = a.installMarketplaceLookup
-	case submitPath(pInstallMarketplace):
-		f = a.installMarketplaceSubmit
+	case formPath(pList):
+		f = a.listForm
+	case submitPath(pList):
+		f = a.list
+
+	case formPath(pInstallS3):
+		f = a.installS3Form
+	case submitPath(pInstallS3):
+		f = a.installS3Submit
+	case lookupPath(pInstallS3):
+		f = a.installLookup
+
+	case formPath(pInstallURL):
+		f = a.installURLForm
+	case submitPath(pInstallURL):
+		f = a.installURLSubmit
 
 	case formPath(pInstallConsent):
 		f = a.installConsentForm
@@ -127,6 +142,7 @@ func (a *builtinApp) Roundtrip(_ *apps.App, creq *apps.CallRequest, async bool) 
 	if err != nil {
 		return nil, err
 	}
+	a.log.Debugf("<>/<> RT: " + string(data))
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
@@ -134,18 +150,29 @@ func (a *builtinApp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, er
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 
-func responseMD(format string, args ...interface{}) *apps.CallResponse {
+func mdResponse(format string, args ...interface{}) *apps.CallResponse {
 	return &apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,
 		Markdown: md.Markdownf(format, args...),
 	}
 }
 
-func responseForm(form *apps.Form) *apps.CallResponse {
+func formResponse(form *apps.Form) *apps.CallResponse {
 	return &apps.CallResponse{
 		Type: apps.CallResponseTypeForm,
-		Data: form,
+		Form: form,
 	}
+}
+
+func dataResponse(data interface{}) *apps.CallResponse {
+	return &apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: data,
+	}
+}
+
+func emptyForm(_ *apps.CallRequest) *apps.CallResponse {
+	return formResponse(&apps.Form{})
 }
 
 func submitPath(p string) string {
@@ -157,5 +184,5 @@ func formPath(p string) string {
 }
 
 func lookupPath(p string) string {
-	return path.Join(p, "form")
+	return path.Join(p, "lookup")
 }

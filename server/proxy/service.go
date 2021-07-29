@@ -114,6 +114,7 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
 	p.builtinUpstreams[appID] = up
+	p.store.App.InitBuiltin()
 }
 
 func WriteCallError(w http.ResponseWriter, statusCode int, err error) {

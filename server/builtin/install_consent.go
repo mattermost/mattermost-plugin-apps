@@ -82,7 +82,7 @@ func (a *builtinApp) installConsentLookup(creq *apps.CallRequest) *apps.CallResp
 // 		TextMaxLength int              `json:"max_length,omitempty"`
 
 // 	}
-func (a *builtinApp) generateConsentForm(m *apps.Manifest, creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequest) *apps.Form {
 
 	// 	fields := []*apps.Field{}
 

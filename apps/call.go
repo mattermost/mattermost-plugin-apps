@@ -226,3 +226,23 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 
 	return defaultValue
 }
+
+func (c *CallRequest) BoolValue(name string, defaultValue bool) bool {
+	if len(c.Values) == 0 {
+		return defaultValue
+	}
+
+	b, ok := c.Values[name].(bool)
+	if ok {
+		return b
+	}
+
+	opt, ok := c.Values[name].(map[string]interface{})
+	if ok {
+		if v, ok2 := opt["value"].(bool); ok2 {
+			return v
+		}
+	}
+
+	return defaultValue
+}

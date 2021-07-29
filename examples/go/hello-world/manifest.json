@@ -3,12 +3,15 @@
 	"display_name": "Hello, world!",
 	"app_type": "http",
 	"icon": "icon.png",
-	"root_url": "http://localhost:8080",
+	"homepage_url": "https://www.mattermost.com",
 	"requested_permissions": [
 		"act_as_bot"
 	],
 	"requested_locations": [
 		"/channel_header",
 		"/command"
-	]
+	],
+	"http": {
+		"root_url": "http://localhost:8080"
+	}
 }
