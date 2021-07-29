@@ -23,11 +23,3 @@ services:
         # command: bash -c "(install dependencies) && (run application)"
 
         # You should only need the (install dependencies) step when your dependencies change.
-
-        # If you can't run your application in "watch" mode, you can manually restart your app without having to restart the Mattermost server.
-        # Instead of running `docker-compose up`, run these commands in two different terminals:
-        # `docker-compose up mattermost db`
-        # `docker-compose up node_app`
-        #
-        # Then you can press ctrl+c in the second terminal, and run `docker-compose up node_app` again to restart your app.
-        # It's probably best to have the app in its own terminal anyway, so the logging is more isolated.
