@@ -18,6 +18,8 @@ docker-compose up mattermost db
 docker-compose up node_app
 ```
 
+If you want to run your App outside of Docker, you will need to provide a way for the containers to access your server, such as using an [ngrok](https://ngrok.io) tunnel.
+
 To upgrade the Mattermost server or Apps framework plugin, you can edit [docker-compose.yml](docker-compose.yml) to configure your target versions. If you need to make changes to the Apps plugin, you can redeploy the plugin after making changes by setting these environment variables:
 
 ```

@@ -18,7 +18,7 @@ services:
             - ./node_app:/app
             # or
             # - ../../path/to/my/app:/app
-        command: bash -c "npm i && npx nodemon"
+        command: bash -c "npm i && npm start"
         # or
         # command: bash -c "(install dependencies) && (run application)"
 

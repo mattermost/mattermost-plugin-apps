@@ -118,6 +118,10 @@ app.post('/bindings', (req, res) => {
     res.json(callResponse);
 });
 
+type FormValues = {
+    message: string;
+}
+
 app.post('/send/submit', async (req, res) => {
     const call = req.body as AppCallRequest;
 
@@ -125,8 +129,10 @@ app.post('/send/submit', async (req, res) => {
     botClient.setUrl(call.context.mattermost_site_url);
     botClient.setToken(call.context.bot_access_token);
 
+    const formValues = call.values as FormValues;
+
     let message = 'Hello, world!';
-    const submittedMessage = call.values.message;
+    const submittedMessage = formValues.message;
     if (submittedMessage) {
         message += ' ...and ' + submittedMessage + '!';
     }
@@ -134,7 +140,7 @@ app.post('/send/submit', async (req, res) => {
     const users = [
         call.context.bot_user_id,
         call.context.acting_user_id,
-    ];
+    ] as string[];
 
     let channel: Channel;
     try {
