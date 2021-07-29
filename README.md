@@ -21,8 +21,6 @@ Running the command `make dev_server` spins up a test Mattermost instance with a
 
 Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps).
 
-[App developer documentation](https://developers.mattermost.com/integrate/apps/).
-
 ## Running the tests
 
 `mattermost-plugin-apps` has two types of tests: unit tests and end to end tests.
