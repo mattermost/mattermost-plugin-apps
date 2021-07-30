@@ -211,8 +211,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		return u, nil
 	}
 
-	conf := p.conf.GetConfig()
-	err := isDeploySupported(conf, app.DeployType)
+	err := CanDeploy(p, app.DeployType)
 	if err != nil {
 		return nil, err
 	}
@@ -228,33 +227,3 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	return up, nil
 }
 
-func isDeploySupported(conf config.Config, dtype apps.DeployType) error {
-	supportedTypes := []apps.DeployType{
-		apps.DeployAWSLambda,
-		apps.DeployBuiltin,
-		apps.DeployPlugin,
-	}
-	mode := "Mattermost Cloud"
-
-	switch {
-	case conf.DeveloperMode:
-		return nil
-
-	case conf.MattermostCloudMode:
-
-	case !conf.MattermostCloudMode:
-		// Self-managed
-		supportedTypes = append(supportedTypes, apps.DeployHTTP, apps.DeployKubeless)
-		mode = "Self-managed"
-
-	default:
-		return errors.New("unreachable")
-	}
-
-	for _, t := range supportedTypes {
-		if dtype == t {
-			return nil
-		}
-	}
-	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", dtype, mode, supportedTypes)
-}

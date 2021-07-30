@@ -11,6 +11,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -85,17 +86,19 @@ func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, sto
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
-	newUpstream := func(dtype apps.DeployType, makeUpstream func() (upstream.Upstream, error)) {
-		if isDeploySupported(conf, dtype) == nil {
-			up, err := makeUpstream()
-			if err != nil {
-				p.mm.Log.Debug("failed to initialize upstream", "error", err.Error(), "app_type", dtype)
-			} else {
-				p.upstreams.Store(dtype, up)
-			}
-		} else {
+	newUpstream := func(dtype apps.DeployType, makeUpstreamf func() (upstream.Upstream, error)) {
+		allowed, _ := p.CanDeploy(dtype)
+		if !allowed {
 			p.upstreams.Delete(dtype)
+			return
 		}
+		// Override whatever might have been stored before.
+		up, err := makeUpstreamf()
+		if err != nil {
+			p.upstreams.Delete(dtype)
+			p.log.WithError(err).Debugw("failed to initialize upstream", "deploy_type", dtype)
+		}
+		p.upstreams.Store(dtype, up)
 	}
 
 	newUpstream(apps.DeployHTTP, func() (upstream.Upstream, error) {
@@ -110,6 +113,56 @@ func (p *Proxy) Configure(conf config.Config) error {
 	newUpstream(apps.DeployKubeless, func() (upstream.Upstream, error) {
 		return upkubeless.MakeUpstream()
 	})
+	return nil
+}
+
+// CanDeploy returns the availability of deployType.  allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
+func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
+	_, usable = p.upstreams.Load(deployType)
+
+	conf := p.conf.GetConfig()
+	supportedTypes := []apps.DeployType{}
+
+	// Initialize with the set supported in all configurations.
+	supportedTypes = append(supportedTypes,
+		apps.DeployAWSLambda,
+		apps.DeployBuiltin,
+		apps.DeployPlugin,
+	)
+
+	switch {
+	case conf.DeveloperMode:
+		// In dev mode support any deploy type.
+		return true, usable
+
+	case conf.MattermostCloudMode:
+		// Nothing else in Mattermost Cloud mode.
+
+	case !conf.MattermostCloudMode:
+		// Add more deploy types in self-managed mode.
+		supportedTypes = append(supportedTypes,
+			apps.DeployHTTP,
+			apps.DeployKubeless)
+
+	default:
+		return false, false
+	}
+
+	for _, t := range supportedTypes {
+		if deployType == t {
+			return true, usable
+		}
+	}
+	return false, false
+}
+
+func CanDeploy(p Service, deployType apps.DeployType) error {
+	_, canDeploy := p.CanDeploy(deployType)
+	if !canDeploy {
+		return errors.Errorf("%s app deployment is not configured on this instance of Mattermost", deployType)
+	}
 	return nil
 }
 

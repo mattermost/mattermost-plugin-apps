@@ -30,7 +30,7 @@ func (a *builtinApp) listForm(_ apps.CallRequest) apps.CallResponse {
 }
 
 func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
-	includePluginApps := creq.BoolValue("plugin-apps", false)
+	includePluginApps := creq.BoolValue("plugin-apps")
 
 	listed := a.proxy.GetListedApps("", includePluginApps)
 	installed := a.proxy.GetInstalledApps()

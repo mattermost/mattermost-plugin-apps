@@ -27,20 +27,18 @@ func (p *Proxy) InstallApp(in Incoming, appID apps.AppID, deployType apps.Deploy
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
-
-	conf := p.conf.GetConfig()
-	err = isDeploySupported(conf, deployType)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "app type is not supported on this instance of Mattermost")
-	}
 	if !m.SupportsDeploy(deployType) {
-		return nil, "", errors.Errorf("app can not be accessed as %s", deployType)
+		return nil, "", errors.Errorf("app does not support %s deployment", deployType)
+	}
+	err = CanDeploy(p, deployType)
+	if err != nil {
+		return nil, "", err
 	}
 
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
-			return nil, "", errors.Wrap(err, "failed to load existing app")
+			return nil, "", errors.Wrap(err, "failed looking for existing app")
 		}
 		app = &apps.App{}
 	}

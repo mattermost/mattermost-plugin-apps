@@ -27,8 +27,6 @@ const (
 )
 
 const (
-	contextInstallAppID = "install_app_id"
-
 	fURL                = "url"
 	fConsentPermissions = "consent_permissions"
 	fConsentLocations   = "consent_locations"
@@ -89,6 +87,9 @@ func App(conf config.Config) *apps.App {
 		BotUsername: config.BotUsername,
 		GrantedLocations: apps.Locations{
 			apps.LocationCommand,
+		},
+		GrantedPermissions: apps.Permissions{
+			apps.PermissionActAsAdmin,
 		},
 	}
 }

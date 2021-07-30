@@ -94,6 +94,21 @@ func (mr *MockServiceMockRecorder) Call(arg0, arg1, arg2 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1, arg2)
 }
 
+// CanDeploy mocks base method.
+func (m *MockService) CanDeploy(arg0 apps.DeployType) (bool, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanDeploy", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// CanDeploy indicates an expected call of CanDeploy.
+func (mr *MockServiceMockRecorder) CanDeploy(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeploy", reflect.TypeOf((*MockService)(nil).CanDeploy), arg0)
+}
+
 // CompleteRemoteOAuth2 mocks base method.
 func (m *MockService) CompleteRemoteOAuth2(arg0, arg1 string, arg2 apps.AppID, arg3 map[string]interface{}) error {
 	m.ctrl.T.Helper()

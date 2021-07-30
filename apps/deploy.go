@@ -39,3 +39,28 @@ func (t DeployType) IsValid() error {
 		return utils.NewInvalidError("%s is not a valid app type", t)
 	}
 }
+
+var SupportedDeployTypes = map[DeployType]bool{
+	DeployAWSLambda: true,
+	DeployBuiltin:   true,
+	DeployHTTP:      true,
+	DeployKubeless:  true,
+	DeployPlugin:    true,
+}
+
+func (t DeployType) String() string {
+	switch t {
+	case DeployHTTP:
+		return "HTTP"
+	case DeployAWSLambda:
+		return "AWS Lambda,S3"
+	case DeployBuiltin:
+		return "Built-in"
+	case DeployKubeless:
+		return "Kubeless"
+	case DeployPlugin:
+		return "Mattermost Plugin"
+	default:
+		return string(t)
+	}
+}

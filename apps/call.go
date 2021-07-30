@@ -222,9 +222,9 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 	return defaultValue
 }
 
-func (c *CallRequest) BoolValue(name string, defaultValue bool) bool {
+func (c *CallRequest) BoolValue(name string) bool {
 	if len(c.Values) == 0 {
-		return defaultValue
+		return false
 	}
 
 	b, ok := c.Values[name].(bool)
@@ -239,5 +239,5 @@ func (c *CallRequest) BoolValue(name string, defaultValue bool) bool {
 		}
 	}
 
-	return defaultValue
+	return false
 }
