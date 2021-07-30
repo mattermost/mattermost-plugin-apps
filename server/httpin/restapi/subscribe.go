@@ -13,6 +13,17 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	a.handleSubscribeCore(w, r, true)
 }
 
+func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	actingUserID := actingID(r)
+	subs, err := a.appServices.GetSubscriptions(actingUserID)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	json.NewEncoder(w).Encode(subs)
+}
+
 func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
 	a.handleSubscribeCore(w, r, false)
 }

@@ -39,6 +39,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy p
 		httputils.CheckAuthorized(mm, a.handleCall)).Methods("POST")
 
 	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleSubscribe).Methods("POST")
+	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleGetSubscriptions).Methods("GET")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, a.handleUnsubscribe).Methods("POST")
 
 	// Bot and OAuthApps checks
