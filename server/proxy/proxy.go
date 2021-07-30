@@ -123,38 +123,38 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
 
-	notify := func(sub *apps.Subscription) error {
-		call := sub.Call
-		if call == nil {
-			return errors.New("nothing to call")
-		}
-
-		callRequest := &apps.CallRequest{Call: *call}
-		app, err := p.store.App.Get(sub.AppID)
-		if err != nil {
-			return err
-		}
-		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
-		if err != nil {
-			return err
-		}
-		callRequest.Context.Subject = sub.Subject
-
-		up, err := p.upstreamForApp(app)
-		if err != nil {
-			return err
-		}
-		return upstream.Notify(up, callRequest)
-	}
-
 	for _, sub := range subs {
-		err := notify(sub)
+		err := p.notifyForSubscription(cc, expander, sub)
 		if err != nil {
 			p.mm.Log.Debug("Error sending subscription notification to app", "app_id", sub.AppID, "subject", sub.Subject, "err", err.Error())
 		}
 	}
 
 	return nil
+}
+
+func (p *Proxy) notifyForSubscription(cc *apps.Context, expander *expander, sub *apps.Subscription) error {
+	call := sub.Call
+	if call == nil {
+		return errors.New("nothing to call")
+	}
+
+	callRequest := &apps.CallRequest{Call: *call}
+	app, err := p.store.App.Get(sub.AppID)
+	if err != nil {
+		return err
+	}
+	callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
+	if err != nil {
+		return err
+	}
+	callRequest.Context.Subject = sub.Subject
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+	return upstream.Notify(up, callRequest)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
@@ -225,7 +225,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 						continue
 					}
 
-					canRead := p.canReadChannel(app.BotUserID, post.ChannelId)
+					canRead := p.mm.User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
 					botCanRead[app.BotUserID] = canRead
 
 					if canRead {
@@ -284,10 +284,6 @@ func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subje
 	}
 
 	return p.notify(cc, subs)
-}
-
-func (p *Proxy) canReadChannel(userID, channelID string) bool {
-	return p.mm.User.HasPermissionToChannel(userID, channelID, model.PERMISSION_READ_CHANNEL)
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
