@@ -60,7 +60,7 @@ func (a *builtinApp) installConsentLookup(creq *apps.CallRequest) *apps.CallResp
 	return nil
 }
 
-func (a *builtinApp) newConsentDeployTypeField(m *apps.Manifest, creq *apps.CallRequest) (field *apps.Field, selected apps.SelectOption) {
+func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {
 	opts := []apps.SelectOption{}
 	for _, deployType := range m.DeployTypes() {
 		_, canUse := a.proxy.CanDeploy(deployType)
@@ -81,7 +81,7 @@ func (a *builtinApp) newConsentDeployTypeField(m *apps.Manifest, creq *apps.Call
 		defaultValue = opts[0]
 	}
 
-	return &apps.Field{
+	return apps.Field{
 		Name:                fDeployType,
 		Type:                apps.FieldTypeStaticSelect,
 		IsRequired:          true,
@@ -94,15 +94,15 @@ func (a *builtinApp) newConsentDeployTypeField(m *apps.Manifest, creq *apps.Call
 	}, defaultValue
 }
 
-func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequest) *apps.Form {
+func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) apps.Form {
 	deployTypeField, selected := a.newConsentDeployTypeField(m, creq)
-	fields := []*apps.Field{
+	fields := []apps.Field{
 		deployTypeField,
 	}
 
 	if deployType := apps.DeployType(selected.Value); deployType != "" {
 		if len(m.RequestedLocations) > 0 {
-			fields = append(fields, &apps.Field{
+			fields = append(fields, apps.Field{
 				Name:        fConsentLocations,
 				Type:        apps.FieldTypeBool,
 				ModalLabel:  fmt.Sprintf("Grant access to: %s", m.RequestedLocations),
@@ -111,7 +111,7 @@ func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequ
 			})
 		}
 		if len(m.RequestedPermissions) > 0 {
-			fields = append(fields, &apps.Field{
+			fields = append(fields, apps.Field{
 				Name:        fConsentPermissions,
 				Type:        apps.FieldTypeBool,
 				ModalLabel:  fmt.Sprintf("Grant permissions to: %s", m.RequestedPermissions),
@@ -119,7 +119,7 @@ func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequ
 				IsRequired:  true,
 			})
 		}
-		fields = append(fields, &apps.Field{
+		fields = append(fields, apps.Field{
 			Name:        fRequireUserConsent,
 			Type:        apps.FieldTypeBool,
 			Label:       fmt.Sprintf("Require explicit user's consent to allow acting on behalf"),
@@ -127,7 +127,7 @@ func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequ
 		})
 
 		if deployType == apps.DeployHTTP {
-			fields = append(fields, &apps.Field{
+			fields = append(fields, apps.Field{
 				Name:        fSecret,
 				Type:        apps.FieldTypeText,
 				ModalLabel:  "Outgoing JWT Secret",
@@ -137,7 +137,7 @@ func (a *builtinApp) newInstallConsentForm(m *apps.Manifest, creq *apps.CallRequ
 		}
 	}
 
-	return &apps.Form{
+	return apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
 		Fields: fields,
 		Call: &apps.Call{

@@ -128,7 +128,7 @@ func (a *builtinApp) installS3Submit(creq apps.CallRequest) apps.CallResponse {
 		a.newInstallConsentForm(m, creq))
 }
 
-func (a *builtinApp) installURLSubmit(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 	manifestURL := creq.GetValue(fURL, "")
 	conf := a.conf.GetConfig()
 	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
