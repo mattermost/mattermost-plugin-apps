@@ -38,7 +38,7 @@ func TestAppMetadataForClient(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	p := newTestProxy(testApps, ctrl)
 	c := &apps.CallRequest{
-		Context: &apps.Context{
+		Context: apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				AppID: "app1",
 			},
@@ -48,7 +48,7 @@ func TestAppMetadataForClient(t *testing.T) {
 		},
 	}
 
-	resp := p.Call("session_id", "acting_user_id", c)
+	resp := p.Call(c)
 	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",

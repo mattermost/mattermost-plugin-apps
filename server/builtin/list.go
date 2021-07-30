@@ -9,18 +9,18 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (a *builtinApp) listCommandBinding() *apps.Binding {
+func (a *builtinApp) listCommandBinding() apps.Binding {
 	return commandBinding("list", pList, "[ flags ]", "Display available and installed Apps")
 }
 
-func (a *builtinApp) listForm(_ *apps.CallRequest) *apps.CallResponse {
-	return formResponse(&apps.Form{
+func (a *builtinApp) listForm(_ apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{
 		Title: "list Apps",
 		Fields: []*apps.Field{
 			{
 				Label: "include-plugins",
-				Name: fIncludePlugins,
-				Type: apps.FieldTypeBool,
+				Name:  fIncludePlugins,
+				Type:  apps.FieldTypeBool,
 			},
 		},
 		Call: &apps.Call{
@@ -29,7 +29,7 @@ func (a *builtinApp) listForm(_ *apps.CallRequest) *apps.CallResponse {
 	})
 }
 
-func (a *builtinApp) list(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
 	includePluginApps := creq.BoolValue("plugin-apps", false)
 
 	listed := a.proxy.GetListedApps("", includePluginApps)

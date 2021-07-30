@@ -29,7 +29,7 @@ type ManifestStore interface {
 	Get(apps.AppID) (*apps.Manifest, error)
 	GetFromS3(apps.AppID, apps.AppVersion) (*apps.Manifest, error)
 	InitGlobal(httpout.Service) error
-	StoreLocal(*apps.Manifest) error
+	StoreLocal(apps.Manifest) error
 }
 
 // manifestStore combines global (aka marketplace) manifests, and locally
@@ -43,8 +43,8 @@ type manifestStore struct {
 	// manifests.
 	mutex sync.RWMutex
 
-	global map[apps.AppID]*apps.Manifest
-	local  map[apps.AppID]*apps.Manifest
+	global map[apps.AppID]apps.Manifest
+	local  map[apps.AppID]apps.Manifest
 
 	aws           upaws.Client
 	s3AssetBucket string
@@ -90,7 +90,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	}
 	defer f.Close()
 
-	global := map[apps.AppID]*apps.Manifest{}
+	global := map[apps.AppID]apps.Manifest{}
 	manifestLocations := map[apps.AppID]string{}
 	err = json.NewDecoder(f).Decode(&manifestLocations)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 				"loc", loc)
 			continue
 		}
-		global[appID] = m
+		global[appID] = *m
 	}
 
 	s.mutex.Lock()
@@ -161,7 +161,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 }
 
 func (s *manifestStore) Configure(conf config.Config) error {
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
@@ -176,7 +176,7 @@ func (s *manifestStore) Configure(conf config.Config) error {
 				"app_id", id)
 
 		default:
-			updatedLocal[apps.AppID(id)] = m
+			updatedLocal[apps.AppID(id)] = *m
 		}
 	}
 
@@ -194,11 +194,11 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 
 	m, ok := local[appID]
 	if ok {
-		return m, nil
+		return &m, nil
 	}
 	m, ok = global[appID]
 	if ok {
-		return m, nil
+		return &m, nil
 	}
 	return nil, utils.ErrNotFound
 }
@@ -211,15 +211,15 @@ func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
 
 	out := map[apps.AppID]*apps.Manifest{}
 	for id, m := range global {
-		out[id] = m
+		out[id] = &m
 	}
 	for id, m := range local {
-		out[id] = m
+		out[id] = &m
 	}
 	return out
 }
 
-func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
+func (s *manifestStore) StoreLocal(m apps.Manifest) error {
 	conf := s.conf.GetConfig()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
@@ -240,7 +240,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 	s.mutex.RLock()
 	local := s.local
 	s.mutex.RUnlock()
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 	for k, v := range local {
 		if k != m.AppID {
 			updatedLocal[k] = v
@@ -282,7 +282,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	s.mutex.RLock()
 	local := s.local
 	s.mutex.RUnlock()
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 	for k, v := range local {
 		if k != appID {
 			updatedLocal[k] = v

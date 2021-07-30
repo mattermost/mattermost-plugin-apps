@@ -5,14 +5,15 @@ package builtin
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/pkg/errors"
 )
 
 const (
 	DebugInstallFromURL = true
 )
 
-func (a *builtinApp) installCommandBinding() *apps.Binding {
-	installCommand := &apps.Binding{
+func (a *builtinApp) installCommandBinding() apps.Binding {
+	installCommand := apps.Binding{
 		Label:       "install",
 		Location:    "install",
 		Hint:        "[app source, e.g. marketplace]",
@@ -21,7 +22,7 @@ func (a *builtinApp) installCommandBinding() *apps.Binding {
 
 	conf := a.conf.GetConfig()
 	if conf.MattermostCloudMode {
-		installCommand.Bindings = []*apps.Binding{
+		installCommand.Bindings = []apps.Binding{
 			{
 				Label:       "marketplace",
 				Location:    "marketplace",
@@ -33,7 +34,7 @@ func (a *builtinApp) installCommandBinding() *apps.Binding {
 			},
 		}
 	} else {
-		installCommand.Bindings = []*apps.Binding{
+		installCommand.Bindings = []apps.Binding{
 			{
 				Label:       "s3",
 				Location:    "s3",
@@ -57,8 +58,8 @@ func (a *builtinApp) installCommandBinding() *apps.Binding {
 	return installCommand
 }
 
-func (a *builtinApp) installS3Form(creq *apps.CallRequest) *apps.CallResponse {
-	return formResponse(&apps.Form{
+func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{
 		Title: "Install an App from AWS S3",
 		Fields: []*apps.Field{
 			{
@@ -76,8 +77,8 @@ func (a *builtinApp) installS3Form(creq *apps.CallRequest) *apps.CallResponse {
 	})
 }
 
-func (a *builtinApp) installURLForm(creq *apps.CallRequest) *apps.CallResponse {
-	return formResponse(&apps.Form{
+func (a *builtinApp) installURLForm(creq apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{
 		Title: "Install an App from an HTTP URL",
 		Fields: []*apps.Field{
 			{
@@ -95,7 +96,7 @@ func (a *builtinApp) installURLForm(creq *apps.CallRequest) *apps.CallResponse {
 	})
 }
 
-func (a *builtinApp) installLookup(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) installLookup(creq apps.CallRequest) apps.CallResponse {
 	name := creq.GetValue("name", "")
 	input := creq.GetValue("user_input", "")
 
@@ -113,10 +114,10 @@ func (a *builtinApp) installLookup(creq *apps.CallRequest) *apps.CallResponse {
 		}
 		return dataResponse(options)
 	}
-	return nil
+	return apps.NewErrorCallResponse(errors.Errorf("unknown field %s", name))
 }
 
-func (a *builtinApp) installS3Submit(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) installS3Submit(creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	m, err := a.store.Manifest.Get(appID)
 	if err != nil {

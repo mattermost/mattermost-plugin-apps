@@ -9,11 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) UninstallApp(in Incoming, appID apps.AppID) (md.MD, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -21,11 +20,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 
 	var message md.MD
 	if app.OnUninstall != nil {
-		creq := &apps.CallRequest{
-			Call:    *app.OnUninstall,
-			Context: cc,
-		}
-		resp := p.Call(sessionID, cc.ActingUserID, creq)
+		resp := p.simpleCall(in, app, *app.OnUninstall)
 		if resp.Type == apps.CallResponseTypeError {
 			p.log.WithError(err).Warnw("OnUninstall failed, uninstalling app anyway",
 				"app_id", app.AppID)
@@ -38,6 +33,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		message = md.MD(fmt.Sprintf("Uninstalled %s", app.DisplayName))
 	}
 
+	client := p.newSudoClient(in)
 	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
 		if err = client.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
@@ -78,7 +74,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 	p.log.Infow("Uninstalled app",
 		"app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil
 }

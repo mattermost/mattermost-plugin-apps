@@ -24,9 +24,9 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return p.store.App.Get(appID)
 }
 
-func (p *Proxy) GetInstalledApps() []*apps.App {
+func (p *Proxy) GetInstalledApps() []apps.App {
 	installed := p.store.App.AsMap()
-	out := []*apps.App{}
+	out := []apps.App{}
 	for _, app := range installed {
 		out = append(out, app)
 	}
@@ -39,9 +39,9 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp {
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
 	conf := p.conf.GetConfig()
-	out := []*apps.ListedApp{}
+	out := []apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
@@ -52,7 +52,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.Lis
 			continue
 		}
 
-		marketApp := &apps.ListedApp{
+		marketApp := apps.ListedApp{
 			Manifest: m,
 		}
 

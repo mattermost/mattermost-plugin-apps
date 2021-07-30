@@ -13,7 +13,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -40,30 +39,35 @@ type Proxy struct {
 }
 
 type Service interface {
+	// To update on configuration changes
 	config.Configurable
 
-	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
-	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
-	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
-	Notify(cc *apps.Context, subj apps.Subject) error
-	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
+	// Admin REST API methods.
+	DisableApp(Incoming, apps.AppID) (md.MD, error)
+	EnableApp(Incoming, apps.AppID) (md.MD, error)
+	InstallApp(_ Incoming, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error)
+	UninstallApp(Incoming, apps.AppID) (md.MD, error)
 
-	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
-	AppIsEnabled(app *apps.App) bool
-	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
-	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	// REST API methods used by user agents (mobile, desktop, web).
+	Call(Incoming, apps.AppID, apps.CallRequest) apps.ProxyCallResponse
+	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
+	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
+	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
+
+	// User-less notification sinks.
+	Notify(cc apps.Context, subj apps.Subject) error
+	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+
+	// Internal go API used by other packages.
+	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+	AddLocalManifest(m apps.Manifest) (md.MD, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
-	GetInstalledApps() []*apps.App
-	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
+	GetInstalledApps() []apps.App
+	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(_ apps.AppID, _ mmclient.Client, sessionID string, _ *apps.Context, trusted bool, secret string, _ apps.DeployType) (*apps.App, md.MD, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
-
-	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
 
 var _ Service = (*Proxy)(nil)

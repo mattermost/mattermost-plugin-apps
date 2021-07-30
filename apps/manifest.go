@@ -18,11 +18,11 @@ const StaticFolder = "static"
 // Call with "/webhook/{PATH}"."
 const PathWebhook = "/webhook"
 
-var DefaultBindings = &Call{
+var DefaultBindings = Call{
 	Path: "/bindings",
 }
 
-var DefaultGetOAuth2ConnectURL = &Call{
+var DefaultGetOAuth2ConnectURL = Call{
 	Path: "/oauth2/connect",
 	Expand: &Expand{
 		ActingUser:            ExpandSummary,
@@ -31,7 +31,7 @@ var DefaultGetOAuth2ConnectURL = &Call{
 	},
 }
 
-var DefaultOnOAuth2Complete = &Call{
+var DefaultOnOAuth2Complete = Call{
 	Path: "/oauth2/complete",
 	Expand: &Expand{
 		ActingUser:            ExpandSummary,

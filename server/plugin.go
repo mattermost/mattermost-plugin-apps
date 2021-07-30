@@ -154,7 +154,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	cc := p.conf.GetConfig().SetContextDefaults(apps.Context{
 		UserID: user.Id,
 		ExpandedContext: apps.ExpandedContext{
 			User: user,
@@ -195,7 +195,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	cc := p.conf.GetConfig().SetContextDefaults(apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    ch.TeamId,
 			ChannelID: ch.Id,
@@ -208,8 +208,8 @@ func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.
 	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
 }
 
-func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+func (p *Plugin) newPostCreatedContext(post *model.Post) apps.Context {
+	return p.conf.GetConfig().SetContextDefaults(apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -222,12 +222,12 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 	})
 }
 
-func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) apps.Context {
 	actingUserID := ""
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return p.conf.GetConfig().SetContextDefaults(apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
@@ -239,12 +239,12 @@ func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.Us
 	})
 }
 
-func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) apps.Context {
 	actingUserID := ""
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return p.conf.GetConfig().SetContextDefaults(apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},

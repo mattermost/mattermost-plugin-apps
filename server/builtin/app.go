@@ -93,8 +93,8 @@ func App(conf config.Config) *apps.App {
 	}
 }
 
-func (a *builtinApp) Roundtrip(_ *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	var f func(*apps.CallRequest) *apps.CallResponse
+func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	var f func(apps.CallRequest) apps.CallResponse
 
 	switch creq.Path {
 	case apps.DefaultBindings.Path:
@@ -150,29 +150,29 @@ func (a *builtinApp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, er
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 
-func mdResponse(format string, args ...interface{}) *apps.CallResponse {
-	return &apps.CallResponse{
+func mdResponse(format string, args ...interface{}) apps.CallResponse {
+	return apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,
 		Markdown: md.Markdownf(format, args...),
 	}
 }
 
-func formResponse(form *apps.Form) *apps.CallResponse {
-	return &apps.CallResponse{
+func formResponse(form apps.Form) apps.CallResponse {
+	return apps.CallResponse{
 		Type: apps.CallResponseTypeForm,
-		Form: form,
+		Form: &form,
 	}
 }
 
-func dataResponse(data interface{}) *apps.CallResponse {
-	return &apps.CallResponse{
+func dataResponse(data interface{}) apps.CallResponse {
+	return apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
 		Data: data,
 	}
 }
 
-func emptyForm(_ *apps.CallRequest) *apps.CallResponse {
-	return formResponse(&apps.Form{})
+func emptyForm(_ apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{})
 }
 
 func submitPath(p string) string {

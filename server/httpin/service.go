@@ -38,7 +38,7 @@ func NewService(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Set("MM_SESSION_ID", c.SessionId)
+	r.Header.Set("Mattermost-Session-ID", c.SessionId)
 	r.Header.Set("Mattermost-Plugin-ID", c.SourcePluginId)
 	s.router.ServeHTTP(w, r)
 }

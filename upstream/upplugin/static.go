@@ -11,14 +11,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
 )
 
 type StaticUpstream struct {
 	httpClient http.Client
 }
-
-var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
 
 func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	return &StaticUpstream{
@@ -26,7 +23,7 @@ func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	}
 }
 
-func (u *StaticUpstream) GetStatic(app *apps.App, assetPath string) (io.ReadCloser, int, error) {
+func (u *StaticUpstream) GetStatic(app apps.App, assetPath string) (io.ReadCloser, int, error) {
 	if app.Manifest.Plugin == nil {
 		return nil, http.StatusInternalServerError, errors.New("app is not available as type plugin")
 	}

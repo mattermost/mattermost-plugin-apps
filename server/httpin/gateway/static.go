@@ -6,11 +6,12 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) static(w http.ResponseWriter, req *http.Request, _, _ string) {
+func (g *gateway) static(w http.ResponseWriter, req *http.Request, _ proxy.Incoming) {
 	appID := appIDVar(req)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))

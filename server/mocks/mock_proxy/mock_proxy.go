@@ -123,7 +123,7 @@ func (mr *MockServiceMockRecorder) Configure(arg0 interface{}) *gomock.Call {
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) DisableApp(arg0 mmclient.Client, arg1 string, arg2 apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -138,7 +138,7 @@ func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2, arg3 interface{}
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) EnableApp(arg0 mmclient.Client, arg1 string, arg2 apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)
@@ -153,7 +153,7 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2, arg3 interface{})
 }
 
 // GetBindings mocks base method.
-func (m *MockService) GetBindings(arg0, arg1 string, arg2 *apps.Context) ([]*apps.Binding, error) {
+func (m *MockService) GetBindings(arg0, arg1 string, arg2 apps.Context) ([]*apps.Binding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBindings", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*apps.Binding)
@@ -272,7 +272,7 @@ func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0 apps.AppID, arg1 mmclient.Client, arg2 string, arg3 *apps.Context, arg4 bool, arg5 string, arg6 apps.DeployType) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 apps.AppID, arg1 mmclient.Client, arg2 string, arg3 apps.Context, arg4 bool, arg5 string, arg6 apps.DeployType) (*apps.App, md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].(*apps.App)
@@ -288,7 +288,7 @@ func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5
 }
 
 // Notify mocks base method.
-func (m *MockService) Notify(arg0 *apps.Context, arg1 apps.Subject) error {
+func (m *MockService) Notify(arg0 apps.Context, arg1 apps.Subject) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Notify", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -330,7 +330,7 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) UninstallApp(arg0 mmclient.Client, arg1 string, arg2 apps.Context, arg3 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(md.MD)

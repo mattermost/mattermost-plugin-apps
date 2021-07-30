@@ -20,7 +20,7 @@ func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp
 	}
 
 	app.RemoteOAuth2 = oapp
-	err = a.store.App.Save(app)
+	err = a.store.App.Save(*app)
 	if err != nil {
 		return err
 	}

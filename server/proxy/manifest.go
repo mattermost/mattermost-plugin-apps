@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error) {
+func (p *Proxy) AddLocalManifest(m apps.Manifest) (md.MD, error) {
 	if err := m.IsValid(); err != nil {
 		return "", err
 	}

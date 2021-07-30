@@ -374,7 +374,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	req.Header.Add("Mattermost-Session-ID", "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()
@@ -449,7 +449,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	req.Header.Add("Mattermost-Session-ID", "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()

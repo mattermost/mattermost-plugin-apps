@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func Notify(u Upstream, app *apps.App, call *apps.CallRequest) error {
+func Notify(u Upstream, app apps.App, call apps.CallRequest) error {
 	r, err := u.Roundtrip(app, call, true)
 	if r != nil {
 		r.Close()
@@ -17,7 +17,7 @@ func Notify(u Upstream, app *apps.App, call *apps.CallRequest) error {
 	return err
 }
 
-func Call(u Upstream, app *apps.App, call *apps.CallRequest) *apps.CallResponse {
+func Call(u Upstream, app apps.App, call apps.CallRequest) apps.CallResponse {
 	r, err := u.Roundtrip(app, call, false)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -29,5 +29,5 @@ func Call(u Upstream, app *apps.App, call *apps.CallRequest) *apps.CallResponse 
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	return &cr
+	return cr
 }

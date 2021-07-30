@@ -18,14 +18,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
-	if creq.Context == nil || creq.Context.AppID == "" {
-		return apps.NewProxyCallResponse(
-			apps.NewErrorCallResponse(
-				utils.NewInvalidError("must provide Context and set the app ID")), nil)
-	}
-
-	app, err := p.store.App.Get(creq.Context.AppID)
+func (p *Proxy) Call(in Incoming, appID apps.AppID, creq apps.CallRequest) apps.ProxyCallResponse {
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
 	}
@@ -35,24 +29,18 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		BotUsername: app.BotUsername,
 	}
 
-	cresp := p.callApp(app, sessionID, actingUserID, creq)
+	cresp := p.callApp(in, app, creq)
 	return apps.NewProxyCallResponse(cresp, metadata)
 }
 
-func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
-	if !p.AppIsEnabled(app) {
+func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+	if !p.appIsEnabled(app) {
 		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
-	}
-
-	if actingUserID != "" {
-		creq.Context.ActingUserID = actingUserID
-		creq.Context.UserID = actingUserID
 	}
 
 	if creq.Path[0] != '/' {
 		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
-
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -64,28 +52,20 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 		return apps.NewErrorCallResponse(err)
 	}
 
-	// Clear any ExpandedContext as it should always be set by an expander for security reasons
-	creq.Context.ExpandedContext = apps.ExpandedContext{}
-
-	conf := p.conf.GetConfig()
-	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
-
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
-	cc, err = expander.ExpandForApp(app, creq.Expand)
+	cc := in.updateContext(creq.Context)
+	creq.Context, err = p.expandContext(&cc, app, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	clone := *creq
-	clone.Context = cc
 
-	callResponse := upstream.Call(up, app, &clone)
-
+	callResponse := upstream.Call(up, *app, creq)
 	if callResponse.Type == "" {
 		callResponse.Type = apps.CallResponseTypeOK
 	}
 
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
+		conf := p.conf.GetConfig()
+		icon, err := normalizeStaticPath(conf, app.AppID, callResponse.Form.Icon)
 		if err != nil {
 			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
 				"app_id", app.AppID,
@@ -97,6 +77,10 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 	}
 
 	return callResponse
+}
+
+func (p *Proxy) simpleCall(in Incoming, app *apps.App, call apps.Call) apps.CallResponse {
+	return p.callApp(in, app, apps.CallRequest{Call: call})
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -115,13 +99,11 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
-	subs, err := p.store.Subscription.Get(subj, cc.TeamID, cc.ChannelID)
+func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
+	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
 	if err != nil {
 		return err
 	}
-
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
 
 	notify := func(sub *apps.Subscription) error {
 		call := sub.Call
@@ -129,26 +111,26 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 			return errors.New("nothing to call")
 		}
 
-		callRequest := &apps.CallRequest{Call: *call}
+		creq := apps.CallRequest{Call: *call}
 		app, err := p.store.App.Get(sub.AppID)
 		if err != nil {
 			return err
 		}
-		if !p.AppIsEnabled(app) {
+		if !p.appIsEnabled(app) {
 			return errors.Errorf("%s is disabled", app.AppID)
 		}
 
-		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
+		creq.Context, err = p.expandContext(&base, app, creq.Call.Expand)
 		if err != nil {
 			return err
 		}
-		callRequest.Context.Subject = subj
+		creq.Context.Subject = subj
 
 		up, err := p.upstreamForApp(app)
 		if err != nil {
 			return err
 		}
-		return upstream.Notify(up, app, callRequest)
+		return upstream.Notify(up, *app, creq)
 	}
 
 	for _, sub := range subs {
@@ -161,15 +143,15 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	return nil
 }
 
-func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
-	if !p.AppIsEnabled(app) {
+func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath string) error {
+	if !p.appIsEnabled(&app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app)
 	if err != nil {
 		return err
 	}
@@ -181,25 +163,21 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		datav = string(data)
 	}
 
+	conf := p.conf.GetConfig()
+	cc := forApp(&app, apps.Context{}, conf)
+	cc.ActingUserID = app.BotUserID
+	cc.ActingUserAccessToken = app.BotAccessToken
+
 	// TODO: do we need to customize the Expand & State for the webhook Call?
-	creq := &apps.CallRequest{
+	return upstream.Notify(up, app, apps.CallRequest{
 		Call: apps.Call{
 			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
-			ActingUserID: app.BotUserID,
-		}),
+		Context: cc,
 		Values: map[string]interface{}{
 			"data": datav,
 		},
-	}
-	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
-	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
-	if err != nil {
-		return err
-	}
-
-	return upstream.Notify(up, app, creq)
+	})
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
@@ -221,7 +199,7 @@ func (p *Proxy) getStatic(app *apps.App, path string) (io.ReadCloser, int, error
 		return nil, http.StatusInternalServerError, err
 	}
 
-	return up.GetStatic(app, path)
+	return up.GetStatic(*app, path)
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {

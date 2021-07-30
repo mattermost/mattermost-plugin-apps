@@ -55,8 +55,7 @@ type CallRequest struct {
 	Values map[string]interface{} `json:"values,omitempty"`
 
 	// Context of execution, see the Context type for more information.
-	// <>/<> TODO: remove pointer
-	Context *Context `json:"context,omitempty"`
+	Context Context `json:"context,omitempty"`
 
 	// In case the request came from the command line, the raw text of the
 	// command, as submitted by the user.
@@ -136,21 +135,21 @@ type CallResponse struct {
 // Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
 // decorate the response using the ProxyCallResponse to provide additional information.
 type ProxyCallResponse struct {
-	*CallResponse
+	CallResponse
 
 	// Used to provide info about the App to client, e.g. the bot user id
 	AppMetadata *AppMetadataForClient `json:"app_metadata"`
 }
 
-func NewProxyCallResponse(response *CallResponse, metadata *AppMetadataForClient) *ProxyCallResponse {
-	return &ProxyCallResponse{
+func NewProxyCallResponse(response CallResponse, metadata *AppMetadataForClient) ProxyCallResponse {
+	return ProxyCallResponse{
 		response,
 		metadata,
 	}
 }
 
-func NewErrorCallResponse(err error) *CallResponse {
-	return &CallResponse{
+func NewErrorCallResponse(err error) CallResponse {
+	return CallResponse{
 		Type: CallResponseTypeError,
 		// TODO <>/<> ticket use MD instead of ErrorText
 		ErrorText: err.Error(),
@@ -158,7 +157,7 @@ func NewErrorCallResponse(err error) *CallResponse {
 }
 
 // Error() makes CallResponse a valid error, for convenience
-func (cr *CallResponse) Error() string {
+func (cr CallResponse) Error() string {
 	if cr.Type == CallResponseTypeError {
 		return cr.ErrorText
 	}
@@ -190,21 +189,17 @@ func NewCall(url string) *Call {
 	return c
 }
 
-func (c *Call) WithOverrides(override *Call) *Call {
-	out := Call{}
-	if c != nil {
-		out = *c
+func (c Call) WithDefault(def Call) Call {
+	if c.Path == "" {
+		c.Path = def.Path
 	}
-	if override == nil {
-		return &out
+	if c.Expand == nil {
+		c.Expand = def.Expand
 	}
-	if override.Path != "" {
-		out.Path = override.Path
+	if c.State == nil {
+		c.State = def.State
 	}
-	if override.Expand != nil {
-		out.Expand = override.Expand
-	}
-	return &out
+	return c
 }
 
 func (c *CallRequest) GetValue(name, defaultValue string) string {

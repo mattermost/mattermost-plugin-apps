@@ -46,5 +46,5 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_ = g.proxy.NotifyRemoteWebhook(app, data, path)
+	_ = g.proxy.NotifyRemoteWebhook(*app, data, path)
 }

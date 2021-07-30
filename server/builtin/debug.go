@@ -7,18 +7,18 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (a *builtinApp) debugCommandBinding() *apps.Binding {
-	return &apps.Binding{
+func (a *builtinApp) debugCommandBinding() apps.Binding {
+	return apps.Binding{
 		Label:    "debug",
 		Location: "debug",
-		Bindings: []*apps.Binding{
+		Bindings: []apps.Binding{
 			commandBinding("clean", pDebugClean, "", "remove all Apps and reset the persistent store"),
 			commandBinding("bindings", pDebugBindings, "", "display all bindings for the current context"),
 		},
 	}
 }
 
-func (a *builtinApp) debugClean(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) debugClean(creq apps.CallRequest) apps.CallResponse {
 	// <>/<> !! TODO!!!
 	return mdResponse("Deleted all KV records and emptied the config.")
 }

@@ -37,7 +37,7 @@ func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Lo
 	}, nil
 }
 
-func (u *Upstream) GetStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
 	key := S3StaticName(app.AppID, app.Version, path)
 	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
 	if err != nil {
@@ -46,16 +46,16 @@ func (u *Upstream) GetStatic(app *apps.App, path string) (io.ReadCloser, int, er
 	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if app.Manifest.AWSLambda == nil {
 		return nil, errors.New("no 'aws_lambda' section in manifest.json")
 	}
-	name := match(call.Path, &app.Manifest)
+	name := match(creq.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
 
-	data, err := u.invokeFunction(name, async, call)
+	data, err := u.invokeFunction(name, async, creq)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) invokeFunction(name string, async bool, creq *apps.CallRequest) ([]byte, error) {
+func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent

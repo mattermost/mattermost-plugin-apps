@@ -3,11 +3,12 @@ package gateway
 import (
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
+func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	appID := appIDVar(req)
 
 	if appID == "" {
@@ -15,11 +16,11 @@ func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(sessionID, actingUserID, appID)
+	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(in, appID)
 	if err != nil {
 		g.log.WithError(err).Warnw("Failed to get remote OuAuth2 connect URL",
 			"app_id", appID,
-			"acting_user_id", actingUserID)
+			"acting_user_id", in.ActingUserID)
 		httputils.WriteError(w, err)
 		return
 	}
@@ -27,7 +28,7 @@ func (g *gateway) remoteOAuth2Connect(w http.ResponseWriter, req *http.Request, 
 	http.Redirect(w, req, connectURL, http.StatusTemporaryRedirect)
 }
 
-func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
+func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	appID := appIDVar(req)
 
 	if appID == "" {
@@ -41,11 +42,11 @@ func (g *gateway) remoteOAuth2Complete(w http.ResponseWriter, req *http.Request,
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteRemoteOAuth2(sessionID, actingUserID, appID, urlValues)
+	err := g.proxy.CompleteRemoteOAuth2(in, appID, urlValues)
 	if err != nil {
 		g.log.WithError(err).Warnw("Failed to complete remote OuAuth2",
 			"app_id", appID,
-			"acting_user_id", actingUserID)
+			"acting_user_id", in.ActingUserID)
 		httputils.WriteError(w, err)
 		return
 	}

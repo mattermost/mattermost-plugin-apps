@@ -39,7 +39,7 @@ func MakeUpstream() (*Upstream, error) {
 	}, nil
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if app.Manifest.Kubeless == nil {
 		return nil, errors.New("no 'kubeless' section in manifest.json")
 	}
@@ -82,7 +82,7 @@ func functionURL(clientset kubernetes.Interface, appID apps.AppID, funcName stri
 	return serviceURL, nil
 }
 
-func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method string, data []byte, async bool) ([]byte, error) {
+func (u *Upstream) invoke(app apps.App, funcName string, requestPath, method string, data []byte, async bool) ([]byte, error) {
 	clientset := kubelessutil.GetClientOutOfCluster()
 	fURL, err := functionURL(clientset, app.AppID, funcName)
 	if err != nil {
@@ -125,7 +125,7 @@ func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method st
 	return []byte(resp.Body), nil
 }
 
-func (u *Upstream) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 

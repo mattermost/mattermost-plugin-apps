@@ -5,20 +5,16 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(mm *pluginapi.Client, conf config.Config, sessionID, actingUserID string) (Client, error) {
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &httpClient{client}, nil
+func NewHTTPClient(mm *pluginapi.Client, conf config.Config, token string) Client {
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(token)
+	return &httpClient{client}
 }
 
 // User section

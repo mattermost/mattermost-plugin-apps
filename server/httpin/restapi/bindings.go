@@ -10,7 +10,7 @@ import (
 
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
 	q := req.URL.Query()
-	cc := &apps.Context{
+	cc := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),
@@ -21,7 +21,7 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, se
 
 	cc = a.conf.GetConfig().SetContextDefaults(cc)
 
-	bindings, err := a.proxy.GetBindings(sessionID, actingUserID, cc)
+	bindings, err := a.proxy.GetBindings(cc)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

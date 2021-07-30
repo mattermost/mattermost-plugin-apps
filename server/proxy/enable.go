@@ -9,41 +9,36 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) EnableApp(in Incoming, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-
 	if !app.Disabled {
 		return md.MD(fmt.Sprintf("%s is already enabled", app.DisplayName)), nil
 	}
 
-	_, err = client.EnableBot(app.BotUserID)
+	_, err = p.newSudoClient(in).EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
 
 	// Enable the app in the store first to allow calls to it
 	app.Disabled = false
-	err = p.store.App.Save(app)
+	err = p.store.App.Save(*app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
 	var message md.MD
 	if app.OnEnable != nil {
-		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
-			Call:    *app.OnEnable,
-			Context: cc,
-		})
+		resp := p.simpleCall(in, app, *app.OnEnable)
 		if resp.Type == apps.CallResponseTypeError {
-			p.log.WithError(err).Warnw("OnEnable failed, enabling app anyway",
-				"app_id", app.AppID)
+			message = "on_enable call failed, App enabled anyway"
+			p.log.WithError(err).Warnw(string(message), "app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
@@ -52,15 +47,14 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 	if message == "" {
 		message = md.MD(fmt.Sprintf("Enabled %s", app.DisplayName))
 	}
-
 	p.log.Infow("Enabled app", "app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) DisableApp(in Incoming, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -73,10 +67,7 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 	// Call the app first as later it's disabled
 	var message md.MD
 	if app.OnDisable != nil {
-		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
-			Call:    *app.OnDisable,
-			Context: cc,
-		})
+		resp := p.simpleCall(in, app, *app.OnDisable)
 		if resp.Type == apps.CallResponseTypeError {
 			p.log.WithError(err).Warnw("OnDisable failed, disabling app anyway",
 				"app_id", app.AppID)
@@ -90,13 +81,13 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 	}
 
 	// disable app, not removing the data
-	_, err = client.DisableBot(app.BotUserID)
+	_, err = p.newSudoClient(in).DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
 	app.Disabled = true
-	err = p.store.App.Save(app)
+	err = p.store.App.Save(*app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -104,12 +95,12 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 	p.log.Infow("Disabled app",
 		"app_id", app.AppID)
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil
 }
 
-func (p *Proxy) AppIsEnabled(app *apps.App) bool {
+func (p *Proxy) appIsEnabled(app *apps.App) bool {
 	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}

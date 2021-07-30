@@ -20,7 +20,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
 
-	diff := map[apps.AppID]*apps.App{}
+	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
 		m := listed[app.AppID]
 
@@ -48,7 +48,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				creq := &apps.CallRequest{
+				creq := apps.CallRequest{
 					Call:   *app.OnVersionChanged,
 					Values: map[string]interface{}{},
 				}
@@ -56,7 +56,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 					creq.Values[k] = v
 				}
 
-				resp := p.Call("", app.BotUserID, creq)
+				resp := p.callApp(Incoming{}, &app, creq)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", creq.Path)
 				}
