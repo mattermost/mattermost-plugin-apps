@@ -6,11 +6,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID, actingUserID string) {
+func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
@@ -21,24 +22,23 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	cc.ExpandedContext = apps.ExpandedContext{}
-	cc, err = a.cleanUserAgentContext(actingUserID, cc)
+	cc, err = a.cleanUserAgentContext(in.ActingUserID, cc)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
 	}
+	creq.Context = cc
 
-	call.Context = cc
-	res := a.proxy.Call(call)
+	res := a.proxy.Call(in, creq.Context.AppID, *creq)
 
 	a.log.Debugw(
 		"Received call response",
-		"app_id", call.Context.AppID,
-		"acting_user_id", call.Context.ActingUserID,
+		"app_id", creq.Context.AppID,
+		"acting_user_id", in.ActingUserID,
 		"error", res.ErrorText,
 		"type", res.Type,
-		"path", call.Path,
+		"path", creq.Path,
 	)
-
 	httputils.WriteJSON(w, res)
 }
 

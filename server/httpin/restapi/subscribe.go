@@ -7,13 +7,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
+func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	a.handleSubscribeCore(w, r, true)
 }
 
-func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
+func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	a.handleSubscribeCore(w, r, false)
 }
 

@@ -90,6 +90,22 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 	}
 }
 
+func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actingUserID := r.Header.Get("Mattermost-User-Id")
+		in := Incoming{
+			ActingUserID: actingUserID,
+		}
+		err := utils.EnsureSysAdmin(mm, actingUserID)
+		if err != nil {
+			httputils.WriteError(w, utils.ErrUnauthorized)
+			return
+		}
+
+		f(w, r, in)
+	}
+}
+
 func (p *Proxy) newSudoClient(in Incoming) mmclient.Client {
 	conf := p.conf.GetConfig()
 	var client mmclient.Client
@@ -111,7 +127,7 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 
 func (in Incoming) newAppContext(app *apps.App, conf config.Config) apps.Context {
 	cc := in.updateContext(apps.Context{})
-	cc = forApp(app, cc, conf) 
+	cc = forApp(app, cc, conf)
 	return cc
 }
 

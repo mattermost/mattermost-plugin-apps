@@ -63,6 +63,7 @@ type Service interface {
 	// Internal go API used by other packages.
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	AddLocalManifest(m apps.Manifest) (md.MD, error)
+	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
