@@ -15,10 +15,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, string, error) {
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -81,7 +80,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 		return nil, "", err
 	}
 
-	var message md.MD
+	var message string
 	if app.OnInstall != nil {
 		creq := &apps.CallRequest{
 			Call:    *app.OnInstall,
@@ -97,7 +96,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Installed %s", app.DisplayName))
+		message = fmt.Sprintf("Installed %s", app.DisplayName)
 	}
 
 	p.log.Infow("Installed an app",

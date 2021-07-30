@@ -12,7 +12,6 @@ import (
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	mmclient "github.com/mattermost/mattermost-plugin-apps/mmclient"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
-	md "github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // MockService is a mock of Service interface.
@@ -51,10 +50,10 @@ func (mr *MockServiceMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *g
 }
 
 // AddLocalManifest mocks base method.
-func (m *MockService) AddLocalManifest(arg0 string, arg1 *apps.Manifest) (md.MD, error) {
+func (m *MockService) AddLocalManifest(arg0 string, arg1 *apps.Manifest) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddLocalManifest", arg0, arg1)
-	ret0, _ := ret[0].(md.MD)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -108,10 +107,10 @@ func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2, arg3 i
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) DisableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(md.MD)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -123,10 +122,10 @@ func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2, arg3 interface{}
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) EnableApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(md.MD)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -257,11 +256,11 @@ func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 bool, arg4, arg5 string) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 bool, arg4, arg5 string) (*apps.App, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*apps.App)
-	ret1, _ := ret[1].(md.MD)
+	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -315,10 +314,10 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (md.MD, error) {
+func (m *MockService) UninstallApp(arg0 mmclient.Client, arg1 string, arg2 *apps.Context, arg3 apps.AppID) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(md.MD)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

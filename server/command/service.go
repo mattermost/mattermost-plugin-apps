@@ -306,7 +306,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
 	if params.current[0] == "help" {
-		return out(params, md.MD("TODO usage"))
+		return out(params, "TODO usage")
 	}
 
 	c, ok := subcommands[params.current[0]]
@@ -354,18 +354,18 @@ func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, 
 	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId)
 }
 
-func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
+func out(params *commandParams, out string) (*model.CommandResponse, error) {
+	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out
 
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
 
 func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
 	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
-		md.Markdownf("Command failed. Error: **%s**\n", err.Error())
+		fmt.Sprintf("Command failed. Error: **%s**\n", err.Error())
 
 	return &model.CommandResponse{
 		Text:         string(txt),
