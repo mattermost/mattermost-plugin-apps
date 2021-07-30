@@ -22,6 +22,14 @@ type Incoming struct {
 	AdminAccessToken      string
 }
 
+func NewIncomingFromContext(cc apps.Context) Incoming {
+	return Incoming{
+		ActingUserID:          cc.ActingUserID,
+		ActingUserAccessToken: cc.ActingUserAccessToken,
+		AdminAccessToken:      cc.AdminAccessToken,
+	}
+}
+
 func RequireUser(f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get("Mattermost-User-Id")
@@ -130,7 +138,3 @@ func (in Incoming) newAppContext(app *apps.App, conf config.Config) apps.Context
 	cc = forApp(app, cc, conf)
 	return cc
 }
-
-// func (in Incoming) newContext() apps.Context {
-// 	return in.updateContext(apps.Context{})
-// }

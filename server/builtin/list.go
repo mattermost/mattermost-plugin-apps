@@ -16,7 +16,7 @@ func (a *builtinApp) listCommandBinding() apps.Binding {
 func (a *builtinApp) listForm(_ apps.CallRequest) apps.CallResponse {
 	return formResponse(apps.Form{
 		Title: "list Apps",
-		Fields: []*apps.Field{
+		Fields: []apps.Field{
 			{
 				Label: "include-plugins",
 				Name:  fIncludePlugins,

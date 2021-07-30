@@ -61,7 +61,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {
 	return formResponse(apps.Form{
 		Title: "Install an App from AWS S3",
-		Fields: []*apps.Field{
+		Fields: []apps.Field{
 			{
 				Name:                 fAppID,
 				Type:                 apps.FieldTypeDynamicSelect,
@@ -80,7 +80,7 @@ func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {
 func (a *builtinApp) installURLForm(creq apps.CallRequest) apps.CallResponse {
 	return formResponse(apps.Form{
 		Title: "Install an App from an HTTP URL",
-		Fields: []*apps.Field{
+		Fields: []apps.Field{
 			{
 				Name:                 fURL,
 				Type:                 apps.FieldTypeText,
@@ -125,7 +125,7 @@ func (a *builtinApp) installS3Submit(creq apps.CallRequest) apps.CallResponse {
 	}
 
 	return formResponse(
-		a.newInstallConsentForm(m, creq))
+		a.newInstallConsentForm(*m, creq))
 }
 
 func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
@@ -141,5 +141,5 @@ func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 	}
 
 	return formResponse(
-		a.newInstallConsentForm(m, creq))
+		a.newInstallConsentForm(*m, creq))
 }

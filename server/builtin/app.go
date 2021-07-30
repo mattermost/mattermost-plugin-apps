@@ -79,8 +79,8 @@ func Manifest(conf config.Config) apps.Manifest {
 	}
 }
 
-func App(conf config.Config) *apps.App {
-	return &apps.App{
+func App(conf config.Config) apps.App {
+	return apps.App{
 		Manifest:    Manifest(conf),
 		DeployType:  apps.DeployBuiltin,
 		BotUserID:   conf.BotUserID,
@@ -147,7 +147,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (i
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
-func (a *builtinApp) GetStatic(_ *apps.App, path string) (io.ReadCloser, int, error) {
+func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.ErrNotFound
 }
 

@@ -11,14 +11,14 @@ import (
 )
 
 func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	a.handleSubscribeCore(w, r, true)
+	a.handleSubscribeCore(w, r, in, true)
 }
 
 func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	a.handleSubscribeCore(w, r, false)
+	a.handleSubscribeCore(w, r, in, false)
 }
 
-func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, isSubscribe bool) {
+func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in proxy.Incoming, isSubscribe bool) {
 	var err error
 	actingUserID := ""
 	// logMessage := ""
@@ -36,7 +36,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		_, _ = w.Write(resp.ToJSON())
 	}()
 
-	actingUserID = actingID(r)
+	actingUserID = in.ActingUserID
 	if actingUserID == "" {
 		err = errors.New("user not logged in")
 		status = http.StatusUnauthorized

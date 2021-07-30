@@ -28,10 +28,10 @@ func (p *Proxy) expandContext(base *apps.Context, app *apps.App, expand *apps.Ex
 	}
 	conf := p.conf.GetConfig()
 	cc := forApp(app, *base, conf)
+	cc.ExpandedContext = apps.ExpandedContext{}
 
 	if expand == nil {
 		// nothing more to do
-		cc.ExpandedContext = apps.ExpandedContext{}
 		return cc, nil
 	}
 

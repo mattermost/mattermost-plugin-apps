@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) installConsentForm(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse {
 	appID, ok := creq.State.(apps.AppID)
 	if !ok {
 		return apps.NewErrorCallResponse(errors.New("no AppID found in State, don't know what to install"))
@@ -24,10 +24,10 @@ func (a *builtinApp) installConsentForm(creq *apps.CallRequest) *apps.CallRespon
 	}
 
 	return formResponse(
-		a.newInstallConsentForm(m, creq))
+		a.newInstallConsentForm(*m, creq))
 }
 
-func (a *builtinApp) installConsentSubmit(creq *apps.CallRequest) *apps.CallResponse {
+func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallResponse {
 	deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 	secret := creq.GetValue(fSecret, "")
 	requireUserConsent := creq.BoolValue(fRequireUserConsent)
@@ -51,13 +51,18 @@ func (a *builtinApp) installConsentSubmit(creq *apps.CallRequest) *apps.CallResp
 		return apps.NewErrorCallResponse(errors.New("consent to grant permissions is required to install"))
 	}
 
-	asAdmin := mmclient.AsAdmin(creq.Context)
+	_, out, err := a.proxy.InstallApp(
+		proxy.NewIncomingFromContext(creq.Context),
+		appID, deployType, !requireUserConsent, secret)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
+	}
 
-	app, out, err := a.proxy.InstallApp(appID, asAdmin, "", creq.Context, !requireUserConsent, secret, deployType)
+	return mdResponse(string(out))
 }
 
-func (a *builtinApp) installConsentLookup(creq *apps.CallRequest) *apps.CallResponse {
-	return nil
+func (a *builtinApp) installConsentLookup(creq apps.CallRequest) apps.CallResponse {
+	return mdResponse("<>/<> TODO")
 }
 
 func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {

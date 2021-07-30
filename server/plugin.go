@@ -154,29 +154,29 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().SetContextDefaults(apps.Context{
+	cc := apps.Context{
 		UserID: user.Id,
 		ExpandedContext: apps.ExpandedContext{
 			User: user,
 		},
-	})
+	}
 	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserJoinedChannel)
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	_ = p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserLeftChannel)
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm), apps.SubjectUserJoinedTeam)
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	_ = p.proxy.Notify(p.newTeamMemberContext(tm), apps.SubjectUserLeftTeam)
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
@@ -190,26 +190,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	_ = p.proxy.Notify(
-		p.newPostCreatedContext(post), apps.SubjectPostCreated)
-}
-
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().SetContextDefaults(apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
-		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
-}
-
-func (p *Plugin) newPostCreatedContext(post *model.Post) apps.Context {
-	return p.conf.GetConfig().SetContextDefaults(apps.Context{
+	cc := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -219,39 +200,38 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) apps.Context {
 		ExpandedContext: apps.ExpandedContext{
 			Post: post,
 		},
-	})
+	}
+	_ = p.proxy.Notify(cc, apps.SubjectPostCreated)
 }
 
-func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	cc := apps.Context{
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    ch.TeamId,
+			ChannelID: ch.Id,
+		},
+		UserID: ch.CreatorId,
+		ExpandedContext: apps.ExpandedContext{
+			Channel: ch,
+		},
 	}
-	return p.conf.GetConfig().SetContextDefaults(apps.Context{
+	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       tm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: tm.UserId,
+	}
 }
 
-func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return p.conf.GetConfig().SetContextDefaults(apps.Context{
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       cm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: cm.UserId,
+	}
 }
