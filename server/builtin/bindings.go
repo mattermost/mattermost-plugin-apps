@@ -12,7 +12,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest) apps.CallResponse {
 	}
 }
 
-func (a *builtinApp) bindings(creq apps.CallRequest) []*apps.Binding {
+func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
 	commands := []apps.Binding{
 		a.infoCommandBinding(),
 	}
@@ -25,7 +25,7 @@ func (a *builtinApp) bindings(creq apps.CallRequest) []*apps.Binding {
 		)
 	}
 
-	return []*apps.Binding{
+	return []apps.Binding{
 		{
 			Location: apps.LocationCommand,
 			Bindings: []apps.Binding{

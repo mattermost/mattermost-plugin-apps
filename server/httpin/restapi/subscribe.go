@@ -52,9 +52,9 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	if isSubscribe {
-		err = a.appServices.Subscribe(actingUserID, &sub)
+		err = a.appServices.Subscribe(actingUserID, sub)
 	} else {
-		err = a.appServices.Unsubscribe(actingUserID, &sub)
+		err = a.appServices.Unsubscribe(actingUserID, sub)
 	}
 
 	if err != nil {

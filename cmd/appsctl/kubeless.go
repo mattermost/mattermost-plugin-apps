@@ -50,8 +50,8 @@ var kubelessProvisionCmd = &cobra.Command{
 	},
 }
 
-func helloKubeless() *apps.App {
-	return &apps.App{
+func helloKubeless() apps.App {
+	return apps.App{
 		DeployType: apps.DeployKubeless,
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
@@ -83,7 +83,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 		}
 
 		app := helloKubeless()
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},

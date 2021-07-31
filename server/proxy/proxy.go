@@ -105,7 +105,7 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 		return err
 	}
 
-	notify := func(sub *apps.Subscription) error {
+	notify := func(sub apps.Subscription) error {
 		call := sub.Call
 		if call == nil {
 			return errors.New("nothing to call")
@@ -226,4 +226,3 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	}
 	return up, nil
 }
-

@@ -103,10 +103,10 @@ func (a *builtinApp) installLookup(creq apps.CallRequest) apps.CallResponse {
 	switch name {
 	case fAppID:
 		marketplaceApps := a.proxy.GetListedApps(input, false)
-		var options []*apps.SelectOption
+		var options []apps.SelectOption
 		for _, mapp := range marketplaceApps {
 			if !mapp.Installed {
-				options = append(options, &apps.SelectOption{
+				options = append(options, apps.SelectOption{
 					Value: string(mapp.Manifest.AppID),
 					Label: mapp.Manifest.DisplayName,
 				})

@@ -23,7 +23,7 @@ import (
 )
 
 func TestAppMetadataForClient(t *testing.T) {
-	testApps := []*apps.App{
+	testApps := []apps.App{
 		{
 			BotUserID:   "botid",
 			BotUsername: "botusername",
@@ -37,7 +37,7 @@ func TestAppMetadataForClient(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	p := newTestProxy(testApps, ctrl)
-	c := &apps.CallRequest{
+	creq := apps.CallRequest{
 		Context: apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				AppID: "app1",
@@ -48,14 +48,14 @@ func TestAppMetadataForClient(t *testing.T) {
 		},
 	}
 
-	resp := p.Call(c)
+	resp := p.Call(Incoming{}, "app1", creq)
 	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
 	})
 }
 
-func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
+func newTestProxy(testApps []apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
@@ -71,7 +71,8 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	s.App = appStore
 
 	upstreams := map[apps.AppID]upstream.Upstream{}
-	for _, app := range testApps {
+	for i := range testApps {
+		app := testApps[i]
 		cr := &apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 		}
@@ -81,7 +82,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 		up := mock_upstream.NewMockUpstream(ctrl)
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[app.Manifest.AppID] = up
-		appStore.EXPECT().Get(app.AppID).Return(app, nil)
+		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
 	}
 
 	p := &Proxy{

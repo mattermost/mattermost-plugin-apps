@@ -90,7 +90,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 }
 
 // Copied from Mattermost Server
-func appMatchesFilter(manifest *apps.Manifest, filter string) bool {
+func appMatchesFilter(manifest apps.Manifest, filter string) bool {
 	filter = strings.TrimSpace(strings.ToLower(filter))
 
 	if filter == "" {

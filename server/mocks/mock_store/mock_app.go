@@ -36,10 +36,10 @@ func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 }
 
 // AsMap mocks base method.
-func (m *MockAppStore) AsMap() map[apps.AppID]*apps.App {
+func (m *MockAppStore) AsMap() map[apps.AppID]apps.App {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AsMap")
-	ret0, _ := ret[0].(map[apps.AppID]*apps.App)
+	ret0, _ := ret[0].(map[apps.AppID]apps.App)
 	return ret0
 }
 
@@ -93,7 +93,7 @@ func (mr *MockAppStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
 }
 
 // InitBuiltin mocks base method.
-func (m *MockAppStore) InitBuiltin(arg0 ...*apps.App) {
+func (m *MockAppStore) InitBuiltin(arg0 ...apps.App) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
@@ -109,7 +109,7 @@ func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...interface{}) *gomock.Cal
 }
 
 // Save mocks base method.
-func (m *MockAppStore) Save(arg0 *apps.App) error {
+func (m *MockAppStore) Save(arg0 apps.App) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", arg0)
 	ret0, _ := ret[0].(error)

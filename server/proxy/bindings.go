@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"encoding/json"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
@@ -38,24 +37,23 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error) {
-	allApps := store.SortApps(p.store.App.AsMap())
-	all := make([][]apps.Binding, len(allApps))
+	all := make(chan []apps.Binding)
+	defer close(all)
 
-	var wg sync.WaitGroup
-	for i, app := range allApps {
-		wg.Add(1)
-		go func(app *apps.App, i int) {
-			defer wg.Done()
-			all[i] = p.getBindingsForApp(in, cc, app)
-		}(&app, i)
+	allApps := store.SortApps(p.store.App.AsMap())
+	for i := range allApps {
+		app := allApps[i]
+		go func(app *apps.App) {
+			bb := p.getBindingsForApp(in, cc, app)
+			all <- bb
+		}(&app)
 	}
-	wg.Wait()
 
 	ret := []apps.Binding{}
-	for _, b := range all {
-		ret = mergeBindings(ret, b)
+	for i := 0; i < len(allApps); i++ {
+		bb := <-all
+		ret = mergeBindings(ret, bb)
 	}
-
 	return ret, nil
 }
 

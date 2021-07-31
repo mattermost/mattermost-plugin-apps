@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -35,7 +34,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	router := mux.NewRouter()
 	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil)
 
-	expected := &apps.Context{
+	expected := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:    "some_post_id",
 			ChannelID: "some_channel_id",
@@ -44,10 +43,9 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 		},
 	}
 
-	bindings := []*apps.Binding{{Location: apps.LocationCommand}}
+	bindings := []apps.Binding{{Location: apps.LocationCommand}}
 
-	proxy.EXPECT().GetBindings("some_session_id", "some_user_id", expected).Return(bindings, nil)
-	conf.EXPECT().GetConfig().Return(config.Config{})
+	proxy.EXPECT().GetBindings(gomock.Any(), expected).Return(bindings, nil)
 
 	query := url.Values{
 		"post_id":         {"some_post_id"},
@@ -74,7 +72,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, b)
 
-	bindingsOut := []*apps.Binding{}
+	bindingsOut := []apps.Binding{}
 	err = json.Unmarshal(b, &bindingsOut)
 	require.NoError(t, err)
 	require.Equal(t, bindings, bindingsOut)

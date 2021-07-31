@@ -189,7 +189,12 @@ func NewCall(url string) *Call {
 	return c
 }
 
-func (c Call) WithDefault(def Call) Call {
+func (cp *Call) WithDefault(def Call) Call {
+	if cp == nil {
+		return def
+	}
+	c := *cp
+
 	if c.Path == "" {
 		c.Path = def.Path
 	}

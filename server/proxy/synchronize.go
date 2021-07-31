@@ -22,24 +22,25 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
-		m := listed[app.AppID]
+		m, ok := listed[app.AppID]
 
 		// exclude unlisted apps, or those that need no action.
-		if m == nil || app.Version == m.Version {
+		if !ok || app.Version == m.Version {
 			continue
 		}
 
 		diff[app.AppID] = app
 	}
 
-	for _, app := range diff {
+	for id := range diff {
+		app := diff[id]
 		m := listed[app.AppID]
 		values := map[string]string{
 			PrevVersion: string(app.Version),
 		}
 
 		// Store the new manifest to update the current mappings of the App
-		app.Manifest = *m
+		app.Manifest = m
 		err := p.store.App.Save(app)
 		if err != nil {
 			return err

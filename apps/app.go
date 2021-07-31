@@ -67,7 +67,7 @@ type OAuth2App struct {
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.
 type ListedApp struct {
-	Manifest  *Manifest                `json:"manifest"`
+	Manifest  Manifest                 `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	IconURL   string                   `json:"icon_url,omitempty"`

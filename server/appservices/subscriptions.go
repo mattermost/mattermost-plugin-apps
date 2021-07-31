@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *AppServices) Subscribe(actingUserID string, sub *apps.Subscription) error {
+func (a *AppServices) Subscribe(actingUserID string, sub apps.Subscription) error {
 	err := utils.EnsureSysAdmin(a.mm, actingUserID)
 	if err != nil {
 		return err
@@ -17,7 +17,7 @@ func (a *AppServices) Subscribe(actingUserID string, sub *apps.Subscription) err
 	return a.store.Subscription.Save(sub)
 }
 
-func (a *AppServices) Unsubscribe(actingUserID string, sub *apps.Subscription) error {
+func (a *AppServices) Unsubscribe(actingUserID string, sub apps.Subscription) error {
 	err := utils.EnsureSysAdmin(a.mm, actingUserID)
 	if err != nil {
 		return err

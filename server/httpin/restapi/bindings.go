@@ -11,7 +11,7 @@ import (
 
 func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	q := req.URL.Query()
-	
+
 	bindings, err := a.proxy.GetBindings(in, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),

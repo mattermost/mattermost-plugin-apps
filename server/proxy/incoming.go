@@ -10,7 +10,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -130,11 +129,5 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 	cc.ActingUserID = in.ActingUserID
 	cc.ActingUserAccessToken = in.ActingUserAccessToken
 	cc.AdminAccessToken = in.AdminAccessToken
-	return cc
-}
-
-func (in Incoming) newAppContext(app *apps.App, conf config.Config) apps.Context {
-	cc := in.updateContext(apps.Context{})
-	cc = forApp(app, cc, conf)
 	return cc
 }

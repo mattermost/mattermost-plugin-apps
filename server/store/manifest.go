@@ -24,7 +24,7 @@ import (
 type ManifestStore interface {
 	config.Configurable
 
-	AsMap() map[apps.AppID]*apps.Manifest
+	AsMap() map[apps.AppID]apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
 	GetFromS3(apps.AppID, apps.AppVersion) (*apps.Manifest, error)
@@ -203,18 +203,18 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	return nil, utils.ErrNotFound
 }
 
-func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
+func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
 	s.mutex.RUnlock()
 
-	out := map[apps.AppID]*apps.Manifest{}
+	out := map[apps.AppID]apps.Manifest{}
 	for id, m := range global {
-		out[id] = &m
+		out[id] = m
 	}
 	for id, m := range local {
-		out[id] = &m
+		out[id] = m
 	}
 	return out
 }

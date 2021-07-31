@@ -156,8 +156,8 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a provisioned resource",
 }
 
-func helloLambda() *apps.App {
-	return &apps.App{
+func helloLambda() apps.App {
+	return apps.App{
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
@@ -216,7 +216,7 @@ var awsTestLambdaCmd = &cobra.Command{
 			return err
 		}
 
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},

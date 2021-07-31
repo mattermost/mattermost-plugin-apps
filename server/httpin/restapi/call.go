@@ -42,8 +42,11 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.
 	httputils.WriteJSON(w, res)
 }
 
-func (a *restapi) cleanUserAgentContext(userID string, cc apps.Context) (apps.Context, error) {
+func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
 	var postID, channelID, teamID string
+	cc := apps.Context{
+		UserAgentContext: orig.UserAgentContext,
+	}
 
 	switch {
 	case cc.PostID != "":
