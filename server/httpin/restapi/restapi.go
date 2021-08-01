@@ -67,13 +67,18 @@ func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf confi
 		proxy.RequireUser(a.handleGetMarketplace)).Methods(http.MethodGet)
 
 	appsRouters := subrouter.PathPrefix(mmclient.PathApps).Subrouter()
-	appsRouters.HandleFunc("", proxy.RequireSysadminOrPlugin(mm, a.handleInstallApp)).Methods("POST")
+	appsRouters.HandleFunc("",
+		proxy.RequireSysadminOrPlugin(mm, a.handleInstallApp)).Methods("POST")
 
 	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
-	appRouter.HandleFunc("", proxy.RequireSysadminOrPlugin(mm, a.handleGetApp)).Methods("GET")
-	appRouter.HandleFunc(mmclient.PathEnable, proxy.RequireSysadminOrPlugin(mm, a.handleEnableApp)).Methods("POST")
-	appRouter.HandleFunc(mmclient.PathDisable, proxy.RequireSysadminOrPlugin(mm, a.handleDisableApp)).Methods("POST")
-	appRouter.HandleFunc("", proxy.RequireSysadminOrPlugin(mm, a.handleUninstallApp)).Methods("DELETE")
+	appRouter.HandleFunc("",
+		proxy.RequireSysadminOrPlugin(mm, a.handleGetApp)).Methods("GET")
+	appRouter.HandleFunc(mmclient.PathEnable,
+		proxy.RequireSysadminOrPlugin(mm, a.handleEnableApp)).Methods("POST")
+	appRouter.HandleFunc(mmclient.PathDisable,
+		proxy.RequireSysadminOrPlugin(mm, a.handleDisableApp)).Methods("POST")
+	appRouter.HandleFunc("",
+		proxy.RequireSysadminOrPlugin(mm, a.handleUninstallApp)).Methods("DELETE")
 }
 
 func appIDVar(r *http.Request) apps.AppID {

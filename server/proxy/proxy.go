@@ -53,7 +53,7 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 	}
 
 	cc := in.updateContext(creq.Context)
-	creq.Context, err = p.expandContext(&cc, app, creq.Expand)
+	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
@@ -120,7 +120,7 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 			return errors.Errorf("%s is disabled", app.AppID)
 		}
 
-		creq.Context, err = p.expandContext(&base, app, creq.Call.Expand)
+		creq.Context, err = p.expandContext(Incoming{}, app, &base, creq.Call.Expand)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,8 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 	}
 
 	conf := p.conf.GetConfig()
-	cc := forApp(&app, apps.Context{}, conf)
+	cc := contextForApp(&app, apps.Context{}, conf)
+	// Set acting user to bot.
 	cc.ActingUserID = app.BotUserID
 	cc.ActingUserAccessToken = app.BotAccessToken
 
@@ -198,7 +199,6 @@ func (p *Proxy) getStatic(app *apps.App, path string) (io.ReadCloser, int, error
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-
 	return up.GetStatic(*app, path)
 }
 

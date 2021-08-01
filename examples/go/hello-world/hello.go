@@ -47,7 +47,7 @@ func main() {
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
 	addr := fmt.Sprintf("%v:%v", host, port)
-	fmt.Printf(`hello-world app listening at http://%s`, addr)
+	fmt.Printf("hello-world app listening at http://%s\n", addr)
 	http.ListenAndServe(addr, nil)
 }
 

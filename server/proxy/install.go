@@ -43,6 +43,7 @@ func (p *Proxy) InstallApp(in Incoming, appID apps.AppID, deployType apps.Deploy
 		app = &apps.App{}
 	}
 
+	app.DeployType = deployType
 	app.Manifest = *m
 	if app.Disabled {
 		app.Disabled = false
@@ -163,6 +164,7 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 				return err
 			}
 		}
+		bot.UserId = user.Id
 	}
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username

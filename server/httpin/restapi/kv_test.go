@@ -63,6 +63,7 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest("PUT", itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
 	req.Header.Set("Mattermost-User-Id", "01234567890123456789012345")
+	req.Header.Set("Mattermost-Session-Id", "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -80,6 +81,7 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest("GET", itemURL, nil)
 	require.NoError(t, err)
 	req.Header.Set("Mattermost-User-Id", "01234567890123456789012345")
+	req.Header.Set("Mattermost-Session-Id", "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {

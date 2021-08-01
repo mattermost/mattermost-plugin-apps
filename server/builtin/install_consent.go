@@ -33,11 +33,12 @@ func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallRespon
 	requireUserConsent := creq.BoolValue(fRequireUserConsent)
 	locationsConsent := creq.BoolValue(fConsentLocations)
 	permissionsConsent := creq.BoolValue(fConsentPermissions)
-	appID, ok := creq.State.(apps.AppID)
+	id, ok := creq.State.(string)
 	if !ok {
 		return apps.NewErrorCallResponse(
 			errors.New("no app ID in state, don't know what to install"))
 	}
+	appID := apps.AppID(id)
 
 	m, err := a.store.Manifest.Get(appID)
 	if err != nil {

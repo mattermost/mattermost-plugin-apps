@@ -11,6 +11,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
+var emptyCC = apps.Context{}
+
 func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
@@ -53,18 +55,18 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 		postID = cc.PostID
 		post, err := a.mm.Post.GetPost(postID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get post. post=%v", postID)
+			return emptyCC, errors.Wrapf(err, "failed to get post. post=%v", postID)
 		}
 
 		channelID = post.ChannelId
 		_, err = a.mm.Channel.GetMember(channelID, userID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
+			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
 		}
 
 		c, err := a.mm.Channel.Get(channelID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
+			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
 		}
 
 		teamID = c.TeamId
@@ -74,12 +76,12 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 
 		_, err := a.mm.Channel.GetMember(channelID, userID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
+			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
 		}
 
 		c, err := a.mm.Channel.Get(channelID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
+			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
 		}
 
 		teamID = c.TeamId
@@ -89,11 +91,11 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 
 		_, err := a.mm.Team.GetMember(teamID, userID)
 		if err != nil {
-			return apps.Context{}, errors.Wrapf(err, "failed to get team membership. user=%v team=%v", userID, teamID)
+			return emptyCC, errors.Wrapf(err, "failed to get team membership. user=%v team=%v", userID, teamID)
 		}
 
 	default:
-		return apps.Context{}, errors.Errorf("no post, channel, or team context provided. user=%v", userID)
+		return emptyCC, errors.Errorf("no post, channel, or team context provided. user=%v", userID)
 	}
 
 	cc.PostID = postID

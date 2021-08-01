@@ -140,6 +140,11 @@ func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 		return apps.NewErrorCallResponse(err)
 	}
 
+	err = a.store.Manifest.StoreLocal(*m)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+
 	return formResponse(
 		a.newInstallConsentForm(*m, creq))
 }

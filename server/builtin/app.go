@@ -143,7 +143,6 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (i
 	if err != nil {
 		return nil, err
 	}
-	a.log.Debugf("<>/<> RT: " + string(data))
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 

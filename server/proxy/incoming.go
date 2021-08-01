@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
@@ -19,6 +20,7 @@ type Incoming struct {
 	PluginID              string
 	ActingUserAccessToken string
 	AdminAccessToken      string
+	SessionID             string
 }
 
 func NewIncomingFromContext(cc apps.Context) Incoming {
@@ -32,34 +34,39 @@ func NewIncomingFromContext(cc apps.Context) Incoming {
 func RequireUser(f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get("Mattermost-User-Id")
-		if actingUserID == "" {
-			httputils.WriteError(w, utils.ErrUnauthorized)
+		sessionID := req.Header.Get("Mattermost-Session-Id")
+		if actingUserID == "" || sessionID == "" {
+			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
 			return
 		}
 
 		f(w, req, Incoming{
 			ActingUserID: actingUserID,
+			SessionID:    sessionID,
 		})
 	}
 }
 
-func RequireUserToken(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		actingUserID := r.Header.Get("Mattermost-User-Id")
-		sessionID := r.Header.Get("Mattermost-Session-ID")
+func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		actingUserID := req.Header.Get("Mattermost-User-Id")
+		sessionID := req.Header.Get("Mattermost-Session-Id")
 		if actingUserID == "" || sessionID == "" {
+			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
+			return
+		}
+		in := Incoming{
+			ActingUserID: actingUserID,
+			SessionID:    sessionID,
+		}
+
+		err := utils.EnsureSysAdmin(mm, actingUserID)
+		if err != nil {
 			httputils.WriteError(w, utils.ErrUnauthorized)
 			return
 		}
 
-		s, err := utils.LoadSession(mm, sessionID, actingUserID)
-		if err != nil {
-			httputils.WriteError(w, err)
-		}
-		f(w, r, Incoming{
-			ActingUserID:          actingUserID,
-			ActingUserAccessToken: s.Token,
-		})
+		f(w, req, in)
 	}
 }
 
@@ -73,40 +80,18 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 		}
 
 		if pluginID == "" {
-			sessionID := r.Header.Get("Mattermost-Session-ID")
+			sessionID := r.Header.Get("Mattermost-Session-Id")
 			if actingUserID == "" || sessionID == "" {
-				httputils.WriteError(w, utils.ErrUnauthorized)
+				httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
 				return
 			}
+			in.SessionID = sessionID
 
 			err := utils.EnsureSysAdmin(mm, actingUserID)
 			if err != nil {
 				httputils.WriteError(w, utils.ErrUnauthorized)
 				return
 			}
-			s, err := utils.LoadSession(mm, sessionID, actingUserID)
-			if err != nil {
-				httputils.WriteError(w, err)
-				return
-			}
-			in.ActingUserAccessToken = s.Token
-			in.AdminAccessToken = s.Token
-		}
-
-		f(w, r, in)
-	}
-}
-
-func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		actingUserID := r.Header.Get("Mattermost-User-Id")
-		in := Incoming{
-			ActingUserID: actingUserID,
-		}
-		err := utils.EnsureSysAdmin(mm, actingUserID)
-		if err != nil {
-			httputils.WriteError(w, utils.ErrUnauthorized)
-			return
 		}
 
 		f(w, r, in)
@@ -125,9 +110,11 @@ func (p *Proxy) newSudoClient(in Incoming) mmclient.Client {
 }
 
 func (in Incoming) updateContext(cc apps.Context) apps.Context {
-	cc.ExpandedContext = apps.ExpandedContext{}
-	cc.ActingUserID = in.ActingUserID
-	cc.ActingUserAccessToken = in.ActingUserAccessToken
-	cc.AdminAccessToken = in.AdminAccessToken
-	return cc
+	updated := cc
+	updated.ActingUserID = in.ActingUserID
+	updated.ExpandedContext = apps.ExpandedContext{
+		ActingUserAccessToken: in.ActingUserAccessToken,
+		AdminAccessToken:      in.AdminAccessToken,
+	}
+	return updated
 }
