@@ -19,6 +19,12 @@ import (
 )
 
 func (p *Proxy) Call(in Incoming, appID apps.AppID, creq apps.CallRequest) apps.ProxyCallResponse {
+	if creq.Context.AppID == "" {
+		return apps.NewProxyCallResponse(
+			apps.NewErrorCallResponse(
+				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
+	}
+
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
@@ -52,11 +58,13 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 		return apps.NewErrorCallResponse(err)
 	}
 
-	cc := in.updateContext(creq.Context)
-	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
+	cc := creq.Context
+	cc = in.updateContext(cc)
+	cc, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
+	creq.Context = cc
 
 	callResponse := upstream.Call(up, *app, creq)
 	if callResponse.Type == "" {
