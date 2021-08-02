@@ -27,6 +27,14 @@ func Pretty(in interface{}) string {
 	return string(bb)
 }
 
+func CodeBlock(in string) string {
+	return fmt.Sprintf("```\n%s\n```\n", in)
+}
+
+func JSONBlock(in interface{}) string {
+	return CodeBlock(Pretty(in))
+}
+
 // FindDir looks for the given directory in nearby ancestors relative to the current working
 // directory as well as the directory of the executable, falling back to `./` if not found.
 func FindDir(dir string) (string, bool) {

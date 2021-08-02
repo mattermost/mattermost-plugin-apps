@@ -30,7 +30,7 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 	}
 
 	return &model.CommandResponse{
-		Text:         string(out),
+		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }

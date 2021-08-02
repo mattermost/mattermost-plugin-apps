@@ -9,7 +9,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -102,7 +101,7 @@ func info(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("Try `/hello-webhooks send %s`",
+		Markdown: fmt.Sprintf("Try `/hello-webhooks send %s`",
 			creq.Context.MattermostSiteURL+creq.Context.AppPath+apps.PathWebhook+
 				"/hello"+
 				"?secret="+creq.Context.App.WebhookSecret),
