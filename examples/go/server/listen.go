@@ -5,20 +5,15 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-var PreferredPorts = map[apps.AppID]int{
-	"hello-world":     8080,
-	"hello-lifecycle": 8081,
-	"hello-oauth2":    8082,
-	"hello-webhooks":  8083,
-}
-
-// Starts the default http server used in all "hello" examples. It prefers
-// localhost://8080, but if that fails, it starts on a random port.
+// Starts the default http server on localhost used in all "hello" examples. It
+// prefers the port specified in the manifest if there is one, or 8080. If those
+// fail, it starts on a random port.
 func Run(manifestData []byte) {
 	m := apps.Manifest{}
 	err := json.Unmarshal(manifestData, &m)
@@ -26,16 +21,29 @@ func Run(manifestData []byte) {
 		panic(err)
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", PreferredPorts[m.AppID]))
+	port := 0
+	if m.HTTP != nil {
+		u, _ := url.Parse(m.HTTP.RootURL)
+		if u != nil {
+			addr, _ := net.ResolveTCPAddr("tcp", u.Host)
+			if addr != nil {
+				port = addr.Port
+			}
+		}
+	}
+	if port == 0 {
+		port = 8080
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
-		fmt.Printf("Port 8080 is unavailable, going to use a random port: %v\n", err)
+		fmt.Printf("Port %v is unavailable, using a random port: %v\n", port, err)
 		listener, err = net.Listen("tcp", ":0")
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	port := listener.Addr().(*net.TCPAddr).Port
+	port = listener.Addr().(*net.TCPAddr).Port
 	if m.HTTP == nil {
 		m.HTTP = &apps.HTTP{}
 	}
