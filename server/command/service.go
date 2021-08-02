@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type Service interface {
@@ -355,7 +354,7 @@ func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, 
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") + out
 
 	return &model.CommandResponse{
 		Text:         txt,
@@ -364,7 +363,7 @@ func out(params *commandParams, out string) (*model.CommandResponse, error) {
 }
 
 func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") +
 		fmt.Sprintf("Command failed. Error: **%s**\n", err.Error())
 
 	return &model.CommandResponse{
