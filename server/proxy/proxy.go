@@ -87,10 +87,6 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 	return callResponse
 }
 
-func (p *Proxy) simpleCall(in Incoming, app *apps.App, call apps.Call) apps.CallResponse {
-	return p.callApp(in, app, apps.CallRequest{Call: call})
-}
-
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
 // If icon is an absolute URL, it's not changed.
 // Otherwise assume it's a path to a static asset and the static path URL prepended.

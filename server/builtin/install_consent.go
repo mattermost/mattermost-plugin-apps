@@ -30,9 +30,7 @@ func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse
 func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallResponse {
 	deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 	secret := creq.GetValue(fSecret, "")
-	requireUserConsent := creq.BoolValue(fRequireUserConsent)
-	locationsConsent := creq.BoolValue(fConsentLocations)
-	permissionsConsent := creq.BoolValue(fConsentPermissions)
+	consent := creq.BoolValue(fConsent)
 	id, ok := creq.State.(string)
 	if !ok {
 		return apps.NewErrorCallResponse(
@@ -44,17 +42,13 @@ func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallRespon
 	if err != nil {
 		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
 	}
-
-	if !locationsConsent && len(m.RequestedLocations) > 0 {
-		return apps.NewErrorCallResponse(errors.New("consent to grant access to locations is required to install"))
-	}
-	if !permissionsConsent && len(m.RequestedPermissions) > 0 {
-		return apps.NewErrorCallResponse(errors.New("consent to grant permissions is required to install"))
+	if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
+		return apps.NewErrorCallResponse(errors.New("consent to use APIs and locations is required to install"))
 	}
 
 	_, out, err := a.proxy.InstallApp(
 		proxy.NewIncomingFromContext(creq.Context),
-		appID, deployType, !requireUserConsent, secret)
+		creq.Context, appID, deployType, true, secret)
 	if err != nil {
 		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
 	}
@@ -102,49 +96,53 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 
 func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) apps.Form {
 	deployTypeField, selected := a.newConsentDeployTypeField(m, creq)
-	fields := []apps.Field{
-		deployTypeField,
+	deployType := apps.DeployType(selected.Value)
+	fields := []apps.Field{}
+
+	// Consent
+	consent := ""
+	if len(m.RequestedLocations) > 0 {
+		consent += "\n- Add the following elements to the **Mattermost User Interface**:\n"
+		for _, l := range m.RequestedLocations {
+			consent += fmt.Sprintf("  - %s\n", l.Markdown())
+		}
+	}
+	if len(m.RequestedPermissions) > 0 {
+		consent += "- Access **Mattermost API** with the following permissions:\n"
+		for _, permission := range m.RequestedPermissions {
+			consent += fmt.Sprintf("  - %s\n", permission.String())
+		}
+	}
+	if consent != "" {
+		header := fmt.Sprintf("Application **%s** requires system administrator's consent to:\n\n", m.DisplayName)
+		consent = header + consent + "---\n"
+
+		fields = append(fields, apps.Field{
+			Name:        fConsent,
+			Type:        apps.FieldTypeBool,
+			ModalLabel:  "Agree to grant the App access to APIs and Locations",
+			Description: "",
+			IsRequired:  true,
+		})
 	}
 
-	if deployType := apps.DeployType(selected.Value); deployType != "" {
-		if len(m.RequestedLocations) > 0 {
-			fields = append(fields, apps.Field{
-				Name:        fConsentLocations,
-				Type:        apps.FieldTypeBool,
-				ModalLabel:  fmt.Sprintf("Grant access to: %s", m.RequestedLocations),
-				Description: "Check to allow the App to add user interface items in these locations",
-				IsRequired:  true,
-			})
-		}
-		if len(m.RequestedPermissions) > 0 {
-			fields = append(fields, apps.Field{
-				Name:        fConsentPermissions,
-				Type:        apps.FieldTypeBool,
-				ModalLabel:  fmt.Sprintf("Grant permissions to: %s", m.RequestedPermissions),
-				Description: "Check to allow the App to use these permissions",
-				IsRequired:  true,
-			})
-		}
-		fields = append(fields, apps.Field{
-			Name:        fRequireUserConsent,
-			Type:        apps.FieldTypeBool,
-			Label:       fmt.Sprintf("Require explicit user's consent to allow acting on behalf"),
-			Description: "If off, users will be quietly connected to the App as needed; otherwise prompt for consent.",
-		})
+	// Deployment type
+	fields = append(fields, deployTypeField)
 
-		if deployType == apps.DeployHTTP {
-			fields = append(fields, apps.Field{
-				Name:        fSecret,
-				Type:        apps.FieldTypeText,
-				ModalLabel:  "Outgoing JWT Secret",
-				Description: fmt.Sprintf("The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the app's web site, %s", m.HomepageURL),
-				IsRequired:  false,
-			})
-		}
+	// JWT secret
+	if deployType == apps.DeployHTTP {
+		fields = append(fields, apps.Field{
+			Name:        fSecret,
+			Type:        apps.FieldTypeText,
+			ModalLabel:  "Outgoing JWT Secret",
+			Description: fmt.Sprintf("The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the app's web site, %s", m.HomepageURL),
+			IsRequired:  false,
+		})
 	}
 
 	return apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
+		Header: consent,
 		Fields: fields,
 		Call: &apps.Call{
 			Path: pInstallConsent,

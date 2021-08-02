@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/server"
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -31,9 +32,6 @@ var sendFormData []byte
 func main() {
 	// Static handlers
 
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
-
 	// Serve the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", writeJSON(bindingsData))
 
@@ -54,7 +52,7 @@ func main() {
 	http.HandleFunc("/send/form", writeJSON(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	server.Run(manifestData)
 }
 
 func install(w http.ResponseWriter, req *http.Request) {

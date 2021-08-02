@@ -32,7 +32,7 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, in pro
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "app is required"))
 		return
 	}
-	_, err := a.proxy.EnableApp(in, appID)
+	_, err := a.proxy.EnableApp(in, apps.Context{}, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -45,7 +45,7 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, in pr
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "app is required"))
 		return
 	}
-	_, err := a.proxy.DisableApp(in, appID)
+	_, err := a.proxy.DisableApp(in, apps.Context{}, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -71,7 +71,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, in pr
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(in, m.AppID, deployAs, false, "")
+	_, _, err = a.proxy.InstallApp(in, apps.Context{}, m.AppID, deployAs, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -84,7 +84,7 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, in 
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "app is required"))
 		return
 	}
-	_, err := a.proxy.UninstallApp(in, appID)
+	_, err := a.proxy.UninstallApp(in, apps.Context{}, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

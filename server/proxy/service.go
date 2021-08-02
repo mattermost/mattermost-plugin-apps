@@ -44,10 +44,10 @@ type Service interface {
 	config.Configurable
 
 	// Admin REST API methods.
-	DisableApp(Incoming, apps.AppID) (md.MD, error)
-	EnableApp(Incoming, apps.AppID) (md.MD, error)
-	InstallApp(_ Incoming, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error)
-	UninstallApp(Incoming, apps.AppID) (md.MD, error)
+	DisableApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
+	EnableApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
+	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error)
+	UninstallApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
 
 	// REST API methods used by user agents (mobile, desktop, web).
 	Call(Incoming, apps.AppID, apps.CallRequest) apps.ProxyCallResponse

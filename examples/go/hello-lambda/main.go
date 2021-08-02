@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/server"
 )
 
 //go:embed manifest-http.json
@@ -30,11 +31,6 @@ var bindingsData []byte
 //go:embed send_form.json
 var formData []byte
 
-const (
-	host = "localhost"
-	port = 8080
-)
-
 //go:embed static
 var static embed.FS
 
@@ -42,12 +38,10 @@ func main() {
 	localMode := os.Getenv("LOCAL") == "true"
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-
 	manifestData := manifestAWSData
 	if localMode {
 		manifestData = manifestHTTPData
 	}
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Returns "PONG". Used for `appsctl test aws`.
 	http.HandleFunc("/ping", writeJSON(pongData))
@@ -62,9 +56,7 @@ func main() {
 	http.HandleFunc("/send/submit", send)
 
 	if localMode {
-		addr := fmt.Sprintf("%v:%v", host, port)
-		fmt.Printf(`hello-world app listening at http://%s`, addr)
-		http.ListenAndServe(":8080", nil)
+		server.Run(manifestData)
 	} else {
 		lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
 	}

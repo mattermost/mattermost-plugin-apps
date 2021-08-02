@@ -124,33 +124,33 @@ func (mr *MockServiceMockRecorder) Configure(arg0 interface{}) *gomock.Call {
 }
 
 // DisableApp mocks base method.
-func (m *MockService) DisableApp(arg0 proxy.Incoming, arg1 apps.AppID) (md.MD, error) {
+func (m *MockService) DisableApp(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1)
+	ret := m.ctrl.Call(m, "DisableApp", arg0, arg1, arg2)
 	ret0, _ := ret[0].(md.MD)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DisableApp indicates an expected call of DisableApp.
-func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) DisableApp(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableApp", reflect.TypeOf((*MockService)(nil).DisableApp), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableApp", reflect.TypeOf((*MockService)(nil).DisableApp), arg0, arg1, arg2)
 }
 
 // EnableApp mocks base method.
-func (m *MockService) EnableApp(arg0 proxy.Incoming, arg1 apps.AppID) (md.MD, error) {
+func (m *MockService) EnableApp(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1)
+	ret := m.ctrl.Call(m, "EnableApp", arg0, arg1, arg2)
 	ret0, _ := ret[0].(md.MD)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // EnableApp indicates an expected call of EnableApp.
-func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2)
 }
 
 // GetBindings mocks base method.
@@ -273,9 +273,9 @@ func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // InstallApp mocks base method.
-func (m *MockService) InstallApp(arg0 proxy.Incoming, arg1 apps.AppID, arg2 apps.DeployType, arg3 bool, arg4 string) (*apps.App, md.MD, error) {
+func (m *MockService) InstallApp(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.AppID, arg3 apps.DeployType, arg4 bool, arg5 string) (*apps.App, md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "InstallApp", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(md.MD)
 	ret2, _ := ret[2].(error)
@@ -283,9 +283,9 @@ func (m *MockService) InstallApp(arg0 proxy.Incoming, arg1 apps.AppID, arg2 apps
 }
 
 // InstallApp indicates an expected call of InstallApp.
-func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // Notify mocks base method.
@@ -331,16 +331,16 @@ func (mr *MockServiceMockRecorder) SynchronizeInstalledApps() *gomock.Call {
 }
 
 // UninstallApp mocks base method.
-func (m *MockService) UninstallApp(arg0 proxy.Incoming, arg1 apps.AppID) (md.MD, error) {
+func (m *MockService) UninstallApp(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.AppID) (md.MD, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1)
+	ret := m.ctrl.Call(m, "UninstallApp", arg0, arg1, arg2)
 	ret0, _ := ret[0].(md.MD)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UninstallApp indicates an expected call of UninstallApp.
-func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UninstallApp", reflect.TypeOf((*MockService)(nil).UninstallApp), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UninstallApp", reflect.TypeOf((*MockService)(nil).UninstallApp), arg0, arg1, arg2)
 }

@@ -27,15 +27,13 @@ const (
 )
 
 const (
-	fURL                = "url"
-	fConsentPermissions = "consent_permissions"
-	fConsentLocations   = "consent_locations"
-	fRequireUserConsent = "require_user_consent"
-	fSecret             = "secret"
-	fAppID              = "app"
-	fIncludePlugins     = "include_plugins"
-	fDeployType         = "deploy_type"
-	fUserID             = "user"
+	fURL            = "url"
+	fConsent        = "consent"
+	fSecret         = "secret"
+	fAppID          = "app"
+	fIncludePlugins = "include_plugins"
+	fDeployType     = "deploy_type"
+	fUserID         = "user"
 )
 
 const (

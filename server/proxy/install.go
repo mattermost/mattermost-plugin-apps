@@ -22,7 +22,7 @@ import (
 //  - client is a user-scoped(??) client to Mattermost??
 //  - sessionID is needed to pass down to the app in liue of a proper token
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -82,7 +82,10 @@ func (p *Proxy) InstallApp(in Incoming, appID apps.AppID, deployType apps.Deploy
 
 	var message md.MD
 	if app.OnInstall != nil {
-		resp := p.simpleCall(in, app, *app.OnInstall)
+		resp := p.callApp(in, app, apps.CallRequest{
+			Call:    *app.OnInstall,
+			Context: cc,
+		})
 		// TODO fail on all errors except 404
 		if resp.Type == apps.CallResponseTypeError {
 			p.log.WithError(err).Warnw("OnInstall failed, installing app anyway", "app_id", app.AppID)

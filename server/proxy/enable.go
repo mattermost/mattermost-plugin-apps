@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) EnableApp(in Incoming, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -35,7 +35,10 @@ func (p *Proxy) EnableApp(in Incoming, appID apps.AppID) (md.MD, error) {
 
 	var message md.MD
 	if app.OnEnable != nil {
-		resp := p.simpleCall(in, app, *app.OnEnable)
+		resp := p.callApp(in, app, apps.CallRequest{
+			Call:    *app.OnEnable,
+			Context: cc,
+		})
 		if resp.Type == apps.CallResponseTypeError {
 			message = "on_enable call failed, App enabled anyway"
 			p.log.WithError(err).Warnw(string(message), "app_id", app.AppID)
@@ -54,7 +57,7 @@ func (p *Proxy) EnableApp(in Incoming, appID apps.AppID) (md.MD, error) {
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(in Incoming, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -67,7 +70,10 @@ func (p *Proxy) DisableApp(in Incoming, appID apps.AppID) (md.MD, error) {
 	// Call the app first as later it's disabled
 	var message md.MD
 	if app.OnDisable != nil {
-		resp := p.simpleCall(in, app, *app.OnDisable)
+		resp := p.callApp(in, app, apps.CallRequest{
+			Call:    *app.OnInstall,
+			Context: cc,
+		})
 		if resp.Type == apps.CallResponseTypeError {
 			p.log.WithError(err).Warnw("OnDisable failed, disabling app anyway",
 				"app_id", app.AppID)

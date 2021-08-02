@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) UninstallApp(in Incoming, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -20,7 +20,10 @@ func (p *Proxy) UninstallApp(in Incoming, appID apps.AppID) (md.MD, error) {
 
 	var message md.MD
 	if app.OnUninstall != nil {
-		resp := p.simpleCall(in, app, *app.OnUninstall)
+		resp := p.callApp(in, app, apps.CallRequest{
+			Call:    *app.OnUninstall,
+			Context: cc,
+		})
 		if resp.Type == apps.CallResponseTypeError {
 			p.log.WithError(err).Warnw("OnUninstall failed, uninstalling app anyway",
 				"app_id", app.AppID)
