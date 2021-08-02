@@ -367,7 +367,7 @@ func errorOut(params *commandParams, err error) (*model.CommandResponse, error) 
 		fmt.Sprintf("Command failed. Error: **%s**\n", err.Error())
 
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, err
 }
