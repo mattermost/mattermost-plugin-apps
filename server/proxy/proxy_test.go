@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -59,6 +60,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
+	testAPI.On("GetUser", mock.Anything).Return(&model.User{Locale: "en"}, nil)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
