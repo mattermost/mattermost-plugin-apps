@@ -1,9 +1,8 @@
 package apps
 
 import (
+	"fmt"
 	"strings"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 const (
@@ -42,14 +41,14 @@ func (l Location) Make(sub Location) Location {
 	return out + sub
 }
 
-func (l Location) Markdown() md.MD {
+func (l Location) Markdown() string {
 	if l[0] != '/' {
-		return md.MD(l)
+		return string(l)
 	}
 
 	tokens := strings.Split(string(l)[1:], "/")
 	if len(tokens) == 0 {
-		return md.MD(l)
+		return string(l)
 	}
 
 	switch Location("/" + tokens[0]) {
@@ -61,7 +60,7 @@ func (l Location) Markdown() md.MD {
 		if len(tokens) < 2 {
 			return "Slash commands"
 		}
-		return md.Markdownf("`/%s` command", strings.Join(tokens[1:], " "))
+		return fmt.Sprintf("`/%s` command", strings.Join(tokens[1:], " "))
 	}
-	return md.MD(l)
+	return string(l)
 }

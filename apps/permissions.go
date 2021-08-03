@@ -2,7 +2,6 @@ package apps
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type Permissions []Permission
@@ -46,7 +45,7 @@ func (p Permissions) Contains(permission Permission) bool {
 	return false
 }
 
-func (p Permission) String() md.MD {
+func (p Permission) String() string {
 	m := ""
 	switch p {
 	case PermissionUserJoinedChannelNotification:
@@ -64,7 +63,7 @@ func (p Permission) String() md.MD {
 	default:
 		m = "unknown permission: " + string(p)
 	}
-	return md.MD(m)
+	return m
 }
 
 func (p Permissions) IsValid() error {

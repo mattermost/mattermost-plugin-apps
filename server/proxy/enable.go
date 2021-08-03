@@ -9,16 +9,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 	if !app.Disabled {
-		return md.MD(fmt.Sprintf("%s is already enabled", app.DisplayName)), nil
+		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
 	_, err = p.newSudoClient(in).EnableBot(app.BotUserID)
@@ -33,7 +32,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
-	var message md.MD
+	var message string
 	if app.OnEnable != nil {
 		resp := p.callApp(in, app, apps.CallRequest{
 			Call:    *app.OnEnable,
@@ -41,14 +40,14 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD
 		})
 		if resp.Type == apps.CallResponseTypeError {
 			message = "on_enable call failed, App enabled anyway"
-			p.log.WithError(err).Warnw(string(message), "app_id", app.AppID)
+			p.log.WithError(err).Warnw(message, "app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Enabled %s", app.DisplayName))
+		message = fmt.Sprintf("Enabled %s", app.DisplayName)
 	}
 	p.log.Infow("Enabled app", "app_id", app.AppID)
 
@@ -57,18 +56,18 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
 	if app.Disabled {
-		return md.MD(fmt.Sprintf("%s is already disabled", app.DisplayName)), nil
+		return fmt.Sprintf("%s is already disabled", app.DisplayName), nil
 	}
 
 	// Call the app first as later it's disabled
-	var message md.MD
+	var message string
 	if app.OnDisable != nil {
 		resp := p.callApp(in, app, apps.CallRequest{
 			Call:    *app.OnInstall,
@@ -83,7 +82,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (md.M
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Disabled %s", app.DisplayName))
+		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
 	// disable app, not removing the data

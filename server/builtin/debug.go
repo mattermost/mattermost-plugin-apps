@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) debugCommandBinding() apps.Binding {
@@ -32,5 +32,5 @@ func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	return mdResponse("%v", md.JSONBlock(bindings))
+	return mdResponse("%v", utils.JSONBlock(bindings))
 }

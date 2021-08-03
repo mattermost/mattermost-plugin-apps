@@ -3,6 +3,7 @@ package builtin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/pkg/errors"
 )
 
@@ -153,7 +153,7 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 func mdResponse(format string, args ...interface{}) apps.CallResponse {
 	return apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,
-		Markdown: md.Markdownf(format, args...),
+		Markdown: fmt.Sprintf(format, args...),
 	}
 }
 

@@ -9,16 +9,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	var message md.MD
+	var message string
 	if app.OnUninstall != nil {
 		resp := p.callApp(in, app, apps.CallRequest{
 			Call:    *app.OnUninstall,
@@ -33,7 +32,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (md
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Uninstalled %s", app.DisplayName))
+		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
 	client := p.newSudoClient(in)

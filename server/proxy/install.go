@@ -15,14 +15,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // InstallApp installs an App.
 //  - client is a user-scoped(??) client to Mattermost??
 //  - sessionID is needed to pass down to the app in liue of a proper token
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error) {
+func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -80,7 +79,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", err
 	}
 
-	var message md.MD
+	var message string
 	if app.OnInstall != nil {
 		resp := p.callApp(in, app, apps.CallRequest{
 			Call:    *app.OnInstall,
@@ -95,7 +94,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Installed %s", app.DisplayName))
+		message = fmt.Sprintf("Installed %s", app.DisplayName)
 	}
 
 	p.log.Infow("Installed an app",
@@ -167,7 +166,17 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 				return err
 			}
 		}
-		bot.UserId = user.Id
+
+		_, err := client.GetBot(user.Id)
+		if err != nil {
+			err = client.CreateBot(bot)
+			if err != nil {
+				return err
+			}
+		} else {
+			bot.UserId = user.Id
+			bot.Username = user.Username
+		}
 	}
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username

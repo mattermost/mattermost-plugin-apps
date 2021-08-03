@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/server"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 //go:embed icon.png
@@ -92,7 +91,7 @@ func connect(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
+		Markdown: fmt.Sprintf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
 	})
 }
 
@@ -162,7 +161,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.MD(message),
+		Markdown: message,
 	})
 
 	// Store new token if refreshed

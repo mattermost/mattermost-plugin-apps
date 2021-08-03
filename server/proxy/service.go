@@ -23,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type Proxy struct {
@@ -44,10 +43,10 @@ type Service interface {
 	config.Configurable
 
 	// Admin REST API methods.
-	DisableApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
-	EnableApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
-	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, md.MD, error)
-	UninstallApp(Incoming, apps.Context, apps.AppID) (md.MD, error)
+	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, string, error)
+	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
 
 	// REST API methods used by user agents (mobile, desktop, web).
 	Call(Incoming, apps.AppID, apps.CallRequest) apps.ProxyCallResponse
@@ -62,7 +61,7 @@ type Service interface {
 
 	// Internal go API used by other packages.
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
-	AddLocalManifest(m apps.Manifest) (md.MD, error)
+	AddLocalManifest(m apps.Manifest) (string, error)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App

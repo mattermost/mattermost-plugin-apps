@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -24,6 +25,14 @@ func Pretty(in interface{}) string {
 		return ""
 	}
 	return string(bb)
+}
+
+func CodeBlock(in string) string {
+	return fmt.Sprintf("```\n%s\n```\n", in)
+}
+
+func JSONBlock(in interface{}) string {
+	return CodeBlock(Pretty(in))
 }
 
 // FindDir looks for the given directory in nearby ancestors relative to the current working
