@@ -31,6 +31,7 @@ const (
 	fConsent        = "consent"
 	fSecret         = "secret"
 	fAppID          = "app"
+	fVersion        = "version"
 	fIncludePlugins = "include_plugins"
 	fDeployType     = "deploy_type"
 	fUserID         = "user"
@@ -100,13 +101,16 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (i
 		f = a.getBindings
 
 	case formPath(pInfo),
-		formPath(pDebugClean):
+		formPath(pDebugClean),
+		formPath(pDebugBindings):
 		f = emptyForm
 
 	case submitPath(pInfo):
 		f = a.info
 	case submitPath(pDebugClean):
 		f = a.debugClean
+	case submitPath(pDebugBindings):
+		f = a.debugBindings
 
 	case formPath(pList):
 		f = a.listForm
@@ -118,7 +122,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (i
 	case submitPath(pInstallS3):
 		f = a.installS3Submit
 	case lookupPath(pInstallS3):
-		f = a.installLookup
+		f = a.installS3Lookup
 
 	case formPath(pInstallURL):
 		f = a.installURLForm
@@ -127,8 +131,6 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (i
 
 	case formPath(pInstallConsent):
 		f = a.installConsentForm
-	case lookupPath(pInstallConsent):
-		f = a.installConsentLookup
 	case submitPath(pInstallConsent):
 		f = a.installConsentSubmit
 

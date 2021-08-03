@@ -53,7 +53,7 @@ func (t DeployType) String() string {
 	case DeployHTTP:
 		return "HTTP"
 	case DeployAWSLambda:
-		return "AWS Lambda,S3"
+		return "AWS Lambda"
 	case DeployBuiltin:
 		return "Built-in"
 	case DeployKubeless:

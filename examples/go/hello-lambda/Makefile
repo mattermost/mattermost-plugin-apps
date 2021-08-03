@@ -1,22 +1,24 @@
 .PHONY: all
 ## all: builds and runs the app locally
-all: run
+all: dist run
+
+.PHONY: build-linux
+## build-linux: build the executable for linux
+build-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/hello-lambda ./aws 
 
 .PHONY: run
 ## run: runs the app locally
-run: 
+run: build
 	go run ./http
 
 .PHONY: dist
 ## dist: creates the bundle file
 dist: build-linux
 	mkdir -p dist
-	zip -qr dist/go-function app.go manifest.json bindings.json pong.json; 
-	cp -r static dist; 
-	cp manifest.json dist/; 
-	cd dist/; 
-	zip -qr go-function hello-lambda; 
-	zip -r bundle.zip go-function.zip manifest.json
+	cp manifest.json dist/
+	cp -r static dist/
+	cd dist ; zip -qrm hello-lambda hello-lambda ; zip -rm bundle.zip hello-lambda.zip manifest.json static
 
 .PHONY: clean
 ## clean: deletes all

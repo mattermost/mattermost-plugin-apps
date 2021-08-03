@@ -10,13 +10,13 @@
 		"/command"
 	],
 	"http": {
-		"root_url": "http://localhost"
+		"root_url": "http://localhost:8084"
 	},
 	"aws_lambda": {
 		"functions": [
 			{
-				"path": "/aws",
-				"name": "go-function",
+				"path": "/",
+				"name": "hello-lambda",
 				"handler": "hello-lambda",
 				"runtime": "go1.x"
 			}

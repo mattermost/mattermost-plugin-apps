@@ -18,6 +18,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
+// ListS3 lists files in S3.
+func (c *client) ListS3(bucket, prefix string) ([]string, error) {
+	result, err := c.s3.ListObjects(&s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list bucket")
+	}
+	keys := []string{}
+	for _, o := range result.Contents {
+		keys = append(keys, *o.Key)
+	}
+	return keys, nil
+}
+
 // GetS3 downloads files from S3.
 func (c *client) GetS3(bucket, item string) ([]byte, error) {
 	var buffer aws.WriteAtBuffer
@@ -103,6 +119,18 @@ func (c *client) ExistsS3Bucket(name string) (bool, error) {
 // key can be 1024 characters long.
 func S3ManifestName(appID apps.AppID, version apps.AppVersion) string {
 	return fmt.Sprintf("manifests/%s_%s.json", appID, version)
+}
+
+// ParseManifestS3Name parses the AppID and AppVersion out of an S3 key.
+func ParseS3ManifestName(key string) (apps.AppID, apps.AppVersion, error) {
+	i := strings.LastIndex(key, "_")
+	if i == -1 || !strings.HasSuffix(key, ".json") {
+		return "", "", errors.New("not a manifest file")
+	}
+	key = strings.TrimSuffix(key, ".json")
+	id := key[:i]
+	version := key[i+1:]
+	return apps.AppID(id), apps.AppVersion(version), nil
 }
 
 // S3StaticName generates key for a specific asset in S3,

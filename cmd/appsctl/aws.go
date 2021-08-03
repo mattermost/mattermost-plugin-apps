@@ -50,6 +50,7 @@ func init() {
 	awsTestCmd.AddCommand(awsTestLambdaCmd)
 	awsTestCmd.AddCommand(awsTestProvisionCmd)
 	awsTestCmd.AddCommand(awsTestS3Cmd)
+	awsTestCmd.AddCommand(awsTestS3ListCmd)
 }
 
 var awsCmd = &cobra.Command{
@@ -166,7 +167,7 @@ func helloLambda() apps.App {
 				Functions: []apps.AWSLambdaFunction{
 					{
 						Path:    "/",
-						Name:    "go-function",
+						Name:    "hello-lambda",
 						Handler: "hello-lambda",
 						Runtime: "go1.x",
 					},
@@ -202,6 +203,25 @@ var awsTestS3Cmd = &cobra.Command{
 			return errors.Errorf("expected 'static pong', got '%s'", r)
 		}
 		fmt.Println("OK")
+		return nil
+	},
+}
+
+var awsTestS3ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "test listing S3 manifests",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		upTest, err := makeTestAWSUpstream()
+		if err != nil {
+			return err
+		}
+
+		resp, err := upTest.ListS3Apps("hello")
+		if err != nil {
+			return err
+		}
+		fmt.Println(resp)
 		return nil
 	},
 }

@@ -13,10 +13,12 @@ import (
 )
 
 func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse {
-	appID, ok := creq.State.(apps.AppID)
+	id, ok := creq.State.(string)
 	if !ok {
-		return apps.NewErrorCallResponse(errors.New("no AppID found in State, don't know what to install"))
+		return apps.NewErrorCallResponse(
+			errors.New("no app ID in state, don't know what to install"))
 	}
+	appID := apps.AppID(id)
 
 	m, err := a.store.Manifest.Get(appID)
 	if err != nil {
@@ -54,10 +56,6 @@ func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallRespon
 	}
 
 	return mdResponse(string(out))
-}
-
-func (a *builtinApp) installConsentLookup(creq apps.CallRequest) apps.CallResponse {
-	return mdResponse("<>/<> TODO")
 }
 
 func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {

@@ -5,7 +5,7 @@
 			"location": "/command",
 			"bindings": [
 				{
-					"icon": "/static/icon.png",
+					"icon": "icon.png",
 					"label": "hello-lambda",
 					"description": "Hello Lambda app",
 					"hint": "[send]",
