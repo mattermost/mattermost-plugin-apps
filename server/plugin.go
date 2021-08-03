@@ -176,7 +176,7 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 		ExpandedContext: apps.ExpandedContext{
 			User: user,
 		},
-		Locale: utils.GetLocale(p.mm, user.Id),
+		Locale: utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), user.Id),
 	})
 	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
 }
@@ -219,7 +219,7 @@ func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.
 			ChannelID: ch.Id,
 		},
 		UserID: ch.CreatorId,
-		Locale: utils.GetLocale(p.mm, ch.CreatorId),
+		Locale: utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), ch.CreatorId),
 		ExpandedContext: apps.ExpandedContext{
 			Channel: ch,
 		},
@@ -235,7 +235,7 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 			ChannelID:  post.ChannelId,
 		},
 		UserID: post.UserId,
-		Locale: utils.GetLocale(p.mm, post.UserId),
+		Locale: utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), post.UserId),
 		ExpandedContext: apps.ExpandedContext{
 			Post: post,
 		},
@@ -253,7 +253,7 @@ func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.Us
 		},
 		ActingUserID: actingUserID,
 		UserID:       tm.UserId,
-		Locale:       utils.GetLocale(p.mm, actingUserID),
+		Locale:       utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), actingUserID),
 		ExpandedContext: apps.ExpandedContext{
 			ActingUser: actingUser,
 		},
@@ -271,7 +271,7 @@ func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *mo
 		},
 		ActingUserID: actingUserID,
 		UserID:       cm.UserId,
-		Locale:       utils.GetLocale(p.mm, actingUserID),
+		Locale:       utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), actingUserID),
 		ExpandedContext: apps.ExpandedContext{
 			ActingUser: actingUser,
 		},

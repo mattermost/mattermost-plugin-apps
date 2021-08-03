@@ -73,7 +73,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	appCC := *cc
 	appCC.AppID = appID
 	appCC.BotAccessToken = app.BotAccessToken
-	appCC.Locale = utils.GetLocale(p.mm, actingUserID)
+	appCC.Locale = utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), actingUserID)
 
 	// TODO PERF: Add caching
 	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)

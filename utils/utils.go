@@ -107,16 +107,16 @@ func LastN(s string, n int) string {
 	return string(out)
 }
 
-func GetLocale(mm *pluginapi.Client, userID string) string {
+func GetLocale(mm *pluginapi.Client, config *model.Config, userID string) string {
 	if u, err := mm.User.Get(userID); err == nil {
 		return u.Locale
 	}
 
-	if locale := mm.Configuration.GetConfig().LocalizationSettings.DefaultClientLocale; locale != nil {
+	if locale := config.LocalizationSettings.DefaultClientLocale; locale != nil {
 		return *locale
 	}
 
-	if locale := mm.Configuration.GetConfig().LocalizationSettings.DefaultServerLocale; locale != nil {
+	if locale := config.LocalizationSettings.DefaultServerLocale; locale != nil {
 		return *locale
 	}
 

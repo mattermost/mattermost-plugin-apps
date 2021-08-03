@@ -26,7 +26,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
 			&apps.Context{
 				ActingUserID: actingUserID,
-				Locale:       utils.GetLocale(p.mm, actingUserID),
+				Locale:       utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), actingUserID),
 			},
 		),
 		Values: map[string]interface{}{
