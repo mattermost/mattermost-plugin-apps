@@ -23,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type Proxy struct {
@@ -50,18 +49,18 @@ type Service interface {
 	Notify(cc *apps.Context, subj apps.Subject) error
 	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
 
-	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
+	AddLocalManifest(actingUserID string, m *apps.Manifest) (string, error)
 	AppIsEnabled(app *apps.App) bool
-	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
-	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
+	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
 	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
+	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, string, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error)
+	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }

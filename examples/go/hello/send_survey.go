@@ -8,7 +8,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 type SurveyFormSubmission struct {
@@ -125,7 +124,7 @@ func NewSendSurveyPartialFormResponse(c *apps.CallRequest, callType apps.CallTyp
 	}
 }
 
-func (h *HelloApp) SendSurvey(c *apps.CallRequest) (md.MD, error) {
+func (h *HelloApp) SendSurvey(c *apps.CallRequest) (string, error) {
 	bot := mmclient.AsBot(c.Context)
 	userID := c.Context.ActingUserID
 	submission := extractSurveyFormValues(c)
