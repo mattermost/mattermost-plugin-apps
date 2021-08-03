@@ -32,6 +32,8 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		creq.Context.UserID = actingUserID
 	}
 
+	creq.Context.Locale = utils.GetLocale(p.mm, creq.Context.ActingUserID)
+
 	app, err := p.store.App.Get(creq.Context.AppID)
 
 	var metadata *apps.AppMetadataForClient
@@ -178,6 +180,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		},
 		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
 			ActingUserID: app.BotUserID,
+			Locale:       utils.GetLocale(p.mm, app.BotUserID),
 		}),
 		Values: map[string]interface{}{
 			"data": datav,

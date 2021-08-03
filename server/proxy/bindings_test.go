@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -587,6 +588,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
+	testAPI.On("GetUser", mock.Anything).Return(&model.User{Locale: "en-US"}, nil)
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
