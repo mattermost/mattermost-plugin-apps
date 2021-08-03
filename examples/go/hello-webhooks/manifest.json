@@ -14,7 +14,7 @@
 		"/command"
 	],
 	"http": {
-		"root_url": "http://localhost:8080"
+		"root_url": "http://localhost:8081"
 	},
 	"on_install": {
 		"path": "/install",
