@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -42,6 +41,9 @@ const (
 	pDebugClean         = "/debug-clean"
 	pInfo               = "/info"
 	pList               = "/list"
+	pUninstall          = "/uninstall"
+	pEnable             = "/enable"
+	pDisable            = "/disable"
 	pInstallURL         = "/install-url"
 	pInstallS3          = "/install-s3"
 	pInstallMarketplace = "/install-marketplace"
@@ -55,19 +57,39 @@ type builtinApp struct {
 	proxy   proxy.Service
 	store   *store.Service
 	httpOut httpout.Service
+
+	router map[string]func(apps.CallRequest) apps.CallResponse
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
 func NewBuiltinApp(mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
-	return &builtinApp{
+	a := &builtinApp{
 		mm:      mm,
 		log:     log,
 		conf:    conf,
 		proxy:   proxy,
 		store:   store,
 		httpOut: httpOut,
+		router:  map[string]func(apps.CallRequest) apps.CallResponse{},
 	}
+
+	a.router[apps.DefaultBindings.Path] = a.getBindings
+
+	a.route(pDebugBindings, a.debugBindings, nil, nil)
+	a.route(pDebugClean, a.debugClean, nil, nil)
+	a.route(pInfo, a.info, nil, nil)
+	a.route(pList, a.list, a.listForm, nil)
+
+	a.route(pDisable, a.disableSubmit, a.disableForm, a.disableLookup)
+	a.route(pEnable, a.enableSubmit, a.enableForm, a.enableLookup)
+	a.route(pInstallConsent, a.installConsentSubmit, a.installConsentForm, nil)
+	a.route(pInstallMarketplace, a.installMarketplaceSubmit, a.installMarketplaceForm, a.installMarketplaceLookup)
+	a.route(pInstallS3, a.installS3Submit, a.installS3Form, a.installS3Lookup)
+	a.route(pInstallURL, a.installURLSubmit, a.installURLForm, nil)
+	a.route(pUninstall, a.uninstallSubmit, a.uninstallForm, a.uninstallLookup)
+
+	return a
 }
 
 func Manifest(conf config.Config) apps.Manifest {
@@ -95,50 +117,10 @@ func App(conf config.Config) apps.App {
 }
 
 func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	var f func(apps.CallRequest) apps.CallResponse
-
-	switch creq.Path {
-	case apps.DefaultBindings.Path:
-		f = a.getBindings
-
-	case formPath(pInfo),
-		formPath(pDebugClean),
-		formPath(pDebugBindings):
-		f = emptyForm
-
-	case submitPath(pInfo):
-		f = a.info
-	case submitPath(pDebugClean):
-		f = a.debugClean
-	case submitPath(pDebugBindings):
-		f = a.debugBindings
-
-	case formPath(pList):
-		f = a.listForm
-	case submitPath(pList):
-		f = a.list
-
-	case formPath(pInstallS3):
-		f = a.installS3Form
-	case submitPath(pInstallS3):
-		f = a.installS3Submit
-	case lookupPath(pInstallS3):
-		f = a.installS3Lookup
-
-	case formPath(pInstallURL):
-		f = a.installURLForm
-	case submitPath(pInstallURL):
-		f = a.installURLSubmit
-
-	case formPath(pInstallConsent):
-		f = a.installConsentForm
-	case submitPath(pInstallConsent):
-		f = a.installConsentSubmit
-
-	default:
-		return nil, errors.Errorf("%s is not found", creq.Path)
+	f, ok := a.router[creq.Path]
+	if !ok {
+		return nil, utils.NewNotFoundError("%s is not found", creq.Path)
 	}
-
 	cresp := f(creq)
 	data, err := json.Marshal(cresp)
 	if err != nil {
@@ -186,4 +168,17 @@ func formPath(p string) string {
 
 func lookupPath(p string) string {
 	return path.Join(p, "lookup")
+}
+
+func (a *builtinApp) route(path string, submitf, formf, lookupf func(apps.CallRequest) apps.CallResponse) {
+	a.router[submitPath(path)] = submitf
+
+	if formf == nil {
+		formf = emptyForm
+	}
+	a.router[formPath(path)] = formf
+
+	if lookupf != nil {
+		a.router[lookupPath(path)] = lookupf
+	}
 }

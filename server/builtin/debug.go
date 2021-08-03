@@ -32,5 +32,5 @@ func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	return mdResponse("%v", utils.JSONBlock(bindings))
+	return mdResponse(utils.JSONBlock(bindings))
 }

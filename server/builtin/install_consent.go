@@ -55,7 +55,7 @@ func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallRespon
 		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
 	}
 
-	return mdResponse(string(out))
+	return mdResponse(out)
 }
 
 func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {

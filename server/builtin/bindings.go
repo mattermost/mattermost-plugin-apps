@@ -20,6 +20,9 @@ func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
 	if utils.EnsureSysAdmin(a.mm, creq.Context.ActingUserID) == nil {
 		commands = append(commands,
 			a.installCommandBinding(),
+			a.uninstallCommandBinding(),
+			a.enableCommandBinding(),
+			a.disableCommandBinding(),
 			a.listCommandBinding(),
 			a.debugCommandBinding(),
 		)
