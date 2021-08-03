@@ -143,13 +143,7 @@ func (a *builtinApp) installS3Submit(creq apps.CallRequest) apps.CallResponse {
 		return apps.NewErrorCallResponse(err)
 	}
 
-	err = a.store.Manifest.StoreLocal(*m)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
-
-	return formResponse(
-		a.newInstallConsentForm(*m, creq))
+	return a.installCommandSubmit(*m, creq)
 }
 
 func (a *builtinApp) installURLForm(creq apps.CallRequest) apps.CallResponse {
@@ -183,34 +177,62 @@ func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 		return apps.NewErrorCallResponse(err)
 	}
 
-	err = a.store.Manifest.StoreLocal(*m)
+	return a.installCommandSubmit(*m, creq)
+}
+
+func (a *builtinApp) installMarketplaceForm(creq apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{
+		Title: "Install an App from Mattermost Apps Marketplace",
+		Fields: []apps.Field{
+			{
+				Name:                 fAppID,
+				Type:                 apps.FieldTypeDynamicSelect,
+				Description:          "select an App",
+				Label:                fAppID,
+				AutocompleteHint:     "App ID",
+				AutocompletePosition: 1,
+			},
+		},
+		Call: &apps.Call{
+			Path: pInstallMarketplace,
+		},
+	})
+}
+
+func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) apps.CallResponse {
+	if creq.SelectedField != fAppID {
+		return apps.NewErrorCallResponse(errors.Errorf("unknown field %q", creq.SelectedField))
+	}
+
+	var options []apps.SelectOption
+	marketplaceApps := a.proxy.GetListedApps(creq.Query, false)
+	for _, app := range marketplaceApps {
+		options = append(options, apps.SelectOption{
+			Value: string(app.Manifest.AppID),
+			Label: string(app.Manifest.DisplayName),
+		})
+	}
+
+	return dataResponse(
+		lookupResponse{
+			Items: options,
+		})
+}
+
+func (a *builtinApp) installMarketplaceSubmit(creq apps.CallRequest) apps.CallResponse {
+	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	m, err := a.store.Manifest.Get(appID)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
 
-	return formResponse(
-		a.newInstallConsentForm(*m, creq))
+	return a.installCommandSubmit(*m, creq)
 }
 
-// func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) apps.CallResponse {
-// 	a.log.Debugf("<>/<> installS3Lookup: creq :%v", utils.ToJSON(creq))
-// 	name := creq.SelectedField
-// 	input := creq.Query
-
-// 	a.log.Debugf("<>/<> installS3Lookup: name: %q input: %q", name, input)
-// 	switch name {
-// 	case fAppID:
-// 		marketplaceApps := a.proxy.GetListedApps(input, false)
-// 		var options []apps.SelectOption
-// 		for _, mapp := range marketplaceApps {
-// 			if !mapp.Installed {
-// 				options = append(options, apps.SelectOption{
-// 					Value: string(mapp.Manifest.AppID),
-// 					Label: mapp.Manifest.DisplayName,
-// 				})
-// 			}
-// 		}
-// 		return dataResponse(options)
-// 	}
-// 	return apps.NewErrorCallResponse(errors.Errorf("unknown field %s", name))
-// }
+func (a *builtinApp) installCommandSubmit(m apps.Manifest, creq apps.CallRequest) apps.CallResponse {
+	err := a.store.Manifest.StoreLocal(m)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+	return formResponse(a.newInstallConsentForm(m, creq))
+}

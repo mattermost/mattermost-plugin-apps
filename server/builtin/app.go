@@ -38,13 +38,14 @@ const (
 )
 
 const (
-	pDebugBindings  = "/debug-bindings"
-	pDebugClean     = "/debug-clean"
-	pInfo           = "/info"
-	pList           = "/list"
-	pInstallURL     = "/install-url"
-	pInstallS3      = "/install-s3"
-	pInstallConsent = "/install-consent"
+	pDebugBindings      = "/debug-bindings"
+	pDebugClean         = "/debug-clean"
+	pInfo               = "/info"
+	pList               = "/list"
+	pInstallURL         = "/install-url"
+	pInstallS3          = "/install-s3"
+	pInstallMarketplace = "/install-marketplace"
+	pInstallConsent     = "/install-consent"
 )
 
 type builtinApp struct {
