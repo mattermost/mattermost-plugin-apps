@@ -22,7 +22,7 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.UninstallApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {
