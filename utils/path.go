@@ -6,6 +6,19 @@ import (
 	"strings"
 )
 
+func CleanPath(p string) (string, error) {
+	if p == "" {
+		return "", NewInvalidError("path must not be empty: %s", p)
+	}
+
+	cleanPath := path.Clean(p)
+	if cleanPath == "." || strings.HasPrefix(cleanPath, "../") {
+		return "", NewInvalidError("bad path: %q", p)
+	}
+
+	return cleanPath, nil
+}
+
 func CleanStaticPath(got string) (unescaped string, err error) {
 	if got == "" {
 		return "", NewInvalidError("asset name is not specified")
@@ -23,9 +36,10 @@ func CleanStaticPath(got string) (unescaped string, err error) {
 		return "", NewInvalidError("asset names may not start with a '/'")
 	}
 
-	assetName := path.Clean(unescaped)
-	if assetName == "." || strings.HasPrefix(assetName, "../") {
-		return "", NewInvalidError("bad path: %s", got)
+	cleanPath, err := CleanPath(unescaped)
+	if err != nil {
+		return "", err
 	}
-	return assetName, nil
+
+	return cleanPath, nil
 }

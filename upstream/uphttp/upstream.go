@@ -56,9 +56,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (
 	if call == nil {
 		return nil, utils.NewInvalidError("empty call")
 	}
-	if len(call.Path) == 0 || call.Path[0] != '/' {
-		return nil, utils.NewInvalidError("invalid call path: %q", call.Path)
-	}
+
 	return u.post(call.Context.ActingUserID, u.rootURL+call.Path, call)
 }
 

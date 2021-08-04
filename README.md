@@ -15,9 +15,11 @@ This is a precursor to our "Mattermost Apps" and "Mattermost Apps Marketplace" w
 
 ## Getting Started
 
-Join the "Integrations and Apps" channel to provide thoughts and feedback.
+Use the App Framework [Docker development environment](dev) to get up and running quickly.
 
-[App developer documentation](https://developers.mattermost.com/integrate/apps/).
+Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
+
+Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps).
 
 ## Running the tests
 

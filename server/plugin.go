@@ -36,6 +36,7 @@ type Plugin struct {
 
 	mm   *pluginapi.Client
 	conf config.Service
+	log  utils.Logger
 	aws  upaws.Client
 
 	store       *store.Service
@@ -55,7 +56,8 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.mm = pluginapi.NewClient(p.API)
+	p.mm = pluginapi.NewClient(p.API, p.Driver)
+	p.log = utils.NewPluginLogger(p.mm)
 
 	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
@@ -66,7 +68,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.conf = config.NewService(p.mm, p.BuildConfig, botUserID)
+	p.conf = config.NewService(p.mm, p.log, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
@@ -81,20 +83,22 @@ func (p *Plugin) OnActivate() error {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.mm.Log.Debug("Initialized config service: " + mode)
+	p.log.Debugf("Initialized config service: %s", mode)
 
-	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, &p.mm.Log)
+	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, p.log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
-	p.mm.Log.Debug("Initialized AWS Client",
-		"region", conf.AWSRegion, "bucket", conf.AWSS3Bucket,
-		"access", utils.LastN(conf.AWSAccessKey, 7), "secret", utils.LastN(conf.AWSSecretKey, 4))
+	p.log.Debugw("Initialized AWS Client",
+		"region", conf.AWSRegion,
+		"bucket", conf.AWSS3Bucket,
+		"access", utils.LastN(conf.AWSAccessKey, 7),
+		"secret", utils.LastN(conf.AWSSecretKey, 4))
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.mm.Log.Debug("Initialized outgoing HTTP")
+	p.log.Debugf("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.conf, p.aws, conf.AWSS3Bucket)
+	p.store = store.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket)
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
@@ -107,38 +111,38 @@ func (p *Plugin) OnActivate() error {
 	// app store
 	appstore := p.store.App
 	appstore.Configure(conf)
-	p.mm.Log.Debug("Initialized the persistent store")
+	p.log.Debugf("Initialized the persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.aws, p.conf, p.store, conf.AWSS3Bucket, mutex, p.httpOut)
-	p.mm.Log.Debug("Initialized the app proxy")
+	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
+	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.mm.Log.Debug("Initialized the app REST APIs")
+	p.log.Debugf("Initialized the app REST APIs")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.mm.Log.Debug("Initialized incoming HTTP")
+	p.log.Debugf("Initialized incoming HTTP")
 
-	p.command, err = command.MakeService(p.mm, p.conf, p.proxy, p.httpOut)
+	p.command, err = command.MakeService(p.mm, p.log, p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
-	p.mm.Log.Debug("Initialized slash commands")
+	p.log.Debugf("Initialized slash commands")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.mm.Log.Error("Failed to synchronize apps metadata", "err", err.Error())
+			p.log.WithError(err).Errorf("Failed to synchronize apps metadata")
 		} else {
-			p.mm.Log.Debug("Synchronized the installed apps metadata")
+			p.log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
 
@@ -154,7 +158,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
@@ -195,7 +199,7 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
 	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.GetConfig().BotUserID))
 	if err != nil {
-		p.mm.Log.Error("Error while checking if the message should be processed", "err", err.Error())
+		p.log.WithError(err).Errorf("Error while checking if the message should be processed")
 		return
 	}
 

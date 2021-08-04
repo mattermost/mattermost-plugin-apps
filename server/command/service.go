@@ -11,13 +11,16 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service interface {
+	config.Configurable
 	ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error)
 }
 
@@ -26,6 +29,7 @@ type service struct {
 	conf    config.Service
 	proxy   proxy.Service
 	httpOut httpout.Service
+	log     utils.Logger
 }
 
 var _ Service = (*service)(nil)
@@ -43,10 +47,18 @@ type commandHandler struct {
 	autoComplete *model.AutocompleteData
 }
 
-func (s *service) allCommands() map[string]commandHandler {
+func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
 	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+
+	enableAC := model.NewAutocompleteData("enable", "", "Enable an app")
+	enableAC.AddTextArgument("ID of the app to enable", "appID", "")
+	enableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+
+	disenableAC := model.NewAutocompleteData("disable", "", "Disable an app")
+	disenableAC.AddTextArgument("ID of the app to disable", "appID", "")
+	disenableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
 
 	all := map[string]commandHandler{
 		"info": {
@@ -61,9 +73,15 @@ func (s *service) allCommands() map[string]commandHandler {
 			f:            s.checkSystemAdmin(s.executeUninstall),
 			autoComplete: uninstallAC,
 		},
+		"enable": {
+			f:            s.checkSystemAdmin(s.executeEnable),
+			autoComplete: enableAC,
+		},
+		"disable": {
+			f:            s.checkSystemAdmin(s.executeDisable),
+			autoComplete: disenableAC,
+		},
 	}
-
-	conf := s.conf.GetConfig()
 
 	if conf.DeveloperMode {
 		debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
@@ -176,14 +194,33 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 	return h
 }
 
-func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
+func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
 		mm:      mm,
+		log:     log,
 		conf:    configService,
 		proxy:   proxy,
 		httpOut: httpOut,
 	}
-	subCommands := s.allCommands()
+	conf := s.conf.GetConfig()
+
+	err := s.registerCommand(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *service) Configure(conf config.Config) {
+	err := s.registerCommand(conf)
+	if err != nil {
+		s.log.WithError(err).Warnf("Failed to re-register command")
+	}
+}
+
+func (s *service) registerCommand(conf config.Config) error {
+	subCommands := s.allSubCommands(conf)
 	var subs []string
 	for t := range subCommands {
 		subs = append(subs, t)
@@ -196,18 +233,15 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 
 	AddACForSubCommands(subCommands, ac)
 
-	err := mm.SlashCommand.Register(&model.Command{
+	err := s.mm.SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Apps",
 		AutoCompleteHint: fmt.Sprintf("Usage: `/%s info`.", config.CommandTrigger),
 		AutocompleteData: ac,
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	return s, nil
+	return err
 }
 
 func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.AutocompleteData) {
@@ -262,7 +296,8 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 }
 
 func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
-	return s.runSubcommand(s.allCommands(), in)
+	conf := s.conf.GetConfig()
+	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
 func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
@@ -270,7 +305,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
 	if params.current[0] == "help" {
-		return out(params, md.MD("TODO usage"))
+		return out(params, "TODO usage")
 	}
 
 	c, ok := subcommands[params.current[0]]
@@ -302,19 +337,37 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 		return handler(p)
 	}
 }
-func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
+
+func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
+	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+		UserAgentContext: apps.UserAgentContext{
+			TeamID:    commandArgs.TeamId,
+			ChannelID: commandArgs.ChannelId,
+		},
+		ActingUserID: commandArgs.UserId,
+		UserID:       commandArgs.UserId,
+	})
+}
+
+func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
+	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId)
+}
+
+func out(params *commandParams, out string) (*model.CommandResponse, error) {
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") + out
+
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
 
 func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
-		md.Markdownf("Command failed. Error: **%s**\n", err.Error())
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") +
+		fmt.Sprintf("Command failed. Error: **%s**\n", err.Error())
+
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, err
 }

@@ -59,7 +59,7 @@ func Setup(t testing.TB) *TestHelper {
 	th.LocalClientPP = th.CreateLocalClient("TODO")
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, _, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	_, _, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.Context, th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
 	require.Nil(t, err)
 
 	rtoken, _ := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
@@ -105,7 +105,7 @@ func SetupPP(th *TestHelper, t testing.TB) {
 }
 
 func (th *TestHelper) CreateClientPP() *mmclient.ClientPP {
-	return mmclient.NewAPIClientPP(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
+	return mmclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
 }
 
 func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
@@ -117,10 +117,10 @@ func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
 		},
 	}
 
-	return &mmclient.ClientPP{
-		APIURL:     "http://_" + model.API_URL_SUFFIX,
-		HTTPClient: httpClient,
-	}
+	client := mmclient.NewAppsPluginAPIClient("http://_" + model.API_URL_SUFFIX)
+	client.HTTPClient = httpClient
+
+	return client
 }
 
 func (th *TestHelper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *mmclient.ClientPP), name ...string) {

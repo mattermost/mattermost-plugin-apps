@@ -17,9 +17,9 @@ const manifestStr = `
   "description": "This plugin powers the Mattermost Apps Framework and is required for any Apps to run",
   "homepage_url": "https://mattermost.com/marketplace/app-framework",
   "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
-  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.6.0",
-  "version": "0.6.0",
-  "min_server_version": "5.35.0",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.7.0",
+  "version": "0.7.0",
+  "min_server_version": "5.37.0",
   "server": {
     "executables": {
       "darwin-amd64": "server/dist/plugin-darwin-amd64",

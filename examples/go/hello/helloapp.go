@@ -9,6 +9,7 @@ const (
 )
 
 const (
+	PathInstall                  = "/install"
 	PathSendSurvey               = "/send"
 	PathSendSurveyModal          = "/send-modal"
 	PathSendSurveyCommandToModal = "/send-command-modal"

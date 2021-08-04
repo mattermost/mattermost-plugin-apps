@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -20,6 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestAppMetadataForClient(t *testing.T) {
@@ -42,6 +42,9 @@ func TestAppMetadataForClient(t *testing.T) {
 			UserAgentContext: apps.UserAgentContext{
 				AppID: "app1",
 			},
+		},
+		Call: apps.Call{
+			Path: "/",
 		},
 	}
 
@@ -931,6 +934,9 @@ func TestFormFilter(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			p := newTestProxy(testApps, ctrl, tc.appResponse, tc.apiExpectations)
 			c := &apps.CallRequest{
+				Call: apps.Call{
+					Path: "/some_path",
+				},
 				Context: &apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						AppID: "app1",
@@ -949,8 +955,10 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller, mockedResponse 
 		apiExpectations(testAPI)
 	}
 
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	// testAPI.On("LogDebug", mock.Anything).Return(nil)
+
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
@@ -958,7 +966,7 @@ func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller, mockedResponse 
 		},
 	})
 
-	s := store.NewService(mm, conf, nil, "")
+	s := store.NewService(mm, utils.NewTestLogger(), conf, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

@@ -18,10 +18,10 @@ func TestCreateOAuth2State(t *testing.T) {
 	stateRE := `[A-Za-z0-9-_]+\.[A-Za-z0-9]`
 	userID := `userid-test`
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testDriver := &plugintest.Driver{}
 	s := oauth2Store{
 		Service: &Service{
-			mm: pluginapi.NewClient(testAPI),
+			mm: pluginapi.NewClient(testAPI, testDriver),
 		},
 	}
 
@@ -63,10 +63,10 @@ func TestCreateOAuth2State(t *testing.T) {
 func TestOAuth2User(t *testing.T) {
 	userID := `userid-test`
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testDriver := &plugintest.Driver{}
 	s := oauth2Store{
 		Service: &Service{
-			mm: pluginapi.NewClient(testAPI),
+			mm: pluginapi.NewClient(testAPI, testDriver),
 		},
 	}
 

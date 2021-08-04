@@ -9,7 +9,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/logger"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -68,9 +67,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
-	logger := logger.New(&p.mm.Log).With(logger.LogContext{
-		"app_id": app.AppID,
-	})
+	log := p.log.With("app_id", app.AppID)
 
 	appID := app.AppID
 	appCC := *cc
@@ -86,13 +83,13 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 
 	resp := p.Call(sessionID, actingUserID, bindingsRequest)
 	if resp == nil || (resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK) {
-		logger.Debugf("Bindings response is nil or unexpected type.")
+		log.Debugf("Bindings response is nil or unexpected type.")
 		return nil
 	}
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
-		logger.Debugf("Error getting bindings. Error: " + resp.Error())
+		log.WithError(resp).Debugf("Error getting bindings.")
 		return nil
 	}
 
@@ -100,7 +97,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	b, _ := json.Marshal(resp.Data)
 	err := json.Unmarshal(b, &bindings)
 	if err != nil {
-		logger.Debugf("Bindings are not of the right type.")
+		log.Debugf("Bindings are not of the right type.")
 		return nil
 	}
 
@@ -170,7 +167,9 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 		if b.Icon != "" {
 			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
-				p.mm.Log.Debug("Invalid icon path in binding", "app_id", app.AppID, "icon", b.Icon, "error", err.Error())
+				p.log.WithError(err).Debugw("Invalid icon path in binding",
+					"app_id", app.AppID,
+					"icon", b.Icon)
 				b.Icon = ""
 			} else {
 				b.Icon = icon
@@ -204,5 +203,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 }
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
-	p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+	if userID != "" {
+		p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+	}
 }

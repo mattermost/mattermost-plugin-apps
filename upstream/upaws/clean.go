@@ -9,16 +9,16 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
+func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 	delete := func(typ string, name Name, del func(Name) error) error {
 		err := del(name)
 		if err != nil {
 			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Info("Not found "+typ, "key", name)
+			log.Infow("Not found "+typ, "key", name)
 		} else {
-			log.Info("Deleted "+typ, "key", name)
+			log.Infow("Deleted "+typ, "key", name)
 		}
 		return nil
 	}
@@ -26,7 +26,7 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 	err := asAdmin.RemoveUserFromGroup(DefaultUserName, DefaultGroupName)
 	switch {
 	case err == nil:
-		log.Info("Removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
+		log.Infow("Removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
 	case errors.Is(err, utils.ErrNotFound):
 		// nothing to do
 	default:
@@ -38,7 +38,7 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 		err = asAdmin.DetachGroupPolicy(DefaultGroupName, ARN(*policy.Arn))
 		switch {
 		case err == nil:
-			log.Info("Detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
+			log.Infow("Detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
 		case errors.Is(err, utils.ErrNotFound):
 			// nothing to do
 		default:
@@ -67,9 +67,9 @@ func CleanAWS(asAdmin Client, accessKeyID string, log Logger) error {
 			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Info("Not found policy", "ARN", *policy.Arn)
+			log.Infow("Not found policy", "ARN", *policy.Arn)
 		} else {
-			log.Info("Deleted policy", "ARN", *policy.Arn)
+			log.Infow("Deleted policy", "ARN", *policy.Arn)
 		}
 	}
 

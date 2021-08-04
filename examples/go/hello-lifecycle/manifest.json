@@ -1,0 +1,24 @@
+{
+	"app_id": "hello-lifecycle",
+	"display_name": "Hello, Lifecycle!",
+	"app_type": "http",
+	"on_install": {
+		"path": "/install"
+	},
+	"on_version_changed": {
+		"path": "/version_changed"
+	},
+	"on_uninstall": {
+		"path": "/uninstall"
+	},
+	"on_enable": {
+		"path": "/enable"
+	},
+	"on_disable": {
+		"path": "/disable"
+	},
+	"root_url": "http://localhost:8080",
+	"requested_permissions": [
+		"act_as_bot"
+	]
+}

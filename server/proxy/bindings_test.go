@@ -25,6 +25,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -669,13 +670,10 @@ func TestInvalidCommand(t *testing.T) {
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.AnythingOfType("string")).Return(nil)
-	testAPI.On("LogDebug", mock.AnythingOfType("string"),
-		mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything,
-	).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
+
+	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	conf := config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
@@ -686,7 +684,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		},
 	})
 
-	s := store.NewService(mm, confService, nil, "")
+	s := store.NewService(mm, utils.NewTestLogger(), confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -713,6 +711,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 	p := &Proxy{
 		mm:               mm,
+		log:              utils.NewTestLogger(),
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             confService,

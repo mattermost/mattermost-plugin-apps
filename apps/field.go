@@ -24,6 +24,9 @@ const (
 	// A mattermost channel reference (~name).
 	FieldTypeChannel FieldType = "channel"
 
+	// An arbitrary markdown text. Only visible on modals.
+	FieldTypeMarkdown FieldType = "markdown"
+
 	TextFieldSubtypeInput     TextFieldSubtype = "input"
 	TextFieldSubtypeTextarea  TextFieldSubtype = "textarea"
 	TextFieldSubtypeNumber    TextFieldSubtype = "number"
@@ -65,7 +68,8 @@ type Field struct {
 	AutocompleteHint string `json:"hint,omitempty"`
 
 	// AutocompletePosition means that this is a positional argument, does not
-	// have a --flag. If >0, indicates what position this field is in.
+	// have a --flag. If >0, indicates what position this field is in. If =-1,
+	// indicates that this field is the last argument.
 	AutocompletePosition int `json:"position,omitempty"`
 
 	// TODO: ModalLabel should default to Label, Name

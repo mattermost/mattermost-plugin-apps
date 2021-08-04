@@ -77,7 +77,7 @@ func (h *helloapp) Roundtrip(c *apps.CallRequest, _ bool) (io.ReadCloser, error)
 			Data: hello.Bindings(),
 		}
 
-	case apps.DefaultOnInstall.Path:
+	case hello.PathInstall:
 		cr = h.Install(c)
 
 	default:
