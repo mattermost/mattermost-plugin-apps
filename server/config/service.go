@@ -7,6 +7,8 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/services/configservice"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Configurable interface {
@@ -31,13 +33,15 @@ type service struct {
 
 	lock             *sync.RWMutex
 	mm               *pluginapi.Client
+	log              utils.Logger
 	mattermostConfig *model.Config
 }
 
-func NewService(mattermost *pluginapi.Client, buildConfig BuildConfig, botUserID string) Service {
+func NewService(mm *pluginapi.Client, log utils.Logger, buildConfig BuildConfig, botUserID string) Service {
 	return &service{
 		lock:        &sync.RWMutex{},
-		mm:          mattermost,
+		mm:          mm,
+		log:         log,
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
 	}
@@ -92,7 +96,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.mm.Log.Warn("Failed to fetch license two times. Falling back to on-prem mode.")
+			s.log.Warnf("Failed to fetch license two times. Falling back to on-prem mode.")
 		}
 	}
 	err := newConfig.Reconfigure(stored, mmconf, license)

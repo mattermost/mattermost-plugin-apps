@@ -12,20 +12,23 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type gateway struct {
+	mm    *pluginapi.Client
+	log   utils.Logger
 	conf  config.Service
 	proxy proxy.Service
-	mm    *pluginapi.Client
 	i18n  *i18n.Bundle
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, _ appservices.Service, i18nBundle *i18n.Bundle) {
+func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service, i18nBundle *i18n.Bundle) {
 	g := &gateway{
-		conf:  conf,
 		mm:    mm,
+		log:   log,
+		conf:  conf,
 		proxy: proxy,
 		i18n:  i18nBundle,
 	}

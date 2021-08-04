@@ -84,7 +84,9 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
 		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
 		if err != nil {
-			p.mm.Log.Debug("Invalid icon path in form. Ignoring it.", "app_id", app.AppID, "icon", callResponse.Form.Icon, "error", err.Error())
+			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+				"app_id", app.AppID,
+				"icon", callResponse.Form.Icon)
 			callResponse.Form.Icon = ""
 		} else {
 			callResponse.Form.Icon = icon

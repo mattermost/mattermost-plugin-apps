@@ -12,7 +12,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
@@ -29,11 +28,11 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
-	txt := md.MD(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+	txt := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "apps.command.list.table.header",
 		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
-	}) + "\n")
-	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n")
+	}) + "\n"
+	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
 		m, _ := s.proxy.GetManifest(app.AppID)
@@ -86,7 +85,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 			name, status, app.AppType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
@@ -105,7 +104,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 
 		name := fmt.Sprintf("[%s](%s) (`%s`)",
 			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 			name, status, l.Manifest.AppType, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 	}
 

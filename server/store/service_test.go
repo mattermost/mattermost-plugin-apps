@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestHashkey(t *testing.T) {
-	s := NewService(nil, nil, nil, "")
+	s := NewService(nil, utils.NewTestLogger(), nil, nil, "")
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string

@@ -9,10 +9,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
 	loc := p.i18n.GetUserLocalizer(cc.ActingUserID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -27,7 +26,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		}))
 	}
 
-	var message md.MD
+	var message string
 	if app.OnUninstall != nil {
 		creq := &apps.CallRequest{
 			Call:    *app.OnUninstall,
@@ -35,14 +34,15 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		}
 		resp := p.Call(sessionID, cc.ActingUserID, creq)
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnUninstall failed, uninstalling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnUninstall failed, uninstalling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
 	}
 
 	if message == "" {
-		message = md.MD(p.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		message = p.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.uninstall.default",
 				Other: "Uninstalled {{.AppID}}",
@@ -50,7 +50,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 			TemplateData: map[string]string{
 				"AppID": app.DisplayName,
 			},
-		}))
+		})
 	}
 
 	// delete oauth app
@@ -138,7 +138,8 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		}))
 	}
 
-	p.mm.Log.Info("Uninstalled app", "app_id", app.AppID)
+	p.log.Infow("Uninstalled app",
+		"app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 

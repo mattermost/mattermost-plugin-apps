@@ -96,7 +96,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 
 	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
-		return s.errorOut(params, err)
+		return s.errorOut(params, errors.Wrap(err, "unable to decode "+manifestURL))
 	}
 
 	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)

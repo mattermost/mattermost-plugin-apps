@@ -3,8 +3,6 @@ package apps
 import (
 	"encoding/json"
 	"io"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // CallType determines what action is expected of a function.
@@ -113,7 +111,7 @@ type CallResponse struct {
 	Type CallResponseType `json:"type"`
 
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
-	Markdown md.MD       `json:"markdown,omitempty"`
+	Markdown string      `json:"markdown,omitempty"`
 	Data     interface{} `json:"data,omitempty"`
 
 	// Used in CallResponseTypeError

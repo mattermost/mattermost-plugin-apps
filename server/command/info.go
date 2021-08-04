@@ -10,14 +10,13 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, error) {
 	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
 
 	conf := s.conf.GetConfig()
-	resp := md.Markdownf(s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	resp := s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "apps.command.info.version",
 			Other: "Mattermost Apps plugin version: {{.Version}}, ",
@@ -36,7 +35,7 @@ func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, er
 			"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
 			"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
 		},
-	}) + "\n")
+	}) + "\n"
 
 	return out(params, resp)
 }

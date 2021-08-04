@@ -11,7 +11,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -22,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestHandleGetBindingsValidContext(t *testing.T) {
@@ -31,7 +31,6 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	conf := mock_config.NewMockService(ctrl)
 
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
@@ -39,7 +38,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	require.Nil(t, err)
 
 	router := mux.NewRouter()
-	Init(router, mm, conf, proxy, nil, i18nBundle)
+	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, i18nBundle)
 
 	expected := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{

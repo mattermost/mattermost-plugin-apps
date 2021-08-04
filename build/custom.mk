@@ -14,3 +14,7 @@ i18n-merge-server:
 	@goi18n merge -format json -outdir assets/i18n/ assets/i18n/active.*.json assets/i18n/translate.*.json
 	@rm -f assets/i18n/translate.*.json
 	@echo "Translations merged, please verify your "git diff" before you submit the changes"
+
+.PHONY: dev_server
+dev_server:
+	cd dev && docker-compose up mattermost db

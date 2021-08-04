@@ -10,17 +10,16 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
 	if !app.Disabled {
-		return md.MD(fmt.Sprintf("%s is already enabled", app.DisplayName)), nil
+		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
 	_, err = client.EnableBot(app.BotUserID)
@@ -35,56 +34,58 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
-	var message md.MD
+	var message string
 	if app.OnEnable != nil {
 		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnEnable failed, enabling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnEnable failed, enabling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Enabled %s", app.DisplayName))
+		message = fmt.Sprintf("Enabled %s", app.DisplayName)
 	}
 
-	p.mm.Log.Info("Enabled app", "app_id", app.AppID)
+	p.log.Infow("Enabled app", "app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (md.MD, error) {
+func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
 	if app.Disabled {
-		return md.MD(fmt.Sprintf("%s is already disabled", app.DisplayName)), nil
+		return fmt.Sprintf("%s is already disabled", app.DisplayName), nil
 	}
 
 	// Call the app first as later it's disabled
-	var message md.MD
+	var message string
 	if app.OnDisable != nil {
 		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
 			Call:    *app.OnDisable,
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.mm.Log.Warn("OnDisable failed, disabling app anyway", "err", resp.Error(), "app_id", app.AppID)
+			p.log.WithError(err).Warnw("OnDisable failed, disabling app anyway",
+				"app_id", app.AppID)
 		} else {
 			message = resp.Markdown
 		}
 	}
 
 	if message == "" {
-		message = md.MD(fmt.Sprintf("Disabled %s", app.DisplayName))
+		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
 	// disable app, not removing the data
@@ -99,7 +100,8 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	p.mm.Log.Info("Disabled app", "app_id", app.AppID)
+	p.log.Infow("Disabled app",
+		"app_id", app.AppID)
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 

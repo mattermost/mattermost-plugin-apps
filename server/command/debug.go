@@ -11,13 +11,13 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
 	_ = s.mm.KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
-	return out(params, md.MD("Deleted all KV records and emptied the config."))
+	return out(params, "Deleted all KV records and emptied the config.")
 }
 
 func (s *service) executeDebugBindings(params *commandParams) (*model.CommandResponse, error) {
@@ -28,7 +28,7 @@ func (s *service) executeDebugBindings(params *commandParams) (*model.CommandRes
 	if err != nil {
 		return s.errorOut(params, err)
 	}
-	return out(params, md.JSONBlock(bindings))
+	return out(params, utils.JSONBlock(bindings))
 }
 
 func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
@@ -65,7 +65,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	}
 
 	return &model.CommandResponse{
-		Text:         string(out),
+		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
