@@ -45,7 +45,7 @@ func (t *Telemetry) TrackCall(appID string, location string) {
 		return
 	}
 
-	_ = t.tracker.TrackEvent("uninstall", map[string]interface{}{
+	_ = t.tracker.TrackEvent("call", map[string]interface{}{
 		"appID":    appID,
 		"location": location,
 	})
