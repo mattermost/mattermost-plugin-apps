@@ -346,6 +346,8 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	conf := mock_config.NewMockService(ctrl)
 
 	testAPI := &plugintest.API{}
+	testAPI.On("GetBundlePath").Return("../../..", nil)
+
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
@@ -398,6 +400,8 @@ func TestHandleCallValidContext(t *testing.T) {
 	conf := mock_config.NewMockService(ctrl)
 
 	testAPI := &plugintest.API{}
+	testAPI.On("GetBundlePath").Return("../../..", nil)
+
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 

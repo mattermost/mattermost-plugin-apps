@@ -35,6 +35,8 @@ func TestKV(t *testing.T) {
 		&model.User{
 			IsBot: true,
 		}, nil)
+	testAPI.On("GetBundlePath").Return("../../..", nil)
+
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
