@@ -93,6 +93,8 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		}
 	}
 
+	p.telemetry.TrackCall(string(creq.Context.AppID), string(creq.Context.Location))
+
 	return apps.NewProxyCallResponse(callResponse, metadata)
 }
 

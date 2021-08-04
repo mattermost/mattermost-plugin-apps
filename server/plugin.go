@@ -11,6 +11,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -47,6 +49,9 @@ type Plugin struct {
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
+
+	telemetryClient mmtelemetry.Client
+	tracker         *telemetry.Telemetry
 }
 
 func NewPlugin(buildConfig config.BuildConfig) *Plugin {
@@ -113,11 +118,18 @@ func (p *Plugin) OnActivate() error {
 	appstore.Configure(conf)
 	p.log.Debugf("Initialized the persistent store")
 
+	p.telemetryClient, err = mmtelemetry.NewRudderClient()
+	if err != nil {
+		p.API.LogWarn("telemetry client not started", "error", err.Error())
+	}
+
+	p.tracker = telemetry.NewTelemetry(nil)
+
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut, p.tracker)
 	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
@@ -149,11 +161,31 @@ func (p *Plugin) OnActivate() error {
 	return nil
 }
 
+func (p *Plugin) OnDeactivate() error {
+	if p.telemetryClient != nil {
+		err := p.telemetryClient.Close()
+		if err != nil {
+			p.API.LogWarn("OnDeactivate: failed to close telemetryClient", "error", err.Error())
+		}
+	}
+
+	return nil
+}
+
 func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
 	}
+
+	enableDiagnostics := false
+	if config := p.API.GetConfig(); config != nil {
+		if configValue := config.LogSettings.EnableDiagnostics; configValue != nil {
+			enableDiagnostics = *configValue
+		}
+	}
+	updatedTracker := mmtelemetry.NewTracker(p.telemetryClient, p.API.GetDiagnosticId(), p.API.GetServerVersion(), manifest.Id, manifest.Version, "appsFramework", enableDiagnostics)
+	p.tracker.UpdateTracker(updatedTracker)
 
 	stored := config.StoredConfig{}
 	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)

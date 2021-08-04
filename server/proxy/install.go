@@ -102,6 +102,8 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 	p.log.Infow("Installed an app",
 		"app_id", app.AppID)
 
+	p.telemetry.TrackInstall(string(app.AppID), string(app.AppType))
+
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return app, message, nil

@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -33,6 +34,7 @@ type Proxy struct {
 	aws           upaws.Client
 	httpOut       httpout.Service
 	s3AssetBucket string
+	telemetry     *telemetry.Telemetry
 }
 
 type Service interface {
@@ -62,7 +64,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, aws upaws.Client, s3AssetBucket string, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, aws upaws.Client, s3AssetBucket string, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, telemetry *telemetry.Telemetry) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
@@ -73,6 +75,7 @@ func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, aws
 		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
+		telemetry:        telemetry,
 	}
 }
 

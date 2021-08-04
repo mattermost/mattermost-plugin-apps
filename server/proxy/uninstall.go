@@ -77,6 +77,8 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 	p.log.Infow("Uninstalled app",
 		"app_id", app.AppID)
 
+	p.telemetry.TrackUninstall(string(app.AppID), string(app.AppType))
+
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	return message, nil
