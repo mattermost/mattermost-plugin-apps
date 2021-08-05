@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -83,7 +84,9 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
 		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
 		if err != nil {
-			p.mm.Log.Debug("Invalid icon path in form. Ignoring it.", "app_id", app.AppID, "icon", callResponse.Form.Icon, "error", err.Error())
+			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+				"app_id", app.AppID,
+				"icon", callResponse.Form.Icon)
 			callResponse.Form.Icon = ""
 		} else {
 			callResponse.Form.Icon = icon
@@ -189,7 +192,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 	return upstream.Notify(up, creq)
 }
 
-func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -199,6 +202,15 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		return nil, status, err
 	}
 	up, err := p.staticUpstreamForManifest(m)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return up.GetStatic(path)
+}
+
+func (p *Proxy) getStaticForApp(app *apps.App, path string) (io.ReadCloser, int, error) {
+	up, err := p.staticUpstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -217,8 +229,28 @@ func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpst
 	case apps.AppTypeBuiltin:
 		return nil, errors.New("static assets are not supported for builtin apps")
 
+	case apps.AppTypePlugin:
+		app, err := p.store.App.Get(m.AppID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get app for static asset")
+		}
+		return upplugin.NewStaticUpstream(app, &p.mm.Plugin), nil
+
 	default:
 		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
+	}
+}
+
+func (p *Proxy) staticUpstreamForApp(app *apps.App) (upstream.StaticUpstream, error) {
+	switch app.AppType {
+	case apps.AppTypeHTTP, apps.AppTypeAWSLambda, apps.AppTypeBuiltin:
+		return p.staticUpstreamForManifest(&app.Manifest)
+
+	case apps.AppTypePlugin:
+		return upplugin.NewStaticUpstream(app, &p.mm.Plugin), nil
+
+	default:
+		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
 	}
 }
 
@@ -245,7 +277,8 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
 		}
 		return up, nil
-
+	case apps.AppTypePlugin:
+		return upplugin.NewUpstream(app, &p.mm.Plugin), nil
 	default:
 		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
@@ -253,19 +286,21 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 
 func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
 	supportedTypes := []apps.AppType{
+		apps.AppTypeAWSLambda,
 		apps.AppTypeBuiltin,
+		apps.AppTypePlugin,
 	}
 	mode := "Mattermost Cloud"
+
 	switch {
 	case conf.DeveloperMode:
 		return nil
 
 	case conf.MattermostCloudMode:
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda)
 
 	case !conf.MattermostCloudMode:
 		// Self-managed
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda, apps.AppTypeHTTP)
+		supportedTypes = append(supportedTypes, apps.AppTypeHTTP)
 		mode = "Self-managed"
 
 	default:

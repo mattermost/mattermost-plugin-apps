@@ -1,11 +1,11 @@
 package hello
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -28,6 +28,6 @@ func SubmitSurvey(c *apps.CallRequest) *apps.CallResponse {
 	}
 	return &apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,
-		Markdown: md.Markdownf("You answered the survey with `%s`.", selected),
+		Markdown: fmt.Sprintf("You answered the survey with `%s`.", selected),
 	}
 }

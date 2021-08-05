@@ -9,10 +9,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (md.MD, error) {
+func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.CallRequest) (string, error) {
 	bot := mmclient.AsBot(c.Context)
 	adminClient := mmclient.AsAdmin(c.Context)
 
@@ -97,5 +96,5 @@ func (h *HelloApp) Install(appID apps.AppID, channelDisplayName string, c *apps.
 
 	bot.DM(c.Context.ActingUserID, "Finished installing!")
 
-	return md.Markdownf("installed %s to %s channel", appID, channelDisplayName), nil
+	return fmt.Sprintf("installed %s to %s channel", appID, channelDisplayName), nil
 }

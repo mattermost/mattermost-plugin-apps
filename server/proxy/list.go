@@ -39,12 +39,16 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp {
 	conf := p.conf.GetConfig()
 	out := []*apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
+			continue
+		}
+
+		if !includePluginApps && m.AppType == apps.AppTypePlugin {
 			continue
 		}
 
@@ -65,6 +69,14 @@ func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 				Description: "Apps are marked as experimental and not meant for production use. Please use with caution.",
 				URL:         "",
 			}}
+
+			if !marketApp.Enabled {
+				marketApp.Labels = append(marketApp.Labels, model.MarketplaceLabel{
+					Name:        "Disabled",
+					Description: "This app is disabled.",
+					URL:         "",
+				})
+			}
 		}
 		out = append(out, marketApp)
 	}

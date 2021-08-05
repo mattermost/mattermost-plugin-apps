@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service interface {
@@ -23,10 +24,10 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(router *mux.Router, mm *pluginapi.Client, conf config.Service, proxy proxy.Service, appServices appservices.Service,
-	initf ...func(*mux.Router, *pluginapi.Client, config.Service, proxy.Service, appservices.Service)) Service {
+func NewService(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, appServices appservices.Service,
+	initf ...func(*mux.Router, *pluginapi.Client, utils.Logger, config.Service, proxy.Service, appservices.Service)) Service {
 	for _, f := range initf {
-		f(router, mm, conf, proxy, appServices)
+		f(router, mm, log, conf, proxy, appServices)
 	}
 	router.Handle("{anything:.*}", http.NotFoundHandler())
 
@@ -37,6 +38,7 @@ func NewService(router *mux.Router, mm *pluginapi.Client, conf config.Service, p
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Add("MM_SESSION_ID", c.SessionId)
+	r.Header.Set("MM_SESSION_ID", c.SessionId)
+	r.Header.Set("Mattermost-Plugin-ID", c.SourcePluginId)
 	s.router.ServeHTTP(w, r)
 }

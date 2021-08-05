@@ -9,7 +9,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -91,7 +90,7 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 
 	asBot.CreatePost(&model.Post{
 		ChannelId: channelID,
-		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Values["path"], creq.Values["data"]),
+		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Path, creq.Values["data"]),
 	})
 
 	json.NewEncoder(w).Encode(apps.CallResponse{Type: apps.CallResponseTypeOK})
@@ -102,7 +101,7 @@ func info(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("Try `/hello-webhooks send %s`",
+		Markdown: fmt.Sprintf("Try `/hello-webhooks send %s`",
 			creq.Context.MattermostSiteURL+creq.Context.AppPath+apps.PathWebhook+
 				"/hello"+
 				"?secret="+creq.Context.App.WebhookSecret),

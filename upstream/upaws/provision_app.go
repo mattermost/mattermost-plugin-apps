@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type ProvisionAppParams struct {
@@ -31,7 +32,7 @@ type ProvisionAppResult struct {
 	Manifest         apps.Manifest
 }
 
-func ProvisionAppFromFile(c Client, path string, log Logger, params ProvisionAppParams) (*ProvisionAppResult, error) {
+func ProvisionAppFromFile(c Client, path string, log utils.Logger, params ProvisionAppParams) (*ProvisionAppResult, error) {
 	provisionData, err := GetProvisionDataFromFile(path, log)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't get Provision data from file %s", path)
@@ -55,7 +56,7 @@ func ProvisionAppFromFile(c Client, path string, log Logger, params ProvisionApp
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func provisionApp(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams) (*ProvisionAppResult, error) {
+func provisionApp(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams) (*ProvisionAppResult, error) {
 	out := ProvisionAppResult{
 		Manifest: *pd.Manifest,
 	}
@@ -78,7 +79,7 @@ func provisionApp(c Client, log Logger, pd *ProvisionData, params ProvisionAppPa
 	return &out, nil
 }
 
-func provisionS3StaticAssets(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+func provisionS3StaticAssets(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
 	var arns []ARN
 	for _, asset := range pd.StaticFiles {
 		_, err := c.UploadS3(params.Bucket, asset.Key, asset.File, false)
@@ -88,19 +89,19 @@ func provisionS3StaticAssets(c Client, log Logger, pd *ProvisionData, params Pro
 		asset.File.Close()
 		arn := ARN(fmt.Sprintf("arn:aws:s3:::%s/%s", params.Bucket, asset.Key))
 		arns = append(arns, arn)
-		log.Info("Uploaded static asset to S3", "bucket", params.Bucket, "key", asset.Key)
+		log.Infow("Uploaded static asset to S3", "bucket", params.Bucket, "key", asset.Key)
 	}
 
 	out.StaticARNs = arns
 	return nil
 }
 
-func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+func provisionLambdaFunctions(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
 	executeRoleARN, err := c.FindRole(params.ExecuteRoleName)
 	if err != nil {
 		return err
 	}
-	log.Info("Found execute role, provisioning functions", "ARN", executeRoleARN)
+	log.Infow("Found execute role, provisioning functions", "ARN", executeRoleARN)
 
 	createdARNs := []ARN{}
 	for _, function := range pd.LambdaFunctions {
@@ -125,7 +126,7 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 		return err
 	}
 	invokePolicyARN := ARN(*invokePolicy.Arn)
-	log.Info("Found invoke policy, updating", "ARN", invokePolicyARN)
+	log.Infow("Found invoke policy, updating", "ARN", invokePolicyARN)
 
 	newDoc, err := c.AddResourcesToPolicyDocument(invokePolicy, createdARNs)
 	if err != nil {
@@ -141,7 +142,7 @@ func provisionLambdaFunctions(c Client, log Logger, pd *ProvisionData, params Pr
 }
 
 // provisionS3Manifest saves manifest file in S3.
-func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+func provisionS3Manifest(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
 	data, err := json.Marshal(pd.Manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", pd.Manifest.AppID)
@@ -156,6 +157,6 @@ func provisionS3Manifest(c Client, log Logger, pd *ProvisionData, params Provisi
 
 	out.Manifest = *pd.Manifest
 	out.ManifestURL = url
-	log.Info("Uploaded manifest to S3 (public-read)", "bucket", params.Bucket, "key", pd.ManifestKey)
+	log.Infow("Uploaded manifest to S3 (public-read)", "bucket", params.Bucket, "key", pd.ManifestKey)
 	return nil
 }

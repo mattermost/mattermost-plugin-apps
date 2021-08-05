@@ -35,7 +35,7 @@ func AsAdmin(cc *apps.Context) *Client {
 func NewClient(userID, token, mattermostSiteURL string) *Client {
 	c := Client{
 		userID:   userID,
-		ClientPP: NewAPIClientPP(mattermostSiteURL),
+		ClientPP: NewAppsPluginAPIClient(mattermostSiteURL),
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
 	c.Client4.SetOAuthToken(token)
@@ -160,16 +160,16 @@ func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	return createdPost, nil
 }
 
-func (c *Client) DM(userID string, format string, args ...interface{}) {
+func (c *Client) DM(userID string, format string, args ...interface{}) (*model.Post, error) {
 	channel, err := c.getDirectChannelWith(userID)
 	if err != nil {
-		return
+		return nil, errors.Wrap(err, "failed to get direct channel to post DM")
 	}
 	post := &model.Post{
 		ChannelId: channel.Id,
 		Message:   fmt.Sprintf(format, args...),
 	}
-	_, _ = c.CreatePost(post)
+	return c.CreatePost(post)
 }
 
 func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {

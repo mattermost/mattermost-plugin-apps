@@ -8,6 +8,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
+	"github.com/pkg/errors"
 )
 
 func ToJSON(in interface{}) string {
@@ -24,6 +25,14 @@ func Pretty(in interface{}) string {
 		return ""
 	}
 	return string(bb)
+}
+
+func CodeBlock(in string) string {
+	return fmt.Sprintf("```\n%s\n```\n", in)
+}
+
+func JSONBlock(in interface{}) string {
+	return CodeBlock(Pretty(in))
 }
 
 // FindDir looks for the given directory in nearby ancestors relative to the current working
@@ -68,6 +77,18 @@ func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.S
 		return nil, NewUnauthorizedError("user ID mismatch")
 	}
 	return session, nil
+}
+
+func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actingUserID string) (*model.Client4, error) {
+	session, err := LoadSession(mm, sessionID, actingUserID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load session")
+	}
+
+	client := model.NewAPIv4Client(mattermostSiteURL)
+	client.SetToken(session.Token)
+
+	return client, nil
 }
 
 // DumpObject pretty prints any object to the standard output. Only used for debug.

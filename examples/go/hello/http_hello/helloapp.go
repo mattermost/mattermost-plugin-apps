@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -36,7 +37,7 @@ type helloapp struct {
 }
 
 // Init hello app router
-func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	h := helloapp{
 		HelloApp: hello.NewHelloApp(mm),
 		conf:     conf,
@@ -45,7 +46,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, conf config.Service, _ proxy
 	r := router.PathPrefix(config.HelloHTTPPath).Subrouter()
 	r.HandleFunc(PathManifest, h.handleManifest).Methods("GET")
 
-	handle(r, apps.DefaultOnInstall.Path, h.Install)
+	handle(r, hello.PathInstall, h.Install)
 	handle(r, apps.DefaultBindings.Path, h.GetBindings)
 	handle(r, hello.PathSendSurvey+"/{type}", h.SendSurvey)
 	handle(r, hello.PathSendSurveyModal+"/{type}", h.SendSurveyModal)

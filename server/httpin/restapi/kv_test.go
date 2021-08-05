@@ -24,16 +24,17 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestKV(t *testing.T) {
 	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
 	testAPI.On("GetUser", mock.Anything).Return(
 		&model.User{
 			IsBot: true,
 		}, nil)
-	mm := pluginapi.NewClient(testAPI)
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	ctrl := gomock.NewController(t)
 	conf := config.NewTestConfigurator(config.Config{})
@@ -44,7 +45,7 @@ func TestKV(t *testing.T) {
 	appService := appservices.NewService(mm, conf, mockStore)
 
 	r := mux.NewRouter()
-	Init(r, mm, conf, nil, appService)
+	Init(r, mm, utils.NewTestLogger(), conf, nil, appService)
 
 	server := httptest.NewServer(r)
 	defer server.Close()

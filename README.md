@@ -13,7 +13,11 @@ Productiion Apps communicate with our REST API and authenticate via OAuth.
 
 ## Getting Started
 
-Join the [Integrations and Apps](https://community.mattermost.com/core/channels/integrations) channel to provide thoughts and feedback. Take a look at the [App developer documentation](https://developers.mattermost.com/integrate/apps/).
+Use the App Framework [Docker development environment](dev) to get up and running quickly.
+
+Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
+
+Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps).
 
 ## Running the tests
 

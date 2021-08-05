@@ -12,12 +12,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -26,6 +27,7 @@ type Proxy struct {
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
 	mm            *pluginapi.Client
+	log           utils.Logger
 	conf          config.Service
 	store         *store.Service
 	aws           upaws.Client
@@ -36,34 +38,35 @@ type Proxy struct {
 type Service interface {
 	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
 	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
+	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
 	Notify(cc *apps.Context, subj apps.Subject) error
 	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
 
-	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
+	AddLocalManifest(actingUserID string, m *apps.Manifest) (string, error)
 	AppIsEnabled(app *apps.App) bool
-	DisableApp(cc *apps.Context, app *apps.App) (md.MD, error)
-	EnableApp(cc *apps.Context, app *apps.App) (md.MD, error)
+	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
+	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []*apps.App
-	GetListedApps(filter string) []*apps.ListedApp
+	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
+	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, string, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
+	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
 
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 }
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, aws upaws.Client, s3AssetBucket string, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		mm:               mm,
+		log:              log,
 		conf:             conf,
 		store:            store,
 		aws:              aws,

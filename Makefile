@@ -10,11 +10,10 @@ GO_BUILD_FLAGS ?=
 MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
 
-
 export GO111MODULE=on
 
 MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
-MINIMUM_SUPPORTED_GO_MINOR_VERSION = 12
+MINIMUM_SUPPORTED_GO_MINOR_VERSION = 16
 GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
 GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to at least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
@@ -26,7 +25,6 @@ LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
 LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
 GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
 GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
-GO_PACKAGES = $(shell go list ./...)
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
@@ -97,7 +95,7 @@ endif
 .PHONY: mock clean_mock
 mock:
 ifneq ($(HAS_SERVER),)
-	go install github.com/golang/mock/mockgen
+	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -destination server/mocks/mock_appservices/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/appservices Service
 	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
 	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/upstream Upstream
@@ -253,13 +251,13 @@ endif
 .PHONY: test-e2e
 test-e2e: dist
 	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e $(GO_PACKAGES)
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
 coverage: webapp/node_modules
 ifneq ($(HAS_SERVER),)
-	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./server/...
+	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./...
 	$(GO) tool cover -html=server/coverage.txt
 endif
 
