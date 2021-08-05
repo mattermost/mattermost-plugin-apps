@@ -25,8 +25,8 @@ const (
 	SubjectUserLeftChannel   Subject = "user_left_channel"
 
 	// SubjectBotJoinedChannel and SubjectBotLeftChannel subscribes to
-	// SubjectUserJoinedChannel and SubjectUserLeftChanne plugin events,
-	// specifically when the App's bot is added or removed from the team
+	// SubjectUserJoinedChannel and SubjectUserLeftChannel plugin events,
+	// specifically when the App's bot is added or removed from the channel
 	SubjectBotJoinedChannel Subject = "bot_joined_channel"
 	SubjectBotLeftChannel   Subject = "bot_left_channel"
 
