@@ -30,7 +30,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID
 	call.Context = cc
 	res := a.proxy.Call(sessionID, actingUserID, call)
 
-	a.mm.Log.Debug(
+	a.log.Debugw(
 		"Received call response",
 		"app_id", call.Context.AppID,
 		"acting_user_id", call.Context.ActingUserID,

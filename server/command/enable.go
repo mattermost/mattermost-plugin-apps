@@ -30,7 +30,7 @@ func (s *service) executeEnable(params *commandParams) (*model.CommandResponse, 
 	}
 
 	return &model.CommandResponse{
-		Text:         string(out),
+		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
@@ -55,7 +55,7 @@ func (s *service) executeDisable(params *commandParams) (*model.CommandResponse,
 	}
 
 	return &model.CommandResponse{
-		Text:         string(out),
+		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }

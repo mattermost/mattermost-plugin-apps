@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // ProvisionData contains all the necessary data for provisioning an app
@@ -42,7 +43,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
+func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -57,7 +58,7 @@ func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
 }
 
 // getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
+func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -84,7 +85,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 			if log != nil {
-				log.Info("Found manifest", "file", file.Name)
+				log.Infow("Found manifest", "file", file.Name)
 			}
 
 		case strings.HasSuffix(file.Name, ".zip"):
@@ -97,7 +98,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				Bundle: lambdaFunctionFile,
 			})
 			if log != nil {
-				log.Info("Found lambda function bundle", "file", file.Name)
+				log.Infow("Found lambda function bundle", "file", file.Name)
 			}
 
 		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
@@ -114,12 +115,12 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				File: assetFile,
 			})
 			if log != nil {
-				log.Info("Found static asset", "file", file.Name)
+				log.Infow("Found static asset", "file", file.Name)
 			}
 
 		default:
 			if log != nil {
-				log.Info("Ignored unknown file", "file", file.Name)
+				log.Infow("Ignored unknown file", "file", file.Name)
 			}
 		}
 	}

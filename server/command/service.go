@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service interface {
@@ -29,6 +29,7 @@ type service struct {
 	conf    config.Service
 	proxy   proxy.Service
 	httpOut httpout.Service
+	log     utils.Logger
 }
 
 var _ Service = (*service)(nil)
@@ -193,9 +194,10 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 	return h
 }
 
-func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
+func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
 		mm:      mm,
+		log:     log,
 		conf:    configService,
 		proxy:   proxy,
 		httpOut: httpOut,
@@ -213,7 +215,7 @@ func MakeService(mm *pluginapi.Client, configService config.Service, proxy proxy
 func (s *service) Configure(conf config.Config) {
 	err := s.registerCommand(conf)
 	if err != nil {
-		s.mm.Log.Warn("Failed to re-register command", "error", err.Error())
+		s.log.WithError(err).Warnf("Failed to re-register command")
 	}
 }
 
@@ -303,7 +305,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 		return errorOut(params, errors.New("expected a (sub-)command"))
 	}
 	if params.current[0] == "help" {
-		return out(params, md.MD("TODO usage"))
+		return out(params, "TODO usage")
 	}
 
 	c, ok := subcommands[params.current[0]]
@@ -351,21 +353,21 @@ func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, 
 	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId)
 }
 
-func out(params *commandParams, out md.Markdowner) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") + out.Markdown()
+func out(params *commandParams, out string) (*model.CommandResponse, error) {
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") + out
 
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, nil
 }
 
 func errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
-	txt := md.CodeBlock(params.commandArgs.Command+"\n") +
-		md.Markdownf("Command failed. Error: **%s**\n", err.Error())
+	txt := utils.CodeBlock(params.commandArgs.Command+"\n") +
+		fmt.Sprintf("Command failed. Error: **%s**\n", err.Error())
 
 	return &model.CommandResponse{
-		Text:         string(txt),
+		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 	}, err
 }

@@ -1,0 +1,25 @@
+{
+  "name": "node-example-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon",
+    "dist": "tsc -p ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "4.17.1",
+    "mattermost-redux": "github:mattermost/mattermost-redux#5fa256e1f5ae6ba237a276e35ec23a4c1f73af7b",
+    "node-fetch": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^16.4.4",
+    "nodemon": "^2.0.12",
+    "ts-node": "^10.1.0",
+    "tslib": "^2.3.0",
+    "typescript": "^4.3.5"
+  }
+}

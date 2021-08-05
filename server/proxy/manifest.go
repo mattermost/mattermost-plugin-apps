@@ -4,11 +4,12 @@
 package proxy
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
-func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error) {
+func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (string, error) {
 	if err := m.IsValid(); err != nil {
 		return "", err
 	}
@@ -18,5 +19,5 @@ func (p *Proxy) AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, 
 		return "", err
 	}
 
-	return md.Markdownf("Stored local manifest for %s [%s](%s).", m.AppID, m.DisplayName, m.HomepageURL), nil
+	return fmt.Sprintf("Stored local manifest for %s [%s](%s).", m.AppID, m.DisplayName, m.HomepageURL), nil
 }
