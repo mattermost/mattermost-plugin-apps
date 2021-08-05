@@ -17,11 +17,14 @@ func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request)
 	actingUserID := actingID(r)
 	subs, err := a.appServices.GetSubscriptions(actingUserID)
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 
-	json.NewEncoder(w).Encode(subs)
+	err = json.NewEncoder(w).Encode(subs)
+	if err != nil {
+		a.log.Errorf("Error encoding JSON", "err", err.Error())
+	}
 }
 
 func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
