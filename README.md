@@ -7,7 +7,9 @@
 
 # Mattermost Apps
 
-This plugin was designed to some concepts of creating Apps, which do not rely on a Go executable being installed on the Mattermost server/cluster to extend functionality. The Apps created using this plugin are not able to use Go RPC to communicate with the Mattermost Server, only through the "App Plugin" which acts as a sort of proxy to the server's activity.
+This plugin serves as the core of the Mattermost App Framework. It extends the Mattermost server's API to allow for the creation of feature-rich integrations, with functionality supported on the Mattermost web client and mobile client. Take a look at the [App developer documentation](https://developers.mattermost.com/integrate/apps) for more information.
+
+Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the App you're creating.
 
 Productiion Apps communicate with our REST API and authenticate via OAuth.
 
