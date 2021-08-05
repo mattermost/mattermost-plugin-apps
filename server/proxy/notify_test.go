@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type notifyTestcase struct {
@@ -622,7 +623,7 @@ func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
 		},
 	})
 
-	s := store.NewService(mm, conf, nil, "")
+	s := store.NewService(mm, utils.NewTestLogger(), conf, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
