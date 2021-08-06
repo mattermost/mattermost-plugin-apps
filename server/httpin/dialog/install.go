@@ -47,6 +47,13 @@ func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, co
 		consent = header + consent + "---\n"
 	}
 
+	trigger := string(m.AppID)
+	if m.CommandTrigger != "" {
+		trigger = m.CommandTrigger
+	}
+
+	consent = consent + fmt.Sprintf("All commands from this app will be executed under the `%s` base command.\n", trigger)
+
 	elements := []model.DialogElement{}
 	if m.AppType == apps.AppTypeHTTP {
 		elements = append(elements, model.DialogElement{

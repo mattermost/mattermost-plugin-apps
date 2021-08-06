@@ -72,6 +72,14 @@ type App struct {
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
 }
 
+func (a *App) GetCommandTrigger() string {
+	if a.Manifest.CommandTrigger != "" {
+		return a.Manifest.CommandTrigger
+	}
+
+	return string(a.AppID)
+}
+
 // OAuth2App contains the setored settings for an "OAuth2 app" used by the App.
 // It is used to describe the OAuth2 connections both to Mattermost, and
 // optionally to a 3rd party remote system.

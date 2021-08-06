@@ -97,6 +97,10 @@ type Manifest struct {
 	// - define path->function mappings, aka "routes". The function with the
 	// path matching as the longest prefix is used to handle a Call request.
 	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
+
+	// CommandTrigger defines the trigger of the Slash Command. If no trigger is
+	// provided, the app id will be used.
+	CommandTrigger string `json:"command_trigger,omitempy"`
 }
 
 // AWSLambda describes a distinct AWS Lambda function defined by the app, and

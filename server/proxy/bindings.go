@@ -35,6 +35,28 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 	return out
 }
 
+func expandCommands(bb []*apps.Binding, commandTriger string) []*apps.Binding {
+	out := []*apps.Binding{}
+	for _, b := range bb {
+		if b.Location != apps.LocationCommand {
+			out = append(out, b)
+			continue
+		}
+
+		b.Location = apps.Location(commandTriger)
+		b.Label = commandTriger
+
+		out = append(out, &apps.Binding{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				b,
+			},
+		})
+	}
+
+	return out
+}
+
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
@@ -99,6 +121,8 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		log.Debugf("Bindings are not of the right type.")
 		return nil
 	}
+
+	bindings = expandCommands(bindings, app.GetCommandTrigger())
 
 	bindings = p.scanAppBindings(app, bindings, "")
 
