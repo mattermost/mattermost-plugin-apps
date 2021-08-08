@@ -204,7 +204,8 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
 
-	subs := postSubs
+	subs := []*apps.Subscription{}
+	subs = append(subs, postSubs...)
 	mentions := model.PossibleAtMentions(post.Message)
 
 	botCanRead := map[string]bool{}
@@ -273,7 +274,9 @@ func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subje
 		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
 	}
 
-	subs := userSubs
+	subs := []*apps.Subscription{}
+	subs = append(subs, userSubs...)
+
 	appsMap := p.store.App.AsMap()
 	for _, sub := range botSubs {
 		app := appsMap[sub.AppID]
