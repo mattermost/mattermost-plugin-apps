@@ -21,6 +21,7 @@ func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(subs)
 	if err != nil {
 		a.log.Errorf("Error encoding JSON", "err", err.Error())
