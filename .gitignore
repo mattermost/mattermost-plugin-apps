@@ -16,5 +16,5 @@ dist/
 
 node_modules
 
-# translatios
+# translations
 assets/i18n/translate.*.json

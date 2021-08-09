@@ -18,7 +18,7 @@ func (s *service) executeInstallMarketplace(params *commandParams) (*model.Comma
 	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
 		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "apps.command.install.appID",
+			ID:    "apps.command.install.error.appID",
 			Other: "you must specify the app id",
 		})))
 	}

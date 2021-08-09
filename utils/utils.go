@@ -86,7 +86,7 @@ func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actin
 	session, err := LoadSession(mm, sessionID, actingUserID)
 	if err != nil {
 		return nil, errors.Wrap(err, i18nBundle.LocalizeDefaultMessage(loc, &nsi18n.Message{
-			ID:    "apps.command.list.table.header",
+			ID:    "apps.utils.error.clienFromSession.failedSession",
 			Other: "failed to load session",
 		}))
 	}

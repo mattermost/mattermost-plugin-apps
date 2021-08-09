@@ -4,8 +4,8 @@
     "other": "debes añadir una `--url`"
   },
   "apps.command.developersOnly": {
-    "hash": "sha1-68a12f8210f2a9917842f1abe53dd3ab410290d6",
-    "other": "{{.Command}} sólo está disponible en el modo desarrollador. Necesitas habilitar el `Modo Desarrollador` y los `Comandos de prueba` en la Consola del Sistema."
+    "hash": "sha1-5d27c2063ba05693adda4436b7ec89317f648ba9",
+    "other": "{{.Command}} sólo está disponible en el modo desarrollador. Debes habilitar el `Modo Desarrollador` y los `Comandos de prueba` en la Consola del Sistema."
   },
   "apps.command.disable.error.appID": {
     "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
@@ -16,15 +16,15 @@
     "other": "debes especificar un app id"
   },
   "apps.command.enableBot": {
-    "hash": "sha1-95a3ef7ee317de659ebdf08fb328994c0f47a1e2",
-    "other": "la configuración de sistema `Permitir la Creación de Cuentas Bot` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítela."
+    "hash": "sha1-cb813050383d2b10d06aeedb9a9de18a2aeef887",
+    "other": "la configuración de sistema `Permitir la Creación de Cuentas Bot` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
   },
   "apps.command.enableOAuth": {
-    "hash": "sha1-b9edb0134d5791e2814e4462ad265c1ac1daef94",
-    "other": "la configuración de sistema `Habilitar el Proveedor de Servicios de OAuth 2.0` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítela."
+    "hash": "sha1-9dc3685a4939013367f1f2ec147d11711b40a77e",
+    "other": "la configuración de sistema `Habilitar el Proveedor de Servicios de OAuth 2.0` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
   },
   "apps.command.error": {
-    "hash": "sha1-957ab0b89c43f63d15af462469519f5465d08030",
+    "hash": "sha1-7f6931a4bdb878cf95828ac8ddbce1e8c4e8ab68",
     "other": "El comando ha fallado. Error: **{{.Error}}**"
   },
   "apps.command.error.invalidArguments": {
@@ -44,16 +44,12 @@
     "other": "subcomando no especificado, no se hace nada"
   },
   "apps.command.info.rest": {
-    "hash": "sha1-9f0e3b41e099a97a84cd07448a48209b911debc5",
+    "hash": "sha1-9e5bfa35ffb01cf0abe8b36c53c3194ce31a3a16",
     "other": "{{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
   },
   "apps.command.info.version": {
-    "hash": "sha1-172aa544e6a71500aea374d354961dfe5adec4d2",
-    "other": "Mattermost Apps plugin versión: {{.Version}}, "
-  },
-  "apps.command.install.appID": {
-    "hash": "sha1-375e94981f450b1996849add06bda8edb89d13b5",
-    "other": "debes especificar el app id"
+    "hash": "sha1-85c00fcb1b5b61695abd1921e4e52af3f7cabbd9",
+    "other": "Plugin Mattermost Apps versión: {{.Version}}, "
   },
   "apps.command.install.aws.error.manifest": {
     "hash": "sha1-a2f21d16d1d5dc6f41656a06167ade07b96e4b2c",
@@ -100,51 +96,55 @@
     "other": "| Nombre | Estado | Tipo | Versión | Cuenta | Lugares | Permisos |"
   },
   "apps.command.list.version.marketplace": {
-    "hash": "sha1-7a601ee4113787e82d98d40938ce136250ed1332",
+    "hash": "sha1-d3494c598272157bab46c74c0378b9fd48790a5e",
     "other": ", {{.Version}} en la tienda"
   },
   "apps.command.notSupported": {
-    "hash": "sha1-ddc23368f9798a05195921b2243c4c2806290ab0",
-    "other": "{{.Command}} no es un comando soportado y no debería de haber sido invocado. Por favor, contacte con su administrador de sistema."
+    "hash": "sha1-18febfbf8a578b22b84889a3d220e6a048148fd9",
+    "other": "{{.Command}} no es un comando soportado y no debería de haber sido invocado. Por favor, contacte con su administrador de sistema"
   },
   "apps.command.uninstall.error.needAppId": {
     "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
     "other": "debe especificar un app id"
   },
   "apps.command.unknown": {
-    "hash": "sha1-92bfa70a0b185634514f54297e37785b2688eaa9",
+    "hash": "sha1-7d7a79f6ffebf668c930aa18cda75bb083d8b196",
     "other": "comando desconocido: {{.Command}}"
   },
   "apps.uninstall.default": {
-    "hash": "sha1-bec0e6be0a0e0e01c1841e7e86532b83ff213c6c",
+    "hash": "sha1-c4c2673d5bf7f963dd8157adee4f634d46133b2a",
     "other": "{{.AppID}} desinstalada"
   },
   "apps.uninstall.error.delete": {
-    "hash": "sha1-1557f86ffc1bd2b55c454520f6ae4045ff28f686",
+    "hash": "sha1-9758836285749b5bfdebe88fbef15c8dc5e1f0b4",
     "other": "no se puede borrar la app - {{.AppID}}"
   },
   "apps.uninstall.error.deleteData": {
-    "hash": "sha1-b2cf96a2d4db88768353f1547ea47dc1764a110d",
+    "hash": "sha1-3d56dfe447ebcc1ccbc0288108e8abff95726400",
     "other": "no se puede borrar los datos de la app - {{.AppID}}"
   },
   "apps.uninstall.error.deleteManifest": {
-    "hash": "sha1-b4f5e063902a378d3b303ff7d6e6c5527c40aac2",
+    "hash": "sha1-a073b8651e18859ecb474cfcf40dd80a6467bc54",
     "other": "no se puede borrar el manifiesto de la app desinstalada - {{.AppID}}"
   },
   "apps.uninstall.error.deleteOAuth": {
-    "hash": "sha1-0e70bf93b766f29e2e0663be833a316efed96800",
+    "hash": "sha1-6efec3943382dad8364ba0be45bdd9a52d20e0c2",
     "other": "error al borrar la aplicación OAuth asociada a {{.AppID}}"
   },
   "apps.uninstall.error.disableBot": {
-    "hash": "sha1-5a6615ed3f03ec8a0e86d9bf34d4e88bfe454440",
+    "hash": "sha1-bf92ab280ae5b4f5bfc8f954ca5f0e4e3a2b5cd0",
     "other": "error al desabilitar la cuenta del bot asociada a {{.AppID}}"
   },
   "apps.uninstall.error.getApp": {
-    "hash": "sha1-6eb1cbf3d4c81ff5be50edfca2d780c4290ae4cb",
+    "hash": "sha1-582af9314ed5d75ef0bedcfc4a4c28af429af9cd",
     "other": "error al obtener la app. appID: {{.AppID}}"
   },
   "apps.uninstall.error.revokeBot": {
-    "hash": "sha1-465cd58fe6503946aee16825e8e5dd8fc02291e2",
+    "hash": "sha1-ec84c0419b7ebe4bd15fec3e2ed70acba53b46d6",
     "other": "error al revocar el token de accesso del bot asociado a {{.AppID}}"
+  },
+  "apps.utils.error.clienFromSession.failedSession": {
+    "hash": "sha1-f11f2beaec2e62e5fded8febcdb5036b2f4ed3d8",
+    "other": "error al cargar la sesión"
   }
 }

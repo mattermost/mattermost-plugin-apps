@@ -12,7 +12,6 @@
   "apps.command.error.noSubCommand": "no subcommand specified, nothing to do",
   "apps.command.info.rest": "{{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
   "apps.command.info.version": "Mattermost Apps plugin version: {{.Version}}, ",
-  "apps.command.install.appID": "you must specify the app id",
   "apps.command.install.aws.error.manifest": "failed to get manifest from S3",
   "apps.command.install.aws.error.version": "you must specify the app version",
   "apps.command.install.error.appID": "you must specify the app id",
@@ -35,5 +34,6 @@
   "apps.uninstall.error.deleteOAuth": "failed to delete Mattermost OAuth2 for {{.AppID}}",
   "apps.uninstall.error.disableBot": "failed to disable bot account for {{.AppID}}",
   "apps.uninstall.error.getApp": "failed to get app. appID: {{.AppID}}",
-  "apps.uninstall.error.revokeBot": "failed to revoke bot access token for {{.AppID}}"
+  "apps.uninstall.error.revokeBot": "failed to revoke bot access token for {{.AppID}}",
+  "apps.utils.error.clienFromSession.failedSession": "failed to load session"
 }
