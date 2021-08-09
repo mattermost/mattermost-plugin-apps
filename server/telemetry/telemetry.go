@@ -40,13 +40,23 @@ func (t *Telemetry) TrackUninstall(appID string, appType string) {
 	})
 }
 
-func (t *Telemetry) TrackCall(appID string, location string) {
+func (t *Telemetry) TrackCall(appID string, location string, actingUserID string) {
 	if t == nil {
 		return
 	}
 
-	_ = t.tracker.TrackEvent("call", map[string]interface{}{
+	_ = t.tracker.TrackUserEvent("call", actingUserID, map[string]interface{}{
 		"appID":    appID,
 		"location": location,
+	})
+}
+
+func (t *Telemetry) TrackOAuthComplete(appID string, actingUserID string) {
+	if t == nil {
+		return
+	}
+
+	_ = t.tracker.TrackUserEvent("oauthComplete", actingUserID, map[string]interface{}{
+		"appID": appID,
 	})
 }

@@ -45,7 +45,7 @@ func TestKV(t *testing.T) {
 	appService := appservices.NewService(mm, conf, mockStore)
 
 	r := mux.NewRouter()
-	Init(r, mm, utils.NewTestLogger(), conf, nil, appService)
+	Init(r, mm, utils.NewTestLogger(), conf, nil, appService, nil)
 
 	server := httptest.NewServer(r)
 	defer server.Close()

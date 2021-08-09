@@ -348,7 +348,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
-	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil)
+	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, nil)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
@@ -397,7 +397,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
-	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil)
+	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, nil)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{

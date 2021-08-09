@@ -33,7 +33,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	router := mux.NewRouter()
-	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil)
+	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, nil)
 
 	expected := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{

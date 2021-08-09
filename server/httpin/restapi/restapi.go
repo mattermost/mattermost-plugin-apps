@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -22,15 +23,17 @@ type restapi struct {
 	conf        config.Service
 	proxy       proxy.Service
 	appServices appservices.Service
+	telemetry   *telemetry.Telemetry
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, appServices appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, appServices appservices.Service, telemetry *telemetry.Telemetry) {
 	a := &restapi{
 		mm:          mm,
 		log:         log,
 		conf:        conf,
 		proxy:       proxy,
 		appServices: appServices,
+		telemetry:   telemetry,
 	}
 
 	subrouter := router.PathPrefix(mmclient.PathAPI).Subrouter()

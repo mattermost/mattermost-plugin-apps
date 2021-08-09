@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -38,6 +39,11 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID
 		"type", res.Type,
 		"path", call.Path,
 	)
+
+	// Only track submit calls
+	if strings.HasSuffix(call.Path, "submit") {
+		a.telemetry.TrackCall(string(call.Context.AppID), string(call.Context.Location), call.Context.ActingUserID)
+	}
 
 	httputils.WriteJSON(w, res)
 }

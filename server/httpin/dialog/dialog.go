@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -27,7 +28,7 @@ type dialog struct {
 	conf  config.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service, _ *telemetry.Telemetry) {
 	d := dialog{
 		mm:    mm,
 		log:   log,

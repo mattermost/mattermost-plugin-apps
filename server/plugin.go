@@ -135,7 +135,7 @@ func (p *Plugin) OnActivate() error {
 	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
 	p.log.Debugf("Initialized the app REST APIs")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices, p.tracker,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
