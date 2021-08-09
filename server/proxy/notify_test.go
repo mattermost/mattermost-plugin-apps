@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/stretchr/testify/mock"
@@ -20,7 +19,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type notifyTestcase struct {
@@ -612,18 +610,19 @@ func TestUserHasBeenCreated(t *testing.T) {
 func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
 	ctrl := gomock.NewController(t)
 
-	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
+	conf, testAPI := config.NewTestService(&config.Config{
+		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
+	})
 
-	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+	conf = conf.WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
-			SiteURL: model.NewString("test.mattermost.com"),
+			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
 	})
 
-	s := store.NewService(mm, utils.NewTestLogger(), conf, nil, "")
+	testAPI.On("LogDebug", mock.Anything).Return(nil)
+
+	s := store.NewService(conf, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -642,7 +641,6 @@ func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
 	appStore.EXPECT().AsMap().Return(appMap).AnyTimes()
 
 	p := &Proxy{
-		mm:               mm,
 		store:            s,
 		builtinUpstreams: upMap,
 		conf:             conf,
