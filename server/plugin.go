@@ -34,10 +34,8 @@ type Plugin struct {
 	plugin.MattermostPlugin
 	config.BuildConfig
 
-	mm   *pluginapi.Client
 	conf config.Service
 	log  utils.Logger
-	aws  upaws.Client
 
 	store       *store.Service
 	appservices appservices.Service
@@ -56,10 +54,9 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.mm = pluginapi.NewClient(p.API, p.Driver)
-	p.log = utils.NewPluginLogger(p.mm)
+	mm := pluginapi.NewClient(p.API, p.Driver)
 
-	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
+	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
 		DisplayName: config.BotDisplayName,
 		Description: config.BotDescription,
@@ -68,14 +65,17 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.conf = config.NewService(p.mm, p.log, p.BuildConfig, botUserID)
+	p.conf = config.NewService(mm, p.BuildConfig, botUserID)
 	stored := config.StoredConfig{}
-	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
 	if err != nil {
 		return errors.Wrap(err, "failed to reconfigure configurator on startup")
 	}
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
+	p.log = log
+	log = log.With("callback", "onactivate")
+
 	mode := "Self-managed"
 	if conf.MattermostCloudMode {
 		mode = "Mattermost Cloud"
@@ -83,22 +83,21 @@ func (p *Plugin) OnActivate() error {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.log.Debugf("Initialized config service: %s", mode)
+	log = log.With("mode", mode)
 
-	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, p.log)
+	aws, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, p.log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize AWS access")
 	}
-	p.log.Debugw("Initialized AWS Client",
-		"region", conf.AWSRegion,
-		"bucket", conf.AWSS3Bucket,
-		"access", utils.LastN(conf.AWSAccessKey, 7),
-		"secret", utils.LastN(conf.AWSSecretKey, 4))
+	log = log.With(
+		"aws_region", conf.AWSRegion,
+		"aws_bucket", conf.AWSS3Bucket,
+		"aws_access", utils.LastN(conf.AWSAccessKey, 7),
+		"aws_secret", utils.LastN(conf.AWSSecretKey, 4))
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.log.Debugf("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket)
+	p.store = store.NewService(p.conf, aws, conf.AWSS3Bucket)
 	// manifest store
 	mstore := p.store.Manifest
 	mstore.Configure(conf)
@@ -111,40 +110,36 @@ func (p *Plugin) OnActivate() error {
 	// app store
 	appstore := p.store.App
 	appstore.Configure(conf)
-	p.log.Debugf("Initialized the persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
-	p.log.Debugf("Initialized the app proxy")
+	p.proxy = proxy.NewService(p.conf, aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
 
-	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.log.Debugf("Initialized the app REST APIs")
+	p.appservices = appservices.NewService(p.conf, p.store)
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 		http_hello.Init,
 	)
-	p.log.Debugf("Initialized incoming HTTP")
 
-	p.command, err = command.MakeService(p.mm, p.log, p.conf, p.proxy, p.httpOut)
+	p.command, err = command.MakeService(p.conf, p.proxy, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize own command handling")
 	}
-	p.log.Debugf("Initialized slash commands")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.log.WithError(err).Errorf("Failed to synchronize apps metadata")
+			log.WithError(err).Errorf("Failed to synchronize apps metadata")
 		} else {
-			p.log.Debugf("Synchronized the installed apps metadata")
+			log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
+	log.Infof("Plugin activated")
 
 	return nil
 }
@@ -155,8 +150,9 @@ func (p *Plugin) OnConfigurationChange() error {
 		return nil
 	}
 
+	mm := pluginapi.NewClient(p.API, p.Driver)
 	stored := config.StoredConfig{}
-	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
 	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
 }
@@ -171,7 +167,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	cc := p.conf.Get().SetContextDefaults(&apps.Context{
 		UserID: user.Id,
 		ExpandedContext: apps.ExpandedContext{
 			User: user,
@@ -212,7 +208,7 @@ func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMe
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.GetConfig().BotUserID))
+	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.Get().BotUserID))
 	if err != nil {
 		p.log.WithError(err).Errorf("Error while checking if the message should be processed")
 		return
@@ -229,7 +225,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	cc := p.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    ch.TeamId,
 			ChannelID: ch.Id,
@@ -243,7 +239,7 @@ func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.
 }
 
 func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return p.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -261,7 +257,7 @@ func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.Us
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return p.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
@@ -278,7 +274,7 @@ func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *mo
 	if actingUser != nil {
 		actingUserID = actingUser.Id
 	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return p.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},

@@ -14,7 +14,7 @@ import (
 )
 
 func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
-	_ = s.mm.KV.DeleteAll()
+	_ = s.conf.MattermostAPI().KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, "Deleted all KV records and emptied the config.")
 }
