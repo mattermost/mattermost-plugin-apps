@@ -7,11 +7,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestHashkey(t *testing.T) {
-	s := NewService(nil, utils.NewTestLogger(), nil, nil, "")
+	testConfig := config.NewTestConfigService(nil)
+	s := NewService(testConfig, nil, "")
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string

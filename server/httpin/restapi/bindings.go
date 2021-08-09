@@ -19,7 +19,7 @@ func (a *restapi) handleGetBindings(w http.ResponseWriter, req *http.Request, se
 		},
 	}
 
-	cc = a.conf.GetConfig().SetContextDefaults(cc)
+	cc = a.conf.Get().SetContextDefaults(cc)
 
 	bindings, err := a.proxy.GetBindings(sessionID, actingUserID, cc)
 	if err != nil {

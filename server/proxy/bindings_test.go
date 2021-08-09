@@ -14,9 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -24,7 +22,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -586,20 +583,15 @@ func TestDuplicateCommand(t *testing.T) {
 }
 
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
-	testAPI := &plugintest.API{}
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
-
-	conf := config.Config{
+	confService := config.NewTestConfigService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
-	}
-	confService := config.NewTestConfigurator(conf).WithMattermostConfig(model.Config{
+	}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
 	})
 
-	s := store.NewService(mm, utils.NewTestLogger(), confService, nil, "")
+	s := store.NewService(confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -625,8 +617,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	appStore.EXPECT().AsMap().Return(appList)
 
 	p := &Proxy{
-		mm:               mm,
-		log:              utils.NewTestLogger(),
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             confService,

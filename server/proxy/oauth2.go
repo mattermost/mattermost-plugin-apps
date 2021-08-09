@@ -23,7 +23,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 
 	creq := &apps.CallRequest{
 		Call: *apps.DefaultGetOAuth2ConnectURL.WithOverrides(app.GetOAuth2ConnectURL),
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID,
+		Context: p.conf.Get().SetContextDefaultsForApp(appID,
 			&apps.Context{
 				ActingUserID: actingUserID,
 			},
@@ -67,7 +67,7 @@ func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.
 
 	creq := &apps.CallRequest{
 		Call:    *apps.DefaultOnOAuth2Complete.WithOverrides(app.OnOAuth2Complete),
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(appID, nil),
+		Context: p.conf.Get().SetContextDefaultsForApp(appID, nil),
 		Values:  urlValues,
 	}
 	cresp := p.Call(sessionID, actingUserID, creq)
