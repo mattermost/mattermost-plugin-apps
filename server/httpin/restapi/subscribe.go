@@ -24,7 +24,7 @@ func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(subs)
 	if err != nil {
-		a.log.Errorf("Error encoding JSON", "err", err.Error())
+		a.conf.Logger().WithError(err).Errorf("Error marshaling subscriptions")
 	}
 }
 

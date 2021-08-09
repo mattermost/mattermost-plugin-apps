@@ -130,7 +130,8 @@ func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	for _, sub := range subs {
 		err := p.notifyForSubscription(cc, expander, sub)
 		if err != nil {
-			p.mm.Log.Debug("Error sending subscription notification to app", "app_id", sub.AppID, "subject", sub.Subject, "err", err.Error())
+			log := p.conf.Logger().WithError(err).With("app_id", sub.AppID, "subject", sub.Subject)
+			log.Debugf("Error sending subscription notification to app")
 		}
 	}
 
@@ -230,7 +231,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 						continue
 					}
 
-					canRead := p.mm.User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
 					botCanRead[app.BotUserID] = canRead
 
 					if canRead {

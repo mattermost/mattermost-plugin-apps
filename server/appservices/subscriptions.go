@@ -18,7 +18,7 @@ func (a *AppServices) Subscribe(actingUserID string, sub *apps.Subscription) err
 }
 
 func (a *AppServices) GetSubscriptions(actingUserID string) ([]*apps.Subscription, error) {
-	err := utils.EnsureSysAdmin(a.mm, actingUserID)
+	err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
 	if err != nil {
 		return nil, err
 	}

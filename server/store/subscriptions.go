@@ -85,7 +85,7 @@ func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) (
 }
 
 func (s subscriptionStore) List() ([]*apps.Subscription, error) {
-	keys, err := s.mm.KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
+	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s subscriptionStore) List() ([]*apps.Subscription, error) {
 	subs := []*apps.Subscription{}
 	for _, key := range keys {
 		sub := []*apps.Subscription{}
-		err := s.mm.KV.Get(key, &sub)
+		err := s.conf.MattermostAPI().KV.Get(key, &sub)
 		if err != nil {
 			return nil, err
 		}

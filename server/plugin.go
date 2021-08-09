@@ -175,35 +175,35 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 	})
 	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
 	if err != nil {
-		p.mm.Log.Debug("Error handling UserHasBeenCreated", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
 	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm, actingUser))
 	if err != nil {
-		p.mm.Log.Debug("Error handling UserHasJoinedChannel", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
 	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm, actingUser))
 	if err != nil {
-		p.mm.Log.Debug("Error handling UserHasLeftChannel", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm, actingUser))
 	if err != nil {
-		p.mm.Log.Debug("Error handling UserHasJoinedTeam", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
 	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm, actingUser))
 	if err != nil {
-		p.mm.Log.Debug("Error handling UserHasLeftTeam", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
 	}
 }
 
@@ -220,7 +220,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 
 	err = p.proxy.NotifyMessageHasBeenPosted(post, p.newPostCreatedContext(post))
 	if err != nil {
-		p.mm.Log.Debug("Error handling MessageHasBeenPosted", "err", err.Error())
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
 	}
 }
 
