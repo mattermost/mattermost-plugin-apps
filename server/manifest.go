@@ -28,6 +28,9 @@ const manifestStr = `
     },
     "executable": ""
   },
+  "webapp": {
+    "bundle_path": "webapp/dist/main.js"
+  },
   "settings_schema": {
     "header": "To create your own Mattermost App, check out [the documentation](https://developers.mattermost.com/integrate/apps/)",
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-apps).",
