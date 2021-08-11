@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,43 +15,32 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestKV(t *testing.T) {
-	testAPI := &plugintest.API{}
+	testConfig, testAPI := config.NewTestService(nil)
 	testAPI.On("GetUser", mock.Anything).Return(
 		&model.User{
 			IsBot: true,
 		}, nil)
-	testAPI.On("GetBundlePath").Return("../../..", nil)
-
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
 
 	ctrl := gomock.NewController(t)
-	conf := config.NewTestConfigurator(config.Config{})
 	mocked := mock_store.NewMockAppKVStore(ctrl)
 	mockStore := &store.Service{
 		AppKV: mocked,
 	}
-	appService := appservices.NewService(mm, conf, mockStore)
 
-	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
-	require.Nil(t, err)
+	appService := appservices.NewService(testConfig, mockStore)
 
 	r := mux.NewRouter()
-	Init(r, mm, utils.NewTestLogger(), conf, nil, appService, i18nBundle)
+	Init(r, testConfig, nil, appService)
 
 	server := httptest.NewServer(r)
 	defer server.Close()

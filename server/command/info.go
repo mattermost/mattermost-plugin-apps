@@ -13,10 +13,10 @@ import (
 )
 
 func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 
-	conf := s.conf.GetConfig()
-	resp := s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	conf := s.conf.Get()
+	resp := s.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "apps.command.info.version",
 			Other: "Mattermost Apps plugin version: {{.Version}}, ",
@@ -24,7 +24,7 @@ func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, er
 		TemplateData: map[string]string{
 			"Version": conf.Version,
 		},
-	}) + s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	}) + s.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "apps.command.info.rest",
 			Other: "{{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",

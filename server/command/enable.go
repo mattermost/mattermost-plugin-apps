@@ -12,9 +12,9 @@ import (
 )
 
 func (s *service) executeEnable(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.enable.error.appID",
 			Other: "you need to specify the app id",
 		})))
@@ -27,7 +27,7 @@ func (s *service) executeEnable(params *commandParams) (*model.CommandResponse, 
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.EnableApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {
@@ -41,9 +41,9 @@ func (s *service) executeEnable(params *commandParams) (*model.CommandResponse, 
 }
 
 func (s *service) executeDisable(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.disable.error.appID",
 			Other: "you need to specify the app id",
 		})))
@@ -56,7 +56,7 @@ func (s *service) executeDisable(params *commandParams) (*model.CommandResponse,
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.DisableApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {

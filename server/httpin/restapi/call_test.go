@@ -6,33 +6,23 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
-		testAPI := &plugintest.API{}
-		testDriver := &plugintest.Driver{}
-		mm := pluginapi.NewClient(testAPI, testDriver)
-
 		a := &restapi{
-			mm: mm,
+			conf: config.NewTestConfigService(nil),
 		}
 
 		userID := "some_user_id"
@@ -46,12 +36,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 	t.Run("post id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the post's channel", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -102,12 +89,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -138,12 +122,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 	t.Run("channel id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the channel", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -180,12 +161,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the channel", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -209,12 +187,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 	t.Run("team id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the team", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -243,12 +218,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the team", func(t *testing.T) {
-			testAPI := &plugintest.API{}
-			testDriver := &plugintest.Driver{}
-			mm := pluginapi.NewClient(testAPI, testDriver)
-
+			testConfig, testAPI := config.NewTestService(nil)
 			a := &restapi{
-				mm: mm,
+				conf: testConfig,
 			}
 
 			userID := "some_user_id"
@@ -271,12 +243,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 }
 
 func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
-	testAPI := &plugintest.API{}
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
-
+	testConfig, testAPI := config.NewTestService(nil)
 	a := &restapi{
-		mm: mm,
+		conf: testConfig,
 	}
 
 	userID := "some_user_id"
@@ -343,19 +312,10 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 func TestHandleCallInvalidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	proxy := mock_proxy.NewMockService(ctrl)
-	conf := mock_config.NewMockService(ctrl)
-
-	testAPI := &plugintest.API{}
-	testAPI.On("GetBundlePath").Return("../../..", nil)
-
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
-
-	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
-	require.Nil(t, err)
+	testConfig, testAPI := config.NewTestService(nil)
 
 	router := mux.NewRouter()
-	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, i18nBundle)
+	Init(router, testConfig, proxy, nil)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
@@ -371,7 +331,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	})
 
 	b := new(bytes.Buffer)
-	err = json.NewEncoder(b).Encode(call)
+	err := json.NewEncoder(b).Encode(call)
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
@@ -397,19 +357,10 @@ func TestHandleCallInvalidContext(t *testing.T) {
 func TestHandleCallValidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	proxy := mock_proxy.NewMockService(ctrl)
-	conf := mock_config.NewMockService(ctrl)
-
-	testAPI := &plugintest.API{}
-	testAPI.On("GetBundlePath").Return("../../..", nil)
-
-	testDriver := &plugintest.Driver{}
-	mm := pluginapi.NewClient(testAPI, testDriver)
-
-	i18nBundle, err := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
-	require.Nil(t, err)
+	testConfig, testAPI := config.NewTestService(nil)
 
 	router := mux.NewRouter()
-	Init(router, mm, utils.NewTestLogger(), conf, proxy, nil, i18nBundle)
+	Init(router, testConfig, proxy, nil)
 
 	cc := &apps.Context{
 		UserAgentContext: apps.UserAgentContext{
@@ -448,10 +399,8 @@ func TestHandleCallValidContext(t *testing.T) {
 		},
 	})
 
-	conf.EXPECT().GetConfig().Return(config.Config{})
-
 	b := new(bytes.Buffer)
-	err = json.NewEncoder(b).Encode(call)
+	err := json.NewEncoder(b).Encode(call)
 	require.NoError(t, err)
 
 	u := "/api/v1/call"

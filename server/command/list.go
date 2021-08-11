@@ -15,7 +15,7 @@ import (
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 
 	var includePluginApps bool
 	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
@@ -28,7 +28,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
-	txt := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+	txt := s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "apps.command.list.table.header",
 		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
 	}) + "\n"
@@ -44,12 +44,12 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 			continue
 		}
 
-		status := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		status := s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.list.status.installed",
 			Other: "**Installed**",
 		})
 		if app.Disabled {
-			status = s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+			status = s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "apps.command.list.status.disabled",
 				Other: "Installed, Disabled",
 			})
@@ -57,7 +57,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 
 		version := string(app.Version)
 		if string(m.Version) != version {
-			version += s.i18n.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			version += s.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "apps.command.list.version.marketplace",
 					Other: ", {{.Version}} in marketplace",
@@ -95,7 +95,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 			continue
 		}
 
-		status := s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		status := s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.list.listed",
 			Other: "Listed",
 		})

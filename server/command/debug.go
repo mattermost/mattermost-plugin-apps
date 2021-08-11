@@ -15,7 +15,7 @@ import (
 )
 
 func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
-	_ = s.mm.KV.DeleteAll()
+	_ = s.conf.MattermostAPI().KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, "Deleted all KV records and emptied the config.")
 }
@@ -32,7 +32,7 @@ func (s *service) executeDebugBindings(params *commandParams) (*model.CommandRes
 }
 
 func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
@@ -42,7 +42,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	}
 
 	if manifestURL == "" {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.debug.addManifest.error.url",
 			Other: "you must add a `--url`",
 		})))

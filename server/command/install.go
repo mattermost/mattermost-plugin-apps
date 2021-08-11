@@ -15,9 +15,9 @@ import (
 )
 
 func (s *service) executeInstallMarketplace(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.error.appID",
 			Other: "you must specify the app id",
 		})))
@@ -26,7 +26,7 @@ func (s *service) executeInstallMarketplace(params *commandParams) (*model.Comma
 
 	m, err := s.proxy.GetManifest(appID)
 	if err != nil {
-		return s.errorOut(params, errors.Wrap(err, s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.Wrap(err, s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.marketplace.error.manifest",
 			Other: "manifest not found",
 		})))
@@ -36,9 +36,9 @@ func (s *service) executeInstallMarketplace(params *commandParams) (*model.Comma
 }
 
 func (s *service) executeInstallAWS(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.error.appID",
 			Other: "you must specify the app id",
 		})))
@@ -46,7 +46,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 	appID := apps.AppID(params.current[0])
 
 	if len(params.current) < 2 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.aws.error.version",
 			Other: "you must specify the app version",
 		})))
@@ -55,7 +55,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 
 	m, err := s.proxy.GetManifestFromS3(appID, version)
 	if err != nil {
-		return s.errorOut(params, errors.Wrap(err, s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.Wrap(err, s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.aws.error.manifest",
 			Other: "failed to get manifest from S3",
 		})))
@@ -70,7 +70,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 }
 
 func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	appSecret := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
@@ -80,7 +80,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 	}
 
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.http.error.url",
 			Other: "you must specify a manifest URL",
 		})))
@@ -88,7 +88,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 	manifestURL := params.current[0]
 
 	// Trust the URL only in dev mode
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
 	if err != nil {
 		return s.errorOut(params, err)
@@ -108,22 +108,22 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 }
 
 func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
-	conf := s.conf.GetConfig()
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
+	conf := s.conf.Get()
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
-	err := s.mm.Frontend.OpenInteractiveDialog(
+	err := s.conf.MattermostAPI().Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(m, appSecret, conf, params.commandArgs))
 	if err != nil {
-		return s.errorOut(params, errors.Wrap(err, s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.Wrap(err, s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.error.openDialog",
 			Other: "couldn't open an interactive dialog",
 		})))
 	}
 
 	return &model.CommandResponse{
-		Text: s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		Text: s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.install.fillDialog",
 			Other: "please continue by filling out the interactive form",
 		}),

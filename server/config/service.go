@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/services/configservice"
 
@@ -17,8 +18,13 @@ type Configurable interface {
 
 // Configurator should be abbreviated as `cfg`
 type Service interface {
-	GetConfig() Config
-	GetMattermostConfig() configservice.ConfigService
+	Basic() (Config, *pluginapi.Client, utils.Logger)
+	Get() Config
+	Logger() utils.Logger
+	MattermostAPI() *pluginapi.Client
+	MattermostConfig() configservice.ConfigService
+	I18N() *i18n.Bundle
+
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
 }
@@ -28,26 +34,35 @@ var _ Service = (*service)(nil)
 type service struct {
 	BuildConfig
 	botUserID string
-
-	conf *Config
+	log       utils.Logger
+	mm        *pluginapi.Client
+	i18n      *i18n.Bundle
 
 	lock             *sync.RWMutex
-	mm               *pluginapi.Client
-	log              utils.Logger
+	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, log utils.Logger, buildConfig BuildConfig, botUserID string) Service {
+func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, i18nBundle *i18n.Bundle) Service {
 	return &service{
-		lock:        &sync.RWMutex{},
-		mm:          mm,
-		log:         log,
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
+		log:         utils.NewPluginLogger(mm),
+		mm:          mm,
+		lock:        &sync.RWMutex{},
+		i18n:        i18nBundle,
 	}
 }
 
-func (s *service) GetConfig() Config {
+// Basic is a convenience method, included in the interface so one can write:
+//   conf, mm, log := x.conf.Basic()
+func (s *service) Basic() (Config, *pluginapi.Client, utils.Logger) {
+	return s.Get(),
+		s.MattermostAPI(),
+		s.Logger()
+}
+
+func (s *service) Get() Config {
 	s.lock.RLock()
 	conf := s.conf
 	s.lock.RUnlock()
@@ -61,7 +76,19 @@ func (s *service) GetConfig() Config {
 	return *conf
 }
 
-func (s *service) GetMattermostConfig() configservice.ConfigService {
+func (s *service) MattermostAPI() *pluginapi.Client {
+	return s.mm
+}
+
+func (s *service) Logger() utils.Logger {
+	return s.log
+}
+
+func (s *service) I18N() *i18n.Bundle {
+	return s.i18n
+}
+
+func (s *service) MattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
@@ -86,8 +113,7 @@ func (s *service) reloadMattermostConfig() *model.Config {
 
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
-
-	newConfig := s.GetConfig()
+	newConfig := s.Get()
 
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).

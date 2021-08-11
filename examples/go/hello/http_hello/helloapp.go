@@ -9,15 +9,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -35,15 +31,13 @@ const (
 type helloapp struct {
 	*hello.HelloApp
 	conf config.Service
-	i18n *i18n.Bundle
 }
 
 // Init hello app router
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, _ proxy.Service, _ appservices.Service, i18nBundle *i18n.Bundle) {
+func Init(router *mux.Router, conf config.Service, _ proxy.Service, _ appservices.Service) {
 	h := helloapp{
-		HelloApp: hello.NewHelloApp(mm),
+		HelloApp: hello.NewHelloApp(conf.MattermostAPI()),
 		conf:     conf,
-		i18n:     i18nBundle,
 	}
 
 	r := router.PathPrefix(config.HelloHTTPPath).Subrouter()
@@ -137,6 +131,6 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 }
 
 func (h *helloapp) appURL(path string) string {
-	conf := h.conf.GetConfig()
+	conf := h.conf.Get()
 	return conf.PluginURL + config.HelloHTTPPath + path
 }

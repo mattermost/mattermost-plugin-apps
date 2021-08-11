@@ -12,9 +12,9 @@ import (
 )
 
 func (s *service) executeUninstall(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &i18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "apps.command.uninstall.error.needAppId",
 			Other: "you need to specify the app id",
 		})))
@@ -27,7 +27,7 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.UninstallApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {

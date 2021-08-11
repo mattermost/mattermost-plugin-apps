@@ -5,35 +5,26 @@ import (
 
 	"github.com/gorilla/mux"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type restapi struct {
-	mm          *pluginapi.Client
-	log         utils.Logger
 	conf        config.Service
 	proxy       proxy.Service
 	appServices appservices.Service
-	i18n        *i18n.Bundle
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, appServices appservices.Service, i18nBundle *i18n.Bundle) {
+func Init(router *mux.Router, conf config.Service, proxy proxy.Service, appServices appservices.Service) {
+	mm := conf.MattermostAPI()
 	a := &restapi{
-		mm:          mm,
-		log:         log,
 		conf:        conf,
 		proxy:       proxy,
 		appServices: appServices,
-		i18n:        i18nBundle,
 	}
 
 	subrouter := router.PathPrefix(mmclient.PathAPI).Subrouter()

@@ -7,16 +7,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	nsi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -27,12 +25,9 @@ type Service interface {
 }
 
 type service struct {
-	mm      *pluginapi.Client
 	conf    config.Service
 	proxy   proxy.Service
 	httpOut httpout.Service
-	i18n    *i18n.Bundle
-	log     utils.Logger
 }
 
 var _ Service = (*service)(nil)
@@ -197,16 +192,13 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 	return h
 }
 
-func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Service, proxy proxy.Service, httpOut httpout.Service, i18nBundle *i18n.Bundle) (Service, error) {
+func MakeService(configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
-		mm:      mm,
-		log:     log,
 		conf:    configService,
 		proxy:   proxy,
 		httpOut: httpOut,
-		i18n:    i18nBundle,
 	}
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 
 	err := s.registerCommand(conf)
 	if err != nil {
@@ -219,7 +211,7 @@ func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Se
 func (s *service) Configure(conf config.Config) {
 	err := s.registerCommand(conf)
 	if err != nil {
-		s.log.WithError(err).Warnf("Failed to re-register command")
+		s.conf.Logger().WithError(err).Warnf("Failed to re-register command")
 	}
 }
 
@@ -237,7 +229,7 @@ func (s *service) registerCommand(conf config.Config) error {
 
 	AddACForSubCommands(subCommands, ac)
 
-	err := s.mm.SlashCommand.Register(&model.Command{
+	err := s.conf.MattermostAPI().SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Apps",
@@ -269,18 +261,18 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		pluginContext: pluginContext,
 		commandArgs:   commandArgs,
 	}
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if pluginContext == nil || commandArgs == nil {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &nsi18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &nsi18n.Message{
 			ID:    "apps.command.error.invalidArguments",
 			Other: "invalid arguments to command.Handler. Please contact your system administrator",
 		})))
 	}
 
-	conf := s.conf.GetMattermostConfig().Config()
+	conf := s.conf.MattermostConfig().Config()
 	enableOAuthServiceProvider := conf.ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.enableOAuth",
 				Other: "the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.URL}} and enable it.",
@@ -293,7 +285,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	enableBotAccounts := conf.ServiceSettings.EnableBotAccountCreation
 	if enableBotAccounts == nil || !*enableBotAccounts {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.enableBot",
 				Other: "the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to {{.URL}} and enable it.",
@@ -306,7 +298,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	split := strings.Fields(commandArgs.Command)
 	if len(split) < 2 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &nsi18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &nsi18n.Message{
 			ID:    "apps.command.error.noSubCommand",
 			Other: "no subcommand specified, nothing to do",
 		})))
@@ -314,7 +306,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 
 	command := split[0]
 	if command != "/"+config.CommandTrigger {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.notSupported",
 				Other: "{{.Command}} is not a supported command and should not have been invoked. Please contact your system administrator",
@@ -331,14 +323,14 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 }
 
 func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
 func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	if len(params.current) == 0 {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeDefaultMessage(loc, &nsi18n.Message{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &nsi18n.Message{
 			ID:    "apps.command.error.needSubCommand",
 			Other: "expected a (sub-)command",
 		})))
@@ -349,7 +341,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 
 	c, ok := subcommands[params.current[0]]
 	if !ok {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.unknown",
 				Other: "unknown command: {{.Command}}",
@@ -360,9 +352,9 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 		})))
 	}
 
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	if c.devOnly && !conf.DeveloperMode {
-		return s.errorOut(params, errors.New(s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		return s.errorOut(params, errors.New(s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.developersOnly",
 				Other: "{{.Command}} is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.",
@@ -385,9 +377,9 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 
 func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandResponse, error)) func(*commandParams) (*model.CommandResponse, error) {
 	return func(p *commandParams) (*model.CommandResponse, error) {
-		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
-			loc := s.i18n.GetUserLocalizer(p.commandArgs.UserId)
-			return s.errorOut(p, errors.New(s.i18n.LocalizeDefaultMessage(loc, &nsi18n.Message{
+		if !s.conf.MattermostAPI().User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+			loc := s.conf.I18N().GetUserLocalizer(p.commandArgs.UserId)
+			return s.errorOut(p, errors.New(s.conf.I18N().LocalizeDefaultMessage(loc, &nsi18n.Message{
 				ID:    "apps.command.error.mustBeAdmin",
 				Other: "you need to be a system admin to run this command",
 			})))
@@ -398,7 +390,7 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 }
 
 func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return s.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    commandArgs.TeamId,
 			ChannelID: commandArgs.ChannelId,
@@ -409,7 +401,7 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 }
 
 func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
-	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId, s.i18n)
+	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {
@@ -422,9 +414,9 @@ func out(params *commandParams, out string) (*model.CommandResponse, error) {
 }
 
 func (s *service) errorOut(params *commandParams, err error) (*model.CommandResponse, error) {
-	loc := s.i18n.GetUserLocalizer(params.commandArgs.UserId)
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	txt := utils.CodeBlock(params.commandArgs.Command+"\n") +
-		s.i18n.LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
+		s.conf.I18N().LocalizeWithConfig(loc, &nsi18n.LocalizeConfig{
 			DefaultMessage: &nsi18n.Message{
 				ID:    "apps.command.error",
 				Other: "Command failed. Error: **{{.Error}}**",

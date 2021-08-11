@@ -46,7 +46,7 @@ func main() {
 	manifestData := manifestAWSData
 	if localMode {
 		manifestData = manifestHTTPData
-	} 
+	}
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Returns "PONG". Used for `appsctl test aws`.
