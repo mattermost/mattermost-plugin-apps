@@ -12,7 +12,7 @@ import (
 )
 
 func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, error) {
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	resp := fmt.Sprintf("Mattermost Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s, Cloud Mode: %t, Developer Mode: %t\n",
 		conf.Version,

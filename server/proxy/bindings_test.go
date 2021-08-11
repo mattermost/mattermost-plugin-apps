@@ -25,7 +25,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -675,16 +674,15 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 
 	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	conf := config.Config{
+	confService := config.NewTestConfigService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
-	}
-	confService := config.NewTestConfigurator(conf).WithMattermostConfig(model.Config{
+	}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
-	})
+	}).WithMattermostAPI(mm)
 
-	s := store.NewService(mm, utils.NewTestLogger(), confService, nil, "")
+	s := store.NewService(confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -710,8 +708,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	appStore.EXPECT().AsMap().Return(appList)
 
 	p := &Proxy{
-		mm:               mm,
-		log:              utils.NewTestLogger(),
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             confService,
