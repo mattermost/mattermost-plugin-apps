@@ -5,28 +5,21 @@ import (
 
 	"github.com/gorilla/mux"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type gateway struct {
-	mm    *pluginapi.Client
-	log   utils.Logger
 	conf  config.Service
 	proxy proxy.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service, _ *telemetry.Telemetry) {
+func Init(router *mux.Router, conf config.Service, proxy proxy.Service, _ appservices.Service) {
+	mm := conf.MattermostAPI()
 	g := &gateway{
-		mm:    mm,
-		log:   log,
 		conf:  conf,
 		proxy: proxy,
 	}

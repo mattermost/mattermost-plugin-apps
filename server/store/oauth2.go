@@ -34,7 +34,7 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	r := make([]byte, 15)
 	_, _ = rand.Read(r)
 	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(r), actingUserID)
-	_, err := s.mm.KV.Set(config.KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
+	_, err := s.conf.MattermostAPI().KV.Set(config.KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
@@ -49,8 +49,8 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 
 	storedState := ""
 	key := config.KVOAuth2StatePrefix + urlState
-	err := s.mm.KV.Get(key, &storedState)
-	_ = s.mm.KV.Delete(key)
+	err := s.conf.MattermostAPI().KV.Get(key, &storedState)
+	_ = s.conf.MattermostAPI().KV.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (s *oauth2Store) SaveUser(botUserID, mattermostUserID string, ref interface
 	if err != nil {
 		return err
 	}
-	_, err = s.mm.KV.Set(userkey, ref)
+	_, err = s.conf.MattermostAPI().KV.Set(userkey, ref)
 	return err
 }
 
@@ -78,5 +78,5 @@ func (s *oauth2Store) GetUser(botUserID, mattermostUserID string, ref interface{
 	if err != nil {
 		return err
 	}
-	return s.mm.KV.Get(userkey, ref)
+	return s.conf.MattermostAPI().KV.Get(userkey, ref)
 }

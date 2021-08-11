@@ -7,14 +7,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const (
@@ -22,16 +19,12 @@ const (
 )
 
 type dialog struct {
-	mm    *pluginapi.Client
-	log   utils.Logger
 	proxy proxy.Service
 	conf  config.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service, _ *telemetry.Telemetry) {
+func Init(router *mux.Router, conf config.Service, proxy proxy.Service, _ appservices.Service) {
 	d := dialog{
-		mm:    mm,
-		log:   log,
 		proxy: proxy,
 		conf:  conf,
 	}
