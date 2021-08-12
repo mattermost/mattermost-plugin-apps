@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	mmclient "github.com/mattermost/mattermost-plugin-apps/mmclient"
+	mmclient "github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 )
 

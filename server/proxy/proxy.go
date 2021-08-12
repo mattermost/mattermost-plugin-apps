@@ -22,6 +22,8 @@ import (
 )
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
+	conf, _, log := p.conf.Basic()
+
 	if creq.Context == nil || creq.Context.AppID == "" {
 		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
 		return apps.NewProxyCallResponse(resp, nil)
@@ -32,7 +34,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		creq.Context.UserID = actingUserID
 	}
 
-	creq.Context.Locale = utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), creq.Context.ActingUserID)
+	creq.Context.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), creq.Context.ActingUserID)
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 
@@ -66,10 +68,9 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	// Clear any ExpandedContext as it should always be set by an expander for security reasons
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
-	conf := p.conf.GetConfig()
 	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
+	expander := p.newExpander(cc, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
@@ -86,7 +87,7 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
 		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
 		if err != nil {
-			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+			log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
 				"app_id", app.AppID,
 				"icon", callResponse.Form.Icon)
 			callResponse.Form.Icon = ""
@@ -120,7 +121,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		return err
 	}
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
+	expander := p.newExpander(cc, p.conf, p.store, "")
 
 	notify := func(sub *apps.Subscription) error {
 		call := sub.Call
@@ -178,15 +179,15 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		Call: apps.Call{
 			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
+		Context: p.conf.Get().SetContextDefaultsForApp(app.AppID, &apps.Context{
 			ActingUserID: app.BotUserID,
-			Locale:       utils.GetLocale(p.mm, p.conf.GetMattermostConfig().Config(), app.BotUserID),
+			Locale:       utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), app.BotUserID),
 		}),
 		Values: map[string]interface{}{
 			"data": datav,
 		},
 	}
-	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
+	expander := p.newExpander(creq.Context, p.conf, p.store, "")
 	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
 		return err
@@ -237,7 +238,7 @@ func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpst
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get app for static asset")
 		}
-		return upplugin.NewStaticUpstream(app, &p.mm.Plugin), nil
+		return upplugin.NewStaticUpstream(app, &p.conf.MattermostAPI().Plugin), nil
 
 	default:
 		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
@@ -250,7 +251,7 @@ func (p *Proxy) staticUpstreamForApp(app *apps.App) (upstream.StaticUpstream, er
 		return p.staticUpstreamForManifest(&app.Manifest)
 
 	case apps.AppTypePlugin:
-		return upplugin.NewStaticUpstream(app, &p.mm.Plugin), nil
+		return upplugin.NewStaticUpstream(app, &p.conf.MattermostAPI().Plugin), nil
 
 	default:
 		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
@@ -258,10 +259,10 @@ func (p *Proxy) staticUpstreamForApp(app *apps.App) (upstream.StaticUpstream, er
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+	conf, mm, _ := p.conf.Basic()
 	if !p.AppIsEnabled(app) {
 		return nil, errors.Errorf("%s is disabled", app.AppID)
 	}
-	conf := p.conf.GetConfig()
 	err := isAppTypeSupported(conf, &app.Manifest)
 	if err != nil {
 		return nil, err
@@ -281,7 +282,7 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		}
 		return up, nil
 	case apps.AppTypePlugin:
-		return upplugin.NewUpstream(app, &p.mm.Plugin), nil
+		return upplugin.NewUpstream(app, &mm.Plugin), nil
 	default:
 		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}

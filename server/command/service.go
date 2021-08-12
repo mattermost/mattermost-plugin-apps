@@ -7,14 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -25,11 +24,9 @@ type Service interface {
 }
 
 type service struct {
-	mm      *pluginapi.Client
 	conf    config.Service
 	proxy   proxy.Service
 	httpOut httpout.Service
-	log     utils.Logger
 }
 
 var _ Service = (*service)(nil)
@@ -194,15 +191,13 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 	return h
 }
 
-func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
+func MakeService(configService config.Service, proxy proxy.Service, httpOut httpout.Service) (Service, error) {
 	s := &service{
-		mm:      mm,
-		log:     log,
 		conf:    configService,
 		proxy:   proxy,
 		httpOut: httpOut,
 	}
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 
 	err := s.registerCommand(conf)
 	if err != nil {
@@ -215,7 +210,7 @@ func MakeService(mm *pluginapi.Client, log utils.Logger, configService config.Se
 func (s *service) Configure(conf config.Config) {
 	err := s.registerCommand(conf)
 	if err != nil {
-		s.log.WithError(err).Warnf("Failed to re-register command")
+		s.conf.Logger().WithError(err).Warnf("Failed to re-register command")
 	}
 }
 
@@ -233,7 +228,7 @@ func (s *service) registerCommand(conf config.Config) error {
 
 	AddACForSubCommands(subCommands, ac)
 
-	err := s.mm.SlashCommand.Register(&model.Command{
+	err := s.conf.MattermostAPI().SlashCommand.Register(&model.Command{
 		Trigger:          config.CommandTrigger,
 		AutoComplete:     true,
 		AutoCompleteDesc: "Manage Apps",
@@ -269,7 +264,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 		return errorOut(params, errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
 	}
 
-	conf := s.conf.GetMattermostConfig().Config()
+	conf := s.conf.MattermostConfig().Config()
 	enableOAuthServiceProvider := conf.ServiceSettings.EnableOAuthServiceProvider
 	if enableOAuthServiceProvider == nil || !*enableOAuthServiceProvider {
 		return errorOut(params, errors.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it.", commandArgs.SiteURL))
@@ -296,7 +291,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 }
 
 func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
@@ -313,7 +308,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 		return errorOut(params, errors.Errorf("unknown command: %s", params.current[0]))
 	}
 
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	if c.devOnly && !conf.DeveloperMode {
 		return errorOut(params, errors.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.", params.current[0]))
 	}
@@ -330,7 +325,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 
 func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandResponse, error)) func(*commandParams) (*model.CommandResponse, error) {
 	return func(p *commandParams) (*model.CommandResponse, error) {
-		if !s.mm.User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		if !s.conf.MattermostAPI().User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
 			return errorOut(p, errors.New("you need to be a system admin to run this command"))
 		}
 
@@ -339,19 +334,19 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 }
 
 func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
+	return s.conf.Get().SetContextDefaults(&apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    commandArgs.TeamId,
 			ChannelID: commandArgs.ChannelId,
 		},
 		ActingUserID: commandArgs.UserId,
 		UserID:       commandArgs.UserId,
-		Locale:       utils.GetLocale(s.mm, s.conf.GetMattermostConfig().Config(), commandArgs.UserId),
+		Locale:       utils.GetLocale(s.conf.MattermostAPI(), s.conf.MattermostConfig().Config(), commandArgs.UserId),
 	})
 }
 
 func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
-	return mmclient.NewHTTPClient(s.mm, s.conf.GetConfig(), commandArgs.Session.Id, commandArgs.UserId)
+	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {

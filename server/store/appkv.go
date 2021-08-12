@@ -31,7 +31,7 @@ func (s *appKVStore) Set(botUserID, prefix, id string, ref interface{}) (bool, e
 	if err != nil {
 		return false, err
 	}
-	return s.mm.KV.Set(key, ref)
+	return s.conf.MattermostAPI().KV.Set(key, ref)
 }
 
 func (s *appKVStore) Get(botUserID, prefix, id string, ref interface{}) error {
@@ -39,7 +39,7 @@ func (s *appKVStore) Get(botUserID, prefix, id string, ref interface{}) error {
 	if err != nil {
 		return err
 	}
-	return s.mm.KV.Get(key, ref)
+	return s.conf.MattermostAPI().KV.Get(key, ref)
 }
 
 func (s *appKVStore) Delete(botUserID, prefix, id string) error {
@@ -47,7 +47,7 @@ func (s *appKVStore) Delete(botUserID, prefix, id string) error {
 	if err != nil {
 		return err
 	}
-	return s.mm.KV.Delete(key)
+	return s.conf.MattermostAPI().KV.Delete(key)
 }
 
 func (s *appKVStore) DeleteAll(botUserID string) error {
@@ -55,7 +55,7 @@ func (s *appKVStore) DeleteAll(botUserID string) error {
 	var keysToDelete []string
 
 	for i := 0; ; i++ {
-		keys, err := s.mm.KV.ListKeys(i, keysPerPage)
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list keys for deletion - page, %d", i)
 		}
@@ -72,7 +72,7 @@ func (s *appKVStore) DeleteAll(botUserID string) error {
 	}
 
 	for _, k := range keysToDelete {
-		err := s.mm.KV.Delete(k)
+		err := s.conf.MattermostAPI().KV.Delete(k)
 		if err != nil {
 			return errors.Wrap(err, "failed to delete key")
 		}
