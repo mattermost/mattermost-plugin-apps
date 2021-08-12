@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -75,31 +76,41 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 
 func (p *Proxy) Configure(conf config.Config) error {
 	_, mm, log := p.conf.Basic()
-	newUpstream := func(appType apps.AppType, makeUpstream func() (upstream.Upstream, error)) {
-		if isAppTypeSupported(conf, appType) == nil {
-			up, err := makeUpstream()
-			if err != nil {
-				p.conf.Logger().Debugw("failed to initialize upstream", "error", err.Error(), "app_type", appType)
-			} else {
-				p.upstreams.Store(appType, up)
-			}
-		} else {
-			p.upstreams.Delete(appType)
-		}
+
+	if isAppTypeSupported(conf, apps.AppTypeHTTP) == nil {
+		p.upstreams.Store(apps.AppTypeHTTP, uphttp.NewUpstream(p.httpOut))
+	} else {
+		p.upstreams.Delete(apps.AppTypeHTTP)
 	}
 
-	newUpstream(apps.AppTypeHTTP, func() (upstream.Upstream, error) {
-		return uphttp.NewUpstream(p.httpOut), nil
-	})
-	newUpstream(apps.AppTypeAWSLambda, func() (upstream.Upstream, error) {
-		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
-	})
-	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
-		return upplugin.NewUpstream(&mm.Plugin), nil
-	})
-	newUpstream(apps.AppTypeKubeless, func() (upstream.Upstream, error) {
-		return upkubeless.MakeUpstream()
-	})
+	if isAppTypeSupported(conf, apps.AppTypeAWSLambda) == nil {
+		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize AWS upstream")
+		} else {
+			p.upstreams.Store(apps.AppTypeAWSLambda, up)
+		}
+	} else {
+		p.upstreams.Delete(apps.AppTypeAWSLambda)
+	}
+
+	if isAppTypeSupported(conf, apps.AppTypePlugin) == nil {
+		p.upstreams.Store(apps.AppTypePlugin, upplugin.NewUpstream(&mm.Plugin))
+	} else {
+		p.upstreams.Delete(apps.AppTypePlugin)
+	}
+
+	if isAppTypeSupported(conf, apps.AppTypeKubeless) == nil {
+		up, err := upkubeless.MakeUpstream()
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize Kubeless upstream")
+		} else {
+			p.upstreams.Store(apps.AppTypeKubeless, up)
+		}
+	} else {
+		p.upstreams.Delete(apps.AppTypeKubeless)
+	}
+
 	return nil
 }
 
