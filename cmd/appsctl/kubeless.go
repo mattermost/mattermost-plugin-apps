@@ -17,7 +17,7 @@ func init() {
 
 	// provision
 	kubelessCmd.AddCommand(kubelessProvisionCmd)
-	kubelessProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with causion in production.")
+	kubelessProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
 
 	// test
 	kubelessCmd.AddCommand(kubelessTestCmd)

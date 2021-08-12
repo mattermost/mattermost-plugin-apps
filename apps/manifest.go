@@ -119,7 +119,7 @@ type KubelessFunction struct {
 	// TODO examples py, go
 	Handler string `json:"handler"`
 
-	// File is the file ath (relative, in the bundle) to the function (source?)
+	// File is the file path (relative, in the bundle) to the function (source?)
 	// file. Checksum is the expected checksum of the file.
 	File     string `json:"file"`
 	Checksum string `json:"checksum"`
@@ -128,7 +128,7 @@ type KubelessFunction struct {
 	// e.g. go.mod.
 	DepsFile string `json:"deps_file"`
 
-	// Kubeless runtime to use.
+	// Kubeless runtime to use. See https://kubeless.io/docs/runtimes/ for more.
 	Runtime string `json:"runtime"`
 
 	// Timeout for the function to complete its execution.
@@ -140,7 +140,7 @@ type KubelessFunction struct {
 
 func (kf KubelessFunction) IsValid() error {
 	if kf.CallPath == "" {
-		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
+		return utils.NewInvalidError("invalid Kubeless function: call_path must not be empty")
 	}
 	if kf.Handler == "" {
 		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
