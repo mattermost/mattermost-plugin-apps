@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -15,7 +15,7 @@ import (
 func (a *restapi) handleGetApp(w http.ResponseWriter, r *http.Request, pluginID, _, actingUserID string) {
 	// Only check non-plugin requests
 	if pluginID == "" {
-		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
 			return
@@ -38,9 +38,10 @@ func (a *restapi) handleGetApp(w http.ResponseWriter, r *http.Request, pluginID,
 }
 
 func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+	mm := a.conf.MattermostAPI()
 	// Only check non-plugin requests
 	if pluginID == "" {
-		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		err := utils.EnsureSysAdmin(mm, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
 			return
@@ -55,10 +56,10 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 
 	var client mmclient.Client
 	if pluginID != "" {
-		client = mmclient.NewRPCClient(a.mm)
+		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -69,7 +70,7 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
 	}
-	cc = a.conf.GetConfig().SetContextDefaultsForApp(appID, cc)
+	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 
 	_, err := a.proxy.EnableApp(client, sessionID, cc, appID)
 	if err != nil {
@@ -79,9 +80,10 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 }
 
 func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+	mm := a.conf.MattermostAPI()
 	// Only check non-plugin requests
 	if pluginID == "" {
-		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		err := utils.EnsureSysAdmin(mm, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
 			return
@@ -96,10 +98,10 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 
 	var client mmclient.Client
 	if pluginID != "" {
-		client = mmclient.NewRPCClient(a.mm)
+		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -110,7 +112,7 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
 	}
-	cc = a.conf.GetConfig().SetContextDefaultsForApp(appID, cc)
+	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 
 	_, err := a.proxy.DisableApp(client, sessionID, cc, appID)
 	if err != nil {
@@ -120,9 +122,10 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 }
 
 func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+	mm := a.conf.MattermostAPI()
 	// Only check non-plugin requests
 	if pluginID == "" {
-		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		err := utils.EnsureSysAdmin(mm, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
 			return
@@ -138,9 +141,9 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 
 	var client mmclient.Client
 	if pluginID != "" {
-		client = mmclient.NewRPCClient(a.mm)
+		client = mmclient.NewRPCClient(mm)
 	} else {
-		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -151,7 +154,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
 	}
-	cc = a.conf.GetConfig().SetContextDefaultsForApp(m.AppID, cc)
+	cc = a.conf.Get().SetContextDefaultsForApp(m.AppID, cc)
 
 	_, err = a.proxy.AddLocalManifest(actingUserID, &m)
 	if err != nil {
@@ -167,9 +170,10 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 }
 
 func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, pluginID, sessionID, actingUserID string) {
+	mm := a.conf.MattermostAPI()
 	// Only check non-plugin requests
 	if pluginID == "" {
-		err := utils.EnsureSysAdmin(a.mm, actingUserID)
+		err := utils.EnsureSysAdmin(mm, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(err, "only admins can get apps"))
 			return
@@ -184,10 +188,10 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 
 	var client mmclient.Client
 	if pluginID != "" {
-		client = mmclient.NewRPCClient(a.mm)
+		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.mm, a.conf.GetConfig(), sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -198,7 +202,7 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
 	}
-	cc = a.conf.GetConfig().SetContextDefaultsForApp(appID, cc)
+	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 
 	_, err := a.proxy.UninstallApp(client, sessionID, cc, appID)
 	if err != nil {

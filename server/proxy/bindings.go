@@ -65,8 +65,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	if !p.AppIsEnabled(app) {
 		return nil
 	}
-
-	log := p.log.With("app_id", app.AppID)
+	log := p.conf.Logger().With("app_id", app.AppID)
 
 	appID := app.AppID
 	appCC := *cc
@@ -112,7 +111,8 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 	out := []*apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", app.AppID)
 
 	for _, appB := range bindings {
 		// clone just in case
@@ -154,7 +154,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 		if b.Icon != "" {
 			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
-				p.log.WithError(err).Debugw("Invalid icon path in binding",
+				log.WithError(err).Debugw("Invalid icon path in binding",
 					"app_id", app.AppID,
 					"icon", b.Icon)
 				b.Icon = ""
@@ -180,6 +180,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
 	if userID != "" {
-		p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
+			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
 	}
 }

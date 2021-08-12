@@ -66,7 +66,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 	manifestURL := params.current[0]
 
 	// Trust the URL only in dev mode
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
 	if err != nil {
 		return errorOut(params, err)
@@ -74,7 +74,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 
 	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
-		return errorOut(params, err)
+		return errorOut(params, errors.Wrap(err, "unable to decode "+manifestURL))
 	}
 
 	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
@@ -97,7 +97,7 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 	manifestURL := params.current[0]
 
 	// Trust the URL only in dev mode
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
 	if err != nil {
 		return errorOut(params, err)
@@ -117,11 +117,11 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 }
 
 func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
-	conf := s.conf.GetConfig()
+	conf := s.conf.Get()
 
 	// Finish the installation when the Dialog is submitted, see
 	// <plugin>/http/dialog/install.go
-	err := s.mm.Frontend.OpenInteractiveDialog(
+	err := s.conf.MattermostAPI().Frontend.OpenInteractiveDialog(
 		dialog.NewInstallAppDialog(m, appSecret, conf, params.commandArgs))
 	if err != nil {
 		return errorOut(params, errors.Wrap(err, "couldn't open an interactive dialog"))

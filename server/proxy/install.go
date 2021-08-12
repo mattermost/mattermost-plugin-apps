@@ -12,18 +12,19 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, string, error) {
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", cc.AppID)
 	m, err := p.store.Manifest.Get(cc.AppID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
 
-	conf := p.conf.GetConfig()
 	err = isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "app type is not supported")
@@ -81,7 +82,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 		resp := p.Call(sessionID, cc.ActingUserID, creq)
 		// TODO fail on all errors except 404
 		if resp.Type == apps.CallResponseTypeError {
-			p.log.WithError(err).Warnw("OnInstall failed, installing app anyway", "app_id", app.AppID)
+			log.WithError(err).Warnf("OnInstall failed, installing app anyway.")
 		} else {
 			message = resp.Markdown
 		}
@@ -91,8 +92,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 		message = fmt.Sprintf("Installed %s", app.DisplayName)
 	}
 
-	p.log.Infow("Installed an app",
-		"app_id", app.AppID)
+	log.Infof("Installed app.")
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
@@ -100,17 +100,18 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 }
 
 func (p *Proxy) ensureOAuthApp(client mmclient.Client, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+	conf, _, log := p.conf.Basic()
+
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
-			p.log.Debugw("App install flow: Using existing OAuth2 App",
+			log.Debugw("App install flow: Using existing OAuth2 App",
 				"id", oauthApp.Id)
-
 			return oauthApp, nil
 		}
 	}
 
-	oauth2CallbackURL := p.conf.GetConfig().AppURL(app.AppID) + config.PathMattermostOAuth2Complete
+	oauth2CallbackURL := conf.AppURL(app.AppID) + config.PathMattermostOAuth2Complete
 
 	oauthApp := &model.OAuthApp{
 		CreatorId:    actingUserID,
@@ -125,13 +126,13 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, app *apps.App, noUserCons
 		return nil, errors.Wrap(err, "failed to create OAuth2 App")
 	}
 
-	p.log.Debugw("App install flow: Created OAuth2 App",
-		"id", oauthApp.Id)
+	log.Debugw("App install flow: Created OAuth2 App", "id", oauthApp.Id)
 
 	return oauthApp, nil
 }
 
 func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
+	log := p.conf.Logger()
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -145,7 +146,7 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 			return err
 		}
 
-		p.log.Debugw("App install flow: Created Bot Account ",
+		log.Debugw("App install flow: Created Bot Account ",
 			"username", bot.Username)
 	} else {
 		if !user.IsBot {
@@ -209,7 +210,7 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 	}
 	defer asset.Close()
 
-	err = p.mm.User.SetProfileImage(app.BotUserID, asset)
+	err = p.conf.MattermostAPI().User.SetProfileImage(app.BotUserID, asset)
 	if err != nil {
 		return errors.Wrap(err, "update profile icon")
 	}

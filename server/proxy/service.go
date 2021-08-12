@@ -9,20 +9,18 @@ import (
 	"net/http"
 	"sync"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -30,8 +28,6 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
-	mm        *pluginapi.Client
-	log       utils.Logger
 	conf      config.Service
 	store     *store.Service
 	httpOut   httpout.Service
@@ -67,11 +63,9 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
-		mm:               mm,
-		log:              log,
 		conf:             conf,
 		store:            store,
 		callOnceMutex:    mutex,
@@ -80,11 +74,12 @@ func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, sto
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
+	_, mm, log := p.conf.Basic()
 	newUpstream := func(appType apps.AppType, makeUpstream func() (upstream.Upstream, error)) {
 		if isAppTypeSupported(conf, appType) == nil {
 			up, err := makeUpstream()
 			if err != nil {
-				p.mm.Log.Debug("failed to initialize upstream", "error", err.Error(), "app_type", appType)
+				p.conf.Logger().Debugw("failed to initialize upstream", "error", err.Error(), "app_type", appType)
 			} else {
 				p.upstreams.Store(appType, up)
 			}
@@ -97,10 +92,10 @@ func (p *Proxy) Configure(conf config.Config) error {
 		return uphttp.NewUpstream(p.httpOut), nil
 	})
 	newUpstream(apps.AppTypeAWSLambda, func() (upstream.Upstream, error) {
-		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, p.log)
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
 	})
 	newUpstream(apps.AppTypePlugin, func() (upstream.Upstream, error) {
-		return upplugin.NewUpstream(&p.mm.Plugin), nil
+		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
 	newUpstream(apps.AppTypeKubeless, func() (upstream.Upstream, error) {
 		return upkubeless.MakeUpstream()

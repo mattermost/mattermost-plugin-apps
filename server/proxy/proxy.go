@@ -67,10 +67,10 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 	// Clear any ExpandedContext as it should always be set by an expander for security reasons
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
 	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
+	expander := p.newExpander(cc, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -87,7 +87,7 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
 		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
 		if err != nil {
-			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+			log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
 				"app_id", app.AppID,
 				"icon", callResponse.Form.Icon)
 			callResponse.Form.Icon = ""
@@ -121,7 +121,7 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		return err
 	}
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
+	expander := p.newExpander(cc, p.conf, p.store, "")
 
 	notify := func(sub *apps.Subscription) error {
 		call := sub.Call
@@ -186,14 +186,14 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		Call: apps.Call{
 			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
+		Context: p.conf.Get().SetContextDefaultsForApp(app.AppID, &apps.Context{
 			ActingUserID: app.BotUserID,
 		}),
 		Values: map[string]interface{}{
 			"data": datav,
 		},
 	}
-	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
+	expander := p.newExpander(creq.Context, p.conf, p.store, "")
 	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func (p *Proxy) upstreamForApp(m *apps.Manifest) (upstream.Upstream, error) {
 		return u, nil
 	}
 
-	conf := p.conf.GetConfig()
+	conf := p.conf.Get()
 	err := isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, err

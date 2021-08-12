@@ -63,7 +63,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				return nil
 			})
 			if err != nil {
-				p.log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+				p.conf.Logger().WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
 					"app_id", app.AppID)
 			}
 		}
@@ -73,8 +73,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 }
 
 func (p *Proxy) callOnce(f func() error) error {
+	mm := p.conf.MattermostAPI()
 	// Delete previous job
-	if err := p.mm.KV.Delete(config.KVCallOnceKey); err != nil {
+	if err := mm.KV.Delete(config.KVCallOnceKey); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
@@ -83,7 +84,7 @@ func (p *Proxy) callOnce(f func() error) error {
 	p.callOnceMutex.Lock()
 	defer p.callOnceMutex.Unlock()
 	value := 0
-	if err := p.mm.KV.Get(config.KVCallOnceKey, &value); err != nil {
+	if err := mm.KV.Get(config.KVCallOnceKey, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -96,7 +97,7 @@ func (p *Proxy) callOnce(f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := p.mm.KV.Set(config.KVCallOnceKey, value)
+	ok, err := mm.KV.Set(config.KVCallOnceKey, value)
 	if err != nil {
 		return errors.Wrapf(err, "can't set key %s to %d", config.KVCallOnceKey, value)
 	}
