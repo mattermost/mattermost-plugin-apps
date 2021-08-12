@@ -100,7 +100,7 @@ type Manifest struct {
 
 	// CommandTrigger defines the trigger of the Slash Command. If no trigger is
 	// provided, the app id will be used.
-	CommandTrigger string `json:"command_trigger,omitempy"`
+	CommandTrigger string `json:"command_trigger,omitempty"`
 }
 
 // AWSLambda describes a distinct AWS Lambda function defined by the app, and

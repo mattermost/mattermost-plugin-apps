@@ -317,48 +317,43 @@ func TestGetBindingsCommands(t *testing.T) {
 			},
 			bindings: []*apps.Binding{
 				{
-					Location: apps.LocationCommand,
+					Location:    apps.LocationCommand,
+					Label:       "base command label",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
 					Bindings: []*apps.Binding{
 						{
-							Location:    "base command location",
-							Label:       "base command label",
-							Icon:        "base command icon",
-							Hint:        "base command hint",
-							Description: "base command description",
+							Location:    "message",
+							Label:       "message",
+							Icon:        "https://example.com/image.png",
+							Hint:        "message command hint",
+							Description: "message command description",
+						}, {
+							Location:    "message-modal",
+							Label:       "message-modal",
+							Icon:        "message-modal command icon",
+							Hint:        "message-modal command hint",
+							Description: "message-modal command description",
+						}, {
+							Location:    "manage",
+							Label:       "manage",
+							Icon:        "../some/invalid/path",
+							Hint:        "manage command hint",
+							Description: "manage command description",
 							Bindings: []*apps.Binding{
 								{
-									Location:    "message",
-									Label:       "message",
-									Icon:        "https://example.com/image.png",
-									Hint:        "message command hint",
-									Description: "message command description",
+									Location:    "subscribe",
+									Label:       "subscribe",
+									Icon:        "subscribe command icon",
+									Hint:        "subscribe command hint",
+									Description: "subscribe command description",
 								}, {
-									Location:    "message-modal",
-									Label:       "message-modal",
-									Icon:        "message-modal command icon",
-									Hint:        "message-modal command hint",
-									Description: "message-modal command description",
-								}, {
-									Location:    "manage",
-									Label:       "manage",
-									Icon:        "../some/invalid/path",
-									Hint:        "manage command hint",
-									Description: "manage command description",
-									Bindings: []*apps.Binding{
-										{
-											Location:    "subscribe",
-											Label:       "subscribe",
-											Icon:        "subscribe command icon",
-											Hint:        "subscribe command hint",
-											Description: "subscribe command description",
-										}, {
-											Location:    "unsubscribe",
-											Label:       "unsubscribe",
-											Icon:        "unsubscribe command icon",
-											Hint:        "unsubscribe command hint",
-											Description: "unsubscribe command description",
-										},
-									},
+									Location:    "unsubscribe",
+									Label:       "unsubscribe",
+									Icon:        "unsubscribe command icon",
+									Hint:        "unsubscribe command hint",
+									Description: "unsubscribe command description",
 								},
 							},
 						},
@@ -381,23 +376,18 @@ func TestGetBindingsCommands(t *testing.T) {
 			},
 			bindings: []*apps.Binding{
 				{
-					Location: apps.LocationCommand,
+					Location:    apps.LocationCommand,
+					Label:       "app2 base command label",
+					Icon:        "app2 base command icon",
+					Hint:        "app2 base command hint",
+					Description: "app2 base command description",
 					Bindings: []*apps.Binding{
 						{
-							Location:    "app2 base command location",
-							Label:       "app2 base command label",
-							Icon:        "app2 base command icon",
-							Hint:        "app2 base command hint",
-							Description: "app2 base command description",
-							Bindings: []*apps.Binding{
-								{
-									Location:    "connect",
-									Label:       "connect",
-									Icon:        "connect command icon",
-									Hint:        "connect command hint",
-									Description: "connect command description",
-								},
-							},
+							Location:    "connect",
+							Label:       "connect",
+							Icon:        "connect command icon",
+							Hint:        "connect command hint",
+							Description: "connect command description",
 						},
 					},
 				},
@@ -411,8 +401,8 @@ func TestGetBindingsCommands(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "base command location",
-					Label:       "base command label",
+					Location:    "app1",
+					Label:       "app1",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
@@ -460,8 +450,8 @@ func TestGetBindingsCommands(t *testing.T) {
 				},
 				{
 					AppID:       apps.AppID("app2"),
-					Location:    "app2 base command location",
-					Label:       "app2 base command label",
+					Location:    "app2",
+					Label:       "app2",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
@@ -506,31 +496,26 @@ func TestDuplicateCommand(t *testing.T) {
 			},
 			bindings: []*apps.Binding{
 				{
-					Location: apps.LocationCommand,
+					Location:    apps.LocationCommand,
+					Label:       "base command label",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
 					Bindings: []*apps.Binding{
 						{
-							Location:    "base command location",
-							Label:       "base command label",
-							Icon:        "base command icon",
-							Hint:        "base command hint",
-							Description: "base command description",
-							Bindings: []*apps.Binding{
-								{
-									Location: "sub1",
-									Label:    "sub1",
-									Icon:     "sub1 icon 1",
-								},
-								{
-									Location: "sub1",
-									Label:    "sub1",
-									Icon:     "sub1 icon 2",
-								},
-								{
-									Location: "",
-									Label:    "",
-									Icon:     "",
-								},
-							},
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "sub1 icon 1",
+						},
+						{
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "sub1 icon 2",
+						},
+						{
+							Location: "",
+							Label:    "",
+							Icon:     "",
 						},
 					},
 				},
@@ -556,8 +541,8 @@ func TestDuplicateCommand(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "base command location",
-					Label:       "base command label",
+					Location:    "app1",
+					Label:       "app1",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
