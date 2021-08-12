@@ -60,6 +60,7 @@ func helloKubeless() *apps.App {
 				{
 					CallPath: "/",
 					Handler:  "app.handler",
+					Runtime:  "nodejs14", // see /examples/js/hello-world
 				},
 			},
 		},

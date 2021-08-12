@@ -120,9 +120,8 @@ type KubelessFunction struct {
 	Handler string `json:"handler"`
 
 	// File is the file path (relative, in the bundle) to the function (source?)
-	// file. Checksum is the expected checksum of the file.
-	File     string `json:"file"`
-	Checksum string `json:"checksum"`
+	// file.
+	File string `json:"file"`
 
 	// DepsFile is the path to the file with runtime-specific dependency list,
 	// e.g. go.mod.
@@ -131,8 +130,8 @@ type KubelessFunction struct {
 	// Kubeless runtime to use. See https://kubeless.io/docs/runtimes/ for more.
 	Runtime string `json:"runtime"`
 
-	// Timeout for the function to complete its execution.
-	Timeout string `json:"timeout"`
+	// Timeout for the function to complete its execution, in seconds.
+	Timeout int `json:"timeout"`
 
 	// Port is the local ipv4 port that the function listens to, default 8080.
 	Port int32 `json:"port"`

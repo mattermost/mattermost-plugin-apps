@@ -55,12 +55,6 @@ func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	p.log = utils.NewPluginLogger(mm)
 
-	defer func() {
-		if err != nil {
-			p.log.WithError(err).Errorf("Failed to activate")
-		}
-	}()
-
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
 		DisplayName: config.BotDisplayName,

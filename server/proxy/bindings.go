@@ -87,8 +87,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(resp).Debugw("Error getting bindings",
-			"app_id", app.AppID)
+		log.WithError(resp).Debugf("Error getting bindings")
 		return nil
 	}
 

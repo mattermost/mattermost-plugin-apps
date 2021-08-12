@@ -53,7 +53,8 @@ type manifestStore struct {
 var _ ManifestStore = (*manifestStore)(nil)
 
 func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
-	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, s.conf.Logger(), "Manifest store")
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion,
+		s.conf.Logger().With("purpose", "Manifest store"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}

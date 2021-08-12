@@ -55,15 +55,13 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid manifest.json")
 	}
-	if log != nil {
-		log.Debugw("Loaded App bundle",
-			"bundle", bundlePath,
-			"app_id", m.AppID)
-	}
+	log.Debugw("Loaded App bundle",
+		"bundle", bundlePath,
+		"app_id", m.AppID)
 
 	kubelessPath, err := exec.LookPath("kubeless")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find kubeless command")
+		return nil, errors.Wrap(err, "failed to find kubeless command. Please follow the steps from https://kubeless.io/docs/quick-start/")
 	}
 
 	// Provision functions.
@@ -86,6 +84,9 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 		}
 		if kf.Port != 0 {
 			args = append(args, "--port", strconv.Itoa(int(kf.Port)))
+		}
+		if kf.Timeout != 0 {
+			args = append(args, "--timeout", strconv.Itoa(kf.Timeout))
 		}
 
 		cmd := exec.Cmd{

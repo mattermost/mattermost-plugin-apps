@@ -59,11 +59,6 @@ func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) 
 	return io.NopCloser(bytes.NewReader(crespData)), nil
 }
 
-func FunctionURL(appID apps.AppID, funcName string) (string, error) {
-	clientset := kubelessutil.GetClientOutOfCluster()
-	return functionURL(clientset, appID, funcName)
-}
-
 func functionURL(clientset kubernetes.Interface, appID apps.AppID, funcName string) (string, error) {
 	// Get the function's service URL
 	svc, err := clientset.CoreV1().Services(namespace(appID)).Get(funcName, metav1.GetOptions{})

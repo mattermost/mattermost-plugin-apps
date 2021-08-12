@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-// invocationPayload is a scoped down version of
+// ServerlessRequest is a scoped down version of
 // https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
 type ServerlessRequest struct {
 	Path       string            `json:"path"`
@@ -21,7 +21,7 @@ type ServerlessRequest struct {
 	Body       string            `json:"body"`
 }
 
-// invocationResponse is a scoped down version of
+// ServerlessResponse is a scoped down version of
 // https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyResponse
 type ServerlessResponse struct {
 	StatusCode      int               `json:"statusCode"`

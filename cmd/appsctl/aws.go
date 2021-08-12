@@ -313,5 +313,6 @@ func makeProvisionAWSClient() (upaws.Client, error) {
 		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
 	}
 
-	return upaws.MakeClient(accessKey, secretKey, region, log, "Provisioner (appsctl)")
+	return upaws.MakeClient(accessKey, secretKey, region,
+		log.With("purpose", "appsctl provisioner"))
 }
