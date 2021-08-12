@@ -87,9 +87,8 @@ func (p *Proxy) Configure(conf config.Config) error {
 		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize AWS upstream")
-		} else {
-			p.upstreams.Store(apps.AppTypeAWSLambda, up)
 		}
+		p.upstreams.Store(apps.AppTypeAWSLambda, up)
 	} else {
 		p.upstreams.Delete(apps.AppTypeAWSLambda)
 	}
@@ -104,9 +103,8 @@ func (p *Proxy) Configure(conf config.Config) error {
 		up, err := upkubeless.MakeUpstream()
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize Kubeless upstream")
-		} else {
-			p.upstreams.Store(apps.AppTypeKubeless, up)
 		}
+		p.upstreams.Store(apps.AppTypeKubeless, up)
 	} else {
 		p.upstreams.Delete(apps.AppTypeKubeless)
 	}
