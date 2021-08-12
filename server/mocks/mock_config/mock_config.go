@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	i18n "github.com/mattermost/mattermost-plugin-api/i18n"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	configservice "github.com/mattermost/mattermost-server/v5/services/configservice"
@@ -65,6 +66,20 @@ func (m *MockService) Get() config.Config {
 func (mr *MockServiceMockRecorder) Get() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockService)(nil).Get))
+}
+
+// I18N mocks base method.
+func (m *MockService) I18N() *i18n.Bundle {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "I18N")
+	ret0, _ := ret[0].(*i18n.Bundle)
+	return ret0
+}
+
+// I18N indicates an expected call of I18N.
+func (mr *MockServiceMockRecorder) I18N() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "I18N", reflect.TypeOf((*MockService)(nil).I18N))
 }
 
 // Logger mocks base method.
