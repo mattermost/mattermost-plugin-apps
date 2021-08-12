@@ -3,7 +3,7 @@
 default: all
 
 i18n-extract-server:
-	@goi18n extract -format json -outdir assets/i18n/ server/ utils/ apps/ cmd/ mmclient/ upstream/
+	@goi18n extract -format json -outdir assets/i18n/ server/ utils/ apps/ cmd/ upstream/
 	@for x in assets/i18n/active.*.json; do echo $$x | sed 's/active/translate/' | sed 's/^/touch /' | bash; done
 	@goi18n merge -format json -outdir assets/i18n/ assets/i18n/active.*.json
 	@echo "Please update your assets/i18n/translate.*.json files and execute \"make i18n-merge-server\""
