@@ -44,7 +44,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, sessionID
 
 	// Only track submit calls
 	if strings.HasSuffix(call.Path, "submit") {
-		a.conf.Telemetry().TrackCall(string(call.Context.AppID), string(call.Context.Location), call.Context.ActingUserID)
+		a.conf.Telemetry().TrackCall(string(call.Context.AppID), string(call.Context.Location), call.Context.ActingUserID, "submit")
 	}
 
 	httputils.WriteJSON(w, res)

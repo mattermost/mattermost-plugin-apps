@@ -18,7 +18,7 @@ func (t *Telemetry) UpdateTracker(tracker mmtelemetry.Tracker) {
 	t.tracker = tracker
 }
 
-func (t *Telemetry) TrackInstall(appID string, appType string) {
+func (t *Telemetry) TrackInstall(appID, appType string) {
 	if t == nil {
 		return
 	}
@@ -29,7 +29,7 @@ func (t *Telemetry) TrackInstall(appID string, appType string) {
 	})
 }
 
-func (t *Telemetry) TrackUninstall(appID string, appType string) {
+func (t *Telemetry) TrackUninstall(appID, appType string) {
 	if t == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func (t *Telemetry) TrackUninstall(appID string, appType string) {
 	})
 }
 
-func (t *Telemetry) TrackCall(appID string, location string, actingUserID string) {
+func (t *Telemetry) TrackCall(appID, location, actingUserID, callType string) {
 	if t == nil {
 		return
 	}
@@ -48,10 +48,11 @@ func (t *Telemetry) TrackCall(appID string, location string, actingUserID string
 	_ = t.tracker.TrackUserEvent("call", actingUserID, map[string]interface{}{
 		"appID":    appID,
 		"location": location,
+		"type":     callType,
 	})
 }
 
-func (t *Telemetry) TrackOAuthComplete(appID string, actingUserID string) {
+func (t *Telemetry) TrackOAuthComplete(appID, actingUserID string) {
 	if t == nil {
 		return
 	}
