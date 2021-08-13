@@ -1,0 +1,37 @@
+{
+	"app_id": "hello-typescript",
+	"version": "0.9.0",
+	"display_name": "Hello, World! in TypeScript",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/ts/hello",
+	"requested_permissions": [
+		"act_as_bot"
+	],
+	"requested_locations": [
+		"/command",
+		"/channel_header"
+	],
+	"http": {
+		"root_url": "http://localhost:4000"
+	},
+	"aws_lambda": {
+		"functions": [
+			{
+				"path": "/",
+				"name": "hello",
+				"handler": "index.aws",
+				"runtime": "nodejs14.x"
+			}
+		]
+	},
+	"kubeless": {
+		"functions": [
+			{
+				"call_path": "/",
+				"handler": "index.kubeless",
+				"file": "function.zip",
+				"deps_file": "package.json",
+				"runtime": "nodejs14"
+			}
+		]
+	}
+}
