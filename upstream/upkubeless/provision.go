@@ -67,7 +67,6 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 	// Provision functions.
 	for _, kf := range m.KubelessFunctions {
 		name := FunctionName(m.AppID, m.Version, kf.Handler)
-		ns := namespace(m.AppID)
 
 		verb := "deploy"
 		if shouldUpdate {
@@ -76,7 +75,7 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 		args := []string{"", "function", verb, name}
 
 		args = append(args, "--handler", kf.Handler)
-		args = append(args, "--namespace", ns)
+		args = append(args, "--namespace", Namespace)
 		args = append(args, "--from-file", kf.File)
 		args = append(args, "--runtime", kf.Runtime)
 		if kf.DepsFile != "" {

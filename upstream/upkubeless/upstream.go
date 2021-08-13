@@ -23,6 +23,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+const Namespace = "mattermost-kubeless-apps"
+
 type Upstream struct {
 	kubelessClient versioned.Interface
 }
@@ -40,9 +42,11 @@ func MakeUpstream() (*Upstream, error) {
 }
 
 func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(creq.Path, &app.Manifest)
-	if name == "" {
-		return nil, utils.ErrNotFound
+	clientset := kubelessutil.GetClientOutOfCluster()
+
+	url, err := resolvePath(clientset, &app.Manifest, creq.Path)
+	if err != nil {
+		return nil, err
 	}
 
 	// Build the JSON request
@@ -51,7 +55,7 @@ func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) 
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
-	crespData, err := u.invoke(app, name, creq.Path, http.MethodPost, creqData, async)
+	crespData, err := u.invoke(clientset, url, http.MethodPost, creqData, async)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +63,15 @@ func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) 
 	return io.NopCloser(bytes.NewReader(crespData)), nil
 }
 
-func functionURL(clientset kubernetes.Interface, appID apps.AppID, funcName string) (string, error) {
+// resolvePath resolved a call path into a fully-qualified URL.
+func resolvePath(clientset kubernetes.Interface, m *apps.Manifest, path string) (string, error) {
+	funcName := match(m, path)
+	if funcName == "" {
+		return "", utils.ErrNotFound
+	}
+
 	// Get the function's service URL
-	svc, err := clientset.CoreV1().Services(namespace(appID)).Get(funcName, metav1.GetOptions{})
+	svc, err := clientset.CoreV1().Services(Namespace).Get(funcName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the kubernetes service for function %s", funcName)
 	}
@@ -70,18 +80,11 @@ func functionURL(clientset kubernetes.Interface, appID apps.AppID, funcName stri
 		port = svc.Spec.Ports[0].Name
 	}
 
-	serviceURL := svc.ObjectMeta.SelfLink + ":" + port + "/proxy/"
-	return serviceURL, nil
+	fURL := svc.ObjectMeta.SelfLink + ":" + port + "/proxy/" + strings.TrimPrefix(path, "/")
+	return fURL, nil
 }
 
-func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method string, data []byte, async bool) ([]byte, error) {
-	clientset := kubelessutil.GetClientOutOfCluster()
-	fURL, err := functionURL(clientset, app.AppID, funcName)
-	if err != nil {
-		return nil, err
-	}
-	fURL += strings.TrimPrefix(requestPath, "/")
-
+func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, data []byte, async bool) ([]byte, error) {
 	timestamp := time.Now().UTC()
 	eventID, err := kubelessutil.GetRandString(11)
 	if err != nil {
@@ -94,12 +97,12 @@ func (u *Upstream) invoke(app *apps.App, funcName string, requestPath, method st
 	req.SetHeader("event-type", "application/json")
 	req.SetHeader("event-id", eventID)
 	req.SetHeader("event-time", timestamp.Format(time.RFC3339))
-	req.SetHeader("event-namespace", "mattermost")
+	req.SetHeader("event-namespace", Namespace)
 
 	// REST package removes trailing slash when building URLs
 	// Causing POST requests to be redirected with an empty body
 	// So we need to manually build the URL
-	req = req.AbsPath(fURL)
+	req = req.AbsPath(url)
 
 	received, err := req.Do().Raw()
 	if err != nil {
@@ -121,7 +124,7 @@ func (u *Upstream) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int,
 	return nil, 0, errors.New("not implemented")
 }
 
-func match(callPath string, m *apps.Manifest) string {
+func match(m *apps.Manifest, callPath string) string {
 	matchedName := ""
 	matchedPath := ""
 	for _, f := range m.KubelessFunctions {
@@ -144,11 +147,4 @@ func FunctionName(appID apps.AppID, version apps.AppVersion, function string) st
 	sanitizedFunction = strings.ReplaceAll(sanitizedFunction, ".", "-")
 	sanitizedFunction = strings.ToLower(sanitizedFunction)
 	return fmt.Sprintf("%s-%s-%s", sanitizedAppID, sanitizedVersion, sanitizedFunction)
-}
-
-func namespace(appID apps.AppID) string {
-	sanitized := string(appID)
-	sanitized = strings.ReplaceAll(sanitized, "_", "-")
-	sanitized = strings.ReplaceAll(sanitized, ".", "-")
-	return "mattermost-app-" + sanitized
 }
