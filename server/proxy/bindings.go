@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -99,14 +100,14 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
-	bindings = p.scanAppBindings(app, bindings, "")
+	bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
 
 	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
+func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location, userAgent string) []*apps.Binding {
 	out := []*apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
@@ -129,7 +130,20 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
+			p.conf.MattermostAPI().Log.Debug("location is not granted to app", "location", fql, "appID", app.Manifest.AppID)
 			continue
+		}
+
+		if fql.In(apps.LocationCommand) {
+			label := b.Label
+			if label == "" {
+				label = string(b.Location)
+			}
+
+			if strings.ContainsAny(label, " \t") {
+				p.conf.MattermostAPI().Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
+				continue
+			}
 		}
 
 		if fql.IsTop() {
@@ -162,14 +176,25 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 
+		// First level of Channel Header
+		if fql == apps.LocationChannelHeader.Make(b.Location) {
+			// Must have an icon on webapp to show the icon
+			if b.Icon == "" && userAgent == "webapp" {
+				p.conf.MattermostAPI().Log.Debug("Channel header button for webapp without icon", "label", b.Label, "app_id", app.AppID)
+				continue
+			}
+		}
+
 		if len(b.Bindings) != 0 {
-			scanned := p.scanAppBindings(app, b.Bindings, fql)
+			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
 				continue
 			}
 			b.Bindings = scanned
 		}
+
+		p.cleanForm(b.Form)
 
 		out = append(out, &b)
 	}

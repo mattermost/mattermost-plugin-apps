@@ -94,6 +94,8 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		}
 	}
 
+	p.cleanForm(callResponse.Form)
+
 	return apps.NewProxyCallResponse(callResponse, metadata)
 }
 
@@ -111,6 +113,104 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	}
 
 	return icon, nil
+}
+
+// cleanForm removes:
+// - Fields without a name
+// - Fields with labels (either natural or defaulted from names) with more than one word
+// - Fields that have the same label as previous fields
+// - Invalid select static fields and their invalid options
+func (p *Proxy) cleanForm(form *apps.Form) {
+	if form == nil {
+		return
+	}
+
+	toRemove := []int{}
+	usedLabels := map[string]bool{}
+	for i, field := range form.Fields {
+		if field.Name == "" {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App from malformed: Field with no name", "field", field)
+			continue
+		}
+		if strings.ContainsAny(field.Name, " \t") {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App form malformed: Name must be a single word", "name", field.Name)
+			continue
+		}
+
+		label := field.Label
+		if label == "" {
+			label = field.Name
+		}
+		if strings.ContainsAny(label, " \t") {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App form malformed: Label must be a single word", "label", label)
+			continue
+		}
+
+		if usedLabels[label] {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App from malformed: Field label repeated. Only getting first field with the label.", "label", label)
+			continue
+		}
+
+		if field.Type == apps.FieldTypeStaticSelect {
+			p.cleanStaticSelect(field)
+			if len(field.SelectStaticOptions) == 0 {
+				toRemove = append([]int{i}, toRemove...)
+				p.conf.MattermostAPI().Log.Debug("App from malformed: Static field without opions.", "label", label)
+				continue
+			}
+		}
+
+		usedLabels[label] = true
+	}
+
+	for _, i := range toRemove {
+		form.Fields = append(form.Fields[:i], form.Fields[i+1:]...)
+	}
+}
+
+// cleanStaticSelect removes:
+// - Options with empty label (either natural or defaulted form the value)
+// - Options that have the same label as the previous options
+// - Options that have the same value as the previous options
+func (p *Proxy) cleanStaticSelect(field *apps.Field) {
+	toRemove := []int{}
+	usedLabels := map[string]bool{}
+	usedValues := map[string]bool{}
+	for i, option := range field.SelectStaticOptions {
+		label := option.Label
+		if label == "" {
+			label = option.Value
+		}
+
+		if label == "" {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App from malformed: Option with no label", "field", field, "option value", option.Value)
+			continue
+		}
+
+		if usedLabels[label] {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App from malformed: Repeated label on select option. Only getting first value with the label", "field", field, "option", option)
+			continue
+		}
+
+		if usedValues[option.Value] {
+			toRemove = append([]int{i}, toRemove...)
+			p.conf.MattermostAPI().Log.Debug("App from malformed: Repeated value on select option. Only getting first value with the value", "field", field, "option", option)
+			continue
+		}
+
+		usedLabels[label] = true
+		usedValues[option.Value] = true
+	}
+
+	for _, i := range toRemove {
+		field.SelectStaticOptions = append(field.SelectStaticOptions[:i], field.SelectStaticOptions[i+1:]...)
+	}
 }
 
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
