@@ -196,7 +196,7 @@ app.post('/issue/submit', async (req, res) => {
 
     res.json({
         type: 'ok',
-        markdown: 'Created a post in your DM channel.'
+        markdown: message
     });
 });
 
