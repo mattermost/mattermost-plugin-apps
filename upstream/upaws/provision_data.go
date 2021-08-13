@@ -84,9 +84,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			if err := json.Unmarshal(data, &m); err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
-			if log != nil {
-				log.Infow("Found manifest", "file", file.Name)
-			}
+			log.Infow("Found manifest", "file", file.Name)
 
 		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
@@ -97,9 +95,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
 			})
-			if log != nil {
-				log.Infow("Found lambda function bundle", "file", file.Name)
-			}
+			log.Infow("Found lambda function bundle", "file", file.Name)
 
 		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
 			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
@@ -114,14 +110,10 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			if log != nil {
-				log.Infow("Found static asset", "file", file.Name)
-			}
+			log.Infow("Found static asset", "file", file.Name)
 
 		default:
-			if log != nil {
-				log.Infow("Ignored unknown file", "file", file.Name)
-			}
+			log.Infow("Ignored unknown file", "file", file.Name)
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -99,12 +99,12 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 }
 
 func (p *Proxy) newSudoClient(in Incoming) mmclient.Client {
-	conf := p.conf.GetConfig()
+	conf, mm, _ := p.conf.Basic()
 	var client mmclient.Client
 	if in.PluginID != "" {
-		client = mmclient.NewRPCClient(p.mm)
+		client = mmclient.NewRPCClient(mm)
 	} else {
-		client = mmclient.NewHTTPClient(p.mm, conf, in.AdminAccessToken)
+		client = mmclient.NewHTTPClient(conf, in.AdminAccessToken)
 	}
 	return client
 }

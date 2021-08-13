@@ -15,7 +15,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 		Description: "Installs an App",
 	}
 
-	conf := a.conf.GetConfig()
+	conf := a.conf.Get()
 	if conf.MattermostCloudMode {
 		installCommand.Bindings = []apps.Binding{
 			{

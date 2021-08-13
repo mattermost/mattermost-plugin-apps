@@ -12,6 +12,7 @@ import (
 )
 
 func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -39,24 +40,22 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			message = "on_enable call failed, App enabled anyway"
-			p.log.WithError(err).Warnw(message, "app_id", app.AppID)
+			log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
 			message = resp.Markdown
 		}
 	}
+	log.Infof("Enabled app")
+	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	if message == "" {
 		message = fmt.Sprintf("Enabled %s", app.DisplayName)
 	}
-	p.log.Infow("Enabled app", "app_id", app.AppID)
-
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
-
 	return message, nil
 }
 
 func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -74,8 +73,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.log.WithError(err).Warnw("OnDisable failed, disabling app anyway",
-				"app_id", app.AppID)
+			log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
 			message = resp.Markdown
 		}
@@ -96,10 +94,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-
-	p.log.Infow("Disabled app",
-		"app_id", app.AppID)
-
+	log.Infof("Disabled app")
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil

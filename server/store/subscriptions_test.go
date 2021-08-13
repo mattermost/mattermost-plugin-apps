@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -19,15 +17,11 @@ import (
 )
 
 func TestDeleteSub(t *testing.T) {
-	botID := "bot-id"
-	mockAPI := &plugintest.API{}
+	conf, mockAPI := config.NewTestService(&config.Config{
+		BotUserID: "bot-id",
+	})
 	defer mockAPI.AssertExpectations(t)
-
-	mockDriver := &plugintest.Driver{}
-
-	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
+	s, err := MakeService(conf, nil)
 	require.NoError(t, err)
 
 	toDelete := apps.Subscription{
@@ -129,15 +123,11 @@ func TestDeleteSub(t *testing.T) {
 }
 
 func TestGetSubs(t *testing.T) {
-	botID := "bot-id"
-	mockAPI := &plugintest.API{}
+	conf, mockAPI := config.NewTestService(&config.Config{
+		BotUserID: "bot-id",
+	})
 	defer mockAPI.AssertExpectations(t)
-
-	mockDriver := &plugintest.Driver{}
-
-	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
+	s, err := MakeService(conf, nil)
 	require.NoError(t, err)
 
 	emptySubs := []apps.Subscription{}
@@ -195,15 +185,11 @@ func TestGetSubs(t *testing.T) {
 }
 
 func TestStoreSub(t *testing.T) {
-	botID := "bot-id"
-	mockAPI := &plugintest.API{}
+	conf, mockAPI := config.NewTestService(&config.Config{
+		BotUserID: "bot-id",
+	})
 	defer mockAPI.AssertExpectations(t)
-
-	mockDriver := &plugintest.Driver{}
-
-	apiClient := pluginapi.NewClient(mockAPI, mockDriver)
-	conf := config.NewService(apiClient, utils.NewTestLogger(), config.BuildConfig{}, botID)
-	s, err := MakeService(apiClient, utils.NewTestLogger(), conf, nil)
+	s, err := MakeService(conf, nil)
 	require.NoError(t, err)
 
 	toStore := apps.Subscription{

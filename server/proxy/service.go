@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"sync"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/pkg/errors"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -30,8 +28,6 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
-	mm        *pluginapi.Client
-	log       utils.Logger
 	conf      config.Service
 	store     *store.Service
 	httpOut   httpout.Service
@@ -73,11 +69,9 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
-		mm:               mm,
-		log:              log,
 		conf:             conf,
 		store:            store,
 		callOnceMutex:    mutex,
@@ -86,33 +80,40 @@ func NewService(mm *pluginapi.Client, log utils.Logger, conf config.Service, sto
 }
 
 func (p *Proxy) Configure(conf config.Config) error {
-	newUpstream := func(dtype apps.DeployType, makeUpstreamf func() (upstream.Upstream, error)) {
-		allowed, _ := p.CanDeploy(dtype)
-		if !allowed {
-			p.upstreams.Delete(dtype)
-			return
-		}
-		// Override whatever might have been stored before.
-		up, err := makeUpstreamf()
-		if err != nil {
-			p.upstreams.Delete(dtype)
-			p.log.WithError(err).Debugw("failed to initialize upstream", "deploy_type", dtype)
-		}
-		p.upstreams.Store(dtype, up)
+	_, mm, log := p.conf.Basic()
+
+	if allowed, _ := p.CanDeploy(apps.DeployHTTP); allowed {
+		p.upstreams.Store(apps.DeployHTTP, uphttp.NewUpstream(p.httpOut))
+	} else {
+		p.upstreams.Delete(apps.DeployHTTP)
 	}
 
-	newUpstream(apps.DeployHTTP, func() (upstream.Upstream, error) {
-		return uphttp.NewUpstream(p.httpOut), nil
-	})
-	newUpstream(apps.DeployAWSLambda, func() (upstream.Upstream, error) {
-		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, p.log)
-	})
-	newUpstream(apps.DeployPlugin, func() (upstream.Upstream, error) {
-		return upplugin.NewUpstream(&p.mm.Plugin), nil
-	})
-	newUpstream(apps.DeployKubeless, func() (upstream.Upstream, error) {
-		return upkubeless.MakeUpstream()
-	})
+	if allowed, _ := p.CanDeploy(apps.DeployAWSLambda); allowed {
+		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize AWS upstream")
+		}
+		p.upstreams.Store(apps.DeployAWSLambda, up)
+	} else {
+		p.upstreams.Delete(apps.DeployAWSLambda)
+	}
+
+	if allowed, _ := p.CanDeploy(apps.DeployPlugin); allowed {
+		p.upstreams.Store(apps.DeployPlugin, upplugin.NewUpstream(&mm.Plugin))
+	} else {
+		p.upstreams.Delete(apps.DeployPlugin)
+	}
+
+	if allowed, _ := p.CanDeploy(apps.DeployKubeless); allowed {
+		up, err := upkubeless.MakeUpstream()
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize Kubeless upstream")
+		}
+		p.upstreams.Store(apps.DeployKubeless, up)
+	} else {
+		p.upstreams.Delete(apps.DeployKubeless)
+	}
+
 	return nil
 }
 
@@ -122,7 +123,7 @@ func (p *Proxy) Configure(conf config.Config) error {
 func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
 	_, usable = p.upstreams.Load(deployType)
 
-	conf := p.conf.GetConfig()
+	conf := p.conf.Get()
 	supportedTypes := []apps.DeployType{}
 
 	// Initialize with the set supported in all configurations.

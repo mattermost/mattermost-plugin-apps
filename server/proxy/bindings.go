@@ -63,7 +63,8 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) [
 	if !p.appIsEnabled(app) {
 		return nil
 	}
-	log := p.log.With("app_id", app.AppID)
+	log := p.conf.Logger().With("app_id", app.AppID)
+
 	appID := app.AppID
 	cc.AppID = appID
 
@@ -83,8 +84,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) [
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(&resp).Debugw("Error getting bindings",
-			"app_id", app.AppID)
+		log.WithError(resp).Debugf("Error getting bindings")
 		return nil
 	}
 
@@ -107,7 +107,8 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefi
 	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", app.AppID)
 
 	for _, b := range bindings {
 		if b.Location == "" {
@@ -147,7 +148,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefi
 		if b.Icon != "" {
 			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
-				p.log.WithError(err).Debugw("Invalid icon path in binding",
+				log.WithError(err).Debugw("Invalid icon path in binding",
 					"app_id", app.AppID,
 					"icon", b.Icon)
 				b.Icon = ""
@@ -173,6 +174,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefi
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
 	if userID != "" {
-		p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
+			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
 	}
 }

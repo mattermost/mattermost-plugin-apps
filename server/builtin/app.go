@@ -63,10 +63,8 @@ type builtinApp struct {
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
-		mm:      mm,
-		log:     log,
 		conf:    conf,
 		proxy:   proxy,
 		store:   store,

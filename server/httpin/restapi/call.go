@@ -33,7 +33,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.
 
 	res := a.proxy.Call(in, creq.Context.AppID, *creq)
 
-	a.log.Debugw(
+	a.conf.Logger().Debugw(
 		"Received call response",
 		"app_id", creq.Context.AppID,
 		"acting_user_id", in.ActingUserID,
@@ -45,6 +45,7 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.
 }
 
 func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
+	mm := a.conf.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{
 		UserAgentContext: orig.UserAgentContext,
@@ -53,18 +54,18 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 	switch {
 	case cc.PostID != "":
 		postID = cc.PostID
-		post, err := a.mm.Post.GetPost(postID)
+		post, err := mm.Post.GetPost(postID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get post. post=%v", postID)
 		}
 
 		channelID = post.ChannelId
-		_, err = a.mm.Channel.GetMember(channelID, userID)
+		_, err = mm.Channel.GetMember(channelID, userID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
 		}
 
-		c, err := a.mm.Channel.Get(channelID)
+		c, err := mm.Channel.Get(channelID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
 		}
@@ -74,12 +75,12 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 	case cc.ChannelID != "":
 		channelID = cc.ChannelID
 
-		_, err := a.mm.Channel.GetMember(channelID, userID)
+		_, err := mm.Channel.GetMember(channelID, userID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
 		}
 
-		c, err := a.mm.Channel.Get(channelID)
+		c, err := mm.Channel.Get(channelID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
 		}
@@ -89,7 +90,7 @@ func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.
 	case cc.TeamID != "":
 		teamID = cc.TeamID
 
-		_, err := a.mm.Team.GetMember(teamID, userID)
+		_, err := mm.Team.GetMember(teamID, userID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to get team membership. user=%v team=%v", userID, teamID)
 		}

@@ -83,7 +83,7 @@ type client struct {
 	region string
 }
 
-func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Logger, purpose string) (Client, error) {
+func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Logger) (Client, error) {
 	awsConfig := &aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
@@ -115,7 +115,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Log
 		region:     region,
 	}
 
-	log.Debugw("Initialized AWS access for "+purpose,
+	log.Debugw("Initialized AWS access",
 		"region", region,
 		"access", utils.LastN(awsAccessKeyID, 7),
 		"secret", utils.LastN(awsSecretAccessKey, 4))

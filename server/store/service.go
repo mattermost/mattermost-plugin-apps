@@ -10,12 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service struct {
@@ -25,16 +23,14 @@ type Service struct {
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
 
-	mm      *pluginapi.Client
-	log     utils.Logger
 	conf    config.Service
 	httpOut httpout.Service
+	// aws           upaws.Client
+	// s3AssetBucket string
 }
 
-func MakeService(mm *pluginapi.Client, log utils.Logger, confService config.Service, httpOut httpout.Service) (*Service, error) {
+func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
-		mm:      mm,
-		log:     log,
 		conf:    confService,
 		httpOut: httpOut,
 	}
@@ -42,7 +38,7 @@ func MakeService(mm *pluginapi.Client, log utils.Logger, confService config.Serv
 	s.OAuth2 = &oauth2Store{Service: s}
 	s.Subscription = &subscriptionStore{Service: s}
 
-	conf := confService.GetConfig()
+	conf := confService.Get()
 	var err error
 	s.App, err = makeAppStore(s, conf)
 	if err != nil {

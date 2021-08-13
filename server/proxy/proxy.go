@@ -72,10 +72,10 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 	}
 
 	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		conf := p.conf.GetConfig()
+		conf, _, log := p.conf.Basic()
 		icon, err := normalizeStaticPath(conf, app.AppID, callResponse.Form.Icon)
 		if err != nil {
-			p.log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+			log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
 				"app_id", app.AppID,
 				"icon", callResponse.Form.Icon)
 			callResponse.Form.Icon = ""
@@ -167,7 +167,7 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 		datav = string(data)
 	}
 
-	conf := p.conf.GetConfig()
+	conf := p.conf.Get()
 	cc := contextForApp(&app, apps.Context{}, conf)
 	// Set acting user to bot.
 	cc.ActingUserID = app.BotUserID

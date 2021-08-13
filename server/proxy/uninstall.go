@@ -12,6 +12,8 @@ import (
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -24,8 +26,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
-			p.log.WithError(err).Warnw("OnUninstall failed, uninstalling app anyway",
-				"app_id", app.AppID)
+			log.WithError(err).Warnf("OnUninstall failed, uninstalling app anyway")
 		} else {
 			message = resp.Markdown
 		}
@@ -61,7 +62,6 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 	}
 
 	// in on-prem mode the manifest need to be deleted as every install add a manifest anyway
-	conf := p.conf.GetConfig()
 	if !conf.MattermostCloudMode {
 		if err = p.store.Manifest.DeleteLocal(app.AppID); err != nil {
 			return "", errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
@@ -73,8 +73,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 
-	p.log.Infow("Uninstalled app",
-		"app_id", app.AppID)
+	log.Infof("Uninstalled app.")
 
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 

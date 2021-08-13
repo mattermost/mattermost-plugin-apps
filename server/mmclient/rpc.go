@@ -1,6 +1,8 @@
 package mmclient
 
 import (
+	"io"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -25,6 +27,10 @@ func (r *rpcClient) CreateUserAccessToken(userID, description string) (*model.Us
 
 func (r *rpcClient) RevokeUserAccessToken(tokenID string) error {
 	return r.mm.User.RevokeAccessToken(tokenID)
+}
+
+func (r *rpcClient) SetProfileImage(userID string, content io.Reader) error {
+	return r.mm.User.SetProfileImage(userID, content)
 }
 
 // OAuth section

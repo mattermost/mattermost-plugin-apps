@@ -40,7 +40,7 @@ func (p *Proxy) GetInstalledApps() []apps.App {
 }
 
 func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
-	conf := p.conf.GetConfig()
+	conf := p.conf.Get()
 	out := []apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {

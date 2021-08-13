@@ -15,7 +15,7 @@ func TestGetProvisionData(t *testing.T) {
 	require.True(t, found)
 
 	bundlepath := filepath.Join(testDir, "test-bundle.zip")
-	provisionData, err := GetProvisionDataFromFile(bundlepath, nil)
+	provisionData, err := GetProvisionDataFromFile(bundlepath, utils.NewTestLogger())
 	require.NoError(t, err)
 	require.Equal(t, apps.AppID("com.mattermost.servicenow"), provisionData.Manifest.AppID)
 	require.Len(t, provisionData.LambdaFunctions, 4)

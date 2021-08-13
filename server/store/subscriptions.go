@@ -42,7 +42,7 @@ func (s subscriptionStore) Delete(sub apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (s subscriptionStore) Delete(sub apps.Subscription) error {
 			updated = append(updated, subs[i+1:]...)
 		}
 
-		_, err = s.mm.KV.Set(key, updated)
+		_, err = s.conf.MattermostAPI().KV.Set(key, updated)
 		if err != nil {
 			return errors.Wrap(err, "failed to save subscriptions")
 		}
@@ -71,7 +71,7 @@ func (s subscriptionStore) Delete(sub apps.Subscription) error {
 func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
 	key := subsKey(subject, teamID, channelID)
 	var subs []apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (s subscriptionStore) Save(sub apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
 	var subs []apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (s subscriptionStore) Save(sub apps.Subscription) error {
 		subs = append(subs, sub)
 	}
 
-	_, err = s.mm.KV.Set(key, subs)
+	_, err = s.conf.MattermostAPI().KV.Set(key, subs)
 	if err != nil {
 		return err
 	}

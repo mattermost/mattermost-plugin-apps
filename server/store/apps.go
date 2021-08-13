@@ -64,18 +64,19 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 }
 
 func (s *appStore) Configure(conf config.Config) error {
+	_, mm, log := s.conf.Basic()
 	newInstalled := map[apps.AppID]apps.App{}
 
 	for id, key := range conf.InstalledApps {
 		var app *apps.App
-		err := s.mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
+		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
 		switch {
 		case err != nil:
-			s.log.WithError(err).Errorw("Failed to load app",
+			log.WithError(err).Errorw("Failed to load app",
 				"app_id", id)
 
 		case app == nil:
-			s.log.Errorw("Failed to load app - key not found",
+			log.Errorw("Failed to load app - key not found",
 				"app_id", id,
 				"key", config.KVInstalledAppPrefix+key)
 
@@ -136,7 +137,7 @@ func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
 }
 
 func (s *appStore) Save(app apps.App) error {
-	conf := s.conf.GetConfig()
+	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	data, err := json.Marshal(app)
@@ -148,7 +149,7 @@ func (s *appStore) Save(app apps.App) error {
 		// no change in the data
 		return nil
 	}
-	_, err = s.mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
+	_, err = mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err
 	}
@@ -182,9 +183,9 @@ func (s *appStore) Save(app apps.App) error {
 		return err
 	}
 
-	err = s.mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
+	err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
 	if err != nil {
-		s.log.WithError(err).Warnf("Failed to delete previous App KV value")
+		log.WithError(err).Warnf("Failed to delete previous App KV value")
 	}
 	return nil
 }
@@ -198,13 +199,13 @@ func (s *appStore) Delete(appID apps.AppID) error {
 		return utils.NewNotFoundError(appID)
 	}
 
-	conf := s.conf.GetConfig()
+	conf, mm, _ := s.conf.Basic()
 	sha, ok := conf.InstalledApps[string(appID)]
 	if !ok {
 		return utils.ErrNotFound
 	}
 
-	err := s.mm.KV.Delete(config.KVInstalledAppPrefix + sha)
+	err := mm.KV.Delete(config.KVInstalledAppPrefix + sha)
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
-// // Copyright (c) 2021-present Mattermost, Inc. All Rights Reserved.
-// // See LICENSE.txt for license information.
+// Copyright (c) 2021-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
 
 const fetch = require('node-fetch');
 const express = require('express');

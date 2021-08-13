@@ -32,7 +32,7 @@ func (a *builtinApp) installS3Lookup(creq apps.CallRequest) apps.CallResponse {
 		return apps.NewErrorCallResponse(errors.Errorf("unknown field %q", creq.SelectedField))
 	}
 
-	conf := a.conf.GetConfig()
+	conf := a.conf.Get()
 	up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, a.log)
 	if err != nil {
 		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to initialize AWS access"))

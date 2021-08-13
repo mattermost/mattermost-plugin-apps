@@ -30,7 +30,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf := p.conf.GetConfig()
+	conf, mm, _ := p.conf.Basic()
 	cc := contextForApp(app, *base, conf)
 
 	if expand == nil {
@@ -43,7 +43,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 		}
-		err := utils.EnsureSysAdmin(p.mm, cc.ActingUserID)
+		err := utils.EnsureSysAdmin(mm, cc.ActingUserID)
 		if err != nil {
 			return emptyCC, utils.NewForbiddenError("user is not a sysadmin")
 		}
@@ -54,7 +54,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		}
 		// Try to obtain it from the present session
 		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			session, err = utils.LoadSession(p.mm, in.SessionID, in.ActingUserID)
+			session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
 			if err != nil {
 				return emptyCC, utils.NewForbiddenError("failed to load user session")
 			}
@@ -73,7 +73,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		if cc.ActingUserAccessToken == "" {
 			if session == nil {
 				var err error
-				session, err = utils.LoadSession(p.mm, in.SessionID, in.ActingUserID)
+				session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
 				if err != nil {
 					return emptyCC, utils.NewForbiddenError("failed to load user session")
 				}
@@ -88,7 +88,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.App = stripApp(app, expand.App)
 
 	if expand.ActingUser != "" && base.ActingUserID != "" && base.ActingUser == nil {
-		actingUser, err := p.mm.User.Get(base.ActingUserID)
+		actingUser, err := mm.User.Get(base.ActingUserID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand acting user %s", base.ActingUserID)
 		}
@@ -97,7 +97,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.ActingUser = stripUser(base.ActingUser, expand.ActingUser)
 
 	if expand.Channel != "" && base.ChannelID != "" && base.Channel == nil {
-		ch, err := p.mm.Channel.Get(base.ChannelID)
+		ch, err := mm.Channel.Get(base.ChannelID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand channel %s", base.ChannelID)
 		}
@@ -106,7 +106,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Channel = stripChannel(base.Channel, expand.Channel)
 
 	if expand.Post != "" && base.PostID != "" && base.Post == nil {
-		post, err := p.mm.Post.GetPost(base.PostID)
+		post, err := mm.Post.GetPost(base.PostID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand post %s", base.PostID)
 		}
@@ -115,7 +115,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Post = stripPost(base.Post, expand.Post)
 
 	if expand.RootPost != "" && base.RootPostID != "" && base.RootPost == nil {
-		post, err := p.mm.Post.GetPost(base.RootPostID)
+		post, err := mm.Post.GetPost(base.RootPostID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand root post %s", base.RootPostID)
 		}
@@ -124,7 +124,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.RootPost = stripPost(base.RootPost, expand.RootPost)
 
 	if expand.Team != "" && base.TeamID != "" && base.Team == nil {
-		team, err := p.mm.Team.Get(base.TeamID)
+		team, err := mm.Team.Get(base.TeamID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand team %s", base.TeamID)
 		}
@@ -133,7 +133,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Team = stripTeam(base.Team, expand.Team)
 
 	if expand.User != "" && base.UserID != "" && base.User == nil {
-		user, err := p.mm.User.Get(base.UserID)
+		user, err := mm.User.Get(base.UserID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand user %s", base.UserID)
 		}

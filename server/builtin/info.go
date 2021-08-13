@@ -25,7 +25,7 @@ func (a *builtinApp) infoCommandBinding() apps.Binding {
 // }
 
 func (a *builtinApp) info(creq apps.CallRequest) apps.CallResponse {
-	conf := a.conf.GetConfig()
+	conf := a.conf.Get()
 	return mdResponse("Mattermost Cloud Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
 		conf.Version,

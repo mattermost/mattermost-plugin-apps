@@ -38,7 +38,7 @@ func init() {
 
 	// provision
 	awsCmd.AddCommand(awsProvisionCmd)
-	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with causion in production.")
+	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
 	awsProvisionCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
 	awsProvisionCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
 
@@ -335,5 +335,6 @@ func makeProvisionAWSClient() (upaws.Client, error) {
 		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
 	}
 
-	return upaws.MakeClient(accessKey, secretKey, region, log, "Provisioner (appsctl)")
+	return upaws.MakeClient(accessKey, secretKey, region,
+		log.With("purpose", "appsctl provisioner"))
 }

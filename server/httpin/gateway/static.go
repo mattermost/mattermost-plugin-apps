@@ -13,6 +13,7 @@ import (
 
 func (g *gateway) static(w http.ResponseWriter, req *http.Request, _ proxy.Incoming) {
 	appID := appIDVar(req)
+	log := g.conf.Logger().With("app_id", appID)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
@@ -33,9 +34,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _ proxy.Incom
 
 	body, status, err := g.proxy.GetStatic(appID, assetName)
 	if err != nil {
-		g.log.WithError(err).Debugw("Failed to get asset",
-			"app_id", appID,
-			"asset_name", assetName)
+		log.WithError(err).Debugw("Failed to get asset", "asset_name", assetName)
 		httputils.WriteError(w, err)
 		return
 	}
