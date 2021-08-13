@@ -20,18 +20,16 @@ func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.
 		return
 	}
 
-	cc := creq.Context
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
-	cc.ExpandedContext = apps.ExpandedContext{}
-	cc, err = a.cleanUserAgentContext(in.ActingUserID, cc)
+	creq.Context.ExpandedContext = apps.ExpandedContext{}
+	creq.Context, err = a.cleanUserAgentContext(in.ActingUserID, creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
 	}
-	creq.Context = cc
 
-	res := a.proxy.Call(in, creq.Context.AppID, *creq)
+	res := a.proxy.Call(in, *creq)
 
 	a.conf.Logger().Debugw(
 		"Received call response",

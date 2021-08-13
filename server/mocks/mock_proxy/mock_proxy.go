@@ -66,17 +66,17 @@ func (mr *MockServiceMockRecorder) AddLocalManifest(arg0 interface{}) *gomock.Ca
 }
 
 // Call mocks base method.
-func (m *MockService) Call(arg0 proxy.Incoming, arg1 apps.AppID, arg2 apps.CallRequest) apps.ProxyCallResponse {
+func (m *MockService) Call(arg0 proxy.Incoming, arg1 apps.CallRequest) apps.ProxyCallResponse {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Call", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Call", arg0, arg1)
 	ret0, _ := ret[0].(apps.ProxyCallResponse)
 	return ret0
 }
 
 // Call indicates an expected call of Call.
-func (mr *MockServiceMockRecorder) Call(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1)
 }
 
 // CanDeploy mocks base method.

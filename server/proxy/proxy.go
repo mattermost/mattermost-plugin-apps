@@ -18,14 +18,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) Call(in Incoming, appID apps.AppID, creq apps.CallRequest) apps.ProxyCallResponse {
+func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
 	if creq.Context.AppID == "" {
 		return apps.NewProxyCallResponse(
 			apps.NewErrorCallResponse(
 				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
 	}
 
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(creq.Context.AppID)
 	if err != nil {
 		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
 	}
