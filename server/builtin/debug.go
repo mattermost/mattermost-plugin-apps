@@ -22,7 +22,7 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 }
 
 func (a *builtinApp) debugClean(creq apps.CallRequest) apps.CallResponse {
-	_ = a.mm.KV.DeleteAll()
+	_ = a.conf.MattermostAPI().KV.DeleteAll()
 	_ = a.conf.StoreConfig(config.StoredConfig{})
 	return mdResponse("Deleted all KV records and emptied the config.")
 }

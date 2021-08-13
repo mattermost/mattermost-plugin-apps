@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"path"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -52,8 +51,6 @@ const (
 
 type builtinApp struct {
 	conf    config.Service
-	mm      *pluginapi.Client
-	log     utils.Logger
 	proxy   proxy.Service
 	store   *store.Service
 	httpOut httpout.Service

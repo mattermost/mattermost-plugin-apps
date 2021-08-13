@@ -17,7 +17,7 @@ func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
 		a.infoCommandBinding(),
 	}
 
-	if utils.EnsureSysAdmin(a.mm, creq.Context.ActingUserID) == nil {
+	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
 		commands = append(commands,
 			a.installCommandBinding(),
 			a.uninstallCommandBinding(),

@@ -3,6 +3,7 @@
 
 import express from 'express';
 import serverless from 'serverless-http';
+global.fetch = require('node-fetch');
 
 const app = new express();
 app.use(express.json());
@@ -73,7 +74,7 @@ app.post('/send/submit', async (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
-    const submittedMessage = call.values.message;
+    const submittedMessage = call.values?.message;
     if (submittedMessage) {
         message += ' ...and ' + submittedMessage + '!';
     }
@@ -111,7 +112,7 @@ app.post('/send/submit', async (req, res) => {
 
     res.json({
         type: 'ok',
-        markdown: 'Created a post in your DM channel.'
+        markdown: 'Created a post in your DM channel.',
     });
 });
 

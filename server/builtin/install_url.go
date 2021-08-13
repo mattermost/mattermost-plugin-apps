@@ -12,7 +12,20 @@ var installURLCall = apps.Call{
 }
 
 func (a *builtinApp) installURLForm(creq apps.CallRequest) apps.CallResponse {
-	return appIDForm(installURLCall)
+	return formResponse(apps.Form{
+		Fields: []apps.Field{
+			{
+				Name:                 fURL,
+				Type:                 apps.FieldTypeText,
+				Description:          "enter the URL for the app's manifest.json",
+				Label:                fURL,
+				AutocompleteHint:     "URL",
+				AutocompletePosition: 1,
+			},
+		},
+		Call: &installURLCall,
+	})
+
 }
 
 func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
