@@ -28,7 +28,7 @@
 			{
 				"call_path": "/",
 				"handler": "index.kubeless",
-				"file": "function.zip",
+				"file": "hello.zip",
 				"deps_file": "package.json",
 				"runtime": "nodejs14"
 			}
