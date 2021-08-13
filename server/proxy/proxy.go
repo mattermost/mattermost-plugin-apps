@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -219,40 +221,45 @@ func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 		return err
 	}
 
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	expander := p.newExpander(cc, p.conf, p.store, "")
 
-	notify := func(sub *apps.Subscription) error {
-		call := sub.Call
-		if call == nil {
-			return errors.New("nothing to call")
-		}
-
-		callRequest := &apps.CallRequest{Call: *call}
-		app, err := p.store.App.Get(sub.AppID)
-		if err != nil {
-			return err
-		}
-		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
-		if err != nil {
-			return err
-		}
-		callRequest.Context.Subject = subj
-
-		up, err := p.upstreamForApp(app)
-		if err != nil {
-			return err
-		}
-		return upstream.Notify(up, callRequest)
-	}
-
 	for _, sub := range subs {
-		err := notify(sub)
+		err := p.notifyForSubscription(cc, expander, sub)
 		if err != nil {
-			// TODO log err
-			continue
+			log := p.conf.Logger().WithError(err).With("app_id", sub.AppID, "subject", sub.Subject)
+			log.Debugf("Error sending subscription notification to app")
 		}
 	}
+
 	return nil
+}
+
+func (p *Proxy) notifyForSubscription(cc *apps.Context, expander *expander, sub *apps.Subscription) error {
+	call := sub.Call
+	if call == nil {
+		return errors.New("nothing to call")
+	}
+
+	callRequest := &apps.CallRequest{Call: *call}
+	app, err := p.store.App.Get(sub.AppID)
+	if err != nil {
+		return err
+	}
+	callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
+	if err != nil {
+		return err
+	}
+	callRequest.Context.Subject = sub.Subject
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+	return upstream.Notify(up, callRequest)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
@@ -291,6 +298,100 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 	}
 
 	return upstream.Notify(up, creq)
+}
+
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
+	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get post_created subscriptions")
+	}
+
+	subs := []*apps.Subscription{}
+	subs = append(subs, postSubs...)
+	mentions := model.PossibleAtMentions(post.Message)
+
+	botCanRead := map[string]bool{}
+	if len(mentions) > 0 {
+		appsMap := p.store.App.AsMap()
+		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		if err != nil && err != utils.ErrNotFound {
+			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+		}
+
+		for _, sub := range mentionSubs {
+			app := appsMap[sub.AppID]
+			if app == nil {
+				continue
+			}
+			for _, mention := range mentions {
+				if mention == app.BotUsername {
+					_, ok := botCanRead[app.BotUserID]
+					if ok {
+						// already processed this bot for this post
+						continue
+					}
+
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					botCanRead[app.BotUserID] = canRead
+
+					if canRead {
+						subs = append(subs, sub)
+					}
+				}
+			}
+		}
+	}
+
+	if len(subs) == 0 {
+		return nil
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyUserHasJoinedChannel(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func (p *Proxy) NotifyUserHasLeftChannel(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserHasJoinedTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserHasLeftTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subject) error {
+	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
+	}
+
+	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
+	}
+
+	subs := []*apps.Subscription{}
+	subs = append(subs, userSubs...)
+
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app := appsMap[sub.AppID]
+		if app == nil {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
