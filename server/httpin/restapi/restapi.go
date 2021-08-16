@@ -5,29 +5,23 @@ import (
 
 	"github.com/gorilla/mux"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type restapi struct {
-	mm          *pluginapi.Client
-	log         utils.Logger
 	conf        config.Service
 	proxy       proxy.Service
 	appServices appservices.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, appServices appservices.Service) {
+func Init(router *mux.Router, conf config.Service, proxy proxy.Service, appServices appservices.Service) {
+	mm := conf.MattermostAPI()
 	a := &restapi{
-		mm:          mm,
-		log:         log,
 		conf:        conf,
 		proxy:       proxy,
 		appServices: appServices,
@@ -42,6 +36,7 @@ func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf confi
 		httputils.CheckAuthorized(mm, a.handleCall)).Methods("POST")
 
 	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleSubscribe).Methods("POST")
+	subrouter.HandleFunc(mmclient.PathSubscribe, a.handleGetSubscriptions).Methods("GET")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, a.handleUnsubscribe).Methods("POST")
 
 	// Bot and OAuthApps checks

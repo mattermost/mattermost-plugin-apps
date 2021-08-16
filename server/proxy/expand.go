@@ -3,8 +3,6 @@ package proxy
 import (
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -17,17 +15,15 @@ type expander struct {
 	// Context to expand (can be expanded multiple times on the same expander)
 	*apps.Context
 
-	mm        *pluginapi.Client
 	conf      config.Service
 	store     *store.Service
 	sessionID string
 	session   *model.Session
 }
 
-func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf config.Service, store *store.Service, sessionID string) *expander {
+func (p *Proxy) newExpander(cc *apps.Context, conf config.Service, store *store.Service, sessionID string) *expander {
 	e := &expander{
 		Context:   cc,
-		mm:        mm,
 		conf:      conf,
 		store:     store,
 		sessionID: sessionID,
@@ -36,11 +32,12 @@ func (p *Proxy) newExpander(cc *apps.Context, mm *pluginapi.Client, conf config.
 }
 
 func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Context, error) {
+	mm := e.conf.MattermostAPI()
 	clone := *e.Context
 	clone.AppID = app.AppID
 
 	if e.MattermostSiteURL == "" {
-		mmconf := e.conf.GetMattermostConfig().Config()
+		mmconf := e.conf.MattermostConfig().Config()
 		if mmconf.ServiceSettings.SiteURL != nil {
 			e.MattermostSiteURL = *mmconf.ServiceSettings.SiteURL
 		}
@@ -61,7 +58,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 			return nil, utils.NewUnauthorizedError("a user session is required")
 		}
 		if e.session == nil {
-			session, err := utils.LoadSession(e.mm, e.sessionID, e.Context.ActingUserID)
+			session, err := utils.LoadSession(mm, e.sessionID, e.Context.ActingUserID)
 			if err != nil {
 				return nil, utils.NewUnauthorizedError(err)
 			}
@@ -85,7 +82,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.App = stripApp(app, expand.App)
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
-		actingUser, err := e.mm.User.Get(e.ActingUserID)
+		actingUser, err := mm.User.Get(e.ActingUserID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand acting user %s", e.ActingUserID)
 		}
@@ -94,7 +91,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.ActingUser = stripUser(e.ActingUser, expand.ActingUser)
 
 	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
-		ch, err := e.mm.Channel.Get(e.ChannelID)
+		ch, err := mm.Channel.Get(e.ChannelID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand channel %s", e.ChannelID)
 		}
@@ -103,7 +100,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.Channel = stripChannel(e.Channel, expand.Channel)
 
 	if expand.Post != "" && e.PostID != "" && e.Post == nil {
-		post, err := e.mm.Post.GetPost(e.PostID)
+		post, err := mm.Post.GetPost(e.PostID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand post %s", e.PostID)
 		}
@@ -112,7 +109,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.Post = stripPost(e.Post, expand.Post)
 
 	if expand.RootPost != "" && e.RootPostID != "" && e.RootPost == nil {
-		post, err := e.mm.Post.GetPost(e.RootPostID)
+		post, err := mm.Post.GetPost(e.RootPostID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand root post %s", e.RootPostID)
 		}
@@ -121,7 +118,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.RootPost = stripPost(e.RootPost, expand.RootPost)
 
 	if expand.Team != "" && e.TeamID != "" && e.Team == nil {
-		team, err := e.mm.Team.Get(e.TeamID)
+		team, err := mm.Team.Get(e.TeamID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand team %s", e.TeamID)
 		}
@@ -133,7 +130,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	// https://mattermost.atlassian.net/browse/MM-30403
 
 	if expand.User != "" && e.UserID != "" && e.User == nil {
-		user, err := e.mm.User.Get(e.UserID)
+		user, err := mm.User.Get(e.UserID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand user %s", e.UserID)
 		}
@@ -142,7 +139,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.User = stripUser(e.User, expand.User)
 
 	if app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
-		conf := e.conf.GetConfig()
+		conf := e.conf.Get()
 		if expand.OAuth2App != "" {
 			clone.ExpandedContext.OAuth2.ClientID = app.RemoteOAuth2.ClientID
 			clone.ExpandedContext.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret

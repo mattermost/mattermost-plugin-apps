@@ -22,7 +22,7 @@ func (s *service) executeEnable(params *commandParams) (*model.CommandResponse, 
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.EnableApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *service) executeDisable(params *commandParams) (*model.CommandResponse,
 
 	appID := apps.AppID(params.current[0])
 
-	cc := s.conf.GetConfig().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
 	out, err := s.proxy.DisableApp(client, params.commandArgs.Session.Id, cc, appID)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -24,7 +25,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -318,7 +318,7 @@ func TestGetBindingsCommands(t *testing.T) {
 			bindings: []*apps.Binding{
 				{
 					Location:    apps.LocationCommand,
-					Label:       "base command label",
+					Label:       "baseCommandLabel",
 					Icon:        "base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
@@ -377,7 +377,7 @@ func TestGetBindingsCommands(t *testing.T) {
 			bindings: []*apps.Binding{
 				{
 					Location:    apps.LocationCommand,
-					Label:       "app2 base command label",
+					Label:       "app2BaseCommandLabel",
 					Icon:        "app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
@@ -570,21 +570,99 @@ func TestDuplicateCommand(t *testing.T) {
 	EqualBindings(t, expected, out)
 }
 
+func TestInvalidCommand(t *testing.T) {
+	testData := []bindingTestData{
+		{
+			app: &apps.App{
+				Manifest: apps.Manifest{
+					AppID:       apps.AppID("app1"),
+					AppType:     apps.AppTypeBuiltin,
+					DisplayName: "App 1",
+				},
+				GrantedLocations: apps.Locations{
+					apps.LocationCommand,
+				},
+			},
+			bindings: []*apps.Binding{
+				{
+					Location:    apps.LocationCommand,
+					Label:       "baseCommandLabel",
+					Icon:        "base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "sub1 icon 1",
+						},
+						{
+							Location: "multiple word",
+							Label:    "multiple word",
+							Icon:     "sub1 icon 2",
+						},
+						{
+							Location: "sub2",
+							Label:    "multiple word",
+							Icon:     "sub1 icon 1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []*apps.Binding{
+		{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					AppID:       apps.AppID("app1"),
+					Location:    "app1",
+					Label:       "app1",
+					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							AppID:    apps.AppID("app1"),
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/sub1 icon 1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := newTestProxyForBindings(testData, ctrl)
+
+	cc := &apps.Context{}
+	out, err := proxy.GetBindings("", "", cc)
+	require.NoError(t, err)
+	EqualBindings(t, expected, out)
+}
+
 func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
 	testAPI := &plugintest.API{}
 	testDriver := &plugintest.Driver{}
 	mm := pluginapi.NewClient(testAPI, testDriver)
 
-	conf := config.Config{
+	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	confService := config.NewTestConfigService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
-	}
-	confService := config.NewTestConfigurator(conf).WithMattermostConfig(model.Config{
+	}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
-	})
+	}).WithMattermostAPI(mm)
 
-	s := store.NewService(mm, utils.NewTestLogger(), confService, nil, "")
+	s := store.NewService(confService, nil, "")
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -610,8 +688,6 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 	appStore.EXPECT().AsMap().Return(appList)
 
 	p := &Proxy{
-		mm:               mm,
-		log:              utils.NewTestLogger(),
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             confService,

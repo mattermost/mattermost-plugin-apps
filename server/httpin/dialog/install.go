@@ -11,8 +11,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -116,13 +116,14 @@ func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, co
 }
 
 func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
+	_, mm, log := d.conf.Basic()
 	actingUserID := req.Header.Get("Mattermost-User-Id")
 	if actingUserID == "" {
 		respondWithError(w, http.StatusUnauthorized, errors.New("user not logged in"))
 		return
 	}
 
-	if err := utils.EnsureSysAdmin(d.mm, actingUserID); err != nil {
+	if err := utils.EnsureSysAdmin(mm, actingUserID); err != nil {
 		respondWithError(w, http.StatusForbidden, err)
 		return
 	}
@@ -164,7 +165,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client, err := mmclient.NewHTTPClient(d.mm, d.conf.GetConfig(), sessionID, actingUserID)
+	client, err := mmclient.NewHTTPClient(d.conf, sessionID, actingUserID)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 		return
@@ -178,17 +179,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
 	}
-	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
+	cc = d.conf.Get().SetContextDefaultsForApp(stateData.AppID, cc)
 
 	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret, "")
 	if err != nil {
-		d.log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
+		log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
 		respondWithError(w, http.StatusInternalServerError, err)
 
 		out = fmt.Sprintf("Install failed. Error: **%s**\n", err.Error())
 	}
 
-	d.mm.Post.SendEphemeralPost(actingUserID, &model.Post{
+	mm.Post.SendEphemeralPost(actingUserID, &model.Post{
 		ChannelId: dialogRequest.ChannelId,
 		Message:   out,
 	})
