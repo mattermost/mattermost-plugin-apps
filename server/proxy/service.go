@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -37,8 +38,14 @@ type Service interface {
 	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
 	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
+
 	Notify(cc *apps.Context, subj apps.Subject) error
 	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
+	NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error
+	NotifyUserHasJoinedChannel(cc *apps.Context) error
+	NotifyUserHasLeftChannel(cc *apps.Context) error
+	NotifyUserHasJoinedTeam(cc *apps.Context) error
+	NotifyUserHasLeftTeam(cc *apps.Context) error
 
 	AddLocalManifest(actingUserID string, m *apps.Manifest) (string, error)
 	AppIsEnabled(app *apps.App) bool
