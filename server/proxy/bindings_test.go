@@ -14,7 +14,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -317,8 +319,8 @@ func TestGetBindingsCommands(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "base command location",
-							Label:       "base command label",
+							Location:    "baseCommandLocation",
+							Label:       "baseCommandLabel",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
@@ -381,8 +383,8 @@ func TestGetBindingsCommands(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "app2 base command location",
-							Label:       "app2 base command label",
+							Location:    "app2BaseCommandLocation",
+							Label:       "app2BaseCommandLabel",
 							Icon:        "app2 base command icon",
 							Hint:        "app2 base command hint",
 							Description: "app2 base command description",
@@ -408,8 +410,8 @@ func TestGetBindingsCommands(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "base command location",
-					Label:       "base command label",
+					Location:    "baseCommandLocation",
+					Label:       "baseCommandLabel",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
@@ -457,8 +459,8 @@ func TestGetBindingsCommands(t *testing.T) {
 				},
 				{
 					AppID:       apps.AppID("app2"),
-					Location:    "app2 base command location",
-					Label:       "app2 base command label",
+					Location:    "app2BaseCommandLocation",
+					Label:       "app2BaseCommandLabel",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
@@ -506,8 +508,8 @@ func TestDuplicateCommand(t *testing.T) {
 					Location: apps.LocationCommand,
 					Bindings: []*apps.Binding{
 						{
-							Location:    "base command location",
-							Label:       "base command label",
+							Location:    "baseCommandLocation",
+							Label:       "baseCommandLabel",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
@@ -553,8 +555,90 @@ func TestDuplicateCommand(t *testing.T) {
 			Bindings: []*apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
-					Location:    "base command location",
-					Label:       "base command label",
+					Location:    "baseCommandLocation",
+					Label:       "baseCommandLabel",
+					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
+					Hint:        "base command hint",
+					Description: "base command description",
+					Bindings: []*apps.Binding{
+						{
+							AppID:    apps.AppID("app1"),
+							Location: "sub1",
+							Label:    "sub1",
+							Icon:     "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/sub1 icon 1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := newTestProxyForBindings(t, testData, ctrl)
+
+	cc := &apps.Context{}
+	out, err := proxy.GetBindings("", "", cc)
+	require.NoError(t, err)
+	EqualBindings(t, expected, out)
+}
+
+func TestInvalidCommand(t *testing.T) {
+	testData := []bindingTestData{
+		{
+			app: &apps.App{
+				Manifest: apps.Manifest{
+					AppID:       apps.AppID("app1"),
+					AppType:     apps.AppTypeBuiltin,
+					DisplayName: "App 1",
+				},
+				GrantedLocations: apps.Locations{
+					apps.LocationCommand,
+				},
+			},
+			bindings: []*apps.Binding{
+				{
+					Location: apps.LocationCommand,
+					Bindings: []*apps.Binding{
+						{
+							Location:    "baseCommandLocation",
+							Label:       "baseCommandLabel",
+							Icon:        "base command icon",
+							Hint:        "base command hint",
+							Description: "base command description",
+							Bindings: []*apps.Binding{
+								{
+									Location: "sub1",
+									Label:    "sub1",
+									Icon:     "sub1 icon 1",
+								},
+								{
+									Location: "multiple word",
+									Label:    "multiple word",
+									Icon:     "sub1 icon 2",
+								},
+								{
+									Location: "sub2",
+									Label:    "multiple word",
+									Icon:     "sub1 icon 1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []*apps.Binding{
+		{
+			Location: apps.LocationCommand,
+			Bindings: []*apps.Binding{
+				{
+					AppID:       apps.AppID("app1"),
+					Location:    "baseCommandLocation",
+					Label:       "baseCommandLabel",
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
@@ -583,13 +667,17 @@ func TestDuplicateCommand(t *testing.T) {
 }
 
 func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
+	testAPI := &plugintest.API{}
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
+
 	confService := config.NewTestConfigService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
 	}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
-	})
+	}).WithMattermostAPI(mm)
 
 	s, err := store.MakeService(confService, nil)
 	require.NoError(tb, err)
