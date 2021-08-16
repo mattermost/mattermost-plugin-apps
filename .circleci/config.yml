@@ -152,10 +152,6 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
-      - run:
-          name: Start hello-world App
-          command: make hello_world
-          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:
@@ -164,6 +160,7 @@ jobs:
           command: |
             export FAILURE_MESSAGE="At least one test has failed."
             export RESULTS_OUTPUT="results-output.txt"
+            make hello_world &
             cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
       - *save_cypress_cache
       - store_artifacts:
@@ -256,10 +253,6 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
-      - run:
-          name: Start hello-world App
-          command: make hello_world
-          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:
@@ -268,6 +261,7 @@ jobs:
           command: |
             export FAILURE_MESSAGE="At least one test has failed."
             export RESULTS_OUTPUT="results-output.txt"
+            make hello_world &
             cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
       - *save_cypress_cache
       - store_artifacts:
