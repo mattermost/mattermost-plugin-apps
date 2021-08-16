@@ -194,7 +194,9 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			b.Bindings = scanned
 		}
 
-		p.cleanForm(b.Form)
+		if b.Form != nil {
+			cleanForm(*b.Form)
+		}
 
 		out = append(out, &b)
 	}
