@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -66,25 +68,31 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 	}
 	creq.Context = cc
 
-	callResponse := upstream.Call(up, *app, creq)
-	if callResponse.Type == "" {
-		callResponse.Type = apps.CallResponseTypeOK
+	cresp := upstream.Call(up, *app, creq)
+	if cresp.Type == "" {
+		cresp.Type = apps.CallResponseTypeOK
 	}
 
-	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		conf, _, log := p.conf.Basic()
-		icon, err := normalizeStaticPath(conf, app.AppID, callResponse.Form.Icon)
-		if err != nil {
-			log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
-				"app_id", app.AppID,
-				"icon", callResponse.Form.Icon)
-			callResponse.Form.Icon = ""
-		} else {
-			callResponse.Form.Icon = icon
+	if cresp.Form != nil {
+		if cresp.Form.Icon != "" {
+			conf, _, log := p.conf.Basic()
+			log = log.With("app_id", app.AppID)
+			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
+			if err != nil {
+				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				cresp.Form.Icon = ""
+			} else {
+				cresp.Form.Icon = icon
+			}
+			clean, problems := cleanForm(*cresp.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugw("invalid form")
+			}
+			cresp.Form = &clean
 		}
 	}
 
-	return callResponse
+	return cresp
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -109,42 +117,45 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 		return err
 	}
 
-	notify := func(sub apps.Subscription) error {
-		call := sub.Call
-		if call == nil {
-			return errors.New("nothing to call")
-		}
+	return p.notify(base, subs)
+}
 
-		creq := apps.CallRequest{Call: *call}
-		app, err := p.store.App.Get(sub.AppID)
-		if err != nil {
-			return err
-		}
-		if !p.appIsEnabled(app) {
-			return errors.Errorf("%s is disabled", app.AppID)
-		}
-
-		creq.Context, err = p.expandContext(Incoming{}, app, &base, creq.Call.Expand)
-		if err != nil {
-			return err
-		}
-		creq.Context.Subject = subj
-
-		up, err := p.upstreamForApp(app)
-		if err != nil {
-			return err
-		}
-		return upstream.Notify(up, *app, creq)
-	}
-
+func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := notify(sub)
+		err := p.notifyForSubscription(&base, sub)
 		if err != nil {
-			// TODO log err
-			continue
+			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
+				"app_id", sub.AppID,
+				"subject", sub.Subject)
 		}
 	}
+
 	return nil
+}
+
+func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription) error {
+	creq := apps.CallRequest{
+		Call: sub.Call,
+	}
+	app, err := p.store.App.Get(sub.AppID)
+	if err != nil {
+		return err
+	}
+	if !p.appIsEnabled(app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
+
+	creq.Context, err = p.expandContext(Incoming{}, app, base, sub.Call.Expand)
+	if err != nil {
+		return err
+	}
+	creq.Context.Subject = sub.Subject
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return err
+	}
+	return upstream.Notify(up, *app, creq)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath string) error {
@@ -183,6 +194,100 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 			"data": datav,
 		},
 	})
+}
+
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
+	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get post_created subscriptions")
+	}
+
+	subs := []apps.Subscription{}
+	subs = append(subs, postSubs...)
+	mentions := model.PossibleAtMentions(post.Message)
+
+	botCanRead := map[string]bool{}
+	if len(mentions) > 0 {
+		appsMap := p.store.App.AsMap()
+		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		if err != nil && err != utils.ErrNotFound {
+			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+		}
+
+		for _, sub := range mentionSubs {
+			app, ok := appsMap[sub.AppID]
+			if !ok {
+				continue
+			}
+			for _, mention := range mentions {
+				if mention == app.BotUsername {
+					_, ok := botCanRead[app.BotUserID]
+					if ok {
+						// already processed this bot for this post
+						continue
+					}
+
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					botCanRead[app.BotUserID] = canRead
+
+					if canRead {
+						subs = append(subs, sub)
+					}
+				}
+			}
+		}
+	}
+
+	if len(subs) == 0 {
+		return nil
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func (p *Proxy) NotifyUserHasLeftChannel(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserHasJoinedTeam(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
+	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
+	}
+
+	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
+	}
+
+	subs := []apps.Subscription{}
+	subs = append(subs, userSubs...)
+
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app, ok := appsMap[sub.AppID]
+		if !ok {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {

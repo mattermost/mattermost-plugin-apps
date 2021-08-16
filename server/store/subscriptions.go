@@ -6,15 +6,18 @@ package store
 import (
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type SubscriptionStore interface {
-	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
-	Save(sub apps.Subscription) error
 	Delete(apps.Subscription) error
+	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
+	List() ([]apps.Subscription, error)
+	Save(sub apps.Subscription) error
 }
 
 type subscriptionStore struct {
@@ -77,6 +80,25 @@ func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) (
 	}
 	if len(subs) == 0 {
 		return nil, utils.ErrNotFound
+	}
+	return subs, nil
+}
+
+func (s subscriptionStore) List() ([]apps.Subscription, error) {
+	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
+	if err != nil {
+		return nil, err
+	}
+
+	subs := []apps.Subscription{}
+	for _, key := range keys {
+		sub := []apps.Subscription{}
+		err := s.conf.MattermostAPI().KV.Get(key, &sub)
+		if err != nil {
+			return nil, err
+		}
+
+		subs = append(subs, sub...)
 	}
 	return subs, nil
 }

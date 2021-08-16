@@ -180,8 +180,8 @@ func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 	return &c, nil
 }
 
-func NewCall(url string) *Call {
-	c := &Call{
+func NewCall(url string) Call {
+	c := Call{
 		Path: url,
 	}
 	return c

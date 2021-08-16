@@ -14,6 +14,21 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in pro
 	a.handleSubscribeCore(w, r, in, true)
 }
 
+func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+	actingUserID := in.ActingUserID
+	subs, err := a.appServices.GetSubscriptions(actingUserID)
+	if err != nil {
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(subs)
+	if err != nil {
+		a.conf.Logger().WithError(err).Errorf("Error marshaling subscriptions")
+	}
+}
+
 func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	a.handleSubscribeCore(w, r, in, false)
 }

@@ -155,23 +155,38 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 			User: user,
 		},
 	}
-	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
+	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
+	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserJoinedChannel)
+	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
+	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserLeftChannel)
+	err := p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserLeftChannel)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
+	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm), apps.SubjectUserJoinedTeam)
+	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
+	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm), apps.SubjectUserLeftTeam)
+	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
+	}
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
@@ -196,7 +211,10 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 			Post: post,
 		},
 	}
-	_ = p.proxy.Notify(cc, apps.SubjectPostCreated)
+	err = p.proxy.NotifyMessageHasBeenPosted(post, cc)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
+	}
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {

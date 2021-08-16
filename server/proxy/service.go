@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -52,8 +54,13 @@ type Service interface {
 	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
 
 	// User-less notification sinks.
-	Notify(cc apps.Context, subj apps.Subject) error
+	Notify(apps.Context, apps.Subject) error
 	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
+	NotifyUserHasJoinedChannel(apps.Context) error
+	NotifyUserHasLeftChannel(apps.Context) error
+	NotifyUserHasJoinedTeam(apps.Context) error
+	NotifyUserHasLeftTeam(apps.Context) error
 
 	// Internal go API used by other packages.
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
