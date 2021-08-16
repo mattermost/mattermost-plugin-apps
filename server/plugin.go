@@ -15,7 +15,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -123,7 +122,6 @@ func (p *Plugin) OnActivate() error {
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
-		http_hello.Init,
 	)
 
 	p.command, err = command.MakeService(p.conf, p.proxy, p.httpOut)
