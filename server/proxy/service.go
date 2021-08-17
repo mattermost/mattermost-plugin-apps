@@ -24,6 +24,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -82,41 +83,39 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 	}
 }
 
+func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
+	if isAppTypeSupported(newConfig, typ) == nil {
+		up, err := makef()
+		switch {
+		case errors.Cause(err) == utils.ErrNotFound:
+			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
+		case err != nil:
+			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
+		default:
+			p.upstreams.Store(typ, up)
+			log.Debugf("Initialized %s upstream.", typ)
+		}
+	} else {
+		p.upstreams.Delete(typ)
+		log.Debugf("Removed %s upstream.", typ)
+	}
+}
+
 func (p *Proxy) Configure(conf config.Config) error {
 	_, mm, log := p.conf.Basic()
 
-	if isAppTypeSupported(conf, apps.AppTypeHTTP) == nil {
-		p.upstreams.Store(apps.AppTypeHTTP, uphttp.NewUpstream(p.httpOut))
-	} else {
-		p.upstreams.Delete(apps.AppTypeHTTP)
-	}
-
-	if isAppTypeSupported(conf, apps.AppTypeAWSLambda) == nil {
-		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize AWS upstream")
-		}
-		p.upstreams.Store(apps.AppTypeAWSLambda, up)
-	} else {
-		p.upstreams.Delete(apps.AppTypeAWSLambda)
-	}
-
-	if isAppTypeSupported(conf, apps.AppTypePlugin) == nil {
-		p.upstreams.Store(apps.AppTypePlugin, upplugin.NewUpstream(&mm.Plugin))
-	} else {
-		p.upstreams.Delete(apps.AppTypePlugin)
-	}
-
-	if isAppTypeSupported(conf, apps.AppTypeKubeless) == nil {
-		up, err := upkubeless.MakeUpstream()
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize Kubeless upstream")
-		}
-		p.upstreams.Store(apps.AppTypeKubeless, up)
-	} else {
-		p.upstreams.Delete(apps.AppTypeKubeless)
-	}
-
+	p.initUpstream(apps.AppTypeHTTP, conf, log, func() (upstream.Upstream, error) {
+		return uphttp.NewUpstream(p.httpOut), nil
+	})
+	p.initUpstream(apps.AppTypeAWSLambda, conf, log, func() (upstream.Upstream, error) {
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+	})
+	p.initUpstream(apps.AppTypePlugin, conf, log, func() (upstream.Upstream, error) {
+		return upplugin.NewUpstream(&mm.Plugin), nil
+	})
+	p.initUpstream(apps.AppTypeKubeless, conf, log, func() (upstream.Upstream, error) {
+		return upkubeless.MakeUpstream()
+	})
 	return nil
 }
 
