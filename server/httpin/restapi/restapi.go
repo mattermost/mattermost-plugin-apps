@@ -43,6 +43,7 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 	// App Service API, intended to be used by Apps. Subscriptions, KV, OAuth2
 	// services.
 	subrouter.HandleFunc(mmclient.PathSubscribe, proxy.RequireSysadmin(mm, a.handleSubscribe)).Methods("POST")
+	subrouter.HandleFunc(mmclient.PathSubscribe, proxy.RequireSysadmin(mm, a.handleGetSubscriptions)).Methods("GET")
 	subrouter.HandleFunc(mmclient.PathUnsubscribe, proxy.RequireSysadmin(mm, a.handleUnsubscribe)).Methods("POST")
 	subrouter.HandleFunc(mmclient.PathKV+"/{prefix}/{key}", proxy.RequireUser(a.kvGet)).Methods("GET")
 	subrouter.HandleFunc(mmclient.PathKV+"/{key}", proxy.RequireUser(a.kvGet)).Methods("GET")

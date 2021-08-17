@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -575,7 +574,7 @@ func TestUserHasBeenCreated(t *testing.T) {
 	}
 }
 
-func runNotifyTest(t *testing.T, a []apps.App, tc notifyTestcase) {
+func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	ctrl := gomock.NewController(t)
 
 	conf, testAPI := config.NewTestService(&config.Config{
@@ -588,8 +587,6 @@ func runNotifyTest(t *testing.T, a []apps.App, tc notifyTestcase) {
 		},
 	})
 
-	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-
 	s, err := store.MakeService(conf, nil)
 	require.NoError(t, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
@@ -598,7 +595,8 @@ func runNotifyTest(t *testing.T, a []apps.App, tc notifyTestcase) {
 	appMap := map[apps.AppID]apps.App{}
 	upMap := map[apps.AppID]upstream.Upstream{}
 	upMockMap := map[apps.AppID]*mock_upstream.MockUpstream{}
-	for _, app := range a {
+	for i := range allApps {
+		app := allApps[i]
 		appMap[app.AppID] = app
 		appStore.EXPECT().Get(app.AppID).Return(&app, nil).AnyTimes()
 

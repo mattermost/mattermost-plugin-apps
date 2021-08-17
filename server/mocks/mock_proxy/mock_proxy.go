@@ -303,11 +303,7 @@ func (mr *MockServiceMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // NotifyMessageHasBeenPosted mocks base method.
-<<<<<<< HEAD
 func (m *MockService) NotifyMessageHasBeenPosted(arg0 *model.Post, arg1 apps.Context) error {
-=======
-func (m *MockService) NotifyMessageHasBeenPosted(arg0 *model.Post, arg1 *apps.Context) error {
->>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyMessageHasBeenPosted", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -335,11 +331,7 @@ func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interfac
 }
 
 // NotifyUserHasJoinedChannel mocks base method.
-<<<<<<< HEAD
 func (m *MockService) NotifyUserHasJoinedChannel(arg0 apps.Context) error {
-=======
-func (m *MockService) NotifyUserHasJoinedChannel(arg0 *apps.Context) error {
->>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyUserHasJoinedChannel", arg0)
 	ret0, _ := ret[0].(error)
@@ -353,11 +345,7 @@ func (mr *MockServiceMockRecorder) NotifyUserHasJoinedChannel(arg0 interface{}) 
 }
 
 // NotifyUserHasJoinedTeam mocks base method.
-<<<<<<< HEAD
 func (m *MockService) NotifyUserHasJoinedTeam(arg0 apps.Context) error {
-=======
-func (m *MockService) NotifyUserHasJoinedTeam(arg0 *apps.Context) error {
->>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyUserHasJoinedTeam", arg0)
 	ret0, _ := ret[0].(error)
@@ -371,11 +359,7 @@ func (mr *MockServiceMockRecorder) NotifyUserHasJoinedTeam(arg0 interface{}) *go
 }
 
 // NotifyUserHasLeftChannel mocks base method.
-<<<<<<< HEAD
 func (m *MockService) NotifyUserHasLeftChannel(arg0 apps.Context) error {
-=======
-func (m *MockService) NotifyUserHasLeftChannel(arg0 *apps.Context) error {
->>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyUserHasLeftChannel", arg0)
 	ret0, _ := ret[0].(error)
@@ -389,11 +373,7 @@ func (mr *MockServiceMockRecorder) NotifyUserHasLeftChannel(arg0 interface{}) *g
 }
 
 // NotifyUserHasLeftTeam mocks base method.
-<<<<<<< HEAD
 func (m *MockService) NotifyUserHasLeftTeam(arg0 apps.Context) error {
-=======
-func (m *MockService) NotifyUserHasLeftTeam(arg0 *apps.Context) error {
->>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyUserHasLeftTeam", arg0)
 	ret0, _ := ret[0].(error)

@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -189,4 +190,29 @@ func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 		Type:      apps.CallResponseTypeError,
 		ErrorText: err.Error(),
 	})
+}
+
+func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+	if app.DeployType == apps.DeployBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
+		if !ok {
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
+		}
+		return u, nil
+	}
+
+	err := CanDeploy(p, app.DeployType)
+	if err != nil {
+		return nil, err
+	}
+
+	upv, ok := p.upstreams.Load(app.DeployType)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid or unsupported upstream type: %s", app.DeployType)
+	}
+	up, ok := upv.(upstream.Upstream)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.DeployType)
+	}
+	return up, nil
 }

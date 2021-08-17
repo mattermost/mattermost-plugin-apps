@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -43,14 +42,11 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 	defer close(all)
 
 	allApps := store.SortApps(p.store.App.AsMap())
-	fmt.Printf("<>/<> 1 %+v\n", allApps)
 	for i := range allApps {
 		app := allApps[i]
-		fmt.Printf("<>/<> 2 %+v\n", app)
 
 		go func(app *apps.App) {
 			bb := p.getBindingsForApp(in, cc, app)
-			fmt.Printf("<>/<> 3 %+v\n", bb)
 			all <- bb
 		}(&app)
 	}
@@ -66,7 +62,6 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 // getBindingsForApp fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
 func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) []apps.Binding {
-	fmt.Printf("<>/<> 10 %v\n", app.AppID)
 	if !p.appIsEnabled(app) {
 		return nil
 	}
@@ -88,7 +83,6 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) [
 		log.Debugf("Bindings response is nil or unexpected type.")
 		return nil
 	}
-	fmt.Printf("<>/<> 12 %+v\n", resp)
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
@@ -111,7 +105,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) [
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
+func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
 	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}

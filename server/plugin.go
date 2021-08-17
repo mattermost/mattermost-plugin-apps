@@ -217,17 +217,21 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
+	err := p.proxy.Notify(
+		apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    ch.TeamId,
+				ChannelID: ch.Id,
+			},
+			UserID: ch.CreatorId,
+			ExpandedContext: apps.ExpandedContext{
+				Channel: ch,
+			},
 		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
+		apps.SubjectChannelCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling ChannelHasBeenCreated")
 	}
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
 }
 
 func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {

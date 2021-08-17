@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -64,7 +67,16 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 	upstreams := map[apps.AppID]upstream.Upstream{}
 	for i := range testApps {
 		app := testApps[i]
+
 		up := mock_upstream.NewMockUpstream(ctrl)
+
+		// set up an empty OK call response
+		b, _ := json.Marshal(apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
+		})
+		reader := ioutil.NopCloser(bytes.NewReader(b))
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+
 		upstreams[app.Manifest.AppID] = up
 		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
 	}
