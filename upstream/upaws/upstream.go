@@ -28,6 +28,9 @@ type Upstream struct {
 var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Logger) (*Upstream, error) {
+	if accessKey == "" && secret == "" {
+		return nil, errors.Wrap(utils.ErrNotFound, "AWS credentials are not set")
+	}
 	awsClient, err := MakeClient(accessKey, secret, region,
 		log.With("purpose", "App Proxy"))
 	if err != nil {

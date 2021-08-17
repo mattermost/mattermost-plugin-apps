@@ -115,7 +115,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Log
 		region:     region,
 	}
 
-	log.Debugw("Initialized AWS access",
+	log.Debugw("New AWS client",
 		"region", region,
 		"access", utils.LastN(awsAccessKeyID, 7),
 		"secret", utils.LastN(awsSecretAccessKey, 4))

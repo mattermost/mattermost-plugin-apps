@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,9 @@ var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream() (*Upstream, error) {
 	kubelessClient, err := kubelessutil.GetKubelessClientOutCluster()
+	if os.IsNotExist(err) {
+		return nil, errors.Wrap(utils.ErrNotFound, err.Error())
+	}
 	if err != nil {
 		return nil, err
 	}

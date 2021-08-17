@@ -90,38 +90,18 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 func (p *Proxy) Configure(conf config.Config) error {
 	_, mm, log := p.conf.Basic()
 
-	if allowed, _ := p.CanDeploy(apps.DeployHTTP); allowed {
-		p.upstreams.Store(apps.DeployHTTP, uphttp.NewUpstream(p.httpOut))
-	} else {
-		p.upstreams.Delete(apps.DeployHTTP)
-	}
-
-	if allowed, _ := p.CanDeploy(apps.DeployAWSLambda); allowed {
-		up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize AWS upstream")
-		}
-		p.upstreams.Store(apps.DeployAWSLambda, up)
-	} else {
-		p.upstreams.Delete(apps.DeployAWSLambda)
-	}
-
-	if allowed, _ := p.CanDeploy(apps.DeployPlugin); allowed {
-		p.upstreams.Store(apps.DeployPlugin, upplugin.NewUpstream(&mm.Plugin))
-	} else {
-		p.upstreams.Delete(apps.DeployPlugin)
-	}
-
-	if allowed, _ := p.CanDeploy(apps.DeployKubeless); allowed {
-		up, err := upkubeless.MakeUpstream()
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize Kubeless upstream")
-		}
-		p.upstreams.Store(apps.DeployKubeless, up)
-	} else {
-		p.upstreams.Delete(apps.DeployKubeless)
-	}
-
+	p.initUpstream(apps.DeployHTTP, conf, log, func() (upstream.Upstream, error) {
+		return uphttp.NewUpstream(p.httpOut), nil
+	})
+	p.initUpstream(apps.DeployAWSLambda, conf, log, func() (upstream.Upstream, error) {
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+	})
+	p.initUpstream(apps.DeployPlugin, conf, log, func() (upstream.Upstream, error) {
+		return upplugin.NewUpstream(&mm.Plugin), nil
+	})
+	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
+		return upkubeless.MakeUpstream()
+	})
 	return nil
 }
 
@@ -129,9 +109,15 @@ func (p *Proxy) Configure(conf config.Config) error {
 // type can be used in the current configuration. usable indicates that it is
 // configured and can be accessed, or deployed to.
 func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
+	return p.canDeploy(p.conf.Get(), deployType)
+}
+
+// CanDeploy returns the availability of deployType.  allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
+func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allowed, usable bool) {
 	_, usable = p.upstreams.Load(deployType)
 
-	conf := p.conf.Get()
 	supportedTypes := []apps.DeployType{}
 
 	// Initialize with the set supported in all configurations.
@@ -215,4 +201,22 @@ func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.DeployType)
 	}
 	return up, nil
+}
+
+func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
+	if allowed, _ := p.canDeploy(newConfig, typ); allowed {
+		up, err := makef()
+		switch {
+		case errors.Cause(err) == utils.ErrNotFound:
+			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
+		case err != nil:
+			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
+		default:
+			p.upstreams.Store(typ, up)
+			log.Debugf("Initialized %s upstream.", typ)
+		}
+	} else {
+		p.upstreams.Delete(typ)
+		log.Debugf("Removed %s upstream.", typ)
+	}
 }
