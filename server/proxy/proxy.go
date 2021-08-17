@@ -97,7 +97,11 @@ func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *app
 			} else {
 				callResponse.Form.Icon = icon
 			}
-			cleanForm(*callResponse.Form)
+			clean, problems := cleanForm(*callResponse.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugf("invalid form field in bingding")
+			}
+			callResponse.Form = &clean
 		}
 	}
 
