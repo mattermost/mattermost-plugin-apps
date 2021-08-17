@@ -13,7 +13,7 @@ type Kubeless struct {
 	Functions []KubelessFunction `json:"functions,omitempty"`
 }
 
-func (k *Kubeless) IsValid() error {
+func (k *Kubeless) Validate() error {
 	if k == nil {
 		return nil
 	}
@@ -21,7 +21,7 @@ func (k *Kubeless) IsValid() error {
 		return utils.NewInvalidError("must provide at least 1 function in kubeless_functions")
 	}
 	for _, kf := range k.Functions {
-		err := kf.IsValid()
+		err := kf.Validate()
 		if err != nil {
 			return errors.Wrapf(err, "invalid function %q", kf.Handler)
 		}
@@ -62,7 +62,7 @@ type KubelessFunction struct {
 	Port int32 `json:"port"`
 }
 
-func (kf KubelessFunction) IsValid() error {
+func (kf KubelessFunction) Validate() error {
 	if kf.CallPath == "" {
 		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
 	}

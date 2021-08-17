@@ -13,7 +13,7 @@ type AWSLambda struct {
 	Functions []AWSLambdaFunction `json:"functions,omitempty"`
 }
 
-func (a *AWSLambda) IsValid() error {
+func (a *AWSLambda) Validate() error {
 	if a == nil {
 		return nil
 	}
@@ -21,7 +21,7 @@ func (a *AWSLambda) IsValid() error {
 		return utils.NewInvalidError("must provide at least 1 function in aws_lambda.Functions")
 	}
 	for _, f := range a.Functions {
-		err := f.IsValid()
+		err := f.Validate()
 		if err != nil {
 			return errors.Wrapf(err, "%q is not valid", f.Name)
 		}
@@ -48,7 +48,7 @@ type AWSLambdaFunction struct {
 	Runtime string `json:"runtime"`
 }
 
-func (f AWSLambdaFunction) IsValid() error {
+func (f AWSLambdaFunction) Validate() error {
 	if f.Path == "" {
 		return utils.NewInvalidError("aws_lambda path must not be empty")
 	}

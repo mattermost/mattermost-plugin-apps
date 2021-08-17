@@ -66,7 +66,7 @@ func (p Permission) String() string {
 	return m
 }
 
-func (p Permissions) IsValid() error {
+func (p Permissions) Validate() error {
 	if len(p) == 0 {
 		return nil
 	}

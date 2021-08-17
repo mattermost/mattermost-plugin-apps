@@ -10,7 +10,7 @@ import (
 )
 
 func (p *Proxy) AddLocalManifest(m apps.Manifest) (string, error) {
-	if err := m.IsValid(); err != nil {
+	if err := m.Validate(); err != nil {
 		return "", err
 	}
 

@@ -148,7 +148,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		Manifest:        m,
 		ManifestKey:     S3ManifestName(m.AppID, m.Version),
 	}
-	if err := pd.IsValid(); err != nil {
+	if err := pd.Validate(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
 	}
 	return pd, nil
@@ -179,11 +179,11 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 	return generatedFunctions
 }
 
-func (pd *ProvisionData) IsValid() error {
+func (pd *ProvisionData) Validate() error {
 	if pd.Manifest == nil || pd.Manifest.AWSLambda == nil {
 		return errors.New("no manifest or AWS Lamda metadata")
 	}
-	if err := pd.Manifest.IsValid(); err != nil {
+	if err := pd.Manifest.Validate(); err != nil {
 		return err
 	}
 

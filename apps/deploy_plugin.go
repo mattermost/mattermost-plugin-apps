@@ -15,7 +15,7 @@ type Plugin struct {
 	PluginID string `json:"plugin_id,omitempty"`
 }
 
-func (p *Plugin) IsValid() error {
+func (p *Plugin) Validate() error {
 	if p == nil {
 		return nil
 	}

@@ -141,7 +141,7 @@ func ManifestFromJSON(data []byte) (*Manifest, error) {
 		return nil, err
 	}
 
-	err = m.IsValid()
+	err = m.Validate()
 	if err != nil {
 		return nil, err
 	}
@@ -150,10 +150,10 @@ func ManifestFromJSON(data []byte) (*Manifest, error) {
 }
 
 type validator interface {
-	IsValid() error
+	Validate() error
 }
 
-func (m Manifest) IsValid() error {
+func (m Manifest) Validate() error {
 	if m.HomepageURL == "" {
 		return utils.NewInvalidError(errors.New("homepage_url is empty"))
 	}
@@ -185,8 +185,8 @@ func (m Manifest) IsValid() error {
 		m.Kubeless,
 		m.Plugin,
 	} {
-		// IsValid() ignores nil pointers.
-		if err := v.IsValid(); err != nil {
+		// Validate() ignores nil pointers.
+		if err := v.Validate(); err != nil {
 			return err
 		}
 	}
@@ -221,13 +221,13 @@ func (m Manifest) DeployTypes() (out []DeployType) {
 func (m Manifest) SupportsDeploy(dtype DeployType) bool {
 	switch dtype {
 	case DeployAWSLambda:
-		return m.AWSLambda != nil && m.AWSLambda.IsValid() == nil
+		return m.AWSLambda != nil && m.AWSLambda.Validate() == nil
 	case DeployHTTP:
-		return m.HTTP != nil && m.HTTP.IsValid() == nil
+		return m.HTTP != nil && m.HTTP.Validate() == nil
 	case DeployKubeless:
-		return m.Kubeless != nil && m.Kubeless.IsValid() == nil
+		return m.Kubeless != nil && m.Kubeless.Validate() == nil
 	case DeployPlugin:
-		return m.Plugin != nil && m.Plugin.IsValid() == nil
+		return m.Plugin != nil && m.Plugin.Validate() == nil
 	}
 	return false
 }
@@ -241,7 +241,7 @@ const (
 	MaxAppIDLength = 32
 )
 
-func (id AppID) IsValid() error {
+func (id AppID) Validate() error {
 	if len(id) < MinAppIDLength {
 		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
 	}
@@ -275,7 +275,7 @@ type AppVersion string
 
 const VersionFormat = "v00_00_000"
 
-func (v AppVersion) IsValid() error {
+func (v AppVersion) Validate() error {
 	if len(v) > len(VersionFormat) {
 		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
 	}

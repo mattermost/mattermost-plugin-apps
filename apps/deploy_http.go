@@ -17,7 +17,7 @@ type HTTP struct {
 	RootURL string `json:"root_url,omitempty"`
 }
 
-func (h *HTTP) IsValid() error {
+func (h *HTTP) Validate() error {
 	if h == nil {
 		return nil
 	}

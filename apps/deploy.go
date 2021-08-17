@@ -31,7 +31,7 @@ const (
 	DeployPlugin DeployType = "plugin"
 )
 
-func (t DeployType) IsValid() error {
+func (t DeployType) Validate() error {
 	switch t {
 	case DeployHTTP, DeployAWSLambda, DeployBuiltin, DeployKubeless, DeployPlugin:
 		return nil

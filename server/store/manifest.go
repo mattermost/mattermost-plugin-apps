@@ -155,7 +155,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = m.IsValid()
+	err = m.Validate()
 	if err != nil {
 		return nil, err
 	}
