@@ -149,13 +149,14 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := apps.Context{
-		UserID: user.Id,
-		ExpandedContext: apps.ExpandedContext{
-			User: user,
+	err := p.proxy.Notify(
+		apps.Context{
+			UserID: user.Id,
+			ExpandedContext: apps.ExpandedContext{
+				User: user,
+			},
 		},
-	}
-	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
+		apps.SubjectUserCreated)
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
 	}
@@ -169,7 +170,7 @@ func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.C
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	err := p.proxy.Notify(p.newChannelMemberContext(cm), apps.SubjectUserLeftChannel)
+	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
