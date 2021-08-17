@@ -49,10 +49,17 @@ func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *
 }
 
 // GetSubscriptions mocks base method.
+<<<<<<< HEAD
 func (m *MockService) GetSubscriptions(arg0 string) ([]apps.Subscription, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
 	ret0, _ := ret[0].([]apps.Subscription)
+=======
+func (m *MockService) GetSubscriptions(arg0 string) ([]*apps.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
+	ret0, _ := ret[0].([]*apps.Subscription)
+>>>>>>> 1c3e1aa2f634eb8a237a74efcac213543a71fded
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

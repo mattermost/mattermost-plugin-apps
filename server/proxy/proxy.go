@@ -290,6 +290,100 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	return p.notify(cc, subs)
 }
 
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
+	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get post_created subscriptions")
+	}
+
+	subs := []*apps.Subscription{}
+	subs = append(subs, postSubs...)
+	mentions := model.PossibleAtMentions(post.Message)
+
+	botCanRead := map[string]bool{}
+	if len(mentions) > 0 {
+		appsMap := p.store.App.AsMap()
+		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		if err != nil && err != utils.ErrNotFound {
+			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+		}
+
+		for _, sub := range mentionSubs {
+			app := appsMap[sub.AppID]
+			if app == nil {
+				continue
+			}
+			for _, mention := range mentions {
+				if mention == app.BotUsername {
+					_, ok := botCanRead[app.BotUserID]
+					if ok {
+						// already processed this bot for this post
+						continue
+					}
+
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					botCanRead[app.BotUserID] = canRead
+
+					if canRead {
+						subs = append(subs, sub)
+					}
+				}
+			}
+		}
+	}
+
+	if len(subs) == 0 {
+		return nil
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyUserHasJoinedChannel(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func (p *Proxy) NotifyUserHasLeftChannel(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserHasJoinedTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserHasLeftTeam(cc *apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subject) error {
+	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
+	}
+
+	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
+	}
+
+	subs := []*apps.Subscription{}
+	subs = append(subs, userSubs...)
+
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app := appsMap[sub.AppID]
+		if app == nil {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
+}
+
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {

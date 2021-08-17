@@ -64,14 +64,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 	upstreams := map[apps.AppID]upstream.Upstream{}
 	for i := range testApps {
 		app := testApps[i]
-		// cresp := &apps.CallResponse{
-		// 	Type: apps.CallResponseTypeOK,
-		// }
-		// b, _ := json.Marshal(cresp)
-		// reader := ioutil.NopCloser(bytes.NewReader(b))
-
 		up := mock_upstream.NewMockUpstream(ctrl)
-		// up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[app.Manifest.AppID] = up
 		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
 	}

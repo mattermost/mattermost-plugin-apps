@@ -111,7 +111,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app *apps.App) [
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
+func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
 	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}

@@ -200,7 +200,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	cc := apps.Context{
+	err = p.proxy.NotifyMessageHasBeenPosted(post, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -210,8 +210,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		ExpandedContext: apps.ExpandedContext{
 			Post: post,
 		},
-	}
-	err = p.proxy.NotifyMessageHasBeenPosted(post, cc)
+	})
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
 	}

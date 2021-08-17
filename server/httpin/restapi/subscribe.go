@@ -15,8 +15,7 @@ func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in pro
 }
 
 func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	actingUserID := in.ActingUserID
-	subs, err := a.appServices.GetSubscriptions(actingUserID)
+	subs, err := a.appServices.GetSubscriptions(in.ActingUserID)
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
