@@ -44,7 +44,7 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        cy.get('#channel-header #send-button').first().click();
+        cy.get('#channel-header button[id="/channel_header/send-button"]').first().click();
 
         // # Type into message field of modal form
         cy.findByTestId('message').type('the test message');
