@@ -69,7 +69,6 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 	cc := &apps.Context{
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		Locale:       utils.GetLocale(a.conf.MattermostAPI(), a.conf.MattermostConfig().Config(), actingUserID),
 	}
 	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 
@@ -112,7 +111,6 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 	cc := &apps.Context{
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		Locale:       utils.GetLocale(a.conf.MattermostAPI(), a.conf.MattermostConfig().Config(), actingUserID),
 	}
 	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 
@@ -155,7 +153,6 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 	cc := &apps.Context{
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		Locale:       utils.GetLocale(a.conf.MattermostAPI(), a.conf.MattermostConfig().Config(), actingUserID),
 	}
 	cc = a.conf.Get().SetContextDefaultsForApp(m.AppID, cc)
 
@@ -204,7 +201,6 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 	cc := &apps.Context{
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		Locale:       utils.GetLocale(a.conf.MattermostAPI(), a.conf.MattermostConfig().Config(), actingUserID),
 	}
 	cc = a.conf.Get().SetContextDefaultsForApp(appID, cc)
 

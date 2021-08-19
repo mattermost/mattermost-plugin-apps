@@ -171,7 +171,6 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		},
 		ActingUserID: actingUserID,
 		UserID:       actingUserID,
-		Locale:       utils.GetLocale(d.conf.MattermostAPI(), d.conf.MattermostConfig().Config(), actingUserID),
 	}
 	cc = d.conf.Get().SetContextDefaultsForApp(stateData.AppID, cc)
 

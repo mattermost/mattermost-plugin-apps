@@ -341,7 +341,6 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 		},
 		ActingUserID: commandArgs.UserId,
 		UserID:       commandArgs.UserId,
-		Locale:       utils.GetLocale(s.conf.MattermostAPI(), s.conf.MattermostConfig().Config(), commandArgs.UserId),
 	})
 }
 

@@ -33,10 +33,6 @@ type Context struct {
 	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
 	AppPath string `json:"app_path"`
 
-	// Locale shows the local for the acting user. For events where the
-	// acting user is not applicable, will use the server locale.
-	Locale string `json:"locale"`
-
 	// Data accepted from the user agent
 	UserAgentContext
 
@@ -82,6 +78,7 @@ type ExpandedContext struct {
 	Post                  *model.Post    `json:"post,omitempty"`
 	RootPost              *model.Post    `json:"root_post,omitempty"`
 	Team                  *model.Team    `json:"team,omitempty"`
+	Locale                string         `json:"locale,omitempty"`
 
 	// TODO replace User with mentions
 	User *model.User `json:"user,omitempty"`

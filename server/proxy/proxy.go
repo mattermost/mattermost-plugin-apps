@@ -288,7 +288,6 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		},
 		Context: p.conf.Get().SetContextDefaultsForApp(app.AppID, &apps.Context{
 			ActingUserID: app.BotUserID,
-			Locale:       utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), app.BotUserID),
 		}),
 		Values: map[string]interface{}{
 			"data": datav,
