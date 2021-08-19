@@ -36,8 +36,6 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		creq.Context.UserID = actingUserID
 	}
 
-	creq.Context.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), creq.Context.ActingUserID)
-
 	app, err := p.store.App.Get(creq.Context.AppID)
 
 	var metadata *apps.AppMetadataForClient

@@ -10,7 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
@@ -73,7 +72,6 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 	appCC := *cc
 	appCC.AppID = appID
 	appCC.BotAccessToken = app.BotAccessToken
-	appCC.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), actingUserID)
 
 	// TODO PERF: Add caching
 	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
