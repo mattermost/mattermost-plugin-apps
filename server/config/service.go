@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/services/configservice"
@@ -12,7 +14,7 @@ import (
 )
 
 type Configurable interface {
-	Configure(Config)
+	Configure(Config) error
 }
 
 // Configurator should be abbreviated as `cfg`
@@ -114,7 +116,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Warnf("Failed to fetch license two times. Falling back to on-prem mode.")
+			s.log.Infof("Failed to fetch license two times. Defaulting to on-prem mode.")
 		}
 	}
 	err := newConfig.Reconfigure(stored, mmconf, license)
@@ -127,7 +129,10 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.lock.Unlock()
 
 	for _, s := range services {
-		s.Configure(newConfig)
+		err = s.Configure(newConfig)
+		if err != nil {
+			return errors.Wrapf(err, "error configuring %T", s)
+		}
 	}
 
 	return nil

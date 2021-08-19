@@ -16,21 +16,19 @@ import (
 )
 
 type StaticUpstream struct {
-	rootURL string
 	httpOut httpout.Service
 }
 
 var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
 
-func NewStaticUpstream(m *apps.Manifest, httpOut httpout.Service) *StaticUpstream {
+func NewStaticUpstream(httpOut httpout.Service) *StaticUpstream {
 	return &StaticUpstream{
-		rootURL: m.HTTPRootURL,
 		httpOut: httpOut,
 	}
 }
 
-func (u *StaticUpstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
+func (u *StaticUpstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", m.HTTPRootURL, apps.StaticFolder, path)
 
 	resp, err := http.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

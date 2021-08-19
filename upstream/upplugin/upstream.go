@@ -23,17 +23,17 @@ type Upstream struct {
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(app *apps.App, api PluginHTTPAPI) *Upstream {
-	staticUp := NewStaticUpstream(app, api)
+func NewUpstream(api PluginHTTPAPI) *Upstream {
+	staticUp := NewStaticUpstream(api)
 	return &Upstream{
 		StaticUpstream: *staticUp,
 	}
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, call)
+			resp, _ := u.invoke(app, call.Context.BotUserID, call)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -41,19 +41,19 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(app, call.Context.ActingUserID, call) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
+func (u *Upstream) invoke(app *apps.App, fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
 	if call == nil {
 		return nil, utils.NewInvalidError("empty call")
 	}
 
-	return u.post(call.Context.ActingUserID, path.Join("/"+u.pluginID, apps.PluginAppPath, call.Path), call)
+	return u.post(call.Context.ActingUserID, path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, call.Path), call)
 }
 
 // post does not close resp.Body, it's the caller's responsibility

@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 )
 
 type Service struct {
@@ -23,34 +23,33 @@ type Service struct {
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
 
-	conf config.Service
-
-	aws           upaws.Client
-	s3AssetBucket string
+	conf    config.Service
+	httpOut httpout.Service
+	// aws           upaws.Client
+	// s3AssetBucket string
 }
 
-func NewService(conf config.Service, aws upaws.Client, s3AssetBucket string) *Service {
+func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
-		conf:          conf,
-		aws:           aws,
-		s3AssetBucket: s3AssetBucket,
+		conf:    confService,
+		httpOut: httpOut,
 	}
-	s.App = &appStore{
-		Service: s,
+	s.AppKV = &appKVStore{Service: s}
+	s.OAuth2 = &oauth2Store{Service: s}
+	s.Subscription = &subscriptionStore{Service: s}
+
+	conf := confService.Get()
+	var err error
+	s.App, err = makeAppStore(s, conf)
+	if err != nil {
+		return nil, err
 	}
-	s.AppKV = &appKVStore{
-		Service: s,
+
+	s.Manifest, err = makeManifestStore(s, conf)
+	if err != nil {
+		return nil, err
 	}
-	s.OAuth2 = &oauth2Store{
-		Service: s,
-	}
-	s.Subscription = &subscriptionStore{
-		Service: s,
-	}
-	s.Manifest = &manifestStore{
-		Service: s,
-	}
-	return s
+	return s, nil
 }
 
 func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {
