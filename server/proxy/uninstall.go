@@ -46,10 +46,10 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		message = p.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.uninstall.default",
-				Other: "Uninstalled {{.AppID}}",
+				Other: "Uninstalled {{.DisplayName}}",
 			},
 			TemplateData: map[string]string{
-				"AppID": app.DisplayName,
+				"DisplayName": app.DisplayName,
 			},
 		})
 	}
@@ -102,7 +102,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		return "", errors.Wrap(err, p.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.uninstall.error.delete",
-				Other: "can't delete app - {{.AppID}}",
+				Other: "can't delete app {{.AppID}}",
 			},
 			TemplateData: map[string]string{
 				"AppID": string(app.AppID),
@@ -116,7 +116,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 			return "", errors.Wrap(err, p.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "apps.uninstall.error.deleteManifest",
-					Other: "can't delete manifest for uninstalled app - {{.AppID}}",
+					Other: "can't delete manifest for uninstalled app {{.AppID}}",
 				},
 				TemplateData: map[string]string{
 					"AppID": string(app.AppID),
@@ -130,7 +130,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		return "", errors.Wrap(err, p.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.uninstall.error.deleteData",
-				Other: "can't delete app data - {{.AppID}}",
+				Other: "can't delete app data for {{.AppID}}",
 			},
 			TemplateData: map[string]string{
 				"AppID": string(app.AppID),

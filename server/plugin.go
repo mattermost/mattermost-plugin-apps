@@ -47,8 +47,6 @@ type Plugin struct {
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
-
-	i18n *i18n.Bundle
 }
 
 func NewPlugin(buildConfig config.BuildConfig) *Plugin {
@@ -73,7 +71,6 @@ func (p *Plugin) OnActivate() error {
 	if err != nil {
 		return err
 	}
-	p.i18n = i18nBundle
 
 	p.conf = config.NewService(mm, p.BuildConfig, botUserID, i18nBundle)
 	stored := config.StoredConfig{}

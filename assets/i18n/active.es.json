@@ -112,20 +112,20 @@
     "other": "comando desconocido: {{.Command}}"
   },
   "apps.uninstall.default": {
-    "hash": "sha1-c4c2673d5bf7f963dd8157adee4f634d46133b2a",
-    "other": "{{.AppID}} desinstalada"
+    "hash": "sha1-c2eebccc97a46a7ab6804806ca0bec29af319ba7",
+    "other": "{{.DisplayName}} desinstalada"
   },
   "apps.uninstall.error.delete": {
-    "hash": "sha1-9758836285749b5bfdebe88fbef15c8dc5e1f0b4",
-    "other": "no se puede borrar la app - {{.AppID}}"
+    "hash": "sha1-6dd0a9b70d0a69d21ec7356448d669c94017a271",
+    "other": "no se puede borrar la app {{.AppID}}"
   },
   "apps.uninstall.error.deleteData": {
-    "hash": "sha1-3d56dfe447ebcc1ccbc0288108e8abff95726400",
-    "other": "no se puede borrar los datos de la app - {{.AppID}}"
+    "hash": "sha1-0dce5c4dd15972208694ba291e8d94d0790e4c8d",
+    "other": "no se puede borrar los datos de la app {{.AppID}}"
   },
   "apps.uninstall.error.deleteManifest": {
-    "hash": "sha1-a073b8651e18859ecb474cfcf40dd80a6467bc54",
-    "other": "no se puede borrar el manifiesto de la app desinstalada - {{.AppID}}"
+    "hash": "sha1-4bb2ea6aff60e45cb2f37f186fdf3a297485fec3",
+    "other": "no se puede borrar el manifiesto de la app desinstalada {{.AppID}}"
   },
   "apps.uninstall.error.deleteOAuth": {
     "hash": "sha1-6efec3943382dad8364ba0be45bdd9a52d20e0c2",
