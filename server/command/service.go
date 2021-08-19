@@ -186,6 +186,22 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 			f:            s.checkSystemAdmin(s.executeInstallAWS),
 			autoComplete: installAWSAC,
 		}
+
+		installKubelessAC := model.NewAutocompleteData("kubeless", "", "Install an App running as a Kubeless function on Kubernetes")
+		// install from URL in the on-prem mode
+		installKubelessAC.Arguments = append(installKubelessAC.Arguments, &model.AutocompleteArg{
+			Name:     "",
+			HelpText: "URL of the App's manifest",
+			Type:     model.AutocompleteArgTypeText,
+			Data: &model.AutocompleteTextArg{
+				Hint: "URL",
+			},
+			Required: true,
+		})
+		h.subCommands[installKubelessAC.Trigger] = commandHandler{
+			f:            s.checkSystemAdmin(s.executeInstallKubeless),
+			autoComplete: installKubelessAC,
+		}
 	}
 
 	return h
@@ -207,11 +223,8 @@ func MakeService(configService config.Service, proxy proxy.Service, httpOut http
 	return s, nil
 }
 
-func (s *service) Configure(conf config.Config) {
-	err := s.registerCommand(conf)
-	if err != nil {
-		s.conf.Logger().WithError(err).Warnf("Failed to re-register command")
-	}
+func (s *service) Configure(conf config.Config) error {
+	return s.registerCommand(conf)
 }
 
 func (s *service) registerCommand(conf config.Config) error {

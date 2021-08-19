@@ -30,7 +30,7 @@ type notifyTestcase struct {
 func sendCallResponse(t *testing.T, path string, cr *apps.CallResponse, up *mock_upstream.MockUpstream) {
 	b, _ := json.Marshal(cr)
 	reader := ioutil.NopCloser(bytes.NewReader(b))
-	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).DoAndReturn(func(c *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ *apps.App, c *apps.CallRequest, async bool) (io.ReadCloser, error) {
 		require.Equal(t, path, c.Path)
 		return reader, nil
 	})
@@ -620,9 +620,10 @@ func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
 		},
 	})
 
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
+	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	s := store.NewService(conf, nil, "")
+	s, err := store.MakeService(conf, nil)
+	require.NoError(t, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 

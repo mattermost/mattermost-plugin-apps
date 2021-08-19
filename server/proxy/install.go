@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret, pluginID string) (*apps.App, string, error) {
+func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, string, error) {
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", cc.AppID)
 	m, err := p.store.Manifest.Get(cc.AppID)
@@ -25,7 +25,7 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
 
-	err = isAppTypeSupported(conf, m)
+	err = isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "app type is not supported")
 	}
@@ -46,14 +46,6 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 	app.GrantedLocations = m.RequestedLocations
 	if secret != "" {
 		app.Secret = secret
-	}
-
-	if app.AppType == apps.AppTypePlugin {
-		if pluginID == "" {
-			return nil, "", errors.New("plugin apps require a coresponding pluginID")
-		}
-
-		app.PluginID = pluginID
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
@@ -212,7 +204,7 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 		return nil
 	}
 
-	asset, _, err := p.getStaticForApp(app, iconPath)
+	asset, _, err := p.getStatic(&app.Manifest, iconPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app icon")
 	}

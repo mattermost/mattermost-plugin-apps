@@ -88,7 +88,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(resp).Debugf("Error getting bindings.")
+		log.WithError(resp).Debugf("Error getting bindings")
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
-			p.conf.MattermostAPI().Log.Debug("location is not granted to app", "location", fql, "appID", app.Manifest.AppID)
+			log.Debugw("location is not granted to app", "location", fql)
 			continue
 		}
 
@@ -141,7 +141,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 
 			if strings.ContainsAny(label, " \t") {
-				p.conf.MattermostAPI().Log.Debug("Binding validation error: Command label has multiple words", "app", app.Manifest.AppID, "location", b.Location)
+				log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
 				continue
 			}
 		}
@@ -180,7 +180,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 		if fql == apps.LocationChannelHeader.Make(b.Location) {
 			// Must have an icon on webapp to show the icon
 			if b.Icon == "" && userAgent == "webapp" {
-				p.conf.MattermostAPI().Log.Debug("Channel header button for webapp without icon", "label", b.Label, "app_id", app.AppID)
+				log.Debugw("Channel header button for webapp without icon", "label", b.Label)
 				continue
 			}
 		}
@@ -194,7 +194,13 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			b.Bindings = scanned
 		}
 
-		p.cleanForm(b.Form)
+		if b.Form != nil {
+			clean, problems := cleanForm(*b.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugf("invalid form field in binding")
+			}
+			b.Form = &clean
+		}
 
 		out = append(out, &b)
 	}

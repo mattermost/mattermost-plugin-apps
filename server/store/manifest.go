@@ -45,9 +45,37 @@ type manifestStore struct {
 
 	global map[apps.AppID]*apps.Manifest
 	local  map[apps.AppID]*apps.Manifest
+
+	aws           upaws.Client
+	s3AssetBucket string
 }
 
 var _ ManifestStore = (*manifestStore)(nil)
+
+func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion,
+		s.conf.Logger().With("purpose", "Manifest store"))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
+	}
+
+	mstore := &manifestStore{
+		Service:       s,
+		aws:           awsClient,
+		s3AssetBucket: conf.AWSS3Bucket,
+	}
+	err = mstore.Configure(conf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to configure")
+	}
+	if conf.MattermostCloudMode {
+		err = mstore.InitGlobal(s.httpOut)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
+		}
+	}
+	return mstore, nil
+}
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
@@ -134,7 +162,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	return &m, nil
 }
 
-func (s *manifestStore) Configure(conf config.Config) {
+func (s *manifestStore) Configure(conf config.Config) error {
 	_, mm, log := s.conf.Basic()
 	updatedLocal := map[apps.AppID]*apps.Manifest{}
 
@@ -158,6 +186,7 @@ func (s *manifestStore) Configure(conf config.Config) {
 	s.mutex.Lock()
 	s.local = updatedLocal
 	s.mutex.Unlock()
+	return nil
 }
 
 func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {

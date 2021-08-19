@@ -17,18 +17,33 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
-	conf, _, log := p.conf.Basic()
-
 	if creq.Context == nil || creq.Context.AppID == "" {
-		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
-		return apps.NewProxyCallResponse(resp, nil)
+		return apps.NewProxyCallResponse(
+			apps.NewErrorCallResponse(
+				utils.NewInvalidError("must provide Context and set the app ID")), nil)
+	}
+
+	app, err := p.store.App.Get(creq.Context.AppID)
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
+	}
+
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
+	cresp := p.callApp(app, sessionID, actingUserID, creq)
+	return apps.NewProxyCallResponse(cresp, metadata)
+}
+
+func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
+	if !p.AppIsEnabled(app) {
+		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
 	}
 
 	if actingUserID != "" {
@@ -36,69 +51,61 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		creq.Context.UserID = actingUserID
 	}
 
-	app, err := p.store.App.Get(creq.Context.AppID)
-
-	var metadata *apps.AppMetadataForClient
-	if app != nil {
-		metadata = &apps.AppMetadataForClient{
-			BotUserID:   app.BotUserID,
-			BotUsername: app.BotUsername,
-		}
-	}
-
-	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
-	}
-
 	if creq.Path[0] != '/' {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path)), metadata)
+		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
 
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 	creq.Path = cleanPath
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app.Manifest)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 
 	// Clear any ExpandedContext as it should always be set by an expander for security reasons
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
 
+	conf, _, log := p.conf.Basic()
 	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
 
 	expander := p.newExpander(cc, p.conf, p.store, sessionID)
 	cc, err = expander.ExpandForApp(app, creq.Expand)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 	clone := *creq
 	clone.Context = cc
 
-	callResponse := upstream.Call(up, &clone)
+	callResponse := upstream.Call(up, app, &clone)
 
 	if callResponse.Type == "" {
 		callResponse.Type = apps.CallResponseTypeOK
 	}
 
-	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
-		if err != nil {
-			log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
-				"app_id", app.AppID,
-				"icon", callResponse.Form.Icon)
-			callResponse.Form.Icon = ""
-		} else {
-			callResponse.Form.Icon = icon
+	if callResponse.Form != nil {
+		if callResponse.Form.Icon != "" {
+			icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
+			if err != nil {
+				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
+					"app_id", app.AppID,
+					"icon", callResponse.Form.Icon)
+				callResponse.Form.Icon = ""
+			} else {
+				callResponse.Form.Icon = icon
+			}
+			clean, problems := cleanForm(*callResponse.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugf("invalid form field in bingding")
+			}
+			callResponse.Form = &clean
 		}
 	}
 
-	p.cleanForm(callResponse.Form)
-
-	return apps.NewProxyCallResponse(callResponse, metadata)
+	return callResponse
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -117,104 +124,6 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-// cleanForm removes:
-// - Fields without a name
-// - Fields with labels (either natural or defaulted from names) with more than one word
-// - Fields that have the same label as previous fields
-// - Invalid select static fields and their invalid options
-func (p *Proxy) cleanForm(form *apps.Form) {
-	if form == nil {
-		return
-	}
-
-	toRemove := []int{}
-	usedLabels := map[string]bool{}
-	for i, field := range form.Fields {
-		if field.Name == "" {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App from malformed: Field with no name", "field", field)
-			continue
-		}
-		if strings.ContainsAny(field.Name, " \t") {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App form malformed: Name must be a single word", "name", field.Name)
-			continue
-		}
-
-		label := field.Label
-		if label == "" {
-			label = field.Name
-		}
-		if strings.ContainsAny(label, " \t") {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App form malformed: Label must be a single word", "label", label)
-			continue
-		}
-
-		if usedLabels[label] {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App from malformed: Field label repeated. Only getting first field with the label.", "label", label)
-			continue
-		}
-
-		if field.Type == apps.FieldTypeStaticSelect {
-			p.cleanStaticSelect(field)
-			if len(field.SelectStaticOptions) == 0 {
-				toRemove = append([]int{i}, toRemove...)
-				p.conf.MattermostAPI().Log.Debug("App from malformed: Static field without opions.", "label", label)
-				continue
-			}
-		}
-
-		usedLabels[label] = true
-	}
-
-	for _, i := range toRemove {
-		form.Fields = append(form.Fields[:i], form.Fields[i+1:]...)
-	}
-}
-
-// cleanStaticSelect removes:
-// - Options with empty label (either natural or defaulted form the value)
-// - Options that have the same label as the previous options
-// - Options that have the same value as the previous options
-func (p *Proxy) cleanStaticSelect(field *apps.Field) {
-	toRemove := []int{}
-	usedLabels := map[string]bool{}
-	usedValues := map[string]bool{}
-	for i, option := range field.SelectStaticOptions {
-		label := option.Label
-		if label == "" {
-			label = option.Value
-		}
-
-		if label == "" {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App from malformed: Option with no label", "field", field, "option value", option.Value)
-			continue
-		}
-
-		if usedLabels[label] {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App from malformed: Repeated label on select option. Only getting first value with the label", "field", field, "option", option)
-			continue
-		}
-
-		if usedValues[option.Value] {
-			toRemove = append([]int{i}, toRemove...)
-			p.conf.MattermostAPI().Log.Debug("App from malformed: Repeated value on select option. Only getting first value with the value", "field", field, "option", option)
-			continue
-		}
-
-		usedLabels[label] = true
-		usedValues[option.Value] = true
-	}
-
-	for _, i := range toRemove {
-		field.SelectStaticOptions = append(field.SelectStaticOptions[:i], field.SelectStaticOptions[i+1:]...)
-	}
-}
-
 func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
 	subs, err := p.store.Subscription.Get(subj, cc.TeamID, cc.ChannelID)
 	if err != nil {
@@ -230,8 +139,9 @@ func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	for _, sub := range subs {
 		err := p.notifyForSubscription(cc, expander, sub)
 		if err != nil {
-			log := p.conf.Logger().WithError(err).With("app_id", sub.AppID, "subject", sub.Subject)
-			log.Debugf("Error sending subscription notification to app")
+			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
+				"app_id", sub.AppID,
+				"subject", sub.Subject)
 		}
 	}
 
@@ -249,25 +159,32 @@ func (p *Proxy) notifyForSubscription(cc *apps.Context, expander *expander, sub 
 	if err != nil {
 		return err
 	}
+	if !p.AppIsEnabled(app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
+
 	callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
 	if err != nil {
 		return err
 	}
 	callRequest.Context.Subject = sub.Subject
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app.Manifest)
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(up, callRequest)
+	return upstream.Notify(up, app, callRequest)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
+	if !p.AppIsEnabled(app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(&app.Manifest)
 	if err != nil {
 		return err
 	}
@@ -297,7 +214,7 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		return err
 	}
 
-	return upstream.Notify(up, creq)
+	return upstream.Notify(up, app, creq)
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
@@ -403,90 +320,46 @@ func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, er
 		}
 		return nil, status, err
 	}
-	up, err := p.staticUpstreamForManifest(m)
+
+	return p.getStatic(m, path)
+}
+
+func (p *Proxy) getStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
+	up, err := p.upstreamForApp(m)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	return up.GetStatic(path)
+	return up.GetStatic(m, path)
 }
 
-func (p *Proxy) getStaticForApp(app *apps.App, path string) (io.ReadCloser, int, error) {
-	up, err := p.staticUpstreamForApp(app)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	return up.GetStatic(path)
-}
-
-func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpstream, error) {
-	switch m.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewStaticUpstream(m, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewStaticUpstream(m, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		return nil, errors.New("static assets are not supported for builtin apps")
-
-	case apps.AppTypePlugin:
-		app, err := p.store.App.Get(m.AppID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get app for static asset")
+func (p *Proxy) upstreamForApp(m *apps.Manifest) (upstream.Upstream, error) {
+	if m.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[m.AppID]
+		if !ok {
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", m.AppID)
 		}
-		return upplugin.NewStaticUpstream(app, &p.conf.MattermostAPI().Plugin), nil
-
-	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
+		return u, nil
 	}
-}
 
-func (p *Proxy) staticUpstreamForApp(app *apps.App) (upstream.StaticUpstream, error) {
-	switch app.AppType {
-	case apps.AppTypeHTTP, apps.AppTypeAWSLambda, apps.AppTypeBuiltin:
-		return p.staticUpstreamForManifest(&app.Manifest)
-
-	case apps.AppTypePlugin:
-		return upplugin.NewStaticUpstream(app, &p.conf.MattermostAPI().Plugin), nil
-
-	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", app.AppType)
-	}
-}
-
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
-	conf, mm, _ := p.conf.Basic()
-	if !p.AppIsEnabled(app) {
-		return nil, errors.Errorf("%s is disabled", app.AppID)
-	}
-	err := isAppTypeSupported(conf, &app.Manifest)
+	conf := p.conf.Get()
+	err := isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	switch app.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewUpstream(app, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewUpstream(app, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		up := p.builtinUpstreams[app.AppID]
-		if up == nil {
-			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
-		}
-		return up, nil
-	case apps.AppTypePlugin:
-		return upplugin.NewUpstream(app, &mm.Plugin), nil
-	default:
-		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
+	upv, ok := p.upstreams.Load(m.AppType)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid app type: %s", m.AppType)
 	}
+	up, ok := upv.(upstream.Upstream)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", m.AppType)
+	}
+	return up, nil
 }
 
-func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
+func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 	supportedTypes := []apps.AppType{
 		apps.AppTypeAWSLambda,
 		apps.AppTypeBuiltin,
@@ -510,9 +383,9 @@ func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
 	}
 
 	for _, t := range supportedTypes {
-		if m.AppType == t {
+		if appType == t {
 			return nil
 		}
 	}
-	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", m.AppType, mode, supportedTypes)
+	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
 }
