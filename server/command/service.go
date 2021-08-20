@@ -281,7 +281,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 			TemplateData: map[string]string{
 				"URL": url,
 			},
-		}), fmt.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it.", url))
+		}), fmt.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it", url))
 	}
 
 	enableBotAccounts := conf.ServiceSettings.EnableBotAccountCreation
@@ -295,7 +295,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 			TemplateData: map[string]string{
 				"URL": url,
 			},
-		}), fmt.Errorf("the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it.", url))
+		}), fmt.Errorf("the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it", url))
 	}
 
 	split := strings.Fields(commandArgs.Command)
@@ -369,7 +369,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 			TemplateData: map[string]string{
 				"Command": command,
 			},
-		}), fmt.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.", command))
+		}), fmt.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console", command))
 	}
 
 	p := *params
