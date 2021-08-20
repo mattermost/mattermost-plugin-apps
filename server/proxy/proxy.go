@@ -5,16 +5,110 @@ package proxy
 
 import (
 	"encoding/json"
+	"io"
+	"net/http"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
+	if creq.Context.AppID == "" {
+		return apps.NewProxyCallResponse(
+			apps.NewErrorCallResponse(
+				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
+	}
+
+	app, err := p.store.App.Get(creq.Context.AppID)
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
+	}
+
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
+	cresp := p.callApp(in, app, creq)
+	return apps.NewProxyCallResponse(cresp, metadata)
+}
+
+func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+	if !p.appIsEnabled(app) {
+		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
+	}
+
+	if creq.Path[0] != '/' {
+		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
+	}
+	cleanPath, err := utils.CleanPath(creq.Path)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+	creq.Path = cleanPath
+
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+
+	cc := creq.Context
+	cc = in.updateContext(cc)
+	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
+	if err != nil {
+		return apps.NewErrorCallResponse(err)
+	}
+
+	cresp := upstream.Call(up, *app, creq)
+	if cresp.Type == "" {
+		cresp.Type = apps.CallResponseTypeOK
+	}
+
+	if cresp.Form != nil {
+		if cresp.Form.Icon != "" {
+			conf, _, log := p.conf.Basic()
+			log = log.With("app_id", app.AppID)
+			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
+			if err != nil {
+				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				cresp.Form.Icon = ""
+			} else {
+				cresp.Form.Icon = icon
+			}
+			clean, problems := cleanForm(*cresp.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugw("invalid form")
+			}
+			cresp.Form = &clean
+		}
+	}
+
+	return cresp
+}
+
+// normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
+// If icon is an absolute URL, it's not changed.
+// Otherwise assume it's a path to a static asset and the static path URL prepended.
+func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
+	if !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") {
+		cleanIcon, err := utils.CleanStaticPath(icon)
+		if err != nil {
+			return "", errors.Wrap(err, "invalid icon path")
+		}
+
+		icon = conf.StaticURL(appID, cleanIcon)
+	}
+
+	return icon, nil
+}
 
 func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
@@ -192,4 +286,25 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	}
 
 	return p.notify(cc, subs)
+}
+
+func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+	app, err := p.store.App.Get(appID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, utils.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		return nil, status, err
+	}
+
+	return p.getStatic(app, path)
+}
+
+func (p *Proxy) getStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	return up.GetStatic(*app, path)
 }
