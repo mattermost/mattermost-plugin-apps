@@ -84,7 +84,7 @@ jobs:
           MINIO_ACCESS_KEY: minioaccesskey
           MINIO_SECRET_KEY: miniosecretkey
           MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
-      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+      - image: mattermost/mattermost-elasticsearch-docker:7.0.0
         environment:
           http.host: "0.0.0.0"
           http.port: 9200
@@ -152,6 +152,10 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
+      - run:
+          name: Start hello-world App
+          command: make hello_world
+          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:
@@ -184,7 +188,7 @@ jobs:
           MINIO_ACCESS_KEY: minioaccesskey
           MINIO_SECRET_KEY: miniosecretkey
           MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
-      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+      - image: mattermost/mattermost-elasticsearch-docker:7.0.0
         environment:
           http.host: "0.0.0.0"
           http.port: 9200
@@ -252,6 +256,10 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
+      - run:
+          name: Start hello-world App
+          command: make hello_world
+          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:

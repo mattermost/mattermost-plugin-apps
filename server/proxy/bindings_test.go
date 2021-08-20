@@ -12,10 +12,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -288,7 +289,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 				bindings: bindings,
 			}}
 
-			proxy := newTestProxyForBindings(testData, ctrl)
+			proxy := newTestProxyForBindings(t, testData, ctrl)
 
 			cc := &apps.Context{}
 			out, err := proxy.GetBindings("", "", cc)
@@ -481,7 +482,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	proxy := newTestProxyForBindings(testData, ctrl)
+	proxy := newTestProxyForBindings(t, testData, ctrl)
 
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", "", cc)
@@ -575,7 +576,7 @@ func TestDuplicateCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	proxy := newTestProxyForBindings(testData, ctrl)
+	proxy := newTestProxyForBindings(t, testData, ctrl)
 
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", "", cc)
@@ -657,7 +658,7 @@ func TestInvalidCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	proxy := newTestProxyForBindings(testData, ctrl)
+	proxy := newTestProxyForBindings(t, testData, ctrl)
 
 	cc := &apps.Context{}
 	out, err := proxy.GetBindings("", "", cc)
@@ -665,21 +666,21 @@ func TestInvalidCommand(t *testing.T) {
 	EqualBindings(t, expected, out)
 }
 
-func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
-	confService, testAPI := config.NewTestService(&config.Config{
+func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *gomock.Controller) *Proxy {
+	testAPI := &plugintest.API{}
+	testDriver := &plugintest.Driver{}
+	mm := pluginapi.NewClient(testAPI, testDriver)
+
+	confService := config.NewTestConfigService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
-	})
-
-	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	testAPI.On("GetUser", mock.Anything).Return(&model.User{Locale: "en-US"}, nil)
-
-	confService = confService.WithMattermostConfig(model.Config{
+	}).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("https://test.mattermost.com"),
 		},
-	})
+	}).WithMattermostAPI(mm)
 
-	s := store.NewService(confService, nil, "")
+	s, err := store.MakeService(confService, nil)
+	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
@@ -697,7 +698,7 @@ func newTestProxyForBindings(testData []bindingTestData, ctrl *gomock.Controller
 		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
 		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
