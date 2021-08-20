@@ -53,11 +53,10 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 
 	cc := creq.Context
 	cc = in.updateContext(cc)
-	cc, err = p.expandContext(in, app, &cc, creq.Expand)
+	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	creq.Context = cc
 
 	cresp := upstream.Call(up, *app, creq)
 	if cresp.Type == "" {
