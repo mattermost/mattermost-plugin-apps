@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/command"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -28,7 +27,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -58,8 +56,9 @@ func NewPlugin(buildConfig config.BuildConfig) *Plugin {
 	}
 }
 
-func (p *Plugin) OnActivate() error {
+func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
+	p.log = utils.NewPluginLogger(mm)
 
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
@@ -82,7 +81,7 @@ func (p *Plugin) OnActivate() error {
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
 	if err != nil {
-		return errors.Wrap(err, "failed to reconfigure configurator on startup")
+		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	conf, _, log := p.conf.Basic()
 	p.log = log
@@ -97,37 +96,24 @@ func (p *Plugin) OnActivate() error {
 	}
 	log = log.With("mode", mode)
 
-	aws, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, p.log)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize AWS access")
-	}
-	log = log.With(
-		"aws_region", conf.AWSRegion,
-		"aws_bucket", conf.AWSS3Bucket,
-		"aws_access", utils.LastN(conf.AWSAccessKey, 7),
-		"aws_secret", utils.LastN(conf.AWSSecretKey, 4))
-
 	p.httpOut = httpout.NewService(p.conf)
 
-	p.store = store.NewService(p.conf, aws, conf.AWSS3Bucket)
-	// manifest store
-	mstore := p.store.Manifest
-	mstore.Configure(conf)
-	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(p.httpOut)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
-		}
+	p.store, err = store.MakeService(p.conf, p.httpOut)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize persistent store")
 	}
-	// app store
-	appstore := p.store.App
-	appstore.Configure(conf)
+	p.log.Debugf("Initialized persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.conf, aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut)
+	err = p.proxy.Configure(conf)
+	if err != nil {
+		return errors.Wrapf(err, "failed to initialize app proxy service")
+	}
+	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.conf, p.store)
 
@@ -135,7 +121,6 @@ func (p *Plugin) OnActivate() error {
 		dialog.Init,
 		restapi.Init,
 		gateway.Init,
-		http_hello.Init,
 	)
 
 	p.command, err = command.MakeService(p.conf, p.proxy, p.httpOut)
@@ -167,7 +152,13 @@ func (p *Plugin) OnDeactivate() error {
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() error {
+func (p *Plugin) OnConfigurationChange() (err error) {
+	defer func() {
+		if err != nil {
+			p.log.WithError(err).Errorf("Failed to reconfigure")
+		}
+	}()
+
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -186,7 +177,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command, p.proxy)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
@@ -205,23 +196,38 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 			User: user,
 		},
 	})
-	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
+	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
+	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm, actingUser))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
+	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm, actingUser))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
+	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm, actingUser))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
+	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm, actingUser))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
+	}
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
@@ -235,8 +241,10 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	_ = p.proxy.Notify(
-		p.newPostCreatedContext(post), apps.SubjectPostCreated)
+	err = p.proxy.NotifyMessageHasBeenPosted(post, p.newPostCreatedContext(post))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
+	}
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {

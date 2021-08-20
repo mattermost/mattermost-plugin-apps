@@ -99,6 +99,9 @@ func DumpObject(c interface{}) {
 
 func LastN(s string, n int) string {
 	out := []byte(s)
+	if len(out) > n+3 {
+		out = out[len(out)-n-3:]
+	}
 	for i := range out {
 		if i < len(out)-n {
 			out[i] = '*'

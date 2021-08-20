@@ -5,7 +5,6 @@ package upaws
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -21,107 +20,71 @@ import (
 // Upstream wraps an awsClient to make requests to the App. It should not be
 // reused between requests, nor cached.
 type Upstream struct {
-	StaticUpstream
-	app *apps.App
+	awsClient      Client
+	staticS3Bucket string
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-// invocationPayload is a scoped down version of
-// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
-type invocationPayload struct {
-	Path       string            `json:"path"`
-	HTTPMethod string            `json:"httpMethod"`
-	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
-}
-
-// invocationResponse is a scoped down version of
-// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyResponse
-type invocationResponse struct {
-	StatusCode int    `json:"statusCode"`
-	Body       string `json:"body"`
-}
-
-func NewUpstream(app *apps.App, awsClient Client, bucket string) *Upstream {
-	staticUp := NewStaticUpstream(&app.Manifest, awsClient, bucket)
-	return &Upstream{
-		StaticUpstream: *staticUp,
+func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Logger) (*Upstream, error) {
+	if accessKey == "" && secret == "" {
+		return nil, errors.Wrap(utils.ErrNotFound, "AWS credentials are not set")
 	}
+	awsClient, err := MakeClient(accessKey, secret, region,
+		log.With("purpose", "App Proxy"))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
+	}
+	return &Upstream{
+		awsClient:      awsClient,
+		staticS3Bucket: staticS3bucket,
+	}, nil
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(call.Path, u.manifest)
+func (u *Upstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
+	key := S3StaticName(m.AppID, m.Version, path)
+	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
+	}
+	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
+}
+
+func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+	name := match(call.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
 
-	crString, err := u.InvokeFunction(name, async, call)
+	data, err := u.invokeFunction(name, async, call)
 	if err != nil {
 		return nil, err
 	}
-	return io.NopCloser(strings.NewReader(crString)), nil
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) InvokeFunction(name string, async bool, call *apps.CallRequest) (string, error) {
+func (u *Upstream) invokeFunction(name string, async bool, creq *apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent
 	}
 
-	payload, err := callToInvocationPayload(call)
+	sreq, err := upstream.ServerlessRequestFromCall(creq)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to convert call into invocation payload")
+		return nil, err
 	}
-
-	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
+	bb, err := u.awsClient.InvokeLambda(name, typ, sreq)
 	if async || err != nil {
-		return "", err
+		return nil, err
 	}
-
-	var resp invocationResponse
-	err = json.Unmarshal(bb, &resp)
+	resp, err := upstream.ServerlessResponseFromJSON(bb)
 	if err != nil {
-		return "", errors.Wrap(err, "Error marshaling request payload")
+		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
-	}
-
-	return resp.Body, nil
-}
-
-func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(u.app.AppID, u.app.Version, path)
-	data, err := u.awsClient.GetS3(u.bucket, key)
-	if err != nil {
-		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
-	}
-	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
-}
-
-func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
-	body, err := json.Marshal(call)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal call for lambda payload")
-	}
-
-	request := invocationPayload{
-		Path:       call.Path,
-		HTTPMethod: http.MethodPost,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       string(body),
-	}
-
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal lambda payload")
-	}
-
-	return payload, nil
+	return []byte(resp.Body), nil
 }
 
 func match(callPath string, m *apps.Manifest) string {

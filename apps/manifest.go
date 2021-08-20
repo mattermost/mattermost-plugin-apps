@@ -97,6 +97,70 @@ type Manifest struct {
 	// - define path->function mappings, aka "routes". The function with the
 	// path matching as the longest prefix is used to handle a Call request.
 	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
+
+	KubelessFunctions []KubelessFunction `json:"kubeless_functions,omitempty"`
+
+	// PluginID is the ID of the plugin, which manages the app, if there is one.
+	PluginID string `json:"plugin_id,omitempty"`
+}
+
+// KubelessFunction describes a distinct Kubeless function defined by the app, and
+// what path should be mapped to it.
+//
+// cmd/appsctl will create or update the functions in a kubeless service.
+//
+// upkubeless will find the closest match for the call's path, and then to
+// invoke the kubeless function.
+type KubelessFunction struct {
+	// CallPath is used to match/map incoming Call requests.
+	CallPath string `json:"call_path"`
+
+	// Handler refers to the actual language function being invoked.
+	// TODO examples py, go
+	Handler string `json:"handler"`
+
+	// File is the file path (relative, in the bundle) to the function (source?)
+	// file.
+	File string `json:"file"`
+
+	// DepsFile is the path to the file with runtime-specific dependency list,
+	// e.g. go.mod.
+	DepsFile string `json:"deps_file"`
+
+	// Kubeless runtime to use. See https://kubeless.io/docs/runtimes/ for more.
+	Runtime string `json:"runtime"`
+
+	// Timeout for the function to complete its execution, in seconds.
+	Timeout int `json:"timeout"`
+
+	// Port is the local ipv4 port that the function listens to, default 8080.
+	Port int32 `json:"port"`
+}
+
+func (kf KubelessFunction) IsValid() error {
+	if kf.CallPath == "" {
+		return utils.NewInvalidError("invalid Kubeless function: call_path must not be empty")
+	}
+	if kf.Handler == "" {
+		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
+	}
+	if kf.Runtime == "" {
+		return utils.NewInvalidError("invalid Kubeless function: runtime must not be empty")
+	}
+	_, err := utils.CleanPath(kf.File)
+	if err != nil {
+		return errors.Wrap(err, "invalid Kubeless function: invalid file")
+	}
+	if kf.DepsFile != "" {
+		_, err := utils.CleanPath(kf.DepsFile)
+		if err != nil {
+			return errors.Wrap(err, "invalid Kubeless function: invalid deps_file")
+		}
+	}
+	if kf.Port < 0 || kf.Port > 65535 {
+		return utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535")
+	}
+	return nil
 }
 
 // AWSLambda describes a distinct AWS Lambda function defined by the app, and
@@ -205,6 +269,17 @@ func (m Manifest) IsValid() error {
 			err := l.IsValid()
 			if err != nil {
 				return errors.Wrapf(err, "%q is not valid", l.Name)
+			}
+		}
+
+	case AppTypeKubeless:
+		if len(m.KubelessFunctions) == 0 {
+			return utils.NewInvalidError("must provide at least 1 function in kubeless_functions")
+		}
+		for _, kf := range m.KubelessFunctions {
+			err := kf.IsValid()
+			if err != nil {
+				return errors.Wrapf(err, "invalid function %q", kf.Handler)
 			}
 		}
 	}

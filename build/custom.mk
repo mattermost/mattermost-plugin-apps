@@ -8,3 +8,7 @@ GO_BUILD_FLAGS += -ldflags '-X "github.com/mattermost/mattermost-plugin-api/expe
 .PHONY: dev_server
 dev_server:
 	cd dev && docker-compose up mattermost db
+
+.PHONY: hello_world
+hello_world:
+	cd examples/go/hello-world && go run hello.go

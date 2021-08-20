@@ -6,13 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestHashkey(t *testing.T) {
-	testConfig := config.NewTestConfigService(nil)
-	s := NewService(testConfig, nil, "")
+	s := &Service{}
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string

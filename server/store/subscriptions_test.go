@@ -21,7 +21,8 @@ func TestDeleteSub(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer mockAPI.AssertExpectations(t)
-	s := NewService(conf, nil, "")
+	s, err := MakeService(conf, nil)
+	require.NoError(t, err)
 
 	toDelete := apps.Subscription{
 		Subject:   "user_joined_channel",
@@ -126,7 +127,8 @@ func TestGetSubs(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer mockAPI.AssertExpectations(t)
-	s := NewService(conf, nil, "")
+	s, err := MakeService(conf, nil)
+	require.NoError(t, err)
 
 	emptySubs := []*apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
@@ -187,7 +189,8 @@ func TestStoreSub(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer mockAPI.AssertExpectations(t)
-	s := NewService(conf, nil, "")
+	s, err := MakeService(conf, nil)
+	require.NoError(t, err)
 
 	toStore := apps.Subscription{
 		Subject:   "user_joined_channel",
