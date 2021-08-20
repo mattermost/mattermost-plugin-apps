@@ -37,24 +37,26 @@ type Proxy struct {
 	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
 }
 
-type Service interface {
-	// To update on configuration changes
-	config.Configurable
-
-	// Admin REST API methods.
+// Admin defines the REST API methods to manipulate Apps.
+type Admin interface {
 	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trusted bool, secret string) (*apps.App, string, error)
 	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
+}
 
+// Invoker implements operations that invoke the Apps.
+type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
 	Call(Incoming, apps.CallRequest) apps.ProxyCallResponse
 	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
 	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
 	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
+}
 
-	// User-less notification sinks.
+// Notifier implements user-less notification sinks.
+type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
 	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
@@ -62,8 +64,10 @@ type Service interface {
 	NotifyUserHasLeftChannel(apps.Context) error
 	NotifyUserHasJoinedTeam(apps.Context) error
 	NotifyUserHasLeftTeam(apps.Context) error
+}
 
-	// Internal go API used by other packages.
+// Internal implements go API used by other packages.
+type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	AddLocalManifest(m apps.Manifest) (string, error)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
@@ -73,6 +77,16 @@ type Service interface {
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
+}
+
+type Service interface {
+	// To update on configuration changes
+	config.Configurable
+
+	Admin
+	Internal
+	Invoker
+	Notifier
 }
 
 var _ Service = (*Proxy)(nil)
