@@ -44,7 +44,7 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        cy.get('#channel-header #send-button').first().click();
+        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/hello-world/static/icon.png"]').first().click();
 
         // # Type into message field of modal form
         cy.findByTestId('message').type('the test message');
