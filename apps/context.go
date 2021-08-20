@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // Context is included in CallRequest and provides App with information about

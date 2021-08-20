@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -37,6 +37,5 @@ func NewService(router *mux.Router, conf config.Service, proxy proxy.Service, ap
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("MM_SESSION_ID", c.SessionId)
-	r.Header.Set("Mattermost-Plugin-ID", c.SourcePluginId)
 	s.router.ServeHTTP(w, r)
 }

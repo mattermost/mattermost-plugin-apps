@@ -5,7 +5,7 @@ package restapi
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/api4"
+	"github.com/mattermost/mattermost-server/v6/api4"
 
 	"github.com/stretchr/testify/require"
 )
@@ -24,24 +24,24 @@ func TestKVE2E(t *testing.T) {
 		}
 
 		// set
-		outSet, resp := th.BotClientPP.KVSet(id, prefix, in)
+		outSet, resp, err := th.BotClientPP.KVSet(id, prefix, in)
+
 		api4.CheckOKStatus(t, resp)
 		outSetMap, ok := outSet.(map[string]interface{})
 		require.True(t, ok)
-		require.Nil(t, resp.Error)
 		require.Equal(t, outSetMap["changed"], true)
 
 		// get
 		var outGet map[string]interface{}
-		resp = th.BotClientPP.KVGet(id, prefix, &outGet)
+		resp, err = th.BotClientPP.KVGet(id, prefix, &outGet)
+		require.NoError(t, err)
 		api4.CheckOKStatus(t, resp)
-		require.Nil(t, resp.Error)
 		require.True(t, ok)
 		require.Equal(t, outGet["test_bool"], true)
 		require.Equal(t, outGet["test_string"], "test")
 
 		// delete
-		_, resp = th.BotClientPP.KVDelete(id, prefix)
-		api4.CheckNoError(t, resp)
+		_, err = th.BotClientPP.KVDelete(id, prefix)
+		require.NoError(t, err)
 	})
 }

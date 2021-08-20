@@ -8,11 +8,12 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -217,6 +218,8 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 	return upstream.Notify(up, app, creq)
 }
 
+var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
+
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
 	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
@@ -225,7 +228,28 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 
 	subs := []*apps.Subscription{}
 	subs = append(subs, postSubs...)
-	mentions := model.PossibleAtMentions(post.Message)
+
+	// This code is copied over from mattermost-server/app.possibleAtMentions
+	possibleAtMentions := func(message string) []string {
+		var names []string
+
+		if !strings.Contains(message, "@") {
+			return names
+		}
+
+		alreadyMentioned := make(map[string]bool)
+		for _, match := range atMentionRegexp.FindAllString(message, -1) {
+			name := model.NormalizeUsername(match[1:])
+			if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+				names = append(names, name)
+				alreadyMentioned[name] = true
+			}
+		}
+
+		return names
+	}
+
+	mentions := possibleAtMentions(post.Message)
 
 	botCanRead := map[string]bool{}
 	if len(mentions) > 0 {
@@ -248,7 +272,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 						continue
 					}
 
-					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PermissionReadChannel)
 					botCanRead[app.BotUserID] = canRead
 
 					if canRead {

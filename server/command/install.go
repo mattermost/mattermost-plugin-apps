@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
@@ -129,6 +129,6 @@ func (s *service) installApp(m *apps.Manifest, appSecret string, params *command
 
 	return &model.CommandResponse{
 		Text:         "please continue by filling out the interactive form",
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}, nil
 }
