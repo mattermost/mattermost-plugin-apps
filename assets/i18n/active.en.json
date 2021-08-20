@@ -1,7 +1,17 @@
 {
   "apps.command.debug.addManifest.error.url": "you must add a `--url`",
+  "apps.command.developersOnly": "{{.Command}} is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console.",
   "apps.command.disable.error.appID": "you need to specify the app id",
   "apps.command.enable.error.appID": "you need to specify the app id",
+  "apps.command.enableBot": "the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to {{.URL}} and enable it.",
+  "apps.command.enableOAuth": "the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.URL}} and enable it.",
+  "apps.command.error.details": "Error details:",
+  "apps.command.error.header": "Command failed.",
+  "apps.command.error.invalidArguments": "invalid arguments to command.Handler. Please contact your system administrator",
+  "apps.command.error.localized": "Error: **{{.LocalizedError}}**",
+  "apps.command.error.mustBeAdmin": "you need to be a system admin to run this command",
+  "apps.command.error.needSubCommand": "expected a (sub-)command",
+  "apps.command.error.noSubCommand": "no subcommand specified, nothing to do",
   "apps.command.info.rest": "{{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
   "apps.command.info.version": "Mattermost Apps plugin version: {{.Version}}, ",
   "apps.command.install.aws.error.manifest": "failed to get manifest from S3",
@@ -17,6 +27,8 @@
   "apps.command.list.status.installed": "**Installed**",
   "apps.command.list.table.header": "| Name | Status | Type | Version | Account | Locations | Permissions |",
   "apps.command.list.version.marketplace": ", {{.Version}} in marketplace",
+  "apps.command.notSupported": "{{.Command}} is not a supported command and should not have been invoked. Please contact your system administrator",
   "apps.command.uninstall.error.needAppId": "you need to specify the app id",
+  "apps.command.unknown": "unknown command: {{.Command}}",
   "apps.utils.error.clienFromSession.failedSession": "failed to load session"
 }

@@ -3,6 +3,10 @@
     "hash": "sha1-cdb355c57a0b8e2db43426f83f43951edbf0bea0",
     "other": "debes añadir una `--url`"
   },
+  "apps.command.developersOnly": {
+    "hash": "sha1-5d27c2063ba05693adda4436b7ec89317f648ba9",
+    "other": "{{.Command}} sólo está disponible en el modo desarrollador. Debes habilitar el `Modo Desarrollador` y los `Comandos de prueba` en la Consola del Sistema."
+  },
   "apps.command.disable.error.appID": {
     "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
     "other": "debes especificar un app id"
@@ -10,6 +14,42 @@
   "apps.command.enable.error.appID": {
     "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
     "other": "debes especificar un app id"
+  },
+  "apps.command.enableBot": {
+    "hash": "sha1-cb813050383d2b10d06aeedb9a9de18a2aeef887",
+    "other": "la configuración de sistema `Permitir la Creación de Cuentas Bot` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
+  },
+  "apps.command.enableOAuth": {
+    "hash": "sha1-9dc3685a4939013367f1f2ec147d11711b40a77e",
+    "other": "la configuración de sistema `Habilitar el Proveedor de Servicios de OAuth 2.0` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
+  },
+  "apps.command.error.details": {
+    "hash": "sha1-68313a27c1ab422bc0d3de4e63dc83279152eda6",
+    "other": "Detalles del error:"
+  },
+  "apps.command.error.header": {
+    "hash": "sha1-112385d1f20f31c5c1aa7e78e93d3590064a43e7",
+    "other": "El command ha fallado."
+  },
+  "apps.command.error.invalidArguments": {
+    "hash": "sha1-325bb7060ccf3f80d5d334a8104393160a1550e3",
+    "other": "argumentos no válidos para `command.Handler`. Por favor, contacte con su administrador del sistema."
+  },
+  "apps.command.error.localized": {
+    "hash": "sha1-d71db283d610310d1e4cbb09cec9626f6e322523",
+    "other": "Error: **{{.LocalizedError}}**"
+  },
+  "apps.command.error.mustBeAdmin": {
+    "hash": "sha1-3a26a3ec99453ca4e3da6b41fa393397954eded7",
+    "other": "debe ser un administrador del sistema para ejecutar este comando"
+  },
+  "apps.command.error.needSubCommand": {
+    "hash": "sha1-2403138799c253439c295946911e52855a6446b0",
+    "other": "se esperaba un (sub-)comando"
+  },
+  "apps.command.error.noSubCommand": {
+    "hash": "sha1-6c7ab4369ce4bb3763933b17eb856028b793a90b",
+    "other": "subcomando no especificado, no se hace nada"
   },
   "apps.command.info.rest": {
     "hash": "sha1-9e5bfa35ffb01cf0abe8b36c53c3194ce31a3a16",
@@ -41,7 +81,7 @@
   },
   "apps.command.install.http.error.decodeManifest": {
     "hash": "sha1-df9fc5c714531a862d86f94afdccb48b42a09359",
-    "other": "no se ha podido descodificar {{.ManifestURL}}"
+    "other": "no se ha podido decodificar {{.ManifestURL}}"
   },
   "apps.command.install.http.error.url": {
     "hash": "sha1-ad45e774b1e5bafc20627e9eb95cdd58d0e07c15",
@@ -71,9 +111,17 @@
     "hash": "sha1-d3494c598272157bab46c74c0378b9fd48790a5e",
     "other": ", {{.Version}} en la tienda"
   },
+  "apps.command.notSupported": {
+    "hash": "sha1-18febfbf8a578b22b84889a3d220e6a048148fd9",
+    "other": "{{.Command}} no es un comando soportado y no debería de haber sido invocado. Por favor, contacte con su administrador de sistema"
+  },
   "apps.command.uninstall.error.needAppId": {
     "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
     "other": "debe especificar un app id"
+  },
+  "apps.command.unknown": {
+    "hash": "sha1-7d7a79f6ffebf668c930aa18cda75bb083d8b196",
+    "other": "comando desconocido: {{.Command}}"
   },
   "apps.utils.error.clienFromSession.failedSession": {
     "hash": "sha1-f11f2beaec2e62e5fded8febcdb5036b2f4ed3d8",
