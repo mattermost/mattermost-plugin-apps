@@ -15,19 +15,18 @@ import (
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
-	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
-
 	var includePluginApps bool
 	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
 	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")
 	err := fs.Parse(params.current)
 	if err != nil {
-		return s.errorOut(params, err)
+		return s.errorOut(params, nil, err)
 	}
 
 	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
+	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	txt := s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "apps.command.list.table.header",
 		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",

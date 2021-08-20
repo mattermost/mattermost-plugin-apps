@@ -11,14 +11,14 @@ type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Client, error) {
+func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Client, utils.LocError, error) {
 	conf, mm, _ := config.Basic()
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID, config.I18N())
+	client, locError, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
 	if err != nil {
-		return nil, err
+		return nil, locError, err
 	}
 
-	return &httpClient{client}, nil
+	return &httpClient{client}, nil, nil
 }
 
 // User section
