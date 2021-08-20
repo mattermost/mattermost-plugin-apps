@@ -193,7 +193,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []apps.Binding, locPrefi
 		if b.Form != nil {
 			clean, problems := cleanForm(*b.Form)
 			for _, prob := range problems {
-				log.WithError(prob).Debugf("invalid form field in bingding")
+				log.WithError(prob).Debugf("invalid form field in binding")
 			}
 			b.Form = &clean
 		}
