@@ -78,19 +78,21 @@ func (c *ClientPP) SetOAuthToken(token string) {
 	c.AuthType = model.HeaderBearer
 }
 
-func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (interface{}, *model.Response, error) {
+func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model.Response, error) {
 	r, err := c.DoAPIPOST(c.kvpath(prefix, id), utils.ToJSON(in)) // nolint:bodyclose
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return false, model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	v, err := interfaceFromJSON(r.Body)
-	if err != nil {
-		return nil, model.BuildResponse(r), err
+	var out map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&out); err != nil {
+		return false, model.BuildResponse(r), err
 	}
 
-	return v, model.BuildResponse(r), nil
+	changed := out["changed"].(bool)
+
+	return changed, model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) (*model.Response, error) {
@@ -312,15 +314,6 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 	}
 
 	return rp, nil
-}
-
-func interfaceFromJSON(data io.Reader) (interface{}, error) {
-	var objmap interface{}
-	if err := json.NewDecoder(data).Decode(&objmap); err != nil {
-		return nil, err
-	}
-
-	return objmap, nil
 }
 
 func (c *ClientPP) closeBody(r *http.Response) {
