@@ -25,7 +25,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	router := mux.NewRouter()
 	Init(router, conf, proxy, nil)
 
-	expected := &apps.Context{
+	expected := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:    "some_post_id",
 			ChannelID: "some_channel_id",
@@ -34,9 +34,9 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 		},
 	}
 
-	bindings := []*apps.Binding{{Location: apps.LocationCommand}}
+	bindings := []apps.Binding{{Location: apps.LocationCommand}}
 
-	proxy.EXPECT().GetBindings("some_session_id", "some_user_id", expected).Return(bindings, nil)
+	proxy.EXPECT().GetBindings(gomock.Any(), expected).Return(bindings, nil)
 
 	query := url.Values{
 		"post_id":         {"some_post_id"},
@@ -52,7 +52,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	require.NoError(t, err)
 
 	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	req.Header.Add("Mattermost-Session-Id", "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()
@@ -63,7 +63,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, b)
 
-	bindingsOut := []*apps.Binding{}
+	bindingsOut := []apps.Binding{}
 	err = json.Unmarshal(b, &bindingsOut)
 	require.NoError(t, err)
 	require.Equal(t, bindings, bindingsOut)

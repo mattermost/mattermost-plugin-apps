@@ -58,6 +58,16 @@ const InitialInvokePolicyDocument = `{
 				"arn:aws:s3:::{{.Bucket}}/manifests/*",
 				"arn:aws:s3:::{{.Bucket}}/static/*"
 			]
+		},
+		{
+			"Sid": "AllowS3list",
+			"Effect": "Allow",
+			"Action": [
+				"s3:ListBucket"
+			],
+			"Resource": [
+				"arn:aws:s3:::{{.Bucket}}"
+			]
 		}
 	]
 }`

@@ -50,6 +50,7 @@ func init() {
 	awsTestCmd.AddCommand(awsTestLambdaCmd)
 	awsTestCmd.AddCommand(awsTestProvisionCmd)
 	awsTestCmd.AddCommand(awsTestS3Cmd)
+	awsTestCmd.AddCommand(awsTestS3ListCmd)
 }
 
 var awsCmd = &cobra.Command{
@@ -156,18 +157,20 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a provisioned resource",
 }
 
-func helloLambda() *apps.App {
-	return &apps.App{
+func helloLambda() apps.App {
+	return apps.App{
+		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
-			AppType: apps.AppTypeAWSLambda,
 			Version: "demo",
-			AWSLambda: []apps.AWSLambda{
-				{
-					Path:    "/",
-					Name:    "go-function",
-					Handler: "hello-lambda",
-					Runtime: "go1.x",
+			AWSLambda: &apps.AWSLambda{
+				Functions: []apps.AWSLambdaFunction{
+					{
+						Path:    "/",
+						Name:    "hello-lambda",
+						Handler: "hello-lambda",
+						Runtime: "go1.x",
+					},
 				},
 			},
 		},
@@ -184,7 +187,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(&helloLambda().Manifest, "test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -204,6 +207,25 @@ var awsTestS3Cmd = &cobra.Command{
 	},
 }
 
+var awsTestS3ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "test listing S3 manifests",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		upTest, err := makeTestAWSUpstream()
+		if err != nil {
+			return err
+		}
+
+		resp, err := upTest.ListS3Apps("hello")
+		if err != nil {
+			return err
+		}
+		fmt.Println(resp)
+		return nil
+	},
+}
+
 var awsTestLambdaCmd = &cobra.Command{
 	Use:   "lambda",
 	Short: "test accessing hello-lambda /ping function",
@@ -214,7 +236,7 @@ var awsTestLambdaCmd = &cobra.Command{
 			return err
 		}
 
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},

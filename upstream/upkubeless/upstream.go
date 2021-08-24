@@ -45,10 +45,13 @@ func MakeUpstream() (*Upstream, error) {
 	}, nil
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.Kubeless == nil {
+		return nil, errors.New("no 'kubeless' section in manifest.json")
+	}
 	clientset := kubelessutil.GetClientOutOfCluster()
 
-	url, err := resolvePath(clientset, &app.Manifest, creq.Path)
+	url, err := resolvePath(clientset, app.Manifest, creq.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +71,7 @@ func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) 
 }
 
 // resolvePath resolved a call path into a fully-qualified URL.
-func resolvePath(clientset kubernetes.Interface, m *apps.Manifest, path string) (string, error) {
+func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (string, error) {
 	funcName := match(m, path)
 	if funcName == "" {
 		return "", utils.ErrNotFound
@@ -124,14 +127,14 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	return []byte(resp.Body), nil
 }
 
-func (u *Upstream) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 
-func match(m *apps.Manifest, callPath string) string {
+func match(m apps.Manifest, callPath string) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.KubelessFunctions {
+	for _, f := range m.Kubeless.Functions {
 		if strings.HasPrefix(callPath, f.CallPath) {
 			if len(f.CallPath) > len(matchedPath) {
 				matchedName = FunctionName(m.AppID, m.Version, f.Handler)

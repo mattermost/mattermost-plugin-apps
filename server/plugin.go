@@ -16,10 +16,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -38,8 +37,6 @@ type Plugin struct {
 	store       *store.Service
 	appservices appservices.Service
 	proxy       proxy.Service
-
-	command command.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
@@ -90,6 +87,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
+	p.store.App.InitBuiltin(builtin.App(conf))
 	p.log.Debugf("Initialized persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
@@ -101,20 +99,18 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
+	p.proxy.AddBuiltinUpstream(
+		builtin.AppID,
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.store, p.httpOut),
+	)
 	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.conf, p.store)
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
-		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 	)
-
-	p.command, err = command.MakeService(p.conf, p.proxy, p.httpOut)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize own command handling")
-	}
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
@@ -145,12 +141,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command, p.proxy)
-}
-
-func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	resp, _ := p.command.ExecuteCommand(c, args)
-	return resp, nil
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.proxy)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
@@ -158,41 +149,42 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.Get().SetContextDefaults(&apps.Context{
-		UserID: user.Id,
-		ExpandedContext: apps.ExpandedContext{
-			User: user,
+	err := p.proxy.Notify(
+		apps.Context{
+			UserID: user.Id,
+			ExpandedContext: apps.ExpandedContext{
+				User: user,
+			},
 		},
-	})
-	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
+		apps.SubjectUserCreated)
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
 	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm, actingUser))
+	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
 	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm, actingUser))
+	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm, actingUser))
+	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
 	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm, actingUser))
+	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
 	}
@@ -209,28 +201,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	err = p.proxy.NotifyMessageHasBeenPosted(post, p.newPostCreatedContext(post))
-	if err != nil {
-		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
-	}
-}
-
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.Get().SetContextDefaults(&apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
-		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
-}
-
-func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+	err = p.proxy.NotifyMessageHasBeenPosted(post, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -241,38 +212,43 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 			Post: post,
 		},
 	})
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
+	}
 }
 
-func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	err := p.proxy.Notify(
+		apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    ch.TeamId,
+				ChannelID: ch.Id,
+			},
+			UserID: ch.CreatorId,
+			ExpandedContext: apps.ExpandedContext{
+				Channel: ch,
+			},
+		},
+		apps.SubjectChannelCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling ChannelHasBeenCreated")
 	}
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       tm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: tm.UserId,
+	}
 }
 
-func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       cm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: cm.UserId,
+	}
 }

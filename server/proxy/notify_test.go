@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -30,28 +29,28 @@ type notifyTestcase struct {
 func sendCallResponse(t *testing.T, path string, cr *apps.CallResponse, up *mock_upstream.MockUpstream) {
 	b, _ := json.Marshal(cr)
 	reader := ioutil.NopCloser(bytes.NewReader(b))
-	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ *apps.App, c *apps.CallRequest, async bool) (io.ReadCloser, error) {
-		require.Equal(t, path, c.Path)
+	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+		require.Equal(t, path, creq.Path)
 		return reader, nil
 	})
 }
 
-var app1 = &apps.App{
+var app1 = apps.App{
+	DeployType:  apps.DeployBuiltin,
 	BotUserID:   "bot1",
 	BotUsername: "bot1username",
 	Manifest: apps.Manifest{
 		AppID:       apps.AppID("app1"),
-		AppType:     apps.AppTypeBuiltin,
 		DisplayName: "App 1",
 	},
 }
 
-var app2 = &apps.App{
+var app2 = apps.App{
+	DeployType:  apps.DeployBuiltin,
 	BotUserID:   "bot2",
 	BotUsername: "bot2username",
 	Manifest: apps.Manifest{
 		AppID:       apps.AppID("app2"),
-		AppType:     apps.AppTypeBuiltin,
 		DisplayName: "App 2",
 	},
 }
@@ -69,13 +68,11 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
-				cc := &apps.Context{
+				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyMessageHasBeenPosted(post, cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -102,13 +99,11 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
-				cc := &apps.Context{
+				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyMessageHasBeenPosted(post, cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -139,15 +134,13 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
-				cc := &apps.Context{
+				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(true)
+
+				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(true)
-
-				err := p.NotifyMessageHasBeenPosted(post, cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -173,21 +166,19 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
-				cc := &apps.Context{
+				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(false)
+
+				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(false)
-
-				err := p.NotifyMessageHasBeenPosted(post, cc)
+				})
 				require.NoError(t, err)
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			runNotifyTest(t, []*apps.App{app1, app2}, tc)
+			runNotifyTest(t, []apps.App{app1, app2}, tc)
 		})
 	}
 }
@@ -201,13 +192,11 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				"sub.bot_joined_channel":                  {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -229,13 +218,11 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/user_joined_channel", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -262,19 +249,17 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/bot_joined_channel1", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserID: app1.BotUserID,
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
@@ -287,13 +272,11 @@ func TestUserHasLeftChannel(t *testing.T) {
 				"sub.bot_left_channel":                  {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -315,13 +298,11 @@ func TestUserHasLeftChannel(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/user_left_channel", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -348,19 +329,17 @@ func TestUserHasLeftChannel(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/bot_left_channel1", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserID: app1.BotUserID,
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftChannel(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
@@ -373,13 +352,11 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				"sub.bot_joined_team":               {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -401,13 +378,11 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/user_joined_team", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -434,19 +409,17 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/bot_joined_team1", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserID: app1.BotUserID,
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasJoinedTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
@@ -459,13 +432,11 @@ func TestUserHasLeftTeam(t *testing.T) {
 				"sub.bot_left_team":               {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -487,13 +458,11 @@ func TestUserHasLeftTeam(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/user_left_team", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
@@ -520,19 +489,17 @@ func TestUserHasLeftTeam(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/bot_left_team1", cr, up[app1.AppID])
 
-				cc := &apps.Context{
+				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserID: app1.BotUserID,
 					UserAgentContext: apps.UserAgentContext{
 						TeamID: "some_team_id",
 					},
-				}
-
-				err := p.NotifyUserHasLeftTeam(cc)
+				})
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
@@ -555,19 +522,19 @@ func TestChannelHasBeenCreated(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/channel_created", cr, up[app1.AppID])
 
-				cc := &apps.Context{
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-						TeamID:    "some_team_id",
+				err := p.Notify(
+					apps.Context{
+						UserAgentContext: apps.UserAgentContext{
+							ChannelID: "some_channel_id",
+							TeamID:    "some_team_id",
+						},
 					},
-				}
-
-				err := p.Notify(cc, apps.SubjectChannelCreated)
+					apps.SubjectChannelCreated)
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
@@ -590,24 +557,24 @@ func TestUserHasBeenCreated(t *testing.T) {
 				}
 				sendCallResponse(t, "/notify/user_created", cr, up[app1.AppID])
 
-				cc := &apps.Context{
-					UserID: "some_user_id",
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-						TeamID:    "some_team_id",
+				err := p.Notify(
+					apps.Context{
+						UserID: "some_user_id",
+						UserAgentContext: apps.UserAgentContext{
+							ChannelID: "some_channel_id",
+							TeamID:    "some_team_id",
+						},
 					},
-				}
-
-				err := p.Notify(cc, apps.SubjectUserCreated)
+					apps.SubjectUserCreated)
 				require.NoError(t, err)
 			},
 		},
 	} {
-		runNotifyTest(t, []*apps.App{app1, app2}, tc)
+		runNotifyTest(t, []apps.App{app1, app2}, tc)
 	}
 }
 
-func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
+func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	ctrl := gomock.NewController(t)
 
 	conf, testAPI := config.NewTestService(&config.Config{
@@ -620,19 +587,18 @@ func runNotifyTest(t *testing.T, a []*apps.App, tc notifyTestcase) {
 		},
 	})
 
-	testAPI.On("LogDebug", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-
 	s, err := store.MakeService(conf, nil)
 	require.NoError(t, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
-	appMap := map[apps.AppID]*apps.App{}
+	appMap := map[apps.AppID]apps.App{}
 	upMap := map[apps.AppID]upstream.Upstream{}
 	upMockMap := map[apps.AppID]*mock_upstream.MockUpstream{}
-	for _, app := range a {
+	for i := range allApps {
+		app := allApps[i]
 		appMap[app.AppID] = app
-		appStore.EXPECT().Get(app.AppID).Return(app, nil).AnyTimes()
+		appStore.EXPECT().Get(app.AppID).Return(&app, nil).AnyTimes()
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		upMap[app.AppID] = up

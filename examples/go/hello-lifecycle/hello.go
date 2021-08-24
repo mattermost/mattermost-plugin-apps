@@ -3,25 +3,17 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/server"
 )
 
 //go:embed manifest.json
 var manifestData []byte
 
-const (
-	host = "localhost"
-	port = 8080
-)
-
 func main() {
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
-
 	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings", writeJSON([]byte("{}")))
 
@@ -33,11 +25,7 @@ func main() {
 
 	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
 
-	addr := fmt.Sprintf("%v:%v", host, port)
-	rootURL := "http://" + addr
-	fmt.Printf("hello-lifecycle app listening at %s \n", rootURL)
-	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
-	http.ListenAndServe(addr, nil)
+	server.Run(manifestData)
 }
 
 func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Request) {

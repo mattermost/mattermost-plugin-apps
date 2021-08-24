@@ -1,25 +1,17 @@
-package main
+package app
 
 import (
 	"embed"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 )
 
-//go:embed manifest-http.json
-var manifestHTTPData []byte
-
 //go:embed manifest.json
-var manifestAWSData []byte
+var ManifestData []byte
 
 //go:embed pong.json
 var pongData []byte
@@ -30,24 +22,11 @@ var bindingsData []byte
 //go:embed send_form.json
 var formData []byte
 
-const (
-	host = "localhost"
-	port = 8080
-)
-
 //go:embed static
 var static embed.FS
 
-func main() {
-	localMode := os.Getenv("LOCAL") == "true"
-
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-
-	manifestData := manifestAWSData
-	if localMode {
-		manifestData = manifestHTTPData
-	}
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
+func init() {
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static))))
 
 	// Returns "PONG". Used for `appsctl test aws`.
 	http.HandleFunc("/ping", writeJSON(pongData))
@@ -60,14 +39,6 @@ func main() {
 
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send/submit", send)
-
-	if localMode {
-		addr := fmt.Sprintf("%v:%v", host, port)
-		fmt.Printf(`hello-world app listening at http://%s`, addr)
-		http.ListenAndServe(":8080", nil)
-	} else {
-		lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
-	}
 }
 
 func send(w http.ResponseWriter, req *http.Request) {

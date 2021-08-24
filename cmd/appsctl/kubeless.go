@@ -39,28 +39,30 @@ var kubelessProvisionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if len(m.KubelessFunctions) == 0 {
+		if m.Kubeless == nil || len(m.Kubeless.Functions) == 0 {
 			return errors.New("no functions to provision, check manifest.json")
 		}
 
-		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.KubelessFunctions))
+		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.Kubeless.Functions))
 		fmt.Printf("You can now install it in Mattermost using:\n")
 		fmt.Printf("  /apps install kubeless <manifest URL>\n\n")
 		return nil
 	},
 }
 
-func helloKubeless() *apps.App {
-	return &apps.App{
+func helloKubeless() apps.App {
+	return apps.App{
+		DeployType: apps.DeployKubeless,
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
-			AppType: apps.AppTypeKubeless,
 			Version: "demo",
-			KubelessFunctions: []apps.KubelessFunction{
-				{
-					CallPath: "/",
-					Handler:  "app.handler",
-					Runtime:  "nodejs14", // see /examples/js/hello-world
+			Kubeless: &apps.Kubeless{
+				Functions: []apps.KubelessFunction{
+					{
+						CallPath: "/",
+						Runtime:  "nodejs14", // see /examples/js/hello-world
+						Handler:  "app.handler",
+					},
 				},
 			},
 		},
@@ -82,7 +84,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 		}
 
 		app := helloKubeless()
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
@@ -91,7 +93,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 			"app_id", app.AppID,
 			"version", app.Version,
 			"call_path", creq.Call.Path,
-			"handler", app.Manifest.KubelessFunctions[0].Handler)
+			"handler", app.Manifest.Kubeless.Functions[0].Handler)
 		resp, err := upTest.Roundtrip(app, creq, false)
 		if err != nil {
 			return err
