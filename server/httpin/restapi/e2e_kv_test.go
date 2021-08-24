@@ -25,7 +25,7 @@ func TestKVE2E(t *testing.T) {
 
 		// set
 		outSet, resp, err := th.BotClientPP.KVSet(id, prefix, in)
-
+		require.NoError(t, err)
 		api4.CheckOKStatus(t, resp)
 		outSetMap, ok := outSet.(map[string]interface{})
 		require.True(t, ok)
