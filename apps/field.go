@@ -48,9 +48,10 @@ type Field struct {
 	// Name is the name of the JSON field to use.
 	Name string `json:"name"`
 
-	Type       FieldType `json:"type"`
-	IsRequired bool      `json:"is_required,omitempty"`
-	ReadOnly   bool      `json:"readonly,omitempty"`
+	Type             FieldType `json:"type"`
+	IsRequired       bool      `json:"is_required,omitempty"`
+	HideRequiredStar bool      `json:"hide_required_star,omitempty"`
+	ReadOnly         bool      `json:"readonly,omitempty"`
 
 	// Present (default) value of the field
 	Value interface{} `json:"value,omitempty"`
