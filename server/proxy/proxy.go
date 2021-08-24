@@ -229,26 +229,6 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 	subs := []*apps.Subscription{}
 	subs = append(subs, postSubs...)
 
-	// This code is copied over from mattermost-server/app.possibleAtMentions
-	possibleAtMentions := func(message string) []string {
-		var names []string
-
-		if !strings.Contains(message, "@") {
-			return names
-		}
-
-		alreadyMentioned := make(map[string]bool)
-		for _, match := range atMentionRegexp.FindAllString(message, -1) {
-			name := model.NormalizeUsername(match[1:])
-			if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
-				names = append(names, name)
-				alreadyMentioned[name] = true
-			}
-		}
-
-		return names
-	}
-
 	mentions := possibleAtMentions(post.Message)
 
 	botCanRead := map[string]bool{}
@@ -412,4 +392,24 @@ func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 		}
 	}
 	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
+}
+
+// possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
+func possibleAtMentions(message string) []string {
+	var names []string
+
+	if !strings.Contains(message, "@") {
+		return names
+	}
+
+	alreadyMentioned := make(map[string]bool)
+	for _, match := range atMentionRegexp.FindAllString(message, -1) {
+		name := model.NormalizeUsername(match[1:])
+		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+			names = append(names, name)
+			alreadyMentioned[name] = true
+		}
+	}
+
+	return names
 }
