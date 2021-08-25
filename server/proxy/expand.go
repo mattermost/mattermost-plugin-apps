@@ -157,6 +157,14 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		}
 	}
 
+	if expand.Locale != "" {
+		if e.ActingUser != nil {
+			e.Locale = utils.GetLocaleWithUser(e.conf.MattermostConfig().Config(), e.ActingUser)
+		} else {
+			e.Locale = utils.GetLocale(e.conf.MattermostAPI(), e.conf.MattermostConfig().Config(), e.ActingUserID)
+		}
+	}
+
 	return &clone, nil
 }
 
