@@ -4,8 +4,6 @@
 package command
 
 import (
-	"errors"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
@@ -13,14 +11,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (s *service) executeUninstall(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeUninstall(params *commandParams) *model.CommandResponse {
 	if len(params.current) == 0 {
 		return s.errorOut(params, utils.NewLocError(&i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.command.uninstall.error.needAppId",
 				Other: "you need to specify the app id",
 			},
-		}), errors.New("you need to specify the app id"))
+		}), nil)
 	}
 
 	client, locErr, err := s.newMMClient(params.commandArgs)
@@ -40,5 +38,5 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 	return &model.CommandResponse{
 		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+	}
 }

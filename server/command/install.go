@@ -15,14 +15,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (s *service) executeInstallMarketplace(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInstallMarketplace(params *commandParams) *model.CommandResponse {
 	if len(params.current) == 0 {
 		return s.errorOut(params, utils.NewLocError(&i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.command.install.error.appID",
 				Other: "you must specify the app id",
 			},
-		}), errors.New("you must specify the app id"))
+		}), nil)
 	}
 	appID := apps.AppID(params.current[0])
 
@@ -39,14 +39,14 @@ func (s *service) executeInstallMarketplace(params *commandParams) (*model.Comma
 	return s.installApp(m, "", params)
 }
 
-func (s *service) executeInstallAWS(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInstallAWS(params *commandParams) *model.CommandResponse {
 	if len(params.current) == 0 {
 		return s.errorOut(params, utils.NewLocError(&i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.command.install.error.appID",
 				Other: "you must specify the app id",
 			},
-		}), errors.New("you must specify the app id"))
+		}), nil)
 	}
 	appID := apps.AppID(params.current[0])
 
@@ -56,7 +56,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 				ID:    "apps.command.install.aws.error.version",
 				Other: "you must specify the app version",
 			},
-		}), errors.New("you must specify the app version"))
+		}), nil)
 	}
 	version := apps.AppVersion(params.current[1])
 
@@ -78,7 +78,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 	return s.installApp(m, "", params)
 }
 
-func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInstallHTTP(params *commandParams) *model.CommandResponse {
 	appSecret := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&appSecret, "app-secret", "", "App secret")
@@ -93,7 +93,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 				ID:    "apps.command.install.http.error.url",
 				Other: "you must specify a manifest URL",
 			},
-		}), errors.New("you must specify a manifest URL"))
+		}), nil)
 	}
 	manifestURL := params.current[0]
 
@@ -125,14 +125,19 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 	return s.installApp(m, appSecret, params)
 }
 
-func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInstallKubeless(params *commandParams) *model.CommandResponse {
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	err := fs.Parse(params.current)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, nil, err)
 	}
 	if len(params.current) == 0 {
-		return errorOut(params, errors.New("you must specify a manifest URL"))
+		return s.errorOut(params, utils.NewLocError(&i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "apps.command.install.http.error.url",
+				Other: "you must specify a manifest URL",
+			},
+		}), nil)
 	}
 	manifestURL := params.current[0]
 
@@ -140,23 +145,23 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 	conf := s.conf.Get()
 	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, nil, err)
 	}
 
 	m, err := apps.ManifestFromJSON(data)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, nil, err)
 	}
 
 	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
 	if err != nil {
-		return errorOut(params, err)
+		return s.errorOut(params, nil, err)
 	}
 
 	return s.installApp(m, "", params)
 }
 
-func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) (*model.CommandResponse, error) {
+func (s *service) installApp(m *apps.Manifest, appSecret string, params *commandParams) *model.CommandResponse {
 	conf := s.conf.Get()
 
 	// Finish the installation when the Dialog is submitted, see

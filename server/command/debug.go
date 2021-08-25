@@ -4,8 +4,6 @@
 package command
 
 import (
-	"errors"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/spf13/pflag"
@@ -15,13 +13,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeDebugClean(params *commandParams) *model.CommandResponse {
 	_ = s.conf.MattermostAPI().KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
 	return out(params, "Deleted all KV records and emptied the config.")
 }
 
-func (s *service) executeDebugBindings(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeDebugBindings(params *commandParams) *model.CommandResponse {
 	bindings, err := s.proxy.GetBindings(
 		params.commandArgs.Session.Id,
 		params.commandArgs.UserId,
@@ -32,7 +30,7 @@ func (s *service) executeDebugBindings(params *commandParams) (*model.CommandRes
 	return out(params, utils.JSONBlock(bindings))
 }
 
-func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeDebugAddManifest(params *commandParams) *model.CommandResponse {
 	manifestURL := ""
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringVar(&manifestURL, "url", "", "manifest URL")
@@ -46,7 +44,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 				ID:    "apps.command.debug.addManifest.error.url",
 				Other: "you must add a `--url`",
 			},
-		}), errors.New("you must add a `--url`"))
+		}), nil)
 	}
 
 	// Inside a debug command: all URLs are trusted.
@@ -68,5 +66,5 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	return &model.CommandResponse{
 		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+	}
 }

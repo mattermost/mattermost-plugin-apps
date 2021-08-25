@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
-func (s *service) executeInfo(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeInfo(params *commandParams) *model.CommandResponse {
 	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 
 	conf := s.conf.Get()

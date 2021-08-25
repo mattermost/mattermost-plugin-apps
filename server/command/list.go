@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
+func (s *service) executeList(params *commandParams) *model.CommandResponse {
 	var includePluginApps bool
 	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
 	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")

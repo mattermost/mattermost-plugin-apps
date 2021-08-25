@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -20,7 +19,7 @@ import (
 
 type Service interface {
 	config.Configurable
-	ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error)
+	ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) *model.CommandResponse
 }
 
 type service struct {
@@ -38,7 +37,7 @@ type commandParams struct {
 }
 
 type commandHandler struct {
-	f            func(*commandParams) (*model.CommandResponse, error)
+	f            func(*commandParams) *model.CommandResponse
 	subCommands  map[string]commandHandler
 	devOnly      bool
 	autoComplete *model.AutocompleteData
@@ -268,7 +267,7 @@ func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.Au
 }
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
-func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error) {
+func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) *model.CommandResponse {
 	params := &commandParams{
 		pluginContext: pluginContext,
 		commandArgs:   commandArgs,
@@ -279,7 +278,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 				ID:    "apps.command.error.invalidArguments",
 				Other: "invalid arguments to command.Handler. Please contact your system administrator",
 			},
-		}), errors.New("invalid arguments to command.Handler. Please contact your system administrator"))
+		}), nil)
 	}
 
 	conf := s.conf.MattermostConfig().Config()
@@ -294,7 +293,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 			TemplateData: map[string]string{
 				"URL": url,
 			},
-		}), fmt.Errorf("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it", url))
+		}), nil)
 	}
 
 	enableBotAccounts := conf.ServiceSettings.EnableBotAccountCreation
@@ -308,7 +307,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 			TemplateData: map[string]string{
 				"URL": url,
 			},
-		}), fmt.Errorf("the system setting `Enable Bot Account Creation` needs to be enabled in order for the Apps plugin to work. Please go to %s and enable it", url))
+		}), nil)
 	}
 
 	split := strings.Fields(commandArgs.Command)
@@ -318,7 +317,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 				ID:    "apps.command.error.noSubCommand",
 				Other: "no subcommand specified, nothing to do",
 			},
-		}), errors.New("no subcommand specified, nothing to do"))
+		}), nil)
 	}
 
 	command := split[0]
@@ -331,7 +330,7 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 			TemplateData: map[string]string{
 				"Command": command,
 			},
-		}), fmt.Errorf("%s is not a supported command and should not have been invoked. Please contact your system administrator", command))
+		}), nil)
 	}
 
 	params.current = split[1:]
@@ -339,19 +338,19 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	return s.handleMain(params)
 }
 
-func (s *service) handleMain(in *commandParams) (*model.CommandResponse, error) {
+func (s *service) handleMain(in *commandParams) *model.CommandResponse {
 	conf := s.conf.Get()
 	return s.runSubcommand(s.allSubCommands(conf), in)
 }
 
-func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) (*model.CommandResponse, error) {
+func (s *service) runSubcommand(subcommands map[string]commandHandler, params *commandParams) *model.CommandResponse {
 	if len(params.current) == 0 {
 		return s.errorOut(params, utils.NewLocError(&i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "apps.command.error.needSubCommand",
 				Other: "expected a (sub-)command",
 			},
-		}), errors.New("expected a (sub-)command"))
+		}), nil)
 	}
 	if params.current[0] == "help" {
 		return out(params, "TODO usage")
@@ -368,7 +367,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 			TemplateData: map[string]string{
 				"Command": command,
 			},
-		}), fmt.Errorf("unknown command: %s", command))
+		}), nil)
 	}
 
 	conf := s.conf.Get()
@@ -382,7 +381,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 			TemplateData: map[string]string{
 				"Command": command,
 			},
-		}), fmt.Errorf("%s is only available in developers mode. You need to enable `Developer Mode` and `Testing Commands` in the System Console", command))
+		}), nil)
 	}
 
 	p := *params
@@ -395,15 +394,15 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 	return c.f(&p)
 }
 
-func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandResponse, error)) func(*commandParams) (*model.CommandResponse, error) {
-	return func(p *commandParams) (*model.CommandResponse, error) {
+func (s *service) checkSystemAdmin(handler func(*commandParams) *model.CommandResponse) func(*commandParams) *model.CommandResponse {
+	return func(p *commandParams) *model.CommandResponse {
 		if !s.conf.MattermostAPI().User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
 			return s.errorOut(p, utils.NewLocError(&i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "apps.command.error.mustBeAdmin",
 					Other: "you need to be a system admin to run this command",
 				},
-			}), errors.New("you need to be a system admin to run this command"))
+			}), nil)
 		}
 
 		return handler(p)
@@ -425,16 +424,16 @@ func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, 
 	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
 }
 
-func out(params *commandParams, out string) (*model.CommandResponse, error) {
+func out(params *commandParams, out string) *model.CommandResponse {
 	txt := utils.CodeBlock(params.commandArgs.Command+"\n") + out
 
 	return &model.CommandResponse{
 		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+	}
 }
 
-func (s *service) errorOut(params *commandParams, locError utils.LocError, err error) (*model.CommandResponse, error) {
+func (s *service) errorOut(params *commandParams, locError utils.LocError, err error) *model.CommandResponse {
 	bundle := s.conf.I18N()
 	loc := bundle.GetUserLocalizer(params.commandArgs.UserId)
 	out := utils.CodeBlock(params.commandArgs.Command)
@@ -470,10 +469,10 @@ func (s *service) errorOut(params *commandParams, locError utils.LocError, err e
 	return &model.CommandResponse{
 		Text:         out,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, err
+	}
 }
 
-func (s *service) locOut(params *commandParams, locText *i18n.LocalizeConfig) (*model.CommandResponse, error) {
+func (s *service) locOut(params *commandParams, locText *i18n.LocalizeConfig) *model.CommandResponse {
 	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
 	locString := s.conf.I18N().LocalizeWithConfig(loc, locText)
 	txt := utils.CodeBlock(params.commandArgs.Command+"\n") + locString
@@ -481,5 +480,5 @@ func (s *service) locOut(params *commandParams, locText *i18n.LocalizeConfig) (*
 	return &model.CommandResponse{
 		Text:         txt,
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
+	}
 }
