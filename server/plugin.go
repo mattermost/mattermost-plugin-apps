@@ -156,7 +156,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	resp, _ := p.command.ExecuteCommand(c, args)
+	resp := p.command.ExecuteCommand(c, args)
 	return resp, nil
 }
 
