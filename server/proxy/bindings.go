@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -87,7 +88,7 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 
 	// TODO: ignore a 404, no bindings
 	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(resp).Debugf("Error getting bindings.")
+		log.WithError(resp).Debugf("Error getting bindings")
 		return nil
 	}
 
@@ -99,14 +100,14 @@ func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Conte
 		return nil
 	}
 
-	bindings = p.scanAppBindings(app, bindings, "")
+	bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
 
 	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
+func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location, userAgent string) []*apps.Binding {
 	out := []*apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
@@ -129,7 +130,20 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
+			log.Debugw("location is not granted to app", "location", fql)
 			continue
+		}
+
+		if fql.In(apps.LocationCommand) {
+			label := b.Label
+			if label == "" {
+				label = string(b.Location)
+			}
+
+			if strings.ContainsAny(label, " \t") {
+				log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
+				continue
+			}
 		}
 
 		if fql.IsTop() {
@@ -162,13 +176,30 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 
+		// First level of Channel Header
+		if fql == apps.LocationChannelHeader.Make(b.Location) {
+			// Must have an icon on webapp to show the icon
+			if b.Icon == "" && userAgent == "webapp" {
+				log.Debugw("Channel header button for webapp without icon", "label", b.Label)
+				continue
+			}
+		}
+
 		if len(b.Bindings) != 0 {
-			scanned := p.scanAppBindings(app, b.Bindings, fql)
+			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
 				continue
 			}
 			b.Bindings = scanned
+		}
+
+		if b.Form != nil {
+			clean, problems := cleanForm(*b.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugf("invalid form field in binding")
+			}
+			b.Form = &clean
 		}
 
 		out = append(out, &b)

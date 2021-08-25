@@ -105,10 +105,34 @@ func DumpObject(c interface{}) {
 
 func LastN(s string, n int) string {
 	out := []byte(s)
+	if len(out) > n+3 {
+		out = out[len(out)-n-3:]
+	}
 	for i := range out {
 		if i < len(out)-n {
 			out[i] = '*'
 		}
 	}
 	return string(out)
+}
+
+func GetLocale(mm *pluginapi.Client, config *model.Config, userID string) string {
+	u, _ := mm.User.Get(userID)
+	return GetLocaleWithUser(config, u)
+}
+
+func GetLocaleWithUser(config *model.Config, user *model.User) string {
+	if user != nil && user.Locale != "" {
+		return user.Locale
+	}
+
+	if locale := config.LocalizationSettings.DefaultClientLocale; locale != nil && *locale != "" {
+		return *locale
+	}
+
+	if locale := config.LocalizationSettings.DefaultServerLocale; locale != nil && *locale != "" {
+		return *locale
+	}
+
+	return "en"
 }

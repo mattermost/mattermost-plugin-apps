@@ -10,6 +10,8 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -40,6 +42,15 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
+func makeAppStore(s *Service, conf config.Config) (*appStore, error) {
+	appStore := &appStore{Service: s}
+	err := appStore.Configure(conf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize App store")
+	}
+	return appStore, nil
+}
+
 func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Lock()
 	if s.builtinInstalled == nil {
@@ -51,7 +62,7 @@ func (s *appStore) InitBuiltin(builtinApps ...*apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf config.Config) {
+func (s *appStore) Configure(conf config.Config) error {
 	_, mm, log := s.conf.Basic()
 	newInstalled := map[apps.AppID]*apps.App{}
 
@@ -76,6 +87,7 @@ func (s *appStore) Configure(conf config.Config) {
 	s.mutex.Lock()
 	s.installed = newInstalled
 	s.mutex.Unlock()
+	return nil
 }
 
 func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {

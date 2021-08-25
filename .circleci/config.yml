@@ -84,7 +84,7 @@ jobs:
           MINIO_ACCESS_KEY: minioaccesskey
           MINIO_SECRET_KEY: miniosecretkey
           MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
-      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+      - image: mattermost/mattermost-elasticsearch-docker:7.0.0
         environment:
           http.host: "0.0.0.0"
           http.port: 9200
@@ -139,6 +139,10 @@ jobs:
           command: |
             until curl --max-time 5 --output - localhost:9200; do echo waiting for Elasticsearch; sleep 5; done;
       - run:
+          name: Wait for Mattermost server
+          command: |
+            until curl --max-time 5 --output - localhost:8065/api/v4/system/ping; do echo waiting for Mattermost Server; sleep 2; done;
+      - run:
           name: Create admin user
           command: |
             STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
@@ -148,6 +152,10 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
+      - run:
+          name: Start hello-world App
+          command: make hello_world
+          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:
@@ -180,7 +188,7 @@ jobs:
           MINIO_ACCESS_KEY: minioaccesskey
           MINIO_SECRET_KEY: miniosecretkey
           MINIO_SSE_MASTER_KEY: "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574"
-      - image: mattermost/mattermost-elasticsearch-docker:6.5.1
+      - image: mattermost/mattermost-elasticsearch-docker:7.0.0
         environment:
           http.host: "0.0.0.0"
           http.port: 9200
@@ -235,6 +243,10 @@ jobs:
           command: |
             until curl --max-time 5 --output - localhost:9200; do echo waiting for Elasticsearch; sleep 5; done;
       - run:
+          name: Wait for Mattermost server
+          command: |
+            until curl --max-time 5 --output - localhost:8065/api/v4/system/ping; do echo waiting for Mattermost Server; sleep 2; done;
+      - run:
           name: Create admin user
           command: |
             STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
@@ -244,6 +256,10 @@ jobs:
       - run:
           name: Install Apps plugin
           command: make deploy
+      - run:
+          name: Start hello-world App
+          command: make hello_world
+          background: true
       - *save_go_cache
       - *restore_cypress_cache
       - run:

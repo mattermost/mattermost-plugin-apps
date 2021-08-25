@@ -162,7 +162,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(client, sessionID, cc, false, "", pluginID)
+	_, _, err = a.proxy.InstallApp(client, sessionID, cc, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

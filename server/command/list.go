@@ -27,6 +27,9 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	installed := s.proxy.GetInstalledApps()
 
 	loc := s.conf.I18N().GetUserLocalizer(params.commandArgs.UserId)
+
+	// All of this information is non sensitive.
+	// Checks for the user's permissions might be needed in the future.
 	txt := s.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "apps.command.list.table.header",
 		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",

@@ -15,21 +15,19 @@ import (
 )
 
 type StaticUpstream struct {
-	pluginID   string
 	httpClient http.Client
 }
 
 var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
 
-func NewStaticUpstream(a *apps.App, api PluginHTTPAPI) *StaticUpstream {
+func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	return &StaticUpstream{
-		pluginID:   a.PluginID,
 		httpClient: MakePluginHTTPClient(api),
 	}
 }
 
-func (u *StaticUpstream) GetStatic(p string) (io.ReadCloser, int, error) {
-	url := path.Join("/"+u.pluginID, apps.PluginAppPath, apps.StaticFolder, p)
+func (u *StaticUpstream) GetStatic(m *apps.Manifest, assetPath string) (io.ReadCloser, int, error) {
+	url := path.Join("/"+m.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)
 
 	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

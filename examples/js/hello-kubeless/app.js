@@ -1,55 +1,61 @@
-// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2021-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+
 const fetch = require('node-fetch');
 const express = require('express');
+const serverless = require('serverless-http');
 
-const app = express();
+const app = new express();
 app.use(express.json());
-const host = 'localhost';
-const port = 8080;
+const shandler = serverless(app);
 
-app.get('/manifest.json', (req, res) => {
+module.exports.handler = async (event, context) => {
+    return await shandler(event.data, context);
+};
+
+app.post('/ping', (req, res) => {
     res.json({
-        app_id: 'hello-world',
-        display_name: 'Hello, world!',
-        app_type: 'http',
-        icon: 'icon.png',
-        root_url: 'http://localhost:8080',
-        homepage_url: 'https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/js/hello-world',
-        requested_permissions: [
-            'act_as_bot',
-        ],
-        requested_locations: [
-            '/channel_header',
-            '/command',
-        ],
-    });
-});
+        type: 'ok',
+        markdown: 'PONG',
+    })
+})
+
+// app.get('/manifest.json', (req, res) => {
+//     res.json({
+//         app_id: "hello-kubeless",
+//         display_name: "Hello, kubeless world!",
+//         app_type: "kubeless",
+//         version: "demo",
+//         homepage_url: "https://www.mattermost.com",
+//         root_url: "http://localhost:8080",
+//         kubeless_functions: [
+//             {
+//                 call_path: "/",
+//                 handler: "app.Handler",
+//                 file: "app.js",
+//                 deps_file: "package.json",
+//                 runtime: "nodejs14"
+//             }
+//         ],
+//         requested_permissions: [
+//             "act_as_bot"
+//         ],
+//         requested_locations: [
+//             "/command"
+//         ]
+//     });
+// });
 
 app.post('/bindings', (req, res) => {
     res.json({
         type: 'ok',
         data: [
             {
-                location: '/channel_header',
-                bindings: [
-                    {
-                        location: 'send-button',
-                        icon: 'icon.png',
-                        label: 'send hello message',
-                        call: {
-                            path: '/send-modal',
-                        },
-                    },
-                ],
-            },
-            {
                 location: '/command',
                 bindings: [
                     {
-                        icon: 'icon.png',
-                        label: 'helloworld',
-                        description: 'Hello World app',
+                        label: 'hello-kubeless',
+                        description: 'Hello Kubeless World app',
                         hint: '[send]',
                         bindings: [
                             {
@@ -67,12 +73,11 @@ app.post('/bindings', (req, res) => {
     });
 });
 
-app.post(['/send/form', '/send-modal/submit'], (req, res) => {
+app.post(['/send/form'], (req, res) => {
     res.json({
         type: 'form',
         form: {
             title: 'Hello, world!',
-            icon: 'icon.png',
             fields: [
                 {
                     type: 'text',
@@ -87,15 +92,11 @@ app.post(['/send/form', '/send-modal/submit'], (req, res) => {
     });
 });
 
-app.get('/static/icon.png', (req, res) => {
-    res.sendFile(__dirname + '/icon.png');
-});
-
 app.post('/send/submit', async (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
-    const submittedMessage = call.values.message;
+    const submittedMessage = call.values?.message;
     if (submittedMessage) {
         message += ' ...and ' + submittedMessage + '!';
     }
@@ -131,13 +132,8 @@ app.post('/send/submit', async (req, res) => {
 
     await fetch(mattermostSiteURL + '/api/v4/posts', options);
 
-
     res.json({
         type: 'ok',
         markdown: 'Created a post in your DM channel.'
     });
-});
-
-app.listen(port, host, () => {
-    console.log(`hello-world app listening at http://${host}:${port}`);
 });

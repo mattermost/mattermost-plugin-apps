@@ -174,7 +174,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 	}
 	cc = d.conf.Get().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret, "")
+	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret)
 	if err != nil {
 		log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
 		respondWithError(w, http.StatusInternalServerError, err)
