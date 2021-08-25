@@ -1,5 +1,3 @@
-// +build !e2e
-
 package restapi
 
 import (
