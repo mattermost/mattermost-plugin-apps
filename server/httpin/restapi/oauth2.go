@@ -23,7 +23,7 @@ func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *restapi) oauth2StoreUser(w http.ResponseWriter, r *http.Request) {
-	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreKeyLength)
+	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

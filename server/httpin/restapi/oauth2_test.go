@@ -66,8 +66,8 @@ func TestOAuth2StoreUser(t *testing.T) {
 		defer server.Close()
 		Init(router, conf, proxy, appServices)
 
-		payload := make([]byte, MaxKVStoreKeyLength+1)
-		expectedPayload := make([]byte, MaxKVStoreKeyLength)
+		payload := make([]byte, MaxKVStoreValueLength+1)
+		expectedPayload := make([]byte, MaxKVStoreValueLength)
 
 		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 

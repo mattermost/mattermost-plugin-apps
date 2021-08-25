@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// MaxKVStoreKeyLength is the maximum length in bytes that a value in the KV store of an app can contain
-	MaxKVStoreKeyLength = 8192
+	// MaxKVStoreValueLength is the maximum length in bytes that a value in the KV store of an app can contain
+	MaxKVStoreValueLength = 8192
 )
 
 func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +29,7 @@ func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 
-	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreKeyLength)
+	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

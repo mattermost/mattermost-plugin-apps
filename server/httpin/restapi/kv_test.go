@@ -104,8 +104,8 @@ func TestKVPut(t *testing.T) {
 		defer server.Close()
 		Init(router, conf, proxy, appServices)
 
-		payload := make([]byte, MaxKVStoreKeyLength+1)
-		expectedPayload := make([]byte, MaxKVStoreKeyLength)
+		payload := make([]byte, MaxKVStoreValueLength+1)
+		expectedPayload := make([]byte, MaxKVStoreValueLength)
 
 		appServices.EXPECT().KVSet("some_user_id", "", "some_key", expectedPayload).Return(true, nil)
 
