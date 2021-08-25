@@ -358,7 +358,7 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 }
 
 func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
-	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
+	return mmclient.NewHTTPClientFromSessionID(s.conf, commandArgs.Session.Id, commandArgs.UserId)
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {
