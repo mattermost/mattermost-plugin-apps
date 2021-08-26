@@ -58,6 +58,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		client = mmclient.NewRPCClient(mm)
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser):
 		var err error
+		// The OAuth2 token should be used here once it's implemented
 		client, err = mmclient.NewHTTPClientFromSessionID(e.conf, e.sessionID, e.ActingUserID)
 		if err != nil {
 			return nil, utils.NewUnauthorizedError(err)
