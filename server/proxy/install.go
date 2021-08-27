@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -204,11 +205,15 @@ func (p *Proxy) updateBotIcon(app *apps.App) error {
 		return nil
 	}
 
-	asset, _, err := p.getStatic(&app.Manifest, iconPath)
+	asset, status, err := p.getStatic(&app.Manifest, iconPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app icon")
 	}
 	defer asset.Close()
+
+	if status != http.StatusOK {
+		return errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
+	}
 
 	err = p.conf.MattermostAPI().User.SetProfileImage(app.BotUserID, asset)
 	if err != nil {
