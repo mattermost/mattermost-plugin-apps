@@ -54,7 +54,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		assert.Empty(t, b)
 	})
 
-	t.Run("payload to big", func(t *testing.T) {
+	t.Run("payload too big", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		conf := config.NewTestConfigService(nil)
