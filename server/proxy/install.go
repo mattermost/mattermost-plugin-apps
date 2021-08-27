@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -53,7 +54,17 @@ func (p *Proxy) InstallApp(client mmclient.Client, sessionID string, cc *apps.Co
 		app.WebhookSecret = model.NewId()
 	}
 
-	err = p.ensureBot(client, app)
+	var icon io.ReadCloser
+	if app.Manifest.Icon == "" {
+		icon, err = p.getAppIcon(app)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "failed get bot icon")
+		}
+
+		defer icon.Close()
+	}
+
+	err = p.ensureBot(client, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
@@ -132,7 +143,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, app *apps.App, noUserCons
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
+func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App, icon io.Reader) error {
 	log := p.conf.Logger()
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
@@ -177,9 +188,11 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username
 
-	err := p.updateBotIcon(app)
-	if err != nil {
-		return errors.Wrap(err, "failed set bot icon")
+	if icon != nil {
+		err := p.conf.MattermostAPI().User.SetProfileImage(app.BotUserID, icon)
+		if err != nil {
+			return errors.Wrap(err, "failed to update bot profile icon")
+		}
 	}
 
 	// Create an access token on a fresh app install
@@ -197,28 +210,18 @@ func (p *Proxy) ensureBot(client mmclient.Client, app *apps.App) error {
 	return nil
 }
 
-func (p *Proxy) updateBotIcon(app *apps.App) error {
-	iconPath := app.Manifest.Icon
-
-	// If app doesn't have an icon, do nothing
-	if iconPath == "" {
-		return nil
-	}
-
-	asset, status, err := p.getStatic(&app.Manifest, iconPath)
+// getAppIcon gets the icon of a given app.
+// The caller must close the returned io.ReadCloser if there is one.
+func (p *Proxy) getAppIcon(app *apps.App) (io.ReadCloser, error) {
+	icon, status, err := p.getStatic(&app.Manifest, app.Manifest.Icon)
 	if err != nil {
-		return errors.Wrap(err, "failed to get app icon")
+		return nil, errors.Wrap(err, "failed to get app icon")
 	}
-	defer asset.Close()
+	defer icon.Close()
 
 	if status != http.StatusOK {
-		return errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
+		return nil, errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
 	}
 
-	err = p.conf.MattermostAPI().User.SetProfileImage(app.BotUserID, asset)
-	if err != nil {
-		return errors.Wrap(err, "update profile icon")
-	}
-
-	return nil
+	return icon, nil
 }
