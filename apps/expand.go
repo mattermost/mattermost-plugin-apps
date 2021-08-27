@@ -78,4 +78,8 @@ type Expand struct {
 	// OAuth2User expands the remote (3rd party) OAuth2 user (custom object,
 	// previously stored with mmclient.StoreOAuthUser).
 	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
+
+	// Locale expands the locale to use for this call. There is no difference
+	// between all or summary.
+	Locale ExpandLevel `json:"locale,omitempty"`
 }

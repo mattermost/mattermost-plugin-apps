@@ -35,6 +35,8 @@ func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
 	listed := a.proxy.GetListedApps("", includePluginApps)
 	installed := a.proxy.GetInstalledApps()
 
+	// All of this information is non sensitive.
+	// Checks for the user's permissions might be needed in the future.
 	txt := "| Name | Status | Type | Version | Account | Locations | Permissions |\n"
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 

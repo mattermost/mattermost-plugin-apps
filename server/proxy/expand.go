@@ -160,6 +160,14 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		}
 	}
 
+	if expand.Locale != "" {
+		if cc.ActingUser != nil {
+			cc.Locale = utils.GetLocaleWithUser(p.conf.MattermostConfig().Config(), cc.ActingUser)
+		} else {
+			cc.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), cc.ActingUserID)
+		}
+	}
+
 	return cc, nil
 }
 
