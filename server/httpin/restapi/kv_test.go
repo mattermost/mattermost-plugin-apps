@@ -92,7 +92,7 @@ func TestKV(t *testing.T) {
 }
 
 func TestKVPut(t *testing.T) {
-	t.Run("payload to big", func(t *testing.T) {
+	t.Run("payload too big", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		conf := config.NewTestConfigService(nil)
