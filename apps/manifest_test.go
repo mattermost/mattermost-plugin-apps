@@ -155,7 +155,7 @@ func TestManifestIsValid(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			err := test.Manifest.IsValid()
+			err := test.Manifest.Validate()
 
 			if test.ExpectedError {
 				assert.Error(t, err)

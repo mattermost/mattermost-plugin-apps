@@ -1,24 +1,21 @@
 package mmclient
 
 import (
+	"io"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Client, error) {
-	conf, mm, _ := config.Basic()
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &httpClient{client}, nil
+func NewHTTPClient(conf config.Config, token string) Client {
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(token)
+	return &httpClient{client}
 }
 
 // User section
@@ -30,6 +27,18 @@ func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
 	}
 
 	return user, nil
+}
+
+func (h *httpClient) SetProfileImage(userID string, content io.Reader) error {
+	data, err := io.ReadAll(content)
+	if err != nil {
+		return err
+	}
+	_, resp := h.mm.SetProfileImage(userID, data)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
 }
 
 func (h *httpClient) CreateUserAccessToken(userID, description string) (*model.UserAccessToken, error) {

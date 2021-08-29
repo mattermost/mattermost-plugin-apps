@@ -2,6 +2,7 @@ package apps
 
 import (
 	"encoding/json"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -17,20 +18,48 @@ const StaticFolder = "static"
 // Call with "/webhook/{PATH}"."
 const PathWebhook = "/webhook"
 
+var DefaultBindings = Call{
+	Path: "/bindings",
+}
+
+var DefaultGetOAuth2ConnectURL = Call{
+	Path: "/oauth2/connect",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+	},
+}
+
+var DefaultOnOAuth2Complete = Call{
+	Path: "/oauth2/complete",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+		OAuth2User:            ExpandAll,
+	},
+}
+
 type Manifest struct {
-	// The AppID is a globally unique identifier that represents your app. IDs must be at least
-	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.
-	AppID   AppID      `json:"app_id"`
-	AppType AppType    `json:"app_type"`
+	// The AppID is a globally unique identifier that represents your app. IDs
+	// must be at least 3 characters, at most 32 characters and must contain
+	// only alphanumeric characters, dashes, underscores and periods.
+	AppID   AppID   `json:"app_id"`
+	AppType AppType `json:"app_type"`
+
+	// Version of the app, formatted as v00.00.000
 	Version AppVersion `json:"version"`
 
 	// HomepageURL is required.
 	HomepageURL string `json:"homepage_url"`
 
+	// DisplayName and Description provide optional information about the App.
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
 
-	// Icon is a relative path in the static assets folder of an png image, which is used to represent the App.
+	// Icon is a relative path in the static assets folder of an png image,
+	// which is used to represent the App.
 	Icon string `json:"icon,omitempty"`
 
 	// Callbacks
@@ -42,8 +71,7 @@ type Manifest struct {
 
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
-	// display. It is not called unless explicitly provided in
-	// the manifest.
+	// display. It is not called unless explicitly provided in the manifest.
 	OnInstall *Call `json:"on_install,omitempty"`
 
 	// OnVersionChanged gets invoked when the Mattermost-recommended version of
@@ -113,7 +141,7 @@ type Manifest struct {
 // invoke the kubeless function.
 type KubelessFunction struct {
 	// CallPath is used to match/map incoming Call requests.
-	CallPath string `json:"call_path"`
+	CallPath string `json:"path"`
 
 	// Handler refers to the actual language function being invoked.
 	// TODO examples py, go
@@ -137,9 +165,9 @@ type KubelessFunction struct {
 	Port int32 `json:"port"`
 }
 
-func (kf KubelessFunction) IsValid() error {
+func (kf KubelessFunction) Validate() error {
 	if kf.CallPath == "" {
-		return utils.NewInvalidError("invalid Kubeless function: call_path must not be empty")
+		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
 	}
 	if kf.Handler == "" {
 		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
@@ -184,7 +212,7 @@ type AWSLambda struct {
 	Runtime string `json:"runtime"`
 }
 
-func (f AWSLambda) IsValid() error {
+func (f AWSLambda) Validate() error {
 	if f.Path == "" {
 		return utils.NewInvalidError("aws_lambda path must not be empty")
 	}
@@ -200,45 +228,29 @@ func (f AWSLambda) IsValid() error {
 	return nil
 }
 
-var DefaultBindings = &Call{
-	Path: "/bindings",
-}
-
-var DefaultGetOAuth2ConnectURL = &Call{
-	Path: "/oauth2/connect",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-	},
-}
-
-var DefaultOnOAuth2Complete = &Call{
-	Path: "/oauth2/complete",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-		OAuth2User:            ExpandAll,
-	},
-}
-
-func (m Manifest) IsValid() error {
-	for _, f := range []func() error{
-		m.AppID.IsValid,
-		m.Version.IsValid,
-		m.AppType.IsValid,
-		m.RequestedPermissions.IsValid,
-	} {
-		if err := f(); err != nil {
-			return err
-		}
+func ManifestFromJSON(data []byte) (*Manifest, error) {
+	var m Manifest
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
 	}
 
+	err = m.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
+type validator interface {
+	Validate() error
+}
+
+func (m Manifest) Validate() error {
 	if m.HomepageURL == "" {
 		return utils.NewInvalidError(errors.New("homepage_url is empty"))
 	}
-
 	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
 		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
 	}
@@ -247,6 +259,19 @@ func (m Manifest) IsValid() error {
 		_, err := utils.CleanStaticPath(m.Icon)
 		if err != nil {
 			return err
+		}
+	}
+
+	for _, v := range []validator{
+		m.AppID,
+		m.Version,
+		m.AppType,
+		m.RequestedPermissions,
+	} {
+		if v != nil {
+			if err := v.Validate(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -266,7 +291,7 @@ func (m Manifest) IsValid() error {
 			return utils.NewInvalidError("must provide at least 1 function in aws_lambda")
 		}
 		for _, l := range m.AWSLambda {
-			err := l.IsValid()
+			err := l.Validate()
 			if err != nil {
 				return errors.Wrapf(err, "%q is not valid", l.Name)
 			}
@@ -277,27 +302,115 @@ func (m Manifest) IsValid() error {
 			return utils.NewInvalidError("must provide at least 1 function in kubeless_functions")
 		}
 		for _, kf := range m.KubelessFunctions {
-			err := kf.IsValid()
+			err := kf.Validate()
 			if err != nil {
 				return errors.Wrapf(err, "invalid function %q", kf.Handler)
 			}
 		}
 	}
+	return nil
+}
+
+// AppID is a globally unique identifier that represents a Mattermost App.
+// An AppID is restricted to no more than 32 ASCII letters, numbers, '-', or '_'.
+type AppID string
+
+const (
+	MinAppIDLength = 3
+	MaxAppIDLength = 32
+)
+
+func (id AppID) Validate() error {
+	if len(id) < MinAppIDLength {
+		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
+	}
+
+	if len(id) > MaxAppIDLength {
+		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
+	}
+
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' || c == '.' {
+			continue
+		}
+
+		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
+	}
 
 	return nil
 }
 
-func ManifestFromJSON(data []byte) (*Manifest, error) {
-	var m Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
+// AppType is the type of an app: http, aws_lambda, or builtin.
+type AppType string
+
+const (
+	// HTTP app (default). All communications are done via HTTP requests. Paths
+	// for both functions and static assets are appended to RootURL "as is".
+	// Mattermost authenticates to the App with an optional shared secret based
+	// JWT.
+	AppTypeHTTP AppType = "http"
+
+	// AWS Lambda app. All functions are called via AWS Lambda "Invoke" API,
+	// using path mapping provided in the app's manifest. Static assets are
+	// served out of AWS S3, using the "Download" method. Mattermost
+	// authenticates to AWS, no authentication to the App is necessary.
+	AppTypeAWSLambda AppType = "aws_lambda"
+
+	AppTypeKubeless AppType = "kubeless"
+
+	// Builtin app. All functions and resources are served by directly invoking
+	// go functions. No manifest, no Mattermost to App authentication are
+	// needed.
+	AppTypeBuiltin AppType = "builtin"
+
+	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
+	// Authentication is done via the plugin.Context.SourcePluginId field.
+	AppTypePlugin AppType = "plugin"
+)
+
+func (at AppType) Validate() error {
+	switch at {
+	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless, AppTypePlugin:
+		return nil
+	default:
+		return utils.NewInvalidError("%s is not a valid app type", at)
+	}
+}
+
+// AppVersion is the version of a Mattermost App. AppVersion is expected to look
+// like "v00_00_000".
+type AppVersion string
+
+const VersionFormat = "v00_00_000"
+
+func (v AppVersion) Validate() error {
+	if len(v) > len(VersionFormat) {
+		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
 	}
 
-	err = m.IsValid()
-	if err != nil {
-		return nil, err
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' || c == '.' {
+			continue
+		}
+
+		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
 	}
 
-	return &m, nil
+	return nil
 }

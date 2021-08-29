@@ -1,23 +1,8 @@
 package apps
 
 import (
-	"unicode"
-
 	"github.com/mattermost/mattermost-server/v5/model"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-// AppID is a globally unique identifier that represents a Mattermost App.
-// An AppID is restricted to no more than 32 ASCII letters, numbers, '-', or '_'.
-type AppID string
-
-// AppVersion is the version of a Mattermost App. AppVersion is expected to look
-// like "v00_00_000".
-type AppVersion string
-
-// AppType is the type of an app: http, aws_lambda, or builtin.
-type AppType string
 
 // App describes an App installed on a Mattermost instance. App should be
 // abbreviated as `app`.
@@ -79,7 +64,7 @@ type OAuth2App struct {
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.
 type ListedApp struct {
-	Manifest  *Manifest                `json:"manifest"`
+	Manifest  Manifest                 `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	IconURL   string                   `json:"icon_url,omitempty"`
@@ -89,97 +74,4 @@ type ListedApp struct {
 type AppMetadataForClient struct {
 	BotUserID   string `json:"bot_user_id,omitempty"`
 	BotUsername string `json:"bot_username,omitempty"`
-}
-
-const (
-	MinAppIDLength = 3
-	MaxAppIDLength = 32
-)
-
-func (id AppID) IsValid() error {
-	if len(id) < MinAppIDLength {
-		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
-	}
-
-	if len(id) > MaxAppIDLength {
-		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
-	}
-
-	for _, c := range id {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' || c == '.' {
-			continue
-		}
-
-		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
-	}
-
-	return nil
-}
-
-const VersionFormat = "v00_00_000"
-
-func (v AppVersion) IsValid() error {
-	if len(v) > len(VersionFormat) {
-		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
-	}
-
-	for _, c := range v {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' || c == '.' {
-			continue
-		}
-
-		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
-	}
-
-	return nil
-}
-
-const (
-	// HTTP app (default). All communications are done via HTTP requests. Paths
-	// for both functions and static assets are appended to RootURL "as is".
-	// Mattermost authenticates to the App with an optional shared secret based
-	// JWT.
-	AppTypeHTTP AppType = "http"
-
-	// AWS Lambda app. All functions are called via AWS Lambda "Invoke" API,
-	// using path mapping provided in the app's manifest. Static assets are
-	// served out of AWS S3, using the "Download" method. Mattermost
-	// authenticates to AWS, no authentication to the App is necessary.
-	AppTypeAWSLambda AppType = "aws_lambda"
-
-	AppTypeKubeless AppType = "kubeless"
-
-	// Builtin app. All functions and resources are served by directly invoking
-	// go functions. No manifest, no Mattermost to App authentication are
-	// needed.
-	AppTypeBuiltin AppType = "builtin"
-
-	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
-	// Authentication is done via the plugin.Context.SourcePluginId field.
-	AppTypePlugin AppType = "plugin"
-)
-
-func (at AppType) IsValid() error {
-	switch at {
-	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless, AppTypePlugin:
-		return nil
-	default:
-		return utils.NewInvalidError("%s is not a valid app type", at)
-	}
 }

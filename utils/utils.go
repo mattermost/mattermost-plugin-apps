@@ -91,12 +91,6 @@ func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actin
 	return client, nil
 }
 
-// DumpObject pretty prints any object to the standard output. Only used for debug.
-func DumpObject(c interface{}) {
-	b, _ := json.MarshalIndent(c, "", "    ")
-	fmt.Printf("%s\n", string(b))
-}
-
 func LastN(s string, n int) string {
 	out := []byte(s)
 	if len(out) > n+3 {

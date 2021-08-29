@@ -43,7 +43,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 		return errorOut(params, errors.Wrap(err, "failed to get manifest from S3"))
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -77,7 +77,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 		return errorOut(params, errors.Wrap(err, "unable to decode "+manifestURL))
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -108,7 +108,7 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 		return errorOut(params, err)
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}

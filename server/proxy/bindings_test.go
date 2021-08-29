@@ -27,16 +27,16 @@ import (
 )
 
 type bindingTestData struct {
-	app      *apps.App
-	bindings []*apps.Binding
+	app      apps.App
+	bindings []apps.Binding
 }
 
-func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Binding {
-	return []*apps.Binding{
+func testBinding(appID apps.AppID, parent apps.Location, n string) []apps.Binding {
+	return []apps.Binding{
 		{
 			AppID:    appID,
 			Location: parent,
-			Bindings: []*apps.Binding{
+			Bindings: []apps.Binding{
 				{
 					AppID:    appID,
 					Location: apps.Location(fmt.Sprintf("id-%s", n)),
@@ -50,23 +50,23 @@ func testBinding(appID apps.AppID, parent apps.Location, n string) []*apps.Bindi
 func TestMergeBindings(t *testing.T) {
 	type TC struct {
 		name               string
-		bb1, bb2, expected []*apps.Binding
+		bb1, bb2, expected []apps.Binding
 	}
 
 	for _, tc := range []TC{
 		{
 			name: "happy simplest",
-			bb1: []*apps.Binding{
+			bb1: []apps.Binding{
 				{
 					Location: "1",
 				},
 			},
-			bb2: []*apps.Binding{
+			bb2: []apps.Binding{
 				{
 					Location: "2",
 				},
 			},
-			expected: []*apps.Binding{
+			expected: []apps.Binding{
 				{
 					Location: "1",
 				},
@@ -115,11 +115,11 @@ func TestMergeBindings(t *testing.T) {
 			name: "happy 2 simple commands",
 			bb1:  testBinding("app1", apps.LocationCommand, "simple1"),
 			bb2:  testBinding("app1", apps.LocationCommand, "simple2"),
-			expected: []*apps.Binding{
+			expected: []apps.Binding{
 				{
 					AppID:    "app1",
 					Location: "/command",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:    "app1",
 							Location: "id-simple1",
@@ -136,10 +136,10 @@ func TestMergeBindings(t *testing.T) {
 		},
 		{
 			name: "happy 2 apps",
-			bb1: []*apps.Binding{
+			bb1: []apps.Binding{
 				{
 					Location: "/post_menu",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:       "zendesk",
 							Label:       "Create zendesk ticket",
@@ -151,10 +151,10 @@ func TestMergeBindings(t *testing.T) {
 					},
 				},
 			},
-			bb2: []*apps.Binding{
+			bb2: []apps.Binding{
 				{
 					Location: "/post_menu",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:       "hello",
 							Label:       "Create hello ticket",
@@ -166,10 +166,10 @@ func TestMergeBindings(t *testing.T) {
 					},
 				},
 			},
-			expected: []*apps.Binding{
+			expected: []apps.Binding{
 				{
 					Location: "/post_menu",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:       "zendesk",
 							Label:       "Create zendesk ticket",
@@ -243,10 +243,10 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			bindings := []*apps.Binding{
+			bindings := []apps.Binding{
 				{
 					Location: apps.LocationChannelHeader,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location: "send",
 							Label:    "Send",
@@ -254,7 +254,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 					},
 				}, {
 					Location: apps.LocationPostMenu,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location: "send-me",
 							Label:    "Send me",
@@ -262,7 +262,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 					},
 				}, {
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location: "ignored",
 							Label:    "ignored",
@@ -271,10 +271,10 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 				},
 			}
 
-			app1 := &apps.App{
+			app1 := apps.App{
 				Manifest: apps.Manifest{
-					AppID:              apps.AppID("app1"),
 					AppType:            apps.AppTypeBuiltin,
+					AppID:              apps.AppID("app1"),
 					DisplayName:        "App 1",
 					RequestedLocations: tc.locations,
 				},
@@ -290,9 +290,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}}
 
 			proxy := newTestProxyForBindings(t, testData, ctrl)
-
-			cc := &apps.Context{}
-			out, err := proxy.GetBindings("", "", cc)
+			out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -302,7 +300,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 func TestGetBindingsCommands(t *testing.T) {
 	testData := []bindingTestData{
 		{
-			app: &apps.App{
+			app: apps.App{
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
 					AppType:     apps.AppTypeBuiltin,
@@ -314,17 +312,17 @@ func TestGetBindingsCommands(t *testing.T) {
 					apps.LocationCommand,
 				},
 			},
-			bindings: []*apps.Binding{
+			bindings: []apps.Binding{
 				{
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location:    "baseCommandLocation",
 							Label:       "baseCommandLabel",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
-							Bindings: []*apps.Binding{
+							Bindings: []apps.Binding{
 								{
 									Location:    "message",
 									Label:       "message",
@@ -343,7 +341,7 @@ func TestGetBindingsCommands(t *testing.T) {
 									Icon:        "../some/invalid/path",
 									Hint:        "manage command hint",
 									Description: "manage command description",
-									Bindings: []*apps.Binding{
+									Bindings: []apps.Binding{
 										{
 											Location:    "subscribe",
 											Label:       "subscribe",
@@ -366,7 +364,7 @@ func TestGetBindingsCommands(t *testing.T) {
 			},
 		},
 		{
-			app: &apps.App{
+			app: apps.App{
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app2"),
 					AppType:     apps.AppTypeBuiltin,
@@ -378,17 +376,17 @@ func TestGetBindingsCommands(t *testing.T) {
 					apps.LocationCommand,
 				},
 			},
-			bindings: []*apps.Binding{
+			bindings: []apps.Binding{
 				{
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location:    "app2BaseCommandLocation",
 							Label:       "app2BaseCommandLabel",
 							Icon:        "app2 base command icon",
 							Hint:        "app2 base command hint",
 							Description: "app2 base command description",
-							Bindings: []*apps.Binding{
+							Bindings: []apps.Binding{
 								{
 									Location:    "connect",
 									Label:       "connect",
@@ -404,10 +402,10 @@ func TestGetBindingsCommands(t *testing.T) {
 		},
 	}
 
-	expected := []*apps.Binding{
+	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Bindings: []*apps.Binding{
+			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
 					Location:    "baseCommandLocation",
@@ -415,7 +413,7 @@ func TestGetBindingsCommands(t *testing.T) {
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:       apps.AppID("app1"),
 							Location:    "message",
@@ -437,7 +435,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							Icon:        "",
 							Hint:        "manage command hint",
 							Description: "manage command description",
-							Bindings: []*apps.Binding{
+							Bindings: []apps.Binding{
 								{
 									AppID:       apps.AppID("app1"),
 									Location:    "subscribe",
@@ -464,7 +462,7 @@ func TestGetBindingsCommands(t *testing.T) {
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
 					Hint:        "app2 base command hint",
 					Description: "app2 base command description",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:       apps.AppID("app2"),
 							Location:    "connect",
@@ -484,8 +482,7 @@ func TestGetBindingsCommands(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", "", cc)
+	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -493,7 +490,7 @@ func TestGetBindingsCommands(t *testing.T) {
 func TestDuplicateCommand(t *testing.T) {
 	testData := []bindingTestData{
 		{
-			app: &apps.App{
+			app: apps.App{
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
 					AppType:     apps.AppTypeBuiltin,
@@ -503,17 +500,17 @@ func TestDuplicateCommand(t *testing.T) {
 					apps.LocationCommand,
 				},
 			},
-			bindings: []*apps.Binding{
+			bindings: []apps.Binding{
 				{
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location:    "baseCommandLocation",
 							Label:       "baseCommandLabel",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
-							Bindings: []*apps.Binding{
+							Bindings: []apps.Binding{
 								{
 									Location: "sub1",
 									Label:    "sub1",
@@ -535,7 +532,7 @@ func TestDuplicateCommand(t *testing.T) {
 				},
 				{
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location:    "",
 							Label:       "",
@@ -549,10 +546,10 @@ func TestDuplicateCommand(t *testing.T) {
 		},
 	}
 
-	expected := []*apps.Binding{
+	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Bindings: []*apps.Binding{
+			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
 					Location:    "baseCommandLocation",
@@ -560,7 +557,7 @@ func TestDuplicateCommand(t *testing.T) {
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:    apps.AppID("app1"),
 							Location: "sub1",
@@ -578,8 +575,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", "", cc)
+	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -587,7 +583,7 @@ func TestDuplicateCommand(t *testing.T) {
 func TestInvalidCommand(t *testing.T) {
 	testData := []bindingTestData{
 		{
-			app: &apps.App{
+			app: apps.App{
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
 					AppType:     apps.AppTypeBuiltin,
@@ -597,17 +593,17 @@ func TestInvalidCommand(t *testing.T) {
 					apps.LocationCommand,
 				},
 			},
-			bindings: []*apps.Binding{
+			bindings: []apps.Binding{
 				{
 					Location: apps.LocationCommand,
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							Location:    "baseCommandLocation",
 							Label:       "baseCommandLabel",
 							Icon:        "base command icon",
 							Hint:        "base command hint",
 							Description: "base command description",
-							Bindings: []*apps.Binding{
+							Bindings: []apps.Binding{
 								{
 									Location: "sub1",
 									Label:    "sub1",
@@ -631,10 +627,10 @@ func TestInvalidCommand(t *testing.T) {
 		},
 	}
 
-	expected := []*apps.Binding{
+	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Bindings: []*apps.Binding{
+			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
 					Location:    "baseCommandLocation",
@@ -642,7 +638,7 @@ func TestInvalidCommand(t *testing.T) {
 					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
 					Hint:        "base command hint",
 					Description: "base command description",
-					Bindings: []*apps.Binding{
+					Bindings: []apps.Binding{
 						{
 							AppID:    apps.AppID("app1"),
 							Location: "sub1",
@@ -660,8 +656,7 @@ func TestInvalidCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	cc := &apps.Context{}
-	out, err := proxy.GetBindings("", "", cc)
+	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -684,7 +679,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
-	appList := map[apps.AppID]*apps.App{}
+	appList := map[apps.AppID]apps.App{}
 	upstreams := map[apps.AppID]upstream.Upstream{}
 
 	for _, test := range testData {
@@ -698,9 +693,8 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(test.app, gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
-		appStore.EXPECT().Get(test.app.AppID).Return(test.app, nil)
 	}
 
 	appStore.EXPECT().AsMap().Return(appList)
@@ -718,8 +712,8 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 // If there are duplicate elements, the number of appearances of each of them in both lists should match.
 //
 // EqualBindings calls t.Fail if the elements not match.
-func EqualBindings(t *testing.T, expected, actual []*apps.Binding) {
-	opt := cmpopts.SortSlices(func(a *apps.Binding, b *apps.Binding) bool {
+func EqualBindings(t *testing.T, expected, actual []apps.Binding) {
+	opt := cmpopts.SortSlices(func(a apps.Binding, b apps.Binding) bool {
 		return a.AppID < b.AppID
 	})
 

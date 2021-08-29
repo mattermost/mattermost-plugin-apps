@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
@@ -38,37 +37,55 @@ type Proxy struct {
 	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
 }
 
-type Service interface {
-	config.Configurable
+// Admin defines the REST API methods to manipulate Apps.
+type Admin interface {
+	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, trustedApp bool, secret string) (*apps.App, string, error)
+	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
+}
 
-	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
-	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error)
-	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
+// Invoker implements operations that invoke the Apps.
+type Invoker interface {
+	// REST API methods used by user agents (mobile, desktop, web).
+	Call(Incoming, apps.CallRequest) apps.ProxyCallResponse
+	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
+	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
+	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
+}
 
-	Notify(cc *apps.Context, subj apps.Subject) error
-	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
-	NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error
-	NotifyUserHasJoinedChannel(cc *apps.Context) error
-	NotifyUserHasLeftChannel(cc *apps.Context) error
-	NotifyUserHasJoinedTeam(cc *apps.Context) error
-	NotifyUserHasLeftTeam(cc *apps.Context) error
+// Notifier implements user-less notification sinks.
+type Notifier interface {
+	Notify(apps.Context, apps.Subject) error
+	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
+	NotifyUserHasJoinedChannel(apps.Context) error
+	NotifyUserHasLeftChannel(apps.Context) error
+	NotifyUserHasJoinedTeam(apps.Context) error
+	NotifyUserHasLeftTeam(apps.Context) error
+}
 
-	AddLocalManifest(actingUserID string, m *apps.Manifest) (string, error)
-	AppIsEnabled(app *apps.App) bool
-	EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
-	DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
+// Internal implements go API used by other packages.
+type Internal interface {
+	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+	AddLocalManifest(m apps.Manifest) (string, error)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
-	GetInstalledApps() []*apps.App
-	GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp
+	GetInstalledApps() []apps.App
+	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
 	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(client mmclient.Client, sessionID string, cc *apps.Context, trusted bool, secret string) (*apps.App, string, error)
 	SynchronizeInstalledApps() error
-	UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error)
+}
 
-	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+type Service interface {
+	// To update on configuration changes
+	config.Configurable
+
+	Admin
+	Internal
+	Invoker
+	Notifier
 }
 
 var _ Service = (*Proxy)(nil)
@@ -83,29 +100,11 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 	}
 }
 
-func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
-	if isAppTypeSupported(newConfig, typ) == nil {
-		up, err := makef()
-		switch {
-		case errors.Cause(err) == utils.ErrNotFound:
-			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
-		case err != nil:
-			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
-		default:
-			p.upstreams.Store(typ, up)
-			log.Debugf("Initialized %s upstream.", typ)
-		}
-	} else {
-		p.upstreams.Delete(typ)
-		log.Debugf("Removed %s upstream.", typ)
-	}
-}
-
 func (p *Proxy) Configure(conf config.Config) error {
 	_, mm, log := p.conf.Basic()
 
 	p.initUpstream(apps.AppTypeHTTP, conf, log, func() (upstream.Upstream, error) {
-		return uphttp.NewUpstream(p.httpOut), nil
+		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode), nil
 	})
 	p.initUpstream(apps.AppTypeAWSLambda, conf, log, func() (upstream.Upstream, error) {
 		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
@@ -124,6 +123,7 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
 	p.builtinUpstreams[appID] = up
+	p.store.App.InitBuiltin()
 }
 
 func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
@@ -133,4 +133,23 @@ func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 		Type:      apps.CallResponseTypeError,
 		ErrorText: err.Error(),
 	})
+}
+
+func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
+	if err := isAppTypeSupported(newConfig, typ); err == nil {
+		var up upstream.Upstream
+		up, err = makef()
+		switch {
+		case errors.Cause(err) == utils.ErrNotFound:
+			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
+		case err != nil:
+			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
+		default:
+			p.upstreams.Store(typ, up)
+			log.Debugf("Initialized %s upstream.", typ)
+		}
+	} else {
+		p.upstreams.Delete(typ)
+		log.Debugf("Upstream %s is not supported, cause: %v", typ, err)
+	}
 }

@@ -13,7 +13,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -30,10 +29,10 @@ func NewUpstream(api PluginHTTPAPI) *Upstream {
 	}
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(app, call.Context.BotUserID, call)
+			resp, _ := u.invoke(app, creq.Context.BotUserID, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -41,19 +40,15 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 		return nil, nil
 	}
 
-	resp, err := u.invoke(app, call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(app, creq.Context.ActingUserID, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(app *apps.App, fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
-	if call == nil {
-		return nil, utils.NewInvalidError("empty call")
-	}
-
-	return u.post(call.Context.ActingUserID, path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, call.Path), call)
+func (u *Upstream) invoke(app apps.App, fromMattermostUserID string, creq apps.CallRequest) (*http.Response, error) {
+	return u.post(creq.Context.ActingUserID, path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, creq.Path), creq)
 }
 
 // post does not close resp.Body, it's the caller's responsibility

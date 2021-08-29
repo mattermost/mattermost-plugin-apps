@@ -13,7 +13,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -346,8 +345,8 @@ func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandR
 	}
 }
 
-func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	return s.conf.Get().SetContextDefaults(&apps.Context{
+func (s *service) newCommandContext(commandArgs *model.CommandArgs) apps.Context {
+	return s.conf.Get().SetContextDefaults(apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    commandArgs.TeamId,
 			ChannelID: commandArgs.ChannelId,
@@ -357,8 +356,13 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 	})
 }
 
-func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
-	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
+func (s *service) newCommandIncoming(commandArgs *model.CommandArgs) proxy.Incoming {
+	return proxy.Incoming{
+		SessionID:             commandArgs.Session.Id,
+		ActingUserID:          commandArgs.UserId,
+		ActingUserAccessToken: commandArgs.Session.Token,
+		AdminAccessToken:      commandArgs.Session.Token,
+	}
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {

@@ -25,7 +25,7 @@ func TestAppIDIsValid(t *testing.T) {
 		"___AND_UNDERSCORES____":            true,
 	} {
 		t.Run(id, func(t *testing.T) {
-			err := AppID(id).IsValid()
+			err := AppID(id).Validate()
 			if valid {
 				assert.NoError(t, err)
 			} else {
@@ -52,7 +52,7 @@ func TestAppVersionIsValid(t *testing.T) {
 		"/":           false,
 	} {
 		t.Run(id, func(t *testing.T) {
-			err := AppVersion(id).IsValid()
+			err := AppVersion(id).Validate()
 			if valid {
 				assert.NoError(t, err)
 			} else {

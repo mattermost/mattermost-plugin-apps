@@ -148,7 +148,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		Manifest:        mani,
 		ManifestKey:     S3ManifestName(mani.AppID, mani.Version),
 	}
-	if err := pd.IsValid(); err != nil {
+	if err := pd.Validate(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
 	}
 	return pd, nil
@@ -179,11 +179,11 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 	return generatedFunctions
 }
 
-func (pd *ProvisionData) IsValid() error {
+func (pd *ProvisionData) Validate() error {
 	if pd.Manifest == nil {
 		return errors.New("no manifest")
 	}
-	if err := pd.Manifest.IsValid(); err != nil {
+	if err := pd.Manifest.Validate(); err != nil {
 		return err
 	}
 

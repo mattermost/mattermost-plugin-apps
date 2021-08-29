@@ -26,11 +26,11 @@ func TestCleanUserAgentContext(t *testing.T) {
 		}
 
 		userID := "some_user_id"
-		cc := &apps.Context{
+		cc := apps.Context{
 			UserAgentContext: apps.UserAgentContext{},
 		}
 
-		err := a.cleanUserAgentContext(userID, cc)
+		_, err := a.cleanUserAgentContext(userID, cc)
 		require.Error(t, err)
 	})
 
@@ -46,7 +46,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			channelID := "some_channel_id"
 			teamID := "some_team_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					AppID:     "app1",
 					UserAgent: "webapp",
@@ -72,9 +72,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			expected := &apps.Context{
+			expected := apps.Context{
 				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					AppID:     "app1",
@@ -98,7 +98,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			postID := "some_post_id"
 			channelID := "some_channel_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					PostID:    postID,
 					ChannelID: "ignored_channel_id",
@@ -115,7 +115,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -131,7 +131,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			channelID := "some_channel_id"
 			teamID := "some_team_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    "ignored_team_id",
@@ -148,9 +148,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			expected := &apps.Context{
+			expected := apps.Context{
 				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
@@ -169,7 +169,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			userID := "some_user_id"
 			channelID := "some_channel_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					ChannelID: channelID,
 					TeamID:    "ignored_team_id",
@@ -180,7 +180,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -195,7 +195,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			userID := "some_user_id"
 			teamID := "some_team_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
@@ -206,9 +206,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 				UserId: userID,
 			}, nil)
 
-			err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
-			expected := &apps.Context{
+			expected := apps.Context{
 				ActingUserID: "some_user_id",
 				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
@@ -226,7 +226,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			userID := "some_user_id"
 			teamID := "some_team_id"
 
-			cc := &apps.Context{
+			cc := apps.Context{
 				UserAgentContext: apps.UserAgentContext{
 					TeamID: teamID,
 				},
@@ -236,7 +236,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified team",
 			})
 
-			err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -253,7 +253,7 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	channelID := "some_channel_id"
 	teamID := "some_team_id"
 
-	cc := &apps.Context{
+	cc := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:    postID,
 			ChannelID: "ignored_channel_id",
@@ -296,9 +296,9 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 		TeamId: teamID,
 	}, nil)
 
-	err := a.cleanUserAgentContext(userID, cc)
+	cc, err := a.cleanUserAgentContext(userID, cc)
 	require.NoError(t, err)
-	expected := &apps.Context{
+	expected := apps.Context{
 		ActingUserID: "some_user_id",
 		UserAgentContext: apps.UserAgentContext{
 			PostID:    postID,
@@ -316,13 +316,12 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	router := mux.NewRouter()
 	Init(router, testConfig, proxy, nil)
 
-	cc := &apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID: "some_team_id",
+	call := apps.CallRequest{
+		Context: apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID: "some_team_id",
+			},
 		},
-	}
-	call := &apps.CallRequest{
-		Context: cc,
 	}
 
 	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(nil, &model.AppError{
@@ -340,7 +339,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	req.Header.Add("Mattermost-Session-Id", "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()
@@ -361,17 +360,16 @@ func TestHandleCallValidContext(t *testing.T) {
 	router := mux.NewRouter()
 	Init(router, testConfig, proxy, nil)
 
-	cc := &apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			AppID:  "app1",
-			TeamID: "some_team_id",
-		},
-	}
-	call := &apps.CallRequest{
+	creq := apps.CallRequest{
 		Call: apps.Call{
 			Path: "/path/submit",
 		},
-		Context: cc,
+		Context: apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				AppID:  "app1",
+				TeamID: "some_team_id",
+			},
+		},
 	}
 
 	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(&model.TeamMember{
@@ -379,11 +377,11 @@ func TestHandleCallValidContext(t *testing.T) {
 		UserId: "some_user_id",
 	}, nil)
 
-	expected := &apps.CallRequest{
+	expected := apps.CallRequest{
 		Call: apps.Call{
 			Path: "/path/submit",
 		},
-		Context: &apps.Context{
+		Context: apps.Context{
 			ActingUserID: "some_user_id",
 			UserAgentContext: apps.UserAgentContext{
 				AppID:  "app1",
@@ -392,14 +390,14 @@ func TestHandleCallValidContext(t *testing.T) {
 		},
 	}
 
-	proxy.EXPECT().Call("some_session_id", "some_user_id", expected).Return(&apps.ProxyCallResponse{
-		CallResponse: &apps.CallResponse{
+	proxy.EXPECT().Call(gomock.Any(), expected).Return(apps.ProxyCallResponse{
+		CallResponse: apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
 		},
 	})
 
 	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(call)
+	err := json.NewEncoder(b).Encode(creq)
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
@@ -409,7 +407,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add("Mattermost-User-Id", "some_user_id")
-	req.Header.Add("MM_SESSION_ID", "some_session_id")
+	req.Header.Add("Mattermost-Session-Id", "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()

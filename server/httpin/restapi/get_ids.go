@@ -3,9 +3,11 @@ package restapi
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request, _, _ string) {
+func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request, _ proxy.Incoming) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {
@@ -17,7 +19,7 @@ func (a *restapi) handleGetBotIDs(w http.ResponseWriter, r *http.Request, _, _ s
 	_, _ = w.Write(b)
 }
 
-func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request, _, _ string) {
+func (a *restapi) handleGetOAuthAppIDs(w http.ResponseWriter, r *http.Request, _ proxy.Incoming) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {

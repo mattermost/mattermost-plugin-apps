@@ -15,16 +15,11 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 		return errorOut(params, errors.New("you need to specify the app id"))
 	}
 
-	client, err := s.newMMClient(params.commandArgs)
-	if err != nil {
-		return errorOut(params, err)
-	}
-
 	appID := apps.AppID(params.current[0])
 
 	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
 
-	out, err := s.proxy.UninstallApp(client, params.commandArgs.Session.Id, cc, appID)
+	out, err := s.proxy.UninstallApp(s.newCommandIncoming(params.commandArgs), cc, appID)
 	if err != nil {
 		return errorOut(params, err)
 	}

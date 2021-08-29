@@ -20,11 +20,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
-	if creq.Context == nil || creq.Context.AppID == "" {
+func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
+	if creq.Context.AppID == "" {
 		return apps.NewProxyCallResponse(
 			apps.NewErrorCallResponse(
-				utils.NewInvalidError("must provide Context and set the app ID")), nil)
+				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
 	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
@@ -37,75 +37,61 @@ func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *ap
 		BotUsername: app.BotUsername,
 	}
 
-	cresp := p.callApp(app, sessionID, actingUserID, creq)
+	cresp := p.callApp(in, app, creq)
 	return apps.NewProxyCallResponse(cresp, metadata)
 }
 
-func (p *Proxy) callApp(app *apps.App, sessionID, actingUserID string, creq *apps.CallRequest) *apps.CallResponse {
-	if !p.AppIsEnabled(app) {
+func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+	if !p.appIsEnabled(app) {
 		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
-	}
-
-	if actingUserID != "" {
-		creq.Context.ActingUserID = actingUserID
-		creq.Context.UserID = actingUserID
 	}
 
 	if creq.Path[0] != '/' {
 		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
-
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
 	creq.Path = cleanPath
 
-	up, err := p.upstreamForApp(&app.Manifest)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
 
-	// Clear any ExpandedContext as it should always be set by an expander for security reasons
-	creq.Context.ExpandedContext = apps.ExpandedContext{}
-
-	conf, _, log := p.conf.Basic()
-	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
-
-	expander := p.newExpander(cc, p.conf, p.store, sessionID)
-	cc, err = expander.ExpandForApp(app, creq.Expand)
+	cc := creq.Context
+	cc = in.updateContext(cc)
+	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	clone := *creq
-	clone.Context = cc
 
-	callResponse := upstream.Call(up, app, &clone)
-
-	if callResponse.Type == "" {
-		callResponse.Type = apps.CallResponseTypeOK
+	cresp := upstream.Call(up, *app, creq)
+	if cresp.Type == "" {
+		cresp.Type = apps.CallResponseTypeOK
 	}
 
-	if callResponse.Form != nil {
-		if callResponse.Form.Icon != "" {
-			icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
+	if cresp.Form != nil {
+		if cresp.Form.Icon != "" {
+			conf, _, log := p.conf.Basic()
+			log = log.With("app_id", app.AppID)
+			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
 			if err != nil {
-				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.",
-					"app_id", app.AppID,
-					"icon", callResponse.Form.Icon)
-				callResponse.Form.Icon = ""
+				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				cresp.Form.Icon = ""
 			} else {
-				callResponse.Form.Icon = icon
+				cresp.Form.Icon = icon
 			}
-			clean, problems := cleanForm(*callResponse.Form)
+			clean, problems := cleanForm(*cresp.Form)
 			for _, prob := range problems {
-				log.WithError(prob).Debugf("invalid form field in bingding")
+				log.WithError(prob).Debugw("invalid form")
 			}
-			callResponse.Form = &clean
+			cresp.Form = &clean
 		}
 	}
 
-	return callResponse
+	return cresp
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -124,20 +110,18 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
-	subs, err := p.store.Subscription.Get(subj, cc.TeamID, cc.ChannelID)
+func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
+	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
 	if err != nil {
 		return err
 	}
 
-	return p.notify(cc, subs)
+	return p.notify(base, subs)
 }
 
-func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
-	expander := p.newExpander(cc, p.conf, p.store, "")
-
+func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := p.notifyForSubscription(cc, expander, sub)
+		err := p.notifyForSubscription(&base, sub)
 		if err != nil {
 			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
 				"app_id", sub.AppID,
@@ -148,43 +132,40 @@ func (p *Proxy) notify(cc *apps.Context, subs []*apps.Subscription) error {
 	return nil
 }
 
-func (p *Proxy) notifyForSubscription(cc *apps.Context, expander *expander, sub *apps.Subscription) error {
-	call := sub.Call
-	if call == nil {
-		return errors.New("nothing to call")
+func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription) error {
+	creq := apps.CallRequest{
+		Call: sub.Call,
 	}
-
-	callRequest := &apps.CallRequest{Call: *call}
 	app, err := p.store.App.Get(sub.AppID)
 	if err != nil {
 		return err
 	}
-	if !p.AppIsEnabled(app) {
+	if !p.appIsEnabled(app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
+	creq.Context, err = p.expandContext(Incoming{}, app, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}
-	callRequest.Context.Subject = sub.Subject
+	creq.Context.Subject = sub.Subject
 
-	up, err := p.upstreamForApp(&app.Manifest)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(up, app, callRequest)
+	return upstream.Notify(up, *app, creq)
 }
 
-func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
-	if !p.AppIsEnabled(app) {
+func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath string) error {
+	if !p.appIsEnabled(&app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(&app.Manifest)
+	up, err := p.upstreamForApp(&app)
 	if err != nil {
 		return err
 	}
@@ -196,35 +177,31 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		datav = string(data)
 	}
 
+	conf := p.conf.Get()
+	cc := contextForApp(&app, apps.Context{}, conf)
+	// Set acting user to bot.
+	cc.ActingUserID = app.BotUserID
+	cc.ActingUserAccessToken = app.BotAccessToken
+
 	// TODO: do we need to customize the Expand & State for the webhook Call?
-	creq := &apps.CallRequest{
+	return upstream.Notify(up, app, apps.CallRequest{
 		Call: apps.Call{
 			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
-		Context: p.conf.Get().SetContextDefaultsForApp(app.AppID, &apps.Context{
-			ActingUserID: app.BotUserID,
-		}),
+		Context: cc,
 		Values: map[string]interface{}{
 			"data": datav,
 		},
-	}
-	expander := p.newExpander(creq.Context, p.conf, p.store, "")
-	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
-	if err != nil {
-		return err
-	}
-
-	return upstream.Notify(up, app, creq)
+	})
 }
 
-func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) error {
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
 	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
 
-	subs := []*apps.Subscription{}
-	subs = append(subs, postSubs...)
+	subs := append([]apps.Subscription{}, postSubs...)
 	mentions := model.PossibleAtMentions(post.Message)
 
 	botCanRead := map[string]bool{}
@@ -236,8 +213,8 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 		}
 
 		for _, sub := range mentionSubs {
-			app := appsMap[sub.AppID]
-			if app == nil {
+			app, ok := appsMap[sub.AppID]
+			if !ok {
 				continue
 			}
 			for _, mention := range mentions {
@@ -266,23 +243,23 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc *apps.Context) e
 	return p.notify(cc, subs)
 }
 
-func (p *Proxy) NotifyUserHasJoinedChannel(cc *apps.Context) error {
+func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
 	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
 }
 
-func (p *Proxy) NotifyUserHasLeftChannel(cc *apps.Context) error {
+func (p *Proxy) NotifyUserHasLeftChannel(cc apps.Context) error {
 	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
 }
 
-func (p *Proxy) NotifyUserHasJoinedTeam(cc *apps.Context) error {
+func (p *Proxy) NotifyUserHasJoinedTeam(cc apps.Context) error {
 	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
 }
 
-func (p *Proxy) NotifyUserHasLeftTeam(cc *apps.Context) error {
+func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
 	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
 }
 
-func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subject) error {
+func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
 	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
@@ -293,13 +270,13 @@ func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subje
 		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
 	}
 
-	subs := []*apps.Subscription{}
+	subs := []apps.Subscription{}
 	subs = append(subs, userSubs...)
 
 	appsMap := p.store.App.AsMap()
 	for _, sub := range botSubs {
-		app := appsMap[sub.AppID]
-		if app == nil {
+		app, ok := appsMap[sub.AppID]
+		if !ok {
 			continue
 		}
 
@@ -312,7 +289,7 @@ func (p *Proxy) notifyJoinLeave(cc *apps.Context, subject, botSubject apps.Subje
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	m, err := p.store.Manifest.Get(appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -321,40 +298,39 @@ func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, er
 		return nil, status, err
 	}
 
-	return p.getStatic(m, path)
+	return p.getStatic(app, path)
 }
 
-func (p *Proxy) getStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
-	up, err := p.upstreamForApp(m)
+func (p *Proxy) getStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-
-	return up.GetStatic(m, path)
+	return up.GetStatic(*app, path)
 }
 
-func (p *Proxy) upstreamForApp(m *apps.Manifest) (upstream.Upstream, error) {
-	if m.AppType == apps.AppTypeBuiltin {
-		u, ok := p.builtinUpstreams[m.AppID]
+func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+	if app.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {
-			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", m.AppID)
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
 		}
 		return u, nil
 	}
 
 	conf := p.conf.Get()
-	err := isAppTypeSupported(conf, m.AppType)
+	err := isAppTypeSupported(conf, app.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	upv, ok := p.upstreams.Load(m.AppType)
+	upv, ok := p.upstreams.Load(app.AppType)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid app type: %s", m.AppType)
+		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
 	up, ok := upv.(upstream.Upstream)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid Upstream for: %s", m.AppType)
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
 	}
 	return up, nil
 }
