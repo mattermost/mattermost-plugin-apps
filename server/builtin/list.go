@@ -1,29 +1,39 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package command
+package builtin
 
 import (
 	"fmt"
 
-	"github.com/spf13/pflag"
-
-	"github.com/mattermost/mattermost-server/v5/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
-	var includePluginApps bool
-	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
-	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")
-	err := fs.Parse(params.current)
-	if err != nil {
-		return errorOut(params, err)
-	}
+func (a *builtinApp) listCommandBinding() apps.Binding {
+	return commandBinding("list", pList, "[ flags ]", "Display available and installed Apps")
+}
 
-	listed := s.proxy.GetListedApps("", includePluginApps)
-	installed := s.proxy.GetInstalledApps()
+func (a *builtinApp) listForm(_ apps.CallRequest) apps.CallResponse {
+	return formResponse(apps.Form{
+		Title: "list Apps",
+		Fields: []apps.Field{
+			{
+				Label: "include-plugins",
+				Name:  fIncludePlugins,
+				Type:  apps.FieldTypeBool,
+			},
+		},
+		Call: &apps.Call{
+			Path: pList,
+		},
+	})
+}
+
+func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
+	includePluginApps := creq.BoolValue("plugin-apps")
+
+	listed := a.proxy.GetListedApps("", includePluginApps)
+	installed := a.proxy.GetInstalledApps()
 
 	// All of this information is non sensitive.
 	// Checks for the user's permissions might be needed in the future.
@@ -31,12 +41,12 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
-		m, _ := s.proxy.GetManifest(app.AppID)
+		m, _ := a.proxy.GetManifest(app.AppID)
 		if m == nil {
 			continue
 		}
 
-		if !includePluginApps && m.AppType == apps.AppTypePlugin {
+		if !includePluginApps && app.AppType == apps.AppTypePlugin {
 			continue
 		}
 
@@ -72,7 +82,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	}
 
 	for _, l := range listed {
-		app, _ := s.proxy.GetInstalledApp(l.Manifest.AppID)
+		app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
 		if app != nil {
 			continue
 		}
@@ -86,6 +96,5 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 			name, status, l.Manifest.AppType, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 	}
-
-	return out(params, txt)
+	return mdResponse(txt)
 }

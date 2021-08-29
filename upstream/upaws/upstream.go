@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -28,7 +29,7 @@ var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Logger) (*Upstream, error) {
 	if accessKey == "" && secret == "" {
-		return nil, errors.Wrap(utils.ErrNotFound, "AWS credentials are not set")
+		return nil, utils.NewNotFoundError("AWS credentials are not set")
 	}
 	awsClient, err := MakeClient(accessKey, secret, region,
 		log.With("purpose", "App Proxy"))
@@ -50,13 +51,16 @@ func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, err
 	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
-func (u *Upstream) Roundtrip(app apps.App, call apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(call.Path, &app.Manifest)
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.AWSLambda == nil {
+		return nil, errors.New("no 'aws_lambda' section in manifest.json")
+	}
+	name := match(creq.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
 
-	data, err := u.invokeFunction(name, async, call)
+	data, err := u.invokeFunction(name, async, creq)
 	if err != nil {
 		return nil, err
 	}
@@ -100,4 +104,66 @@ func match(callPath string, m *apps.Manifest) string {
 	}
 
 	return matchedName
+}
+
+// Lists all apps with manifests in S3.
+func (u *Upstream) ListS3Apps(appPrefix string) ([]apps.AppID, error) {
+	result, err := u.awsClient.ListS3(u.staticS3Bucket, "manifests/"+appPrefix)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list bucket")
+	}
+	keys := map[string]struct{}{}
+	for _, k := range result {
+		k = strings.TrimPrefix(k, "manifests/")
+		id, _, err := ParseS3ManifestName(k)
+		if err != nil {
+			continue
+		}
+		keys[string(id)] = struct{}{}
+	}
+	if len(keys) == 0 {
+		return nil, utils.NewNotFoundError(appPrefix)
+	}
+	sorted := []string{}
+	for k := range keys {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	out := []apps.AppID{}
+	for _, k := range sorted {
+		out = append(out, apps.AppID(k))
+	}
+	return out, nil
+}
+
+// Lists all apps with manifests in S3.
+func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]apps.AppVersion, error) {
+	result, err := u.awsClient.ListS3(u.staticS3Bucket, "manifests/"+string(appID))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list bucket")
+	}
+	keys := map[string]struct{}{}
+	for _, k := range result {
+		k = strings.TrimPrefix(k, "manifests/")
+		id, v, err := ParseS3ManifestName(k)
+		if err != nil || id != appID {
+			continue
+		}
+		if strings.HasPrefix(string(v), versionPrefix) {
+			keys[string(v)] = struct{}{}
+		}
+	}
+	if len(keys) == 0 {
+		return nil, utils.NewNotFoundError(versionPrefix)
+	}
+	sorted := []string{}
+	for k := range keys {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	out := []apps.AppVersion{}
+	for _, k := range sorted {
+		out = append(out, apps.AppVersion(k))
+	}
+	return out, nil
 }
