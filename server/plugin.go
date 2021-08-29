@@ -218,33 +218,34 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.Get().SetContextDefaults(apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
+	_ = p.proxy.Notify(
+		apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    ch.TeamId,
+				ChannelID: ch.Id,
+			},
+			UserID: ch.CreatorId,
+			ExpandedContext: apps.ExpandedContext{
+				Channel: ch,
+			},
 		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
+		apps.SubjectChannelCreated)
 }
 
 func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {
-	return p.conf.Get().SetContextDefaults(apps.Context{
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
 		UserID: tm.UserId,
-	})
+	}
 }
 
 func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember) apps.Context {
-	return p.conf.Get().SetContextDefaults(apps.Context{
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
 		UserID: cm.UserId,
-	})
+	}
 }
