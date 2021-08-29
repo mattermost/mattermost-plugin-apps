@@ -57,6 +57,7 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 		s.builtinInstalled = map[apps.AppID]apps.App{}
 	}
 	for _, app := range builtinApps {
+		app.DeployType = apps.DeployBuiltin
 		s.builtinInstalled[app.AppID] = app
 	}
 	s.mutex.Unlock()

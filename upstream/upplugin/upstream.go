@@ -48,7 +48,11 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 }
 
 func (u *Upstream) invoke(app apps.App, fromMattermostUserID string, creq apps.CallRequest) (*http.Response, error) {
-	return u.post(creq.Context.ActingUserID, path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, creq.Path), creq)
+	if app.Manifest.Plugin == nil {
+		return nil, errors.New("app is not available as type plugin")
+	}
+
+	return u.post(creq.Context.ActingUserID, path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, creq.Path), creq)
 }
 
 // post does not close resp.Body, it's the caller's responsibility

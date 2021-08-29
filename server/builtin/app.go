@@ -31,6 +31,7 @@ const (
 	fAppID          = "app"
 	fVersion        = "version"
 	fIncludePlugins = "include_plugins"
+	fDeployType     = "deploy_type"
 	fUserID         = "user"
 )
 
@@ -89,7 +90,6 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
-		AppType:     apps.AppTypeBuiltin,
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
@@ -99,6 +99,7 @@ func Manifest(conf config.Config) apps.Manifest {
 func App(conf config.Config) apps.App {
 	return apps.App{
 		Manifest:    Manifest(conf),
+		DeployType:  apps.DeployBuiltin,
 		BotUserID:   conf.BotUserID,
 		BotUsername: config.BotUsername,
 		GrantedLocations: apps.Locations{

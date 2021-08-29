@@ -59,6 +59,11 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, in pr
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal manifest"))
 		return
 	}
+	deployAs := m.MustDeployAs()
+	if deployAs == "" {
+		httputils.WriteError(w, utils.NewInvalidError("install API does not yet support multiple deploy types"))
+		return
+	}
 
 	_, err = a.proxy.AddLocalManifest(m)
 	if err != nil {
@@ -66,7 +71,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, in pr
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(in, apps.Context{}, m.AppID, false, "")
+	_, _, err = a.proxy.InstallApp(in, apps.Context{}, m.AppID, deployAs, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

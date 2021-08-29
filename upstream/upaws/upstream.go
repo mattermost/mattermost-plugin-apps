@@ -94,7 +94,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.AWSLambda {
+	for _, f := range m.AWSLambda.Functions {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				matchedName = LambdaName(m.AppID, m.Version, f.Name)

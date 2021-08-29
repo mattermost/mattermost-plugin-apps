@@ -126,7 +126,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range m.AWSLambda {
+		for _, manifestFunction := range m.AWSLambda.Functions {
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,
@@ -187,11 +187,11 @@ func (pd *ProvisionData) Validate() error {
 		return err
 	}
 
-	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
+	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {
 		return errors.New("different number of functions in the manifest and in the bundle")
 	}
 
-	for _, function := range pd.Manifest.AWSLambda {
+	for _, function := range pd.Manifest.AWSLambda.Functions {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
 			return errors.Errorf("function %s was not found in the bundle", function)

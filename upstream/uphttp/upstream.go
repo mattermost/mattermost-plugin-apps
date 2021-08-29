@@ -20,20 +20,35 @@ import (
 )
 
 type Upstream struct {
-	httpOut httpout.Service
-	devMode bool
+	httpOut    httpout.Service
+	appRootURL func(_ apps.App, path string) (string, error)
+	devMode    bool
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(httpOut httpout.Service, devMode bool) *Upstream {
+func NewUpstream(httpOut httpout.Service, devMode bool, appRootURL func(apps.App, string) (string, error)) *Upstream {
+	if appRootURL == nil {
+		appRootURL = AppRootURL
+	}
 	return &Upstream{
-		httpOut: httpOut,
-		devMode: devMode,
+		httpOut:    httpOut,
+		appRootURL: appRootURL,
+		devMode:    devMode,
 	}
 }
 
+func AppRootURL(app apps.App, _ string) (string, error) {
+	if app.Manifest.HTTP == nil {
+		return "", errors.New("failed to get root URL: no http section in manifest.json")
+	}
+	return app.Manifest.HTTP.RootURL, nil
+}
+
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if app.Manifest.HTTP == nil {
+		return nil, errors.New("app is not available as type http")
+	}
 	if async {
 		go func() {
 			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)
@@ -46,13 +61,17 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 
 	resp, err := u.invoke(creq.Context.ActingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}
 	return resp.Body, nil
 }
 
 func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
-	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + creq.Path)
+	rootURL, err := u.appRootURL(app, creq.Path)
+	if err != nil {
+		return nil, err
+	}
+	callURL, err := utils.CleanURL(rootURL + "/" + creq.Path)
 	if err != nil {
 		return nil, err
 	}

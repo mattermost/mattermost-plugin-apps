@@ -11,6 +11,9 @@ type App struct {
 	// may differ from what is currently in the manifest store for the app's ID.
 	Manifest
 
+	// DeployType is the type of upstream that can be used to access the App.
+	DeployType DeployType `json:"type"`
+
 	// Disabled is set to true if the app is disabled. Disabling an app does not
 	// erase any of it's data.
 	Disabled bool `json:"disabled,omitempty"`

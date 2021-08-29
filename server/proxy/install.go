@@ -21,16 +21,19 @@ import (
 //  - client is a user-scoped(??) client to Mattermost??
 //  - sessionID is needed to pass down to the app in liue of a proper token
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trusted bool, secret string) (*apps.App, string, error) {
+func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
-	err = isAppTypeSupported(conf, m.AppType)
+	if !m.SupportsDeploy(deployType) {
+		return nil, "", errors.Errorf("app does not support %s deployment", deployType)
+	}
+	err = CanDeploy(p, deployType)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "app type is not supported")
+		return nil, "", err
 	}
 
 	app, err := p.store.App.Get(appID)
@@ -41,6 +44,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app = &apps.App{}
 	}
 
+	app.DeployType = deployType
 	app.Manifest = *m
 	if app.Disabled {
 		app.Disabled = false

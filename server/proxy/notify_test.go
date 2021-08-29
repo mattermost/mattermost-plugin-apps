@@ -36,21 +36,21 @@ func sendCallResponse(t *testing.T, path string, cr *apps.CallResponse, up *mock
 }
 
 var app1 = apps.App{
+	DeployType:  apps.DeployBuiltin,
 	BotUserID:   "bot1",
 	BotUsername: "bot1username",
 	Manifest: apps.Manifest{
-		AppType:     apps.AppTypeBuiltin,
 		AppID:       apps.AppID("app1"),
 		DisplayName: "App 1",
 	},
 }
 
 var app2 = apps.App{
+	DeployType:  apps.DeployBuiltin,
 	BotUserID:   "bot2",
 	BotUsername: "bot2username",
 	Manifest: apps.Manifest{
 		AppID:       apps.AppID("app2"),
-		AppType:     apps.AppTypeBuiltin,
 		DisplayName: "App 2",
 	},
 }
