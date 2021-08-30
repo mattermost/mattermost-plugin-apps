@@ -99,15 +99,24 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 	}
 }
 
-func (p *Proxy) newMattermostAdminClient(in Incoming) mmclient.Client {
+func (p *Proxy) asAdmin(in Incoming) (Incoming, mmclient.Client, error) {
 	conf, mm, _ := p.conf.Basic()
 	var client mmclient.Client
 	if in.PluginID != "" {
 		client = mmclient.NewRPCClient(mm)
 	} else {
+		if in.AdminAccessToken == "" && in.SessionID != "" {
+			session, err := mm.Session.Get(in.SessionID)
+			if err != nil {
+				return in, nil, err
+			}
+			in.AdminAccessToken = session.Token
+			in.ActingUserAccessToken = session.Token
+		}
+
 		client = mmclient.NewHTTPClient(conf, in.AdminAccessToken)
 	}
-	return client
+	return in, client, nil
 }
 
 func (in Incoming) updateContext(cc apps.Context) apps.Context {
