@@ -55,7 +55,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app.WebhookSecret = model.NewId()
 	}
 
-	client := p.newSudoClient(in)
+	client := p.newMattermostAdminClient(in)
 	err = p.ensureBot(client, log, app)
 	if err != nil {
 		return nil, "", err
