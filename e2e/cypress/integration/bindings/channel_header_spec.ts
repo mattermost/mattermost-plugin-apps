@@ -13,7 +13,7 @@ import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/
 const helloAppHost = Cypress.config('helloAppHost');
 const helloManifestRoute = `${helloAppHost}/manifest.json`;
 
-const installAppCommand = `/apps install http ${helloManifestRoute} --app-secret 1234`;
+const installAppCommand = `/apps install url ${helloManifestRoute}`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;
@@ -73,5 +73,6 @@ const runCommand = (command: string) => {
 
 const installHTTPHello = () => {
     runCommand(installAppCommand);
-    cy.get('#interactiveDialogSubmit').click();
+    cy.get('#consent').click();
+    cy.get('#appsModalSubmit').click();
 };
