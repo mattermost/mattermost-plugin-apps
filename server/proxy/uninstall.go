@@ -36,23 +36,26 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	client := p.newSudoClient(in)
+	in, asAdmin, err := p.asAdmin(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin client")
+	}
 	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
-		if err = client.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
+		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
 		}
 	}
 
 	// revoke bot account token if there is one
 	if app.BotAccessTokenID != "" {
-		if err = client.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
+		if err = asAdmin.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
 			return "", errors.Wrapf(err, "failed to revoke bot access token for %s", app.AppID)
 		}
 	}
 
 	// disable the bot account
-	if _, err = client.DisableBot(app.BotUserID); err != nil {
+	if _, err = asAdmin.DisableBot(app.BotUserID); err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 

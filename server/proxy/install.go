@@ -18,8 +18,6 @@ import (
 )
 
 // InstallApp installs an App.
-//  - client is a user-scoped(??) client to Mattermost??
-//  - sessionID is needed to pass down to the app in liue of a proper token
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf, _, log := p.conf.Basic()
@@ -59,15 +57,18 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		app.WebhookSecret = model.NewId()
 	}
 
-	client := p.newSudoClient(in)
-	err = p.ensureBot(client, log, app)
+	in, asAdmin, err := p.asAdmin(in)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to get an admin client")
+	}
+	err = p.ensureBot(asAdmin, log, app)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(client, log, conf, app, trusted, in.ActingUserID)
+		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, app, trusted, in.ActingUserID)
 		if err != nil {
 			return nil, "", err
 		}
