@@ -230,8 +230,7 @@ func (c *CallRequest) BoolValue(name string) bool {
 		return false
 	}
 
-	b, ok := c.Values[name].(bool)
-	if ok {
+	if b, ok := c.Values[name].(bool); ok {
 		return b
 	}
 

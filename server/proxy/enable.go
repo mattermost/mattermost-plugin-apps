@@ -21,7 +21,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	_, err = p.newSudoClient(in).EnableBot(app.BotUserID)
+	_, err = p.newMattermostAdminClient(in).EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -84,7 +84,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	}
 
 	// disable app, not removing the data
-	_, err = p.newSudoClient(in).DisableBot(app.BotUserID)
+	_, err = p.newMattermostAdminClient(in).DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}

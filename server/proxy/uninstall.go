@@ -36,7 +36,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	client := p.newSudoClient(in)
+	client := p.newMattermostAdminClient(in)
 	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
 		if err = client.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {

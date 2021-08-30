@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -33,8 +34,8 @@ func NewIncomingFromContext(cc apps.Context) Incoming {
 
 func RequireUser(f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		actingUserID := req.Header.Get("Mattermost-User-Id")
-		sessionID := req.Header.Get("Mattermost-Session-Id")
+		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
+		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
 		if actingUserID == "" || sessionID == "" {
 			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
 			return
@@ -49,8 +50,8 @@ func RequireUser(f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) ht
 
 func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		actingUserID := req.Header.Get("Mattermost-User-Id")
-		sessionID := req.Header.Get("Mattermost-Session-Id")
+		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
+		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
 		if actingUserID == "" || sessionID == "" {
 			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
 			return
@@ -72,15 +73,15 @@ func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http
 
 func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		pluginID := r.Header.Get("Mattermost-Plugin-ID")
-		actingUserID := r.Header.Get("Mattermost-User-Id")
+		pluginID := r.Header.Get(config.MattermostPluginIDHeader)
+		actingUserID := r.Header.Get(config.MattermostUserIDHeader)
 		in := Incoming{
 			PluginID:     pluginID,
 			ActingUserID: actingUserID,
 		}
 
 		if pluginID == "" {
-			sessionID := r.Header.Get("Mattermost-Session-Id")
+			sessionID := r.Header.Get(config.MattermostSessionIDHeader)
 			if actingUserID == "" || sessionID == "" {
 				httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
 				return
@@ -98,7 +99,7 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 	}
 }
 
-func (p *Proxy) newSudoClient(in Incoming) mmclient.Client {
+func (p *Proxy) newMattermostAdminClient(in Incoming) mmclient.Client {
 	conf, mm, _ := p.conf.Basic()
 	var client mmclient.Client
 	if in.PluginID != "" {
