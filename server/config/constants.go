@@ -44,6 +44,8 @@ const (
 	PathMarketplace = "/marketplace"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
+	WebSocketEventPluginEnabled   = "plugin_enabled"
+	WebSocketEventPluginDisabled  = "plugin_disabled"
 )
 
 const (

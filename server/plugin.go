@@ -126,6 +126,14 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	log.Infof("Plugin activated")
 
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, map[string]interface{}{}, &model.WebsocketBroadcast{})
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, map[string]interface{}{}, &model.WebsocketBroadcast{})
+
 	return nil
 }
 
