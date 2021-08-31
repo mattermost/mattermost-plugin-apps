@@ -17,6 +17,8 @@ const StaticFolder = "static"
 // Call with "/webhook/{PATH}"."
 const PathWebhook = "/webhook"
 
+const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
+
 type Manifest struct {
 	// The AppID is a globally unique identifier that represents your app. IDs must be at least
 	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.

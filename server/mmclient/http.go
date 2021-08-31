@@ -11,7 +11,7 @@ type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Client, error) {
+func NewHTTPClientFromSessionID(config config.Service, sessionID, actingUserID string) (Client, error) {
 	conf, mm, _ := config.Basic()
 	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
 	if err != nil {
@@ -21,7 +21,25 @@ func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Clien
 	return &httpClient{client}, nil
 }
 
+func NewHTTPClientFromToken(config config.Service, token, actingUserID string) (Client, error) {
+	conf := config.Get()
+
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(token)
+
+	return &httpClient{client}, nil
+}
+
 // User section
+
+func (h *httpClient) GetUser(userID string) (*model.User, error) {
+	user, _, err := h.mm.GetUser(userID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
 
 func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
 	user, _, err := h.mm.GetUserByUsername(userName, "")
@@ -48,6 +66,39 @@ func (h *httpClient) RevokeUserAccessToken(tokenID string) error {
 	}
 
 	return nil
+}
+
+// Channel section
+
+func (h *httpClient) GetChannel(channelID string) (*model.Channel, error) {
+	channel, _, err := h.mm.GetChannel(channelID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return channel, nil
+}
+
+// Team section
+
+func (h *httpClient) GetTeam(teamID string) (*model.Team, error) {
+	team, _, err := h.mm.GetTeam(teamID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return team, nil
+}
+
+// Post section
+
+func (h *httpClient) GetPost(postID string) (*model.Post, error) {
+	post, _, err := h.mm.GetPost(postID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
 }
 
 // OAuth section
