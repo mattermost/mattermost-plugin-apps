@@ -43,7 +43,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	}
 
 	// Inside a debug command: all URLs are trusted.
-	data, err := s.httpOut.GetFromURL(manifestURL, true)
+	data, err := s.httpOut.GetFromURL(manifestURL, true, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}
