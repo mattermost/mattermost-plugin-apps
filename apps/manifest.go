@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
@@ -42,6 +45,9 @@ var DefaultOnOAuth2Complete = Call{
 }
 
 type Manifest struct {
+	// Set to the version of the Apps plugin that stores it, e.g. "v0.8.0"
+	SchemaVersion string
+
 	// The AppID is a globally unique identifier that represents your app. IDs
 	// must be at least 3 characters, at most 32 characters and must contain
 	// only alphanumeric characters, dashes, underscores and periods.
@@ -132,21 +138,44 @@ type Manifest struct {
 	// and accessed as a local Plugin. The JSON name `plugin` must match the
 	// type.
 	Plugin *Plugin `json:"plugin,omitempty"`
+
+	// unexported data
+
+	// v7AppType is the AppType field value if the Manifest was decoded from a
+	// v0.7.x version. It is used in App.UnmarshalJSON to set DeployType.
+	v7AppType string
 }
 
-func ManifestFromJSON(data []byte) (*Manifest, error) {
-	var m Manifest
-	err := json.Unmarshal(data, &m)
+// DecodeCompatibleManifest decodes any known version of manifest.json into the
+// current format. Since App embeds Manifest anonymously, it appears impossible
+// to implement json.Unmarshaler without introducing all kinds of complexities.
+// Thus, custom functions to encode/decode JSON, with backwards compatibility
+// support for App and Manifest.
+func DecodeCompatibleManifest(data []byte) (m *Manifest, err error) {
+	defer func() {
+		if m != nil {
+			err = m.Validate()
+			if err != nil {
+				m = nil
+			}
+		}
+	}()
+
+	err = json.Unmarshal(data, &m)
+	// If failed to decode as current version, opportunistically try as a
+	// v0.7.x. There was no schema version before, this condition may need to be
+	// updated in the future.
+	if err != nil || m.SchemaVersion == "" {
+		m7 := ManifestV0_7{}
+		_ = json.Unmarshal(data, &m7)
+		if from7 := m7.Manifest(); from7 != nil {
+			return from7, nil
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	err = m.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	return &m, nil
+	return m, nil
 }
 
 type validator interface {

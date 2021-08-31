@@ -48,7 +48,7 @@ func GetAppBundle(bundlePath string, log utils.Logger) (*apps.Manifest, string, 
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to load manifest.json")
 	}
-	m, err := apps.ManifestFromJSON(data)
+	m, err := apps.DecodeCompatibleManifest(data)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "invalid manifest.json")
 	}

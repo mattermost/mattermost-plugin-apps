@@ -674,7 +674,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		},
 	}).WithMattermostAPI(mm)
 
-	s, err := store.MakeService(confService, nil)
+	s, err := store.MakeService(confService, nil, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

@@ -6,7 +6,6 @@ package upaws
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"io"
 	"os"
 	"strings"
@@ -81,7 +80,8 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "can't read manifest.json file")
 			}
-			if err := json.Unmarshal(data, &m); err != nil {
+			m, err = apps.DecodeCompatibleManifest(data)
+			if err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 			log.Infow("Found manifest", "file", file.Name)

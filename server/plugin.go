@@ -83,7 +83,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.httpOut = httpout.NewService(p.conf)
 
-	p.store, err = store.MakeService(p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.conf, p.API, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}

@@ -124,8 +124,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 			continue
 		}
 
-		var m *apps.Manifest
-		m, err = apps.ManifestFromJSON(data)
+		m, err := apps.DecodeCompatibleManifest(data)
 		if err != nil {
 			log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID,
@@ -149,38 +148,29 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	return nil
 }
 
-func DecodeManifest(data []byte) (*apps.Manifest, error) {
-	var m apps.Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
-	}
-	err = m.Validate()
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
-}
-
 func (s *manifestStore) Configure(conf config.Config) error {
-	_, mm, log := s.conf.Basic()
 	updatedLocal := map[apps.AppID]apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
-		var m *apps.Manifest
-		err := mm.KV.Get(config.KVLocalManifestPrefix+key, &m)
-		switch {
-		case err != nil:
-			log.WithError(err).Errorw("Failed to load local manifest",
-				"app_id", id)
+		log := s.conf.Logger().With("app_id", id)
 
-		case m == nil:
-			log.WithError(utils.ErrNotFound).Errorw("Failed to load local manifest",
-				"app_id", id)
-
-		default:
-			updatedLocal[apps.AppID(id)] = *m
+		data, appErr := s.api.KVGet(config.KVLocalManifestPrefix + key)
+		if appErr != nil {
+			log.WithError(appErr).Errorw("Failed to get local manifest from KV")
+			continue
 		}
+		if len(data) == 0 {
+			err := utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
+			log.WithError(err).Errorw("Failed to load local manifest")
+			continue
+		}
+
+		m, err := apps.DecodeCompatibleManifest(data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to decode local manifest")
+			continue
+		}
+		updatedLocal[apps.AppID(id)] = *m
 	}
 
 	s.mutex.Lock()
@@ -225,6 +215,8 @@ func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 func (s *manifestStore) StoreLocal(m apps.Manifest) error {
 	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
+
+	m.SchemaVersion = conf.BuildConfig.Version
 
 	data, err := json.Marshal(m)
 	if err != nil {
@@ -324,7 +316,7 @@ func (s *manifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*a
 		return nil, errors.Wrap(err, "failed to get manifest data")
 	}
 
-	m, err := apps.ManifestFromJSON(data)
+	m, err := apps.DecodeCompatibleManifest(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal manifest data")
 	}

@@ -587,7 +587,7 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 		},
 	})
 
-	s, err := store.MakeService(conf, nil)
+	s, err := store.MakeService(conf, nil, nil)
 	require.NoError(t, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

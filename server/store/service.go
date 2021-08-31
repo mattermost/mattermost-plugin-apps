@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -25,14 +26,16 @@ type Service struct {
 
 	conf    config.Service
 	httpOut httpout.Service
+	api     plugin.API
 	// aws           upaws.Client
 	// s3AssetBucket string
 }
 
-func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
+func MakeService(confService config.Service, api plugin.API, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
 		conf:    confService,
 		httpOut: httpOut,
+		api:     api,
 	}
 	s.AppKV = &appKVStore{Service: s}
 	s.OAuth2 = &oauth2Store{Service: s}

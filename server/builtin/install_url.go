@@ -35,7 +35,7 @@ func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	m, err := apps.ManifestFromJSON(data)
+	m, err := apps.DecodeCompatibleManifest(data)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
