@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.5
 	github.com/kubeless/kubeless v1.0.8
 	github.com/mattermost/mattermost-plugin-api v0.0.20
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20210820075617-74518ea165a0
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20210831134654-b6564fec6d62
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.2.0
 	github.com/spf13/pflag v1.0.5
