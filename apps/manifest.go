@@ -142,7 +142,8 @@ type Manifest struct {
 	// unexported data
 
 	// v7AppType is the AppType field value if the Manifest was decoded from a
-	// v0.7.x version. It is used in App.UnmarshalJSON to set DeployType.
+	// v0.7.x version. It is used in App.DecodeCompatibleManifest to set
+	// DeployType.
 	v7AppType string
 }
 
