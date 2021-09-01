@@ -139,6 +139,8 @@ type Manifest struct {
 	// type.
 	Plugin *Plugin `json:"plugin,omitempty"`
 
+	OpenFAAS *OpenFAAS `json:"open_faas,omitempty"`
+
 	// unexported data
 
 	// v7AppType is the AppType field value if the Manifest was decoded from a
@@ -202,6 +204,7 @@ func (m Manifest) Validate() error {
 	if m.HTTP == nil &&
 		m.Plugin == nil &&
 		m.AWSLambda == nil &&
+		m.OpenFAAS == nil &&
 		m.Kubeless == nil {
 		return utils.NewInvalidError("manifest does not define an app type (http, aws_lambda, etc.)")
 	}
@@ -243,6 +246,9 @@ func (m Manifest) DeployTypes() (out []DeployType) {
 	if m.Kubeless != nil {
 		out = append(out, DeployKubeless)
 	}
+	if m.OpenFAAS != nil {
+		out = append(out, DeployOpenFAAS)
+	}
 	if m.Plugin != nil {
 		out = append(out, DeployPlugin)
 	}
@@ -257,6 +263,8 @@ func (m Manifest) SupportsDeploy(dtype DeployType) bool {
 		return m.HTTP != nil && m.HTTP.Validate() == nil
 	case DeployKubeless:
 		return m.Kubeless != nil && m.Kubeless.Validate() == nil
+	case DeployOpenFAAS:
+		return m.OpenFAAS != nil && m.OpenFAAS.Validate() == nil
 	case DeployPlugin:
 		return m.Plugin != nil && m.Plugin.Validate() == nil
 	}

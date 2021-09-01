@@ -1,54 +1,47 @@
-package main
+package function
 
 import (
+	"crypto/tls"
 	"embed"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 )
 
-//go:embed manifest-http.json
-var manifestHTTPData []byte
+//go:embed data/manifest.json
+var manifestData []byte
 
-//go:embed manifest.json
-var manifestAWSData []byte
-
-//go:embed pong.json
+//go:embed data/pong.json
 var pongData []byte
 
-//go:embed bindings.json
+//go:embed data/bindings.json
 var bindingsData []byte
 
-//go:embed send_form.json
+//go:embed data/send_form.json
 var formData []byte
-
-const (
-	host = "localhost"
-	port = 8080
-)
 
 //go:embed static
 var static embed.FS
 
-func main() {
-	localMode := os.Getenv("LOCAL") == "true"
+// Handler for OpenFaaS and faasd.
+func Handle(w http.ResponseWriter, r *http.Request) {
+	InitApp(apps.DeployOpenFAAS)
+	http.DefaultServeMux.ServeHTTP(w, r)
+}
 
-	// Serve its own manifest as HTTP for convenience in dev. mode.
+var deployType apps.DeployType
 
-	manifestData := manifestAWSData
-	if localMode {
-		manifestData = manifestHTTPData
-	}
+func InitApp(dt apps.DeployType) {
+	// Serve static assets.
+	http.Handle("/static/", http.FileServer(http.FS(static)))
+
+	// Returns the manifest for the App.
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
+	// Serve app's Calls. "/ping" is used in `appsctl test aws`
 	// Returns "PONG". Used for `appsctl test aws`.
 	http.HandleFunc("/ping", writeJSON(pongData))
 
@@ -61,25 +54,31 @@ func main() {
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send/submit", send)
 
-	if localMode {
-		addr := fmt.Sprintf("%v:%v", host, port)
-		fmt.Printf(`hello-world app listening at http://%s`, addr)
-		http.ListenAndServe(":8080", nil)
-	} else {
-		lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
-	}
+	deployType = dt
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
-	c := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&c)
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
 
-	message := "Hello from AWS Lambda!"
-	v, ok := c.Values["message"]
+	message := fmt.Sprintf("Hello from a serververless app running as %s!", deployType)
+	v, ok := creq.Values["message"]
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
-	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+
+	// Running on ngrok in development, need this to avoid getting "x509:
+	// certificate signed by unknown authority" error when running in a fresh
+	// ubuntu container.
+	asBot := mmclient.AsBot(creq.Context)
+	asBot.HttpClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	asBot.DM(creq.Context.ActingUserID, message)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,

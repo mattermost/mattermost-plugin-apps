@@ -1,0 +1,33 @@
+{
+  "name": "hello-world-app",
+  "version": "1.0.0",
+  "description": "Hello World App implemented in JavaScript and deployable on all supported backends.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p .",
+    "build:watch": "tsc -w -p .",
+    "clean": "rm -rf dist node_modules",
+    "check-types": "tsc",
+    "lint": "eslint --ignore-pattern node_modules --ignore-pattern dist --ext ts ./src --quiet --cache",
+    "fix": "eslint --ignore-pattern node_modules --ignore-pattern dist --ext ts ./src --quiet --fix --cache",
+    "start": "nodemon dist/index.js",
+    "test": "jest --coverage --passWithNoTests"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "4.17.1",
+    "node-fetch": "2.6.1",
+    "serverless-http": "^2.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5",
+    "nodemon": "^2.0.12",
+    "@types/node": "^16.6.1",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "eslint": "7.4.0",
+    "eslint-import-resolver-typescript": "^2.4.0",
+    "eslint-plugin-import": "^2.22.1"
+  }
+}

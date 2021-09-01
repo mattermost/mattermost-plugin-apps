@@ -5,9 +5,9 @@
 			"location": "/command",
 			"bindings": [
 				{
-					"icon": "/static/icon.png",
-					"label": "hello-lambda",
-					"description": "Hello Lambda app",
+					"icon": "icon.png",
+					"label": "hello-serverless",
+					"description": "Hello Serverless app",
 					"hint": "[send]",
 					"bindings": [
 						{

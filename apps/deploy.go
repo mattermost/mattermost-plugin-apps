@@ -26,6 +26,9 @@ const (
 	// Kubeless-deployable app.
 	DeployKubeless DeployType = "kubeless"
 
+	// OpenFaaS-deployable app.
+	DeployOpenFAAS DeployType = "open_faas"
+
 	// Builtin app. All functions and resources are served by directly invoking
 	// go functions. No manifest, no Mattermost to App authentication are
 	// needed.
@@ -42,6 +45,7 @@ func (t DeployType) Validate() error {
 		DeployAWSLambda,
 		DeployBuiltin,
 		DeployKubeless,
+		DeployOpenFAAS,
 		DeployPlugin:
 		return nil
 	default:
@@ -59,6 +63,8 @@ func (t DeployType) String() string {
 		return "Built-in"
 	case DeployKubeless:
 		return "Kubeless"
+	case DeployOpenFAAS:
+		return "OpenFaaS"
 	case DeployPlugin:
 		return "Mattermost Plugin"
 	default:
