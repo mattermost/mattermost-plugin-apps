@@ -11,7 +11,6 @@ This plugin serves as the core of the Mattermost App Framework. It extends the M
 
 Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the App you're creating.
 
-Productiion Apps communicate with our REST API and authenticate via OAuth.
 
 ## Getting Started
 
