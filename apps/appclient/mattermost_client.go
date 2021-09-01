@@ -1,4 +1,4 @@
-package mmclient
+package appclient
 
 import (
 	"fmt"

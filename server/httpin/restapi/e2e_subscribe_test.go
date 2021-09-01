@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/api4"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appsclient"
 
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func TestSubscribeE2E(t *testing.T) {
 			TeamID:    th.ServerTestHelper.BasicTeam.Id,
 		}
 
-		th.TestForSystemAdmin(t, func(t *testing.T, client *mmclient.ClientPP) {
+		th.TestForSystemAdmin(t, func(t *testing.T, client *appclient.ClientPP) {
 			// subscribe
 			_, resp := client.Subscribe(subscription)
 			api4.CheckOKStatus(t, resp)

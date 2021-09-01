@@ -1,4 +1,4 @@
-package mmclient
+package pluginclient
 
 import (
 	"io"
@@ -7,10 +7,17 @@ import (
 )
 
 type Client interface {
+	GetUser(userID string) (*model.User, error)
 	GetUserByUsername(userName string) (*model.User, error)
 	CreateUserAccessToken(userID, description string) (*model.UserAccessToken, error)
 	RevokeUserAccessToken(tokenID string) error
 	SetProfileImage(userID string, content io.Reader) error
+
+	GetChannel(channelID string) (*model.Channel, error)
+
+	GetTeam(teamID string) (*model.Team, error)
+
+	GetPost(postID string) (*model.Post, error)
 
 	CreateOAuthApp(app *model.OAuthApp) error
 	GetOAuthApp(appID string) (*model.OAuthApp, error)

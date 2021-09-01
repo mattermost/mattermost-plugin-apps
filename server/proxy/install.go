@@ -5,6 +5,8 @@ package proxy
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -13,7 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/pluginclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -53,11 +55,19 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app.WebhookSecret = model.NewId()
 	}
 
+	icon, err := p.getAppIcon(app)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed get bot icon")
+	}
+	if icon != nil {
+		defer icon.Close()
+	}
+
 	in, asAdmin, err := p.asAdmin(in)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin client")
 	}
-	err = p.ensureBot(asAdmin, log, app)
+	err = p.ensureBot(asAdmin, log, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
@@ -103,7 +113,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client pluginclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
@@ -133,7 +143,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) error {
+func (p *Proxy) ensureBot(mm pluginclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -177,9 +187,11 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) e
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username
 
-	err := p.updateBotIcon(mm, app)
-	if err != nil {
-		return errors.Wrap(err, "failed set bot icon")
+	if icon != nil {
+		err := mm.SetProfileImage(app.BotUserID, icon)
+		if err != nil {
+			return errors.Wrap(err, "failed to update bot profile icon")
+		}
 	}
 
 	// Create an access token on a fresh app install
@@ -197,24 +209,23 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) e
 	return nil
 }
 
-func (p *Proxy) updateBotIcon(mm mmclient.Client, app *apps.App) error {
+// getAppIcon gets the icon of a given app.
+// Returns nil, nil if no app icon is defined in the manifest.
+// The caller must close the returned io.ReadCloser if there is one.
+func (p *Proxy) getAppIcon(app *apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
-
-	// If app doesn't have an icon, do nothing
 	if iconPath == "" {
-		return nil
+		return nil, nil
 	}
 
-	asset, _, err := p.getStatic(app, iconPath)
+	icon, status, err := p.getStatic(app, iconPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to get app icon")
-	}
-	defer asset.Close()
-
-	err = mm.SetProfileImage(app.BotUserID, asset)
-	if err != nil {
-		return errors.Wrap(err, "update profile icon")
+		return nil, errors.Wrap(err, "failed to get app icon")
 	}
 
-	return nil
+	if status != http.StatusOK {
+		return nil, errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
+	}
+
+	return icon, nil
 }

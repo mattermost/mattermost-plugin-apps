@@ -9,6 +9,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
+
 // Where static assets are.
 const StaticFolder = "static"
 
@@ -101,7 +103,7 @@ type Manifest struct {
 	// (3rd party) OAuth2 flow, and after the "state" has already been
 	// validated. It gets passed the URL query as Values. The App should obtain
 	// the OAuth2 user token, and store it persistently for future use using
-	// mmclient.StoreOAuth2User.
+	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access

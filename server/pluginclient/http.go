@@ -1,4 +1,4 @@
-package mmclient
+package pluginclient
 
 import (
 	"io"
@@ -19,6 +19,15 @@ func NewHTTPClient(conf config.Config, token string) Client {
 }
 
 // User section
+
+func (h *httpClient) GetUser(userID string) (*model.User, error) {
+	user, resp := h.mm.GetUser(userID, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return user, nil
+}
 
 func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
 	user, resp := h.mm.GetUserByUsername(userName, "")
@@ -57,6 +66,39 @@ func (h *httpClient) RevokeUserAccessToken(tokenID string) error {
 	}
 
 	return nil
+}
+
+// Channel section
+
+func (h *httpClient) GetChannel(channelID string) (*model.Channel, error) {
+	channel, resp := h.mm.GetChannel(channelID, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return channel, nil
+}
+
+// Team section
+
+func (h *httpClient) GetTeam(teamID string) (*model.Team, error) {
+	team, resp := h.mm.GetTeam(teamID, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return team, nil
+}
+
+// Post section
+
+func (h *httpClient) GetPost(postID string) (*model.Post, error) {
+	post, resp := h.mm.GetPost(postID, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return post, nil
 }
 
 // OAuth section

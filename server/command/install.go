@@ -67,7 +67,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -98,7 +98,7 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/pluginclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -99,11 +99,11 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 	}
 }
 
-func (p *Proxy) asAdmin(in Incoming) (Incoming, mmclient.Client, error) {
+func (p *Proxy) asAdmin(in Incoming) (Incoming, pluginclient.Client, error) {
 	conf, mm, _ := p.conf.Basic()
-	var client mmclient.Client
+	var client pluginclient.Client
 	if in.PluginID != "" {
-		client = mmclient.NewRPCClient(mm)
+		client = pluginclient.NewRPCClient(mm)
 	} else {
 		if in.AdminAccessToken == "" && in.SessionID != "" {
 			session, err := mm.Session.Get(in.SessionID)
@@ -114,7 +114,7 @@ func (p *Proxy) asAdmin(in Incoming) (Incoming, mmclient.Client, error) {
 			in.ActingUserAccessToken = session.Token
 		}
 
-		client = mmclient.NewHTTPClient(conf, in.AdminAccessToken)
+		client = pluginclient.NewHTTPClient(conf, in.AdminAccessToken)
 	}
 	return in, client, nil
 }

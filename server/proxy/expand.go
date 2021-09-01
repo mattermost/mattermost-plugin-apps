@@ -8,8 +8,9 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/pluginclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -18,7 +19,7 @@ func contextForApp(app *apps.App, base apps.Context, conf config.Config) apps.Co
 	out.ExpandedContext = apps.ExpandedContext{}
 	out.MattermostSiteURL = conf.MattermostSiteURL
 	out.AppID = app.AppID
-	out.AppPath = path.Join(conf.PluginURLPath, mmclient.PathApps, string(app.AppID))
+	out.AppPath = path.Join(conf.PluginURLPath, appclient.PathApps, string(app.AppID))
 	out.BotUserID = app.BotUserID
 	out.BotAccessToken = app.BotAccessToken
 	return out
@@ -30,12 +31,26 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf, mm, _ := p.conf.Basic()
-	cc := contextForApp(app, *base, conf)
+	conf := p.conf.Get()
 
+	cc := contextForApp(app, *base, conf)
 	if expand == nil {
 		// nothing more to do
 		return cc, nil
+	}
+
+	var client pluginclient.Client
+	switch {
+	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
+		// If the app has admin permission anyway, use the RPC client for performance reasons
+		client = pluginclient.NewRPCClient(p.conf.MattermostAPI())
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserAccessToken != "":
+		// The OAuth2 token should be used here once it's implemented
+		client = pluginclient.NewHTTPClient(conf, in.ActingUserAccessToken)
+	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
+		client = pluginclient.NewHTTPClient(conf, base.BotAccessToken)
+	default:
+		return emptyCC, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
 	}
 
 	var session *model.Session
@@ -43,7 +58,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 		}
-		err := utils.EnsureSysAdmin(mm, cc.ActingUserID)
+		err := utils.EnsureSysAdmin(p.conf.MattermostAPI(), cc.ActingUserID)
 		if err != nil {
 			return emptyCC, utils.NewForbiddenError("user is not a sysadmin")
 		}
@@ -54,7 +69,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		}
 		// Try to obtain it from the present session
 		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
+			session, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
 			if err != nil {
 				return emptyCC, utils.NewForbiddenError("failed to load user session")
 			}
@@ -73,7 +88,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		if cc.ActingUserAccessToken == "" {
 			if session == nil {
 				var err error
-				session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
+				session, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
 				if err != nil {
 					return emptyCC, utils.NewForbiddenError("failed to load user session")
 				}
@@ -88,7 +103,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.App = stripApp(app, expand.App)
 
 	if expand.ActingUser != "" && base.ActingUserID != "" && base.ActingUser == nil {
-		actingUser, err := mm.User.Get(base.ActingUserID)
+		actingUser, err := client.GetUser(base.ActingUserID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand acting user %s", base.ActingUserID)
 		}
@@ -97,7 +112,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.ActingUser = stripUser(base.ActingUser, expand.ActingUser)
 
 	if expand.Channel != "" && base.ChannelID != "" && base.Channel == nil {
-		ch, err := mm.Channel.Get(base.ChannelID)
+		ch, err := client.GetChannel(base.ChannelID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand channel %s", base.ChannelID)
 		}
@@ -106,7 +121,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Channel = stripChannel(base.Channel, expand.Channel)
 
 	if expand.Post != "" && base.PostID != "" && base.Post == nil {
-		post, err := mm.Post.GetPost(base.PostID)
+		post, err := client.GetPost(base.PostID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand post %s", base.PostID)
 		}
@@ -115,7 +130,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Post = stripPost(base.Post, expand.Post)
 
 	if expand.RootPost != "" && base.RootPostID != "" && base.RootPost == nil {
-		post, err := mm.Post.GetPost(base.RootPostID)
+		post, err := client.GetPost(base.RootPostID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand root post %s", base.RootPostID)
 		}
@@ -124,7 +139,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.RootPost = stripPost(base.RootPost, expand.RootPost)
 
 	if expand.Team != "" && base.TeamID != "" && base.Team == nil {
-		team, err := mm.Team.Get(base.TeamID)
+		team, err := client.GetTeam(base.TeamID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand team %s", base.TeamID)
 		}
@@ -133,7 +148,7 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 	cc.Team = stripTeam(base.Team, expand.Team)
 
 	if expand.User != "" && base.UserID != "" && base.User == nil {
-		user, err := mm.User.Get(base.UserID)
+		user, err := client.GetUser(base.UserID)
 		if err != nil {
 			return emptyCC, errors.Wrapf(err, "failed to expand user %s", base.UserID)
 		}

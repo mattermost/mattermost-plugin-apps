@@ -1,4 +1,4 @@
-package mmclient
+package pluginclient
 
 import (
 	"io"
@@ -17,6 +17,10 @@ func NewRPCClient(c *pluginapi.Client) Client {
 
 // User section
 
+func (r *rpcClient) GetUser(userID string) (*model.User, error) {
+	return r.mm.User.Get(userID)
+}
+
 func (r *rpcClient) GetUserByUsername(userName string) (*model.User, error) {
 	return r.mm.User.GetByUsername(userName)
 }
@@ -31,6 +35,24 @@ func (r *rpcClient) RevokeUserAccessToken(tokenID string) error {
 
 func (r *rpcClient) SetProfileImage(userID string, content io.Reader) error {
 	return r.mm.User.SetProfileImage(userID, content)
+}
+
+// Channel section
+
+func (r *rpcClient) GetChannel(channelID string) (*model.Channel, error) {
+	return r.mm.Channel.Get(channelID)
+}
+
+// Team section
+
+func (r *rpcClient) GetTeam(teamID string) (*model.Team, error) {
+	return r.mm.Team.Get(teamID)
+}
+
+// Post section
+
+func (r *rpcClient) GetPost(postID string) (*model.Post, error) {
+	return r.mm.Post.GetPost(postID)
 }
 
 // OAuth section

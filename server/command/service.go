@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -267,7 +268,7 @@ func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.Au
 }
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
-func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error) {
+func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (resp *model.CommandResponse, err error) {
 	params := &commandParams{
 		pluginContext: pluginContext,
 		commandArgs:   commandArgs,
@@ -298,6 +299,31 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	}
 
 	params.current = split[1:]
+
+	defer func(log utils.Logger, developerMode bool) {
+		if x := recover(); x != nil {
+			stack := string(debug.Stack())
+
+			log.Errorw(
+				"Recovered from a panic in a command",
+				"command", commandArgs.Command,
+				"error", x,
+				"stack", stack,
+			)
+
+			txt := utils.CodeBlock(commandArgs.Command+"\n") + "Command paniced. "
+
+			if developerMode {
+				txt += fmt.Sprintf("Error: **%v**. Stack:\n%v", x, utils.CodeBlock(stack))
+			} else {
+				txt += "Please check the server logs for more details."
+			}
+			resp = &model.CommandResponse{
+				Text:         txt,
+				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			}
+		}
+	}(s.conf.Logger(), s.conf.Get().DeveloperMode)
 
 	return s.handleMain(params)
 }
