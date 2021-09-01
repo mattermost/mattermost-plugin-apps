@@ -14,7 +14,7 @@ func main() {
 	plugin.ClientMain(
 		NewPlugin(
 			config.BuildConfig{
-				Manifest:       *manifest,
+				Manifest:       manifest,
 				BuildHash:      BuildHash,
 				BuildHashShort: BuildHashShort,
 				BuildDate:      BuildDate,

@@ -310,7 +310,12 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 
 	if rp.StatusCode >= 300 {
 		defer c.closeBody(rp)
-		return rp, model.AppErrorFromJson(rp.Body)
+		data, err := io.ReadAll(rp.Body)
+		if err != nil {
+			return rp, err
+		}
+
+		return rp, errors.New((string(data)))
 	}
 
 	return rp, nil
