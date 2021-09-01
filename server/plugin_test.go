@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestOnActivate(t *testing.T) {
