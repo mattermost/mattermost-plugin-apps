@@ -139,6 +139,9 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 	}
 	cc.Team = stripTeam(base.Team, expand.Team)
 
+	// TODO: expand Mentions, maybe replacing User?
+	// https://mattermost.atlassian.net/browse/MM-30403
+
 	if expand.User != "" && base.UserID != "" && base.User == nil {
 		user, err := client.GetUser(base.UserID)
 		if err != nil {
