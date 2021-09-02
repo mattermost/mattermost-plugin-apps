@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
@@ -31,7 +31,7 @@ func TestCreateOAuth2State(t *testing.T) {
 	urlState, err := s.CreateState(userID)
 	require.NoError(t, err)
 	key := config.KVOAuth2StatePrefix + urlState
-	require.LessOrEqual(t, len(key), model.KEY_VALUE_KEY_MAX_RUNES)
+	require.LessOrEqual(t, len(key), model.KeyValueKeyMaxRunes)
 	require.Regexp(t, stateRE, urlState)
 
 	// Validate errors

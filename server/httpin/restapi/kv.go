@@ -1,13 +1,17 @@
 package restapi
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+)
+
+const (
+	// MaxKVStoreValueLength is the maximum length in bytes that a value in the KV store of an app can contain
+	MaxKVStoreValueLength = 8192
 )
 
 func (a *restapi) kvGet(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
@@ -26,7 +30,7 @@ func (a *restapi) kvPut(w http.ResponseWriter, r *http.Request, in proxy.Incomin
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 
-	data, err := io.ReadAll(r.Body)
+	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

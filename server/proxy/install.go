@@ -5,11 +5,13 @@ package proxy
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -20,12 +22,13 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trusted bool, secret string) (*apps.App, string, error) {
-	conf, _, log := p.conf.Basic()
+	conf, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
+
 	err = isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "app type is not supported")
@@ -53,11 +56,16 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app.WebhookSecret = model.NewId()
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
+	icon, err := p.getAppIcon(app)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to get an admin client")
+		return nil, "", errors.Wrap(err, "failed get bot icon")
 	}
-	err = p.ensureBot(asAdmin, log, app)
+	if icon != nil {
+		defer icon.Close()
+	}
+
+	asAdmin := mmclient.NewRPCClient(mm)
+	err = p.ensureBot(asAdmin, log, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
@@ -80,7 +88,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 
 	var message string
 	if app.OnInstall != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnInstall,
 			Context: cc,
 		})
@@ -96,7 +104,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		message = fmt.Sprintf("Installed %s", app.DisplayName)
 	}
 
-	p.conf.Logger().Infof("Installed app.")
+	log.Infof("Installed app.")
 
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
@@ -133,7 +141,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) error {
+func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -177,9 +185,11 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) e
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username
 
-	err := p.updateBotIcon(mm, app)
-	if err != nil {
-		return errors.Wrap(err, "failed set bot icon")
+	if icon != nil {
+		err := mm.SetProfileImage(app.BotUserID, icon)
+		if err != nil {
+			return errors.Wrap(err, "failed to update bot profile icon")
+		}
 	}
 
 	// Create an access token on a fresh app install
@@ -197,24 +207,23 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App) e
 	return nil
 }
 
-func (p *Proxy) updateBotIcon(mm mmclient.Client, app *apps.App) error {
+// getAppIcon gets the icon of a given app.
+// Returns nil, nil if no app icon is defined in the manifest.
+// The caller must close the returned io.ReadCloser if there is one.
+func (p *Proxy) getAppIcon(app *apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
-
-	// If app doesn't have an icon, do nothing
 	if iconPath == "" {
-		return nil
+		return nil, nil
 	}
 
-	asset, _, err := p.getStatic(app, iconPath)
+	icon, status, err := p.getStatic(*app, iconPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to get app icon")
-	}
-	defer asset.Close()
-
-	err = mm.SetProfileImage(app.BotUserID, asset)
-	if err != nil {
-		return errors.Wrap(err, "update profile icon")
+		return nil, errors.Wrap(err, "failed to get app icon")
 	}
 
-	return nil
+	if status != http.StatusOK {
+		return nil, errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
+	}
+
+	return icon, nil
 }

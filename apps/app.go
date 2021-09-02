@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // App describes an App installed on a Mattermost instance. App should be
@@ -39,7 +39,7 @@ type App struct {
 	MattermostOAuth2 OAuth2App `json:"mattermost_oauth2,omitempty"`
 
 	// RemoteOAuth2 contains App's remote OAuth2 credentials. Use
-	// mmclient.StoreOAuth2App to update.
+	// appclient.StoreOAuth2App to update.
 	RemoteOAuth2 OAuth2App `json:"remote_oauth2,omitempty"`
 
 	// In V1, GrantedPermissions are simply copied from RequestedPermissions

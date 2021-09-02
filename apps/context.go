@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -86,7 +86,7 @@ type ExpandedContext struct {
 
 type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
-	// mmclient.StoreOAuth2App
+	// appclient.StoreOAuth2App
 	OAuth2App
 	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`

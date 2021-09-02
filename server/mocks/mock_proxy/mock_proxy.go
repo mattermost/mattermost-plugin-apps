@@ -13,7 +13,7 @@ import (
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
-	model "github.com/mattermost/mattermost-server/v5/model"
+	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
 // MockService is a mock of Service interface.

@@ -9,10 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
 func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
+	_, mm, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -21,11 +23,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
-	}
-	_, err = asAdmin.EnableBot(app.BotUserID)
+	_, err = mmclient.NewRPCClient(mm).EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -39,7 +37,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
@@ -59,7 +57,8 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 }
 
 func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
+	_, mm, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -72,8 +71,8 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
-			Call:    *app.OnInstall,
+		resp := p.callApp(in, *app, apps.CallRequest{
+			Call:    *app.OnDisable,
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
@@ -87,12 +86,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	// disable app, not removing the data
-	in, asAdmin, err := p.asAdmin(in)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
-	}
-	_, err = asAdmin.DisableBot(app.BotUserID)
+	_, err = mmclient.NewRPCClient(mm).DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
@@ -108,7 +102,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app *apps.App) bool {
+func (p *Proxy) appIsEnabled(app apps.App) bool {
 	if app.AppType == apps.AppTypeBuiltin {
 		return true
 	}

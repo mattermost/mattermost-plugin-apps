@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"unicode"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
 
 // Where static assets are.
 const StaticFolder = "static"
@@ -101,7 +104,7 @@ type Manifest struct {
 	// (3rd party) OAuth2 flow, and after the "state" has already been
 	// validated. It gets passed the URL query as Values. The App should obtain
 	// the OAuth2 user token, and store it persistently for future use using
-	// mmclient.StoreOAuth2User.
+	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access
@@ -166,29 +169,36 @@ type KubelessFunction struct {
 }
 
 func (kf KubelessFunction) Validate() error {
+	var result error
 	if kf.CallPath == "" {
-		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: path must not be empty"))
 	}
 	if kf.Handler == "" {
-		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: handler must not be empty"))
 	}
 	if kf.Runtime == "" {
-		return utils.NewInvalidError("invalid Kubeless function: runtime must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: runtime must not be empty"))
 	}
 	_, err := utils.CleanPath(kf.File)
 	if err != nil {
-		return errors.Wrap(err, "invalid Kubeless function: invalid file")
+		result = multierror.Append(result,
+			errors.Wrap(err, "invalid Kubeless function: invalid file"))
 	}
 	if kf.DepsFile != "" {
 		_, err := utils.CleanPath(kf.DepsFile)
 		if err != nil {
-			return errors.Wrap(err, "invalid Kubeless function: invalid deps_file")
+			result = multierror.Append(result,
+				errors.Wrap(err, "invalid Kubeless function: invalid deps_file"))
 		}
 	}
 	if kf.Port < 0 || kf.Port > 65535 {
-		return utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535"))
 	}
-	return nil
+	return result
 }
 
 // AWSLambda describes a distinct AWS Lambda function defined by the app, and
@@ -213,19 +223,24 @@ type AWSLambda struct {
 }
 
 func (f AWSLambda) Validate() error {
+	var result error
 	if f.Path == "" {
-		return utils.NewInvalidError("aws_lambda path must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda path must not be empty"))
 	}
 	if f.Name == "" {
-		return utils.NewInvalidError("aws_lambda name must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda name must not be empty"))
 	}
 	if f.Handler == "" {
-		return utils.NewInvalidError("aws_lambda handler must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda handler must not be empty"))
 	}
 	if f.Runtime == "" {
-		return utils.NewInvalidError("aws_lambda runtime must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda runtime must not be empty"))
 	}
-	return nil
+	return result
 }
 
 func ManifestFromJSON(data []byte) (*Manifest, error) {
@@ -248,17 +263,20 @@ type validator interface {
 }
 
 func (m Manifest) Validate() error {
+	var result error
 	if m.HomepageURL == "" {
-		return utils.NewInvalidError(errors.New("homepage_url is empty"))
+		result = multierror.Append(result,
+			utils.NewInvalidError(errors.New("homepage_url is empty")))
 	}
 	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
-		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
+		result = multierror.Append(result,
+			utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL)))
 	}
 
 	if m.Icon != "" {
 		_, err := utils.CleanStaticPath(m.Icon)
 		if err != nil {
-			return err
+			result = multierror.Append(result, err)
 		}
 	}
 
@@ -270,7 +288,7 @@ func (m Manifest) Validate() error {
 	} {
 		if v != nil {
 			if err := v.Validate(); err != nil {
-				return err
+				result = multierror.Append(result, err)
 			}
 		}
 	}
@@ -278,37 +296,43 @@ func (m Manifest) Validate() error {
 	switch m.AppType {
 	case AppTypeHTTP:
 		if m.HTTPRootURL == "" {
-			return utils.NewInvalidError(errors.New("root_url must be set for HTTP apps"))
+			result = multierror.Append(result,
+				utils.NewInvalidError(errors.New("root_url must be set for HTTP apps")))
 		}
 
 		err := utils.IsValidHTTPURL(m.HTTPRootURL)
 		if err != nil {
-			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
+			result = multierror.Append(result,
+				utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL)))
 		}
 
 	case AppTypeAWSLambda:
 		if len(m.AWSLambda) == 0 {
-			return utils.NewInvalidError("must provide at least 1 function in aws_lambda")
+			result = multierror.Append(result,
+				utils.NewInvalidError("must provide at least 1 function in aws_lambda"))
 		}
 		for _, l := range m.AWSLambda {
 			err := l.Validate()
 			if err != nil {
-				return errors.Wrapf(err, "%q is not valid", l.Name)
+				result = multierror.Append(result,
+					errors.Wrapf(err, "%q is not valid", l.Name))
 			}
 		}
 
 	case AppTypeKubeless:
 		if len(m.KubelessFunctions) == 0 {
-			return utils.NewInvalidError("must provide at least 1 function in kubeless_functions")
+			result = multierror.Append(result,
+				utils.NewInvalidError("must provide at least 1 function in kubeless_functions"))
 		}
 		for _, kf := range m.KubelessFunctions {
 			err := kf.Validate()
 			if err != nil {
-				return errors.Wrapf(err, "invalid function %q", kf.Handler)
+				result = multierror.Append(result,
+					errors.Wrapf(err, "invalid function %q", kf.Handler))
 			}
 		}
 	}
-	return nil
+	return result
 }
 
 // AppID is a globally unique identifier that represents a Mattermost App.
@@ -321,12 +345,15 @@ const (
 )
 
 func (id AppID) Validate() error {
+	var result error
 	if len(id) < MinAppIDLength {
-		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength))
 	}
 
 	if len(id) > MaxAppIDLength {
-		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength))
 	}
 
 	for _, c := range id {
@@ -342,10 +369,11 @@ func (id AppID) Validate() error {
 			continue
 		}
 
-		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appID %q", c, id))
 	}
 
-	return nil
+	return result
 }
 
 // AppType is the type of an app: http, aws_lambda, or builtin.
@@ -392,8 +420,10 @@ type AppVersion string
 const VersionFormat = "v00_00_000"
 
 func (v AppVersion) Validate() error {
+	var result error
 	if len(v) > len(VersionFormat) {
-		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
+		result = multierror.Append(result,
+			utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat))
 	}
 
 	for _, c := range v {
@@ -409,8 +439,9 @@ func (v AppVersion) Validate() error {
 			continue
 		}
 
-		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appVersion", c))
 	}
 
-	return nil
+	return result
 }
