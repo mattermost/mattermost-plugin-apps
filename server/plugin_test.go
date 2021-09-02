@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -16,7 +16,7 @@ func TestOnActivate(t *testing.T) {
 	testAPI := &plugintest.API{}
 	p := NewPlugin(
 		config.BuildConfig{
-			Manifest:       *manifest,
+			Manifest:       manifest,
 			BuildHash:      BuildHash,
 			BuildHashShort: BuildHashShort,
 			BuildDate:      BuildDate,
@@ -70,7 +70,7 @@ func TestOnDeactivate(t *testing.T) {
 	testAPI := &plugintest.API{}
 	p := NewPlugin(
 		config.BuildConfig{
-			Manifest:       *manifest,
+			Manifest:       manifest,
 			BuildHash:      BuildHash,
 			BuildHashShort: BuildHashShort,
 			BuildDate:      BuildDate,

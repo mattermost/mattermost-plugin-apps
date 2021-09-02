@@ -2,13 +2,14 @@ package command
 
 import (
 	"fmt"
+	"runtime/debug"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -47,15 +48,15 @@ type commandHandler struct {
 func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	uninstallAC := model.NewAutocompleteData("uninstall", "", "Uninstall an app")
 	uninstallAC.AddTextArgument("ID of the app to uninstall", "appID", "")
-	uninstallAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+	uninstallAC.RoleID = model.SystemAdminRoleId
 
 	enableAC := model.NewAutocompleteData("enable", "", "Enable an app")
 	enableAC.AddTextArgument("ID of the app to enable", "appID", "")
-	enableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+	enableAC.RoleID = model.SystemAdminRoleId
 
 	disenableAC := model.NewAutocompleteData("disable", "", "Disable an app")
 	disenableAC.AddTextArgument("ID of the app to disable", "appID", "")
-	disenableAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+	disenableAC.RoleID = model.SystemAdminRoleId
 
 	all := map[string]commandHandler{
 		"info": {
@@ -83,10 +84,10 @@ func (s *service) allSubCommands(conf config.Config) map[string]commandHandler {
 	if conf.DeveloperMode {
 		debugAddManifestAC := model.NewAutocompleteData("debug-add-manifest", "", "Add a manifest to the local list of known apps")
 		debugAddManifestAC.AddNamedTextArgument("url", "URL of the manifest to add", "URL", "", true)
-		debugAddManifestAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+		debugAddManifestAC.RoleID = model.SystemAdminRoleId
 
 		debugCleanAC := model.NewAutocompleteData("debug-clean", "", "Delete all KV data")
-		debugCleanAC.RoleID = model.SYSTEM_ADMIN_ROLE_ID
+		debugCleanAC.RoleID = model.SystemAdminRoleId
 
 		all["debug-bindings"] = commandHandler{
 			f:            s.executeDebugBindings,
@@ -116,7 +117,7 @@ func (s *service) installCommand(conf config.Config) commandHandler {
 		autoComplete: &model.AutocompleteData{
 			Trigger:  "install",
 			HelpText: "Install an App.",
-			RoleID:   model.SYSTEM_ADMIN_ROLE_ID,
+			RoleID:   model.SystemAdminRoleId,
 		},
 		subCommands: map[string]commandHandler{},
 	}
@@ -268,7 +269,7 @@ func AddACForSubCommands(subCommands map[string]commandHandler, rootAC *model.Au
 }
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
-func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, error) {
+func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *model.CommandArgs) (resp *model.CommandResponse, err error) {
 	params := &commandParams{
 		pluginContext: pluginContext,
 		commandArgs:   commandArgs,
@@ -299,6 +300,31 @@ func (s *service) ExecuteCommand(pluginContext *plugin.Context, commandArgs *mod
 	}
 
 	params.current = split[1:]
+
+	defer func(log utils.Logger, developerMode bool) {
+		if x := recover(); x != nil {
+			stack := string(debug.Stack())
+
+			log.Errorw(
+				"Recovered from a panic in a command",
+				"command", commandArgs.Command,
+				"error", x,
+				"stack", stack,
+			)
+
+			txt := utils.CodeBlock(commandArgs.Command+"\n") + "Command paniced. "
+
+			if developerMode {
+				txt += fmt.Sprintf("Error: **%v**. Stack:\n%v", x, utils.CodeBlock(stack))
+			} else {
+				txt += "Please check the server logs for more details."
+			}
+			resp = &model.CommandResponse{
+				Text:         txt,
+				ResponseType: model.CommandResponseTypeEphemeral,
+			}
+		}
+	}(s.conf.Logger(), s.conf.Get().DeveloperMode)
 
 	return s.handleMain(params)
 }
@@ -338,7 +364,7 @@ func (s *service) runSubcommand(subcommands map[string]commandHandler, params *c
 
 func (s *service) checkSystemAdmin(handler func(*commandParams) (*model.CommandResponse, error)) func(*commandParams) (*model.CommandResponse, error) {
 	return func(p *commandParams) (*model.CommandResponse, error) {
-		if !s.conf.MattermostAPI().User.HasPermissionTo(p.commandArgs.UserId, model.PERMISSION_MANAGE_SYSTEM) {
+		if !s.conf.MattermostAPI().User.HasPermissionTo(p.commandArgs.UserId, model.PermissionManageSystem) {
 			return errorOut(p, errors.New("you need to be a system admin to run this command"))
 		}
 
@@ -358,7 +384,7 @@ func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Contex
 }
 
 func (s *service) newMMClient(commandArgs *model.CommandArgs) (mmclient.Client, error) {
-	return mmclient.NewHTTPClient(s.conf, commandArgs.Session.Id, commandArgs.UserId)
+	return mmclient.NewHTTPClientFromSessionID(s.conf, commandArgs.Session.Id, commandArgs.UserId)
 }
 
 func out(params *commandParams, out string) (*model.CommandResponse, error) {
@@ -366,7 +392,7 @@ func out(params *commandParams, out string) (*model.CommandResponse, error) {
 
 	return &model.CommandResponse{
 		Text:         txt,
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}, nil
 }
 
@@ -376,6 +402,6 @@ func errorOut(params *commandParams, err error) (*model.CommandResponse, error) 
 
 	return &model.CommandResponse{
 		Text:         txt,
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}, err
 }

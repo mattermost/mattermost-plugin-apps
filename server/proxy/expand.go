@@ -3,10 +3,11 @@ package proxy
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -50,6 +51,28 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 		return &clone, nil
 	}
 
+	var client mmclient.Client
+	switch {
+	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
+		// If the app has admin permission anyway, use the RPC client for performance reasons
+		client = mmclient.NewRPCClient(mm)
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser):
+		var err error
+		// The OAuth2 token should be used here once it's implemented
+		client, err = mmclient.NewHTTPClientFromSessionID(e.conf, e.sessionID, e.ActingUserID)
+		if err != nil {
+			return nil, utils.NewUnauthorizedError(err)
+		}
+	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
+		var err error
+		client, err = mmclient.NewHTTPClientFromToken(e.conf, e.BotAccessToken, e.BotUserID)
+		if err != nil {
+			return nil, utils.NewUnauthorizedError(err)
+		}
+	default:
+		return nil, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
+	}
+
 	// TODO: use the appropriate user's Mattermost OAuth2 token once
 	// re-implemented, for now pass in the session token to make things work.
 	if expand.AdminAccessToken != "" || expand.ActingUserAccessToken != "" {
@@ -82,7 +105,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.App = stripApp(app, expand.App)
 
 	if expand.ActingUser != "" && e.ActingUserID != "" && e.ActingUser == nil {
-		actingUser, err := mm.User.Get(e.ActingUserID)
+		actingUser, err := client.GetUser(e.ActingUserID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand acting user %s", e.ActingUserID)
 		}
@@ -91,7 +114,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.ActingUser = stripUser(e.ActingUser, expand.ActingUser)
 
 	if expand.Channel != "" && e.ChannelID != "" && e.Channel == nil {
-		ch, err := mm.Channel.Get(e.ChannelID)
+		ch, err := client.GetChannel(e.ChannelID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand channel %s", e.ChannelID)
 		}
@@ -100,7 +123,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.Channel = stripChannel(e.Channel, expand.Channel)
 
 	if expand.Post != "" && e.PostID != "" && e.Post == nil {
-		post, err := mm.Post.GetPost(e.PostID)
+		post, err := client.GetPost(e.PostID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand post %s", e.PostID)
 		}
@@ -109,7 +132,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.Post = stripPost(e.Post, expand.Post)
 
 	if expand.RootPost != "" && e.RootPostID != "" && e.RootPost == nil {
-		post, err := mm.Post.GetPost(e.RootPostID)
+		post, err := client.GetPost(e.RootPostID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand root post %s", e.RootPostID)
 		}
@@ -118,7 +141,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	clone.ExpandedContext.RootPost = stripPost(e.RootPost, expand.RootPost)
 
 	if expand.Team != "" && e.TeamID != "" && e.Team == nil {
-		team, err := mm.Team.Get(e.TeamID)
+		team, err := client.GetTeam(e.TeamID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand team %s", e.TeamID)
 		}
@@ -130,7 +153,7 @@ func (e *expander) ExpandForApp(app *apps.App, expand *apps.Expand) (*apps.Conte
 	// https://mattermost.atlassian.net/browse/MM-30403
 
 	if expand.User != "" && e.UserID != "" && e.User == nil {
-		user, err := mm.User.Get(e.UserID)
+		user, err := client.GetUser(e.UserID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to expand user %s", e.UserID)
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -79,7 +79,7 @@ func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) 
 	}
 
 	hashed := hashkey(gns, b, ns, k)
-	if len(hashed) > model.KEY_VALUE_KEY_MAX_RUNES {
+	if len(hashed) > model.KeyValueKeyMaxRunes {
 		return "", errors.Errorf("hashed key is too long (%v bytes), global namespace: %q, botUserID: %q, app namespace: %q, key: %q",
 			len(hashed), globalNamespace, botUserID, appNamespace, key)
 	}
@@ -92,7 +92,7 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 	encodedID := make([]byte, ascii85.MaxEncodedLen(len(idHash)))
 	_ = ascii85.Encode(encodedID, idHash)
 
-	key := make([]byte, 0, model.KEY_VALUE_KEY_MAX_RUNES)
+	key := make([]byte, 0, model.KeyValueKeyMaxRunes)
 	key = append(key, globalNamespace...)
 	key = append(key, botUserID...)
 	key = append(key, appNamespace...)
@@ -102,8 +102,8 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 
 func parseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
 	k := []byte(key)
-	if len(k) != model.KEY_VALUE_KEY_MAX_RUNES {
-		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KEY_VALUE_KEY_MAX_RUNES)
+	if len(k) != model.KeyValueKeyMaxRunes {
+		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KeyValueKeyMaxRunes)
 	}
 	gns := k[0:2]
 	b := k[2:28]

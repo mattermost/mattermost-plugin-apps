@@ -8,9 +8,8 @@ package restapi
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/api4"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
-	"github.com/mattermost/mattermost-server/v5/testlib"
+	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/testlib"
 )
 
 var mainHelper *testlib.MainHelper
@@ -20,8 +19,6 @@ func TestMain(m *testing.M) {
 		EnableStore:     true,
 		EnableResources: false,
 	}
-
-	mlog.DisableZap()
 
 	mainHelper = testlib.NewMainHelperWithOptions(&options)
 	defer mainHelper.Close()
