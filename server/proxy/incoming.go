@@ -113,20 +113,6 @@ func (in *Incoming) ensureUserTokens(mm *pluginapi.Client, adminRequested bool) 
 	return err
 }
 
-func (in *Incoming) getAdminClient(conf config.Config, mm *pluginapi.Client) (mmclient.Client, error) {
-	var client mmclient.Client
-	if in.PluginID != "" {
-		client = mmclient.NewRPCClient(mm)
-	} else {
-		err := in.ensureUserTokens(mm, true)
-		if err != nil {
-			return nil, err
-		}
-		client = mmclient.NewHTTPClient(conf, in.AdminAccessToken)
-	}
-	return client, nil
-}
-
 func (in Incoming) getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client) (mmclient.Client, error) {
 	switch {
 	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):

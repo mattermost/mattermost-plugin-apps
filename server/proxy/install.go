@@ -63,10 +63,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		defer icon.Close()
 	}
 
-	asAdmin, err := in.getAdminClient(conf, mm)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to get an admin client")
-	}
+	asAdmin := mmclient.NewRPCClient(mm)
 	err = p.ensureBot(asAdmin, log, app, icon)
 	if err != nil {
 		return nil, "", err

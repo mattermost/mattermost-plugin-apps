@@ -9,10 +9,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
 func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, mm, log := p.conf.Basic()
+	_, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
@@ -22,11 +23,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	asAdmin, err := in.getAdminClient(conf, mm)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
-	}
-	_, err = asAdmin.EnableBot(app.BotUserID)
+	_, err = mmclient.NewRPCClient(mm).EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -60,7 +57,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 }
 
 func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, mm, log := p.conf.Basic()
+	_, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
@@ -89,12 +86,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	// disable app, not removing the data
-	asAdmin, err := in.getAdminClient(conf, mm)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
-	}
-	_, err = asAdmin.DisableBot(app.BotUserID)
+	_, err = mmclient.NewRPCClient(mm).DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
