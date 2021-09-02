@@ -6,8 +6,8 @@ import (
 	"os"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/utils/fileutils"
 	"github.com/pkg/errors"
 )
 
@@ -56,7 +56,7 @@ func FindDir(dir string) (string, bool) {
 }
 
 func EnsureSysAdmin(mm *pluginapi.Client, userID string) error {
-	if !mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
+	if !mm.User.HasPermissionTo(userID, model.PermissionManageSystem) {
 		return NewUnauthorizedError("user must be a sysadmin")
 	}
 	return nil
@@ -108,4 +108,25 @@ func LastN(s string, n int) string {
 		}
 	}
 	return string(out)
+}
+
+func GetLocale(mm *pluginapi.Client, config *model.Config, userID string) string {
+	u, _ := mm.User.Get(userID)
+	return GetLocaleWithUser(config, u)
+}
+
+func GetLocaleWithUser(config *model.Config, user *model.User) string {
+	if user != nil && user.Locale != "" {
+		return user.Locale
+	}
+
+	if locale := config.LocalizationSettings.DefaultClientLocale; locale != nil && *locale != "" {
+		return *locale
+	}
+
+	if locale := config.LocalizationSettings.DefaultServerLocale; locale != nil && *locale != "" {
+		return *locale
+	}
+
+	return "en"
 }

@@ -59,7 +59,7 @@ func (a *restapi) handleEnableApp(w http.ResponseWriter, r *http.Request, plugin
 		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClientFromSessionID(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -101,7 +101,7 @@ func (a *restapi) handleDisableApp(w http.ResponseWriter, r *http.Request, plugi
 		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClientFromSessionID(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -143,7 +143,7 @@ func (a *restapi) handleInstallApp(w http.ResponseWriter, r *http.Request, plugi
 	if pluginID != "" {
 		client = mmclient.NewRPCClient(mm)
 	} else {
-		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClientFromSessionID(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return
@@ -191,7 +191,7 @@ func (a *restapi) handleUninstallApp(w http.ResponseWriter, r *http.Request, plu
 		client = mmclient.NewRPCClient(mm)
 	} else {
 		var err error
-		client, err = mmclient.NewHTTPClient(a.conf, sessionID, actingUserID)
+		client, err = mmclient.NewHTTPClientFromSessionID(a.conf, sessionID, actingUserID)
 		if err != nil {
 			httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
 			return

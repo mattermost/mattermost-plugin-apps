@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -78,6 +78,7 @@ type ExpandedContext struct {
 	Post                  *model.Post    `json:"post,omitempty"`
 	RootPost              *model.Post    `json:"root_post,omitempty"`
 	Team                  *model.Team    `json:"team,omitempty"`
+	Locale                string         `json:"locale,omitempty"`
 
 	// TODO replace User with mentions
 	User *model.User `json:"user,omitempty"`

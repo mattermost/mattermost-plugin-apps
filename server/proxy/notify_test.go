@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -145,7 +145,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 					},
 				}
 
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(true)
+				testAPI.On("HasPermissionToChannel", "bot2", "", model.PermissionReadChannel).Return(true)
 
 				err := p.NotifyMessageHasBeenPosted(post, cc)
 				require.NoError(t, err)
@@ -179,7 +179,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 					},
 				}
 
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PERMISSION_READ_CHANNEL).Return(false)
+				testAPI.On("HasPermissionToChannel", "bot2", "", model.PermissionReadChannel).Return(false)
 
 				err := p.NotifyMessageHasBeenPosted(post, cc)
 				require.NoError(t, err)

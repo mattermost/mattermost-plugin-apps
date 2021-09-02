@@ -12,7 +12,7 @@ import (
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	telemetry "github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
-	configservice "github.com/mattermost/mattermost-server/v5/services/configservice"
+	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
 )
 
 // MockService is a mock of Service interface.

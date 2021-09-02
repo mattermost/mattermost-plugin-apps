@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -25,6 +25,8 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
+	// All of this information is non sensitive.
+	// Checks for the user's permissions might be needed in the future.
 	txt := "| Name | Status | Type | Version | Account | Locations | Permissions |\n"
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
