@@ -75,7 +75,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	var message string
 	if app.OnDisable != nil {
 		resp := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnInstall,
+			Call:    *app.OnDisable,
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
