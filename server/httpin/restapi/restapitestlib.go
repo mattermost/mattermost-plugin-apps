@@ -12,9 +12,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/api4"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
@@ -59,10 +59,11 @@ func Setup(t testing.TB) *TestHelper {
 	th.LocalClientPP = th.CreateLocalClient("TODO")
 
 	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, _, err := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.Context, th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
-	require.Nil(t, err)
+	_, _, appErr := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.Context, th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
+	require.Nil(t, appErr)
 
-	rtoken, _ := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
+	rtoken, _, err := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
+	require.NoError(t, err)
 
 	th.BotClientPP = th.CreateClientPP()
 	th.BotClientPP.AuthToken = rtoken.Token
@@ -117,7 +118,7 @@ func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
 		},
 	}
 
-	client := mmclient.NewAppsPluginAPIClient("http://_" + model.API_URL_SUFFIX)
+	client := mmclient.NewAppsPluginAPIClient("http://_" + model.APIURLSuffix)
 	client.HTTPClient = httpClient
 
 	return client
