@@ -43,7 +43,7 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		return emptyCC, err
 	}
 
-	var session *model.Session
+	var userSession *model.Session
 	if expand.AdminAccessToken != "" {
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
@@ -59,11 +59,11 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		}
 		// Try to obtain it from the present session
 		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			session, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
+			userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
 			if err != nil {
 				return emptyCC, utils.NewForbiddenError("failed to load user session")
 			}
-			cc.AdminAccessToken = session.Token
+			cc.AdminAccessToken = userSession.Token
 		}
 		if cc.AdminAccessToken == "" {
 			return cc, errors.New("admin access token is not available")
@@ -76,14 +76,14 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		}
 		cc.ActingUserAccessToken = in.ActingUserAccessToken
 		if cc.ActingUserAccessToken == "" {
-			if session == nil {
+			if userSession == nil {
 				var err error
-				session, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
+				userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
 				if err != nil {
 					return emptyCC, utils.NewForbiddenError("failed to load user session")
 				}
 			}
-			cc.ActingUserAccessToken = session.Token
+			cc.ActingUserAccessToken = userSession.Token
 		}
 		if cc.ActingUserAccessToken == "" {
 			return emptyCC, utils.NewForbiddenError("acting user token is not available")
