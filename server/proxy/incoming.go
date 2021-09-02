@@ -34,7 +34,7 @@ func NewIncomingFromContext(cc apps.Context) Incoming {
 	}
 }
 
-func RequireUser(f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+func RequireUser(f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
 		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
