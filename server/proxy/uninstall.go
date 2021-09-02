@@ -12,7 +12,7 @@ import (
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, _, log := p.conf.Basic()
+	conf, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -21,7 +21,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 
 	var message string
 	if app.OnUninstall != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnUninstall,
 			Context: cc,
 		})
@@ -36,7 +36,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := in.getAdminClient(conf, mm)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin client")
 	}

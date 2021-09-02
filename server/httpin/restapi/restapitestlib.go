@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/appsclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 // Note: run

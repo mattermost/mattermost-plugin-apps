@@ -37,11 +37,11 @@ func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse 
 		BotUsername: app.BotUsername,
 	}
 
-	cresp := p.callApp(in, app, creq)
+	cresp := p.callApp(in, *app, creq)
 	return apps.NewProxyCallResponse(cresp, metadata)
 }
 
-func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.CallResponse {
 	if !p.appIsEnabled(app) {
 		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
 	}
@@ -67,7 +67,7 @@ func (p *Proxy) callApp(in Incoming, app *apps.App, creq apps.CallRequest) apps.
 		return apps.NewErrorCallResponse(err)
 	}
 
-	cresp := upstream.Call(up, *app, creq)
+	cresp := upstream.Call(up, app, creq)
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
 	}
@@ -140,17 +140,17 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(app) {
+	if !p.appIsEnabled(*app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	creq.Context, err = p.expandContext(Incoming{}, app, base, sub.Call.Expand)
+	creq.Context, err = p.expandContext(Incoming{}, *app, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}
 	creq.Context.Subject = sub.Subject
 
-	up, err := p.upstreamForApp(app)
+	up, err := p.upstreamForApp(*app)
 	if err != nil {
 		return err
 	}
@@ -158,14 +158,14 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 }
 
 func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath string) error {
-	if !p.appIsEnabled(&app) {
+	if !p.appIsEnabled(app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(&app)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 	}
 
 	conf := p.conf.Get()
-	cc := contextForApp(&app, apps.Context{}, conf)
+	cc := contextForApp(app, apps.Context{}, conf)
 	// Set acting user to bot.
 	cc.ActingUserID = app.BotUserID
 	cc.ActingUserAccessToken = app.BotAccessToken
@@ -298,18 +298,18 @@ func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, er
 		return nil, status, err
 	}
 
-	return p.getStatic(app, path)
+	return p.getStatic(*app, path)
 }
 
-func (p *Proxy) getStatic(app *apps.App, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) getStatic(app apps.App, path string) (io.ReadCloser, int, error) {
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(*app, path)
+	return up.GetStatic(app, path)
 }
 
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
 	if app.AppType == apps.AppTypeBuiltin {
 		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {

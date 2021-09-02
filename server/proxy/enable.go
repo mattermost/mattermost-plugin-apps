@@ -12,7 +12,8 @@ import (
 )
 
 func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
+	conf, mm, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -21,7 +22,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := in.getAdminClient(conf, mm)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin client")
 	}
@@ -39,7 +40,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
@@ -59,7 +60,8 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 }
 
 func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
+	conf, mm, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -72,7 +74,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnInstall,
 			Context: cc,
 		})
@@ -88,7 +90,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	}
 
 	// disable app, not removing the data
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := in.getAdminClient(conf, mm)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin client")
 	}
@@ -108,7 +110,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app *apps.App) bool {
+func (p *Proxy) appIsEnabled(app apps.App) bool {
 	if app.AppType == apps.AppTypeBuiltin {
 		return true
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/api4"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/appsclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 
 	"github.com/stretchr/testify/require"
 )

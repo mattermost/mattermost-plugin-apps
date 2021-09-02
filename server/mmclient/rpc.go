@@ -1,4 +1,4 @@
-package pluginclient
+package mmclient
 
 import (
 	"io"

@@ -10,11 +10,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/pluginclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func contextForApp(app *apps.App, base apps.Context, conf config.Config) apps.Context {
+func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Context {
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
 	out.MattermostSiteURL = conf.MattermostSiteURL
@@ -27,11 +26,11 @@ func contextForApp(app *apps.App, base apps.Context, conf config.Config) apps.Co
 
 var emptyCC = apps.Context{}
 
-func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
+func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf := p.conf.Get()
+	conf, mm, _ := p.conf.Basic()
 
 	cc := contextForApp(app, *base, conf)
 	if expand == nil {
@@ -39,18 +38,9 @@ func (p *Proxy) expandContext(in Incoming, app *apps.App, base *apps.Context, ex
 		return cc, nil
 	}
 
-	var client pluginclient.Client
-	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
-		// If the app has admin permission anyway, use the RPC client for performance reasons
-		client = pluginclient.NewRPCClient(p.conf.MattermostAPI())
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserAccessToken != "":
-		// The OAuth2 token should be used here once it's implemented
-		client = pluginclient.NewHTTPClient(conf, in.ActingUserAccessToken)
-	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		client = pluginclient.NewHTTPClient(conf, base.BotAccessToken)
-	default:
-		return emptyCC, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
+	client, err := in.getExpandClient(app, conf, mm)
+	if err != nil {
+		return emptyCC, err
 	}
 
 	var session *model.Session
@@ -281,11 +271,7 @@ func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
 	}
 }
 
-func stripApp(app *apps.App, level apps.ExpandLevel) *apps.App {
-	if app == nil {
-		return nil
-	}
-
+func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	clone := apps.App{
 		Manifest: apps.Manifest{
 			AppID:   app.AppID,

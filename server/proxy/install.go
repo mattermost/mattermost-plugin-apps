@@ -15,14 +15,14 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/pluginclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trusted bool, secret string) (*apps.App, string, error) {
-	conf, _, log := p.conf.Basic()
+	conf, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
@@ -63,7 +63,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		defer icon.Close()
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := in.getAdminClient(conf, mm)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin client")
 	}
@@ -90,7 +90,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 
 	var message string
 	if app.OnInstall != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnInstall,
 			Context: cc,
 		})
@@ -113,7 +113,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client pluginclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
@@ -143,7 +143,7 @@ func (p *Proxy) ensureOAuthApp(client pluginclient.Client, log utils.Logger, con
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm pluginclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -218,7 +218,7 @@ func (p *Proxy) getAppIcon(app *apps.App) (io.ReadCloser, error) {
 		return nil, nil
 	}
 
-	icon, status, err := p.getStatic(app, iconPath)
+	icon, status, err := p.getStatic(*app, iconPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app icon")
 	}
