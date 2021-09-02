@@ -6,6 +6,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type httpClient struct {
@@ -38,8 +39,13 @@ func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
 	return user, nil
 }
 
+const (
+	// MaxProfileImageSize is the maximum length in bytes of the profile image file.
+	MaxProfileImageSize = 50 * 1024 * 1024 // 50Mb
+)
+
 func (h *httpClient) SetProfileImage(userID string, content io.Reader) error {
-	data, err := io.ReadAll(content)
+	data, err := httputils.LimitReadAll(content, MaxProfileImageSize)
 	if err != nil {
 		return err
 	}
