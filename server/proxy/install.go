@@ -28,6 +28,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
+	
 	err = isAppTypeSupported(conf, m.AppType)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "app type is not supported")
