@@ -4,7 +4,7 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -37,6 +37,6 @@ func (s *service) executeUninstall(params *commandParams) *model.CommandResponse
 
 	return &model.CommandResponse{
 		Text:         out,
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
@@ -99,7 +99,7 @@ func (s *service) executeInstallHTTP(params *commandParams) *model.CommandRespon
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return s.errorOut(params, nil, err)
 	}
@@ -143,7 +143,7 @@ func (s *service) executeInstallKubeless(params *commandParams) *model.CommandRe
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return s.errorOut(params, nil, err)
 	}

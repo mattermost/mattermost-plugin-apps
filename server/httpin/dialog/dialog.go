@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"

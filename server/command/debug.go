@@ -4,7 +4,7 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/spf13/pflag"
 
@@ -48,7 +48,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) *model.CommandR
 	}
 
 	// Inside a debug command: all URLs are trusted.
-	data, err := s.httpOut.GetFromURL(manifestURL, true)
+	data, err := s.httpOut.GetFromURL(manifestURL, true, apps.MaxManifestSize)
 	if err != nil {
 		return s.errorOut(params, nil, err)
 	}
@@ -65,6 +65,6 @@ func (s *service) executeDebugAddManifest(params *commandParams) *model.CommandR
 
 	return &model.CommandResponse{
 		Text:         out,
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}
 }

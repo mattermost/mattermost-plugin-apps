@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/utils/fileutils"
 )
 
 func ToJSON(in interface{}) string {
@@ -57,7 +59,7 @@ func FindDir(dir string) (string, bool) {
 }
 
 func EnsureSysAdmin(mm *pluginapi.Client, userID string) error {
-	if !mm.User.HasPermissionTo(userID, model.PERMISSION_MANAGE_SYSTEM) {
+	if !mm.User.HasPermissionTo(userID, model.PermissionManageSystem) {
 		return NewUnauthorizedError("user must be a sysadmin")
 	}
 	return nil
