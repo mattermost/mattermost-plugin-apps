@@ -7,12 +7,10 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -84,54 +82,6 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter,
 		}
 
 		RequireSysadmin(mm, f)(w, r)
-	}
-}
-
-func (in *Incoming) ensureUserTokens(mm *pluginapi.Client, adminRequested bool) error {
-	var session *model.Session
-	var err error
-	if in.ActingUserAccessToken == "" && in.SessionID != "" {
-		session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
-		if err != nil {
-			return err
-		}
-		in.ActingUserAccessToken = session.Token
-	}
-	if in.ActingUserAccessToken == "" {
-		return errors.New("failed to obtain the acting user token")
-	}
-
-	if adminRequested {
-		if !in.SysAdminChecked {
-			err = utils.EnsureSysAdmin(mm, in.ActingUserID)
-			if err != nil {
-				return err
-			}
-		}
-		in.AdminAccessToken = in.ActingUserAccessToken
-	}
-	return err
-}
-
-func (in Incoming) getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client) (mmclient.Client, error) {
-	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
-		// If the app has admin permission anyway, use the RPC client for performance reasons
-		return mmclient.NewRPCClient(mm), nil
-
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
-		// The OAuth2 token should be used here once it's implemented
-		err := in.ensureUserTokens(mm, true)
-		if err != nil {
-			return nil, err
-		}
-		return mmclient.NewHTTPClient(conf, in.ActingUserAccessToken), nil
-
-	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		return mmclient.NewHTTPClient(conf, app.BotAccessToken), nil
-
-	default:
-		return nil, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
 	}
 }
 
