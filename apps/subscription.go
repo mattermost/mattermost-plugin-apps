@@ -94,13 +94,14 @@ type SubscriptionResponse struct {
 	Errors map[string]string `json:"errors,omitempty"`
 }
 
-func SubscriptionResponseFromJSON(data io.Reader) *SubscriptionResponse {
+func SubscriptionResponseFromJSON(data io.Reader) (*SubscriptionResponse, error) {
 	var o *SubscriptionResponse
 	err := json.NewDecoder(data).Decode(&o)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return o
+
+	return o, nil
 }
 
 func (r *SubscriptionResponse) ToJSON() []byte {

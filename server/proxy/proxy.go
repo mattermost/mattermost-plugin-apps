@@ -8,11 +8,12 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -195,14 +196,18 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 	})
 }
 
+var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
+
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
 	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
 
-	subs := append([]apps.Subscription{}, postSubs...)
-	mentions := model.PossibleAtMentions(post.Message)
+	subs := []apps.Subscription{}
+	subs = append(subs, postSubs...)
+
+	mentions := possibleAtMentions(post.Message)
 
 	botCanRead := map[string]bool{}
 	if len(mentions) > 0 {
@@ -225,7 +230,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 						continue
 					}
 
-					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PERMISSION_READ_CHANNEL)
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PermissionReadChannel)
 					botCanRead[app.BotUserID] = canRead
 
 					if canRead {
@@ -364,4 +369,24 @@ func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 		}
 	}
 	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
+}
+
+// possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
+func possibleAtMentions(message string) []string {
+	var names []string
+
+	if !strings.Contains(message, "@") {
+		return names
+	}
+
+	alreadyMentioned := make(map[string]bool)
+	for _, match := range atMentionRegexp.FindAllString(message, -1) {
+		name := model.NormalizeUsername(match[1:])
+		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+			names = append(names, name)
+			alreadyMentioned[name] = true
+		}
+	}
+
+	return names
 }

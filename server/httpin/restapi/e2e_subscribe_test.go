@@ -5,7 +5,7 @@ package restapi
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/api4"
+	"github.com/mattermost/mattermost-server/v6/api4"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -28,14 +28,14 @@ func TestSubscribeE2E(t *testing.T) {
 
 		th.TestForSystemAdmin(t, func(t *testing.T, client *appclient.ClientPP) {
 			// subscribe
-			_, resp := client.Subscribe(subscription)
+			_, resp, err := client.Subscribe(subscription)
+			require.NoError(t, err)
 			api4.CheckOKStatus(t, resp)
-			require.Nil(t, resp.Error)
 
 			// unsubscribe
-			_, resp = client.Unsubscribe(subscription)
+			_, resp, err = client.Unsubscribe(subscription)
+			require.NoError(t, err)
 			api4.CheckOKStatus(t, resp)
-			require.Nil(t, resp.Error)
 		})
 	})
 }

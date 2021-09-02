@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // App describes an App installed on a Mattermost instance. App should be
