@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -180,29 +181,35 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 }
 
 func (pd *ProvisionData) Validate() error {
+	var result error
 	if pd.Manifest == nil {
-		return errors.New("no manifest")
+		result = multierror.Append(result,
+			errors.New("no manifest"))
 	}
 	if err := pd.Manifest.Validate(); err != nil {
 		return err
 	}
 
 	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
-		return errors.New("different amount of functions in manifest and in the bundle")
+		result = multierror.Append(result,
+			errors.New("different amount of functions in manifest and in the bundle"))
 	}
 
 	for _, function := range pd.Manifest.AWSLambda {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
-			return errors.Errorf("function %s was not found in the bundle", function)
+			result = multierror.Append(result,
+				errors.Errorf("function %s was not found in the bundle", function))
 		}
 		if data.Handler != function.Handler {
-			return errors.New("mismatched handler")
+			result = multierror.Append(result,
+				errors.New("mismatched handler"))
 		}
 		if data.Runtime != function.Runtime {
-			return errors.New("mismatched runtime")
+			result = multierror.Append(result,
+				errors.New("mismatched runtime"))
 		}
 	}
 
-	return nil
+	return result
 }
