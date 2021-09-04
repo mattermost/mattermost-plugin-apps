@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -93,4 +95,40 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 		AdminAccessToken:      in.AdminAccessToken,
 	}
 	return updated
+}
+
+func (in *Incoming) ensureUserTokens(mm *pluginapi.Client, adminRequested bool) error {
+	var session *model.Session
+	var err error
+	if in.ActingUserAccessToken == "" && in.SessionID != "" {
+		session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
+		if err != nil {
+			return err
+		}
+		in.ActingUserAccessToken = session.Token
+	}
+	if in.ActingUserAccessToken == "" {
+		return errors.New("failed to obtain the acting user token")
+	}
+
+	if adminRequested {
+		if !in.SysAdminChecked {
+			err = utils.EnsureSysAdmin(mm, in.ActingUserID)
+			if err != nil {
+				return err
+			}
+		}
+		in.AdminAccessToken = in.ActingUserAccessToken
+	}
+	return err
+}
+
+func (p *Proxy) getAdminClient(in Incoming) (mmclient.Client, error) {
+	conf, mm, _ := p.conf.Basic()
+	err := in.ensureUserTokens(mm, true)
+	if err != nil {
+		return nil, err
+	}
+	asAdmin := mmclient.NewHTTPClient(conf, in.AdminAccessToken)
+	return asAdmin, nil
 }

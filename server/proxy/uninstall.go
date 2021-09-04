@@ -9,11 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, mm, log := p.conf.Basic()
+	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -37,7 +36,10 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	asAdmin := mmclient.NewRPCClient(mm)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
 	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
 		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
