@@ -9,12 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
 func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	_, mm, log := p.conf.Basic()
-	log = log.With("app_id", appID)
+	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -23,7 +21,11 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	_, err = mmclient.NewRPCClient(mm).EnableBot(app.BotUserID)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
+	_, err = asAdmin.EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -57,8 +59,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 }
 
 func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	_, mm, log := p.conf.Basic()
-	log = log.With("app_id", appID)
+	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -86,7 +87,11 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	_, err = mmclient.NewRPCClient(mm).DisableBot(app.BotUserID)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
+	_, err = asAdmin.DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}

@@ -22,7 +22,7 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trusted bool, secret string) (*apps.App, string, error) {
-	conf, mm, log := p.conf.Basic()
+	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
@@ -64,7 +64,10 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		defer icon.Close()
 	}
 
-	asAdmin := mmclient.NewRPCClient(mm)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
 	err = p.ensureBot(asAdmin, log, app, icon)
 	if err != nil {
 		return nil, "", err

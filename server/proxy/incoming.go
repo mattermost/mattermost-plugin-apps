@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -48,7 +50,7 @@ func RequireUser(f func(http.ResponseWriter, *http.Request, Incoming)) http.Hand
 	}
 }
 
-func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+func RequireSysadmin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
 		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
@@ -62,16 +64,15 @@ func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http
 			return
 		}
 
-		in := Incoming{
+		f(w, req, Incoming{
 			ActingUserID:    actingUserID,
 			SessionID:       sessionID,
 			SysAdminChecked: true,
-		}
-		f(w, req, in)
+		})
 	}
 }
 
-func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pluginID := r.Header.Get(config.MattermostPluginIDHeader)
 		if pluginID != "" {
@@ -93,4 +94,40 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 		AdminAccessToken:      in.AdminAccessToken,
 	}
 	return updated
+}
+
+func (in *Incoming) ensureUserTokens(mm *pluginapi.Client, adminRequested bool) error {
+	var session *model.Session
+	var err error
+	if in.ActingUserAccessToken == "" && in.SessionID != "" {
+		session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
+		if err != nil {
+			return err
+		}
+		in.ActingUserAccessToken = session.Token
+	}
+	if in.ActingUserAccessToken == "" {
+		return errors.New("failed to obtain the acting user token")
+	}
+
+	if adminRequested {
+		if !in.SysAdminChecked {
+			err = utils.EnsureSysAdmin(mm, in.ActingUserID)
+			if err != nil {
+				return err
+			}
+		}
+		in.AdminAccessToken = in.ActingUserAccessToken
+	}
+	return err
+}
+
+func (p *Proxy) getAdminClient(in Incoming) (mmclient.Client, error) {
+	conf, mm, _ := p.conf.Basic()
+	err := in.ensureUserTokens(mm, true)
+	if err != nil {
+		return nil, err
+	}
+	asAdmin := mmclient.NewHTTPClient(conf, in.AdminAccessToken)
+	return asAdmin, nil
 }

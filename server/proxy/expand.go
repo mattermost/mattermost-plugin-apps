@@ -294,32 +294,6 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	return nil
 }
 
-func ensureUserTokens(mm *pluginapi.Client, adminRequested bool, in Incoming) error {
-	var session *model.Session
-	var err error
-	if in.ActingUserAccessToken == "" && in.SessionID != "" {
-		session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
-		if err != nil {
-			return err
-		}
-		in.ActingUserAccessToken = session.Token
-	}
-	if in.ActingUserAccessToken == "" {
-		return errors.New("failed to obtain the acting user token")
-	}
-
-	if adminRequested {
-		if !in.SysAdminChecked {
-			err = utils.EnsureSysAdmin(mm, in.ActingUserID)
-			if err != nil {
-				return err
-			}
-		}
-		in.AdminAccessToken = in.ActingUserAccessToken
-	}
-	return err
-}
-
 func getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client, in Incoming) (mmclient.Client, error) {
 	switch {
 	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
@@ -328,7 +302,7 @@ func getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client, in 
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
-		err := ensureUserTokens(mm, true, in)
+		err := in.ensureUserTokens(mm, true)
 		if err != nil {
 			return nil, err
 		}
