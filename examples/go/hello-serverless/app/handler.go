@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 //go:embed data/manifest.json

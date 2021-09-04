@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 //go:embed manifest.json
@@ -36,7 +36,7 @@ func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Requ
 		c := apps.CallRequest{}
 		json.NewDecoder(req.Body).Decode(&c)
 
-		_, err := mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+		_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 		if err != nil {
 			json.NewEncoder(w).Encode(apps.CallResponse{
 				Type:      apps.CallResponseTypeError,

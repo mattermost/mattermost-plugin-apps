@@ -4,6 +4,7 @@
 package apps
 
 import (
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -20,16 +21,19 @@ func (a *AWSLambda) Validate() error {
 	if a == nil {
 		return nil
 	}
+	var result error
 	if len(a.Functions) == 0 {
-		return utils.NewInvalidError("must provide at least 1 function in aws_lambda.Functions")
+		result = multierror.Append(result,
+			utils.NewInvalidError("must provide at least 1 function in aws_lambda.Functions"))
 	}
 	for _, f := range a.Functions {
 		err := f.Validate()
 		if err != nil {
-			return errors.Wrapf(err, "%q is not valid", f.Name)
+			result = multierror.Append(result,
+				errors.Wrapf(err, "%q is not valid", f.Name))
 		}
 	}
-	return nil
+	return result
 }
 
 // AWSLambdaFunction describes a distinct AWS Lambda function defined by the
@@ -52,17 +56,22 @@ type AWSLambdaFunction struct {
 }
 
 func (f AWSLambdaFunction) Validate() error {
+	var result error
 	if f.Path == "" {
-		return utils.NewInvalidError("aws_lambda path must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda path must not be empty"))
 	}
 	if f.Name == "" {
-		return utils.NewInvalidError("aws_lambda name must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda name must not be empty"))
 	}
 	if f.Handler == "" {
-		return utils.NewInvalidError("aws_lambda handler must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda handler must not be empty"))
 	}
 	if f.Runtime == "" {
-		return utils.NewInvalidError("aws_lambda runtime must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("aws_lambda runtime must not be empty"))
 	}
-	return nil
+	return result
 }

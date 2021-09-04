@@ -4,6 +4,7 @@
 package apps
 
 import (
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -66,27 +67,34 @@ type KubelessFunction struct {
 }
 
 func (kf KubelessFunction) Validate() error {
+	var result error
 	if kf.Path == "" {
-		return utils.NewInvalidError("invalid Kubeless function: path must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: path must not be empty"))
 	}
 	if kf.Handler == "" {
-		return utils.NewInvalidError("invalid Kubeless function: handler must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: handler must not be empty"))
 	}
 	if kf.Runtime == "" {
-		return utils.NewInvalidError("invalid Kubeless function: runtime must not be empty")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: runtime must not be empty"))
 	}
 	_, err := utils.CleanPath(kf.File)
 	if err != nil {
-		return errors.Wrap(err, "invalid Kubeless function: invalid file")
+		result = multierror.Append(result,
+			errors.Wrap(err, "invalid Kubeless function: invalid file"))
 	}
 	if kf.DepsFile != "" {
 		_, err := utils.CleanPath(kf.DepsFile)
 		if err != nil {
-			return errors.Wrap(err, "invalid Kubeless function: invalid deps_file")
+			result = multierror.Append(result,
+				errors.Wrap(err, "invalid Kubeless function: invalid deps_file"))
 		}
 	}
 	if kf.Port < 0 || kf.Port > 65535 {
-		return utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535")
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid Kubeless function: port must be between 0 and 65535"))
 	}
-	return nil
+	return result
 }

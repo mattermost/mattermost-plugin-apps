@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -194,7 +194,7 @@ func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 	})
 }
 
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
+func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
 	if app.DeployType == apps.DeployBuiltin {
 		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {

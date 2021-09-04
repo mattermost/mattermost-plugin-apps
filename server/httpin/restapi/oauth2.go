@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -25,7 +24,7 @@ func (a *restapi) oauth2StoreApp(w http.ResponseWriter, r *http.Request, in prox
 }
 
 func (a *restapi) oauth2StoreUser(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	data, err := io.ReadAll(r.Body)
+	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

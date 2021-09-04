@@ -21,9 +21,9 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := p.getAdminClient(in)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
 	_, err = asAdmin.EnableBot(app.BotUserID)
 	if err != nil {
@@ -39,7 +39,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
@@ -72,8 +72,8 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.callApp(in, app, apps.CallRequest{
-			Call:    *app.OnInstall,
+		resp := p.callApp(in, *app, apps.CallRequest{
+			Call:    *app.OnDisable,
 			Context: cc,
 		})
 		if resp.Type == apps.CallResponseTypeError {
@@ -87,10 +87,9 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	// disable app, not removing the data
-	in, asAdmin, err := p.asAdmin(in)
+	asAdmin, err := p.getAdminClient(in)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin client")
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
 	_, err = asAdmin.DisableBot(app.BotUserID)
 	if err != nil {
@@ -108,7 +107,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app *apps.App) bool {
+func (p *Proxy) appIsEnabled(app apps.App) bool {
 	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}

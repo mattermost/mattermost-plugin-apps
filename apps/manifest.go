@@ -7,10 +7,13 @@ import (
 	"encoding/json"
 	"unicode"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
 
 // Where static assets are.
 const StaticFolder = "static"
@@ -106,7 +109,7 @@ type Manifest struct {
 	// (3rd party) OAuth2 flow, and after the "state" has already been
 	// validated. It gets passed the URL query as Values. The App should obtain
 	// the OAuth2 user token, and store it persistently for future use using
-	// mmclient.StoreOAuth2User.
+	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access
@@ -186,17 +189,20 @@ type validator interface {
 }
 
 func (m Manifest) Validate() error {
+	var result error
 	if m.HomepageURL == "" {
-		return utils.NewInvalidError(errors.New("homepage_url is empty"))
+		result = multierror.Append(result,
+			utils.NewInvalidError(errors.New("homepage_url is empty")))
 	}
 	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
-		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
+		result = multierror.Append(result,
+			utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL)))
 	}
 
 	if m.Icon != "" {
 		_, err := utils.CleanStaticPath(m.Icon)
 		if err != nil {
-			return err
+			result = multierror.Append(result, err)
 		}
 	}
 
@@ -220,12 +226,12 @@ func (m Manifest) Validate() error {
 	} {
 		if v != nil {
 			if err := v.Validate(); err != nil {
-				return err
+				result = multierror.Append(result, err)
 			}
 		}
 	}
 
-	return nil
+	return result
 }
 
 func (m Manifest) MustDeployAs() DeployType {
@@ -281,12 +287,15 @@ const (
 )
 
 func (id AppID) Validate() error {
+	var result error
 	if len(id) < MinAppIDLength {
-		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength))
 	}
 
 	if len(id) > MaxAppIDLength {
-		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength))
 	}
 
 	for _, c := range id {
@@ -302,9 +311,11 @@ func (id AppID) Validate() error {
 			continue
 		}
 
-		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appID %q", c, id))
 	}
-	return nil
+
+	return result
 }
 
 // AppVersion is the version of a Mattermost App. AppVersion is expected to look
@@ -314,8 +325,10 @@ type AppVersion string
 const VersionFormat = "v00_00_000"
 
 func (v AppVersion) Validate() error {
+	var result error
 	if len(v) > len(VersionFormat) {
-		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
+		result = multierror.Append(result,
+			utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat))
 	}
 
 	for _, c := range v {
@@ -331,8 +344,9 @@ func (v AppVersion) Validate() error {
 			continue
 		}
 
-		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appVersion", c))
 	}
 
-	return nil
+	return result
 }
