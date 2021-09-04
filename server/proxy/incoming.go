@@ -50,7 +50,7 @@ func RequireUser(f func(http.ResponseWriter, *http.Request, Incoming)) http.Hand
 	}
 }
 
-func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+func RequireSysadmin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
 		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
@@ -64,16 +64,15 @@ func RequireSysadmin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http
 			return
 		}
 
-		in := Incoming{
+		f(w, req, Incoming{
 			ActingUserID:    actingUserID,
 			SessionID:       sessionID,
 			SysAdminChecked: true,
-		}
-		f(w, req, in)
+		})
 	}
 }
 
-func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, in Incoming)) http.HandlerFunc {
+func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pluginID := r.Header.Get(config.MattermostPluginIDHeader)
 		if pluginID != "" {
