@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
@@ -14,7 +14,7 @@ func main() {
 	plugin.ClientMain(
 		NewPlugin(
 			config.BuildConfig{
-				Manifest:       *manifest,
+				Manifest:       manifest,
 				BuildHash:      BuildHash,
 				BuildHashShort: BuildHashShort,
 				BuildDate:      BuildDate,

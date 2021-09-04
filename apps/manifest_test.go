@@ -1,65 +1,122 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package apps
+package apps_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func TestManifestIsValid(t *testing.T) {
+func TestValidateAppID(t *testing.T) {
+	t.Parallel()
+
+	for id, valid := range map[string]bool{
+		"":                                  false,
+		"a":                                 false,
+		"ab":                                false,
+		"abc":                               true,
+		"abcdefghijklmnopqrstuvwxyzabcdef":  true,
+		"abcdefghijklmnopqrstuvwxyzabcdefg": false,
+		"../path":                           false,
+		"/etc/passwd":                       false,
+		"com.mattermost.app-0.9":            true,
+		"CAPS-ARE-FINE":                     true,
+		"....DOTS.ALSO.......":              true,
+		"----SLASHES-ALSO----":              true,
+		"___AND_UNDERSCORES____":            true,
+	} {
+		t.Run(id, func(t *testing.T) {
+			err := apps.AppID(id).Validate()
+			if valid {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateAppVersion(t *testing.T) {
+	t.Parallel()
+
+	for id, valid := range map[string]bool{
+		"":            true,
+		"v1.0.0":      true,
+		"1.0.0":       true,
+		"v1.0.0-rc1":  true,
+		"1.0.0-rc1":   true,
+		"CAPS-OK":     true,
+		".DOTS.":      true,
+		"-SLASHES-":   true,
+		"_OK_":        true,
+		"v00_00_0000": false,
+		"/":           false,
+	} {
+		t.Run(id, func(t *testing.T) {
+			err := apps.AppVersion(id).Validate()
+			if valid {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateManifest(t *testing.T) {
 	t.Parallel()
 
 	for name, test := range map[string]struct {
-		Manifest      Manifest
+		Manifest      apps.Manifest
 		ExpectedError bool
 	}{
 		"empty manifest": {
-			Manifest:      Manifest{},
+			Manifest:      apps.Manifest{},
 			ExpectedError: true,
 		},
 		"no app types": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
 			},
 			ExpectedError: true,
 		},
 		"HomepageURL empty": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID: "abc",
-				HTTP: &HTTP{
+				HTTP: &apps.HTTP{
 					RootURL: "https://example.org/root",
 				},
 			},
 			ExpectedError: true,
 		},
 		"HTTP RootURL empty": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP:        &HTTP{},
+				HTTP:        &apps.HTTP{},
 			},
 			ExpectedError: true,
 		},
 		"minimal valid HTTP app example manifest": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP: &HTTP{
+				HTTP: &apps.HTTP{
 					RootURL: "https://example.org/root",
 				},
 			},
 			ExpectedError: false,
 		},
 		"invalid Icon": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP: &HTTP{
+				HTTP: &apps.HTTP{
 					RootURL: "https://example.org/root",
 				},
 				Icon: "../..",
@@ -67,39 +124,39 @@ func TestManifestIsValid(t *testing.T) {
 			ExpectedError: true,
 		},
 		"invalid HomepageURL": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: ":invalid",
-				HTTP: &HTTP{
+				HTTP: &apps.HTTP{
 					RootURL: "https://example.org/root",
 				},
 			},
 			ExpectedError: true,
 		},
 		"invalid HTTPRootURL": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org/root",
-				HTTP: &HTTP{
+				HTTP: &apps.HTTP{
 					RootURL: ":invalid",
 				},
 			},
 			ExpectedError: true,
 		},
 		"no lambda for AWS app": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda:   &AWSLambda{},
+				AWSLambda:   &apps.AWSLambda{},
 			},
 			ExpectedError: true,
 		},
 		"missing path for AWS app": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &AWSLambda{
-					Functions: []AWSLambdaFunction{{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{{
 						Name:    "go-funcion",
 						Handler: "hello-lambda",
 						Runtime: "go1.x",
@@ -109,11 +166,11 @@ func TestManifestIsValid(t *testing.T) {
 			ExpectedError: true,
 		},
 		"missing name for AWS app": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &AWSLambda{
-					Functions: []AWSLambdaFunction{{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{{
 						Path:    "/",
 						Handler: "hello-lambda",
 						Runtime: "go1.x",
@@ -123,11 +180,11 @@ func TestManifestIsValid(t *testing.T) {
 			ExpectedError: true,
 		},
 		"missing handler for AWS app": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &AWSLambda{
-					Functions: []AWSLambdaFunction{{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{{
 						Path:    "/",
 						Name:    "go-funcion",
 						Runtime: "go1.x",
@@ -137,11 +194,11 @@ func TestManifestIsValid(t *testing.T) {
 			ExpectedError: true,
 		},
 		"missing runtime for AWS app": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &AWSLambda{
-					Functions: []AWSLambdaFunction{{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{{
 						Path:    "/",
 						Name:    "go-funcion",
 						Handler: "hello-lambda",
@@ -151,11 +208,11 @@ func TestManifestIsValid(t *testing.T) {
 			ExpectedError: true,
 		},
 		"minimal valid AWS app example manifest": {
-			Manifest: Manifest{
+			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &AWSLambda{
-					Functions: []AWSLambdaFunction{{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{{
 						Path:    "/",
 						Name:    "go-funcion",
 						Handler: "hello-lambda",
@@ -173,188 +230,6 @@ func TestManifestIsValid(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestManifestUnmarshalJSON(t *testing.T) {
-	hello := Manifest{
-		AppID:                "hello-world",
-		DisplayName:          "Hello, world!",
-		Icon:                 "icon.png",
-		HomepageURL:          "http://localhost:8080",
-		RequestedPermissions: Permissions{PermissionActAsBot},
-		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
-	}
-
-	helloHTTP := hello
-	helloHTTP.HTTP = &HTTP{
-		RootURL: "http://localhost:8080",
-	}
-	helloHTTP7 := helloHTTP
-	helloHTTP7.v7AppType = string(DeployHTTP)
-
-	helloPlugin := hello
-	helloPlugin.Plugin = &Plugin{
-		PluginID: "com.mattermost.hello-world",
-	}
-	helloPlugin7 := helloPlugin
-	helloPlugin7.v7AppType = string(DeployPlugin)
-
-	helloAWS := hello
-	helloAWS.AWSLambda = &AWSLambda{
-		Functions: []AWSLambdaFunction{
-			{
-				Path:    "/",
-				Name:    "go-function",
-				Handler: "hello-lambda",
-				Runtime: "go1.x",
-			},
-		},
-	}
-	helloAWS7 := helloAWS
-	helloAWS7.v7AppType = string(DeployAWSLambda)
-
-	for name, test := range map[string]struct {
-		In            string
-		Expected      Manifest
-		ExpectedError string
-	}{
-		"v0.7 http": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"app_type": "http",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"root_url": "http://localhost:8080",
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloHTTP7,
-		},
-		"v0.8 http": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"http":{
-						"root_url": "http://localhost:8080"
-					},
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloHTTP,
-		},
-		"v0.7 aws": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"app_type": "aws_lambda",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"aws_lambda": [
-						{
-							"path": "/",
-							"name": "go-function",
-							"handler": "hello-lambda",
-							"runtime": "go1.x"
-						}
-					],
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloAWS7,
-		},
-		"v0.8 aws": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"aws_lambda": {
-						"functions": [
-							{
-								"path": "/",
-								"name": "go-function",
-								"handler": "hello-lambda",
-								"runtime": "go1.x"
-							}
-						]
-					},
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloAWS,
-		},
-		"v0.7 plugin": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"app_type": "plugin",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"plugin_id": "com.mattermost.hello-world",
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloPlugin7,
-		},
-		"v0.8 plugin": {
-			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"plugin": {
-						"plugin_id": "com.mattermost.hello-world"
-					},
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloPlugin,
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			m, err := DecodeCompatibleManifest([]byte(test.In))
-			if test.ExpectedError != "" {
-				require.Error(t, err)
-				require.Equal(t, test.ExpectedError, err.Error())
-			} else {
-				require.NoError(t, err)
-				require.EqualValues(t, test.Expected, *m)
 			}
 		})
 	}

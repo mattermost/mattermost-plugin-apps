@@ -111,7 +111,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
-			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode)
+			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode, apps.MaxManifestSize)
 		default:
 			log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID)

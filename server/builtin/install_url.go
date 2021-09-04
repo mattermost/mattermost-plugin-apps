@@ -31,7 +31,7 @@ func (a *builtinApp) installURLForm(creq apps.CallRequest) apps.CallResponse {
 func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
 	manifestURL := creq.GetValue(fURL, "")
 	conf := a.conf.Get()
-	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}

@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 //go:embed icon.png
@@ -64,11 +64,11 @@ func install(w http.ResponseWriter, req *http.Request) {
 	channelID := creq.Context.ChannelID
 
 	// Add the Bot user to the team and the channel.
-	asAdmin := mmclient.AsAdmin(creq.Context)
+	asAdmin := appclient.AsAdmin(creq.Context)
 	asAdmin.AddTeamMember(teamID, creq.Context.BotUserID)
 	asAdmin.AddChannelMember(channelID, creq.Context.BotUserID)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	// store the channel ID for future use
 	asBot.KVSet("channel_id", "", channelID)
 
@@ -84,7 +84,7 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	channelID := ""
 	asBot.KVGet("channel_id", "", &channelID)
 
