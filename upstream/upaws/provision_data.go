@@ -183,8 +183,7 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 func (pd *ProvisionData) Validate() error {
 	var result error
 	if pd.Manifest == nil {
-		result = multierror.Append(result,
-			errors.New("no manifest"))
+		return errors.New("no manifest")
 	}
 	if err := pd.Manifest.Validate(); err != nil {
 		return err
