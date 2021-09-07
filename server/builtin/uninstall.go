@@ -22,14 +22,11 @@ func (a *builtinApp) uninstallCommandBinding() apps.Binding {
 		Hint:        "[ App ID ]",
 		Description: "Uninstalls an App",
 		Call:        &uninstallCall,
+		Form:        appIDForm(uninstallCall),
 	}
 }
 
-func (a *builtinApp) uninstallForm(creq apps.CallRequest) apps.CallResponse {
-	return appIDForm(uninstallCall)
-}
-
-func (a *builtinApp) uninstallLookup(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) uninstallLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
 	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
 		return app.Installed
 	})

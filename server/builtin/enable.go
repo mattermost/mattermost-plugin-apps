@@ -22,14 +22,11 @@ func (a *builtinApp) enableCommandBinding() apps.Binding {
 		Hint:        "[ App ID ]",
 		Description: "Enables an App",
 		Call:        &enableCall,
+		Form:        appIDForm(enableCall),
 	}
 }
 
-func (a *builtinApp) enableForm(creq apps.CallRequest) apps.CallResponse {
-	return appIDForm(enableCall)
-}
-
-func (a *builtinApp) enableLookup(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) enableLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
 	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
 		return app.Installed && !app.Enabled
 	})

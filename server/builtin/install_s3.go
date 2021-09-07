@@ -14,7 +14,9 @@ var installS3Call = apps.Call{
 }
 
 func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {
-	resp := appIDForm(installS3Call)
+	resp := apps.CallResponse{
+		Form: appIDForm(installS3Call),
+	}
 	resp.Form.Title = "Install an App from AWS S3"
 	resp.Form.Fields = append(resp.Form.Fields, apps.Field{
 		Name:                 fVersion,
@@ -27,15 +29,15 @@ func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {
 	return resp
 }
 
-func (a *builtinApp) installS3Lookup(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) installS3Lookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
 	if creq.SelectedField != fAppID && creq.SelectedField != fVersion {
-		return apps.NewErrorCallResponse(errors.Errorf("unknown field %q", creq.SelectedField))
+		return nil, errors.Errorf("unknown field %q", creq.SelectedField)
 	}
 
 	conf, _, log := a.conf.Basic()
 	up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
 	if err != nil {
-		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to initialize AWS access"))
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
 
 	var options []apps.SelectOption
@@ -43,7 +45,7 @@ func (a *builtinApp) installS3Lookup(creq apps.CallRequest) apps.CallResponse {
 	case fAppID:
 		appIDs, err := up.ListS3Apps(creq.Query)
 		if err != nil {
-			return apps.NewErrorCallResponse(errors.Wrap(err, "failed to retrive the list of apps, try --url"))
+			return nil, errors.Wrap(err, "failed to retrive the list of apps, try --url")
 		}
 		for _, appID := range appIDs {
 			options = append(options, apps.SelectOption{
@@ -56,7 +58,7 @@ func (a *builtinApp) installS3Lookup(creq apps.CallRequest) apps.CallResponse {
 		id := creq.GetValue(fAppID, "")
 		versions, err := up.ListS3Versions(apps.AppID(id), creq.Query)
 		if err != nil {
-			return apps.NewErrorCallResponse(errors.Wrap(err, "failed to retrive the list of apps, try --url"))
+			return nil, errors.Wrap(err, "failed to retrive the list of apps, try --url")
 		}
 		for _, v := range versions {
 			options = append(options, apps.SelectOption{
@@ -66,10 +68,7 @@ func (a *builtinApp) installS3Lookup(creq apps.CallRequest) apps.CallResponse {
 		}
 	}
 
-	return dataResponse(
-		lookupResponse{
-			Items: options,
-		})
+	return options, nil
 }
 
 func (a *builtinApp) installS3Submit(creq apps.CallRequest) apps.CallResponse {

@@ -11,11 +11,7 @@ var installMarketplaceCall = apps.Call{
 	Path: pInstallMarketplace,
 }
 
-func (a *builtinApp) installMarketplaceForm(creq apps.CallRequest) apps.CallResponse {
-	return appIDForm(installMarketplaceCall)
-}
-
-func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
 	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
 		return !app.Installed
 	})

@@ -12,21 +12,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) installConsentForm(creq apps.CallRequest) (*apps.Form, error) {
 	id, ok := creq.State.(string)
 	if !ok {
-		return apps.NewErrorCallResponse(
-			errors.New("no app ID in state, don't know what to install"))
+		return nil, errors.New("no app ID in state, don't know what to install")
 	}
 	appID := apps.AppID(id)
 
 	m, err := a.store.Manifest.Get(appID)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return nil, err
 	}
 
-	return formResponse(
-		a.newInstallConsentForm(*m, creq))
+	return a.newInstallConsentForm(*m, creq), nil
 }
 
 func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallResponse {
@@ -57,7 +55,7 @@ func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallRespon
 	return mdResponse(out)
 }
 
-func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) apps.Form {
+func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) *apps.Form {
 	fields := []apps.Field{}
 
 	// Consent
@@ -98,7 +96,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		})
 	}
 
-	return apps.Form{
+	return &apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
 		Header: consent,
 		Fields: fields,
