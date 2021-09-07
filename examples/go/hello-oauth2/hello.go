@@ -23,9 +23,6 @@ var iconData []byte
 //go:embed manifest.json
 var manifestData []byte
 
-//go:embed bindings.json
-var bindingsData []byte
-
 //go:embed send_form.json
 var sendFormData []byte
 
@@ -42,7 +39,7 @@ func main() {
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", writeJSON(bindingsData))
+	http.HandleFunc("/bindings", bindings)
 
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
@@ -74,14 +71,61 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+func bindings(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	bindings := []apps.Binding{{
+		Location: apps.LocationCommand,
+		Bindings: []*apps.Binding{{
+			Icon:        "icon.png",
+			Label:       "hello-oauth2",
+			Description: "Hello remote (3rd party) OAuth2 App",
+			Hint:        "[connect | send]",
+			Bindings: []*apps.Binding{
+				{
+					Location: "connect",
+					Label:    "connect",
+					Call: &apps.Call{
+						Path: "/connect",
+					},
+				}, {
+					Location: "send",
+					Label:    "send",
+					Call: &apps.Call{
+						Path: "/send",
+					},
+				},
+			},
+		}},
+	}}
+
+	if creq.Context.ActingUser.IsSystemAdmin() {
+		configure := &apps.Binding{
+			Location: "configure",
+			Label:    "configure",
+			Call: &apps.Call{
+				Path: "/configure",
+			},
+		}
+		bindings[0].Bindings[0].Hint = "[configure | connect | send]"
+		bindings[0].Bindings[0].Bindings = append(bindings[0].Bindings[0].Bindings, configure)
+	}
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: bindings,
+	})
+}
+
 func configure(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
-	asAdmin := mmclient.AsAdmin(creq.Context)
-	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
+	asUser := mmclient.AsActingUser(creq.Context)
+	asUser.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: "updated OAuth client credentials",
