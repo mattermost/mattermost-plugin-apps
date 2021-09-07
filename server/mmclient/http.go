@@ -13,7 +13,7 @@ type httpClient struct {
 
 func NewHTTPClientFromSessionID(config config.Service, sessionID, actingUserID string) (Client, error) {
 	conf, mm, _ := config.Basic()
-	client, err := utils.ClientFromSession(mm, conf.MattermostListenURL, sessionID, actingUserID)
+	client, err := utils.ClientFromSession(mm, conf.MattermostLocalURL, sessionID, actingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func NewHTTPClientFromSessionID(config config.Service, sessionID, actingUserID s
 func NewHTTPClientFromToken(config config.Service, token, actingUserID string) (Client, error) {
 	conf := config.Get()
 
-	client := model.NewAPIv4Client(conf.MattermostListenURL)
+	client := model.NewAPIv4Client(conf.MattermostLocalURL)
 	client.SetToken(token)
 
 	return &httpClient{client}, nil
