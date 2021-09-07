@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 // Note: run
@@ -28,10 +28,10 @@ var pluginID = "com.mattermost.apps"
 
 type TestHelper struct {
 	ServerTestHelper    *api4.TestHelper
-	ClientPP            *mmclient.ClientPP
-	SystemAdminClientPP *mmclient.ClientPP
-	BotClientPP         *mmclient.ClientPP
-	LocalClientPP       *mmclient.ClientPP
+	ClientPP            *appclient.ClientPP
+	SystemAdminClientPP *appclient.ClientPP
+	BotClientPP         *appclient.ClientPP
+	LocalClientPP       *appclient.ClientPP
 }
 
 func (th *TestHelper) TearDown() {
@@ -105,11 +105,11 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	require.True(t, th.ServerTestHelper.App.GetPluginsEnvironment().IsActive(pluginID))
 }
 
-func (th *TestHelper) CreateClientPP() *mmclient.ClientPP {
-	return mmclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
+func (th *TestHelper) CreateClientPP() *appclient.ClientPP {
+	return appclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
 }
 
-func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
+func (th *TestHelper) CreateLocalClient(socketPath string) *appclient.ClientPP {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Dial: func(network, addr string) (net.Conn, error) {
@@ -118,13 +118,13 @@ func (th *TestHelper) CreateLocalClient(socketPath string) *mmclient.ClientPP {
 		},
 	}
 
-	client := mmclient.NewAppsPluginAPIClient("http://_" + model.APIURLSuffix)
+	client := appclient.NewAppsPluginAPIClient("http://_" + model.APIURLSuffix)
 	client.HTTPClient = httpClient
 
 	return client
 }
 
-func (th *TestHelper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *mmclient.ClientPP), name ...string) {
+func (th *TestHelper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
 	var testName string
 	if len(name) > 0 {
 		testName = name[0] + "/"
@@ -135,7 +135,7 @@ func (th *TestHelper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *mmcli
 	})
 }
 
-func (th *TestHelper) TestForLocal(t *testing.T, f func(*testing.T, *mmclient.ClientPP), name ...string) {
+func (th *TestHelper) TestForLocal(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
 	var testName string
 	if len(name) > 0 {
 		testName = name[0] + "/"

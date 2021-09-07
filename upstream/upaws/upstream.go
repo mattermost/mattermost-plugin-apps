@@ -41,8 +41,8 @@ func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Lo
 	}, nil
 }
 
-func (u *Upstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(m.AppID, m.Version, path)
+func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	key := S3StaticName(app.AppID, app.Version, path)
 	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
@@ -50,7 +50,7 @@ func (u *Upstream) GetStatic(m *apps.Manifest, path string) (io.ReadCloser, int,
 	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, call apps.CallRequest, async bool) (io.ReadCloser, error) {
 	name := match(call.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
@@ -66,7 +66,7 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) invokeFunction(name string, async bool, creq *apps.CallRequest) ([]byte, error) {
+func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent

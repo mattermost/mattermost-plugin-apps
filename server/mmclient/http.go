@@ -1,33 +1,22 @@
 package mmclient
 
 import (
+	"io"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClientFromSessionID(config config.Service, sessionID, actingUserID string) (Client, error) {
-	conf, mm, _ := config.Basic()
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &httpClient{client}, nil
-}
-
-func NewHTTPClientFromToken(config config.Service, token, actingUserID string) (Client, error) {
-	conf := config.Get()
-
+func NewHTTPClient(conf config.Config, token string) Client {
 	client := model.NewAPIv4Client(conf.MattermostSiteURL)
 	client.SetToken(token)
-
-	return &httpClient{client}, nil
+	return &httpClient{client}
 }
 
 // User section
@@ -48,6 +37,23 @@ func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
 	}
 
 	return user, nil
+}
+
+const (
+	// MaxProfileImageSize is the maximum length in bytes of the profile image file.
+	MaxProfileImageSize = 50 * 1024 * 1024 // 50Mb
+)
+
+func (h *httpClient) SetProfileImage(userID string, content io.Reader) error {
+	data, err := httputils.LimitReadAll(content, MaxProfileImageSize)
+	if err != nil {
+		return err
+	}
+	_, err = h.mm.SetProfileImage(userID, data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *httpClient) CreateUserAccessToken(userID, description string) (*model.UserAccessToken, error) {
