@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"runtime/debug"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -111,7 +112,45 @@ func App(conf config.Config) apps.App {
 	}
 }
 
-func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
+	defer func(log utils.Logger) {
+		if x := recover(); x != nil {
+			stack := string(debug.Stack())
+			txt := "Call `" + creq.Path + "` panic-ed."
+			log = log.With(
+				"path", creq.Path,
+				"values", creq.Values,
+				"error", x,
+				"stack", stack,
+			)
+			if creq.RawCommand != "" {
+				txt = "Command `" + creq.RawCommand + "` panic-ed."
+				log.Errorw("Recovered from a panic in a command", "command", creq.RawCommand)
+			} else {
+				log.Errorw("Recovered from a panic in a Call")
+			}
+
+			if a.conf.Get().DeveloperMode {
+				txt += "\n"
+				txt += fmt.Sprintf("Error: **%v**.\n", x)
+				txt += fmt.Sprintf("Stack:\n%v", utils.CodeBlock(stack))
+			} else {
+				txt += "Please check the server logs for more details."
+			}
+			out = nil
+			data, errr := json.Marshal(apps.CallResponse{
+				Type:     apps.CallResponseTypeOK,
+				Markdown: txt,
+			})
+			if errr != nil {
+				err = errr
+				return
+			}
+			err = nil
+			out = ioutil.NopCloser(bytes.NewReader(data))
+		}
+	}(a.conf.Logger())
+
 	f, ok := a.router[creq.Path]
 	if !ok {
 		return nil, utils.NewNotFoundError("%s is not found", creq.Path)
