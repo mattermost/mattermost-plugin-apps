@@ -23,8 +23,8 @@ func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	}
 }
 
-func (u *StaticUpstream) GetStatic(app apps.App, assetPath string) (io.ReadCloser, int, error) {
-	url := path.Join("/"+app.Manifest.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)
+func (u *StaticUpstream) GetStatic(m apps.Manifest, assetPath string) (io.ReadCloser, int, error) {
+	url := path.Join("/"+m.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)
 
 	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

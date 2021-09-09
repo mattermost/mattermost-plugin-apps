@@ -13,8 +13,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", app.Manifest.HTTPRootURL, apps.StaticFolder, path)
+func (u *Upstream) GetStatic(m apps.Manifest, path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", m.HTTPRootURL, apps.StaticFolder, path)
 
 	client := u.httpOut.MakeClient(u.devMode)
 

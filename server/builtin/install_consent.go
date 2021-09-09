@@ -96,6 +96,11 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		})
 	}
 
+	var iconURL string
+	if m.Icon != "" {
+		iconURL = a.conf.Get().StaticURL(m.AppID, m.Icon)
+	}
+
 	return &apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
 		Header: consent,
@@ -107,5 +112,6 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			},
 			State: m.AppID,
 		},
+		Icon: iconURL,
 	}
 }

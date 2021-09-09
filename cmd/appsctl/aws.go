@@ -184,7 +184,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda().Manifest, "test.txt")
 		if err != nil {
 			return err
 		}
