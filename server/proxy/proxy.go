@@ -64,8 +64,10 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.C
 		return apps.NewErrorCallResponse(err)
 	}
 
+	// Clone incoming context, and update with the user data from Incoming.
 	cc := creq.Context
 	cc = in.updateContext(cc)
+
 	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
