@@ -20,6 +20,7 @@ var installURLForm = apps.Form{
 			Label:                fURL,
 			AutocompleteHint:     "URL",
 			AutocompletePosition: 1,
+			IsRequired: true,
 		},
 	},
 	Call: &installURLCall,

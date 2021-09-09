@@ -19,6 +19,7 @@ func appIDForm(call apps.Call) *apps.Form {
 				Label:                fAppID,
 				AutocompleteHint:     "App ID",
 				AutocompletePosition: 1,
+				IsRequired:           true,
 			},
 		},
 		Call: &call,
