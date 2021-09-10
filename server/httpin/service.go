@@ -70,6 +70,6 @@ func recoveryHandler(log utils.Logger, developerMode bool) func(http.Handler) ht
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Set("MM_SESSION_ID", c.SessionId)
+	r.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
 	s.router.ServeHTTP(w, r)
 }

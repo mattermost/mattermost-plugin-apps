@@ -50,8 +50,8 @@ var kubelessProvisionCmd = &cobra.Command{
 	},
 }
 
-func helloKubeless() *apps.App {
-	return &apps.App{
+func helloKubeless() apps.App {
+	return apps.App{
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
 			AppType: apps.AppTypeKubeless,
@@ -82,7 +82,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 		}
 
 		app := helloKubeless()
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
@@ -90,7 +90,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 		log.Debugw("Invoking test function",
 			"app_id", app.AppID,
 			"version", app.Version,
-			"call_path", creq.Call.Path,
+			"path", creq.Call.Path,
 			"handler", app.Manifest.KubelessFunctions[0].Handler)
 		resp, err := upTest.Roundtrip(app, creq, false)
 		if err != nil {
