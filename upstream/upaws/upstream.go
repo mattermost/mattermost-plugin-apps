@@ -42,8 +42,8 @@ func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Lo
 	}, nil
 }
 
-func (u *Upstream) GetStatic(m apps.Manifest, path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(m.AppID, m.Version, path)
+func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	key := S3StaticName(app.AppID, app.Version, path)
 	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)

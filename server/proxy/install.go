@@ -56,7 +56,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app.WebhookSecret = model.NewId()
 	}
 
-	icon, err := p.getAppIcon(app.Manifest)
+	icon, err := p.getAppIcon(*app)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed get bot icon")
 	}
@@ -213,19 +213,20 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 // getAppIcon gets the icon of a given app.
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
-func (p *Proxy) getAppIcon(m apps.Manifest) (io.ReadCloser, error) {
-	iconPath := m.Icon
+func (p *Proxy) getAppIcon(app apps.App) (io.ReadCloser, error) {
+	iconPath := app.Manifest.Icon
 	if iconPath == "" {
 		return nil, nil
 	}
 
-	icon, status, err := p.getStatic(m, iconPath)
+	icon, status, err := p.getStatic(app, iconPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app icon")
 	}
 
 	if status != http.StatusOK {
-		return nil, errors.Errorf("received %d status code while downloading bot icon for %v", status, m.AppID)
+		return nil, errors.Errorf("received %d status code while downloading bot icon for %v",
+			status, app.Manifest.AppID)
 	}
 
 	return icon, nil

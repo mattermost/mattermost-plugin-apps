@@ -59,15 +59,13 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.C
 	}
 	creq.Path = cleanPath
 
-	up, err := p.upstreamForApp(app.Manifest)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
 
-	// Clone incoming context, and update with the user data from Incoming.
 	cc := creq.Context
 	cc = in.updateContext(cc)
-
 	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
@@ -154,7 +152,7 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 	}
 	creq.Context.Subject = sub.Subject
 
-	up, err := p.upstreamForApp(app.Manifest)
+	up, err := p.upstreamForApp(*app)
 	if err != nil {
 		return err
 	}
@@ -169,7 +167,7 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
 
-	up, err := p.upstreamForApp(app.Manifest)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
 	}
@@ -297,7 +295,7 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 }
 
 func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	m, err := p.store.Manifest.Get(appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -306,39 +304,39 @@ func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, er
 		return nil, status, err
 	}
 
-	return p.getStatic(*m, path)
+	return p.getStatic(*app, path)
 }
 
-func (p *Proxy) getStatic(m apps.Manifest, path string) (io.ReadCloser, int, error) {
-	up, err := p.upstreamForApp(m)
+func (p *Proxy) getStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(m, path)
+	return up.GetStatic(app, path)
 }
 
-func (p *Proxy) upstreamForApp(m apps.Manifest) (upstream.Upstream, error) {
-	if m.AppType == apps.AppTypeBuiltin {
-		u, ok := p.builtinUpstreams[m.AppID]
+func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
+	if app.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {
-			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", m.AppID)
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
 		}
 		return u, nil
 	}
 
 	conf := p.conf.Get()
-	err := isAppTypeSupported(conf, m.AppType)
+	err := isAppTypeSupported(conf, app.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	upv, ok := p.upstreams.Load(m.AppType)
+	upv, ok := p.upstreams.Load(app.AppType)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid app type: %s", m.AppType)
+		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
 	up, ok := upv.(upstream.Upstream)
 	if !ok {
-		return nil, utils.NewInvalidError("invalid Upstream for: %s", m.AppType)
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
 	}
 	return up, nil
 }

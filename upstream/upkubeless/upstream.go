@@ -124,7 +124,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	return []byte(resp.Body), nil
 }
 
-func (u *Upstream) GetStatic(_ apps.Manifest, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 
