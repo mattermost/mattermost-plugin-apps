@@ -41,7 +41,9 @@ func main() {
 	// Serves the icon for the app.
 	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
 
-	fmt.Println("Listening on :8080") // matches manifest.json
+	addr := ":8080" // matches manifest.json
+	fmt.Println("Listening on", addr) 
+	fmt.Println("Use '/apps install url http://localhost"+addr+"/manifest.json' to install the app") // matches manifest.json
 	panic(http.ListenAndServe(":8080", nil))
 }
 

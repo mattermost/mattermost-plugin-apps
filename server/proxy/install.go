@@ -59,7 +59,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		app.WebhookSecret = model.NewId()
 	}
 
-	icon, err := p.getAppIcon(app)
+	icon, err := p.getAppIcon(*app)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed get bot icon")
 	}
@@ -71,14 +71,14 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
-	err = p.ensureBot(asAdmin, log, app, icon)
+	err = p.ensureBot(asAdmin, log, *app, icon)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, app, trusted, in.ActingUserID)
+		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, in.ActingUserID)
 		if err != nil {
 			return nil, "", err
 		}
@@ -117,7 +117,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
@@ -147,7 +147,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -216,19 +216,20 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 // getAppIcon gets the icon of a given app.
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
-func (p *Proxy) getAppIcon(app *apps.App) (io.ReadCloser, error) {
+func (p *Proxy) getAppIcon(app apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
 	if iconPath == "" {
 		return nil, nil
 	}
 
-	icon, status, err := p.getStatic(*app, iconPath)
+	icon, status, err := p.getStatic(app, iconPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app icon")
 	}
 
 	if status != http.StatusOK {
-		return nil, errors.Errorf("received %d status code while downloading bot icon for %v", status, app.Manifest.AppID)
+		return nil, errors.Errorf("received %d status code while downloading bot icon for %v",
+			status, app.Manifest.AppID)
 	}
 
 	return icon, nil

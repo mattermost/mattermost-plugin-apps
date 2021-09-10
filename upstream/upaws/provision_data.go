@@ -188,7 +188,7 @@ func (pd *ProvisionData) Validate() error {
 			errors.New("no manifest or AWS Lamda metadata"))
 	}
 	if err := pd.Manifest.Validate(); err != nil {
-		result = multierror.Append(result, errors.Wrap(err, "invalid manifest"))
+		return err
 	}
 
 	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {

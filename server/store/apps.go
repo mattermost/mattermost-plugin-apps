@@ -108,7 +108,7 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	if ok {
 		return &app, nil
 	}
-	return nil, utils.ErrNotFound
+	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
 func (s *appStore) AsMap() map[apps.AppID]apps.App {

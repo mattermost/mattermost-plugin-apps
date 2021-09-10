@@ -5,6 +5,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+var noParameters = apps.Form{
+	Title: "command with no parameters",
+}
+
 func (a *builtinApp) getBindings(creq apps.CallRequest) apps.CallResponse {
 	return apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
@@ -19,12 +23,12 @@ func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
 
 	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
 		commands = append(commands,
-			a.installCommandBinding(),
-			a.uninstallCommandBinding(),
-			a.enableCommandBinding(),
-			a.disableCommandBinding(),
-			a.listCommandBinding(),
 			a.debugCommandBinding(),
+			a.disableCommandBinding(),
+			a.enableCommandBinding(),
+			a.installCommandBinding(),
+			a.listCommandBinding(),
+			a.uninstallCommandBinding(),
 		)
 	}
 
@@ -39,18 +43,6 @@ func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
 					Bindings:    commands,
 				},
 			},
-		},
-	}
-}
-
-func commandBinding(label, path, hint, descr string) apps.Binding {
-	return apps.Binding{
-		Label:       label,
-		Location:    apps.Location(label),
-		Hint:        hint,
-		Description: descr,
-		Call: &apps.Call{
-			Path: path,
 		},
 	}
 }

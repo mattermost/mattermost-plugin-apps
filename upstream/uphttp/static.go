@@ -18,7 +18,6 @@ func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, err
 	if app.Manifest.HTTP == nil {
 		return nil, http.StatusInternalServerError, errors.New("app is not available as type http")
 	}
-
 	rootURL, err := u.appRootURL(app, "/")
 	if err != nil {
 		return nil, http.StatusNotFound, err

@@ -10,23 +10,25 @@ import (
 )
 
 func (a *builtinApp) listCommandBinding() apps.Binding {
-	return commandBinding("list", pList, "[ flags ]", "Display available and installed Apps")
-}
-
-func (a *builtinApp) listForm(_ apps.CallRequest) apps.CallResponse {
-	return formResponse(apps.Form{
-		Title: "list Apps",
-		Fields: []apps.Field{
-			{
-				Label: "include-plugins",
-				Name:  fIncludePlugins,
-				Type:  apps.FieldTypeBool,
-			},
-		},
+	return apps.Binding{
+		Label:       "list",
+		Location:    "list",
+		Hint:        "[ flags ]",
+		Description: "Display available and installed Apps",
 		Call: &apps.Call{
 			Path: pList,
 		},
-	})
+		Form: &apps.Form{
+			Title: "list Apps",
+			Fields: []apps.Field{
+				{
+					Label: "include-plugins",
+					Name:  fIncludePlugins,
+					Type:  apps.FieldTypeBool,
+				},
+			},
+		},
+	}
 }
 
 func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {

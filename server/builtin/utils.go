@@ -9,8 +9,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func appIDForm(call apps.Call) apps.CallResponse {
-	return formResponse(apps.Form{
+func appIDForm(call apps.Call) *apps.Form {
+	return &apps.Form{
 		Fields: []apps.Field{
 			{
 				Name:                 fAppID,
@@ -19,19 +19,16 @@ func appIDForm(call apps.Call) apps.CallResponse {
 				Label:                fAppID,
 				AutocompleteHint:     "App ID",
 				AutocompletePosition: 1,
+				IsRequired:           true,
 			},
 		},
 		Call: &call,
-	})
+	}
 }
 
-type lookupResponse struct {
-	Items []apps.SelectOption `json:"items"`
-}
-
-func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) apps.CallResponse {
+func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) ([]apps.SelectOption, error) {
 	if creq.SelectedField != fAppID {
-		return apps.NewErrorCallResponse(errors.Errorf("unknown field %q", creq.SelectedField))
+		return nil, errors.Errorf("unknown field %q", creq.SelectedField)
 	}
 
 	var options []apps.SelectOption
@@ -44,8 +41,5 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 			})
 		}
 	}
-
-	return dataResponse(lookupResponse{
-		Items: options,
-	})
+	return options, nil
 }

@@ -24,6 +24,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 				Hint:        "[app ID]",
 				Description: "Installs an App from the Marketplace",
 				Call:        &installMarketplaceCall,
+				Form:        appIDForm(installMarketplaceCall),
 			},
 		}
 	} else {
@@ -34,6 +35,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 				Hint:        "[app ID]",
 				Description: "Installs an App from AWS S3, as configured by the system administrator",
 				Call:        &installS3Call,
+				Form:        appIDForm(installS3Call),
 			},
 			{
 				Label:       "url",
@@ -41,6 +43,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 				Hint:        "[manifest.json URL]",
 				Description: "Installs an App from an HTTP URL",
 				Call:        &installURLCall,
+				Form:        &installURLForm,
 			},
 		}
 	}
@@ -52,5 +55,5 @@ func (a *builtinApp) installCommandSubmit(m apps.Manifest, creq apps.CallRequest
 	if err != nil {
 		return apps.NewErrorCallResponse(err)
 	}
-	return formResponse(a.newInstallConsentForm(m, creq))
+	return formResponse(*a.newInstallConsentForm(m, creq))
 }

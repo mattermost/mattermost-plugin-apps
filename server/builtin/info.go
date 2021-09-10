@@ -9,24 +9,20 @@ import (
 )
 
 func (a *builtinApp) infoCommandBinding() apps.Binding {
-	return commandBinding("info", pInfo, "", "display Apps plugin info")
+	return apps.Binding{
+		Label:       "info",
+		Location:    "info",
+		Description: "Display Apps plugin info",
+		Call: &apps.Call{
+			Path: pInfo,
+		},
+		Form: &noParameters,
+	}
 }
-
-// func (a *builtinApp) infoForm(c *apps.Call) *apps.CallResponse {
-// 	return &apps.CallResponse{
-// 		Type: apps.CallResponseTypeForm,
-// 		Form: &apps.Form{
-// 			Title: "Apps proxy info",
-// 			Call: &apps.Call{
-// 				Path: PathInfo,
-// 			},
-// 		},
-// 	}
-// }
 
 func (a *builtinApp) info(creq apps.CallRequest) apps.CallResponse {
 	conf := a.conf.Get()
-	return mdResponse("Mattermost Cloud Apps plugin version: %s, "+
+	return mdResponse("Mattermost Apps plugin version: %s, "+
 		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
 		conf.Version,
 		conf.BuildHashShort,
