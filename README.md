@@ -44,7 +44,7 @@ Some differences between the environments:
 
 * The App Framework e2e tests can't be run with the App Framework development environment.
 
-More specific information about the App Framework Docker development environment is explained in dev/README.md.
+More specific information about the App Framework Docker development environment is explained in [dev/README.md](dev/README.md).
 
 To run the end to end test suite, you need to have the Mattermost server project downloaded and configured in your system. Check the [Developer Setup](https://developers.mattermost.com/contribute/server/developer-setup/) guide on how to configure a local server instance. The tests will search for a `mattermost-server` folder in the same directory where the `mattermost-plugin-apps` is.
 
