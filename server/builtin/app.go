@@ -165,7 +165,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 }
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
-	return nil, http.StatusNotFound, utils.ErrNotFound
+	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
 }
 
 func mdResponse(format string, args ...interface{}) apps.CallResponse {
