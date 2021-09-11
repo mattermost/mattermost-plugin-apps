@@ -75,7 +75,6 @@ type Internal interface {
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
-	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
 }
 

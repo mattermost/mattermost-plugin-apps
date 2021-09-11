@@ -16,10 +16,6 @@ func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
 }
 
-func (p *Proxy) GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
-	return p.store.Manifest.GetFromS3(appID, version)
-}
-
 func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return p.store.App.Get(appID)
 }
