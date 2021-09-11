@@ -39,14 +39,14 @@ func NewUpstream(httpOut httpout.Service, devMode bool, appRootURL func(apps.App
 }
 
 func AppRootURL(app apps.App, _ string) (string, error) {
-	if app.Manifest.HTTP == nil {
+	if !app.Manifest.SupportsDeploy(apps.DeployHTTP) {
 		return "", errors.New("failed to get root URL: no http section in manifest.json")
 	}
 	return app.Manifest.HTTP.RootURL, nil
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if app.Manifest.HTTP == nil {
+	if !app.Manifest.SupportsDeploy(apps.DeployHTTP) {
 		return nil, errors.New("app is not available as type http")
 	}
 	if async {

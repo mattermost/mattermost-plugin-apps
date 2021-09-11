@@ -24,7 +24,7 @@ func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 }
 
 func (u *StaticUpstream) GetStatic(app apps.App, assetPath string) (io.ReadCloser, int, error) {
-	if app.Manifest.Plugin == nil {
+	if !app.SupportsDeploy(apps.DeployPlugin) {
 		return nil, http.StatusInternalServerError, errors.New("app is not available as type plugin")
 	}
 	url := path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, apps.StaticFolder, assetPath)

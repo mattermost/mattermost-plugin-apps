@@ -257,13 +257,13 @@ func (m Manifest) DeployTypes() (out []DeployType) {
 func (m Manifest) SupportsDeploy(dtype DeployType) bool {
 	switch dtype {
 	case DeployAWSLambda:
-		return m.AWSLambda != nil && m.AWSLambda.Validate() == nil
+		return m.AWSLambda != nil // && m.AWSLambda.Validate() == nil
 	case DeployHTTP:
-		return m.HTTP != nil && m.HTTP.Validate() == nil
+		return m.HTTP != nil // && m.HTTP.Validate() == nil
 	case DeployKubeless:
-		return m.Kubeless != nil && m.Kubeless.Validate() == nil
+		return m.Kubeless != nil // && m.Kubeless.Validate() == nil
 	case DeployPlugin:
-		return m.Plugin != nil && m.Plugin.Validate() == nil
+		return m.Plugin != nil // && m.Plugin.Validate() == nil
 	}
 	return false
 }

@@ -183,7 +183,7 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 func (pd *ProvisionData) Validate() error {
 	var result error
 
-	if pd.Manifest == nil || pd.Manifest.AWSLambda == nil {
+	if pd.Manifest == nil || !pd.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
 		result = multierror.Append(result,
 			errors.New("no manifest or AWS Lamda metadata"))
 	}

@@ -52,7 +52,7 @@ func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, err
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if app.Manifest.AWSLambda == nil {
+	if !app.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
 		return nil, errors.New("no 'aws_lambda' section in manifest.json")
 	}
 	name := match(creq.Path, &app.Manifest)
