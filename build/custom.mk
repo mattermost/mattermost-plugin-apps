@@ -6,4 +6,4 @@ dev_server:
 
 .PHONY: hello_world
 hello_world:
-	cd examples/go/hello && go run hello.go
+	cd examples/go/hello-world && go run hello.go
