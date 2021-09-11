@@ -5,7 +5,6 @@ package apps
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -22,11 +21,11 @@ func (h *HTTP) Validate() error {
 		return nil
 	}
 	if h.RootURL == "" {
-		return utils.NewInvalidError(errors.New("root_url must be set for HTTP apps"))
+		return utils.NewInvalidError("root_url must be set for HTTP apps")
 	}
 	err := utils.IsValidHTTPURL(h.RootURL)
 	if err != nil {
-		return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", h.RootURL))
+		return utils.NewInvalidError("invalid root_url: %q: %v", h.RootURL, err)
 	}
 	return nil
 }

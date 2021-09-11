@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -23,7 +21,7 @@ func (p *Plugin) Validate() error {
 		return nil
 	}
 	if p.PluginID == "" {
-		return utils.NewInvalidError(errors.New("plugin_id must be set for plugin apps"))
+		return utils.NewInvalidError("plugin_id must be set for plugin apps")
 	}
 	return nil
 }

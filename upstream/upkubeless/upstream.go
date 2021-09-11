@@ -32,7 +32,7 @@ var _ upstream.Upstream = (*Upstream)(nil)
 func MakeUpstream() (*Upstream, error) {
 	_, err := kubelessutil.BuildOutOfClusterConfig()
 	if os.IsNotExist(err) {
-		return nil, utils.NewNotFoundError(err.Error())
+		return nil, utils.NewNotFoundError(err)
 	}
 	if err != nil {
 		return nil, err

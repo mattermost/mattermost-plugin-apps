@@ -8,7 +8,6 @@ import (
 	"unicode"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -190,11 +189,11 @@ func (m Manifest) Validate() error {
 	var result error
 	if m.HomepageURL == "" {
 		result = multierror.Append(result,
-			utils.NewInvalidError(errors.New("homepage_url is empty")))
+			utils.NewInvalidError("homepage_url is empty"))
 	}
 	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
 		result = multierror.Append(result,
-			utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL)))
+			utils.NewInvalidError("homepage_url %q invalid: %v", m.HomepageURL, err))
 	}
 
 	if m.Icon != "" {
