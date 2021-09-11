@@ -9,6 +9,9 @@ import (
 
 var installMarketplaceCall = apps.Call{
 	Path: pInstallMarketplace,
+	Expand: &apps.Expand{
+		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+	},
 }
 
 func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {

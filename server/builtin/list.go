@@ -17,6 +17,9 @@ func (a *builtinApp) listCommandBinding() apps.Binding {
 		Description: "Display available and installed Apps",
 		Call: &apps.Call{
 			Path: pList,
+			Expand: &apps.Expand{
+				AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+			},
 		},
 		Form: &apps.Form{
 			Title: "list Apps",
