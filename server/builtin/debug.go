@@ -15,22 +15,28 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 		Label:    "debug",
 		Location: "debug",
 		Bindings: []apps.Binding{
-			apps.Binding{
+			{
 				Label:       "clean",
 				Location:    "clean",
 				Hint:        "",
 				Description: "remove all Apps and reset the persistent store",
 				Call: &apps.Call{
 					Path: pDebugClean,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+					},
 				},
 				Form: &noParameters,
 			},
-			apps.Binding{
+			{
 				Label:       "bindings",
 				Location:    "bindings",
 				Description: "Display all bindings for the current context",
 				Call: &apps.Call{
 					Path: pDebugBindings,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+					},
 				},
 				Form: &noParameters,
 			},

@@ -72,19 +72,20 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 
 	a.router[apps.DefaultBindings.Path] = a.getBindings
 
-	a.handle(pDebugBindings, a.debugBindings)
-	a.handle(pDebugClean, a.debugClean)
-	a.handle(pInfo, a.info)
-	a.handle(pList, a.list)
+	// Actions available to all users
+	a.handle(pInfo, false, a.info)
 
-	a.withLookup(pDisable, a.disableSubmit, a.disableLookup)
-	a.withLookup(pEnable, a.enableSubmit, a.enableLookup)
-	a.withLookup(pInstallMarketplace, a.installMarketplaceSubmit, a.installMarketplaceLookup)
-	a.withLookup(pInstallS3, a.installS3Submit, a.installS3Lookup)
-	a.withLookup(pUninstall, a.uninstallSubmit, a.uninstallLookup)
-	a.handle(pInstallURL, a.installURLSubmit)
-
-	a.withForm(pInstallConsent, a.installConsentSubmit, a.installConsentForm)
+	// Actions that require sysadmin
+	a.handle(pDebugBindings, SysadminOnly, a.debugBindings)
+	a.handle(pDebugClean, SysadminOnly, a.debugClean)
+	a.handle(pList, SysadminOnly, a.list)
+	a.withLookup(pDisable, SysadminOnly, a.disableSubmit, a.disableLookup)
+	a.withLookup(pEnable, SysadminOnly, a.enableSubmit, a.enableLookup)
+	a.withLookup(pInstallMarketplace, SysadminOnly, a.installMarketplaceSubmit, a.installMarketplaceLookup)
+	a.withLookup(pInstallS3, SysadminOnly, a.installS3Submit, a.installS3Lookup)
+	a.withLookup(pUninstall, SysadminOnly, a.uninstallSubmit, a.uninstallLookup)
+	a.handle(pInstallURL, SysadminOnly, a.installURLSubmit)
+	a.withForm(pInstallConsent, SysadminOnly, a.installConsentSubmit, a.installConsentForm)
 
 	return a
 }
@@ -205,17 +206,23 @@ func lookupPath(p string) string {
 	return path.Join(p, "lookup")
 }
 
-func (a *builtinApp) handle(path string,
+const SysadminOnly = true
+
+func (a *builtinApp) handle(
+	path string,
+	sysadminOnly bool,
 	submitf func(apps.CallRequest) apps.CallResponse,
 ) {
-	a.router[submitPath(path)] = submitf
+	a.router[submitPath(path)] = requireSysadmin(sysadminOnly, submitf)
 }
 
-func (a *builtinApp) withLookup(path string,
+func (a *builtinApp) withLookup(
+	path string,
+	sysadminOnly bool,
 	submitf func(apps.CallRequest) apps.CallResponse,
 	lookupf func(apps.CallRequest) ([]apps.SelectOption, error),
 ) {
-	a.handle(path, submitf)
+	a.handle(path, sysadminOnly, submitf)
 
 	if lookupf == nil {
 		return
@@ -223,29 +230,45 @@ func (a *builtinApp) withLookup(path string,
 	type lookupResponse struct {
 		Items []apps.SelectOption `json:"items"`
 	}
-	a.router[lookupPath(path)] = func(creq apps.CallRequest) apps.CallResponse {
-		opts, err := lookupf(creq)
-		if err != nil {
-			return apps.NewErrorCallResponse(err)
-		}
-		return dataResponse(lookupResponse{opts})
-	}
+	a.router[lookupPath(path)] = requireSysadmin(sysadminOnly,
+		func(creq apps.CallRequest) apps.CallResponse {
+			opts, err := lookupf(creq)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return dataResponse(lookupResponse{opts})
+		})
 }
 
-func (a *builtinApp) withForm(path string,
+func (a *builtinApp) withForm(
+	path string,
+	sysadminOnly bool,
 	submitf func(apps.CallRequest) apps.CallResponse,
 	formf func(apps.CallRequest) (*apps.Form, error),
 ) {
-	a.handle(path, submitf)
+	a.handle(path, sysadminOnly, submitf)
 
 	if formf == nil {
 		return
 	}
-	a.router[lookupPath(path)] = func(creq apps.CallRequest) apps.CallResponse {
-		form, err := formf(creq)
-		if err != nil {
-			return apps.NewErrorCallResponse(err)
+	a.router[lookupPath(path)] = requireSysadmin(sysadminOnly,
+		func(creq apps.CallRequest) apps.CallResponse {
+			form, err := formf(creq)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return formResponse(*form)
+		})
+}
+
+func requireSysadmin(require bool, handler func(apps.CallRequest) apps.CallResponse) func(apps.CallRequest) apps.CallResponse {
+	if !require {
+		return handler
+	}
+	return func(creq apps.CallRequest) apps.CallResponse {
+		if creq.Context.ExpandedContext.AdminAccessToken == "" {
+			return apps.NewErrorCallResponse(utils.NewUnauthorizedError("no admin token in the request"))
 		}
-		return formResponse(*form)
+		return handler(creq)
 	}
 }

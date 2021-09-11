@@ -11,6 +11,9 @@ import (
 
 var installS3Call = apps.Call{
 	Path: pInstallS3,
+	Expand: &apps.Expand{
+		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+	},
 }
 
 func (a *builtinApp) installS3Form(creq apps.CallRequest) apps.CallResponse {

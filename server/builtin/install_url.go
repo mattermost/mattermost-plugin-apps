@@ -9,6 +9,9 @@ import (
 
 var installURLCall = apps.Call{
 	Path: pInstallURL,
+	Expand: &apps.Expand{
+		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+	},
 }
 
 var installURLForm = apps.Form{
