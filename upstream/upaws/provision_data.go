@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -98,8 +99,8 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			})
 			log.Infow("Found lambda function bundle", "file", file.Name)
 
-		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
-			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
+		case strings.HasPrefix(file.Name, path.StaticFolder+"/"):
+			assetName := strings.TrimPrefix(file.Name, path.StaticFolder+"/")
 			if assetName == "" {
 				continue
 			}

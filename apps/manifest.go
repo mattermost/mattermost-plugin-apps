@@ -14,15 +14,6 @@ import (
 
 const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
 
-// Where static assets are.
-const StaticFolder = "static"
-
-// Root Call path for incoming webhooks from remote (3rd party) systems. Each
-// webhook URL should be in the form:
-// "{PluginURL}/apps/{AppID}/webhook/{PATH}/.../?secret=XYZ", and it will invoke a
-// Call with "/webhook/{PATH}"."
-const PathWebhook = "/webhook"
-
 var DefaultBindings = Call{
 	Path: "/bindings",
 }

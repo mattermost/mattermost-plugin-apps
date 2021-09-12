@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 )
 
 // ListS3 lists files in S3.
@@ -137,7 +138,7 @@ func ParseS3ManifestName(key string) (apps.AppID, apps.AppVersion, error) {
 // key can be 1024 characters long.
 func S3StaticName(appID apps.AppID, version apps.AppVersion, name string) string {
 	sanitizedName := strings.ReplaceAll(name, " ", "-")
-	return fmt.Sprintf("%s/%s_%s_app/%s", apps.StaticFolder, appID, version, sanitizedName)
+	return fmt.Sprintf("%s/%s_%s_app/%s", path.StaticFolder, appID, version, sanitizedName)
 }
 
 func S3BucketName() string {

@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
@@ -70,12 +71,12 @@ type Config struct {
 }
 
 func (conf Config) AppURL(appID apps.AppID) string {
-	return conf.PluginURL + path.Join(PathApps, string(appID))
+	return conf.PluginURL + path.Join(appspath.Apps, string(appID))
 }
 
 // StaticURL returns the URL to a static asset.
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
-	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
+	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
 func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {

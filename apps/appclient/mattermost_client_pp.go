@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -20,30 +21,6 @@ const (
 	HeaderAuth       = "Authorization"
 
 	AppsPluginName = "com.mattermost.apps"
-)
-
-// Paths for the REST APIs exposed by the Apps Plugin itself
-const (
-	// Top-level path
-	PathAPI = "/api/v1"
-
-	// Other sub-paths.
-	PathKV          = "/kv"
-	PathSubscribe   = "/subscribe"
-	PathUnsubscribe = "/unsubscribe"
-
-	PathApps      = "/apps"
-	PathApp       = "/app"
-	PathEnable    = "/enable"
-	PathDisable   = "/disable"
-	PathUninstall = "/uninstall"
-
-	PathBotIDs      = "/bot-ids"
-	PathOAuthAppIDs = "/oauth-app-ids"
-
-	PathOAuth2App         = "/oauth2/app"
-	PathOAuth2User        = "/oauth2/user"
-	PathOAuth2CreateState = "/oauth2/create-state"
 )
 
 type ClientPP struct {
@@ -121,7 +98,7 @@ func (c *ClientPP) KVDelete(id string, prefix string) (*model.Response, error) {
 }
 
 func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathSubscribe), request.ToJSON()) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe), request.ToJSON()) // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -136,7 +113,7 @@ func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResp
 }
 
 func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathUnsubscribe), request.ToJSON()) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), request.ToJSON()) // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -155,7 +132,7 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret strin
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	})
-	r, err := c.DoAPIPOST(c.apipath(PathOAuth2App)+"/"+string(appID), data) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), data) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -165,7 +142,7 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret strin
 }
 
 func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathOAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -175,7 +152,7 @@ func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Re
 }
 
 func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(PathOAuth2User)+"/"+string(appID), "") // nolint:bodyclose
+	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User)+"/"+string(appID), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -196,7 +173,7 @@ func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
 		return nil, err
 	}
 
-	r, err := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Apps), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -206,7 +183,7 @@ func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
 }
 
 func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIDELETE(c.apipath(PathApps) + "/" + string(appID) + PathUninstall) // nolint:bodyclose
+	r, err := c.DoAPIDELETE(c.apipath(appspath.Apps) + "/" + string(appID) + appspath.UninstallApp) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -216,7 +193,7 @@ func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
 }
 
 func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
+	r, err := c.DoAPIGET(c.apipath(appspath.Apps)+"/"+string(appID), "") // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -232,7 +209,7 @@ func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) 
 }
 
 func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable, "") // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Apps)+"/"+string(appID)+appspath.EnableApp, "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -242,7 +219,7 @@ func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
 }
 
 func (c *ClientPP) DisableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable, "") // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Apps)+"/"+string(appID)+appspath.DisableApp, "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -329,7 +306,7 @@ func (c *ClientPP) closeBody(r *http.Response) {
 }
 
 func (c *ClientPP) apipath(p string) string {
-	return c.GetPluginRoute(AppsPluginName) + PathAPI + p
+	return c.GetPluginRoute(AppsPluginName) + appspath.API + p
 }
 
 func (c *ClientPP) kvpath(prefix, id string) string {

@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -127,7 +128,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 		}
 	}
 
-	oauth2CallbackURL := conf.AppURL(app.AppID) + config.PathMattermostOAuth2Complete
+	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
 	oauthApp := &model.OAuthApp{
 		CreatorId:    actingUserID,
