@@ -18,6 +18,7 @@ func init() {
 	// provision
 	kubelessCmd.AddCommand(kubelessProvisionCmd)
 	kubelessProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	kubelessProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 
 	// test
 	kubelessCmd.AddCommand(kubelessTestCmd)
@@ -43,9 +44,16 @@ var kubelessProvisionCmd = &cobra.Command{
 			return errors.New("no functions to provision, check manifest.json")
 		}
 
+		if err = updateMattermost(*m, apps.DeployKubeless, install); err != nil {
+			return err
+		}
+
 		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.Kubeless.Functions))
-		fmt.Printf("You can now install it in Mattermost using:\n")
-		fmt.Printf("  /apps install kubeless <manifest URL>\n\n")
+
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install %s\n\n", m.AppID)
+		}
 		return nil
 	},
 }

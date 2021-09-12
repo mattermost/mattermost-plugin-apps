@@ -72,7 +72,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
-	err = p.ensureBot(asAdmin, log, *app, icon)
+	err = p.ensureBot(asAdmin, log, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
@@ -148,7 +148,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,

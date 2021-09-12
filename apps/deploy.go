@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -87,4 +89,82 @@ func (t DeployType) String() string {
 	default:
 		return string(t)
 	}
+}
+
+func (d Deploy) Validate() error {
+	var result error
+	atLeastOne := false
+	for _, v := range []validator{
+		d.HTTP,
+		d.AWSLambda,
+		d.Kubeless,
+		d.Plugin,
+	} {
+		if v != nil {
+			atLeastOne = true
+			if err := v.Validate(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+	if !atLeastOne {
+		result = multierror.Append(result,
+			utils.NewInvalidError("manifest has no deployment information (http, aws_lambda, open_faas, etc.)"))
+	}
+	return result
+}
+
+func (d Deploy) MustDeployAs() DeployType {
+	all := d.DeployTypes()
+	if len(all) == 1 {
+		return all[0]
+	}
+	return ""
+}
+
+func (d Deploy) DeployTypes() (out []DeployType) {
+	if d.AWSLambda != nil {
+		out = append(out, DeployAWSLambda)
+	}
+	if d.HTTP != nil {
+		out = append(out, DeployHTTP)
+	}
+	if d.Kubeless != nil {
+		out = append(out, DeployKubeless)
+	}
+	if d.Plugin != nil {
+		out = append(out, DeployPlugin)
+	}
+	return out
+}
+
+func (d Deploy) SupportsDeploy(dtype DeployType) bool {
+	switch dtype {
+	case DeployAWSLambda:
+		return d.AWSLambda != nil
+	case DeployHTTP:
+		return d.HTTP != nil
+	case DeployKubeless:
+		return d.Kubeless != nil
+	case DeployPlugin:
+		return d.Plugin != nil
+	}
+	return false
+}
+
+func (d Deploy) UpdateDeploy(newDeploy Deploy, deployType DeployType) Deploy {
+	var result Deploy
+	if d.AWSLambda != nil || deployType == DeployAWSLambda {
+		result.AWSLambda = newDeploy.AWSLambda
+	}
+	if d.HTTP != nil || deployType == DeployHTTP {
+		result.HTTP = newDeploy.HTTP
+	}
+	if d.Kubeless != nil || deployType == DeployKubeless {
+		result.Kubeless = newDeploy.Kubeless
+	}
+	if d.Plugin != nil || deployType == DeployPlugin {
+		result.Plugin = newDeploy.Plugin
+	}
+	return result
 }

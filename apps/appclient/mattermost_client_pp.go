@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 
@@ -167,14 +168,14 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 	return model.BuildResponse(r), nil
 }
 
-// AddListedApp adds a specified App manifest to the local store.
-func (c *ClientPP) AddListedApp(m apps.Manifest) (*model.Response, error) {
+// StoreListedApp adds a specified App manifest to the local store.
+func (c *ClientPP) StoreListedApp(m apps.Manifest) (*model.Response, error) {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := c.DoAPIPOST(c.apipath(appspath.AddListedApp), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.StoreListedApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -265,6 +266,26 @@ func (c *ClientPP) DisableApp(appID apps.AppID) (*model.Response, error) {
 	defer c.closeBody(r)
 
 	return model.BuildResponse(r), nil
+}
+
+func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.ListedApp, *model.Response, error) {
+	v := url.Values{}
+	v.Add("filter", filter)
+	if includePlugins {
+		v.Add("include_plugins", "true")
+	}
+	r, err := c.DoAPIGET(c.apipath(appspath.Marketplace)+"?"+v.Encode(), "") // nolint:bodyclose
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	listed := []apps.ListedApp{}
+	err = json.NewDecoder(r.Body).Decode(&listed)
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	return listed, model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) getPluginsRoute() string {

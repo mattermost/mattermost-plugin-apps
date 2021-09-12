@@ -17,8 +17,8 @@ import (
 )
 
 func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
-	api.HandleFunc(path.AddListedApp,
-		proxy.RequireSysadminOrPlugin(mm, a.AddListedApp)).Methods("POST")
+	api.HandleFunc(path.StoreListedApp,
+		proxy.RequireSysadminOrPlugin(mm, a.StoreListedApp)).Methods("POST")
 	api.HandleFunc(path.InstallApp,
 		proxy.RequireSysadminOrPlugin(mm, a.InstallApp)).Methods("POST")
 	api.HandleFunc(path.EnableApp,
@@ -29,13 +29,13 @@ func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
 		proxy.RequireSysadminOrPlugin(mm, a.UninstallApp)).Methods("POST")
 }
 
-// AddListedApp adds the specified Manifest to the local manifest store, making
-// the App installable.
-//   Path: /api/v1/add-liosted-app
+// StoreListedApp adds (or updates) the specified Manifest to the local manifest
+// store, making the App installable.
+//   Path: /api/v1/add-listed-app
 //   Method: POST
 //   Input: Manifest
 //   Output: None
-func (a *restapi) AddListedApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) StoreListedApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	var m apps.Manifest
 	err := json.NewDecoder(r.Body).Decode(&m)
 	if err != nil {

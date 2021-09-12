@@ -23,6 +23,7 @@ var (
 	shouldUpdate          bool
 	invokePolicyName      string
 	executeRoleName       string
+	install               bool
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 
 	// provision
 	awsCmd.AddCommand(awsProvisionCmd)
+	awsProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
 	awsProvisionCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
 	awsProvisionCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
@@ -136,18 +138,24 @@ var awsProvisionCmd = &cobra.Command{
 			return err
 		}
 
+		if err = updateMattermost(out.Manifest, apps.DeployAWSLambda, install); err != nil {
+			return err
+		}
+
 		fmt.Printf("\n'%s' is now provisioned to AWS.\n", out.Manifest.DisplayName)
 		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
 			len(out.LambdaARNs), len(out.StaticARNs))
-
-		fmt.Printf("You can now install it in Mattermost using:\n")
-		fmt.Printf("  /apps install aws %s %s\n\n", out.Manifest.AppID, out.Manifest.Version)
 
 		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
 		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
 		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
 		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
+		fmt.Printf("\n")
 
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install %s\n\n", out.Manifest.AppID)
+		}
 		return nil
 	},
 }

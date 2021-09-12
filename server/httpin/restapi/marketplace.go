@@ -17,7 +17,8 @@ func (a *restapi) initMarketplace(api *mux.Router) {
 
 func (a *restapi) GetMarketplace(w http.ResponseWriter, req *http.Request, _ proxy.Incoming) {
 	filter := req.URL.Query().Get("filter")
+	includePlugins := req.URL.Query().Get("include_plugins") != ""
 
-	result := a.proxy.GetListedApps(filter, false)
+	result := a.proxy.GetListedApps(filter, includePlugins)
 	httputils.WriteJSON(w, result)
 }

@@ -175,22 +175,11 @@ func (m Manifest) Validate() error {
 		}
 	}
 
-	// At least one deploy type must be supported.
-	if m.HTTP == nil &&
-		m.Plugin == nil &&
-		m.AWSLambda == nil &&
-		m.Kubeless == nil {
-		return utils.NewInvalidError("manifest does not define an app type (http, aws_lambda, etc.)")
-	}
-
 	for _, v := range []validator{
 		m.AppID,
 		m.Version,
 		m.RequestedPermissions,
-		m.HTTP,
-		m.AWSLambda,
-		m.Kubeless,
-		m.Plugin,
+		m.Deploy,
 	} {
 		if v != nil {
 			if err := v.Validate(); err != nil {
@@ -200,44 +189,6 @@ func (m Manifest) Validate() error {
 	}
 
 	return result
-}
-
-func (m Manifest) MustDeployAs() DeployType {
-	tt := m.DeployTypes()
-	if len(tt) == 1 {
-		return tt[0]
-	}
-	return ""
-}
-
-func (m Manifest) DeployTypes() (out []DeployType) {
-	if m.AWSLambda != nil {
-		out = append(out, DeployAWSLambda)
-	}
-	if m.HTTP != nil {
-		out = append(out, DeployHTTP)
-	}
-	if m.Kubeless != nil {
-		out = append(out, DeployKubeless)
-	}
-	if m.Plugin != nil {
-		out = append(out, DeployPlugin)
-	}
-	return out
-}
-
-func (m Manifest) SupportsDeploy(dtype DeployType) bool {
-	switch dtype {
-	case DeployAWSLambda:
-		return m.AWSLambda != nil // && m.AWSLambda.Validate() == nil
-	case DeployHTTP:
-		return m.HTTP != nil // && m.HTTP.Validate() == nil
-	case DeployKubeless:
-		return m.Kubeless != nil // && m.Kubeless.Validate() == nil
-	case DeployPlugin:
-		return m.Plugin != nil // && m.Plugin.Validate() == nil
-	}
-	return false
 }
 
 // AppID is a globally unique identifier that represents a Mattermost App.
