@@ -93,23 +93,26 @@ func (t DeployType) String() string {
 
 func (d Deploy) Validate() error {
 	var result error
-	atLeastOne := false
+
+	if d.HTTP == nil &&
+		d.AWSLambda == nil &&
+		d.Kubeless == nil &&
+		d.Plugin == nil {
+		result = multierror.Append(result,
+			utils.NewInvalidError("manifest has no deployment information (http, aws_lambda, open_faas, etc.)"))
+	}
+
 	for _, v := range []validator{
 		d.HTTP,
 		d.AWSLambda,
 		d.Kubeless,
 		d.Plugin,
 	} {
-		if v != nil {
-			atLeastOne = true
-			if err := v.Validate(); err != nil {
-				result = multierror.Append(result, err)
-			}
+		// Validate must ignore nil pointer in its implementation, v is never
+		// nil (interface wrapper).
+		if err := v.Validate(); err != nil {
+			result = multierror.Append(result, err)
 		}
-	}
-	if !atLeastOne {
-		result = multierror.Append(result,
-			utils.NewInvalidError("manifest has no deployment information (http, aws_lambda, open_faas, etc.)"))
 	}
 	return result
 }
