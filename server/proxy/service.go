@@ -42,6 +42,7 @@ type Admin interface {
 	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
+	StoreLocalManifest(apps.Manifest) (string, error)
 	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
 }
 
@@ -69,7 +70,6 @@ type Notifier interface {
 // Internal implements go API used by other packages.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
-	AddLocalManifest(m apps.Manifest) (string, error)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App

@@ -51,21 +51,6 @@ func (mr *MockServiceMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBuiltinUpstream", reflect.TypeOf((*MockService)(nil).AddBuiltinUpstream), arg0, arg1)
 }
 
-// AddLocalManifest mocks base method.
-func (m *MockService) AddLocalManifest(arg0 apps.Manifest) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddLocalManifest", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AddLocalManifest indicates an expected call of AddLocalManifest.
-func (mr *MockServiceMockRecorder) AddLocalManifest(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLocalManifest", reflect.TypeOf((*MockService)(nil).AddLocalManifest), arg0)
-}
-
 // Call mocks base method.
 func (m *MockService) Call(arg0 proxy.Incoming, arg1 apps.CallRequest) apps.ProxyCallResponse {
 	m.ctrl.T.Helper()
@@ -369,6 +354,21 @@ func (m *MockService) NotifyUserHasLeftTeam(arg0 apps.Context) error {
 func (mr *MockServiceMockRecorder) NotifyUserHasLeftTeam(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftTeam), arg0)
+}
+
+// StoreLocalManifest mocks base method.
+func (m *MockService) StoreLocalManifest(arg0 apps.Manifest) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreLocalManifest", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StoreLocalManifest indicates an expected call of StoreLocalManifest.
+func (mr *MockServiceMockRecorder) StoreLocalManifest(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreLocalManifest", reflect.TypeOf((*MockService)(nil).StoreLocalManifest), arg0)
 }
 
 // SynchronizeInstalledApps mocks base method.

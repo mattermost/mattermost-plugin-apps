@@ -7,8 +7,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
@@ -166,14 +167,34 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 	return model.BuildResponse(r), nil
 }
 
-// InstallApp installs a app using a given manfest.
-func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
+// AddListedApp adds a specified App manifest to the local store.
+func (c *ClientPP) AddListedApp(m apps.Manifest) (*model.Response, error) {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := c.DoAPIPOST(c.apipath(appspath.Apps), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.AddListedApp), string(b)) // nolint:bodyclose
+	if err != nil {
+		return model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r), nil
+}
+
+// InstallApp installs a app using a given manfest.
+func (c *ClientPP) InstallApp(appID apps.AppID, deployType apps.DeployType) (*model.Response, error) {
+	b, err := json.Marshal(apps.App{
+		Manifest: apps.Manifest{
+			AppID: appID,
+		},
+		DeployType: deployType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -183,7 +204,13 @@ func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
 }
 
 func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIDELETE(c.apipath(appspath.Apps) + "/" + string(appID) + appspath.UninstallApp) // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -209,7 +236,13 @@ func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) 
 }
 
 func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.Apps)+"/"+string(appID)+appspath.EnableApp, "") // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.EnableApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -219,7 +252,13 @@ func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
 }
 
 func (c *ClientPP) DisableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.Apps)+"/"+string(appID)+appspath.DisableApp, "") // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.DisableApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
