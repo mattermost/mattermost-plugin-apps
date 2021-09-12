@@ -88,8 +88,10 @@ func TestValidateManifest(t *testing.T) {
 		"HomepageURL empty": {
 			Manifest: apps.Manifest{
 				AppID: "abc",
-				HTTP: &apps.HTTP{
-					RootURL: "https://example.org/root",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: "https://example.org/root",
+					},
 				},
 			},
 			ExpectedError: true,
@@ -98,7 +100,9 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP:        &apps.HTTP{},
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{},
+				},
 			},
 			ExpectedError: true,
 		},
@@ -106,8 +110,10 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP: &apps.HTTP{
-					RootURL: "https://example.org/root",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: "https://example.org/root",
+					},
 				},
 			},
 			ExpectedError: false,
@@ -116,8 +122,10 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				HTTP: &apps.HTTP{
-					RootURL: "https://example.org/root",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: "https://example.org/root",
+					},
 				},
 				Icon: "../..",
 			},
@@ -127,8 +135,10 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: ":invalid",
-				HTTP: &apps.HTTP{
-					RootURL: "https://example.org/root",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: "https://example.org/root",
+					},
 				},
 			},
 			ExpectedError: true,
@@ -137,8 +147,10 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org/root",
-				HTTP: &apps.HTTP{
-					RootURL: ":invalid",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: ":invalid",
+					},
 				},
 			},
 			ExpectedError: true,
@@ -147,7 +159,9 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda:   &apps.AWSLambda{},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{},
+				},
 			},
 			ExpectedError: true,
 		},
@@ -155,12 +169,14 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &apps.AWSLambda{
-					Functions: []apps.AWSLambdaFunction{{
-						Name:    "go-funcion",
-						Handler: "hello-lambda",
-						Runtime: "go1.x",
-					}},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: []apps.AWSLambdaFunction{{
+							Name:    "go-funcion",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						}},
+					},
 				},
 			},
 			ExpectedError: true,
@@ -169,12 +185,14 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &apps.AWSLambda{
-					Functions: []apps.AWSLambdaFunction{{
-						Path:    "/",
-						Handler: "hello-lambda",
-						Runtime: "go1.x",
-					}},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: []apps.AWSLambdaFunction{{
+							Path:    "/",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						}},
+					},
 				},
 			},
 			ExpectedError: true,
@@ -183,12 +201,14 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &apps.AWSLambda{
-					Functions: []apps.AWSLambdaFunction{{
-						Path:    "/",
-						Name:    "go-funcion",
-						Runtime: "go1.x",
-					}},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: []apps.AWSLambdaFunction{{
+							Path:    "/",
+							Name:    "go-funcion",
+							Runtime: "go1.x",
+						}},
+					},
 				},
 			},
 			ExpectedError: true,
@@ -197,12 +217,14 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &apps.AWSLambda{
-					Functions: []apps.AWSLambdaFunction{{
-						Path:    "/",
-						Name:    "go-funcion",
-						Handler: "hello-lambda",
-					}},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: []apps.AWSLambdaFunction{{
+							Path:    "/",
+							Name:    "go-funcion",
+							Handler: "hello-lambda",
+						}},
+					},
 				},
 			},
 			ExpectedError: true,
@@ -211,13 +233,15 @@ func TestValidateManifest(t *testing.T) {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
-				AWSLambda: &apps.AWSLambda{
-					Functions: []apps.AWSLambdaFunction{{
-						Path:    "/",
-						Name:    "go-funcion",
-						Handler: "hello-lambda",
-						Runtime: "go1.x",
-					}},
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: []apps.AWSLambdaFunction{{
+							Path:    "/",
+							Name:    "go-funcion",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						}},
+					},
 				},
 			},
 			ExpectedError: false,

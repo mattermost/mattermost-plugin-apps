@@ -103,7 +103,6 @@ type Manifest struct {
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
 	// Requested Access
-
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
 	// RequestedLocations is the list of top-level locations that the
@@ -111,26 +110,8 @@ type Manifest struct {
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// Deploy types, only those supported by the App should be populated.
-
-	// HTTP contains metadata for an app that is already, deployed externally
-	// and us accessed over HTTP. The JSON name `http` must match the type.
-	HTTP *HTTP `json:"http,omitempty"`
-
-	// AWSLambda contains metadata for an app that can be deployed to AWS Lambda
-	// and S3 services, and is accessed using the AWS APIs. The JSON name
-	// `aws_lambda` must match the type.
-	AWSLambda *AWSLambda `json:"aws_lambda,omitempty"`
-
-	// Kubeless contains metadata for an app that can be deployed to Kubeless
-	// running on a Kubernetes cluster, and is accessed using the Kubernetes
-	// APIs and HTTP. The JSON name `kubeless` must match the type.
-	Kubeless *Kubeless `json:"kubeless,omitempty"`
-
-	// Plugin contains metadata for an app that is implemented and is deployed
-	// and accessed as a local Plugin. The JSON name `plugin` must match the
-	// type.
-	Plugin *Plugin `json:"plugin,omitempty"`
+	// Deployment information
+	Deploy
 
 	// unexported data
 

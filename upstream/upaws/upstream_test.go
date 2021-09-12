@@ -41,8 +41,10 @@ func TestMatch(t *testing.T) {
 			matched := match(tc.callPath, &apps.Manifest{
 				AppID:   "testID",
 				Version: "v00.00.000",
-				AWSLambda: &apps.AWSLambda{
-					Functions: lambdas,
+				Deploy: apps.Deploy{
+					AWSLambda: &apps.AWSLambda{
+						Functions: lambdas,
+					},
 				},
 			})
 			assert.Equal(t, tc.expected, matched)

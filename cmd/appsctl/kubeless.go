@@ -56,12 +56,14 @@ func helloKubeless() apps.App {
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
 			Version: "demo",
-			Kubeless: &apps.Kubeless{
-				Functions: []apps.KubelessFunction{
-					{
-						Path:    "/",
-						Runtime: "nodejs14", // see /examples/js/hello-world
-						Handler: "app.handler",
+			Deploy: apps.Deploy{
+				Kubeless: &apps.Kubeless{
+					Functions: []apps.KubelessFunction{
+						{
+							Path:    "/",
+							Runtime: "nodejs14", // see /examples/js/hello-world
+							Handler: "app.handler",
+						},
 					},
 				},
 			},

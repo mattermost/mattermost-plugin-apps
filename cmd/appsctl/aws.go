@@ -163,13 +163,15 @@ func helloLambda() apps.App {
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
 			Version: "demo",
-			AWSLambda: &apps.AWSLambda{
-				Functions: []apps.AWSLambdaFunction{
-					{
-						Path:    "/",
-						Name:    "hello-lambda",
-						Handler: "hello-lambda",
-						Runtime: "go1.x",
+			Deploy: apps.Deploy{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{
+						{
+							Path:    "/",
+							Name:    "hello-lambda",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						},
 					},
 				},
 			},
