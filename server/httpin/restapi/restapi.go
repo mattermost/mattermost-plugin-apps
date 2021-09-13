@@ -29,6 +29,9 @@ func Init(router *mux.Router, conf config.Service, proxy proxy.Service, appServi
 
 	subrouter := router.PathPrefix(mmclient.PathAPI).Subrouter()
 
+	subrouter.HandleFunc(config.PingPath,
+		httputils.CheckAuthorized(mm, a.handlePing)).Methods("GET")
+
 	subrouter.HandleFunc(apps.DefaultBindings.Path,
 		httputils.CheckAuthorized(mm, a.handleGetBindings)).Methods("GET")
 

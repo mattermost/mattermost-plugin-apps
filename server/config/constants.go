@@ -31,6 +31,8 @@ const (
 	// Top-level path for the Apps namespaces, followed by /{AppID}/...
 	PathApps = "/apps"
 
+	PingPath = "/ping"
+
 	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
 	PathMattermostOAuth2Connect  = "/oauth2/mattermost/connect"
 	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
