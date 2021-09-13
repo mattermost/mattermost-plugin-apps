@@ -15,30 +15,38 @@ var disableCall = apps.Call{
 	},
 }
 
-func (a *builtinApp) disableCommandBinding() apps.Binding {
-	return apps.Binding{
-		Label:       "disable",
-		Location:    "disable",
-		Hint:        "[ App ID ]",
-		Description: "Disables an App",
-		Call:        &disableCall,
-		Form:        appIDForm(disableCall),
-	}
-}
+func (a *builtinApp) disable() handler {
+	return handler{
+		requireSysadmin: true,
 
-func (a *builtinApp) disableLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return app.Installed && app.Enabled
-	})
-}
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "disable",
+				Location:    "disable",
+				Hint:        "[ App ID ]",
+				Description: "Disables an App",
+				Call:        &disableCall,
+				Form:        appIDForm(disableCall),
+			}
+		},
 
-func (a *builtinApp) disableSubmit(creq apps.CallRequest) apps.CallResponse {
-	out, err := a.proxy.DisableApp(
-		proxy.NewIncomingFromContext(creq.Context),
-		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		// Lookup returns the list of eligible Apps.
+		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+				return app.Installed && app.Enabled
+			})
+		},
+
+		// Submit disables an app.
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			out, err := a.proxy.DisableApp(
+				proxy.NewIncomingFromContext(creq.Context),
+				creq.Context,
+				apps.AppID(creq.GetValue(fAppID, "")))
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return mdResponse(out)
+		},
 	}
-	return mdResponse(out)
 }

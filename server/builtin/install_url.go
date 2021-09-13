@@ -14,31 +14,46 @@ var installURLCall = apps.Call{
 	},
 }
 
-var installURLForm = apps.Form{
-	Fields: []apps.Field{
-		{
-			Name:                 fURL,
-			Type:                 apps.FieldTypeText,
-			Description:          "enter the URL for the app's manifest.json",
-			Label:                fURL,
-			AutocompleteHint:     "URL",
-			AutocompletePosition: 1,
-			IsRequired: true,
-		},
-	},
-	Call: &installURLCall,
-}
+func (a *builtinApp) installURL() handler {
+	return handler{
+		requireSysadmin: true,
 
-func (a *builtinApp) installURLSubmit(creq apps.CallRequest) apps.CallResponse {
-	manifestURL := creq.GetValue(fURL, "")
-	conf := a.conf.Get()
-	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "url",
+				Location:    "url",
+				Hint:        "[manifest.json URL]",
+				Description: "Installs an App from an HTTP URL",
+				Call:        &installURLCall,
+				Form: &apps.Form{
+					Fields: []apps.Field{
+						{
+							Name:                 fURL,
+							Type:                 apps.FieldTypeText,
+							Description:          "enter the URL for the app's manifest.json",
+							Label:                fURL,
+							AutocompleteHint:     "URL",
+							AutocompletePosition: 1,
+							IsRequired:           true,
+						},
+					},
+					Call: &installURLCall,
+				},
+			}
+		},
+
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			manifestURL := creq.GetValue(fURL, "")
+			conf := a.conf.Get()
+			data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			m, err := apps.ManifestFromJSON(data)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return a.installCommandSubmit(*m, creq)
+		},
 	}
-	m, err := apps.ManifestFromJSON(data)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
-	return a.installCommandSubmit(*m, creq)
 }

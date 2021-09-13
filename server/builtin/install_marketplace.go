@@ -14,18 +14,35 @@ var installMarketplaceCall = apps.Call{
 	},
 }
 
-func (a *builtinApp) installMarketplaceLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return !app.Installed
-	})
-}
+func (a *builtinApp) installMarketplace() handler {
+	return handler{
+		requireSysadmin: true,
 
-func (a *builtinApp) installMarketplaceSubmit(creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	m, err := a.store.Manifest.Get(appID)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "marketplace",
+				Location:    "marketplace",
+				Hint:        "[app ID]",
+				Description: "Installs an App from the Marketplace",
+				Call:        &installMarketplaceCall,
+				Form:        appIDForm(installMarketplaceCall),
+			}
+		},
+
+		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+				return !app.Installed
+			})
+		},
+
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			m, err := a.store.Manifest.Get(appID)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+
+			return a.installCommandSubmit(*m, creq)
+		},
 	}
-
-	return a.installCommandSubmit(*m, creq)
 }

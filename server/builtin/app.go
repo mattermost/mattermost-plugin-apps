@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"runtime/debug"
+	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -49,13 +50,20 @@ const (
 	pInstallConsent     = "/install-consent"
 )
 
+type handler struct {
+	requireSysadmin bool
+	commandBinding  func() apps.Binding
+	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
+	submitf         func(apps.CallRequest) apps.CallResponse
+	formf           func(apps.CallRequest) (*apps.Form, error)
+}
+
 type builtinApp struct {
 	conf    config.Service
 	proxy   proxy.Service
 	store   *store.Service
 	httpOut httpout.Service
-
-	router map[string]func(apps.CallRequest) apps.CallResponse
+	router  map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
@@ -66,25 +74,24 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 		proxy:   proxy,
 		store:   store,
 		httpOut: httpOut,
-		router:  map[string]func(apps.CallRequest) apps.CallResponse{},
 	}
 
-	a.router[apps.DefaultBindings.Path] = a.getBindings
+	a.router = map[string]handler{
+		// Actions available to all users
+		pInfo: a.info(),
 
-	// Actions available to all users
-	a.handle(pInfo, false, a.info)
-
-	// Actions that require sysadmin
-	a.handle(pDebugBindings, SysadminOnly, a.debugBindings)
-	a.handle(pDebugClean, SysadminOnly, a.debugClean)
-	a.handle(pList, SysadminOnly, a.list)
-	a.withLookup(pDisable, SysadminOnly, a.disableSubmit, a.disableLookup)
-	a.withLookup(pEnable, SysadminOnly, a.enableSubmit, a.enableLookup)
-	a.withLookup(pInstallMarketplace, SysadminOnly, a.installMarketplaceSubmit, a.installMarketplaceLookup)
-	a.withLookup(pInstallS3, SysadminOnly, a.installS3Submit, a.installS3Lookup)
-	a.withLookup(pUninstall, SysadminOnly, a.uninstallSubmit, a.uninstallLookup)
-	a.handle(pInstallURL, SysadminOnly, a.installURLSubmit)
-	a.withForm(pInstallConsent, SysadminOnly, a.installConsentSubmit, a.installConsentForm)
+		// Actions that require sysadmin
+		pDebugBindings:      a.debugBindings(),
+		pDebugClean:         a.debugClean(),
+		pList:               a.list(),
+		pDisable:            a.disable(),
+		pEnable:             a.enable(),
+		pInstallMarketplace: a.installMarketplace(),
+		pInstallS3:          a.installS3(),
+		pInstallURL:         a.installURL(),
+		pInstallConsent:     a.installConsent(),
+		pUninstall:          a.uninstall(),
+	}
 
 	return a
 }
@@ -152,16 +159,59 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		}
 	}(a.conf.Logger())
 
-	f, ok := a.router[creq.Path]
+	readcloser := func(cresp apps.CallResponse) (io.ReadCloser, error) {
+		data, err := json.Marshal(cresp)
+		if err != nil {
+			return nil, err
+		}
+		return ioutil.NopCloser(bytes.NewReader(data)), nil
+	}
+
+	// The bindings call does not have a call type, so make it into a submit so
+	// that the router can handle it.
+	if creq.Path == apps.DefaultBindings.Path {
+		return readcloser(a.bindings(creq))
+	}
+
+	callPath, callType := path.Split(creq.Path)
+	callPath = strings.TrimRight(callPath, "/")
+	h, ok := a.router[callPath]
 	if !ok {
-		return nil, utils.NewNotFoundError("%s is not found", creq.Path)
+		return nil, utils.NewNotFoundError(callPath)
 	}
-	cresp := f(creq)
-	data, err := json.Marshal(cresp)
-	if err != nil {
-		return nil, err
+	if h.requireSysadmin && creq.Context.AdminAccessToken == "" {
+		return nil, apps.NewErrorCallResponse(utils.NewUnauthorizedError("no admin token in the request"))
 	}
-	return ioutil.NopCloser(bytes.NewReader(data)), nil
+
+	switch apps.CallType(callType) {
+	case apps.CallTypeForm:
+		if h.formf == nil {
+			return nil, utils.ErrNotFound
+		}
+		form, err := h.formf(creq)
+		if err != nil {
+			return nil, err
+		}
+		return readcloser(formResponse(*form))
+
+	case apps.CallTypeLookup:
+		if h.lookupf == nil {
+			return nil, utils.ErrNotFound
+		}
+		opts, err := h.lookupf(creq)
+		if err != nil {
+			return nil, err
+		}
+		return readcloser(dataResponse(opts))
+
+	case apps.CallTypeSubmit:
+		if h.submitf == nil {
+			return nil, utils.ErrNotFound
+		}
+		return readcloser(h.submitf(creq))
+	}
+
+	return nil, utils.NewNotFoundError("%s does not handle %s", callPath, callType)
 }
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
@@ -191,83 +241,4 @@ func dataResponse(data interface{}) apps.CallResponse {
 
 func emptyForm(_ apps.CallRequest) apps.CallResponse {
 	return formResponse(apps.Form{})
-}
-
-func submitPath(p string) string {
-	return path.Join(p, "submit")
-}
-
-func formPath(p string) string {
-	return path.Join(p, "form")
-}
-
-func lookupPath(p string) string {
-	return path.Join(p, "lookup")
-}
-
-const SysadminOnly = true
-
-func (a *builtinApp) handle(
-	path string,
-	sysadminOnly bool,
-	submitf func(apps.CallRequest) apps.CallResponse,
-) {
-	a.router[submitPath(path)] = requireSysadmin(sysadminOnly, submitf)
-}
-
-func (a *builtinApp) withLookup(
-	path string,
-	sysadminOnly bool,
-	submitf func(apps.CallRequest) apps.CallResponse,
-	lookupf func(apps.CallRequest) ([]apps.SelectOption, error),
-) {
-	a.handle(path, sysadminOnly, submitf)
-
-	if lookupf == nil {
-		return
-	}
-	type lookupResponse struct {
-		Items []apps.SelectOption `json:"items"`
-	}
-	a.router[lookupPath(path)] = requireSysadmin(sysadminOnly,
-		func(creq apps.CallRequest) apps.CallResponse {
-			opts, err := lookupf(creq)
-			if err != nil {
-				return apps.NewErrorCallResponse(err)
-			}
-			return dataResponse(lookupResponse{opts})
-		})
-}
-
-func (a *builtinApp) withForm(
-	path string,
-	sysadminOnly bool,
-	submitf func(apps.CallRequest) apps.CallResponse,
-	formf func(apps.CallRequest) (*apps.Form, error),
-) {
-	a.handle(path, sysadminOnly, submitf)
-
-	if formf == nil {
-		return
-	}
-	a.router[lookupPath(path)] = requireSysadmin(sysadminOnly,
-		func(creq apps.CallRequest) apps.CallResponse {
-			form, err := formf(creq)
-			if err != nil {
-				return apps.NewErrorCallResponse(err)
-			}
-			return formResponse(*form)
-		})
-}
-
-func requireSysadmin(require bool, handler func(apps.CallRequest) apps.CallResponse) func(apps.CallRequest) apps.CallResponse {
-	if !require {
-		return handler
-	}
-	return func(creq apps.CallRequest) apps.CallResponse {
-		if creq.Context.ExpandedContext.AdminAccessToken == "" {
-			return apps.NewErrorCallResponse(utils.NewUnauthorizedError("no admin token in the request"))
-		}
-		return handler(creq)
-	}
 }

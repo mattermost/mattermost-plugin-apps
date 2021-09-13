@@ -15,30 +15,36 @@ var enableCall = apps.Call{
 	},
 }
 
-func (a *builtinApp) enableCommandBinding() apps.Binding {
-	return apps.Binding{
-		Label:       "enable",
-		Location:    "enable",
-		Hint:        "[ App ID ]",
-		Description: "Enables an App",
-		Call:        &enableCall,
-		Form:        appIDForm(enableCall),
-	}
-}
+func (a *builtinApp) enable() handler {
+	return handler{
+		requireSysadmin: true,
 
-func (a *builtinApp) enableLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return app.Installed && !app.Enabled
-	})
-}
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "enable",
+				Location:    "enable",
+				Hint:        "[ App ID ]",
+				Description: "Enables an App",
+				Call:        &enableCall,
+				Form:        appIDForm(enableCall),
+			}
+		},
 
-func (a *builtinApp) enableSubmit(creq apps.CallRequest) apps.CallResponse {
-	out, err := a.proxy.EnableApp(
-		proxy.NewIncomingFromContext(creq.Context),
-		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+				return app.Installed && !app.Enabled
+			})
+		},
+
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			out, err := a.proxy.EnableApp(
+				proxy.NewIncomingFromContext(creq.Context),
+				creq.Context,
+				apps.AppID(creq.GetValue(fAppID, "")))
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return mdResponse(out)
+		},
 	}
-	return mdResponse(out)
 }

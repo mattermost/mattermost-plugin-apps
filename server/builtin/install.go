@@ -18,33 +18,12 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 	conf := a.conf.Get()
 	if conf.MattermostCloudMode {
 		installCommand.Bindings = []apps.Binding{
-			{
-				Label:       "marketplace",
-				Location:    "marketplace",
-				Hint:        "[app ID]",
-				Description: "Installs an App from the Marketplace",
-				Call:        &installMarketplaceCall,
-				Form:        appIDForm(installMarketplaceCall),
-			},
+			a.installMarketplace().commandBinding(),
 		}
 	} else {
 		installCommand.Bindings = []apps.Binding{
-			{
-				Label:       "s3",
-				Location:    "s3",
-				Hint:        "[app ID]",
-				Description: "Installs an App from AWS S3, as configured by the system administrator",
-				Call:        &installS3Call,
-				Form:        appIDForm(installS3Call),
-			},
-			{
-				Label:       "url",
-				Location:    "url",
-				Hint:        "[manifest.json URL]",
-				Description: "Installs an App from an HTTP URL",
-				Call:        &installURLCall,
-				Form:        &installURLForm,
-			},
+			a.installS3().commandBinding(),
+			a.installURL().commandBinding(),
 		}
 	}
 	return installCommand

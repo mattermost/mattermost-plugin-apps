@@ -12,47 +12,53 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) installConsentForm(creq apps.CallRequest) (*apps.Form, error) {
-	id, ok := creq.State.(string)
-	if !ok {
-		return nil, errors.New("no app ID in state, don't know what to install")
-	}
-	appID := apps.AppID(id)
+func (a *builtinApp) installConsent() handler {
+	return handler{
+		requireSysadmin: true,
 
-	m, err := a.store.Manifest.Get(appID)
-	if err != nil {
-		return nil, err
-	}
+		formf: func(creq apps.CallRequest) (*apps.Form, error) {
+			id, ok := creq.State.(string)
+			if !ok {
+				return nil, errors.New("no app ID in state, don't know what to install")
+			}
+			appID := apps.AppID(id)
 
-	return a.newInstallConsentForm(*m, creq), nil
-}
+			m, err := a.store.Manifest.Get(appID)
+			if err != nil {
+				return nil, err
+			}
 
-func (a *builtinApp) installConsentSubmit(creq apps.CallRequest) apps.CallResponse {
-	secret := creq.GetValue(fSecret, "")
-	consent := creq.BoolValue(fConsent)
-	id, ok := creq.State.(string)
-	if !ok {
-		return apps.NewErrorCallResponse(
-			errors.New("no app ID in state, don't know what to install"))
-	}
-	appID := apps.AppID(id)
+			return a.newInstallConsentForm(*m, creq), nil
+		},
 
-	m, err := a.store.Manifest.Get(appID)
-	if err != nil {
-		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
-	}
-	if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
-		return apps.NewErrorCallResponse(errors.New("consent to use APIs and locations is required to install"))
-	}
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			secret := creq.GetValue(fSecret, "")
+			consent := creq.BoolValue(fConsent)
+			id, ok := creq.State.(string)
+			if !ok {
+				return apps.NewErrorCallResponse(
+					errors.New("no app ID in state, don't know what to install"))
+			}
+			appID := apps.AppID(id)
 
-	_, out, err := a.proxy.InstallApp(
-		proxy.NewIncomingFromContext(creq.Context),
-		creq.Context, appID, true, secret)
-	if err != nil {
-		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
-	}
+			m, err := a.store.Manifest.Get(appID)
+			if err != nil {
+				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
+			}
+			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
+				return apps.NewErrorCallResponse(errors.New("consent to use APIs and locations is required to install"))
+			}
 
-	return mdResponse(out)
+			_, out, err := a.proxy.InstallApp(
+				proxy.NewIncomingFromContext(creq.Context),
+				creq.Context, appID, true, secret)
+			if err != nil {
+				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
+			}
+
+			return mdResponse(out)
+		},
+	}
 }
 
 func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) *apps.Form {
