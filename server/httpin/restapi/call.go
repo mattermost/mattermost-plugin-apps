@@ -3,9 +3,11 @@ package restapi
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -13,7 +15,17 @@ import (
 
 var emptyCC = apps.Context{}
 
-func (a *restapi) handleCall(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
+func (a *restapi) initCall(api *mux.Router) {
+	api.HandleFunc(path.Call,
+		proxy.RequireUser(a.Call)).Methods("POST")
+}
+
+// Call handles a call request for an App.
+//   Path: /api/v1/call
+//   Method: POST
+//   Input: CallRequest
+//   Output: CallResponse
+func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))

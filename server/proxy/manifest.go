@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (p *Proxy) AddLocalManifest(m apps.Manifest) (string, error) {
+func (p *Proxy) StoreLocalManifest(m apps.Manifest) (string, error) {
 	if err := m.Validate(); err != nil {
 		return "", err
 	}

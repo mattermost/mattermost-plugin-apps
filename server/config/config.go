@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 )
 
@@ -69,26 +70,13 @@ type Config struct {
 	AWSS3Bucket  string
 }
 
-func (conf Config) SetContextDefaults(cc apps.Context) apps.Context {
-	cc.BotUserID = conf.BotUserID
-	cc.MattermostSiteURL = conf.MattermostSiteURL
-	return cc
-}
-
-func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc apps.Context) apps.Context {
-	cc = conf.SetContextDefaults(cc)
-	cc.AppID = appID
-	cc.AppPath = path.Join(conf.PluginURLPath, PathApps, string(appID))
-	return cc
-}
-
 func (conf Config) AppURL(appID apps.AppID) string {
-	return conf.PluginURL + path.Join(PathApps, string(appID))
+	return conf.PluginURL + path.Join(appspath.Apps, string(appID))
 }
 
 // StaticURL returns the URL to a static asset.
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
-	return conf.AppURL(appID) + "/" + path.Join(apps.StaticFolder, name)
+	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
 func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {

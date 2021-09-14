@@ -18,6 +18,7 @@ func init() {
 	// provision
 	kubelessCmd.AddCommand(kubelessProvisionCmd)
 	kubelessProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	kubelessProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 
 	// test
 	kubelessCmd.AddCommand(kubelessTestCmd)
@@ -39,28 +40,39 @@ var kubelessProvisionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if len(m.KubelessFunctions) == 0 {
+		if m.Kubeless == nil || len(m.Kubeless.Functions) == 0 {
 			return errors.New("no functions to provision, check manifest.json")
 		}
 
-		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.KubelessFunctions))
-		fmt.Printf("You can now install it in Mattermost using:\n")
-		fmt.Printf("  /apps install kubeless <manifest URL>\n\n")
+		if err = updateMattermost(*m, apps.DeployKubeless, install); err != nil {
+			return err
+		}
+
+		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.Kubeless.Functions))
+
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install listed %s\n\n", m.AppID)
+		}
 		return nil
 	},
 }
 
 func helloKubeless() apps.App {
 	return apps.App{
+		DeployType: apps.DeployKubeless,
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
-			AppType: apps.AppTypeKubeless,
 			Version: "demo",
-			KubelessFunctions: []apps.KubelessFunction{
-				{
-					CallPath: "/",
-					Handler:  "app.handler",
-					Runtime:  "nodejs14", // see /examples/js/hello-world
+			Deploy: apps.Deploy{
+				Kubeless: &apps.Kubeless{
+					Functions: []apps.KubelessFunction{
+						{
+							Path:    "/",
+							Runtime: "nodejs14", // see /examples/js/hello-world
+							Handler: "app.handler",
+						},
+					},
 				},
 			},
 		},
@@ -91,7 +103,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 			"app_id", app.AppID,
 			"version", app.Version,
 			"path", creq.Call.Path,
-			"handler", app.Manifest.KubelessFunctions[0].Handler)
+			"handler", app.Manifest.Kubeless.Functions[0].Handler)
 		resp, err := upTest.Roundtrip(app, creq, false)
 		if err != nil {
 			return err

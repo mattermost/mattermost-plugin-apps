@@ -23,7 +23,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 			appID := apps.AppID(id)
 
-			m, err := a.store.Manifest.Get(appID)
+			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
 				return nil, err
 			}
@@ -32,6 +32,7 @@ func (a *builtinApp) installConsent() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 			secret := creq.GetValue(fSecret, "")
 			consent := creq.BoolValue(fConsent)
 			id, ok := creq.State.(string)
@@ -41,7 +42,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 			appID := apps.AppID(id)
 
-			m, err := a.store.Manifest.Get(appID)
+			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
 				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
 			}
@@ -51,7 +52,7 @@ func (a *builtinApp) installConsent() handler {
 
 			_, out, err := a.proxy.InstallApp(
 				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context, appID, true, secret)
+				creq.Context, appID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
 			}
@@ -61,13 +62,49 @@ func (a *builtinApp) installConsent() handler {
 	}
 }
 
+func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {
+	opts := []apps.SelectOption{}
+	for _, deployType := range m.DeployTypes() {
+		_, canUse := a.proxy.CanDeploy(deployType)
+		if canUse {
+			opts = append(opts, apps.SelectOption{
+				Label: deployType.String(),
+				Value: string(deployType),
+			})
+		}
+	}
+
+	dtype := apps.DeployType(creq.GetValue(fDeployType, ""))
+	defaultValue := apps.SelectOption{
+		Label: dtype.String(),
+		Value: string(dtype),
+	}
+	if len(opts) == 1 {
+		defaultValue = opts[0]
+	}
+
+	return apps.Field{
+		Name:                fDeployType,
+		Type:                apps.FieldTypeStaticSelect,
+		IsRequired:          true,
+		Description:         "Select how the App will be accessed.",
+		Label:               "deploy-type",
+		ModalLabel:          "Deployment method",
+		SelectRefresh:       true,
+		SelectStaticOptions: opts,
+		Value:               defaultValue,
+	}, defaultValue
+}
+
 func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) *apps.Form {
+	deployTypeField, selected := a.newConsentDeployTypeField(m, creq)
+	deployType := apps.DeployType(selected.Value)
 	fields := []apps.Field{}
 
 	// Consent
 	consent := ""
 	if len(m.RequestedLocations) > 0 {
-		consent += "\n- Add the following elements to the **Mattermost User Interface**:\n"
+		consent += "- Add the following elements to the **Mattermost User Interface**:\n"
 		for _, l := range m.RequestedLocations {
 			consent += fmt.Sprintf("  - %s\n", l.Markdown())
 		}
@@ -91,8 +128,11 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		})
 	}
 
+	// Deployment type
+	fields = append(fields, deployTypeField)
+
 	// JWT secret
-	if m.AppType == apps.AppTypeHTTP {
+	if deployType == apps.DeployHTTP {
 		fields = append(fields, apps.Field{
 			Name:        fSecret,
 			Type:        apps.FieldTypeText,
@@ -102,10 +142,11 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		})
 	}
 
-	var iconURL string
-	if m.Icon != "" {
-		iconURL = a.conf.Get().StaticURL(m.AppID, m.Icon)
-	}
+	// TODO: figure out a way to access the static assets before the app is installed
+	// var iconURL string
+	// if m.Icon != "" {
+	// 	iconURL = a.conf.Get().StaticURL(m.AppID, m.Icon)
+	// }
 
 	return &apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
@@ -118,6 +159,6 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			},
 			State: m.AppID,
 		},
-		Icon: iconURL,
+		// Icon: iconURL, see above TODO
 	}
 }

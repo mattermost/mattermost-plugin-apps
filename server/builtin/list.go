@@ -55,10 +55,10 @@ func (a *builtinApp) list() handler {
 					continue
 				}
 
-				if !includePluginApps && app.AppType == apps.AppTypePlugin {
+				if !includePluginApps && app.DeployType == apps.DeployPlugin {
 					continue
 				}
-
+				
 				status := "**Installed**"
 				if app.Disabled {
 					status = "Installed, Disabled"
@@ -87,7 +87,7 @@ func (a *builtinApp) list() handler {
 					app.DisplayName, app.HomepageURL, app.AppID)
 
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-					name, status, app.AppType, version, account, app.GrantedLocations, app.GrantedPermissions)
+					name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 			}
 
 			for _, l := range listed {
@@ -103,7 +103,7 @@ func (a *builtinApp) list() handler {
 				name := fmt.Sprintf("[%s](%s) (`%s`)",
 					l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-					name, status, l.Manifest.AppType, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
+					name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 			}
 			return mdResponse(txt)
 		},

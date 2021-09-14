@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -21,17 +22,19 @@ import (
 
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trusted bool, secret string) (*apps.App, string, error) {
+func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
-
-	err = isAppTypeSupported(conf, m.AppType)
+	if !m.SupportsDeploy(deployType) {
+		return nil, "", errors.Errorf("app does not support %s deployment", deployType)
+	}
+	err = CanDeploy(p, deployType)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "app type is not supported")
+		return nil, "", err
 	}
 
 	app, err := p.store.App.Get(appID)
@@ -42,6 +45,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 		app = &apps.App{}
 	}
 
+	app.DeployType = deployType
 	app.Manifest = *m
 	if app.Disabled {
 		app.Disabled = false
@@ -75,7 +79,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, app, trusted, in.ActingUserID)
+		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, in.ActingUserID)
 		if err != nil {
 			return nil, "", err
 		}
@@ -114,7 +118,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, trust
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2.ClientID != "" {
 		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
 		if err == nil {
@@ -124,7 +128,7 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 		}
 	}
 
-	oauth2CallbackURL := conf.AppURL(app.AppID) + config.PathMattermostOAuth2Complete
+	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
 	oauthApp := &model.OAuthApp{
 		CreatorId:    actingUserID,

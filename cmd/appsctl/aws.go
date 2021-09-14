@@ -23,6 +23,7 @@ var (
 	shouldUpdate          bool
 	invokePolicyName      string
 	executeRoleName       string
+	install               bool
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 
 	// provision
 	awsCmd.AddCommand(awsProvisionCmd)
+	awsProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
 	awsProvisionCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
 	awsProvisionCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
@@ -50,6 +52,7 @@ func init() {
 	awsTestCmd.AddCommand(awsTestLambdaCmd)
 	awsTestCmd.AddCommand(awsTestProvisionCmd)
 	awsTestCmd.AddCommand(awsTestS3Cmd)
+	awsTestCmd.AddCommand(awsTestS3ListCmd)
 }
 
 var awsCmd = &cobra.Command{
@@ -135,18 +138,24 @@ var awsProvisionCmd = &cobra.Command{
 			return err
 		}
 
+		if err = updateMattermost(out.Manifest, apps.DeployAWSLambda, install); err != nil {
+			return err
+		}
+
 		fmt.Printf("\n'%s' is now provisioned to AWS.\n", out.Manifest.DisplayName)
 		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
 			len(out.LambdaARNs), len(out.StaticARNs))
-
-		fmt.Printf("You can now install it in Mattermost using:\n")
-		fmt.Printf("  /apps install aws %s %s\n\n", out.Manifest.AppID, out.Manifest.Version)
 
 		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
 		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
 		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
 		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
+		fmt.Printf("\n")
 
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install listed %s\n\n", out.Manifest.AppID)
+		}
 		return nil
 	},
 }
@@ -158,16 +167,20 @@ var awsTestCmd = &cobra.Command{
 
 func helloLambda() apps.App {
 	return apps.App{
+		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
-			AppType: apps.AppTypeAWSLambda,
 			Version: "demo",
-			AWSLambda: []apps.AWSLambda{
-				{
-					Path:    "/",
-					Name:    "go-function",
-					Handler: "hello-lambda",
-					Runtime: "go1.x",
+			Deploy: apps.Deploy{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{
+						{
+							Path:    "/",
+							Name:    "hello-lambda",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						},
+					},
 				},
 			},
 		},
@@ -200,6 +213,25 @@ var awsTestS3Cmd = &cobra.Command{
 			return errors.Errorf("expected 'static pong', got '%s'", r)
 		}
 		fmt.Println("OK")
+		return nil
+	},
+}
+
+var awsTestS3ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "test listing S3 manifests",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		upTest, err := makeTestAWSUpstream()
+		if err != nil {
+			return err
+		}
+
+		resp, err := upTest.ListS3Apps("hello")
+		if err != nil {
+			return err
+		}
+		fmt.Println(resp)
 		return nil
 	},
 }

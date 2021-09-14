@@ -83,7 +83,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.httpOut = httpout.NewService(p.conf)
 
-	p.store, err = store.MakeService(p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.conf, p.API, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
@@ -101,7 +101,7 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	p.proxy.AddBuiltinUpstream(
 		builtin.AppID,
-		builtin.NewBuiltinApp(p.conf, p.proxy, p.store, p.httpOut),
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.httpOut),
 	)
 	p.log.Debugf("Initialized the app proxy")
 
@@ -218,7 +218,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 }
 
 func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	_ = p.proxy.Notify(
+	err := p.proxy.Notify(
 		apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				TeamID:    ch.TeamId,
@@ -230,6 +230,9 @@ func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.
 			},
 		},
 		apps.SubjectChannelCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling ChannelHasBeenCreated")
+	}
 }
 
 func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {

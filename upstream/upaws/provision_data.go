@@ -6,7 +6,6 @@ package upaws
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"io"
 	"os"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -82,7 +82,8 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "can't read manifest.json file")
 			}
-			if err := json.Unmarshal(data, &m); err != nil {
+			m, err = apps.DecodeCompatibleManifest(data)
+			if err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 			log.Infow("Found manifest", "file", file.Name)
@@ -98,8 +99,8 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			})
 			log.Infow("Found lambda function bundle", "file", file.Name)
 
-		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
-			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
+		case strings.HasPrefix(file.Name, path.StaticFolder+"/"):
+			assetName := strings.TrimPrefix(file.Name, path.StaticFolder+"/")
 			if assetName == "" {
 				continue
 			}
@@ -127,7 +128,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range m.AWSLambda {
+		for _, manifestFunction := range m.AWSLambda.Functions {
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,
@@ -183,7 +184,7 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 func (pd *ProvisionData) Validate() error {
 	var result error
 
-	if pd.Manifest == nil || pd.Manifest.AWSLambda == nil {
+	if pd.Manifest == nil || !pd.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
 		result = multierror.Append(result,
 			errors.New("no manifest or AWS Lamda metadata"))
 	}
@@ -191,12 +192,12 @@ func (pd *ProvisionData) Validate() error {
 		return err
 	}
 
-	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
+	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {
 		result = multierror.Append(result,
 			errors.New("different number of functions in the manifest and in the bundle"))
 	}
 
-	for _, function := range pd.Manifest.AWSLambda {
+	for _, function := range pd.Manifest.AWSLambda.Functions {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
 			result = multierror.Append(result,

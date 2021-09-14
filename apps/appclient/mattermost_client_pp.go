@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -20,30 +23,6 @@ const (
 	HeaderAuth       = "Authorization"
 
 	AppsPluginName = "com.mattermost.apps"
-)
-
-// Paths for the REST APIs exposed by the Apps Plugin itself
-const (
-	// Top-level path
-	PathAPI = "/api/v1"
-
-	// Other sub-paths.
-	PathKV          = "/kv"
-	PathSubscribe   = "/subscribe"
-	PathUnsubscribe = "/unsubscribe"
-
-	PathApps      = "/apps"
-	PathApp       = "/app"
-	PathEnable    = "/enable"
-	PathDisable   = "/disable"
-	PathUninstall = "/uninstall"
-
-	PathBotIDs      = "/bot-ids"
-	PathOAuthAppIDs = "/oauth-app-ids"
-
-	PathOAuth2App         = "/oauth2/app"
-	PathOAuth2User        = "/oauth2/user"
-	PathOAuth2CreateState = "/oauth2/create-state"
 )
 
 type ClientPP struct {
@@ -121,7 +100,7 @@ func (c *ClientPP) KVDelete(id string, prefix string) (*model.Response, error) {
 }
 
 func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathSubscribe), request.ToJSON()) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe), request.ToJSON()) // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -136,7 +115,7 @@ func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResp
 }
 
 func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathUnsubscribe), request.ToJSON()) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), request.ToJSON()) // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -155,7 +134,7 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret strin
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	})
-	r, err := c.DoAPIPOST(c.apipath(PathOAuth2App)+"/"+string(appID), data) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), data) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -165,7 +144,7 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret strin
 }
 
 func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathOAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -175,7 +154,7 @@ func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Re
 }
 
 func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(PathOAuth2User)+"/"+string(appID), "") // nolint:bodyclose
+	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User)+"/"+string(appID), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -189,14 +168,34 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 	return model.BuildResponse(r), nil
 }
 
-// InstallApp installs a app using a given manfest.
-func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
+// StoreListedApp adds a specified App manifest to the local store.
+func (c *ClientPP) StoreListedApp(m apps.Manifest) (*model.Response, error) {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := c.DoAPIPOST(c.apipath(PathApps), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.StoreListedApp), string(b)) // nolint:bodyclose
+	if err != nil {
+		return model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r), nil
+}
+
+// InstallApp installs a app using a given manfest.
+func (c *ClientPP) InstallApp(appID apps.AppID, deployType apps.DeployType) (*model.Response, error) {
+	b, err := json.Marshal(apps.App{
+		Manifest: apps.Manifest{
+			AppID: appID,
+		},
+		DeployType: deployType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -206,7 +205,13 @@ func (c *ClientPP) InstallApp(m apps.Manifest) (*model.Response, error) {
 }
 
 func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIDELETE(c.apipath(PathApps) + "/" + string(appID) + PathUninstall) // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -216,7 +221,7 @@ func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
 }
 
 func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(PathApps)+"/"+string(appID), "") // nolint:bodyclose
+	r, err := c.DoAPIGET(c.apipath(appspath.Apps)+"/"+string(appID), "") // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
@@ -232,7 +237,13 @@ func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) 
 }
 
 func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathEnable, "") // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.EnableApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -242,13 +253,39 @@ func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
 }
 
 func (c *ClientPP) DisableApp(appID apps.AppID) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(PathApps)+"/"+string(appID)+PathDisable, "") // nolint:bodyclose
+	b, err := json.Marshal(apps.Manifest{
+		AppID: appID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.DisableApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
 	return model.BuildResponse(r), nil
+}
+
+func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.ListedApp, *model.Response, error) {
+	v := url.Values{}
+	v.Add("filter", filter)
+	if includePlugins {
+		v.Add("include_plugins", "true")
+	}
+	r, err := c.DoAPIGET(c.apipath(appspath.Marketplace)+"?"+v.Encode(), "") // nolint:bodyclose
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	listed := []apps.ListedApp{}
+	err = json.NewDecoder(r.Body).Decode(&listed)
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	return listed, model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) getPluginsRoute() string {
@@ -329,7 +366,7 @@ func (c *ClientPP) closeBody(r *http.Response) {
 }
 
 func (c *ClientPP) apipath(p string) string {
-	return c.GetPluginRoute(AppsPluginName) + PathAPI + p
+	return c.GetPluginRoute(AppsPluginName) + appspath.API + p
 }
 
 func (c *ClientPP) kvpath(prefix, id string) string {
