@@ -9,26 +9,26 @@ var noParameters = apps.Form{
 	Title: "command with no parameters",
 }
 
-func (a *builtinApp) getBindings(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
 	return apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
-		Data: a.bindings(creq),
+		Data: a.getBindings(creq),
 	}
 }
 
-func (a *builtinApp) bindings(creq apps.CallRequest) []apps.Binding {
+func (a *builtinApp) getBindings(creq apps.CallRequest) []apps.Binding {
 	commands := []apps.Binding{
-		a.infoCommandBinding(),
+		a.info().commandBinding(),
 	}
 
 	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
 		commands = append(commands,
 			a.debugCommandBinding(),
-			a.disableCommandBinding(),
-			a.enableCommandBinding(),
+			a.disable().commandBinding(),
+			a.enable().commandBinding(),
 			a.installCommandBinding(),
-			a.listCommandBinding(),
-			a.uninstallCommandBinding(),
+			a.list().commandBinding(),
+			a.uninstall().commandBinding(),
 		)
 	}
 

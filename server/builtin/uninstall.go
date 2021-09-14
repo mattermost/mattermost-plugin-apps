@@ -15,30 +15,34 @@ var uninstallCall = apps.Call{
 	},
 }
 
-func (a *builtinApp) uninstallCommandBinding() apps.Binding {
-	return apps.Binding{
-		Label:       "uninstall",
-		Location:    "uninstall",
-		Hint:        "[ App ID ]",
-		Description: "Uninstalls an App",
-		Call:        &uninstallCall,
-		Form:        appIDForm(uninstallCall),
-	}
-}
+func (a *builtinApp) uninstall() handler {
+	return handler{
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "uninstall",
+				Location:    "uninstall",
+				Hint:        "[ App ID ]",
+				Description: "Uninstalls an App",
+				Call:        &uninstallCall,
+				Form:        appIDForm(uninstallCall),
+			}
+		},
 
-func (a *builtinApp) uninstallLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return app.Installed
-	})
-}
+		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+				return app.Installed
+			})
+		},
 
-func (a *builtinApp) uninstallSubmit(creq apps.CallRequest) apps.CallResponse {
-	out, err := a.proxy.UninstallApp(
-		proxy.NewIncomingFromContext(creq.Context),
-		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			out, err := a.proxy.UninstallApp(
+				proxy.NewIncomingFromContext(creq.Context),
+				creq.Context,
+				apps.AppID(creq.GetValue(fAppID, "")))
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return mdResponse(out)
+		},
 	}
-	return mdResponse(out)
 }

@@ -15,7 +15,47 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 		Label:    "debug",
 		Location: "debug",
 		Bindings: []apps.Binding{
-			{
+			a.debugBindings().commandBinding(),
+			a.debugClean().commandBinding(),
+		},
+	}
+}
+
+func (a *builtinApp) debugBindings() handler {
+	return handler{
+		requireSysadmin: true,
+
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
+				Label:       "bindings",
+				Location:    "bindings",
+				Description: "Display all bindings for the current context",
+				Call: &apps.Call{
+					Path: pDebugBindings,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+					},
+				},
+				Form: &noParameters,
+			}
+		},
+
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			bindings, err := a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
+			if err != nil {
+				return apps.NewErrorCallResponse(err)
+			}
+			return mdResponse(utils.JSONBlock(bindings))
+		},
+	}
+}
+
+func (a *builtinApp) debugClean() handler {
+	return handler{
+		requireSysadmin: true,
+
+		commandBinding: func() apps.Binding {
+			return apps.Binding{
 				Label:       "clean",
 				Location:    "clean",
 				Hint:        "",
@@ -27,33 +67,13 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 					},
 				},
 				Form: &noParameters,
-			},
-			{
-				Label:       "bindings",
-				Location:    "bindings",
-				Description: "Display all bindings for the current context",
-				Call: &apps.Call{
-					Path: pDebugBindings,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-					},
-				},
-				Form: &noParameters,
-			},
+			}
+		},
+
+		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			_ = a.conf.MattermostAPI().KV.DeleteAll()
+			_ = a.conf.StoreConfig(config.StoredConfig{})
+			return mdResponse("Deleted all KV records and emptied the config.")
 		},
 	}
-}
-
-func (a *builtinApp) debugClean(creq apps.CallRequest) apps.CallResponse {
-	_ = a.conf.MattermostAPI().KV.DeleteAll()
-	_ = a.conf.StoreConfig(config.StoredConfig{})
-	return mdResponse("Deleted all KV records and emptied the config.")
-}
-
-func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
-	bindings, err := a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
-	if err != nil {
-		return apps.NewErrorCallResponse(err)
-	}
-	return mdResponse(utils.JSONBlock(bindings))
 }
