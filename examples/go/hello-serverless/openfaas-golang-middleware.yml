@@ -1,0 +1,12 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://192.168.64.3:8080
+functions:
+  hello:
+    lang: golang-middleware
+    build_args:
+      GO111MODULE: on
+    handler: ./app
+    # image should be replaced with the appropriate registry/image name.
+    image: levb/test-golang-middleware:latest

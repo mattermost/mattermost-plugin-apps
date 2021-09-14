@@ -28,6 +28,9 @@ const (
 	// Kubeless-deployable app.
 	DeployKubeless DeployType = "kubeless"
 
+	// OpenFaaS-deployable app.
+	DeployOpenFAAS DeployType = "open_faas"
+
 	// Builtin app. All functions and resources are served by directly invoking
 	// go functions. No manifest, no Mattermost to App authentication are
 	// needed.
@@ -55,6 +58,8 @@ type Deploy struct {
 	// APIs and HTTP. The JSON name `kubeless` must match the type.
 	Kubeless *Kubeless `json:"kubeless,omitempty"`
 
+	OpenFAAS *OpenFAAS `json:"open_faas,omitempty"`
+
 	// Plugin contains metadata for an app that is implemented and is deployed
 	// and accessed as a local Plugin. The JSON name `plugin` must match the
 	// type.
@@ -67,6 +72,7 @@ func (t DeployType) Validate() error {
 		DeployAWSLambda,
 		DeployBuiltin,
 		DeployKubeless,
+		DeployOpenFAAS,
 		DeployPlugin:
 		return nil
 	default:
@@ -84,6 +90,8 @@ func (t DeployType) String() string {
 		return "Built-in"
 	case DeployKubeless:
 		return "Kubeless"
+	case DeployOpenFAAS:
+		return "OpenFaaS"
 	case DeployPlugin:
 		return "Mattermost Plugin"
 	default:
@@ -94,18 +102,20 @@ func (t DeployType) String() string {
 func (d Deploy) Validate() error {
 	var result error
 
-	if d.HTTP == nil &&
-		d.AWSLambda == nil &&
+	if d.AWSLambda == nil &&
+		d.HTTP == nil &&
 		d.Kubeless == nil &&
+		d.OpenFAAS == nil &&
 		d.Plugin == nil {
 		result = multierror.Append(result,
 			utils.NewInvalidError("manifest has no deployment information (http, aws_lambda, open_faas, etc.)"))
 	}
 
 	for _, v := range []validator{
-		d.HTTP,
 		d.AWSLambda,
+		d.HTTP,
 		d.Kubeless,
+		d.OpenFAAS,
 		d.Plugin,
 	} {
 		// Validate must ignore nil pointer in its implementation, v is never
@@ -135,6 +145,9 @@ func (d Deploy) DeployTypes() (out []DeployType) {
 	if d.Kubeless != nil {
 		out = append(out, DeployKubeless)
 	}
+	if d.OpenFAAS != nil {
+		out = append(out, DeployOpenFAAS)
+	}
 	if d.Plugin != nil {
 		out = append(out, DeployPlugin)
 	}
@@ -149,6 +162,8 @@ func (d Deploy) SupportsDeploy(dtype DeployType) bool {
 		return d.HTTP != nil
 	case DeployKubeless:
 		return d.Kubeless != nil
+	case DeployOpenFAAS:
+		return d.OpenFAAS != nil
 	case DeployPlugin:
 		return d.Plugin != nil
 	}
@@ -165,6 +180,9 @@ func (d Deploy) UpdateDeploy(newDeploy Deploy, deployType DeployType) Deploy {
 	}
 	if d.Kubeless != nil || deployType == DeployKubeless {
 		result.Kubeless = newDeploy.Kubeless
+	}
+	if d.OpenFAAS != nil || deployType == DeployOpenFAAS {
+		result.OpenFAAS = newDeploy.OpenFAAS
 	}
 	if d.Plugin != nil || deployType == DeployPlugin {
 		result.Plugin = newDeploy.Plugin

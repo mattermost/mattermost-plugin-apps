@@ -1,0 +1,33 @@
+{
+	"app_id": "hello-serverless",
+	"version": "demo",
+	"display_name": "Hello, Serverless!",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
+	"requested_permissions": [
+		"act_as_bot"
+	],
+	"requested_locations": [
+		"/command"
+	],
+	"http": {
+		"root_url": "http://localhost:8080"
+	},
+	"aws_lambda": {
+		"functions": [
+			{
+				"path": "/",
+				"name": "hello-serverless",
+				"handler": "hello-serverless",
+				"runtime": "go1.x"
+			}
+		]
+	},
+	"open_faas": {
+		"functions": [
+			{
+				"path": "/",
+				"name": "hello"
+			}
+		]
+	}
+}

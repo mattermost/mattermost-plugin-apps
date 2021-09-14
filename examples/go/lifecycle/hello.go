@@ -13,13 +13,7 @@ import (
 //go:embed manifest.json
 var manifestData []byte
 
-const (
-	host = "localhost"
-	port = 8080
-)
-
 func main() {
-	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Returns the Channel Header and Command bindings for the app.
@@ -33,11 +27,8 @@ func main() {
 
 	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
 
-	addr := fmt.Sprintf("%v:%v", host, port)
-	rootURL := "http://" + addr
-	fmt.Printf("hello-lifecycle app listening at %s \n", rootURL)
-	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
-	http.ListenAndServe(addr, nil)
+	fmt.Println("Listening on :8083") // matches manifest.json
+	panic(http.ListenAndServe(":8083", nil))
 }
 
 func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Request) {

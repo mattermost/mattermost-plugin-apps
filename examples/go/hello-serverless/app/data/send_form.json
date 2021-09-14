@@ -1,7 +1,7 @@
 {
 	"type": "form",
 	"form": {
-		"title": "Hello, AWS Lambda!",
+		"title": "Hello, serverless!",
 		"icon": "/static/icon.png",
 		"fields": [
 			{

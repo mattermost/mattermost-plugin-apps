@@ -31,7 +31,6 @@ var sendFormData []byte
 func main() {
 	// Static handlers
 
-	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
@@ -54,7 +53,8 @@ func main() {
 	http.HandleFunc("/send/form", writeJSON(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("Listening on :8081") // matches manifest.json
+	panic(http.ListenAndServe(":8081", nil))
 }
 
 func install(w http.ResponseWriter, req *http.Request) {
