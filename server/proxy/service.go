@@ -153,9 +153,6 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 		supportedTypes = append(supportedTypes,
 			apps.DeployHTTP,
 			apps.DeployKubeless)
-
-	default:
-		return false, false
 	}
 
 	for _, t := range supportedTypes {
