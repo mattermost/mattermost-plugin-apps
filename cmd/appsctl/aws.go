@@ -154,7 +154,7 @@ var awsProvisionCmd = &cobra.Command{
 
 		if !install {
 			fmt.Printf("You can now install it in Mattermost using:\n")
-			fmt.Printf("  /apps install %s\n\n", out.Manifest.AppID)
+			fmt.Printf("  /apps install listed %s\n\n", out.Manifest.AppID)
 		}
 		return nil
 	},

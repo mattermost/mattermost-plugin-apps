@@ -52,7 +52,7 @@ var kubelessProvisionCmd = &cobra.Command{
 
 		if !install {
 			fmt.Printf("You can now install it in Mattermost using:\n")
-			fmt.Printf("  /apps install %s\n\n", m.AppID)
+			fmt.Printf("  /apps install listed %s\n\n", m.AppID)
 		}
 		return nil
 	},

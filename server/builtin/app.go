@@ -38,17 +38,16 @@ const (
 )
 
 const (
-	pDebugBindings      = "/debug-bindings"
-	pDebugClean         = "/debug-clean"
-	pInfo               = "/info"
-	pList               = "/list"
-	pUninstall          = "/uninstall"
-	pEnable             = "/enable"
-	pDisable            = "/disable"
-	pInstallURL         = "/install-url"
-	pInstallS3          = "/install-s3"
-	pInstallMarketplace = "/install-marketplace"
-	pInstallConsent     = "/install-consent"
+	pDebugBindings  = "/debug-bindings"
+	pDebugClean     = "/debug-clean"
+	pInfo           = "/info"
+	pList           = "/list"
+	pUninstall      = "/uninstall"
+	pEnable         = "/enable"
+	pDisable        = "/disable"
+	pInstallURL     = "/install-url"
+	pInstallListed  = "/install-listed"
+	pInstallConsent = "/install-consent"
 )
 
 type handler struct {
@@ -82,16 +81,15 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 		pInfo: a.info(),
 
 		// Actions that require sysadmin
-		pDebugBindings:      a.debugBindings(),
-		pDebugClean:         a.debugClean(),
-		pList:               a.list(),
-		pDisable:            a.disable(),
-		pEnable:             a.enable(),
-		pInstallMarketplace: a.installMarketplace(),
-		pInstallS3:          a.installS3(),
-		pInstallURL:         a.installURL(),
-		pInstallConsent:     a.installConsent(),
-		pUninstall:          a.uninstall(),
+		pDebugBindings:  a.debugBindings(),
+		pDebugClean:     a.debugClean(),
+		pDisable:        a.disable(),
+		pEnable:         a.enable(),
+		pInstallConsent: a.installConsent(),
+		pInstallListed:  a.installListed(),
+		pInstallURL:     a.installURL(),
+		pList:           a.list(),
+		pUninstall:      a.uninstall(),
 	}
 
 	return a
@@ -203,7 +201,9 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		if err != nil {
 			return nil, err
 		}
-		return readcloser(dataResponse(opts))
+		return readcloser(dataResponse(struct {
+			Items []apps.SelectOption `json:"items"`
+		}{opts}))
 
 	case apps.CallTypeSubmit:
 		if h.submitf == nil {

@@ -23,7 +23,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 			appID := apps.AppID(id)
 
-			m, err := a.store.Manifest.Get(appID)
+			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
 				return nil, err
 			}
@@ -42,7 +42,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 			appID := apps.AppID(id)
 
-			m, err := a.store.Manifest.Get(appID)
+			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
 				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
 			}
