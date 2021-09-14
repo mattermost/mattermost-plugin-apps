@@ -137,7 +137,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			Name:        fSecret,
 			Type:        apps.FieldTypeText,
 			ModalLabel:  "Outgoing JWT Secret",
-			Description: fmt.Sprintf("The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the app's web site, %s", m.HomepageURL),
+			Description: fmt.Sprintf("The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the App's web site, %s", m.HomepageURL),
 			IsRequired:  false,
 		})
 	}
