@@ -15,7 +15,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -61,18 +60,16 @@ type handler struct {
 type builtinApp struct {
 	conf    config.Service
 	proxy   proxy.Service
-	store   *store.Service
 	httpOut httpout.Service
 	router  map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
 		conf:    conf,
 		proxy:   proxy,
-		store:   store,
 		httpOut: httpOut,
 	}
 

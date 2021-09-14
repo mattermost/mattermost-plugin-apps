@@ -101,7 +101,7 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	p.proxy.AddBuiltinUpstream(
 		builtin.AppID,
-		builtin.NewBuiltinApp(p.conf, p.proxy, p.store, p.httpOut),
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.httpOut),
 	)
 	p.log.Debugf("Initialized the app proxy")
 
