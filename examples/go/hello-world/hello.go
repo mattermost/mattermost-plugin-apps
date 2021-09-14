@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -44,7 +45,7 @@ func main() {
 	addr := ":8080" // matches manifest.json
 	fmt.Println("Listening on", addr)
 	fmt.Println("Use '/apps install url http://localhost" + addr + "/manifest.json' to install the app") // matches manifest.json
-	panic(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
