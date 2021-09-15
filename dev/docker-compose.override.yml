@@ -2,8 +2,8 @@ services:
     mattermost:
         environment:
             # Change to DEBUG for verbose logging in Mattermost's terminal
-            MM_LOGSETTINGS_CONSOLELEVEL: INFO
-            # MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
+            MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
+            MM_LOGSETTINGS_FILELEVEL: DEBUG
     node_app:
         image: node:13
         ports:
