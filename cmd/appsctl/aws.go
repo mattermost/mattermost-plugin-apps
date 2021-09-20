@@ -156,8 +156,8 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a provisioned resource",
 }
 
-func helloLambda() *apps.App {
-	return &apps.App{
+func helloLambda() apps.App {
+	return apps.App{
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
 			AppType: apps.AppTypeAWSLambda,
@@ -184,7 +184,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(&helloLambda().Manifest, "test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -214,7 +214,7 @@ var awsTestLambdaCmd = &cobra.Command{
 			return err
 		}
 
-		creq := &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},

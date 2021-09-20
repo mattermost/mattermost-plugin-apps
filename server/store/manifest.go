@@ -24,12 +24,12 @@ import (
 type ManifestStore interface {
 	config.Configurable
 
-	AsMap() map[apps.AppID]*apps.Manifest
+	AsMap() map[apps.AppID]apps.Manifest
 	DeleteLocal(apps.AppID) error
 	Get(apps.AppID) (*apps.Manifest, error)
 	GetFromS3(apps.AppID, apps.AppVersion) (*apps.Manifest, error)
 	InitGlobal(httpout.Service) error
-	StoreLocal(*apps.Manifest) error
+	StoreLocal(apps.Manifest) error
 }
 
 // manifestStore combines global (aka marketplace) manifests, and locally
@@ -43,8 +43,8 @@ type manifestStore struct {
 	// manifests.
 	mutex sync.RWMutex
 
-	global map[apps.AppID]*apps.Manifest
-	local  map[apps.AppID]*apps.Manifest
+	global map[apps.AppID]apps.Manifest
+	local  map[apps.AppID]apps.Manifest
 
 	aws           upaws.Client
 	s3AssetBucket string
@@ -93,7 +93,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	}
 	defer f.Close()
 
-	global := map[apps.AppID]*apps.Manifest{}
+	global := map[apps.AppID]apps.Manifest{}
 	manifestLocations := map[apps.AppID]string{}
 	err = json.NewDecoder(f).Decode(&manifestLocations)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 		case len(parts) == 2 && parts[0] == "file":
 			data, err = os.ReadFile(filepath.Join(assetPath, parts[1]))
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
-			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode)
+			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode, apps.MaxManifestSize)
 		default:
 			log.WithError(err).Errorw("Failed to load global manifest",
 				"app_id", appID)
@@ -139,7 +139,7 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 				"loc", loc)
 			continue
 		}
-		global[appID] = m
+		global[appID] = *m
 	}
 
 	s.mutex.Lock()
@@ -155,7 +155,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = m.IsValid()
+	err = m.Validate()
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func DecodeManifest(data []byte) (*apps.Manifest, error) {
 
 func (s *manifestStore) Configure(conf config.Config) error {
 	_, mm, log := s.conf.Basic()
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
 		var m *apps.Manifest
@@ -179,7 +179,7 @@ func (s *manifestStore) Configure(conf config.Config) error {
 				"app_id", id)
 
 		default:
-			updatedLocal[apps.AppID(id)] = m
+			updatedLocal[apps.AppID(id)] = *m
 		}
 	}
 
@@ -197,22 +197,22 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 
 	m, ok := local[appID]
 	if ok {
-		return m, nil
+		return &m, nil
 	}
 	m, ok = global[appID]
 	if ok {
-		return m, nil
+		return &m, nil
 	}
 	return nil, utils.ErrNotFound
 }
 
-func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
+func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
 	s.mutex.RUnlock()
 
-	out := map[apps.AppID]*apps.Manifest{}
+	out := map[apps.AppID]apps.Manifest{}
 	for id, m := range global {
 		out[id] = m
 	}
@@ -222,7 +222,7 @@ func (s *manifestStore) AsMap() map[apps.AppID]*apps.Manifest {
 	return out
 }
 
-func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
+func (s *manifestStore) StoreLocal(m apps.Manifest) error {
 	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
@@ -243,7 +243,7 @@ func (s *manifestStore) StoreLocal(m *apps.Manifest) error {
 	s.mutex.RLock()
 	local := s.local
 	s.mutex.RUnlock()
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 	for k, v := range local {
 		if k != m.AppID {
 			updatedLocal[k] = v
@@ -285,7 +285,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 	s.mutex.RLock()
 	local := s.local
 	s.mutex.RUnlock()
-	updatedLocal := map[apps.AppID]*apps.Manifest{}
+	updatedLocal := map[apps.AppID]apps.Manifest{}
 	for k, v := range local {
 		if k != appID {
 			updatedLocal[k] = v

@@ -7,7 +7,7 @@
     "root_url": "http://localhost:8080",
     "kubeless_functions": [
         {
-            "call_path": "/",
+            "path": "/",
             "handler": "app.handler",
             "file": "app.js",
             "deps_file": "package.json",

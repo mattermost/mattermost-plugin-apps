@@ -30,7 +30,7 @@ app.post('/ping', (req, res) => {
 //         root_url: "http://localhost:8080",
 //         kubeless_functions: [
 //             {
-//                 call_path: "/",
+//                 path: "/",
 //                 handler: "app.Handler",
 //                 file: "app.js",
 //                 deps_file: "package.json",

@@ -9,10 +9,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
-func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
@@ -22,11 +21,10 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 
 	var message string
 	if app.OnUninstall != nil {
-		creq := &apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnUninstall,
 			Context: cc,
-		}
-		resp := p.Call(sessionID, cc.ActingUserID, creq)
+		})
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(err).Warnf("OnUninstall failed, uninstalling app anyway")
 		} else {
@@ -38,22 +36,26 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
 	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
-		if err = client.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
+		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
 		}
 	}
 
 	// revoke bot account token if there is one
 	if app.BotAccessTokenID != "" {
-		if err = client.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
+		if err = asAdmin.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
 			return "", errors.Wrapf(err, "failed to revoke bot access token for %s", app.AppID)
 		}
 	}
 
 	// disable the bot account
-	if _, err = client.DisableBot(app.BotUserID); err != nil {
+	if _, err = asAdmin.DisableBot(app.BotUserID); err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
@@ -78,7 +80,7 @@ func (p *Proxy) UninstallApp(client mmclient.Client, sessionID string, cc *apps.
 
 	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.AppType))
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil
 }
