@@ -132,7 +132,8 @@ func (p *Plugin) OnActivate() (err error) {
 }
 
 func (p *Plugin) OnDeactivate() error {
-	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, map[string]interface{}{}, &model.WebsocketBroadcast{})
+	conf, _, _ := p.conf.Basic()
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
 	return nil
 }
