@@ -82,7 +82,7 @@ func TestOnDeactivate(t *testing.T) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id")
 
-	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{}, &model.WebsocketBroadcast{})
+	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
 	err := p.OnDeactivate()
 	require.NoError(t, err)
