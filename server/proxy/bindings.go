@@ -94,7 +94,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 	b, _ := json.Marshal(resp.Data)
 	err := json.Unmarshal(b, &bindings)
 	if err != nil {
-		log.Debugf("Bindings are not of the right type.")
+		log.WithError(err).Debugf("Bindings are not of the right type.")
 		return nil
 	}
 

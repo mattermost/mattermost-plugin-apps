@@ -28,6 +28,8 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 
 	api := router.PathPrefix(path.API).Subrouter()
 
+	a.initPing(api)
+
 	// Proxy API, intended to be used by the user-agents (mobile, desktop, and
 	// web).
 	a.initCall(api)

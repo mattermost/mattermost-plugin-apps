@@ -1,8 +1,6 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-// +build !e2e
-
 package apps_test
 
 import (

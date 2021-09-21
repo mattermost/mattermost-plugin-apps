@@ -133,3 +133,9 @@ func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, licen
 
 	return nil
 }
+
+func (conf Config) GetPluginVersionInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"version": conf.Manifest.Version,
+	}
+}
