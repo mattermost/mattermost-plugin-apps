@@ -45,7 +45,7 @@ func MakeUpstream() (*Upstream, error) {
 	}, nil
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, creq *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	clientset := kubelessutil.GetClientOutOfCluster()
 
 	url, err := resolvePath(clientset, &app.Manifest, creq.Path)
@@ -124,7 +124,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	return []byte(resp.Body), nil
 }
 
-func (u *Upstream) GetStatic(_ *apps.Manifest, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 

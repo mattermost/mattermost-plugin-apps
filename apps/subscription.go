@@ -76,13 +76,12 @@ type Subscription struct {
 	TeamID    string `json:"team_id,omitempty"`
 
 	// Call is the (one-way) call to make upon the event.
-	Call *Call
+	Call Call
 }
 
-func (sub *Subscription) EqualScope(other *Subscription) bool {
-	s1, s2 := *sub, *other
-	s1.Call, s2.Call = nil, nil
-	return s1 == s2
+func (sub Subscription) EqualScope(s2 Subscription) bool {
+	sub.Call, s2.Call = Call{}, Call{}
+	return sub == s2
 }
 
 func (sub *Subscription) ToJSON() string {

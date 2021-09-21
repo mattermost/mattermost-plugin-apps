@@ -158,41 +158,42 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.Get().SetContextDefaults(&apps.Context{
-		UserID: user.Id,
-		ExpandedContext: apps.ExpandedContext{
-			User: user,
+	err := p.proxy.Notify(
+		apps.Context{
+			UserID: user.Id,
+			ExpandedContext: apps.ExpandedContext{
+				User: user,
+			},
 		},
-	})
-	err := p.proxy.Notify(cc, apps.SubjectUserCreated)
+		apps.SubjectUserCreated)
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
 	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm, actingUser))
+	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
 	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm, actingUser))
+	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm, actingUser))
+	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
 	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm, actingUser))
+	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
 	}
@@ -209,28 +210,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	err = p.proxy.NotifyMessageHasBeenPosted(post, p.newPostCreatedContext(post))
-	if err != nil {
-		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
-	}
-}
-
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.Get().SetContextDefaults(&apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
-		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
-}
-
-func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+	err = p.proxy.NotifyMessageHasBeenPosted(post, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -241,38 +221,40 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 			Post: post,
 		},
 	})
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
+	}
 }
 
-func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	_ = p.proxy.Notify(
+		apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    ch.TeamId,
+				ChannelID: ch.Id,
+			},
+			UserID: ch.CreatorId,
+			ExpandedContext: apps.ExpandedContext{
+				Channel: ch,
+			},
+		},
+		apps.SubjectChannelCreated)
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       tm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: tm.UserId,
+	}
 }
 
-func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return p.conf.Get().SetContextDefaults(&apps.Context{
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       cm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: cm.UserId,
+	}
 }

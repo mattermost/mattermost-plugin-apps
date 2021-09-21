@@ -12,9 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 type installDialogState struct {
@@ -108,24 +106,8 @@ func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, co
 	}
 }
 
-func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
+func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	_, mm, log := d.conf.Basic()
-	actingUserID := req.Header.Get("Mattermost-User-Id")
-	if actingUserID == "" {
-		respondWithError(w, http.StatusUnauthorized, errors.New("user not logged in"))
-		return
-	}
-
-	if err := utils.EnsureSysAdmin(mm, actingUserID); err != nil {
-		respondWithError(w, http.StatusForbidden, err)
-		return
-	}
-
-	sessionID := req.Header.Get("MM_SESSION_ID")
-	if sessionID == "" {
-		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
-		return
-	}
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -158,23 +140,17 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client, err := mmclient.NewHTTPClientFromSessionID(d.conf, sessionID, actingUserID)
-	if err != nil {
-		httputils.WriteError(w, errors.Wrap(utils.ErrInvalid, "invalid session"))
-		return
-	}
-
-	cc := &apps.Context{
+	cc := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    stateData.TeamID,
 			ChannelID: stateData.ChannelID,
 		},
-		ActingUserID: actingUserID,
-		UserID:       actingUserID,
+		ActingUserID: in.ActingUserID,
+		UserID:       in.ActingUserID,
 	}
 	cc = d.conf.Get().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	_, out, err := d.proxy.InstallApp(client, sessionID, cc, noUserConsentForOAuth2, secret)
+	_, out, err := d.proxy.InstallApp(in, cc, stateData.AppID, noUserConsentForOAuth2, secret)
 	if err != nil {
 		log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
 		respondWithError(w, http.StatusInternalServerError, err)
@@ -182,7 +158,7 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		out = fmt.Sprintf("Install failed. Error: **%s**\n", err.Error())
 	}
 
-	mm.Post.SendEphemeralPost(actingUserID, &model.Post{
+	mm.Post.SendEphemeralPost(in.ActingUserID, &model.Post{
 		ChannelId: dialogRequest.ChannelId,
 		Message:   out,
 	})

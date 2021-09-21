@@ -21,8 +21,7 @@ func (s *service) executeDebugClean(params *commandParams) (*model.CommandRespon
 
 func (s *service) executeDebugBindings(params *commandParams) (*model.CommandResponse, error) {
 	bindings, err := s.proxy.GetBindings(
-		params.commandArgs.Session.Id,
-		params.commandArgs.UserId,
+		s.newCommandIncoming(params.commandArgs),
 		s.newCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
@@ -53,7 +52,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	out, err := s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}

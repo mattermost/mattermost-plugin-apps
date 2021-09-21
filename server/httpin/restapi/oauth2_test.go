@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
@@ -36,11 +36,12 @@ func TestOAuth2StoreUser(t *testing.T) {
 		expectedPayload := payload
 		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
-		u := server.URL + mmclient.PathAPI + mmclient.PathOAuth2User + "/some_app_id"
+		u := server.URL + appclient.PathAPI + appclient.PathOAuth2User + "/some_app_id"
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
-		req.Header.Add("Mattermost-User-Id", "some_user_id")
+		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
+		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -71,11 +72,12 @@ func TestOAuth2StoreUser(t *testing.T) {
 
 		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
-		u := server.URL + mmclient.PathAPI + mmclient.PathOAuth2User + "/some_app_id"
+		u := server.URL + appclient.PathAPI + appclient.PathOAuth2User + "/some_app_id"
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
-		req.Header.Add("Mattermost-User-Id", "some_user_id")
+		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
+		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)

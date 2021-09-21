@@ -1,6 +1,8 @@
 package mmclient
 
 import (
+	"io"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -9,6 +11,7 @@ type Client interface {
 	GetUserByUsername(userName string) (*model.User, error)
 	CreateUserAccessToken(userID, description string) (*model.UserAccessToken, error)
 	RevokeUserAccessToken(tokenID string) error
+	SetProfileImage(userID string, content io.Reader) error
 
 	GetChannel(channelID string) (*model.Channel, error)
 
