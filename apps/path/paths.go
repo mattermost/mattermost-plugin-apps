@@ -6,6 +6,9 @@ package path
 const (
 	API = "/api/v1"
 
+	// User-agent ping
+	Ping = "/ping"
+
 	// Services for Apps.
 	KV                = "/kv"
 	OAuth2App         = "/oauth2/app"
