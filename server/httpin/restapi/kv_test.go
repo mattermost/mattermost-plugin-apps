@@ -17,7 +17,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
@@ -47,7 +47,7 @@ func TestKV(t *testing.T) {
 	defer server.Close()
 	Init(router, testConfig, nil, appService)
 
-	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), mmclient.PathAPI, mmclient.PathKV, "/test-id"}, "")
+	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), appclient.PathAPI, appclient.PathKV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
 
 	req, err := http.NewRequest("PUT", itemURL, bytes.NewReader(item))
@@ -59,7 +59,8 @@ func TestKV(t *testing.T) {
 
 	req, err = http.NewRequest("PUT", itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
-	req.Header.Set("Mattermost-User-Id", "01234567890123456789012345")
+	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
+	req.Header.Set(config.MattermostSessionIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -76,7 +77,8 @@ func TestKV(t *testing.T) {
 
 	req, err = http.NewRequest("GET", itemURL, nil)
 	require.NoError(t, err)
-	req.Header.Set("Mattermost-User-Id", "01234567890123456789012345")
+	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
+	req.Header.Set(config.MattermostSessionIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -109,11 +111,12 @@ func TestKVPut(t *testing.T) {
 
 		appServices.EXPECT().KVSet("some_user_id", "", "some_key", expectedPayload).Return(true, nil)
 
-		u := server.URL + mmclient.PathAPI + mmclient.PathKV + "/some_key"
+		u := server.URL + appclient.PathAPI + appclient.PathKV + "/some_key"
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
-		req.Header.Add("Mattermost-User-Id", "some_user_id")
+		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
+		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)

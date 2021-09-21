@@ -1,4 +1,4 @@
-package mmclient
+package appclient
 
 import (
 	"fmt"
@@ -16,19 +16,19 @@ type Client struct {
 	userID string
 }
 
-func as(id, token string, cc *apps.Context) *Client {
+func as(id, token string, cc apps.Context) *Client {
 	return NewClient(id, token, cc.MattermostSiteURL)
 }
 
-func AsBot(cc *apps.Context) *Client {
+func AsBot(cc apps.Context) *Client {
 	return as(cc.BotUserID, cc.BotAccessToken, cc)
 }
 
-func AsActingUser(cc *apps.Context) *Client {
+func AsActingUser(cc apps.Context) *Client {
 	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
 }
 
-func AsAdmin(cc *apps.Context) *Client {
+func AsAdmin(cc apps.Context) *Client {
 	return as(cc.ActingUserID, cc.AdminAccessToken, cc)
 }
 

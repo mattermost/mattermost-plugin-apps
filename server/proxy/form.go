@@ -18,11 +18,10 @@ import (
 // - Invalid select static fields and their invalid options
 func cleanForm(in apps.Form) (apps.Form, []error) {
 	out := in
-	out.Fields = []*apps.Field{}
+	out.Fields = []apps.Field{}
 	problems := []error{}
 	usedLabels := map[string]bool{}
-	for _, fptr := range in.Fields {
-		f := *fptr
+	for _, f := range in.Fields {
 		if f.Name == "" {
 			problems = append(problems, errors.Errorf("field with no name, label %s", f.Label))
 			continue
@@ -56,7 +55,7 @@ func cleanForm(in apps.Form) (apps.Form, []error) {
 			f = clean
 		}
 
-		out.Fields = append(out.Fields, &f)
+		out.Fields = append(out.Fields, f)
 		usedLabels[label] = true
 	}
 

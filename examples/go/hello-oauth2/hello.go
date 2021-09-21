@@ -14,7 +14,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 //go:embed icon.png
@@ -77,12 +77,12 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 
 	bindings := []apps.Binding{{
 		Location: apps.LocationCommand,
-		Bindings: []*apps.Binding{{
+		Bindings: []apps.Binding{{
 			Icon:        "icon.png",
 			Label:       "hello-oauth2",
 			Description: "Hello remote (3rd party) OAuth2 App",
 			Hint:        "[connect | send]",
-			Bindings: []*apps.Binding{
+			Bindings: []apps.Binding{
 				{
 					Location: "connect",
 					Label:    "connect",
@@ -101,7 +101,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 	}}
 
 	if creq.Context.ActingUser.IsSystemAdmin() {
-		configure := &apps.Binding{
+		configure := apps.Binding{
 			Location: "configure",
 			Label:    "configure",
 			Call: &apps.Call{
@@ -124,7 +124,7 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
-	asUser := mmclient.AsActingUser(creq.Context)
+	asUser := appclient.AsActingUser(creq.Context)
 	asUser.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
@@ -175,7 +175,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 
 	token, _ := oauth2Config(&creq).Exchange(context.Background(), code)
 
-	asActingUser := mmclient.AsActingUser(creq.Context)
+	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{})
@@ -213,7 +213,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()
 	if err != nil && newToken.AccessToken != token.AccessToken {
-		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
+		appclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
 	}
 }
 
