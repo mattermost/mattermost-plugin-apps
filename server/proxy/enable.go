@@ -9,35 +9,37 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 )
 
-func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-
 	if !app.Disabled {
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	_, err = client.EnableBot(app.BotUserID)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
+	_, err = asAdmin.EnableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
 
 	// Enable the app in the store first to allow calls to it
 	app.Disabled = false
-	err = p.store.App.Save(app)
+	err = p.store.App.Save(*app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnEnable,
 			Context: cc,
 		})
@@ -48,7 +50,6 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 		}
 	}
 	log.Infof("Enabled app")
-
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	if message == "" {
@@ -57,7 +58,7 @@ func (p *Proxy) EnableApp(client mmclient.Client, sessionID string, cc *apps.Con
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
 	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
@@ -71,7 +72,7 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.Call(sessionID, cc.ActingUserID, &apps.CallRequest{
+		resp := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnDisable,
 			Context: cc,
 		})
@@ -86,26 +87,27 @@ func (p *Proxy) DisableApp(client mmclient.Client, sessionID string, cc *apps.Co
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	// disable app, not removing the data
-	_, err = client.DisableBot(app.BotUserID)
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
+	_, err = asAdmin.DisableBot(app.BotUserID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
 	app.Disabled = true
-	err = p.store.App.Save(app)
+	err = p.store.App.Save(*app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-
 	log.Infof("Disabled app")
-
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
 	return message, nil
 }
 
-func (p *Proxy) AppIsEnabled(app *apps.App) bool {
+func (p *Proxy) appIsEnabled(app apps.App) bool {
 	if app.AppType == apps.AppTypeBuiltin {
 		return true
 	}

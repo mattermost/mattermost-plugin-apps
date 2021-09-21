@@ -1,61 +1,118 @@
 package mmclient
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"io"
+
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type httpClient struct {
 	mm *model.Client4
 }
 
-func NewHTTPClient(config config.Service, sessionID, actingUserID string) (Client, error) {
-	conf, mm, _ := config.Basic()
-	client, err := utils.ClientFromSession(mm, conf.MattermostSiteURL, sessionID, actingUserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &httpClient{client}, nil
+func NewHTTPClient(conf config.Config, token string) Client {
+	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client.SetToken(token)
+	return &httpClient{client}
 }
 
 // User section
 
-func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
-	user, resp := h.mm.GetUserByUsername(userName, "")
-	if resp.Error != nil {
-		return nil, resp.Error
+func (h *httpClient) GetUser(userID string) (*model.User, error) {
+	user, _, err := h.mm.GetUser(userID, "")
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil
 }
 
+func (h *httpClient) GetUserByUsername(userName string) (*model.User, error) {
+	user, _, err := h.mm.GetUserByUsername(userName, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+const (
+	// MaxProfileImageSize is the maximum length in bytes of the profile image file.
+	MaxProfileImageSize = 50 * 1024 * 1024 // 50Mb
+)
+
+func (h *httpClient) SetProfileImage(userID string, content io.Reader) error {
+	data, err := httputils.LimitReadAll(content, MaxProfileImageSize)
+	if err != nil {
+		return err
+	}
+	_, err = h.mm.SetProfileImage(userID, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *httpClient) CreateUserAccessToken(userID, description string) (*model.UserAccessToken, error) {
-	token, resp := h.mm.CreateUserAccessToken(userID, description)
-	if resp.Error != nil {
-		return nil, resp.Error
+	token, _, err := h.mm.CreateUserAccessToken(userID, description)
+	if err != nil {
+		return nil, err
 	}
 
 	return token, nil
 }
 
 func (h *httpClient) RevokeUserAccessToken(tokenID string) error {
-	_, resp := h.mm.RevokeUserAccessToken(tokenID)
-	if resp.Error != nil {
-		return resp.Error
+	_, err := h.mm.RevokeUserAccessToken(tokenID)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
+// Channel section
+
+func (h *httpClient) GetChannel(channelID string) (*model.Channel, error) {
+	channel, _, err := h.mm.GetChannel(channelID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return channel, nil
+}
+
+// Team section
+
+func (h *httpClient) GetTeam(teamID string) (*model.Team, error) {
+	team, _, err := h.mm.GetTeam(teamID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return team, nil
+}
+
+// Post section
+
+func (h *httpClient) GetPost(postID string) (*model.Post, error) {
+	post, _, err := h.mm.GetPost(postID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
 // OAuth section
 
 func (h *httpClient) CreateOAuthApp(app *model.OAuthApp) error {
-	createdOauthApp, resp := h.mm.CreateOAuthApp(app)
-	if resp.Error != nil {
-		return resp.Error
+	createdOauthApp, _, err := h.mm.CreateOAuthApp(app)
+	if err != nil {
+		return err
 	}
 
 	*app = *createdOauthApp
@@ -64,18 +121,18 @@ func (h *httpClient) CreateOAuthApp(app *model.OAuthApp) error {
 }
 
 func (h *httpClient) GetOAuthApp(appID string) (*model.OAuthApp, error) {
-	oauthApp, resp := h.mm.GetOAuthApp(appID)
-	if resp.Error != nil {
-		return nil, resp.Error
+	oauthApp, _, err := h.mm.GetOAuthApp(appID)
+	if err != nil {
+		return nil, err
 	}
 
 	return oauthApp, nil
 }
 
 func (h *httpClient) DeleteOAuthApp(appID string) error {
-	_, resp := h.mm.DeleteOAuthApp(appID)
-	if resp.Error != nil {
-		return resp.Error
+	_, err := h.mm.DeleteOAuthApp(appID)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -84,9 +141,9 @@ func (h *httpClient) DeleteOAuthApp(appID string) error {
 // Bot section
 
 func (h *httpClient) CreateBot(bot *model.Bot) error {
-	createdBot, resp := h.mm.CreateBot(bot)
-	if resp.Error != nil {
-		return resp.Error
+	createdBot, _, err := h.mm.CreateBot(bot)
+	if err != nil {
+		return err
 	}
 
 	*bot = *createdBot
@@ -95,27 +152,27 @@ func (h *httpClient) CreateBot(bot *model.Bot) error {
 }
 
 func (h *httpClient) GetBot(botUserID string) (*model.Bot, error) {
-	bot, resp := h.mm.GetBot(botUserID, "")
-	if resp.Error != nil {
-		return nil, resp.Error
+	bot, _, err := h.mm.GetBot(botUserID, "")
+	if err != nil {
+		return nil, err
 	}
 
 	return bot, nil
 }
 
 func (h *httpClient) EnableBot(botUserID string) (*model.Bot, error) {
-	bot, resp := h.mm.EnableBot(botUserID)
-	if resp.Error != nil {
-		return nil, resp.Error
+	bot, _, err := h.mm.EnableBot(botUserID)
+	if err != nil {
+		return nil, err
 	}
 
 	return bot, nil
 }
 
 func (h *httpClient) DisableBot(botUserID string) (*model.Bot, error) {
-	bot, resp := h.mm.DisableBot(botUserID)
-	if resp.Error != nil {
-		return nil, resp.Error
+	bot, _, err := h.mm.DisableBot(botUserID)
+	if err != nil {
+		return nil, err
 	}
 
 	return bot, nil

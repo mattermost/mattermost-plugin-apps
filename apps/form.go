@@ -48,5 +48,5 @@ type Form struct {
 	SubmitButtons string `json:"submit_buttons,omitempty"`
 
 	// Fields is the list of fields in the form.
-	Fields []*Field `json:"fields,omitempty"`
+	Fields []Field `json:"fields,omitempty"`
 }

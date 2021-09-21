@@ -6,7 +6,7 @@ package appservices
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -20,9 +20,9 @@ var ErrIsABot = errors.New("is a bot")
 type Service interface {
 	// Subscriptions
 
-	Subscribe(actingUserID string, _ *apps.Subscription) error
-	GetSubscriptions(actingUserID string) ([]*apps.Subscription, error)
-	Unsubscribe(actingUserID string, _ *apps.Subscription) error
+	Subscribe(actingUserID string, _ apps.Subscription) error
+	GetSubscriptions(actingUserID string) ([]apps.Subscription, error)
+	Unsubscribe(actingUserID string, _ apps.Subscription) error
 
 	// KV
 
@@ -62,7 +62,7 @@ func (a *AppServices) ensureFromBot(mattermostUserID string) error {
 		return err
 	}
 	if !mmuser.IsBot {
-		return errors.Wrap(ErrNotABot, mmuser.GetDisplayName(model.SHOW_NICKNAME_FULLNAME))
+		return errors.Wrap(ErrNotABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func (a *AppServices) ensureFromUser(mattermostUserID string) error {
 		return err
 	}
 	if mmuser.IsBot {
-		return errors.Wrap(ErrIsABot, mmuser.GetDisplayName(model.SHOW_NICKNAME_FULLNAME))
+		return errors.Wrap(ErrIsABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
 	}
 	return nil
 }

@@ -20,22 +20,23 @@ import (
 )
 
 type Upstream struct {
-	StaticUpstream
+	httpOut httpout.Service
+	devMode bool
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(httpOut httpout.Service) *Upstream {
-	staticUp := NewStaticUpstream(httpOut)
+func NewUpstream(httpOut httpout.Service, devMode bool) *Upstream {
 	return &Upstream{
-		StaticUpstream: *staticUp,
+		httpOut: httpOut,
+		devMode: devMode,
 	}
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, app, call)
+			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -43,24 +44,20 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, app, call) // nolint:bodyclose
+	resp, err := u.invoke(creq.Context.ActingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, app *apps.App, call *apps.CallRequest) (*http.Response, error) {
-	if call == nil {
-		return nil, utils.NewInvalidError("empty call")
-	}
-
-	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + call.Path)
+func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
+	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + creq.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	client := u.httpOut.MakeClient(true)
+	client := u.httpOut.MakeClient(u.devMode)
 	jwtoken, err := createJWT(fromMattermostUserID, app.Secret)
 	if err != nil {
 		return nil, err
@@ -68,7 +65,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, app *apps.App, call *apps
 
 	piper, pipew := io.Pipe()
 	go func() {
-		encodeErr := json.NewEncoder(pipew).Encode(call)
+		encodeErr := json.NewEncoder(pipew).Encode(creq)
 		if encodeErr != nil {
 			_ = pipew.CloseWithError(encodeErr)
 		}

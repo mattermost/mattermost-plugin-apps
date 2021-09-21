@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -69,19 +69,13 @@ type Config struct {
 	AWSS3Bucket  string
 }
 
-func (conf Config) SetContextDefaults(cc *apps.Context) *apps.Context {
-	if cc == nil {
-		cc = &apps.Context{}
-	}
+func (conf Config) SetContextDefaults(cc apps.Context) apps.Context {
 	cc.BotUserID = conf.BotUserID
 	cc.MattermostSiteURL = conf.MattermostSiteURL
 	return cc
 }
 
-func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
-	if cc == nil {
-		cc = &apps.Context{}
-	}
+func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc apps.Context) apps.Context {
 	cc = conf.SetContextDefaults(cc)
 	cc.AppID = appID
 	cc.AppPath = path.Join(conf.PluginURLPath, PathApps, string(appID))

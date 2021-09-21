@@ -14,10 +14,10 @@ import (
 )
 
 type SubscriptionStore interface {
-	Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
-	List() ([]*apps.Subscription, error)
-	Save(sub *apps.Subscription) error
-	Delete(*apps.Subscription) error
+	Delete(apps.Subscription) error
+	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
+	List() ([]apps.Subscription, error)
+	Save(sub apps.Subscription) error
 }
 
 type subscriptionStore struct {
@@ -41,10 +41,10 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 	return config.KVSubPrefix + string(subject) + idSuffix
 }
 
-func (s subscriptionStore) Delete(sub *apps.Subscription) error {
+func (s subscriptionStore) Delete(sub apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*apps.Subscription
+	var subs []apps.Subscription
 	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
@@ -71,9 +71,9 @@ func (s subscriptionStore) Delete(sub *apps.Subscription) error {
 	return utils.ErrNotFound
 }
 
-func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
+func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
 	key := subsKey(subject, teamID, channelID)
-	var subs []*apps.Subscription
+	var subs []apps.Subscription
 	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
@@ -84,15 +84,15 @@ func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) (
 	return subs, nil
 }
 
-func (s subscriptionStore) List() ([]*apps.Subscription, error) {
+func (s subscriptionStore) List() ([]apps.Subscription, error) {
 	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
 	if err != nil {
 		return nil, err
 	}
 
-	subs := []*apps.Subscription{}
+	subs := []apps.Subscription{}
 	for _, key := range keys {
-		sub := []*apps.Subscription{}
+		sub := []apps.Subscription{}
 		err := s.conf.MattermostAPI().KV.Get(key, &sub)
 		if err != nil {
 			return nil, err
@@ -103,10 +103,10 @@ func (s subscriptionStore) List() ([]*apps.Subscription, error) {
 	return subs, nil
 }
 
-func (s subscriptionStore) Save(sub *apps.Subscription) error {
+func (s subscriptionStore) Save(sub apps.Subscription) error {
 	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	// get all subscriptions for the subject
-	var subs []*apps.Subscription
+	var subs []apps.Subscription
 	err := s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err

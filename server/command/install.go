@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
@@ -43,7 +43,7 @@ func (s *service) executeInstallAWS(params *commandParams) (*model.CommandRespon
 		return errorOut(params, errors.Wrap(err, "failed to get manifest from S3"))
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -67,7 +67,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -77,7 +77,7 @@ func (s *service) executeInstallHTTP(params *commandParams) (*model.CommandRespo
 		return errorOut(params, errors.Wrap(err, "unable to decode "+manifestURL))
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -98,7 +98,7 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 
 	// Trust the URL only in dev mode
 	conf := s.conf.Get()
-	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode)
+	data, err := s.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -108,7 +108,7 @@ func (s *service) executeInstallKubeless(params *commandParams) (*model.CommandR
 		return errorOut(params, err)
 	}
 
-	_, err = s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	_, err = s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -129,6 +129,6 @@ func (s *service) installApp(m *apps.Manifest, appSecret string, params *command
 
 	return &model.CommandResponse{
 		Text:         "please continue by filling out the interactive form",
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}, nil
 }

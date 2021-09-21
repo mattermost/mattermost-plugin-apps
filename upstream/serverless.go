@@ -42,7 +42,7 @@ func ServerlessResponseFromJSON(data []byte) (*ServerlessResponse, error) {
 	return &resp, nil
 }
 
-func ServerlessRequestFromCall(creq *apps.CallRequest) ([]byte, error) {
+func ServerlessRequestFromCall(creq apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(creq)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to encode serverless request")
