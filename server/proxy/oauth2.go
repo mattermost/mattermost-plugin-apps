@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error) {
+func (p *Proxy) GetRemoteOAuth2ConnectURL(in Incoming, appID apps.AppID) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", err
@@ -16,25 +16,19 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
-	state, err := p.store.OAuth2.CreateState(actingUserID)
+	state, err := p.store.OAuth2.CreateState(in.ActingUserID)
 	if err != nil {
 		return "", err
 	}
 
-	creq := &apps.CallRequest{
-		Call: *apps.DefaultGetOAuth2ConnectURL.WithOverrides(app.GetOAuth2ConnectURL),
-		Context: p.conf.Get().SetContextDefaultsForApp(appID,
-			&apps.Context{
-				ActingUserID: actingUserID,
-			},
-		),
+	cresp := p.callApp(in, *app, apps.CallRequest{
+		Call: app.GetOAuth2ConnectURL.WithDefault(apps.DefaultGetOAuth2ConnectURL),
 		Values: map[string]interface{}{
 			"state": state,
 		},
-	}
-	cresp := p.Call(sessionID, actingUserID, creq)
+	})
 	if cresp.Type == apps.CallResponseTypeError {
-		return "", cresp
+		return "", &cresp
 	}
 	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
 		return "", errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
@@ -47,7 +41,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID 
 	return connectURL, nil
 }
 
-func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error {
+func (p *Proxy) CompleteRemoteOAuth2(in Incoming, appID apps.AppID, urlValues map[string]interface{}) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -60,24 +54,23 @@ func (p *Proxy) CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.
 	if urlState == "" {
 		return utils.NewUnauthorizedError("no state arg in the URL")
 	}
-	err = p.store.OAuth2.ValidateStateOnce(urlState, actingUserID)
+	err = p.store.OAuth2.ValidateStateOnce(urlState, in.ActingUserID)
 	if err != nil {
 		return err
 	}
 
-	creq := &apps.CallRequest{
-		Call:    *apps.DefaultOnOAuth2Complete.WithOverrides(app.OnOAuth2Complete),
-		Context: p.conf.Get().SetContextDefaultsForApp(appID, nil),
-		Values:  urlValues,
-	}
-	cresp := p.Call(sessionID, actingUserID, creq)
+	cresp := p.callApp(in, *app,
+		apps.CallRequest{
+			Call:   app.OnOAuth2Complete.WithDefault(apps.DefaultOnOAuth2Complete),
+			Values: urlValues,
+		})
 	if cresp.Type == apps.CallResponseTypeError {
-		return cresp
+		return &cresp
 	}
 	if cresp.Type != "" && cresp.Type != apps.CallResponseTypeOK {
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
-	p.dispatchRefreshBindingsEvent(actingUserID)
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 	return nil
 }

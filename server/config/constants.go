@@ -5,6 +5,12 @@ package config
 
 import "github.com/mattermost/mattermost-plugin-apps/apps"
 
+const (
+	MattermostSessionIDHeader = "Mattermost-Session-Id"
+	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
+	MattermostUserIDHeader    = "Mattermost-User-Id"
+)
+
 // Internal configuration apps.of mattermost-plugin-apps
 const (
 	Repository     = "mattermost-plugin-apps"

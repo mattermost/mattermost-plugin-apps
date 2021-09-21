@@ -20,9 +20,9 @@ var ErrIsABot = errors.New("is a bot")
 type Service interface {
 	// Subscriptions
 
-	Subscribe(actingUserID string, _ *apps.Subscription) error
-	GetSubscriptions(actingUserID string) ([]*apps.Subscription, error)
-	Unsubscribe(actingUserID string, _ *apps.Subscription) error
+	Subscribe(actingUserID string, _ apps.Subscription) error
+	GetSubscriptions(actingUserID string) ([]apps.Subscription, error)
+	Unsubscribe(actingUserID string, _ apps.Subscription) error
 
 	// KV
 
