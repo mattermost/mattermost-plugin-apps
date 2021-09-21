@@ -38,6 +38,7 @@ var configureFormData []byte
 func main() {
 	// Static handlers
 
+	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
@@ -70,8 +71,7 @@ func main() {
 	http.HandleFunc("/send/form", writeJSON(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	fmt.Println("Listening on :8082") // matches manifest.json
-	panic(http.ListenAndServe(":8082", nil))
+	http.ListenAndServe(":8080", nil)
 }
 
 func configure(w http.ResponseWriter, req *http.Request) {

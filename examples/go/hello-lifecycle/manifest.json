@@ -17,10 +17,8 @@
 	"on_disable": {
 		"path": "/disable"
 	},
+	"root_url": "http://localhost:8080",
 	"requested_permissions": [
 		"act_as_bot"
-	],
-	"http": {
-		"root_url": "http://localhost:8083"
-	}
+	]
 }

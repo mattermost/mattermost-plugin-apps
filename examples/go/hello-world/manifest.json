@@ -3,7 +3,7 @@
     "version":"v0.8.0",
 	"display_name": "Hello, world!",
 	"icon": "icon.png",
-	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-world",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello",
 	"requested_permissions": [
 		"act_as_bot"
 	],
