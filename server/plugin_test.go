@@ -60,7 +60,7 @@ func TestOnActivate(t *testing.T) {
 
 	testAPI.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 
-	testAPI.On("PublishWebSocketEvent", "plugin_enabled", map[string]interface{}{}, &model.WebsocketBroadcast{})
+	testAPI.On("PublishWebSocketEvent", "plugin_enabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
 	err := p.OnActivate()
 	require.NoError(t, err)
