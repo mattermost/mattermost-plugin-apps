@@ -17,16 +17,6 @@ import (
 
 // GetAppBundle loads and unzips the bundle into a temp folder, parses the
 // manifest.
-//
-// Its input is a zip file containing:
-//   - manifest.json
-//   - static
-//     - static-file(...)
-// 	 - aws
-//     - {function-name}.zip(...)
-//   - openfaas
-//     
-//   |-- function files referenced in manifest.json...
 func GetAppBundle(bundlePath string, log utils.Logger) (*apps.Manifest, string, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {

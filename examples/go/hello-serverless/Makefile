@@ -3,12 +3,13 @@
 all: dist run
 
 .PHONY: run
-## run: runs the app locally, as an http server
+## run: runs the app locally
 run: 
-	go run ./http/main.go
+	MODE=http go run .
 
-.PHONY: dist
-## dist: creates the bundle file for AWS Lambda deployments
+
+.PHONY: dist-aws
+## dist-aws: creates the bundle file for AWS Lambda deployments
 dist-aws: 
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/hello-serverless . 
 	rm -rf dist/aws && mkdir -p dist/aws
