@@ -7,7 +7,6 @@ all: dist run
 run: 
 	MODE=http go run .
 
-
 .PHONY: dist-aws
 ## dist-aws: creates the bundle file for AWS Lambda deployments
 dist-aws: 
@@ -20,24 +19,25 @@ dist-aws:
 		zip -rmq ../bundle-aws.zip hello-serverless.zip manifest.json static
 	rm -r dist/aws
 
-.PHONY: dist-openfaas
-## dist-openfaas: creates the bundle file for OpenFaaS deployments
-dist-openfaas:
+.PHONY: dist-open-faas
+## dist-open-faas: creates the bundle file for OpenFaaS deployments
+dist-open-faas:
 	mkdir -p dist
-	rm -f dist/bundle-openfaas.zip
-	rm -rf dist/openfaas && mkdir -p dist/openfaas
-	cp app/data/manifest.json dist/openfaas
-	cp go.mod dist/openfaas
-	cp go.sum dist/openfaas
-	cp openfaas-golang-middleware.yml dist/openfaas/manifest.yml
-	cp -r app dist/openfaas
-	cp -r template dist/openfaas
-	cd dist/openfaas ; \
-		zip -rmq ../bundle-openfaas.zip *
+	rm -f dist/bundle-open-faas.zip
+	rm -rf dist/open-faas && mkdir -p dist/open-faas
+	cp app/data/manifest.json dist/open-faas
+	cp go.mod dist/open-faas
+	cp go.sum dist/open-faas
+	cp open-faas-golang-middleware.yml dist/open-faas/manifest.yml
+	cp -r app dist/open-faas
+	cp -r template dist/open-faas
+	cd dist/open-faas ; \
+		zip -rmq ../bundle-open-faas.zip *
+	rm -r dist/open-faas
 
 .PHONY: dist
 ## dist: creates all bundles
-dist: dist-aws dist-openfaas
+dist: dist-aws dist-open-faas
 
 .PHONY: clean
 ## clean: deletes all
