@@ -7,6 +7,6 @@ functions:
     lang: golang-middleware
     build_args:
       GO111MODULE: on
-    handler: ./app
+    handler: ./function
     # image should be replaced with the appropriate registry/image name.
     image: levb/test-golang-middleware:latest

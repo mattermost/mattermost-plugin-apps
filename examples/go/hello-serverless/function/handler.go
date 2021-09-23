@@ -1,8 +1,7 @@
 package function
 
 import (
-	"crypto/tls"
-	"embed"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,20 +10,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
-//go:embed data/manifest.json
-var manifestData []byte
-
-//go:embed data/pong.json
+//go:embed pong.json
 var pongData []byte
 
-//go:embed data/bindings.json
+//go:embed bindings.json
 var bindingsData []byte
 
-//go:embed data/send_form.json
+//go:embed send_form.json
 var formData []byte
-
-//go:embed static
-var static embed.FS
 
 // Handler for OpenFaaS and faasd.
 func Handle(w http.ResponseWriter, r *http.Request) {
@@ -35,12 +28,6 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 var deployType apps.DeployType
 
 func InitApp(dt apps.DeployType) {
-	// Serve static assets.
-	http.Handle("/static/", http.FileServer(http.FS(static)))
-
-	// Returns the manifest for the App.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
-
 	// Serve app's Calls. "/ping" is used in `appsctl test aws`
 	// Returns "PONG". Used for `appsctl test aws`.
 	http.HandleFunc("/ping", writeJSON(pongData))
@@ -70,14 +57,14 @@ func send(w http.ResponseWriter, req *http.Request) {
 	// Running on ngrok in development, need this to avoid getting "x509:
 	// certificate signed by unknown authority" error when running in a fresh
 	// ubuntu container.
-	asBot := mmclient.AsBot(creq.Context)
-	asBot.HttpClient = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	asBot := appclient.AsBot(creq.Context)
+	// asBot.HttpClient = &http.Client{
+	// 	Transport: &http.Transport{
+	// 		TLSClientConfig: &tls.Config{
+	// 			InsecureSkipVerify: true,
+	// 		},
+	// 	},
+	// }
 	asBot.DM(creq.Context.ActingUserID, message)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
