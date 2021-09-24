@@ -16,7 +16,7 @@ var manifestData []byte
 
 const (
 	host = "localhost"
-	port = 8080
+	port = 8083
 )
 
 func main() {
@@ -34,9 +34,9 @@ func main() {
 
 	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
 
-	addr := fmt.Sprintf("%v:%v", host, port)
-	rootURL := "http://" + addr
-	fmt.Printf("hello-lifecycle app listening at %s \n", rootURL)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-lifecycle app listening on %q \n", addr)
 	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
 	http.ListenAndServe(addr, nil)
 }
