@@ -14,6 +14,11 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
+const (
+	host = "localhost"
+	port = 8081
+)
+
 //go:embed icon.png
 var iconData []byte
 
@@ -56,7 +61,11 @@ func main() {
 	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-webhooks app listening on %q \n", addr)
+	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func install(w http.ResponseWriter, req *http.Request) {

@@ -44,10 +44,10 @@ func main() {
 	http.HandleFunc("/static/icon.png",
 		httputils.HandleData("image/png", iconData))
 
-	addr := ":8080" // matches manifest.json
+	addr := ":4000" // matches manifest.json
 	fmt.Println("Listening on", addr)
 	fmt.Println("Use '/apps install url http://localhost" + addr + "/manifest.json' to install the app") // matches manifest.json
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {

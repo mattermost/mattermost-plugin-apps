@@ -12,6 +12,6 @@
 		"/command"
 	],
 	"http": {
-		"root_url": "http://localhost:8080"
+		"root_url": "http://localhost:4000"
 	}
 }
