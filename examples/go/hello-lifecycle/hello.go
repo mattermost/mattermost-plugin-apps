@@ -38,7 +38,7 @@ func main() {
 	rootURL := fmt.Sprintf("http://%v:%v", host, port)
 	fmt.Printf("hello-lifecycle app listening on %q \n", addr)
 	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
-	http.ListenAndServe(addr, nil)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Request) {

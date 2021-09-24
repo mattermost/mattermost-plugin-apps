@@ -18,6 +18,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
+const (
+	host = "localhost"
+	port = 8082
+)
+
 //go:embed icon.png
 var iconData []byte
 
@@ -73,7 +78,11 @@ func main() {
 	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-oauth2 app listening on %q \n", addr)
+	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func configure(w http.ResponseWriter, req *http.Request) {
