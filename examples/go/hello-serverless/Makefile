@@ -42,7 +42,7 @@ dist-openfaas:
 	cp -r openfaas/template dist/openfaas
 	cd dist/openfaas ; \
 		zip -rq ../bundle-openfaas.zip *
-	# rm -r dist/openfaas
+	rm -r dist/openfaas
 
 .PHONY: dist
 ## dist: creates all bundles

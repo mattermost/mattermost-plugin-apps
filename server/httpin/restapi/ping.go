@@ -21,5 +21,5 @@ func (a *restapi) initPing(api *mux.Router) {
 
 func (a *restapi) Ping(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
 	info := a.conf.Get().GetPluginVersionInfo()
-	httputils.WriteJSON(w, info)
+	_ = httputils.WriteJSON(w, info)
 }

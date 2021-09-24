@@ -51,7 +51,7 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 		"type", res.Type,
 		"path", creq.Path,
 	)
-	httputils.WriteJSON(w, res)
+	_ = httputils.WriteJSON(w, res)
 }
 
 func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {

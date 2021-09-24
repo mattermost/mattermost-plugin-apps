@@ -20,14 +20,14 @@ func Notify(u Upstream, app apps.App, creq apps.CallRequest) error {
 func Call(u Upstream, app apps.App, creq apps.CallRequest) apps.CallResponse {
 	r, err := u.Roundtrip(app, creq, false)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewErrorResponse(err)
 	}
 	defer r.Close()
 
 	cr := apps.CallResponse{}
 	err = json.NewDecoder(r).Decode(&cr)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewErrorResponse(err)
 	}
 	return cr
 }

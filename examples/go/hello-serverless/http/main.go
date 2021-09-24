@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/function"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func main() {
@@ -20,10 +21,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		http.HandleFunc("/manifest.json", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(mdata)
-		})
+		http.HandleFunc("/manifest.json", httputils.HandleJSONData(mdata))
 	}
 
 	if spath != nil && *spath != "" {

@@ -36,5 +36,5 @@ func (a *restapi) GetBindings(w http.ResponseWriter, req *http.Request, in proxy
 		httputils.WriteError(w, err)
 		return
 	}
-	httputils.WriteJSON(w, bindings)
+	_ = httputils.WriteJSON(w, bindings)
 }

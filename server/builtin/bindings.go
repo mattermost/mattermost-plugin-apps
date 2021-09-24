@@ -10,10 +10,7 @@ var noParameters = apps.Form{
 }
 
 func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
-	return apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
-		Data: a.getBindings(creq),
-	}
+	return apps.NewOKResponse(a.getBindings(creq))
 }
 
 func (a *builtinApp) getBindings(creq apps.CallRequest) []apps.Binding {

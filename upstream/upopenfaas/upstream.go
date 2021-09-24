@@ -21,10 +21,6 @@ const (
 	// Environment variable used by appsctl to find OpenFaaS
 	EnvGatewayURL = "OPENFAAS_URL"
 
-	// Environment variables set for function execution
-	FuncEnvMode = "MODE"
-	FuncEnvSelf = "SELF"
-
 	// YAML file for provisioning
 	ManifestYaml = "manifest.yml"
 )

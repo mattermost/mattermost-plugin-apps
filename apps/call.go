@@ -5,6 +5,7 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -149,12 +150,38 @@ func NewProxyCallResponse(response CallResponse, metadata *AppMetadataForClient)
 	}
 }
 
-func NewErrorCallResponse(err error) CallResponse {
+func NewErrorResponse(err error) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeError,
 		// TODO <>/<> ticket use MD instead of ErrorText
 		ErrorText: err.Error(),
 	}
+}
+
+func NewOKResponse(data interface{}, textArgs ...interface{}) CallResponse {
+	text := ""
+	if len(textArgs) > 0 {
+		format, _ := textArgs[0].(string)
+		text = fmt.Sprintf(format, textArgs[1:]...)
+	}
+	return CallResponse{
+		Type:     CallResponseTypeOK,
+		Data:     data,
+		Markdown: text,
+	}
+}
+
+func NewFormResponse(form Form) CallResponse {
+	return CallResponse{
+		Type: CallResponseTypeForm,
+		Form: &form,
+	}
+}
+
+func NewLookupResponse(opts []SelectOption) CallResponse {
+	return NewOKResponse(struct {
+		Items []SelectOption `json:"items"`
+	}{opts})
 }
 
 // Error() makes CallResponse a valid error, for convenience

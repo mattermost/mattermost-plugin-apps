@@ -21,13 +21,12 @@ import (
 
 // ProvisionApp creates OpenFaaS functions from an app bundle, as declared by
 // the app's manifest.
-func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool, gateway string) (*apps.Manifest, error) {
+func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool, gateway, prefix string) (*apps.Manifest, error) {
 	m, dir, err := upstream.GetAppBundle(bundlePath, log)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("<>/<>", dir)
-	// defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 
 	yamlFile := filepath.Join(dir, ManifestYaml)
 	parsedServices, err := stack.ParseYAMLFile(yamlFile, "", "", false)
@@ -42,9 +41,11 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool, gatewa
 		if f.Environment == nil {
 			f.Environment = map[string]string{}
 		}
-		f.Environment[FuncEnvMode] = "open_faas"
-		f.Environment[FuncEnvSelf] = fmt.Sprintf("%s/function/%s", gateway, FunctionName(m.AppID, m.Version, name))
 		f.Name = FunctionName(m.AppID, m.Version, name)
+		if !strings.HasSuffix(prefix, "/") {
+			prefix += "/"
+		}
+		f.Image = prefix + f.Image
 		newFunctions[f.Name] = f
 	}
 	parsedServices.Functions = newFunctions

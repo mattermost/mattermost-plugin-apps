@@ -8,5 +8,4 @@ functions:
     build_args:
       GO111MODULE: on
     handler: ./function
-    # image should be replaced with the appropriate registry/image name.
-    image: levb/test-golang-middleware:latest
+    image: hello-openfaas

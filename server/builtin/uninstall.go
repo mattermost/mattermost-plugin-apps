@@ -40,9 +40,9 @@ func (a *builtinApp) uninstall() handler {
 				creq.Context,
 				apps.AppID(creq.GetValue(fAppID, "")))
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
-			return mdResponse(out)
+			return apps.NewOKResponse(nil, out)
 		},
 	}
 }

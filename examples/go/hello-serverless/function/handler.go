@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 //go:embed pong.json
@@ -30,13 +31,13 @@ var deployType apps.DeployType
 func InitApp(dt apps.DeployType) {
 	// Serve app's Calls. "/ping" is used in `appsctl test aws`
 	// Returns "PONG". Used for `appsctl test aws`.
-	http.HandleFunc("/ping", writeJSON(pongData))
+	http.HandleFunc("/ping", httputils.HandleJSONData(pongData))
 
 	// Returns the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", writeJSON(bindingsData))
+	http.HandleFunc("/bindings", httputils.HandleJSONData(bindingsData))
 
 	// The form for sending a Hello message.
-	http.HandleFunc("/send/form", writeJSON(formData))
+	http.HandleFunc("/send/form", httputils.HandleJSONData(formData))
 
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send/submit", send)
@@ -54,32 +55,9 @@ func send(w http.ResponseWriter, req *http.Request) {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
 
-	// Running on ngrok in development, need this to avoid getting "x509:
-	// certificate signed by unknown authority" error when running in a fresh
-	// ubuntu container.
 	asBot := appclient.AsBot(creq.Context)
-	// asBot.HttpClient = &http.Client{
-	// 	Transport: &http.Transport{
-	// 		TLSClientConfig: &tls.Config{
-	// 			InsecureSkipVerify: true,
-	// 		},
-	// 	},
-	// }
 	asBot.DM(creq.Context.ActingUserID, message)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Type:     apps.CallResponseTypeOK,
-		Markdown: "Created a post in your DM channel.",
-	})
-}
-
-func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", ct)
-		w.Write(data)
-	}
-}
-
-func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return writeData("application/json", data)
+	httputils.WriteJSON(w,
+		apps.NewOKResponse(nil, "Created a post in your DM channel."))
 }

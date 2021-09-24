@@ -17,6 +17,7 @@ func init() {
 	// provision
 	openfaasCmd.AddCommand(openfaasProvisionCmd)
 	openfaasProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	openfaasProvisionCmd.Flags().StringVar(&dockerRegistry, "docker-registry", "", "Docker image prefix, usually the docker registry to use for deploying functions.")
 
 	// test
 	// openfaasCmd.AddCommand(openfaasTestCmd)
@@ -35,7 +36,7 @@ var openfaasProvisionCmd = &cobra.Command{
 		bundlePath := args[0]
 		gateway := os.Getenv(upopenfaas.EnvGatewayURL)
 
-		m, err := upopenfaas.ProvisionApp(bundlePath, log, shouldUpdate, gateway)
+		m, err := upopenfaas.ProvisionApp(bundlePath, log, shouldUpdate, gateway, dockerRegistry)
 		if err != nil {
 			return err
 		}

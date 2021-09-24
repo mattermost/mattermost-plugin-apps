@@ -118,7 +118,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 
 		cresp := apps.CallResponse{}
 		_ = json.Unmarshal(data, &cresp)
-		expected := apps.CallResponse{Markdown: "PONG", Type: apps.CallResponseTypeOK}
+		expected := apps.NewOKResponse(nil, "PONG")
 		if cresp != expected {
 			return errors.Errorf("invalid value received: %s", string(data))
 		}
