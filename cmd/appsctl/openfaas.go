@@ -17,6 +17,7 @@ func init() {
 	// provision
 	openfaasCmd.AddCommand(openfaasProvisionCmd)
 	openfaasProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	openfaasProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 	openfaasProvisionCmd.Flags().StringVar(&dockerRegistry, "docker-registry", "", "Docker image prefix, usually the docker registry to use for deploying functions.")
 
 	// test
