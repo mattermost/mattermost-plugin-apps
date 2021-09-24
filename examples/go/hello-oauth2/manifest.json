@@ -1,6 +1,6 @@
 {
 	"app_id": "hello-oauth2",
-	"version": "demo",
+	"version": "0.8.0",
 	"display_name": "Hello, OAuth2!",
 	"app_type": "http",
 	"icon": "icon.png",
