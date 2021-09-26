@@ -57,5 +57,5 @@ func (a *restapi) OAuth2GetUser(w http.ResponseWriter, r *http.Request, in proxy
 		httputils.WriteError(w, err)
 		return
 	}
-	httputils.WriteJSON(w, v)
+	_ = httputils.WriteJSON(w, v)
 }

@@ -142,10 +142,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 				txt += "Please check the server logs for more details."
 			}
 			out = nil
-			data, errr := json.Marshal(apps.CallResponse{
-				Type:     apps.CallResponseTypeOK,
-				Markdown: txt,
-			})
+			data, errr := json.Marshal(apps.NewOKResponse(nil, txt))
 			if errr != nil {
 				err = errr
 				return
@@ -176,7 +173,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		return nil, utils.NewNotFoundError(callPath)
 	}
 	if h.requireSysadmin && creq.Context.AdminAccessToken == "" {
-		return nil, apps.NewErrorCallResponse(utils.NewUnauthorizedError("no admin token in the request"))
+		return nil, apps.NewErrorResponse(utils.NewUnauthorizedError("no admin token in the request"))
 	}
 
 	switch apps.CallType(callType) {
@@ -188,7 +185,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		if err != nil {
 			return nil, err
 		}
-		return readcloser(formResponse(*form))
+		return readcloser(apps.NewFormResponse(*form))
 
 	case apps.CallTypeLookup:
 		if h.lookupf == nil {
@@ -198,9 +195,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		if err != nil {
 			return nil, err
 		}
-		return readcloser(dataResponse(struct {
-			Items []apps.SelectOption `json:"items"`
-		}{opts}))
+		return readcloser(apps.NewLookupResponse(opts))
 
 	case apps.CallTypeSubmit:
 		if h.submitf == nil {
@@ -216,27 +211,6 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
 }
 
-func mdResponse(format string, args ...interface{}) apps.CallResponse {
-	return apps.CallResponse{
-		Type:     apps.CallResponseTypeOK,
-		Markdown: fmt.Sprintf(format, args...),
-	}
-}
-
-func formResponse(form apps.Form) apps.CallResponse {
-	return apps.CallResponse{
-		Type: apps.CallResponseTypeForm,
-		Form: &form,
-	}
-}
-
-func dataResponse(data interface{}) apps.CallResponse {
-	return apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
-		Data: data,
-	}
-}
-
 func emptyForm(_ apps.CallRequest) apps.CallResponse {
-	return formResponse(apps.Form{})
+	return apps.NewFormResponse(apps.Form{})
 }

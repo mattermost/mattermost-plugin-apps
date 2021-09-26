@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (a *restapi) initSubscriptions(api *mux.Router, mm *pluginapi.Client) {
@@ -47,8 +48,7 @@ func (a *restapi) GetSubscriptions(w http.ResponseWriter, r *http.Request, in pr
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(subs)
+	err = httputils.WriteJSON(w, subs)
 	if err != nil {
 		a.conf.Logger().WithError(err).Errorf("Error marshaling subscriptions")
 	}
@@ -76,9 +76,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in
 			status = http.StatusInternalServerError
 			// logMessage = "Error: " + resp.Error
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_, _ = w.Write(resp.ToJSON())
+		_ = httputils.WriteJSONStatus(w, status, resp)
 	}()
 
 	actingUserID = in.ActingUserID

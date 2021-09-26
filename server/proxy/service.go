@@ -4,9 +4,7 @@
 package proxy
 
 import (
-	"encoding/json"
 	"io"
-	"net/http"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -179,15 +177,6 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 	}
 	p.builtinUpstreams[appID] = up
 	p.store.App.InitBuiltin()
-}
-
-func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		Type:      apps.CallResponseTypeError,
-		ErrorText: err.Error(),
-	})
 }
 
 func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {

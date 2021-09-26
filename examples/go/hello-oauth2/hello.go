@@ -15,6 +15,12 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+)
+
+const (
+	host = "localhost"
+	port = 8082
 )
 
 //go:embed icon.png
@@ -39,13 +45,14 @@ func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", writeJSON(bindingsData))
+	http.HandleFunc("/bindings", httputils.HandleJSONData(bindingsData))
 
 	// Serve the icon for the App.
-	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
+	http.HandleFunc("/static/icon.png",
+		httputils.HandleData("image/png", iconData))
 
 	// Google OAuth2 handlers
 
@@ -58,20 +65,24 @@ func main() {
 	// Submit handlers
 
 	// `configure` command - sets up Google OAuth client credentials.
-	http.HandleFunc("/configure/form", writeJSON(configureFormData))
+	http.HandleFunc("/configure/form", httputils.HandleJSONData(configureFormData))
 	http.HandleFunc("/configure/submit", configure)
 
 	// `connect` command - display the OAuth2 connect link.
 	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
 	// cached by the user agent as a {}
-	http.HandleFunc("/connect/form", writeJSON(connectFormData))
+	http.HandleFunc("/connect/form", httputils.HandleJSONData(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
 	// `send` command - send a Hello message.
-	http.HandleFunc("/send/form", writeJSON(sendFormData))
+	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-oauth2 app listening on %q \n", addr)
+	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func configure(w http.ResponseWriter, req *http.Request) {
@@ -83,18 +94,16 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	asAdmin := appclient.AsAdmin(creq.Context)
 	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "updated OAuth client credentials",
-	})
+	json.NewEncoder(w).Encode(
+		apps.NewOKResponse(nil, "updated OAuth client credentials"))
 }
 
 func connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: fmt.Sprintf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
-	})
+	json.NewEncoder(w).Encode(
+		apps.NewOKResponse(nil, "[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL))
 }
 
 func oauth2Config(creq *apps.CallRequest) *oauth2.Config {
@@ -118,10 +127,7 @@ func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 
 	url := oauth2Config(&creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
-		Data: url,
-	})
+	httputils.WriteJSON(w, apps.NewOKResponse(url))
 }
 
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
@@ -134,7 +140,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{})
+	httputils.WriteJSON(w, apps.NewOKResponse(struct{}{}))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -162,26 +168,13 @@ func send(w http.ResponseWriter, req *http.Request) {
 		message += " You have no calendars.\n"
 	}
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: message,
-	})
+	httputils.WriteJSON(w, apps.NewOKResponse(nil, message))
 
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()
 	if err != nil && newToken.AccessToken != token.AccessToken {
 		appclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
 	}
-}
-
-func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", ct)
-		w.Write(data)
-	}
-}
-
-func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return writeData("application/json", data)
 }
 
 func remarshal(dst, src interface{}) {

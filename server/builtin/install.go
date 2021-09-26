@@ -87,10 +87,10 @@ func (a *builtinApp) installListed() handler {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
 
-			return formResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
 		},
 	}
 }
@@ -104,18 +104,18 @@ func (a *builtinApp) installURL() handler {
 			conf := a.conf.Get()
 			data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
 			m, err := apps.DecodeCompatibleManifest(data)
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
 			_, err = a.proxy.StoreLocalManifest(*m)
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
 
-			return formResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
 		},
 	}
 }

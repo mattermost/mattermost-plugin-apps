@@ -43,9 +43,9 @@ func (a *builtinApp) debugBindings() handler {
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			bindings, err := a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
-			return mdResponse(utils.JSONBlock(bindings))
+			return apps.NewOKResponse(nil, utils.JSONBlock(bindings))
 		},
 	}
 }
@@ -73,7 +73,7 @@ func (a *builtinApp) debugClean() handler {
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			_ = a.conf.MattermostAPI().KV.DeleteAll()
 			_ = a.conf.StoreConfig(config.StoredConfig{})
-			return mdResponse("Deleted all KV records and emptied the config.")
+			return apps.NewOKResponse(nil, "Deleted all KV records and emptied the config.")
 		},
 	}
 }

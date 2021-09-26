@@ -26,8 +26,8 @@ type notifyTestcase struct {
 	run  func(p *Proxy, upstreams map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API)
 }
 
-func sendCallResponse(t *testing.T, path string, cr *apps.CallResponse, up *mock_upstream.MockUpstream) {
-	b, _ := json.Marshal(cr)
+func sendCallResponse(t *testing.T, path string, cresp apps.CallResponse, up *mock_upstream.MockUpstream) {
+	b, _ := json.Marshal(cresp)
 	reader := ioutil.NopCloser(bytes.NewReader(b))
 	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 		require.Equal(t, path, creq.Path)
@@ -90,10 +90,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/post_created", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/post_created", apps.NewOKResponse(nil), up[app1.AppID])
 
 				message := "Hey @bot2username!"
 				post := &model.Post{
@@ -125,10 +122,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/bot_mention2", cr, up[app2.AppID])
+				sendCallResponse(t, "/notify/bot_mention2", apps.NewOKResponse(nil), up[app2.AppID])
 
 				message := "Hey @bot2username!"
 				post := &model.Post{
@@ -213,10 +207,7 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				"sub.bot_joined_channel": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/user_joined_channel", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/user_joined_channel", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -244,10 +235,7 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/bot_joined_channel1", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/bot_joined_channel1", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserID: app1.BotUserID,
@@ -293,10 +281,7 @@ func TestUserHasLeftChannel(t *testing.T) {
 				"sub.bot_left_channel": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/user_left_channel", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/user_left_channel", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -324,10 +309,7 @@ func TestUserHasLeftChannel(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/bot_left_channel1", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/bot_left_channel1", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserID: app1.BotUserID,
@@ -373,10 +355,7 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				"sub.bot_joined_team": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/user_joined_team", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/user_joined_team", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -404,10 +383,7 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/bot_joined_team1", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/bot_joined_team1", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserID: app1.BotUserID,
@@ -453,10 +429,7 @@ func TestUserHasLeftTeam(t *testing.T) {
 				"sub.bot_left_team": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/user_left_team", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/user_left_team", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -484,10 +457,7 @@ func TestUserHasLeftTeam(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/bot_left_team1", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/bot_left_team1", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserID: app1.BotUserID,
@@ -517,10 +487,7 @@ func TestChannelHasBeenCreated(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/channel_created", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/channel_created", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.Notify(
 					apps.Context{
@@ -552,10 +519,7 @@ func TestUserHasBeenCreated(t *testing.T) {
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				cr := &apps.CallResponse{
-					Type: apps.CallResponseTypeOK,
-				}
-				sendCallResponse(t, "/notify/user_created", cr, up[app1.AppID])
+				sendCallResponse(t, "/notify/user_created", apps.NewOKResponse(nil), up[app1.AppID])
 
 				err := p.Notify(
 					apps.Context{

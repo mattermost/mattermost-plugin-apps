@@ -46,9 +46,6 @@ func AppRootURL(app apps.App, _ string) (string, error) {
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if !app.Manifest.SupportsDeploy(apps.DeployHTTP) {
-		return nil, errors.New("app is not available as type http")
-	}
 	if async {
 		go func() {
 			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)

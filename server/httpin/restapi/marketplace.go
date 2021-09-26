@@ -20,5 +20,5 @@ func (a *restapi) GetMarketplace(w http.ResponseWriter, req *http.Request, _ pro
 	includePlugins := req.URL.Query().Get("include_plugins") != ""
 
 	result := a.proxy.GetListedApps(filter, includePlugins)
-	httputils.WriteJSON(w, result)
+	_ = httputils.WriteJSON(w, result)
 }

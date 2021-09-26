@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upopenfaas"
 )
 
@@ -16,6 +17,8 @@ func init() {
 	// provision
 	openfaasCmd.AddCommand(openfaasProvisionCmd)
 	openfaasProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	openfaasProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
+	openfaasProvisionCmd.Flags().StringVar(&dockerRegistry, "docker-registry", "", "Docker image prefix, usually the docker registry to use for deploying functions.")
 
 	// test
 	// openfaasCmd.AddCommand(openfaasTestCmd)
@@ -34,7 +37,7 @@ var openfaasProvisionCmd = &cobra.Command{
 		bundlePath := args[0]
 		gateway := os.Getenv(upopenfaas.EnvGatewayURL)
 
-		m, err := upopenfaas.ProvisionApp(bundlePath, log, shouldUpdate, gateway)
+		m, err := upopenfaas.ProvisionApp(bundlePath, log, shouldUpdate, gateway, dockerRegistry)
 		if err != nil {
 			return err
 		}
@@ -42,14 +45,16 @@ var openfaasProvisionCmd = &cobra.Command{
 			return errors.New("no functions to provision, check manifest.json")
 		}
 
-		rootURL, err := upopenfaas.RootURL(*m, gateway, "/")
-		if err != nil {
+		if err = updateMattermost(*m, apps.DeployOpenFAAS, install); err != nil {
 			return err
 		}
 
 		fmt.Printf("\nProvisioned '%s' to OpenFaaS.\n", m.DisplayName)
-		fmt.Printf("You can install it now in Mattermost using:\n")
-		fmt.Printf("  /apps install url %s/%s\n\n", rootURL, "manifest.json")
+
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install listed %s\n\n", m.AppID)
+		}
 		return nil
 	},
 }

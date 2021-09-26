@@ -14,18 +14,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var (
-	shouldCreate          bool
-	shouldCreateAccessKey bool
-	userName              string
-	policyName            string
-	groupName             string
-	shouldUpdate          bool
-	invokePolicyName      string
-	executeRoleName       string
-	install               bool
-)
-
 func init() {
 	rootCmd.AddCommand(awsCmd)
 
@@ -265,7 +253,7 @@ var awsTestLambdaCmd = &cobra.Command{
 
 		cresp := apps.CallResponse{}
 		_ = json.Unmarshal(data, &cresp)
-		expected := apps.CallResponse{Markdown: "PONG", Type: apps.CallResponseTypeOK}
+		expected := apps.NewOKResponse(nil, "PONG")
 		if cresp != expected {
 			return errors.Errorf("invalid value received: %s", string(data))
 		}

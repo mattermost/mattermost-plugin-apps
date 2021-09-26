@@ -105,7 +105,7 @@ func (a *builtinApp) list() handler {
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 					name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 			}
-			return mdResponse(txt)
+			return apps.NewOKResponse(nil, txt)
 		},
 	}
 }

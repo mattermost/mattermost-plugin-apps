@@ -14,14 +14,14 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		AppID:                "hello-world",
 		DisplayName:          "Hello, world!",
 		Icon:                 "icon.png",
-		HomepageURL:          "http://localhost:8080",
+		HomepageURL:          "http://localhost:1111",
 		RequestedPermissions: Permissions{PermissionActAsBot},
 		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
 	}
 
 	helloHTTP := hello
 	helloHTTP.HTTP = &HTTP{
-		RootURL: "http://localhost:8080",
+		RootURL: "http://localhost:1111",
 	}
 	helloHTTP7 := helloHTTP
 	helloHTTP7.v7AppType = string(DeployHTTP)
@@ -58,8 +58,8 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"display_name": "Hello, world!",
 					"app_type": "http",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
-					"root_url": "http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
+					"root_url": "http://localhost:1111",
 					"requested_permissions": [
 						"act_as_bot"
 					],
@@ -75,9 +75,9 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"app_id": "hello-world",
 					"display_name": "Hello, world!",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
 					"http":{
-						"root_url": "http://localhost:8080"
+						"root_url": "http://localhost:1111"
 					},
 					"requested_permissions": [
 						"act_as_bot"
@@ -95,7 +95,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"display_name": "Hello, world!",
 					"app_type": "aws_lambda",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
 					"aws_lambda": [
 						{
 							"path": "/",
@@ -119,7 +119,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"app_id": "hello-world",
 					"display_name": "Hello, world!",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
 					"aws_lambda": {
 						"functions": [
 							{
@@ -146,7 +146,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"display_name": "Hello, world!",
 					"app_type": "plugin",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
 					"plugin_id": "com.mattermost.hello-world",
 					"requested_permissions": [
 						"act_as_bot"
@@ -163,7 +163,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 					"app_id": "hello-world",
 					"display_name": "Hello, world!",
 					"icon": "icon.png",
-					"homepage_url":"http://localhost:8080",
+					"homepage_url":"http://localhost:1111",
 					"plugin": {
 						"plugin_id": "com.mattermost.hello-world"
 					},
