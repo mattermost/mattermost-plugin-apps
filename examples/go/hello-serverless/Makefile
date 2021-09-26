@@ -10,7 +10,7 @@ run:
 
 .PHONY: dist-http
 ## dist-http: creates the bundle file for HTTP deployment from a bundle (manifest and static deployed to Mattermost)
-dist-http: 
+dist-http:
 	rm -rf dist/http && mkdir -p dist/http
 	cp manifest.json dist/http
 	cp -r static dist/http
