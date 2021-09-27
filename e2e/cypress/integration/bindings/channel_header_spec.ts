@@ -67,7 +67,7 @@ describe('Apps bindings - Channel header', () => {
 });
 
 const runCommand = (command: string) => {
-    cy.get('#post_textbox').clear().type(command);
+    cy.get('#post_textbox').clear().type(command + ' ');
     cy.get('#post_textbox').type('{enter}');
 };
 
