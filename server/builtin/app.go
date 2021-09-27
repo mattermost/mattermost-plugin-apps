@@ -202,7 +202,9 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		if err != nil {
 			return nil, err
 		}
-		return readcloser(dataResponse(opts))
+		return readcloser(dataResponse(struct {
+			Items []apps.SelectOption `json:"items"`
+		}{opts}))
 
 	case apps.CallTypeSubmit:
 		if h.submitf == nil {
