@@ -47,7 +47,7 @@ func TestOnActivate(t *testing.T) {
 	siteURL := "http://" + listenAddress
 	testAPI.On("GetConfig").Return(&model.Config{
 		ServiceSettings: model.ServiceSettings{
-			SiteURL: &siteURL,
+			SiteURL:       &siteURL,
 			ListenAddress: &listenAddress,
 		},
 	})
