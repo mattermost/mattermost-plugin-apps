@@ -14,8 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -107,21 +105,4 @@ func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error)
 		return true
 	}
 	return false
-}
-
-func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, sessionID, actingUserID string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		actingUserID := req.Header.Get("Mattermost-User-Id")
-		if actingUserID == "" {
-			WriteError(w, utils.ErrUnauthorized)
-			return
-		}
-		sessionID := req.Header.Get("MM_SESSION_ID")
-		if sessionID == "" {
-			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user session"))
-			return
-		}
-
-		f(w, req, sessionID, actingUserID)
-	}
 }

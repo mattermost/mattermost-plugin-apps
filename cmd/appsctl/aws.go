@@ -14,16 +14,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var shouldCreate bool
-var shouldCreateAccessKey bool
-var userName string
-var policyName string
-var groupName string
+var (
+	shouldCreate          bool
+	shouldCreateAccessKey bool
+	userName              string
+	policyName            string
+	groupName             string
+	shouldUpdate          bool
+	invokePolicyName      string
+	executeRoleName       string
+)
 
 func init() {
-	rootCmd.AddCommand(
-		awsCmd,
-	)
+	rootCmd.AddCommand(awsCmd)
 
 	// init
 	awsCmd.AddCommand(awsInitCmd)
@@ -32,6 +35,12 @@ func init() {
 	awsInitCmd.Flags().StringVar(&userName, "user", upaws.DefaultUserName, "Username to use for invoking the AWS App from Mattermost Server.")
 	awsInitCmd.Flags().StringVar(&policyName, "policy", upaws.DefaultPolicyName, "Name of the policy to control access of AWS services directly by Mattermost Server (user).")
 	awsInitCmd.Flags().StringVar(&groupName, "group", upaws.DefaultGroupName, "Name of the user group connecting the invoking user to the invoke policy.")
+
+	// provision
+	awsCmd.AddCommand(awsProvisionCmd)
+	awsProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	awsProvisionCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
+	awsProvisionCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
 
 	// clean
 	awsCmd.AddCommand(awsCleanCmd)
@@ -52,12 +61,12 @@ var awsInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
 
-		out, err := upaws.InitializeAWS(asProvisioner, &log, upaws.InitParams{
+		out, err := upaws.InitializeAWS(asProvisioner, log, upaws.InitParams{
 			Bucket:                upaws.S3BucketName(),
 			User:                  upaws.Name(userName),
 			Group:                 upaws.Name(groupName),
@@ -91,7 +100,7 @@ var awsCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Delete group, user and policy used for Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
@@ -101,7 +110,44 @@ var awsCleanCmd = &cobra.Command{
 			return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 		}
 
-		return upaws.CleanAWS(asProvisioner, accessKeyID, &log)
+		return upaws.CleanAWS(asProvisioner, accessKeyID, log)
+	},
+}
+
+var awsProvisionCmd = &cobra.Command{
+	Use:   "provision",
+	Short: "Provision a Mattermost app to AWS",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		asProvisioner, err := makeProvisionAWSClient()
+		if err != nil {
+			return err
+		}
+
+		bucket := upaws.S3BucketName()
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, args[0], log, upaws.ProvisionAppParams{
+			Bucket:           bucket,
+			InvokePolicyName: upaws.Name(invokePolicyName),
+			ExecuteRoleName:  upaws.Name(executeRoleName),
+			ShouldUpdate:     shouldUpdate,
+		})
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("\n'%s' is now provisioned to AWS.\n", out.Manifest.DisplayName)
+		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
+			len(out.LambdaARNs), len(out.StaticARNs))
+
+		fmt.Printf("You can now install it in Mattermost using:\n")
+		fmt.Printf("  /apps install aws %s %s\n\n", out.Manifest.AppID, out.Manifest.Version)
+
+		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
+		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
+		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
+		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
+
+		return nil
 	},
 }
 
@@ -110,11 +156,22 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a provisioned resource",
 }
 
-var helloApp = &apps.App{
-	Manifest: apps.Manifest{
-		AppID:   "hello-lambda",
-		Version: "demo",
-	},
+func helloLambda() apps.App {
+	return apps.App{
+		Manifest: apps.Manifest{
+			AppID:   "hello-lambda",
+			AppType: apps.AppTypeAWSLambda,
+			Version: "demo",
+			AWSLambda: []apps.AWSLambda{
+				{
+					Path:    "/",
+					Name:    "go-function",
+					Handler: "hello-lambda",
+					Runtime: "go1.x",
+				},
+			},
+		},
+	}
 }
 
 var awsTestS3Cmd = &cobra.Command{
@@ -122,13 +179,12 @@ var awsTestS3Cmd = &cobra.Command{
 	Short: "test accessing a static S3 resource",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		up := upaws.NewUpstream(helloApp, asTest, upaws.S3BucketName())
-		resp, _, err := up.GetStatic("test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -153,32 +209,33 @@ var awsTestLambdaCmd = &cobra.Command{
 	Short: "test accessing hello-lambda /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID: "hello-lambda",
-			},
-		}
-		up := upaws.NewUpstream(app, asTest, "")
-		crString, err := up.InvokeFunction("hello-lambda_demo_go-function", false, &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
-		})
+		}
+		resp, err := upTest.Roundtrip(helloLambda(), creq, false)
 		if err != nil {
 			return err
 		}
-		log.Debugf("Received: %s", crString)
+		defer resp.Close()
 
-		cr := apps.CallResponse{}
-		_ = json.Unmarshal([]byte(crString), &cr)
+		data, err := io.ReadAll(resp)
+		if err != nil {
+			return err
+		}
+		log.Debugf("Received: %s", string(data))
+
+		cresp := apps.CallResponse{}
+		_ = json.Unmarshal(data, &cresp)
 		expected := apps.CallResponse{Markdown: "PONG", Type: apps.CallResponseTypeOK}
-		if cr != expected {
-			return errors.Errorf("invalid value received: %s", crString)
+		if cresp != expected {
+			return errors.Errorf("invalid value received: %s", string(data))
 		}
 
 		fmt.Println("OK")
@@ -205,12 +262,12 @@ with the default initial IAM configuration`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		asProvisioner, err := AsProvisioner()
+		asProvisioner, err := makeProvisionAWSClient()
 		if err != nil {
 			return err
 		}
 
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, &log, upaws.ProvisionAppParams{
+		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, log, upaws.ProvisionAppParams{
 			Bucket:           upaws.S3BucketName(),
 			InvokePolicyName: upaws.Name(upaws.DefaultPolicyName),
 			ExecuteRoleName:  upaws.Name(upaws.DefaultExecuteRoleName),
@@ -223,4 +280,39 @@ with the default initial IAM configuration`,
 		fmt.Printf("Success!\n\n%s\n", utils.Pretty(out))
 		return nil
 	},
+}
+
+func makeTestAWSUpstream() (*upaws.Upstream, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.AccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.SecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
+	}
+
+	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), log)
+}
+
+func makeProvisionAWSClient() (upaws.Client, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.ProvisionAccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.ProvisionAccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.ProvisionSecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.ProvisionSecretEnvVar)
+	}
+
+	return upaws.MakeClient(accessKey, secretKey, region,
+		log.With("purpose", "appsctl provisioner"))
 }

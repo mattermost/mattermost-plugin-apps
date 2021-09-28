@@ -4,9 +4,7 @@
 package command
 
 import (
-	"fmt"
-
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -17,15 +15,17 @@ func (s *service) executeUninstall(params *commandParams) (*model.CommandRespons
 		return errorOut(params, errors.New("you need to specify the app id"))
 	}
 
-	id := params.current[0]
+	appID := apps.AppID(params.current[0])
 
-	err := s.proxy.UninstallApp(params.commandArgs.Session.Id, params.commandArgs.UserId, apps.AppID(id))
+	cc := s.conf.Get().SetContextDefaultsForApp(appID, s.newCommandContext(params.commandArgs))
+
+	out, err := s.proxy.UninstallApp(s.newCommandIncoming(params.commandArgs), cc, appID)
 	if err != nil {
 		return errorOut(params, err)
 	}
 
 	return &model.CommandResponse{
-		Text:         fmt.Sprintf("Uninstalled %s.", id),
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:         out,
+		ResponseType: model.CommandResponseTypeEphemeral,
 	}, nil
 }

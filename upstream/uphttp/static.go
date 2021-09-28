@@ -11,28 +11,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
 )
 
-type StaticUpstream struct {
-	rootURL string
-	httpOut httpout.Service
-}
+func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	url := fmt.Sprintf("%s/%s/%s", app.Manifest.HTTPRootURL, apps.StaticFolder, path)
 
-var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
+	client := u.httpOut.MakeClient(u.devMode)
 
-func NewStaticUpstream(m *apps.Manifest, httpOut httpout.Service) *StaticUpstream {
-	return &StaticUpstream{
-		rootURL: m.HTTPRootURL,
-		httpOut: httpOut,
-	}
-}
-
-func (u *StaticUpstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
-	/* #nosec G107 */
-	resp, err := http.Get(url) // nolint:bodyclose
+	resp, err := client.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}

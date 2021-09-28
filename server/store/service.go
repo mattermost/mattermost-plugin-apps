@@ -10,11 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 )
 
 type Service struct {
@@ -24,36 +23,33 @@ type Service struct {
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
 
-	mm   *pluginapi.Client
-	conf config.Service
-
-	aws           upaws.Client
-	s3AssetBucket string
+	conf    config.Service
+	httpOut httpout.Service
+	// aws           upaws.Client
+	// s3AssetBucket string
 }
 
-func NewService(mm *pluginapi.Client, conf config.Service, aws upaws.Client, s3AssetBucket string) *Service {
+func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
-		mm:            mm,
-		conf:          conf,
-		aws:           aws,
-		s3AssetBucket: s3AssetBucket,
+		conf:    confService,
+		httpOut: httpOut,
 	}
-	s.App = &appStore{
-		Service: s,
+	s.AppKV = &appKVStore{Service: s}
+	s.OAuth2 = &oauth2Store{Service: s}
+	s.Subscription = &subscriptionStore{Service: s}
+
+	conf := confService.Get()
+	var err error
+	s.App, err = makeAppStore(s, conf)
+	if err != nil {
+		return nil, err
 	}
-	s.AppKV = &appKVStore{
-		Service: s,
+
+	s.Manifest, err = makeManifestStore(s, conf)
+	if err != nil {
+		return nil, err
 	}
-	s.OAuth2 = &oauth2Store{
-		Service: s,
-	}
-	s.Subscription = &subscriptionStore{
-		Service: s,
-	}
-	s.Manifest = &manifestStore{
-		Service: s,
-	}
-	return s
+	return s, nil
 }
 
 func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {
@@ -83,7 +79,7 @@ func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) 
 	}
 
 	hashed := hashkey(gns, b, ns, k)
-	if len(hashed) > model.KEY_VALUE_KEY_MAX_RUNES {
+	if len(hashed) > model.KeyValueKeyMaxRunes {
 		return "", errors.Errorf("hashed key is too long (%v bytes), global namespace: %q, botUserID: %q, app namespace: %q, key: %q",
 			len(hashed), globalNamespace, botUserID, appNamespace, key)
 	}
@@ -96,7 +92,7 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 	encodedID := make([]byte, ascii85.MaxEncodedLen(len(idHash)))
 	_ = ascii85.Encode(encodedID, idHash)
 
-	key := make([]byte, 0, model.KEY_VALUE_KEY_MAX_RUNES)
+	key := make([]byte, 0, model.KeyValueKeyMaxRunes)
 	key = append(key, globalNamespace...)
 	key = append(key, botUserID...)
 	key = append(key, appNamespace...)
@@ -106,8 +102,8 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 
 func parseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
 	k := []byte(key)
-	if len(k) != model.KEY_VALUE_KEY_MAX_RUNES {
-		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KEY_VALUE_KEY_MAX_RUNES)
+	if len(k) != model.KeyValueKeyMaxRunes {
+		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KeyValueKeyMaxRunes)
 	}
 	gns := k[0:2]
 	b := k[2:28]

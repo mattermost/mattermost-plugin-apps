@@ -7,17 +7,32 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(w, r, true)
+func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+	a.handleSubscribeCore(w, r, in, true)
 }
 
-func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(w, r, false)
+func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+	subs, err := a.appServices.GetSubscriptions(in.ActingUserID)
+	if err != nil {
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(subs)
+	if err != nil {
+		a.conf.Logger().WithError(err).Errorf("Error marshaling subscriptions")
+	}
 }
 
-func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, isSubscribe bool) {
+func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+	a.handleSubscribeCore(w, r, in, false)
+}
+
+func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in proxy.Incoming, isSubscribe bool) {
 	var err error
 	actingUserID := ""
 	// logMessage := ""
@@ -35,7 +50,7 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 		_, _ = w.Write(resp.ToJSON())
 	}()
 
-	actingUserID = actingID(r)
+	actingUserID = in.ActingUserID
 	if actingUserID == "" {
 		err = errors.New("user not logged in")
 		status = http.StatusUnauthorized
@@ -51,9 +66,9 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, is
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	if isSubscribe {
-		err = a.appServices.Subscribe(actingUserID, &sub)
+		err = a.appServices.Subscribe(actingUserID, sub)
 	} else {
-		err = a.appServices.Unsubscribe(actingUserID, &sub)
+		err = a.appServices.Unsubscribe(actingUserID, sub)
 	}
 
 	if err != nil {

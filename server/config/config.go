@@ -1,13 +1,14 @@
 package config
 
 import (
+	"net"
 	"net/url"
 	"os"
 	"path"
 	"strings"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -57,6 +58,7 @@ type Config struct {
 	BotUserID              string
 	MattermostSiteHostname string
 	MattermostSiteURL      string
+	MattermostLocalURL     string
 	PluginURL              string
 	PluginURLPath          string
 
@@ -69,19 +71,13 @@ type Config struct {
 	AWSS3Bucket  string
 }
 
-func (conf Config) SetContextDefaults(cc *apps.Context) *apps.Context {
-	if cc == nil {
-		cc = &apps.Context{}
-	}
+func (conf Config) SetContextDefaults(cc apps.Context) apps.Context {
 	cc.BotUserID = conf.BotUserID
 	cc.MattermostSiteURL = conf.MattermostSiteURL
 	return cc
 }
 
-func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc *apps.Context) *apps.Context {
-	if cc == nil {
-		cc = &apps.Context{}
-	}
+func (conf Config) SetContextDefaultsForApp(appID apps.AppID, cc apps.Context) apps.Context {
 	cc = conf.SetContextDefaults(cc)
 	cc.AppID = appID
 	cc.AppPath = path.Join(conf.PluginURLPath, PathApps, string(appID))
@@ -107,10 +103,33 @@ func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, licen
 		return err
 	}
 
+	var localURL string
+	if mmconf.ServiceSettings.ConnectionSecurity != nil && *mmconf.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
+		// If there is no reverse proxy use the server URL
+		localURL = *mattermostSiteURL
+	} else {
+		// Avoid the reverse proxy by using the local port
+		listenAddress := mmconf.ServiceSettings.ListenAddress
+		if listenAddress == nil {
+			return errors.New("plugin requires Mattermost Listen Address to be set")
+		}
+		host, port, err := net.SplitHostPort(*listenAddress)
+		if err != nil {
+			return err
+		}
+
+		if host == "" {
+			host = "127.0.0.1"
+		}
+
+		localURL = "http://" + host + ":" + port
+	}
+
 	conf.StoredConfig = stored
 
 	conf.MattermostSiteURL = *mattermostSiteURL
 	conf.MattermostSiteHostname = mattermostURL.Hostname()
+	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.BuildConfig.Manifest.Id
 	conf.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + conf.PluginURLPath
 
@@ -150,4 +169,10 @@ func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, licen
 	}
 
 	return nil
+}
+
+func (conf Config) GetPluginVersionInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"version": conf.Manifest.Version,
+	}
 }

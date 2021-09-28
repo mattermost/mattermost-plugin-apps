@@ -6,17 +6,29 @@ package command
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/spf13/pflag"
 
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-server/v6/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func (s *service) executeList(params *commandParams) (*model.CommandResponse, error) {
-	listed := s.proxy.GetListedApps("")
+	var includePluginApps bool
+	fs := pflag.NewFlagSet("plugin-apps", pflag.ContinueOnError)
+	fs.BoolVar(&includePluginApps, "plugin-apps", false, "Include apps managed by plugins")
+	err := fs.Parse(params.current)
+	if err != nil {
+		return errorOut(params, err)
+	}
+
+	listed := s.proxy.GetListedApps("", includePluginApps)
 	installed := s.proxy.GetInstalledApps()
 
-	txt := md.MD("| Name | Status | Type | Version | Account | Locations | Permissions |\n")
-	txt += md.MD("| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n")
+	// All of this information is non sensitive.
+	// Checks for the user's permissions might be needed in the future.
+	txt := "| Name | Status | Type | Version | Account | Locations | Permissions |\n"
+	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
 		m, _ := s.proxy.GetManifest(app.AppID)
@@ -24,9 +36,13 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 			continue
 		}
 
+		if !includePluginApps && m.AppType == apps.AppTypePlugin {
+			continue
+		}
+
 		status := "**Installed**"
 		if app.Disabled {
-			status += ", **Disabled**"
+			status = "Installed, Disabled"
 		}
 
 		version := string(app.Version)
@@ -51,7 +67,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 			name, status, app.AppType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
@@ -67,7 +83,7 @@ func (s *service) executeList(params *commandParams) (*model.CommandResponse, er
 
 		name := fmt.Sprintf("[%s](%s) (`%s`)",
 			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
-		txt += md.Markdownf("|%s|%s|%s|%s|%s|%s|%s|\n",
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 			name, status, l.Manifest.AppType, version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 	}
 

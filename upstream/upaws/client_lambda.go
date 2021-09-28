@@ -27,7 +27,7 @@ func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]by
 		Payload:        payload,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error calling function %s", name)
+		return nil, errors.Wrapf(err, "invoke AWS Lambda function %s", name)
 	}
 	return result.Payload, nil
 }
@@ -59,7 +59,7 @@ func (c *client) CreateLambda(zipFile io.Reader, name, handler, runtime string, 
 	if err != nil {
 		return "", errors.Wrapf(err, "can't create function, %+v\n", fc)
 	}
-	c.logger.Info("created function", "ARN", *fc.FunctionArn)
+	c.log.Infow("created function", "ARN", *fc.FunctionArn)
 	return ARN(*fc.FunctionArn), nil
 }
 
@@ -87,7 +87,7 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to update function %v", function)
 	}
-	c.logger.Info("updated function", "ARN", *fc.Configuration.FunctionArn)
+	c.log.Infow("updated function", "ARN", *fc.Configuration.FunctionArn)
 	return ARN(*fc.Configuration.FunctionArn), nil
 }
 

@@ -8,8 +8,10 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
-	configservice "github.com/mattermost/mattermost-server/v5/services/configservice"
+	utils "github.com/mattermost/mattermost-plugin-apps/utils"
+	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
 )
 
 // MockService is a mock of Service interface.
@@ -35,32 +37,76 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
-// GetConfig mocks base method.
-func (m *MockService) GetConfig() config.Config {
+// Basic mocks base method.
+func (m *MockService) Basic() (config.Config, *pluginapi.Client, utils.Logger) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfig")
+	ret := m.ctrl.Call(m, "Basic")
+	ret0, _ := ret[0].(config.Config)
+	ret1, _ := ret[1].(*pluginapi.Client)
+	ret2, _ := ret[2].(utils.Logger)
+	return ret0, ret1, ret2
+}
+
+// Basic indicates an expected call of Basic.
+func (mr *MockServiceMockRecorder) Basic() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Basic", reflect.TypeOf((*MockService)(nil).Basic))
+}
+
+// Get mocks base method.
+func (m *MockService) Get() config.Config {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get")
 	ret0, _ := ret[0].(config.Config)
 	return ret0
 }
 
-// GetConfig indicates an expected call of GetConfig.
-func (mr *MockServiceMockRecorder) GetConfig() *gomock.Call {
+// Get indicates an expected call of Get.
+func (mr *MockServiceMockRecorder) Get() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockService)(nil).GetConfig))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockService)(nil).Get))
 }
 
-// GetMattermostConfig mocks base method.
-func (m *MockService) GetMattermostConfig() configservice.ConfigService {
+// Logger mocks base method.
+func (m *MockService) Logger() utils.Logger {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMattermostConfig")
+	ret := m.ctrl.Call(m, "Logger")
+	ret0, _ := ret[0].(utils.Logger)
+	return ret0
+}
+
+// Logger indicates an expected call of Logger.
+func (mr *MockServiceMockRecorder) Logger() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logger", reflect.TypeOf((*MockService)(nil).Logger))
+}
+
+// MattermostAPI mocks base method.
+func (m *MockService) MattermostAPI() *pluginapi.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MattermostAPI")
+	ret0, _ := ret[0].(*pluginapi.Client)
+	return ret0
+}
+
+// MattermostAPI indicates an expected call of MattermostAPI.
+func (mr *MockServiceMockRecorder) MattermostAPI() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MattermostAPI", reflect.TypeOf((*MockService)(nil).MattermostAPI))
+}
+
+// MattermostConfig mocks base method.
+func (m *MockService) MattermostConfig() configservice.ConfigService {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MattermostConfig")
 	ret0, _ := ret[0].(configservice.ConfigService)
 	return ret0
 }
 
-// GetMattermostConfig indicates an expected call of GetMattermostConfig.
-func (mr *MockServiceMockRecorder) GetMattermostConfig() *gomock.Call {
+// MattermostConfig indicates an expected call of MattermostConfig.
+func (mr *MockServiceMockRecorder) MattermostConfig() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMattermostConfig", reflect.TypeOf((*MockService)(nil).GetMattermostConfig))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MattermostConfig", reflect.TypeOf((*MockService)(nil).MattermostConfig))
 }
 
 // Reconfigure mocks base method.

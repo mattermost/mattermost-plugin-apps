@@ -5,6 +5,12 @@ package config
 
 import "github.com/mattermost/mattermost-plugin-apps/apps"
 
+const (
+	MattermostSessionIDHeader = "Mattermost-Session-Id"
+	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
+	MattermostUserIDHeader    = "Mattermost-User-Id"
+)
+
 // Internal configuration apps.of mattermost-plugin-apps
 const (
 	Repository     = "mattermost-plugin-apps"
@@ -31,6 +37,8 @@ const (
 	// Top-level path for the Apps namespaces, followed by /{AppID}/...
 	PathApps = "/apps"
 
+	PingPath = "/ping"
+
 	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
 	PathMattermostOAuth2Connect  = "/oauth2/mattermost/connect"
 	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
@@ -44,6 +52,8 @@ const (
 	PathMarketplace = "/marketplace"
 
 	WebSocketEventRefreshBindings = "refresh_bindings"
+	WebSocketEventPluginEnabled   = "plugin_enabled"
+	WebSocketEventPluginDisabled  = "plugin_disabled"
 )
 
 const (

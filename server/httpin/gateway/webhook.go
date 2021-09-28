@@ -32,7 +32,7 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	conf := g.conf.GetConfig()
+	conf := g.conf.Get()
 	data, err := httputils.LimitReadAll(req.Body, conf.MaxWebhookSize)
 	if err != nil {
 		httputils.WriteError(w, err)
@@ -46,5 +46,5 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_ = g.proxy.NotifyRemoteWebhook(app, data, path)
+	_ = g.proxy.NotifyRemoteWebhook(*app, data, path)
 }

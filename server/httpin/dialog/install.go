@@ -8,11 +8,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 type installDialogState struct {
@@ -106,23 +106,8 @@ func NewInstallAppDialog(m *apps.Manifest, secret string, conf config.Config, co
 	}
 }
 
-func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
-	actingUserID := req.Header.Get("Mattermost-User-Id")
-	if actingUserID == "" {
-		respondWithError(w, http.StatusUnauthorized, errors.New("user not logged in"))
-		return
-	}
-
-	if err := utils.EnsureSysAdmin(d.mm, actingUserID); err != nil {
-		respondWithError(w, http.StatusForbidden, err)
-		return
-	}
-
-	sessionID := req.Header.Get("MM_SESSION_ID")
-	if sessionID == "" {
-		respondWithError(w, http.StatusUnauthorized, errors.New("no session"))
-		return
-	}
+func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
+	_, mm, log := d.conf.Basic()
 	var dialogRequest model.SubmitDialogRequest
 	err := json.NewDecoder(req.Body).Decode(&dialogRequest)
 	if err != nil {
@@ -155,22 +140,26 @@ func (d *dialog) handleInstall(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cc := &apps.Context{
+	cc := apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    stateData.TeamID,
 			ChannelID: stateData.ChannelID,
 		},
+		ActingUserID: in.ActingUserID,
+		UserID:       in.ActingUserID,
 	}
-	cc = d.conf.GetConfig().SetContextDefaultsForApp(stateData.AppID, cc)
+	cc = d.conf.Get().SetContextDefaultsForApp(stateData.AppID, cc)
 
-	app, out, err := d.proxy.InstallApp(sessionID, actingUserID, cc, noUserConsentForOAuth2, secret)
+	_, out, err := d.proxy.InstallApp(in, cc, stateData.AppID, noUserConsentForOAuth2, secret)
 	if err != nil {
-		d.mm.Log.Warn("Failed to install app", "app_id", cc.AppID, "error", err.Error())
+		log.WithError(err).Warnw("Failed to install app", "app_id", cc.AppID)
 		respondWithError(w, http.StatusInternalServerError, err)
-		return
+
+		out = fmt.Sprintf("Install failed. Error: **%s**\n", err.Error())
 	}
 
-	_ = d.mm.Post.DM(app.BotUserID, actingUserID, &model.Post{
-		Message: out.String(),
+	mm.Post.SendEphemeralPost(in.ActingUserID, &model.Post{
+		ChannelId: dialogRequest.ChannelId,
+		Message:   out,
 	})
 }

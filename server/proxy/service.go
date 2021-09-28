@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"sync"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -17,7 +20,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Proxy struct {
@@ -25,52 +31,91 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
-	mm            *pluginapi.Client
-	conf          config.Service
-	store         *store.Service
-	aws           upaws.Client
-	httpOut       httpout.Service
-	s3AssetBucket string
+	conf      config.Service
+	store     *store.Service
+	httpOut   httpout.Service
+	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
+}
+
+// Admin defines the REST API methods to manipulate Apps.
+type Admin interface {
+	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
+	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, trustedApp bool, secret string) (*apps.App, string, error)
+	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
+}
+
+// Invoker implements operations that invoke the Apps.
+type Invoker interface {
+	// REST API methods used by user agents (mobile, desktop, web).
+	Call(Incoming, apps.CallRequest) apps.ProxyCallResponse
+	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
+	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
+	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
+}
+
+// Notifier implements user-less notification sinks.
+type Notifier interface {
+	Notify(apps.Context, apps.Subject) error
+	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
+	NotifyUserHasJoinedChannel(apps.Context) error
+	NotifyUserHasLeftChannel(apps.Context) error
+	NotifyUserHasJoinedTeam(apps.Context) error
+	NotifyUserHasLeftTeam(apps.Context) error
+}
+
+// Internal implements go API used by other packages.
+type Internal interface {
+	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+	AddLocalManifest(m apps.Manifest) (string, error)
+	GetInstalledApp(appID apps.AppID) (*apps.App, error)
+	GetInstalledApps() []apps.App
+	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(appID apps.AppID) (*apps.Manifest, error)
+	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
+	SynchronizeInstalledApps() error
 }
 
 type Service interface {
-	Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse
-	CompleteRemoteOAuth2(sessionID, actingUserID string, appID apps.AppID, urlValues map[string]interface{}) error
-	GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error)
-	GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(sessionID, actingUserID string, appID apps.AppID) (string, error)
-	Notify(cc *apps.Context, subj apps.Subject) error
-	NotifyRemoteWebhook(app *apps.App, data []byte, path string) error
+	// To update on configuration changes
+	config.Configurable
 
-	AddLocalManifest(actingUserID string, m *apps.Manifest) (md.MD, error)
-	AppIsEnabled(app *apps.App) bool
-	DisableApp(cc *apps.Context, app *apps.App) (md.MD, error)
-	EnableApp(cc *apps.Context, app *apps.App) (md.MD, error)
-	GetInstalledApp(appID apps.AppID) (*apps.App, error)
-	GetInstalledApps() []*apps.App
-	GetListedApps(filter string) []*apps.ListedApp
-	GetManifest(appID apps.AppID) (*apps.Manifest, error)
-	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	InstallApp(sessionID, actingUserID string, cc *apps.Context, trusted bool, secret string) (*apps.App, md.MD, error)
-	SynchronizeInstalledApps() error
-	UninstallApp(sessionID, actingUserID string, appID apps.AppID) error
-
-	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
+	Admin
+	Internal
+	Invoker
+	Notifier
 }
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(mm *pluginapi.Client, aws upaws.Client, conf config.Service, store *store.Service, s3AssetBucket string, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
-		mm:               mm,
 		conf:             conf,
 		store:            store,
-		aws:              aws,
-		s3AssetBucket:    s3AssetBucket,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
 	}
+}
+
+func (p *Proxy) Configure(conf config.Config) error {
+	_, mm, log := p.conf.Basic()
+
+	p.initUpstream(apps.AppTypeHTTP, conf, log, func() (upstream.Upstream, error) {
+		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode), nil
+	})
+	p.initUpstream(apps.AppTypeAWSLambda, conf, log, func() (upstream.Upstream, error) {
+		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+	})
+	p.initUpstream(apps.AppTypePlugin, conf, log, func() (upstream.Upstream, error) {
+		return upplugin.NewUpstream(&mm.Plugin), nil
+	})
+	p.initUpstream(apps.AppTypeKubeless, conf, log, func() (upstream.Upstream, error) {
+		return upkubeless.MakeUpstream()
+	})
+	return nil
 }
 
 func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
@@ -78,6 +123,7 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
 	p.builtinUpstreams[appID] = up
+	p.store.App.InitBuiltin()
 }
 
 func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
@@ -87,4 +133,23 @@ func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 		Type:      apps.CallResponseTypeError,
 		ErrorText: err.Error(),
 	})
+}
+
+func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
+	if err := isAppTypeSupported(newConfig, typ); err == nil {
+		var up upstream.Upstream
+		up, err = makef()
+		switch {
+		case errors.Cause(err) == utils.ErrNotFound:
+			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
+		case err != nil:
+			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
+		default:
+			p.upstreams.Store(typ, up)
+			log.Debugf("Initialized %s upstream.", typ)
+		}
+	} else {
+		p.upstreams.Delete(typ)
+		log.Debugf("Upstream %s is not supported, cause: %v", typ, err)
+	}
 }

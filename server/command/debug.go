@@ -4,30 +4,29 @@
 package command
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (s *service) executeDebugClean(params *commandParams) (*model.CommandResponse, error) {
-	_ = s.mm.KV.DeleteAll()
+	_ = s.conf.MattermostAPI().KV.DeleteAll()
 	_ = s.conf.StoreConfig(config.StoredConfig{})
-	return out(params, md.MD("Deleted all KV records and emptied the config."))
+	return out(params, "Deleted all KV records and emptied the config.")
 }
 
 func (s *service) executeDebugBindings(params *commandParams) (*model.CommandResponse, error) {
 	bindings, err := s.proxy.GetBindings(
-		params.commandArgs.Session.Id,
-		params.commandArgs.UserId,
+		s.newCommandIncoming(params.commandArgs),
 		s.newCommandContext(params.commandArgs))
 	if err != nil {
 		return errorOut(params, err)
 	}
-	return out(params, md.JSONBlock(bindings))
+	return out(params, utils.JSONBlock(bindings))
 }
 
 func (s *service) executeDebugAddManifest(params *commandParams) (*model.CommandResponse, error) {
@@ -43,7 +42,7 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 	}
 
 	// Inside a debug command: all URLs are trusted.
-	data, err := s.httpOut.GetFromURL(manifestURL, true)
+	data, err := s.httpOut.GetFromURL(manifestURL, true, apps.MaxManifestSize)
 	if err != nil {
 		return errorOut(params, err)
 	}
@@ -53,23 +52,13 @@ func (s *service) executeDebugAddManifest(params *commandParams) (*model.Command
 		return errorOut(params, err)
 	}
 
-	out, err := s.proxy.AddLocalManifest(params.commandArgs.UserId, m)
+	out, err := s.proxy.AddLocalManifest(*m)
 	if err != nil {
 		return errorOut(params, err)
 	}
-	return &model.CommandResponse{
-		Text:         string(out),
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-	}, nil
-}
 
-func (s *service) newCommandContext(commandArgs *model.CommandArgs) *apps.Context {
-	return s.conf.GetConfig().SetContextDefaults(&apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    commandArgs.TeamId,
-			ChannelID: commandArgs.ChannelId,
-		},
-		ActingUserID: commandArgs.UserId,
-		UserID:       commandArgs.UserId,
-	})
+	return &model.CommandResponse{
+		Text:         out,
+		ResponseType: model.CommandResponseTypeEphemeral,
+	}, nil
 }

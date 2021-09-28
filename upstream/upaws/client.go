@@ -4,9 +4,6 @@
 package upaws
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type ARN string
@@ -79,18 +78,11 @@ type client struct {
 	s3Uploader s3manageriface.UploaderAPI
 	s3         s3iface.S3API
 
-	logger Logger
+	log    utils.Logger
 	region string
 }
 
-type Logger interface {
-	Error(message string, keyValuePairs ...interface{})
-	Warn(message string, keyValuePairs ...interface{})
-	Info(message string, keyValuePairs ...interface{})
-	Debug(message string, keyValuePairs ...interface{})
-}
-
-func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger) (Client, error) {
+func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Logger) (Client, error) {
 	awsConfig := &aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
@@ -101,29 +93,16 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger
 		return nil, err
 	}
 
-	if logger != nil {
-		awsSession.Handlers.Complete.PushFront(func(r *request.Request) {
-			if r.HTTPResponse != nil && r.HTTPRequest != nil {
-				var buffer bytes.Buffer
-
-				buffer.WriteString(fmt.Sprintf("[aws] %s %s (%s), ", r.HTTPRequest.Method, r.HTTPRequest.URL.String(), r.HTTPResponse.Status))
-				buffer.WriteString(fmt.Sprintf("aws-service-id: %s, aws-operation-name: %s, ", r.ClientInfo.ServiceID, r.Operation.Name))
-
-				paramBytes, err := json.Marshal(r.Params)
-				if err != nil {
-					buffer.WriteString(fmt.Sprintf("error: %s ", err.Error()))
-				} else {
-					pstr := string(paramBytes)
-					if len(pstr) > 1024 {
-						pstr = pstr[:1024] + "..."
-					}
-					buffer.WriteString(fmt.Sprintf("params: %s", pstr))
-				}
-
-				logger.Debug(buffer.String())
-			}
-		})
-	}
+	awsSession.Handlers.Complete.PushFront(func(r *request.Request) {
+		if r.HTTPResponse != nil && r.HTTPRequest != nil {
+			log.Debugw("AWS request",
+				"method", r.HTTPRequest.Method,
+				"url", r.HTTPRequest.URL.String(),
+				"status", r.HTTPResponse.Status,
+				"aws-service-id", r.ClientInfo.ServiceID,
+				"aws-operation-name", r.Operation.Name)
+		}
+	})
 
 	c := &client{
 		lambda:     lambda.New(awsSession, awsConfig),
@@ -131,9 +110,14 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, logger Logger
 		s3Down:     s3manager.NewDownloader(awsSession),
 		s3Uploader: s3manager.NewUploader(awsSession),
 		s3:         s3.New(awsSession),
-		logger:     logger,
+		log:        log,
 		region:     region,
 	}
+
+	log.Debugw("New AWS client",
+		"region", region,
+		"access", utils.LastN(awsAccessKeyID, 7),
+		"secret", utils.LastN(awsSecretAccessKey, 4))
 
 	return c, nil
 }

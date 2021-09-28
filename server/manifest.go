@@ -3,12 +3,13 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-var manifest *model.Manifest
+var manifest model.Manifest
 
 const manifestStr = `
 {
@@ -19,7 +20,7 @@ const manifestStr = `
   "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
   "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v0.7.0",
   "version": "0.7.0",
-  "min_server_version": "5.35.0",
+  "min_server_version": "5.37.0",
   "server": {
     "executables": {
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
@@ -37,5 +38,5 @@ const manifestStr = `
 `
 
 func init() {
-	manifest = model.ManifestFromJson(strings.NewReader(manifestStr))
+	_ = json.NewDecoder(strings.NewReader(manifestStr)).Decode(&manifest)
 }

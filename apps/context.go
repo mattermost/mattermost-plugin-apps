@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -78,6 +78,7 @@ type ExpandedContext struct {
 	Post                  *model.Post    `json:"post,omitempty"`
 	RootPost              *model.Post    `json:"root_post,omitempty"`
 	Team                  *model.Team    `json:"team,omitempty"`
+	Locale                string         `json:"locale,omitempty"`
 
 	// TODO replace User with mentions
 	User *model.User `json:"user,omitempty"`
@@ -85,7 +86,7 @@ type ExpandedContext struct {
 
 type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
-	// mmclient.StoreOAuth2App
+	// appclient.StoreOAuth2App
 	OAuth2App
 	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`

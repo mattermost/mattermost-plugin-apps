@@ -8,9 +8,8 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 //go:embed icon.png
@@ -65,11 +64,11 @@ func install(w http.ResponseWriter, req *http.Request) {
 	channelID := creq.Context.ChannelID
 
 	// Add the Bot user to the team and the channel.
-	asAdmin := mmclient.AsAdmin(creq.Context)
+	asAdmin := appclient.AsAdmin(creq.Context)
 	asAdmin.AddTeamMember(teamID, creq.Context.BotUserID)
 	asAdmin.AddChannelMember(channelID, creq.Context.BotUserID)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	// store the channel ID for future use
 	asBot.KVSet("channel_id", "", channelID)
 
@@ -85,13 +84,13 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	channelID := ""
 	asBot.KVGet("channel_id", "", &channelID)
 
 	asBot.CreatePost(&model.Post{
 		ChannelId: channelID,
-		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Values["path"], creq.Values["data"]),
+		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Path, creq.Values["data"]),
 	})
 
 	json.NewEncoder(w).Encode(apps.CallResponse{Type: apps.CallResponseTypeOK})
@@ -102,7 +101,7 @@ func info(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("Try `/hello-webhooks send %s`",
+		Markdown: fmt.Sprintf("Try `/hello-webhooks send %s`",
 			creq.Context.MattermostSiteURL+creq.Context.AppPath+apps.PathWebhook+
 				"/hello"+
 				"?secret="+creq.Context.App.WebhookSecret),

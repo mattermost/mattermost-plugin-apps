@@ -1,41 +1,78 @@
 package config
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/services/configservice"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/services/configservice"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-type TestConfigurator struct {
+type TestService struct {
 	config   Config
 	mmconfig model.Config
+	mm       *pluginapi.Client
+	log      utils.Logger
 }
 
-var _ Service = (*TestConfigurator)(nil)
+var _ Service = (*TestService)(nil)
 
-func NewTestConfigurator(config Config) *TestConfigurator {
-	return &TestConfigurator{
-		config: config,
+func NewTestConfigService(testConfig *Config) *TestService {
+	conf, _ := NewTestService(testConfig)
+	return conf
+}
+
+func NewTestService(testConfig *Config) (*TestService, *plugintest.API) {
+	testAPI := &plugintest.API{}
+	testDriver := &plugintest.Driver{}
+	if testConfig == nil {
+		testConfig = &Config{}
 	}
+	return &TestService{
+		config: *testConfig,
+		log:    utils.NewTestLogger(),
+		mm:     pluginapi.NewClient(testAPI, testDriver),
+	}, testAPI
 }
 
-func (c TestConfigurator) WithMattermostConfig(mmconfig model.Config) *TestConfigurator {
-	c.mmconfig = mmconfig
-	return &c
+func (s TestService) WithMattermostConfig(mmconfig model.Config) *TestService {
+	s.mmconfig = mmconfig
+	return &s
 }
 
-func (c *TestConfigurator) GetConfig() Config {
-	return c.config
+func (s TestService) WithMattermostAPI(mm *pluginapi.Client) *TestService {
+	s.mm = mm
+	return &s
 }
 
-func (c *TestConfigurator) GetMattermostConfig() configservice.ConfigService {
-	return &mattermostConfigService{&c.mmconfig}
+func (s *TestService) Basic() (Config, *pluginapi.Client, utils.Logger) {
+	return s.Get(),
+		s.MattermostAPI(),
+		s.Logger()
 }
 
-func (c *TestConfigurator) Reconfigure(StoredConfig, ...Configurable) error {
+func (s *TestService) Get() Config {
+	return s.config
+}
+
+func (s *TestService) Logger() utils.Logger {
+	return s.log
+}
+
+func (s *TestService) MattermostAPI() *pluginapi.Client {
+	return s.mm
+}
+
+func (s *TestService) MattermostConfig() configservice.ConfigService {
+	return &mattermostConfigService{&s.mmconfig}
+}
+
+func (s *TestService) Reconfigure(StoredConfig, ...Configurable) error {
 	return nil
 }
 
-func (c *TestConfigurator) StoreConfig(sc StoredConfig) error {
-	c.config.StoredConfig = sc
+func (s *TestService) StoreConfig(sc StoredConfig) error {
+	s.config.StoredConfig = sc
 	return nil
 }

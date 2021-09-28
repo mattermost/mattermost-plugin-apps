@@ -6,8 +6,7 @@ package appservices
 import (
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -21,8 +20,9 @@ var ErrIsABot = errors.New("is a bot")
 type Service interface {
 	// Subscriptions
 
-	Subscribe(actingUserID string, _ *apps.Subscription) error
-	Unsubscribe(actingUserID string, _ *apps.Subscription) error
+	Subscribe(actingUserID string, _ apps.Subscription) error
+	GetSubscriptions(actingUserID string) ([]apps.Subscription, error)
+	Unsubscribe(actingUserID string, _ apps.Subscription) error
 
 	// KV
 
@@ -40,16 +40,14 @@ type Service interface {
 }
 
 type AppServices struct {
-	mm    *pluginapi.Client
 	conf  config.Service
 	store *store.Service
 }
 
 var _ Service = (*AppServices)(nil)
 
-func NewService(mm *pluginapi.Client, conf config.Service, store *store.Service) *AppServices {
+func NewService(conf config.Service, store *store.Service) *AppServices {
 	return &AppServices{
-		mm:    mm,
 		conf:  conf,
 		store: store,
 	}
@@ -59,12 +57,12 @@ func (a *AppServices) ensureFromBot(mattermostUserID string) error {
 	if mattermostUserID == "" {
 		return utils.NewUnauthorizedError("not logged in")
 	}
-	mmuser, err := a.mm.User.Get(mattermostUserID)
+	mmuser, err := a.conf.MattermostAPI().User.Get(mattermostUserID)
 	if err != nil {
 		return err
 	}
 	if !mmuser.IsBot {
-		return errors.Wrap(ErrNotABot, mmuser.GetDisplayName(model.SHOW_NICKNAME_FULLNAME))
+		return errors.Wrap(ErrNotABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
 	}
 	return nil
 }
@@ -73,12 +71,12 @@ func (a *AppServices) ensureFromUser(mattermostUserID string) error {
 	if mattermostUserID == "" {
 		return utils.NewUnauthorizedError("not logged in")
 	}
-	mmuser, err := a.mm.User.Get(mattermostUserID)
+	mmuser, err := a.conf.MattermostAPI().User.Get(mattermostUserID)
 	if err != nil {
 		return err
 	}
 	if mmuser.IsBot {
-		return errors.Wrap(ErrIsABot, mmuser.GetDisplayName(model.SHOW_NICKNAME_FULLNAME))
+		return errors.Wrap(ErrIsABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
 	}
 	return nil
 }

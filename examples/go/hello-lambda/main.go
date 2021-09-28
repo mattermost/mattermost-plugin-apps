@@ -12,7 +12,7 @@ import (
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 //go:embed manifest-http.json
@@ -46,7 +46,7 @@ func main() {
 	manifestData := manifestAWSData
 	if localMode {
 		manifestData = manifestHTTPData
-	} 
+	}
 	http.HandleFunc("/manifest.json", writeJSON(manifestData))
 
 	// Returns "PONG". Used for `appsctl test aws`.
@@ -79,7 +79,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
-	mmclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+	appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type:     apps.CallResponseTypeOK,

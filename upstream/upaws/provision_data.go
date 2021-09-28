@@ -11,9 +11,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // ProvisionData contains all the necessary data for provisioning an app
@@ -42,7 +44,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
+func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -57,7 +59,7 @@ func GetProvisionDataFromFile(path string, log Logger) (*ProvisionData, error) {
 }
 
 // getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
+func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -83,9 +85,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 			if err := json.Unmarshal(data, &mani); err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
-			if log != nil {
-				log.Info("Found manifest", "file", file.Name)
-			}
+			log.Infow("Found manifest", "file", file.Name)
 
 		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
@@ -96,9 +96,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
 			})
-			if log != nil {
-				log.Info("Found lambda function bundle", "file", file.Name)
-			}
+			log.Infow("Found lambda function bundle", "file", file.Name)
 
 		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
 			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
@@ -113,14 +111,10 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			if log != nil {
-				log.Info("Found static asset", "file", file.Name)
-			}
+			log.Infow("Found static asset", "file", file.Name)
 
 		default:
-			if log != nil {
-				log.Info("Ignored unknown file", "file", file.Name)
-			}
+			log.Infow("Ignored unknown file", "file", file.Name)
 		}
 	}
 
@@ -155,7 +149,7 @@ func getProvisionData(b []byte, log Logger) (*ProvisionData, error) {
 		Manifest:        mani,
 		ManifestKey:     S3ManifestName(mani.AppID, mani.Version),
 	}
-	if err := pd.IsValid(); err != nil {
+	if err := pd.Validate(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
 	}
 	return pd, nil
@@ -186,30 +180,35 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 	return generatedFunctions
 }
 
-func (pd *ProvisionData) IsValid() error {
+func (pd *ProvisionData) Validate() error {
+	var result error
 	if pd.Manifest == nil {
 		return errors.New("no manifest")
 	}
-	if err := pd.Manifest.IsValid(); err != nil {
+	if err := pd.Manifest.Validate(); err != nil {
 		return err
 	}
 
 	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
-		return errors.New("different amount of functions in manifest and in the bundle")
+		result = multierror.Append(result,
+			errors.New("different amount of functions in manifest and in the bundle"))
 	}
 
 	for _, function := range pd.Manifest.AWSLambda {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
-			return errors.Errorf("function %s was not found in the bundle", function)
+			result = multierror.Append(result,
+				errors.Errorf("function %s was not found in the bundle", function))
 		}
 		if data.Handler != function.Handler {
-			return errors.New("mismatched handler")
+			result = multierror.Append(result,
+				errors.New("mismatched handler"))
 		}
 		if data.Runtime != function.Runtime {
-			return errors.New("mismatched runtime")
+			result = multierror.Append(result,
+				errors.New("mismatched runtime"))
 		}
 	}
 
-	return nil
+	return result
 }

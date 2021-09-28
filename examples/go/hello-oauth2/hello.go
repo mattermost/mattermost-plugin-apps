@@ -14,8 +14,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
 //go:embed icon.png
@@ -81,7 +80,7 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
-	asAdmin := mmclient.AsAdmin(creq.Context)
+	asAdmin := appclient.AsAdmin(creq.Context)
 	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
@@ -94,7 +93,7 @@ func connect(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.Markdownf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
+		Markdown: fmt.Sprintf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
 	})
 }
 
@@ -132,7 +131,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 
 	token, _ := oauth2Config(&creq).Exchange(context.Background(), code)
 
-	asActingUser := mmclient.AsActingUser(creq.Context)
+	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
 	json.NewEncoder(w).Encode(apps.CallResponse{})
@@ -164,13 +163,13 @@ func send(w http.ResponseWriter, req *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: md.MD(message),
+		Markdown: message,
 	})
 
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()
 	if err != nil && newToken.AccessToken != token.AccessToken {
-		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
+		appclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
 	}
 }
 

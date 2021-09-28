@@ -4,83 +4,81 @@
 package proxy
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) UninstallApp(sessionID, actingUserID string, appID apps.AppID) error {
-	err := utils.EnsureSysAdmin(p.mm, actingUserID)
-	if err != nil {
-		return err
-	}
-
+func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get app. appID: %s", appID)
+		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
+	var message string
 	if app.OnUninstall != nil {
-		creq := &apps.CallRequest{
-			Call: *app.OnUninstall,
-		}
-		resp := p.Call(sessionID, actingUserID, creq)
+		resp := p.callApp(in, *app, apps.CallRequest{
+			Call:    *app.OnUninstall,
+			Context: cc,
+		})
 		if resp.Type == apps.CallResponseTypeError {
-			return errors.Wrapf(resp, "call %s failed", creq.Path)
+			log.WithError(err).Warnf("OnUninstall failed, uninstalling app anyway")
+		} else {
+			message = resp.Markdown
 		}
 	}
 
-	// delete oauth app
-	session, err := utils.LoadSession(p.mm, sessionID, actingUserID)
-	if err != nil {
-		return err
+	if message == "" {
+		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
-	conf := p.conf.GetConfig()
-	asAdmin := model.NewAPIv4Client(conf.MattermostSiteURL)
-	asAdmin.SetToken(session.Token)
 
+	asAdmin, err := p.getAdminClient(in)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get an admin HTTP client")
+	}
+	// delete oauth app
 	if app.MattermostOAuth2.ClientID != "" {
-		success, response := asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID)
-		if !success {
-			if response.Error != nil {
-				return errors.Wrapf(response.Error, "failed to delete Mattermost OAuth2 for %s", app.AppID)
-			}
-			return errors.Errorf("failed to delete Mattermost OAuth2 App - returned with status code %d", response.StatusCode)
+		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
+			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
+		}
+	}
+
+	// revoke bot account token if there is one
+	if app.BotAccessTokenID != "" {
+		if err = asAdmin.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
+			return "", errors.Wrapf(err, "failed to revoke bot access token for %s", app.AppID)
 		}
 	}
 
 	// disable the bot account
-	if app.BotAccessTokenID != "" {
-		success, response := asAdmin.RevokeUserAccessToken(app.BotAccessTokenID)
-		if !success {
-			if response.Error != nil {
-				return errors.Wrapf(response.Error, "failed to revoke bot access token for %s", app.AppID)
-			}
-			return errors.Errorf("failed to revoke bot access token for %s, returned with status code %d", app.AppID, response.StatusCode)
-		}
+	if _, err = asAdmin.DisableBot(app.BotUserID); err != nil {
+		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
-	_, err = p.mm.Bot.UpdateActive(app.BotUserID, false)
-	if err != nil {
-		return errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
-	}
-
-	// delete app from proxy plugin, not removing the data
-	if err := p.store.App.Delete(app.AppID); err != nil {
-		return errors.Wrapf(err, "can't delete app - %s", app.AppID)
+	// delete app
+	if err = p.store.App.Delete(app.AppID); err != nil {
+		return "", errors.Wrapf(err, "can't delete app - %s", app.AppID)
 	}
 
 	// in on-prem mode the manifest need to be deleted as every install add a manifest anyway
 	if !conf.MattermostCloudMode {
-		if err := p.store.Manifest.DeleteLocal(app.AppID); err != nil {
-			return errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
+		if err = p.store.Manifest.DeleteLocal(app.AppID); err != nil {
+			return "", errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
 		}
 	}
 
-	p.mm.Log.Info("Uninstalled the app", "app_id", app.AppID)
+	// remove data
+	if err = p.store.AppKV.DeleteAll(app.BotUserID); err != nil {
+		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
+	}
 
-	p.dispatchRefreshBindingsEvent(actingUserID)
-	return nil
+	log.Infof("Uninstalled app.")
+
+	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+
+	return message, nil
 }

@@ -20,26 +20,27 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
 
-	diff := map[apps.AppID]*apps.App{}
+	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
-		m := listed[app.AppID]
+		m, ok := listed[app.AppID]
 
 		// exclude unlisted apps, or those that need no action.
-		if m == nil || app.Version == m.Version {
+		if !ok || app.Version == m.Version {
 			continue
 		}
 
 		diff[app.AppID] = app
 	}
 
-	for _, app := range diff {
+	for id := range diff {
+		app := diff[id]
 		m := listed[app.AppID]
 		values := map[string]string{
 			PrevVersion: string(app.Version),
 		}
 
 		// Store the new manifest to update the current mappings of the App
-		app.Manifest = *m
+		app.Manifest = m
 		err := p.store.App.Save(app)
 		if err != nil {
 			return err
@@ -48,7 +49,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				creq := &apps.CallRequest{
+				creq := apps.CallRequest{
 					Call:   *app.OnVersionChanged,
 					Values: map[string]interface{}{},
 				}
@@ -56,14 +57,15 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 					creq.Values[k] = v
 				}
 
-				resp := p.Call("", app.BotUserID, creq)
+				resp := p.callApp(Incoming{}, app, creq)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", creq.Path)
 				}
 				return nil
 			})
 			if err != nil {
-				p.mm.Log.Error("Failed in callOnce:OnVersionChanged", "app_id", app.AppID, "err", err.Error())
+				p.conf.Logger().WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+					"app_id", app.AppID)
 			}
 		}
 	}
@@ -72,8 +74,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 }
 
 func (p *Proxy) callOnce(f func() error) error {
+	mm := p.conf.MattermostAPI()
 	// Delete previous job
-	if err := p.mm.KV.Delete(config.KVCallOnceKey); err != nil {
+	if err := mm.KV.Delete(config.KVCallOnceKey); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
@@ -82,7 +85,7 @@ func (p *Proxy) callOnce(f func() error) error {
 	p.callOnceMutex.Lock()
 	defer p.callOnceMutex.Unlock()
 	value := 0
-	if err := p.mm.KV.Get(config.KVCallOnceKey, &value); err != nil {
+	if err := mm.KV.Get(config.KVCallOnceKey, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -95,7 +98,7 @@ func (p *Proxy) callOnce(f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := p.mm.KV.Set(config.KVCallOnceKey, value)
+	ok, err := mm.KV.Set(config.KVCallOnceKey, value)
 	if err != nil {
 		return errors.Wrapf(err, "can't set key %s to %d", config.KVCallOnceKey, value)
 	}

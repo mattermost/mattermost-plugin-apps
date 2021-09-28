@@ -3,8 +3,6 @@ package apps
 import (
 	"encoding/json"
 	"io"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 )
 
 // CallType determines what action is expected of a function.
@@ -55,8 +53,7 @@ type CallRequest struct {
 	Values map[string]interface{} `json:"values,omitempty"`
 
 	// Context of execution, see the Context type for more information.
-	// <>/<> TODO: remove pointer
-	Context *Context `json:"context,omitempty"`
+	Context Context `json:"context,omitempty"`
 
 	// In case the request came from the command line, the raw text of the
 	// command, as submitted by the user.
@@ -113,7 +110,7 @@ type CallResponse struct {
 	Type CallResponseType `json:"type"`
 
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
-	Markdown md.MD       `json:"markdown,omitempty"`
+	Markdown string      `json:"markdown,omitempty"`
 	Data     interface{} `json:"data,omitempty"`
 
 	// Used in CallResponseTypeError
@@ -136,21 +133,21 @@ type CallResponse struct {
 // Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
 // decorate the response using the ProxyCallResponse to provide additional information.
 type ProxyCallResponse struct {
-	*CallResponse
+	CallResponse
 
 	// Used to provide info about the App to client, e.g. the bot user id
 	AppMetadata *AppMetadataForClient `json:"app_metadata"`
 }
 
-func NewProxyCallResponse(response *CallResponse, metadata *AppMetadataForClient) *ProxyCallResponse {
-	return &ProxyCallResponse{
+func NewProxyCallResponse(response CallResponse, metadata *AppMetadataForClient) ProxyCallResponse {
+	return ProxyCallResponse{
 		response,
 		metadata,
 	}
 }
 
-func NewErrorCallResponse(err error) *CallResponse {
-	return &CallResponse{
+func NewErrorCallResponse(err error) CallResponse {
+	return CallResponse{
 		Type: CallResponseTypeError,
 		// TODO <>/<> ticket use MD instead of ErrorText
 		ErrorText: err.Error(),
@@ -158,7 +155,7 @@ func NewErrorCallResponse(err error) *CallResponse {
 }
 
 // Error() makes CallResponse a valid error, for convenience
-func (cr *CallResponse) Error() string {
+func (cr CallResponse) Error() string {
 	if cr.Type == CallResponseTypeError {
 		return cr.ErrorText
 	}
@@ -183,28 +180,29 @@ func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 	return &c, nil
 }
 
-func NewCall(url string) *Call {
-	c := &Call{
+func NewCall(url string) Call {
+	c := Call{
 		Path: url,
 	}
 	return c
 }
 
-func (c *Call) WithOverrides(override *Call) *Call {
-	out := Call{}
-	if c != nil {
-		out = *c
+func (cp *Call) WithDefault(def Call) Call {
+	if cp == nil {
+		return def
 	}
-	if override == nil {
-		return &out
+	c := *cp
+
+	if c.Path == "" {
+		c.Path = def.Path
 	}
-	if override.Path != "" {
-		out.Path = override.Path
+	if c.Expand == nil {
+		c.Expand = def.Expand
 	}
-	if override.Expand != nil {
-		out.Expand = override.Expand
+	if c.State == nil {
+		c.State = def.State
 	}
-	return &out
+	return c
 }
 
 func (c *CallRequest) GetValue(name, defaultValue string) string {
@@ -225,4 +223,23 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+func (c *CallRequest) BoolValue(name string) bool {
+	if len(c.Values) == 0 {
+		return false
+	}
+
+	if b, ok := c.Values[name].(bool); ok {
+		return b
+	}
+
+	opt, ok := c.Values[name].(map[string]interface{})
+	if ok {
+		if v, ok2 := opt["value"].(bool); ok2 {
+			return v
+		}
+	}
+
+	return false
 }

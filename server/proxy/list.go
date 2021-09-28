@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -24,9 +24,9 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return p.store.App.Get(appID)
 }
 
-func (p *Proxy) GetInstalledApps() []*apps.App {
+func (p *Proxy) GetInstalledApps() []apps.App {
 	installed := p.store.App.AsMap()
-	out := []*apps.App{}
+	out := []apps.App{}
 	for _, app := range installed {
 		out = append(out, app)
 	}
@@ -39,16 +39,20 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
-	conf := p.conf.GetConfig()
-	out := []*apps.ListedApp{}
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
+	conf := p.conf.Get()
+	out := []apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
 
-		marketApp := &apps.ListedApp{
+		if !includePluginApps && m.AppType == apps.AppTypePlugin {
+			continue
+		}
+
+		marketApp := apps.ListedApp{
 			Manifest: m,
 		}
 
@@ -65,6 +69,14 @@ func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 				Description: "Apps are marked as experimental and not meant for production use. Please use with caution.",
 				URL:         "",
 			}}
+
+			if !marketApp.Enabled {
+				marketApp.Labels = append(marketApp.Labels, model.MarketplaceLabel{
+					Name:        "Disabled",
+					Description: "This app is disabled.",
+					URL:         "",
+				})
+			}
 		}
 		out = append(out, marketApp)
 	}
@@ -78,7 +90,7 @@ func (p *Proxy) GetListedApps(filter string) []*apps.ListedApp {
 }
 
 // Copied from Mattermost Server
-func appMatchesFilter(manifest *apps.Manifest, filter string) bool {
+func appMatchesFilter(manifest apps.Manifest, filter string) bool {
 	filter = strings.TrimSpace(strings.ToLower(filter))
 
 	if filter == "" {

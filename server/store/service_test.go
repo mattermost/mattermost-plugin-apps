@@ -1,5 +1,3 @@
-// +build !e2e
-
 package store
 
 import (
@@ -9,7 +7,7 @@ import (
 )
 
 func TestHashkey(t *testing.T) {
-	s := NewService(nil, nil, nil, "")
+	s := &Service{}
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string

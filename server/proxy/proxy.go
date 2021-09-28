@@ -8,89 +8,92 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) Call(sessionID, actingUserID string, creq *apps.CallRequest) *apps.ProxyCallResponse {
-	if creq.Context == nil || creq.Context.AppID == "" {
-		resp := apps.NewErrorCallResponse(utils.NewInvalidError("must provide Context and set the app ID"))
-		return apps.NewProxyCallResponse(resp, nil)
-	}
-
-	if actingUserID != "" {
-		creq.Context.ActingUserID = actingUserID
-		creq.Context.UserID = actingUserID
+func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
+	if creq.Context.AppID == "" {
+		return apps.NewProxyCallResponse(
+			apps.NewErrorCallResponse(
+				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
 	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
-
-	var metadata *apps.AppMetadataForClient
-	if app != nil {
-		metadata = &apps.AppMetadataForClient{
-			BotUserID:   app.BotUserID,
-			BotUsername: app.BotUsername,
-		}
+	if err != nil {
+		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
 	}
 
-	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+	metadata := &apps.AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	}
+
+	cresp := p.callApp(in, *app, creq)
+	return apps.NewProxyCallResponse(cresp, metadata)
+}
+
+func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.CallResponse {
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", app.AppID)
+
+	if !p.appIsEnabled(app) {
+		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
 	}
 
 	if creq.Path[0] != '/' {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path)), metadata)
+		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
-
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 	creq.Path = cleanPath
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
+		return apps.NewErrorCallResponse(err)
 	}
 
-	// Clear any ExpandedContext as it should always be set by an expander for security reasons
-	creq.Context.ExpandedContext = apps.ExpandedContext{}
-
-	conf := p.conf.GetConfig()
-	cc := conf.SetContextDefaultsForApp(creq.Context.AppID, creq.Context)
-
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, sessionID)
-	cc, err = expander.ExpandForApp(app, creq.Expand)
+	cc := creq.Context
+	cc = in.updateContext(cc)
+	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), metadata)
-	}
-	clone := *creq
-	clone.Context = cc
-
-	callResponse := upstream.Call(up, &clone)
-
-	if callResponse.Type == "" {
-		callResponse.Type = apps.CallResponseTypeOK
+		return apps.NewErrorCallResponse(err)
 	}
 
-	if callResponse.Form != nil && callResponse.Form.Icon != "" {
-		icon, err := normalizeStaticPath(conf, cc.AppID, callResponse.Form.Icon)
-		if err != nil {
-			p.mm.Log.Debug("Invalid icon path in form. Ignoring it.", "app_id", app.AppID, "icon", callResponse.Form.Icon, "error", err.Error())
-			callResponse.Form.Icon = ""
-		} else {
-			callResponse.Form.Icon = icon
+	cresp := upstream.Call(up, app, creq)
+	if cresp.Type == "" {
+		cresp.Type = apps.CallResponseTypeOK
+	}
+
+	if cresp.Form != nil {
+		if cresp.Form.Icon != "" {
+			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
+			if err != nil {
+				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				cresp.Form.Icon = ""
+			} else {
+				cresp.Form.Icon = icon
+			}
+			clean, problems := cleanForm(*cresp.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugw("invalid form")
+			}
+			cresp.Form = &clean
 		}
 	}
 
-	return apps.NewProxyCallResponse(callResponse, metadata)
+	return cresp
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -109,49 +112,57 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-func (p *Proxy) Notify(cc *apps.Context, subj apps.Subject) error {
-	subs, err := p.store.Subscription.Get(subj, cc.TeamID, cc.ChannelID)
+func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
+	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
 	if err != nil {
 		return err
 	}
 
-	expander := p.newExpander(cc, p.mm, p.conf, p.store, "")
+	return p.notify(base, subs)
+}
 
-	notify := func(sub *apps.Subscription) error {
-		call := sub.Call
-		if call == nil {
-			return errors.New("nothing to call")
-		}
-
-		callRequest := &apps.CallRequest{Call: *call}
-		app, err := p.store.App.Get(sub.AppID)
-		if err != nil {
-			return err
-		}
-		callRequest.Context, err = expander.ExpandForApp(app, callRequest.Expand)
-		if err != nil {
-			return err
-		}
-		callRequest.Context.Subject = subj
-
-		up, err := p.upstreamForApp(app)
-		if err != nil {
-			return err
-		}
-		return upstream.Notify(up, callRequest)
-	}
-
+func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := notify(sub)
+		err := p.notifyForSubscription(&base, sub)
 		if err != nil {
-			// TODO log err
-			continue
+			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
+				"app_id", sub.AppID,
+				"subject", sub.Subject)
 		}
 	}
+
 	return nil
 }
 
-func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath string) error {
+func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription) error {
+	creq := apps.CallRequest{
+		Call: sub.Call,
+	}
+	app, err := p.store.App.Get(sub.AppID)
+	if err != nil {
+		return err
+	}
+	if !p.appIsEnabled(*app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
+
+	creq.Context, err = p.expandContext(Incoming{}, *app, base, sub.Call.Expand)
+	if err != nil {
+		return err
+	}
+	creq.Context.Subject = sub.Subject
+
+	up, err := p.upstreamForApp(*app)
+	if err != nil {
+		return err
+	}
+	return upstream.Notify(up, *app, creq)
+}
+
+func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath string) error {
+	if !p.appIsEnabled(app) {
+		return errors.Errorf("%s is disabled", app.AppID)
+	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
@@ -168,29 +179,123 @@ func (p *Proxy) NotifyRemoteWebhook(app *apps.App, data []byte, webhookPath stri
 		datav = string(data)
 	}
 
+	conf := p.conf.Get()
+	cc := contextForApp(app, apps.Context{}, conf)
+	// Set acting user to bot.
+	cc.ActingUserID = app.BotUserID
+	cc.ActingUserAccessToken = app.BotAccessToken
+
 	// TODO: do we need to customize the Expand & State for the webhook Call?
-	creq := &apps.CallRequest{
+	return upstream.Notify(up, app, apps.CallRequest{
 		Call: apps.Call{
 			Path: path.Join(apps.PathWebhook, webhookPath),
 		},
-		Context: p.conf.GetConfig().SetContextDefaultsForApp(app.AppID, &apps.Context{
-			ActingUserID: app.BotUserID,
-		}),
+		Context: cc,
 		Values: map[string]interface{}{
 			"data": datav,
 		},
-	}
-	expander := p.newExpander(creq.Context, p.mm, p.conf, p.store, "")
-	creq.Context, err = expander.ExpandForApp(app, creq.Expand)
-	if err != nil {
-		return err
-	}
-
-	return upstream.Notify(up, creq)
+	})
 }
 
-func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	m, err := p.store.Manifest.Get(appID)
+var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
+
+func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
+	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrap(err, "failed to get post_created subscriptions")
+	}
+
+	subs := []apps.Subscription{}
+	subs = append(subs, postSubs...)
+
+	mentions := possibleAtMentions(post.Message)
+
+	botCanRead := map[string]bool{}
+	if len(mentions) > 0 {
+		appsMap := p.store.App.AsMap()
+		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		if err != nil && err != utils.ErrNotFound {
+			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+		}
+
+		for _, sub := range mentionSubs {
+			app, ok := appsMap[sub.AppID]
+			if !ok {
+				continue
+			}
+			for _, mention := range mentions {
+				if mention == app.BotUsername {
+					_, ok := botCanRead[app.BotUserID]
+					if ok {
+						// already processed this bot for this post
+						continue
+					}
+
+					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PermissionReadChannel)
+					botCanRead[app.BotUserID] = canRead
+
+					if canRead {
+						subs = append(subs, sub)
+					}
+				}
+			}
+		}
+	}
+
+	if len(subs) == 0 {
+		return nil
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func (p *Proxy) NotifyUserHasLeftChannel(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserHasJoinedTeam(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
+	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
+	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
+	}
+
+	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
+	if err != nil && err != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
+	}
+
+	subs := []apps.Subscription{}
+	subs = append(subs, userSubs...)
+
+	appsMap := p.store.App.AsMap()
+	for _, sub := range botSubs {
+		app, ok := appsMap[sub.AppID]
+		if !ok {
+			continue
+		}
+
+		if app.BotUserID == cc.UserID {
+			subs = append(subs, sub)
+		}
+	}
+
+	return p.notify(cc, subs)
+}
+
+func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
@@ -198,74 +303,61 @@ func (p *Proxy) GetAsset(appID apps.AppID, path string) (io.ReadCloser, int, err
 		}
 		return nil, status, err
 	}
-	up, err := p.staticUpstreamForManifest(m)
+
+	return p.getStatic(*app, path)
+}
+
+func (p *Proxy) getStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-
-	return up.GetStatic(path)
+	return up.GetStatic(app, path)
 }
 
-func (p *Proxy) staticUpstreamForManifest(m *apps.Manifest) (upstream.StaticUpstream, error) {
-	switch m.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewStaticUpstream(m, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewStaticUpstream(m, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		return nil, errors.New("static assets are not supported for builtin apps")
-
-	default:
-		return nil, utils.NewInvalidError("not a valid app type: %s", m.AppType)
+func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
+	if app.AppType == apps.AppTypeBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
+		if !ok {
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
+		}
+		return u, nil
 	}
-}
 
-func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
-	if !p.AppIsEnabled(app) {
-		return nil, errors.Errorf("%s is disabled", app.AppID)
-	}
-	conf := p.conf.GetConfig()
-	err := isAppTypeSupported(conf, &app.Manifest)
+	conf := p.conf.Get()
+	err := isAppTypeSupported(conf, app.AppType)
 	if err != nil {
 		return nil, err
 	}
 
-	switch app.AppType {
-	case apps.AppTypeHTTP:
-		return uphttp.NewUpstream(app, p.httpOut), nil
-
-	case apps.AppTypeAWSLambda:
-		return upaws.NewUpstream(app, p.aws, p.s3AssetBucket), nil
-
-	case apps.AppTypeBuiltin:
-		up := p.builtinUpstreams[app.AppID]
-		if up == nil {
-			return nil, utils.NewNotFoundError("builtin app not found: %s", app.AppID)
-		}
-		return up, nil
-
-	default:
+	upv, ok := p.upstreams.Load(app.AppType)
+	if !ok {
 		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
 	}
+	up, ok := upv.(upstream.Upstream)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
+	}
+	return up, nil
 }
 
-func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
+func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
 	supportedTypes := []apps.AppType{
+		apps.AppTypeAWSLambda,
 		apps.AppTypeBuiltin,
+		apps.AppTypePlugin,
 	}
 	mode := "Mattermost Cloud"
+
 	switch {
 	case conf.DeveloperMode:
 		return nil
 
 	case conf.MattermostCloudMode:
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda)
 
 	case !conf.MattermostCloudMode:
 		// Self-managed
-		supportedTypes = append(supportedTypes, apps.AppTypeAWSLambda, apps.AppTypeHTTP)
+		supportedTypes = append(supportedTypes, apps.AppTypeHTTP)
 		mode = "Self-managed"
 
 	default:
@@ -273,9 +365,29 @@ func isAppTypeSupported(conf config.Config, m *apps.Manifest) error {
 	}
 
 	for _, t := range supportedTypes {
-		if m.AppType == t {
+		if appType == t {
 			return nil
 		}
 	}
-	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", m.AppType, mode, supportedTypes)
+	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
+}
+
+// possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
+func possibleAtMentions(message string) []string {
+	var names []string
+
+	if !strings.Contains(message, "@") {
+		return names
+	}
+
+	alreadyMentioned := make(map[string]bool)
+	for _, match := range atMentionRegexp.FindAllString(message, -1) {
+		name := model.NormalizeUsername(match[1:])
+		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+			names = append(names, name)
+			alreadyMentioned[name] = true
+		}
+	}
+
+	return names
 }

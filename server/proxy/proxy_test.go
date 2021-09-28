@@ -7,12 +7,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -23,7 +20,7 @@ import (
 )
 
 func TestAppMetadataForClient(t *testing.T) {
-	testApps := []*apps.App{
+	testApps := []apps.App{
 		{
 			BotUserID:   "botid",
 			BotUsername: "botusername",
@@ -36,9 +33,9 @@ func TestAppMetadataForClient(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	p := newTestProxy(testApps, ctrl)
-	c := &apps.CallRequest{
-		Context: &apps.Context{
+	p := newTestProxy(t, testApps, ctrl)
+	creq := apps.CallRequest{
+		Context: apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				AppID: "app1",
 			},
@@ -48,44 +45,43 @@ func TestAppMetadataForClient(t *testing.T) {
 		},
 	}
 
-	resp := p.Call("session_id", "acting_user_id", c)
+	resp := p.Call(Incoming{}, creq)
 	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
 	})
 }
 
-func newTestProxy(testApps []*apps.App, ctrl *gomock.Controller) *Proxy {
-	testAPI := &plugintest.API{}
-	testAPI.On("LogDebug", mock.Anything).Return(nil)
-	mm := pluginapi.NewClient(testAPI)
-
-	conf := config.NewTestConfigurator(config.Config{}).WithMattermostConfig(model.Config{
+func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *Proxy {
+	conf := config.NewTestConfigService(nil).WithMattermostConfig(model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL: model.NewString("test.mattermost.com"),
 		},
 	})
 
-	s := store.NewService(mm, conf, nil, "")
+	s, err := store.MakeService(conf, nil)
+	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
 
 	upstreams := map[apps.AppID]upstream.Upstream{}
-	for _, app := range testApps {
-		cr := &apps.CallResponse{
-			Type: apps.CallResponseTypeOK,
-		}
-		b, _ := json.Marshal(cr)
-		reader := ioutil.NopCloser(bytes.NewReader(b))
+	for i := range testApps {
+		app := testApps[i]
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any()).Return(reader, nil)
+
+		// set up an empty OK call response
+		b, _ := json.Marshal(apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
+		})
+		reader := ioutil.NopCloser(bytes.NewReader(b))
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+
 		upstreams[app.Manifest.AppID] = up
-		appStore.EXPECT().Get(app.AppID).Return(app, nil)
+		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
 	}
 
 	p := &Proxy{
-		mm:               mm,
 		store:            s,
 		builtinUpstreams: upstreams,
 		conf:             conf,
