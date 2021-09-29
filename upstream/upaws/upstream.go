@@ -161,10 +161,5 @@ func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]str
 		sorted = append(sorted, k)
 	}
 	sort.Strings(sorted)
-	out := []string{}
-	for _, k := range sorted {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out, nil
+	return sorted, nil
 }
