@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -96,38 +95,38 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 	return updated
 }
 
-func (in *Incoming) ensureUserTokens(mm *pluginapi.Client, adminRequested bool) error {
-	var session *model.Session
-	var err error
-	if in.ActingUserAccessToken == "" && in.SessionID != "" {
-		session, err = utils.LoadSession(mm, in.SessionID, in.ActingUserID)
-		if err != nil {
-			return err
-		}
-		in.ActingUserAccessToken = session.Token
+func (in *Incoming) ensureUserToken(mm *pluginapi.Client) error {
+	if in.ActingUserAccessToken != "" {
+		return nil
 	}
-	if in.ActingUserAccessToken == "" {
-		return errors.New("failed to obtain the acting user token")
+	if in.SessionID == "" {
+		return utils.NewUnauthorizedError("no user token nor session ID")
 	}
-
-	if adminRequested {
-		if !in.SysAdminChecked {
-			err = utils.EnsureSysAdmin(mm, in.ActingUserID)
-			if err != nil {
-				return err
-			}
-		}
-		in.AdminAccessToken = in.ActingUserAccessToken
+	session, err := utils.LoadSession(mm, in.SessionID, in.ActingUserID)
+	if err != nil {
+		return errors.Wrap(err, "failed to obtain user token from session")
 	}
-	return err
+	in.ActingUserAccessToken = session.Token
+	return nil
 }
 
 func (p *Proxy) getAdminClient(in Incoming) (mmclient.Client, error) {
 	conf, mm, _ := p.conf.Basic()
-	err := in.ensureUserTokens(mm, true)
-	if err != nil {
-		return nil, err
+
+	if in.AdminAccessToken == "" {
+		if !in.SysAdminChecked {
+			err := utils.EnsureSysAdmin(mm, in.ActingUserID)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get admin access to Mattermost")
+			}
+		}
+		err := in.ensureUserToken(mm)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
+		}
+		in.AdminAccessToken = in.ActingUserAccessToken
 	}
+
 	asAdmin := mmclient.NewHTTPClient(conf, in.AdminAccessToken)
 	return asAdmin, nil
 }

@@ -17,10 +17,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -40,8 +39,6 @@ type Plugin struct {
 	store       *store.Service
 	appservices appservices.Service
 	proxy       proxy.Service
-
-	command command.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
@@ -102,6 +99,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
+	p.store.App.InitBuiltin(builtin.App(conf))
 	p.log.Debugf("Initialized persistent store")
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
@@ -113,20 +111,18 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
+	p.proxy.AddBuiltinUpstream(
+		builtin.AppID,
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.store, p.httpOut),
+	)
 	p.log.Debugf("Initialized the app proxy")
 
 	p.appservices = appservices.NewService(p.conf, p.store)
 
 	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
-		dialog.Init,
 		restapi.Init,
 		gateway.Init,
 	)
-
-	p.command, err = command.MakeService(p.conf, p.proxy, p.httpOut)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize own command handling")
-	}
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
@@ -186,12 +182,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command, p.proxy)
-}
-
-func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	resp, _ := p.command.ExecuteCommand(c, args)
-	return resp, nil
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.proxy)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {

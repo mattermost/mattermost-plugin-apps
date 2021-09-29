@@ -302,7 +302,7 @@ func getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client, in 
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
-		err := in.ensureUserTokens(mm, true)
+		err := in.ensureUserToken(mm)
 		if err != nil {
 			return nil, err
 		}
