@@ -74,7 +74,7 @@ func (a *builtinApp) installS3() handler {
 				id := creq.GetValue(fAppID, "")
 				versions, err := up.ListS3Versions(apps.AppID(id), creq.Query)
 				if err != nil {
-					return nil, errors.Wrap(err, "failed to retrive the list of apps, try --url")
+					return nil, errors.Wrap(err, "failed to retrive the list of app versions on S3, try --url")
 				}
 				for _, v := range versions {
 					options = append(options, apps.SelectOption{
@@ -89,8 +89,27 @@ func (a *builtinApp) installS3() handler {
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			version := apps.AppVersion(creq.GetValue(fVersion, ""))
-			m, err := a.store.Manifest.GetFromS3(appID, version)
+			version := creq.GetValue(fVersion, "")
+			if version == "" {
+				conf, _, log := a.conf.Basic()
+				up, err := upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
+				if err != nil {
+					return apps.NewErrorCallResponse(
+						errors.Wrap(err, "failed to initialize AWS access"))
+				}
+
+				versions, err := up.ListS3Versions(appID, "")
+				if err != nil {
+					return apps.NewErrorCallResponse(
+						errors.Wrap(err, "failed to retrive the list of app versions on S3"))
+				}
+
+				if len(versions) > 0 {
+					version = versions[0]
+				}
+			}
+
+			m, err := a.store.Manifest.GetFromS3(appID, apps.AppVersion(version))
 			if err != nil {
 				return apps.NewErrorCallResponse(err)
 			}

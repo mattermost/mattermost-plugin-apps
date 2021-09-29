@@ -137,7 +137,7 @@ func (u *Upstream) ListS3Apps(appPrefix string) ([]apps.AppID, error) {
 }
 
 // Lists all apps with manifests in S3.
-func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]apps.AppVersion, error) {
+func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]string, error) {
 	result, err := u.awsClient.ListS3(u.staticS3Bucket, "manifests/"+string(appID))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list bucket")
@@ -161,9 +161,10 @@ func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]app
 		sorted = append(sorted, k)
 	}
 	sort.Strings(sorted)
-	out := []apps.AppVersion{}
+	out := []string{}
 	for _, k := range sorted {
-		out = append(out, apps.AppVersion(k))
+		out = append(out, k)
 	}
+	sort.Strings(out)
 	return out, nil
 }
