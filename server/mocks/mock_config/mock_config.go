@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
+	telemetry "github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
 )
@@ -140,4 +141,18 @@ func (m *MockService) StoreConfig(arg0 config.StoredConfig) error {
 func (mr *MockServiceMockRecorder) StoreConfig(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreConfig", reflect.TypeOf((*MockService)(nil).StoreConfig), arg0)
+}
+
+// Telemetry mocks base method.
+func (m *MockService) Telemetry() *telemetry.Telemetry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Telemetry")
+	ret0, _ := ret[0].(*telemetry.Telemetry)
+	return ret0
+}
+
+// Telemetry indicates an expected call of Telemetry.
+func (mr *MockServiceMockRecorder) Telemetry() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Telemetry", reflect.TypeOf((*MockService)(nil).Telemetry))
 }

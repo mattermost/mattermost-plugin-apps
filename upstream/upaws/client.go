@@ -67,6 +67,7 @@ type Client interface {
 	FindPolicy(policyName Name) (*iam.Policy, error)
 	FindRole(name Name) (ARN, error)
 	FindUser(name Name) (ARN, error)
+	ListS3(bucket, prefix string) ([]string, error)
 	RemoveUserFromGroup(u, g Name) error
 	UploadS3(bucket, key string, body io.Reader, publicRead bool) (string, error)
 }

@@ -43,10 +43,12 @@ func TestOnActivate(t *testing.T) {
 
 	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
 
-	siteURL := "http://localhost:8065"
+	listenAddress := "localhost:8065"
+	siteURL := "http://" + listenAddress
 	testAPI.On("GetConfig").Return(&model.Config{
 		ServiceSettings: model.ServiceSettings{
-			SiteURL: &siteURL,
+			SiteURL:       &siteURL,
+			ListenAddress: &listenAddress,
 		},
 	})
 
@@ -80,7 +82,7 @@ func TestOnDeactivate(t *testing.T) {
 	p.API = testAPI
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id")
+	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id", nil)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 

@@ -6,7 +6,7 @@ Start the example App by running `docker-compose up`. This will spin up 3 docker
 
 Visit http://localhost:8066 to connect to the Mattermost instance. Once your account is set up, run the following slash command to install the example App:
 
-`/apps install http http://node_app:4000/manifest.json`
+`/apps install url http://node_app:4000/manifest.json`
 
 Your App can be written in another language than JavaScript, and can be in a different directory. You'll just need to edit [docker-compose.override.yml](docker-compose.override.yml), and change the `volumes` to match the relative path to your app, and change the `command` to match your App's start command. Note how the environment variables are used in `src/app.ts`
 

@@ -14,7 +14,7 @@ type httpClient struct {
 }
 
 func NewHTTPClient(conf config.Config, token string) Client {
-	client := model.NewAPIv4Client(conf.MattermostSiteURL)
+	client := model.NewAPIv4Client(conf.MattermostLocalURL)
 	client.SetToken(token)
 	return &httpClient{client}
 }

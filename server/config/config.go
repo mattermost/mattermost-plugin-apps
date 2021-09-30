@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"net/url"
 	"os"
 	"path"
@@ -58,6 +59,7 @@ type Config struct {
 	BotUserID              string
 	MattermostSiteHostname string
 	MattermostSiteURL      string
+	MattermostLocalURL     string
 	PluginURL              string
 	PluginURLPath          string
 
@@ -102,10 +104,33 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 		return err
 	}
 
+	var localURL string
+	if mmconf.ServiceSettings.ConnectionSecurity != nil && *mmconf.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
+		// If there is no reverse proxy use the server URL
+		localURL = *mattermostSiteURL
+	} else {
+		// Avoid the reverse proxy by using the local port
+		listenAddress := mmconf.ServiceSettings.ListenAddress
+		if listenAddress == nil {
+			return errors.New("plugin requires Mattermost Listen Address to be set")
+		}
+		host, port, err := net.SplitHostPort(*listenAddress)
+		if err != nil {
+			return err
+		}
+
+		if host == "" {
+			host = "127.0.0.1"
+		}
+
+		localURL = "http://" + host + ":" + port
+	}
+
 	conf.StoredConfig = stored
 
 	conf.MattermostSiteURL = *mattermostSiteURL
 	conf.MattermostSiteHostname = mattermostURL.Hostname()
+	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.BuildConfig.Manifest.Id
 	conf.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + conf.PluginURLPath
 
