@@ -43,7 +43,7 @@ func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Lo
 }
 
 func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(app.AppID, app.Version, path)
+	key := S3StaticName(app.Manifest.AppID, app.Manifest.Version, path)
 	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
@@ -52,7 +52,7 @@ func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, err
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if app.Manifest.AWSLambda == nil {
+	if !app.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
 		return nil, errors.New("no 'aws_lambda' section in manifest.json")
 	}
 	name := match(creq.Path, &app.Manifest)
@@ -94,7 +94,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.AWSLambda {
+	for _, f := range m.AWSLambda.Functions {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				matchedName = LambdaName(m.AppID, m.Version, f.Name)

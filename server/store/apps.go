@@ -57,31 +57,35 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 		s.builtinInstalled = map[apps.AppID]apps.App{}
 	}
 	for _, app := range builtinApps {
+		app.DeployType = apps.DeployBuiltin
 		s.builtinInstalled[app.AppID] = app
 	}
 	s.mutex.Unlock()
 }
 
 func (s *appStore) Configure(conf config.Config) error {
-	_, mm, log := s.conf.Basic()
 	newInstalled := map[apps.AppID]apps.App{}
 
 	for id, key := range conf.InstalledApps {
-		var app *apps.App
-		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &app)
-		switch {
-		case err != nil:
-			log.WithError(err).Errorw("Failed to load app",
-				"app_id", id)
+		log := s.conf.Logger().With("app_id", id)
 
-		case app == nil:
-			log.Errorw("Failed to load app - key not found",
-				"app_id", id,
-				"key", config.KVInstalledAppPrefix+key)
-
-		default:
-			newInstalled[apps.AppID(id)] = *app
+		data, appErr := s.api.KVGet(config.KVInstalledAppPrefix + key)
+		if appErr != nil {
+			log.WithError(appErr).Errorw("Failed to load app")
+			continue
 		}
+		if len(data) == 0 {
+			err := utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
+			log.WithError(err).Errorw("Failed to load app")
+			continue
+		}
+
+		app, err := apps.DecodeCompatibleApp(data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to decode app")
+			continue
+		}
+		newInstalled[apps.AppID(id)] = *app
 	}
 
 	s.mutex.Lock()
@@ -104,7 +108,7 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	if ok {
 		return &app, nil
 	}
-	return nil, utils.ErrNotFound
+	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
 func (s *appStore) AsMap() map[apps.AppID]apps.App {
@@ -139,6 +143,8 @@ func (s *appStore) Save(app apps.App) error {
 	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
+	app.Manifest.SchemaVersion = conf.BuildConfig.Version
+
 	data, err := json.Marshal(app)
 	if err != nil {
 		return err
@@ -148,6 +154,7 @@ func (s *appStore) Save(app apps.App) error {
 		// no change in the data
 		return nil
 	}
+
 	_, err = mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err

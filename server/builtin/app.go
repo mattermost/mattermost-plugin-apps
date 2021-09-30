@@ -15,7 +15,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -33,21 +32,20 @@ const (
 	fAppID          = "app"
 	fVersion        = "version"
 	fIncludePlugins = "include_plugins"
-	fUserID         = "user"
+	fDeployType     = "deploy_type"
 )
 
 const (
-	pDebugBindings      = "/debug-bindings"
-	pDebugClean         = "/debug-clean"
-	pInfo               = "/info"
-	pList               = "/list"
-	pUninstall          = "/uninstall"
-	pEnable             = "/enable"
-	pDisable            = "/disable"
-	pInstallURL         = "/install-url"
-	pInstallS3          = "/install-s3"
-	pInstallMarketplace = "/install-marketplace"
-	pInstallConsent     = "/install-consent"
+	pDebugBindings  = "/debug-bindings"
+	pDebugClean     = "/debug-clean"
+	pInfo           = "/info"
+	pList           = "/list"
+	pUninstall      = "/uninstall"
+	pEnable         = "/enable"
+	pDisable        = "/disable"
+	pInstallURL     = "/install-url"
+	pInstallListed  = "/install-listed"
+	pInstallConsent = "/install-consent"
 )
 
 type handler struct {
@@ -61,18 +59,16 @@ type handler struct {
 type builtinApp struct {
 	conf    config.Service
 	proxy   proxy.Service
-	store   *store.Service
 	httpOut httpout.Service
 	router  map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
 		conf:    conf,
 		proxy:   proxy,
-		store:   store,
 		httpOut: httpOut,
 	}
 
@@ -81,16 +77,15 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 		pInfo: a.info(),
 
 		// Actions that require sysadmin
-		pDebugBindings:      a.debugBindings(),
-		pDebugClean:         a.debugClean(),
-		pList:               a.list(),
-		pDisable:            a.disable(),
-		pEnable:             a.enable(),
-		pInstallMarketplace: a.installMarketplace(),
-		pInstallS3:          a.installS3(),
-		pInstallURL:         a.installURL(),
-		pInstallConsent:     a.installConsent(),
-		pUninstall:          a.uninstall(),
+		pDebugBindings:  a.debugBindings(),
+		pDebugClean:     a.debugClean(),
+		pDisable:        a.disable(),
+		pEnable:         a.enable(),
+		pInstallConsent: a.installConsent(),
+		pInstallListed:  a.installListed(),
+		pInstallURL:     a.installURL(),
+		pList:           a.list(),
+		pUninstall:      a.uninstall(),
 	}
 
 	return a
@@ -99,7 +94,6 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, store *store.Servic
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
-		AppType:     apps.AppTypeBuiltin,
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
@@ -109,6 +103,7 @@ func Manifest(conf config.Config) apps.Manifest {
 func App(conf config.Config) apps.App {
 	return apps.App{
 		Manifest:    Manifest(conf),
+		DeployType:  apps.DeployBuiltin,
 		BotUserID:   conf.BotUserID,
 		BotUsername: config.BotUsername,
 		GrantedLocations: apps.Locations{

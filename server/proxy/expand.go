@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -20,7 +20,7 @@ func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Con
 	out.ExpandedContext = apps.ExpandedContext{}
 	out.MattermostSiteURL = conf.MattermostSiteURL
 	out.AppID = app.AppID
-	out.AppPath = path.Join(conf.PluginURLPath, appclient.PathApps, string(app.AppID))
+	out.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
 	out.BotUserID = app.BotUserID
 	out.BotAccessToken = app.BotAccessToken
 	return out
@@ -156,8 +156,8 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		if expand.OAuth2App != "" {
 			cc.OAuth2.ClientID = app.RemoteOAuth2.ClientID
 			cc.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
-			cc.OAuth2.ConnectURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Connect
-			cc.OAuth2.CompleteURL = conf.AppURL(app.AppID) + config.PathRemoteOAuth2Complete
+			cc.OAuth2.ConnectURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Connect
+			cc.OAuth2.CompleteURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Complete
 		}
 
 		if expand.OAuth2User != "" && base.OAuth2.User == nil && base.ActingUserID != "" {

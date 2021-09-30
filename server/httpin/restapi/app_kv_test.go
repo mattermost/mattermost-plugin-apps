@@ -17,7 +17,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
@@ -47,7 +47,7 @@ func TestKV(t *testing.T) {
 	defer server.Close()
 	Init(router, testConfig, nil, appService)
 
-	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), appclient.PathAPI, appclient.PathKV, "/test-id"}, "")
+	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
 
 	req, err := http.NewRequest("PUT", itemURL, bytes.NewReader(item))
@@ -111,7 +111,7 @@ func TestKVPut(t *testing.T) {
 
 		appServices.EXPECT().KVSet("some_user_id", "", "some_key", expectedPayload).Return(true, nil)
 
-		u := server.URL + appclient.PathAPI + appclient.PathKV + "/some_key"
+		u := server.URL + path.API + path.KV + "/some_key"
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)

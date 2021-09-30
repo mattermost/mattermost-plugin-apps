@@ -108,7 +108,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 }
 
 func (p *Proxy) appIsEnabled(app apps.App) bool {
-	if app.AppType == apps.AppTypeBuiltin {
+	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}
 	if app.Disabled {

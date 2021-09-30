@@ -270,8 +270,8 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}
 
 			app1 := apps.App{
+				DeployType: apps.DeployBuiltin,
 				Manifest: apps.Manifest{
-					AppType:            apps.AppTypeBuiltin,
 					AppID:              apps.AppID("app1"),
 					DisplayName:        "App 1",
 					RequestedLocations: tc.locations,
@@ -299,9 +299,9 @@ func TestGetBindingsCommands(t *testing.T) {
 	testData := []bindingTestData{
 		{
 			app: apps.App{
+				DeployType: apps.DeployBuiltin,
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
-					AppType:     apps.AppTypeBuiltin,
 					DisplayName: "App 1",
 				},
 				GrantedLocations: apps.Locations{
@@ -363,9 +363,9 @@ func TestGetBindingsCommands(t *testing.T) {
 		},
 		{
 			app: apps.App{
+				DeployType: apps.DeployBuiltin,
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app2"),
-					AppType:     apps.AppTypeBuiltin,
 					DisplayName: "App 2",
 				},
 				GrantedLocations: apps.Locations{
@@ -489,9 +489,9 @@ func TestDuplicateCommand(t *testing.T) {
 	testData := []bindingTestData{
 		{
 			app: apps.App{
+				DeployType: apps.DeployBuiltin,
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
-					AppType:     apps.AppTypeBuiltin,
 					DisplayName: "App 1",
 				},
 				GrantedLocations: apps.Locations{
@@ -582,9 +582,9 @@ func TestInvalidCommand(t *testing.T) {
 	testData := []bindingTestData{
 		{
 			app: apps.App{
+				DeployType: apps.DeployBuiltin,
 				Manifest: apps.Manifest{
 					AppID:       apps.AppID("app1"),
-					AppType:     apps.AppTypeBuiltin,
 					DisplayName: "App 1",
 				},
 				GrantedLocations: apps.Locations{
@@ -672,7 +672,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		},
 	}).WithMattermostAPI(mm)
 
-	s, err := store.MakeService(confService, nil)
+	s, err := store.MakeService(confService, nil, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

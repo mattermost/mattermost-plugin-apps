@@ -1,6 +1,11 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
+	"encoding/json"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -10,6 +15,9 @@ type App struct {
 	// Manifest contains the manifest data that the App was installed with. It
 	// may differ from what is currently in the manifest store for the app's ID.
 	Manifest
+
+	// DeployType is the type of upstream that can be used to access the App.
+	DeployType DeployType `json:"deploy_type"`
 
 	// Disabled is set to true if the app is disabled. Disabling an app does not
 	// erase any of it's data.
@@ -52,6 +60,33 @@ type App struct {
 	// In V1, GrantedLocations are simply copied from RequestedLocations upon
 	// the sysadmin's consent, during installing the App.
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
+}
+
+func DecodeCompatibleApp(data []byte) (app *App, err error) {
+	defer func() {
+		if app != nil {
+			err = app.Validate()
+			if err != nil {
+				app = nil
+			}
+		}
+	}()
+
+	err = json.Unmarshal(data, &app)
+	// If failed to decode as current version, opportunistically try as a
+	// v0.7.x. There was no schema version before, this condition may need to be
+	// updated in the future.
+	if err != nil || app.SchemaVersion == "" {
+		app7 := AppV0_7{}
+		_ = json.Unmarshal(data, &app7)
+		if from7 := app7.App(); from7 != nil {
+			return from7, nil
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return app, nil
 }
 
 // OAuth2App contains the setored settings for an "OAuth2 app" used by the App.
