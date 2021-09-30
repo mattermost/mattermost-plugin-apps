@@ -65,7 +65,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
 	}
 	bundleFunctions := []FunctionData{}
-	var mani *apps.Manifest
+	var m *apps.Manifest
 	assets := []AssetData{}
 
 	// Read all the files from zip archive
@@ -82,7 +82,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "can't read manifest.json file")
 			}
-			if err := json.Unmarshal(data, &mani); err != nil {
+			if err := json.Unmarshal(data, &m); err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
 			log.Infow("Found manifest", "file", file.Name)
@@ -118,7 +118,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		}
 	}
 
-	if mani == nil {
+	if m == nil {
 		return nil, errors.New("no manifest found")
 	}
 
@@ -127,7 +127,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range mani.AWSLambda {
+		for _, manifestFunction := range m.AWSLambda {
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,
@@ -140,14 +140,14 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		}
 	}
 
-	generatedAssets := generateAssetNames(mani, assets)
-	generatedFunctions := generateFunctionNames(mani, resFunctions)
+	generatedAssets := generateAssetNames(m, assets)
+	generatedFunctions := generateFunctionNames(m, resFunctions)
 
 	pd := &ProvisionData{
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
-		Manifest:        mani,
-		ManifestKey:     S3ManifestName(mani.AppID, mani.Version),
+		Manifest:        m,
+		ManifestKey:     S3ManifestName(m.AppID, m.Version),
 	}
 	if err := pd.Validate(); err != nil {
 		return nil, errors.Wrap(err, "provision data is not valid")
@@ -182,8 +182,10 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 
 func (pd *ProvisionData) Validate() error {
 	var result error
-	if pd.Manifest == nil {
-		return errors.New("no manifest")
+
+	if pd.Manifest == nil || pd.Manifest.AWSLambda == nil {
+		result = multierror.Append(result,
+			errors.New("no manifest or AWS Lamda metadata"))
 	}
 	if err := pd.Manifest.Validate(); err != nil {
 		return err
@@ -191,7 +193,7 @@ func (pd *ProvisionData) Validate() error {
 
 	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
 		result = multierror.Append(result,
-			errors.New("different amount of functions in manifest and in the bundle"))
+			errors.New("different number of functions in the manifest and in the bundle"))
 	}
 
 	for _, function := range pd.Manifest.AWSLambda {

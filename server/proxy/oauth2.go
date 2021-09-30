@@ -71,6 +71,8 @@ func (p *Proxy) CompleteRemoteOAuth2(in Incoming, appID apps.AppID, urlValues ma
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
+	p.conf.Telemetry().TrackOAuthComplete(string(appID), in.ActingUserID)
+
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 	return nil
 }
