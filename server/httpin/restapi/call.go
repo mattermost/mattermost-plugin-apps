@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -51,6 +52,12 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 		"type", res.Type,
 		"path", creq.Path,
 	)
+
+	// Only track submit calls
+	if strings.HasSuffix(creq.Path, "submit") {
+		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
+	}
+
 	_ = httputils.WriteJSON(w, res)
 }
 

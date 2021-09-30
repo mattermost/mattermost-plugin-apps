@@ -33,7 +33,6 @@ const (
 	fVersion        = "version"
 	fIncludePlugins = "include_plugins"
 	fDeployType     = "deploy_type"
-	fUserID         = "user"
 )
 
 const (

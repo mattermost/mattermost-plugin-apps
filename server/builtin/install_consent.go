@@ -104,7 +104,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	// Consent
 	consent := ""
 	if len(m.RequestedLocations) > 0 {
-		consent += "- Add the following elements to the **Mattermost User Interface**:\n"
+		consent += "\n- Add the following elements to the **Mattermost User Interface**:\n"
 		for _, l := range m.RequestedLocations {
 			consent += fmt.Sprintf("  - %s\n", l.Markdown())
 		}
