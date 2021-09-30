@@ -1,10 +1,15 @@
-package apps
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
+package apps_test
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func TestUnmarshalCallRequest(t *testing.T) {
@@ -25,7 +30,7 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	}
 	`
 
-	data, err := CallRequestFromJSON([]byte(payload))
+	data, err := apps.CallRequestFromJSON([]byte(payload))
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)
@@ -48,7 +53,7 @@ func TestMarshalCallResponse(t *testing.T) {
 			]
 		}
 	}`
-	res := &CallResponse{}
+	res := &apps.CallResponse{}
 
 	err := json.Unmarshal([]byte(resStr), res)
 	require.NoError(t, err)

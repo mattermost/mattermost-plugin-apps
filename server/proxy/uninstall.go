@@ -78,7 +78,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 
 	log.Infof("Uninstalled app.")
 
-	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.AppType))
+	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
 
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 

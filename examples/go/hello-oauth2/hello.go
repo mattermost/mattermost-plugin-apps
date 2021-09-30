@@ -29,6 +29,9 @@ var sendFormData []byte
 //go:embed connect_form.json
 var connectFormData []byte
 
+//go:embed disconnect_form.json
+var disconnectFormData []byte
+
 //go:embed configure_form.json
 var configureFormData []byte
 
@@ -64,6 +67,10 @@ func main() {
 	http.HandleFunc("/connect/form", writeJSON(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
+	// `disconnect` command - disconnect your account.
+	http.HandleFunc("/disconnect/form", writeJSON(disconnectFormData))
+	http.HandleFunc("/disconnect/submit", disconnect)
+
 	// `send` command - send a Hello message.
 	http.HandleFunc("/send/form", writeJSON(sendFormData))
 	http.HandleFunc("/send/submit", send)
@@ -75,30 +82,45 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	bindings := []apps.Binding{{
-		Location: apps.LocationCommand,
-		Bindings: []apps.Binding{{
-			Icon:        "icon.png",
-			Label:       "hello-oauth2",
-			Description: "Hello remote (3rd party) OAuth2 App",
-			Hint:        "[connect | send]",
-			Bindings: []apps.Binding{
-				{
-					Location: "connect",
-					Label:    "connect",
-					Call: &apps.Call{
-						Path: "/connect",
-					},
-				}, {
-					Location: "send",
-					Label:    "send",
-					Call: &apps.Call{
-						Path: "/send",
-					},
-				},
+	commandBinding := apps.Binding{
+		Icon:        "icon.png",
+		Label:       "hello-oauth2",
+		Description: "Hello remote (3rd party) OAuth2 App",
+		Hint:        "",
+		Bindings:    []apps.Binding{},
+	}
+
+	token := oauth2.Token{}
+	remarshal(&token, creq.Context.OAuth2.User)
+
+	if token.AccessToken == "" {
+		connect := apps.Binding{
+			Location: "connect",
+			Label:    "connect",
+			Call: &apps.Call{
+				Path: "/connect",
 			},
-		}},
-	}}
+		}
+
+		commandBinding.Bindings = append(commandBinding.Bindings, connect)
+	} else {
+		send := apps.Binding{
+			Location: "send",
+			Label:    "send",
+			Call: &apps.Call{
+				Path: "/send",
+			},
+		}
+
+		disconnect := apps.Binding{
+			Location: "disconnect",
+			Label:    "disconnect",
+			Call: &apps.Call{
+				Path: "/disconnect",
+			},
+		}
+		commandBinding.Bindings = append(commandBinding.Bindings, send, disconnect)
+	}
 
 	if creq.Context.ActingUser.IsSystemAdmin() {
 		configure := apps.Binding{
@@ -108,13 +130,17 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 				Path: "/configure",
 			},
 		}
-		bindings[0].Bindings[0].Hint = "[configure | connect | send]"
-		bindings[0].Bindings[0].Bindings = append(bindings[0].Bindings[0].Bindings, configure)
+		commandBinding.Bindings = append(commandBinding.Bindings, configure)
 	}
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
-		Data: bindings,
+		Data: []apps.Binding{{
+			Location: apps.LocationCommand,
+			Bindings: []apps.Binding{
+				commandBinding,
+			},
+		}},
 	})
 }
 
@@ -138,6 +164,21 @@ func connect(w http.ResponseWriter, req *http.Request) {
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
 		Markdown: fmt.Sprintf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
+	})
+}
+
+func disconnect(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	asActingUser := appclient.AsActingUser(creq.Context)
+	err := asActingUser.StoreOAuth2User(creq.Context.AppID, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Markdown: "Disconnected your Google account",
 	})
 }
 

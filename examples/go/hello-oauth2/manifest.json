@@ -16,7 +16,8 @@
     "bindings": {
         "path": "/bindings",
         "expand": {
-            "acting_user": "all"
+            "acting_user": "all",
+            "oauth2_user": "all"
         }
     }
 }

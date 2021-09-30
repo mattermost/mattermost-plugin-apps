@@ -41,7 +41,8 @@ type Proxy struct {
 type Admin interface {
 	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
-	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, trustedApp bool, secret string) (*apps.App, string, error)
+	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
+	StoreLocalManifest(apps.Manifest) (string, error)
 	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
 }
 
@@ -69,12 +70,11 @@ type Notifier interface {
 // Internal implements go API used by other packages.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
-	AddLocalManifest(m apps.Manifest) (string, error)
+	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(appID apps.AppID) (*apps.Manifest, error)
-	GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
 }
 
@@ -103,18 +103,71 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 func (p *Proxy) Configure(conf config.Config) error {
 	_, mm, log := p.conf.Basic()
 
-	p.initUpstream(apps.AppTypeHTTP, conf, log, func() (upstream.Upstream, error) {
-		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode), nil
+	p.initUpstream(apps.DeployHTTP, conf, log, func() (upstream.Upstream, error) {
+		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode, uphttp.AppRootURL), nil
 	})
-	p.initUpstream(apps.AppTypeAWSLambda, conf, log, func() (upstream.Upstream, error) {
+	p.initUpstream(apps.DeployAWSLambda, conf, log, func() (upstream.Upstream, error) {
 		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
 	})
-	p.initUpstream(apps.AppTypePlugin, conf, log, func() (upstream.Upstream, error) {
+	p.initUpstream(apps.DeployPlugin, conf, log, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
-	p.initUpstream(apps.AppTypeKubeless, conf, log, func() (upstream.Upstream, error) {
+	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
 		return upkubeless.MakeUpstream()
 	})
+	return nil
+}
+
+// CanDeploy returns the availability of deployType.  allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
+func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
+	return p.canDeploy(p.conf.Get(), deployType)
+}
+
+// CanDeploy returns the availability of deployType.  allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
+func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allowed, usable bool) {
+	_, usable = p.upstreams.Load(deployType)
+
+	supportedTypes := []apps.DeployType{}
+
+	// Initialize with the set supported in all configurations.
+	supportedTypes = append(supportedTypes,
+		apps.DeployAWSLambda,
+		apps.DeployBuiltin,
+		apps.DeployPlugin,
+	)
+
+	switch {
+	case conf.DeveloperMode:
+		// In dev mode support any deploy type.
+		return true, usable
+
+	case conf.MattermostCloudMode:
+		// Nothing else in Mattermost Cloud mode.
+
+	case !conf.MattermostCloudMode:
+		// Add more deploy types in self-managed mode.
+		supportedTypes = append(supportedTypes,
+			apps.DeployHTTP,
+			apps.DeployKubeless)
+	}
+
+	for _, t := range supportedTypes {
+		if deployType == t {
+			return true, usable
+		}
+	}
+	return false, false
+}
+
+func CanDeploy(p Service, deployType apps.DeployType) error {
+	_, canDeploy := p.CanDeploy(deployType)
+	if !canDeploy {
+		return errors.Errorf("%s app deployment is not configured on this instance of Mattermost", deployType)
+	}
 	return nil
 }
 
@@ -135,10 +188,34 @@ func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
 	})
 }
 
-func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
-	if err := isAppTypeSupported(newConfig, typ); err == nil {
-		var up upstream.Upstream
-		up, err = makef()
+func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
+	if app.DeployType == apps.DeployBuiltin {
+		u, ok := p.builtinUpstreams[app.AppID]
+		if !ok {
+			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
+		}
+		return u, nil
+	}
+
+	err := CanDeploy(p, app.DeployType)
+	if err != nil {
+		return nil, err
+	}
+
+	upv, ok := p.upstreams.Load(app.DeployType)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid or unsupported upstream type: %s", app.DeployType)
+	}
+	up, ok := upv.(upstream.Upstream)
+	if !ok {
+		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.DeployType)
+	}
+	return up, nil
+}
+
+func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log utils.Logger, makef func() (upstream.Upstream, error)) {
+	if allowed, _ := p.canDeploy(newConfig, typ); allowed {
+		up, err := makef()
 		switch {
 		case errors.Cause(err) == utils.ErrNotFound:
 			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
@@ -150,6 +227,6 @@ func (p *Proxy) initUpstream(typ apps.AppType, newConfig config.Config, log util
 		}
 	} else {
 		p.upstreams.Delete(typ)
-		log.Debugf("Upstream %s is not supported, cause: %v", typ, err)
+		log.Debugf("Upstream %s is not supported.", typ)
 	}
 }

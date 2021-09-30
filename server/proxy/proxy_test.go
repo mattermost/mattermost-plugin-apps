@@ -24,9 +24,9 @@ func TestAppMetadataForClient(t *testing.T) {
 		{
 			BotUserID:   "botid",
 			BotUsername: "botusername",
+			DeployType:  apps.DeployBuiltin,
 			Manifest: apps.Manifest{
 				AppID:       apps.AppID("app1"),
-				AppType:     apps.AppTypeBuiltin,
 				DisplayName: "App 1",
 			},
 		},
@@ -59,7 +59,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		},
 	})
 
-	s, err := store.MakeService(conf, nil)
+	s, err := store.MakeService(conf, nil, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

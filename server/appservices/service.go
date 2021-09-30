@@ -36,7 +36,7 @@ type Service interface {
 	StoreOAuth2App(_ apps.AppID, actingUserID string, oapp apps.OAuth2App) error
 	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
 	// ref can be either a []byte, or anything else will be JSON marshaled.
-	StoreOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
+	StoreOAuth2User(_ apps.AppID, actingUserID string, ref []byte) error
 }
 
 type AppServices struct {

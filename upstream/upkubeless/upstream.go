@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubeless/kubeless/pkg/client/clientset/versioned"
 	kubelessutil "github.com/kubeless/kubeless/pkg/utils"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,29 +25,28 @@ import (
 
 const Namespace = "mattermost-kubeless-apps"
 
-type Upstream struct {
-	kubelessClient versioned.Interface
-}
+type Upstream struct{}
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream() (*Upstream, error) {
-	kubelessClient, err := kubelessutil.GetKubelessClientOutCluster()
+	_, err := kubelessutil.BuildOutOfClusterConfig()
 	if os.IsNotExist(err) {
-		return nil, errors.Wrap(utils.ErrNotFound, err.Error())
+		return nil, utils.NewNotFoundError(err)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &Upstream{
-		kubelessClient: kubelessClient,
-	}, nil
+	return &Upstream{}, nil
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if !app.SupportsDeploy(apps.DeployKubeless) {
+		return nil, errors.New("no 'kubeless' section in manifest.json")
+	}
 	clientset := kubelessutil.GetClientOutOfCluster()
 
-	url, err := resolvePath(clientset, &app.Manifest, creq.Path)
+	url, err := resolvePath(clientset, app.Manifest, creq.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +66,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 }
 
 // resolvePath resolved a call path into a fully-qualified URL.
-func resolvePath(clientset kubernetes.Interface, m *apps.Manifest, path string) (string, error) {
+func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (string, error) {
 	funcName := match(m, path)
 	if funcName == "" {
 		return "", utils.ErrNotFound
@@ -128,14 +126,14 @@ func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error
 	return nil, 0, errors.New("not implemented")
 }
 
-func match(m *apps.Manifest, callPath string) string {
+func match(m apps.Manifest, callPath string) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.KubelessFunctions {
-		if strings.HasPrefix(callPath, f.CallPath) {
-			if len(f.CallPath) > len(matchedPath) {
+	for _, f := range m.Kubeless.Functions {
+		if strings.HasPrefix(callPath, f.Path) {
+			if len(f.Path) > len(matchedPath) {
 				matchedName = FunctionName(m.AppID, m.Version, f.Handler)
-				matchedPath = f.CallPath
+				matchedPath = f.Path
 			}
 		}
 	}

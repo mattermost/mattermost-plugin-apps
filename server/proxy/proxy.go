@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -188,7 +189,7 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 	// TODO: do we need to customize the Expand & State for the webhook Call?
 	return upstream.Notify(up, app, apps.CallRequest{
 		Call: apps.Call{
-			Path: path.Join(apps.PathWebhook, webhookPath),
+			Path: path.Join(appspath.Webhook, webhookPath),
 		},
 		Context: cc,
 		Values: map[string]interface{}{
@@ -313,63 +314,6 @@ func (p *Proxy) getStatic(app apps.App, path string) (io.ReadCloser, int, error)
 		return nil, http.StatusInternalServerError, err
 	}
 	return up.GetStatic(app, path)
-}
-
-func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
-	if app.AppType == apps.AppTypeBuiltin {
-		u, ok := p.builtinUpstreams[app.AppID]
-		if !ok {
-			return nil, errors.Wrapf(utils.ErrNotFound, "no builtin %s", app.AppID)
-		}
-		return u, nil
-	}
-
-	conf := p.conf.Get()
-	err := isAppTypeSupported(conf, app.AppType)
-	if err != nil {
-		return nil, err
-	}
-
-	upv, ok := p.upstreams.Load(app.AppType)
-	if !ok {
-		return nil, utils.NewInvalidError("invalid app type: %s", app.AppType)
-	}
-	up, ok := upv.(upstream.Upstream)
-	if !ok {
-		return nil, utils.NewInvalidError("invalid Upstream for: %s", app.AppType)
-	}
-	return up, nil
-}
-
-func isAppTypeSupported(conf config.Config, appType apps.AppType) error {
-	supportedTypes := []apps.AppType{
-		apps.AppTypeAWSLambda,
-		apps.AppTypeBuiltin,
-		apps.AppTypePlugin,
-	}
-	mode := "Mattermost Cloud"
-
-	switch {
-	case conf.DeveloperMode:
-		return nil
-
-	case conf.MattermostCloudMode:
-
-	case !conf.MattermostCloudMode:
-		// Self-managed
-		supportedTypes = append(supportedTypes, apps.AppTypeHTTP)
-		mode = "Self-managed"
-
-	default:
-		return errors.New("unreachable")
-	}
-
-	for _, t := range supportedTypes {
-		if appType == t {
-			return nil
-		}
-	}
-	return utils.NewForbiddenError("%s is not allowed in %s mode, only %s", appType, mode, supportedTypes)
 }
 
 // possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions

@@ -4,17 +4,43 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *restapi) handleSubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) initSubscriptions(api *mux.Router, mm *pluginapi.Client) {
+	// Subscribe
+	api.HandleFunc(path.Subscribe,
+		proxy.RequireSysadmin(mm, a.Subscribe)).Methods("POST")
+	// GetSubscriptions
+	api.HandleFunc(path.Subscribe,
+		proxy.RequireSysadmin(mm, a.GetSubscriptions)).Methods("GET")
+	// Unsubscribe
+	api.HandleFunc(path.Unsubscribe,
+		proxy.RequireSysadmin(mm, a.Unsubscribe)).Methods("POST")
+}
+
+// Subscribe starts or updates an App subscription to Mattermost events.
+//   Path: /api/v1/subscribe
+//   Method: POST
+//   Input: Subscription
+//   Output: None
+func (a *restapi) Subscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	a.handleSubscribeCore(w, r, in, true)
 }
 
-func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+// GetSubscriptions returns the App's current list of subscriptions.
+//   Path: /api/v1/subscribe
+//   Method: GET
+//   Input: None
+//   Output: []Subscription
+func (a *restapi) GetSubscriptions(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	subs, err := a.appServices.GetSubscriptions(in.ActingUserID)
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
@@ -28,7 +54,12 @@ func (a *restapi) handleGetSubscriptions(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (a *restapi) handleUnsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+// Unsubscribe removes an App's subscription to Mattermost events.
+//   Path: /api/v1/unsubscribe
+//   Method: POST
+//   Input: Subscription
+//   Output: None
+func (a *restapi) Unsubscribe(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	a.handleSubscribeCore(w, r, in, false)
 }
 
