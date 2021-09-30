@@ -1,17 +1,24 @@
 {
-	"app_id": "hello-oauth2",
-	"version":"demo",
-	"display_name": "Hello, OAuth2!",
-	"app_type": "http",
+    "app_id": "hello-oauth2",
+    "version": "demo",
+    "display_name": "Hello, OAuth2!",
+    "app_type": "http",
     "icon": "icon.png",
-	"root_url": "http://localhost:8080",
-	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
-	"requested_permissions": [
-		"act_as_admin",
-		"act_as_user",
-		"remote_oauth2"
-	],
-	"requested_locations": [
-		"/command"
-	]
+    "root_url": "http://localhost:8080",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
+    "requested_permissions": [
+        "act_as_admin",
+        "act_as_user",
+        "remote_oauth2"
+    ],
+    "requested_locations": [
+        "/command"
+    ],
+    "bindings": {
+        "path": "/bindings",
+        "expand": {
+            "acting_user": "all",
+            "oauth2_user": "all"
+        }
+    }
 }

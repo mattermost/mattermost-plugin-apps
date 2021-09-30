@@ -121,7 +121,7 @@ func (mr *MockServiceMockRecorder) StoreOAuth2App(arg0, arg1, arg2 interface{}) 
 }
 
 // StoreOAuth2User mocks base method.
-func (m *MockService) StoreOAuth2User(arg0 apps.AppID, arg1 string, arg2 interface{}) error {
+func (m *MockService) StoreOAuth2User(arg0 apps.AppID, arg1 string, arg2 []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreOAuth2User", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
