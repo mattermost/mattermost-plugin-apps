@@ -1,7 +1,9 @@
 package appservices
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"bytes"
+
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -31,7 +33,7 @@ func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp
 	return nil
 }
 
-func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref interface{}) error {
+func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref []byte) error {
 	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -42,14 +44,16 @@ func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
-	var oauth2user interface{}
-	_ = a.GetOAuth2User(appID, actingUserID, &oauth2user)
 
-	var refinterface interface{}
-	json.Unmarshal(ref.([]byte), &refinterface)
-	eq := reflect.DeepEqual(refinterface, oauth2user)
-	if !eq {
-		a.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	var oauth2user []byte
+	err = a.store.OAuth2.GetUser(app.BotUserID, actingUserID, &oauth2user)
+	if err != nil {
+		return err
+	}
+
+	// Trigger a bindings refresh if the OAuth2 user was updated
+	if !bytes.Equal(ref, oauth2user) {
+		a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	}
 
 	return a.store.OAuth2.SaveUser(app.BotUserID, actingUserID, ref)
