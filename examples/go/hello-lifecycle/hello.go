@@ -36,7 +36,7 @@ func main() {
 	addr := fmt.Sprintf("%v:%v", host, port)
 	rootURL := "http://" + addr
 	fmt.Printf("hello-lifecycle app listening at %s \n", rootURL)
-	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
+	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
 	http.ListenAndServe(addr, nil)
 }
 
