@@ -82,7 +82,7 @@ func TestOnDeactivate(t *testing.T) {
 	p.API = testAPI
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id")
+	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id", nil)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
