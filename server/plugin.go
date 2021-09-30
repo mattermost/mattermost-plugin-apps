@@ -11,6 +11,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -40,6 +42,9 @@ type Plugin struct {
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
+
+	telemetryClient mmtelemetry.Client
+	tracker         *telemetry.Telemetry
 }
 
 func NewPlugin(buildConfig config.BuildConfig) *Plugin {
@@ -61,7 +66,14 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.conf = config.NewService(mm, p.BuildConfig, botUserID)
+	p.telemetryClient, err = mmtelemetry.NewRudderClient()
+	if err != nil {
+		p.API.LogWarn("telemetry client not started", "error", err.Error())
+	}
+
+	p.tracker = telemetry.NewTelemetry(nil)
+
+	p.conf = config.NewService(mm, p.BuildConfig, botUserID, p.tracker)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
@@ -131,6 +143,13 @@ func (p *Plugin) OnDeactivate() error {
 	conf, _, _ := p.conf.Basic()
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
+	if p.telemetryClient != nil {
+		err := p.telemetryClient.Close()
+		if err != nil {
+			p.API.LogWarn("OnDeactivate: failed to close telemetryClient", "error", err.Error())
+		}
+	}
+
 	return nil
 }
 
@@ -145,6 +164,15 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 		// pre-activate, nothing to do.
 		return nil
 	}
+
+	enableDiagnostics := false
+	if config := p.API.GetConfig(); config != nil {
+		if configValue := config.LogSettings.EnableDiagnostics; configValue != nil {
+			enableDiagnostics = *configValue
+		}
+	}
+	updatedTracker := mmtelemetry.NewTracker(p.telemetryClient, p.API.GetDiagnosticId(), p.API.GetServerVersion(), manifest.Id, manifest.Version, "appsFramework", enableDiagnostics)
+	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	stored := config.StoredConfig{}

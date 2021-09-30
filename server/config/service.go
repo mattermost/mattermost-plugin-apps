@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -24,6 +25,7 @@ type Service interface {
 	Logger() utils.Logger
 	MattermostAPI() *pluginapi.Client
 	MattermostConfig() configservice.ConfigService
+	Telemetry() *telemetry.Telemetry
 
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
@@ -36,19 +38,21 @@ type service struct {
 	botUserID string
 	log       utils.Logger
 	mm        *pluginapi.Client
+	telemetry *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string) Service {
+func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry) Service {
 	return &service{
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
 		log:         utils.NewPluginLogger(mm),
 		mm:          mm,
 		lock:        &sync.RWMutex{},
+		telemetry:   telemetry,
 	}
 }
 
@@ -80,6 +84,10 @@ func (s *service) MattermostAPI() *pluginapi.Client {
 
 func (s *service) Logger() utils.Logger {
 	return s.log
+}
+
+func (s *service) Telemetry() *telemetry.Telemetry {
+	return s.telemetry
 }
 
 func (s *service) MattermostConfig() configservice.ConfigService {
