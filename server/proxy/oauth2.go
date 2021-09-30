@@ -73,6 +73,5 @@ func (p *Proxy) CompleteRemoteOAuth2(in Incoming, appID apps.AppID, urlValues ma
 
 	p.conf.Telemetry().TrackOAuthComplete(string(appID), in.ActingUserID)
 
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 	return nil
 }

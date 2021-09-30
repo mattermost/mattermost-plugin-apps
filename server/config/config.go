@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
@@ -81,7 +82,7 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
-func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, license *model.License) error {
+func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -137,12 +138,16 @@ func (conf *Config) Reconfigure(stored StoredConfig, mmconf *model.Config, licen
 		license.Features != nil &&
 		license.Features.Cloud != nil &&
 		*license.Features.Cloud
+	if conf.MattermostCloudMode {
+		log.Debugf("Detected Mattermost Cloud mode based on the license")
+	}
 
 	// On community.mattermost.com license is not suitable for checking, resort
 	// to the presence of legacy environment variable to trigger it.
 	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
 	if legacyAccessKey != "" {
 		conf.MattermostCloudMode = true
+		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
 		conf.AWSAccessKey = legacyAccessKey
 	}
 
