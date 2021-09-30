@@ -30,7 +30,7 @@ var sendFormData []byte
 var connectFormData []byte
 
 //go:embed disconnect_form.json
-var dicconnectFormData []byte
+var disconnectFormData []byte
 
 //go:embed configure_form.json
 var configureFormData []byte
@@ -68,7 +68,7 @@ func main() {
 	http.HandleFunc("/connect/submit", connect)
 
 	// `disconnect` command - disconnect your account.
-	http.HandleFunc("/disconnect/form", writeJSON(dicconnectFormData))
+	http.HandleFunc("/disconnect/form", writeJSON(disconnectFormData))
 	http.HandleFunc("/disconnect/submit", disconnect)
 
 	// `send` command - send a Hello message.
