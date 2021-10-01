@@ -57,7 +57,7 @@ func (a *builtinApp) installConsent() handler {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
 			}
 
-			return apps.NewOKResponse(nil, out)
+			return apps.NewTextResponse(out)
 		},
 	}
 }

@@ -45,7 +45,7 @@ func (a *builtinApp) debugBindings() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			return apps.NewOKResponse(nil, utils.JSONBlock(bindings))
+			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},
 	}
 }
@@ -73,7 +73,7 @@ func (a *builtinApp) debugClean() handler {
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			_ = a.conf.MattermostAPI().KV.DeleteAll()
 			_ = a.conf.StoreConfig(config.StoredConfig{})
-			return apps.NewOKResponse(nil, "Deleted all KV records and emptied the config.")
+			return apps.NewTextResponse("Deleted all KV records and emptied the config.")
 		},
 	}
 }

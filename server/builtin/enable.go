@@ -44,7 +44,7 @@ func (a *builtinApp) enable() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			return apps.NewOKResponse(nil, out)
+			return apps.NewTextResponse(out)
 		},
 	}
 }

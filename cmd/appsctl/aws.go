@@ -253,7 +253,7 @@ var awsTestLambdaCmd = &cobra.Command{
 
 		cresp := apps.CallResponse{}
 		_ = json.Unmarshal(data, &cresp)
-		expected := apps.NewOKResponse(nil, "PONG")
+		expected := apps.NewTextResponse("PONG")
 		if cresp != expected {
 			return errors.Errorf("invalid value received: %s", string(data))
 		}

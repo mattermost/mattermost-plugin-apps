@@ -165,7 +165,7 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
 
 	json.NewEncoder(w).Encode(
-		apps.NewOKResponse(nil, "updated OAuth client credentials"))
+		apps.NewTextResponse("updated OAuth client credentials"))
 }
 
 func connect(w http.ResponseWriter, req *http.Request) {
@@ -173,7 +173,7 @@ func connect(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	json.NewEncoder(w).Encode(
-		apps.NewOKResponse(nil, "[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL))
+		apps.NewTextResponse("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL))
 }
 
 func disconnect(w http.ResponseWriter, req *http.Request) {
@@ -212,7 +212,7 @@ func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 
 	url := oauth2Config(&creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 
-	httputils.WriteJSON(w, apps.NewOKResponse(url))
+	httputils.WriteJSON(w, apps.NewDataResponse(url))
 }
 
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
@@ -225,7 +225,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
-	httputils.WriteJSON(w, apps.NewOKResponse(struct{}{}))
+	httputils.WriteJSON(w, apps.NewDataResponse(struct{}{}))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -253,7 +253,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 		message += " You have no calendars.\n"
 	}
 
-	httputils.WriteJSON(w, apps.NewOKResponse(nil, message))
+	httputils.WriteJSON(w, apps.NewTextResponse(message))
 
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()

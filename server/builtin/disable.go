@@ -46,7 +46,7 @@ func (a *builtinApp) disable() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			return apps.NewOKResponse(nil, out)
+			return apps.NewTextResponse(out)
 		},
 	}
 }

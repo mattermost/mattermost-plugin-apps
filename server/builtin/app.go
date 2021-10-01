@@ -141,7 +141,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 				txt += "Please check the server logs for more details."
 			}
 			out = nil
-			data, errr := json.Marshal(apps.NewOKResponse(nil, txt))
+			data, errr := json.Marshal(apps.NewTextResponse(txt))
 			if errr != nil {
 				err = errr
 				return

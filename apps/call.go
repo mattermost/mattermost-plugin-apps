@@ -158,16 +158,17 @@ func NewErrorResponse(err error) CallResponse {
 	}
 }
 
-func NewOKResponse(data interface{}, textArgs ...interface{}) CallResponse {
-	text := ""
-	if len(textArgs) > 0 {
-		format, _ := textArgs[0].(string)
-		text = fmt.Sprintf(format, textArgs[1:]...)
+func NewDataResponse(data interface{}) CallResponse {
+	return CallResponse{
+		Type: CallResponseTypeOK,
+		Data: data,
 	}
+}
+
+func NewTextResponse(format string, args ...interface{}) CallResponse {
 	return CallResponse{
 		Type:     CallResponseTypeOK,
-		Data:     data,
-		Markdown: text,
+		Markdown: fmt.Sprintf(format, args...),
 	}
 }
 
@@ -179,7 +180,7 @@ func NewFormResponse(form Form) CallResponse {
 }
 
 func NewLookupResponse(opts []SelectOption) CallResponse {
-	return NewOKResponse(struct {
+	return NewDataResponse(struct {
 		Items []SelectOption `json:"items"`
 	}{opts})
 }

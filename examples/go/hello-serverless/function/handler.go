@@ -59,5 +59,5 @@ func send(w http.ResponseWriter, req *http.Request) {
 	asBot.DM(creq.Context.ActingUserID, message)
 
 	httputils.WriteJSON(w,
-		apps.NewOKResponse(nil, "Created a post in your DM channel."))
+		apps.NewTextResponse("Created a post in your DM channel."))
 }

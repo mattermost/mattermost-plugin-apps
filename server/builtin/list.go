@@ -12,7 +12,7 @@ import (
 func (a *builtinApp) list() handler {
 	return handler{
 		requireSysadmin: true,
-		
+
 		commandBinding: func() apps.Binding {
 			return apps.Binding{
 				Label:       "list",
@@ -58,7 +58,7 @@ func (a *builtinApp) list() handler {
 				if !includePluginApps && app.DeployType == apps.DeployPlugin {
 					continue
 				}
-				
+
 				status := "**Installed**"
 				if app.Disabled {
 					status = "Installed, Disabled"
@@ -105,7 +105,7 @@ func (a *builtinApp) list() handler {
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 					name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 			}
-			return apps.NewOKResponse(nil, txt)
+			return apps.NewTextResponse(txt)
 		},
 	}
 }

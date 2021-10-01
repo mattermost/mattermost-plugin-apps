@@ -89,7 +89,7 @@ func install(w http.ResponseWriter, req *http.Request) {
 		Message:   "@hello-webhooks is installed into this channel, try /hello-webhooks send",
 	})
 
-	httputils.WriteJSON(w, apps.NewOKResponse(nil))
+	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
 }
 
 func webhookReceived(w http.ResponseWriter, req *http.Request) {
@@ -105,7 +105,7 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Path, creq.Values["data"]),
 	})
 
-	httputils.WriteJSON(w, apps.NewOKResponse(nil))
+	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
 }
 
 func info(w http.ResponseWriter, req *http.Request) {
@@ -113,11 +113,9 @@ func info(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	httputils.WriteJSON(w,
-		apps.NewOKResponse(nil,
-			"Try `/hello-webhooks send %s`",
-			creq.Context.MattermostSiteURL+creq.Context.AppPath+path.Webhook+
-				"/hello"+
-				"?secret="+creq.Context.App.WebhookSecret))
+		apps.NewTextResponse("Try `/hello-webhooks send %s/hello?secret=%s`",
+			creq.Context.MattermostSiteURL+creq.Context.AppPath+path.Webhook,
+			creq.Context.App.WebhookSecret))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -131,5 +129,5 @@ func send(w http.ResponseWriter, req *http.Request) {
 		bytes.NewReader([]byte(`"Hello from a webhook!"`)))
 
 	httputils.WriteJSON(w,
-		apps.NewOKResponse(nil, "posted a Hello webhook message"))
+		apps.NewTextResponse("posted a Hello webhook message"))
 }

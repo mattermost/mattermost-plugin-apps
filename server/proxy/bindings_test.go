@@ -683,7 +683,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 	for _, test := range testData {
 		appList[test.app.AppID] = test.app
 
-		bb, _ := json.Marshal(apps.NewOKResponse(test.bindings))
+		bb, _ := json.Marshal(apps.NewDataResponse(test.bindings))
 		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
