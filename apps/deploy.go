@@ -13,28 +13,28 @@ import (
 type DeployType string
 
 const (
-	// HTTP-deployable app. All communications are done via HTTP requests. Paths
-	// for both functions and static assets are appended to RootURL "as is".
-	// Mattermost authenticates to the App with an optional shared secret based
-	// JWT.
-	DeployHTTP DeployType = "http"
-
 	// AWS Lambda-deployable app. All functions are called via AWS Lambda
 	// "Invoke" API, using path mapping provided in the app's manifest. Static
 	// assets are served out of AWS S3, using the "Download" method. Mattermost
 	// authenticates to AWS, no authentication to the App is necessary.
 	DeployAWSLambda DeployType = "aws_lambda"
 
+	// Builtin app. All functions and resources are served by directly invoking
+	// go functions. No manifest, no Mattermost to App authentication are
+	// needed.
+	DeployBuiltin DeployType = "builtin"
+
+	// HTTP-deployable app. All communications are done via HTTP requests. Paths
+	// for both functions and static assets are appended to RootURL "as is".
+	// Mattermost authenticates to the App with an optional shared secret based
+	// JWT.
+	DeployHTTP DeployType = "http"
+
 	// Kubeless-deployable app.
 	DeployKubeless DeployType = "kubeless"
 
 	// OpenFaaS-deployable app.
 	DeployOpenFAAS DeployType = "open_faas"
-
-	// Builtin app. All functions and resources are served by directly invoking
-	// go functions. No manifest, no Mattermost to App authentication are
-	// needed.
-	DeployBuiltin DeployType = "builtin"
 
 	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
 	// Authentication is done via the plugin.Context.SourcePluginId field.
@@ -44,14 +44,14 @@ const (
 // Deploy contains App's deployment data, only the fields supported by the App
 // should be populated.
 type Deploy struct {
-	// HTTP contains metadata for an app that is already, deployed externally
-	// and us accessed over HTTP. The JSON name `http` must match the type.
-	HTTP *HTTP `json:"http,omitempty"`
-
 	// AWSLambda contains metadata for an app that can be deployed to AWS Lambda
 	// and S3 services, and is accessed using the AWS APIs. The JSON name
 	// `aws_lambda` must match the type.
 	AWSLambda *AWSLambda `json:"aws_lambda,omitempty"`
+
+	// HTTP contains metadata for an app that is already, deployed externally
+	// and us accessed over HTTP. The JSON name `http` must match the type.
+	HTTP *HTTP `json:"http,omitempty"`
 
 	// Kubeless contains metadata for an app that can be deployed to Kubeless
 	// running on a Kubernetes cluster, and is accessed using the Kubernetes
@@ -68,9 +68,9 @@ type Deploy struct {
 
 func (t DeployType) Validate() error {
 	switch t {
-	case DeployHTTP,
-		DeployAWSLambda,
+	case DeployAWSLambda,
 		DeployBuiltin,
+		DeployHTTP,
 		DeployKubeless,
 		DeployOpenFAAS,
 		DeployPlugin:
@@ -82,12 +82,12 @@ func (t DeployType) Validate() error {
 
 func (t DeployType) String() string {
 	switch t {
-	case DeployHTTP:
-		return "HTTP"
 	case DeployAWSLambda:
 		return "AWS Lambda"
 	case DeployBuiltin:
 		return "Built-in"
+	case DeployHTTP:
+		return "HTTP"
 	case DeployKubeless:
 		return "Kubeless"
 	case DeployOpenFAAS:

@@ -120,7 +120,7 @@ func (p *Proxy) Configure(conf config.Config) error {
 	return nil
 }
 
-// CanDeploy returns the availability of deployType.  allowed indicates that the
+// CanDeploy returns the availability of deployType. allowed indicates that the
 // type can be used in the current configuration. usable indicates that it is
 // configured and can be accessed, or deployed to.
 func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
@@ -163,6 +163,9 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 	return false, false
 }
 
+// CanDeploy returns the availability of deployType. allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
 func CanDeploy(p Service, deployType apps.DeployType) error {
 	_, canDeploy := p.CanDeploy(deployType)
 	if !canDeploy {
