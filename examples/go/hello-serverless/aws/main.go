@@ -10,8 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/function"
 )
 
-// OpenFaaS provides its own main via the golang-middleware template, so it's
-// not explicitly supported here.
 func main() {
 	function.InitApp(apps.DeployAWSLambda)
 	lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
