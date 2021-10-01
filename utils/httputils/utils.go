@@ -82,7 +82,7 @@ func WriteJSON(w http.ResponseWriter, v interface{}) error {
 
 // HandleJSONData returns an http.HandleFunc that serves a JSON-encoded data
 // chunk.
-func HandleJSONData(data []byte) func(w http.ResponseWriter, r *http.Request) {
+func HandleJSONData(data []byte) http.HandlerFunc {
 	return HandleData("application/json", data)
 }
 
