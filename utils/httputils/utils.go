@@ -88,7 +88,7 @@ func HandleJSONData(data []byte) http.HandlerFunc {
 
 // HandleData returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
-func HandleData(ct string, data []byte) htttp.HandlerFunc {
+func HandleData(ct string, data []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", ct)
 		_, _ = w.Write(data)
