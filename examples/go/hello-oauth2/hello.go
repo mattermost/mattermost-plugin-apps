@@ -225,7 +225,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
-	httputils.WriteJSON(w, apps.NewDataResponse(struct{}{}))
+	httputils.WriteJSON(w, apps.NewDataResponse(nil))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
