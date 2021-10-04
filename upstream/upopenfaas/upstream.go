@@ -57,11 +57,9 @@ func RootURL(m apps.Manifest, gateway, path string) (string, error) {
 	matchedPath := ""
 	var matched apps.OpenFAASFunction
 	for _, f := range m.OpenFAAS.Functions {
-		if strings.HasPrefix(path, f.Path) {
-			if len(f.Path) > len(matchedPath) {
-				matched = f
-				matchedPath = f.Path
-			}
+		if strings.HasPrefix(path, f.Path) && len(f.Path) > len(matchedPath) {
+			matched = f
+			matchedPath = f.Path
 		}
 	}
 
