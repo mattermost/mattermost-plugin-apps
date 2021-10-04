@@ -49,7 +49,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	message := fmt.Sprintf("Hello from a serververless app running as %s!", deployType)
+	message := fmt.Sprintf("Hello from a serverless app running as %s!", deployType)
 	v, ok := creq.Values["message"]
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
