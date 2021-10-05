@@ -5,7 +5,10 @@ package apps
 
 import (
 	"encoding/json"
-	"io"
+
+	"github.com/hashicorp/go-multierror"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Subject string
@@ -66,7 +69,11 @@ const (
 type Subscription struct {
 	// AppID is used internally by Mattermost. It does not need to be set by app
 	// developers.
-	AppID AppID `json:"app_id,omitempty"`
+	AppID AppID `json:"app_id"`
+
+	// UserID is used internally by Mattermost. It does not need to be set by app
+	// developers.
+	UserID string `json:"user_id"`
 
 	// Subscription subject. See type Subject godoc (linked) for details.
 	Subject Subject `json:"subject"`
@@ -79,6 +86,22 @@ type Subscription struct {
 	Call Call
 }
 
+func (sub Subscription) Validate() error {
+	var result error
+	if sub.Subject == "" {
+		result = multierror.Append(result,
+			utils.NewInvalidError("subject most not be empty"))
+	}
+
+	emptyCall := Call{}
+	if sub.Call == emptyCall {
+		result = multierror.Append(result,
+			utils.NewInvalidError("call most not be empty"))
+	}
+
+	return result
+}
+
 func (sub Subscription) EqualScope(s2 Subscription) bool {
 	sub.Call, s2.Call = Call{}, Call{}
 	return sub == s2
@@ -87,24 +110,4 @@ func (sub Subscription) EqualScope(s2 Subscription) bool {
 func (sub *Subscription) ToJSON() string {
 	b, _ := json.Marshal(sub)
 	return string(b)
-}
-
-type SubscriptionResponse struct {
-	Error  string            `json:"error,omitempty"`
-	Errors map[string]string `json:"errors,omitempty"`
-}
-
-func SubscriptionResponseFromJSON(data io.Reader) (*SubscriptionResponse, error) {
-	var o *SubscriptionResponse
-	err := json.NewDecoder(data).Decode(&o)
-	if err != nil {
-		return nil, err
-	}
-
-	return o, nil
-}
-
-func (r *SubscriptionResponse) ToJSON() []byte {
-	b, _ := json.Marshal(r)
-	return b
 }

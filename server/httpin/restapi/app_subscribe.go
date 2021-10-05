@@ -5,26 +5,26 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (a *restapi) initSubscriptions(api *mux.Router, mm *pluginapi.Client) {
 	// Subscribe
 	api.HandleFunc(path.Subscribe,
-		proxy.RequireSysadmin(mm, a.Subscribe)).Methods("POST")
+		proxy.RequireUser(a.Subscribe)).Methods("POST")
 	// GetSubscriptions
 	api.HandleFunc(path.Subscribe,
-		proxy.RequireSysadmin(mm, a.GetSubscriptions)).Methods("GET")
+		proxy.RequireUser(a.GetSubscriptions)).Methods("GET")
 	// Unsubscribe
 	api.HandleFunc(path.Unsubscribe,
-		proxy.RequireSysadmin(mm, a.Unsubscribe)).Methods("POST")
+		proxy.RequireUser(a.Unsubscribe)).Methods("POST")
 }
 
 // Subscribe starts or updates an App subscription to Mattermost events.
@@ -65,43 +65,43 @@ func (a *restapi) Unsubscribe(w http.ResponseWriter, r *http.Request, in proxy.I
 
 func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in proxy.Incoming, isSubscribe bool) {
 	var err error
-	actingUserID := ""
-	// logMessage := ""
+	var logMessage string
 	status := http.StatusOK
 
-	defer func() {
-		resp := apps.SubscriptionResponse{}
+	defer func(log utils.Logger) {
 		if err != nil {
-			resp.Error = errors.Wrap(err, "failed operation").Error()
-			status = http.StatusInternalServerError
-			// logMessage = "Error: " + resp.Error
+			log.WithError(err).Warnw(logMessage)
+			http.Error(w, err.Error(), status)
 		}
-		_ = httputils.WriteJSONStatus(w, status, resp)
-	}()
 
-	actingUserID = in.ActingUserID
-	if actingUserID == "" {
-		err = errors.New("user not logged in")
-		status = http.StatusUnauthorized
-		return
-	}
+	}(a.conf.Logger())
 
 	var sub apps.Subscription
 	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		status = http.StatusUnauthorized
+		status = http.StatusBadRequest
+		logMessage = "Failed to parse Subscription"
+		return
+	}
+
+	sub.UserID = in.ActingUserID
+
+	if err = sub.Validate(); err != nil {
+		status = http.StatusBadRequest
+		logMessage = "Invalid Subscription"
 		return
 	}
 
 	// TODO replace with an appropriate API-level call that would validate,
 	// deduplicate, etc.
 	if isSubscribe {
-		err = a.appServices.Subscribe(actingUserID, sub)
+		err = a.appServices.Subscribe(sub)
 	} else {
-		err = a.appServices.Unsubscribe(actingUserID, sub)
+		err = a.appServices.Unsubscribe(sub)
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		status = httputils.ErrorToStatus(err)
+		logMessage = "Failed to handle subscribe request"
 		return
 	}
 }

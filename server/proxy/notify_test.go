@@ -83,6 +83,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				"sub.post_created.some_channel_id": {
 					{
 						AppID:     app1.AppID,
+						UserID:    "some_user_id",
 						Subject:   apps.SubjectPostCreated,
 						ChannelID: "some_channel_id",
 						Call:      apps.NewCall("/notify/post_created"),
@@ -96,6 +97,8 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
+
 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
@@ -110,14 +113,18 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				"sub.post_created.some_channel_id": {},
 				"sub.bot_mentioned": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention1"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotMentioned,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_mention1"),
 					},
 					{
-						AppID:   app2.AppID,
-						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention2"),
+						AppID:     app2.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotMentioned,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_mention2"),
 					},
 				},
 			},
@@ -128,7 +135,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				post := &model.Post{
 					Message: message,
 				}
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PermissionReadChannel).Return(true)
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
 						ChannelID: "some_channel_id",
@@ -143,14 +150,18 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 				"sub.post_created.some_channel_id": {},
 				"sub.bot_mentioned": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention1"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotMentioned,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_mention1"),
 					},
 					{
-						AppID:   app2.AppID,
-						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention2"),
+						AppID:     app2.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotMentioned,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_mention2"),
 					},
 				},
 			},
@@ -160,7 +171,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 					Message: message,
 				}
 
-				testAPI.On("HasPermissionToChannel", "bot2", "", model.PermissionReadChannel).Return(false)
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(false)
 
 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -199,15 +210,19 @@ func TestUserHasJoinedChannel(t *testing.T) {
 			subs: map[string][]apps.Subscription{
 				"sub.user_joined_channel.some_channel_id": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectUserJoinedChannel,
-						Call:    apps.NewCall("/notify/user_joined_channel"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectUserJoinedChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/user_joined_channel"),
 					},
 				},
 				"sub.bot_joined_channel": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/user_joined_channel", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 
 				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -223,19 +238,25 @@ func TestUserHasJoinedChannel(t *testing.T) {
 				"sub.user_joined_channel.some_channel_id": {},
 				"sub.bot_joined_channel": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectBotJoinedChannel,
-						Call:    apps.NewCall("/notify/bot_joined_channel1"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotJoinedChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_joined_channel1"),
 					},
 					{
-						AppID:   app2.AppID,
-						Subject: apps.SubjectBotJoinedChannel,
-						Call:    apps.NewCall("/notify/bot_joined_channel2"),
+						AppID:     app2.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotJoinedChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_joined_channel2"),
 					},
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/bot_joined_channel1", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 
 				err := p.NotifyUserHasJoinedChannel(apps.Context{
 					UserID: app1.BotUserID,
@@ -273,15 +294,19 @@ func TestUserHasLeftChannel(t *testing.T) {
 			subs: map[string][]apps.Subscription{
 				"sub.user_left_channel.some_channel_id": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectUserLeftChannel,
-						Call:    apps.NewCall("/notify/user_left_channel"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectUserLeftChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/user_left_channel"),
 					},
 				},
 				"sub.bot_left_channel": {},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/user_left_channel", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 
 				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -297,19 +322,25 @@ func TestUserHasLeftChannel(t *testing.T) {
 				"sub.user_left_channel.some_channel_id": {},
 				"sub.bot_left_channel": {
 					{
-						AppID:   app1.AppID,
-						Subject: apps.SubjectBotLeftChannel,
-						Call:    apps.NewCall("/notify/bot_left_channel1"),
+						AppID:     app1.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotLeftChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_left_channel1"),
 					},
 					{
-						AppID:   app2.AppID,
-						Subject: apps.SubjectBotLeftChannel,
-						Call:    apps.NewCall("/notify/bot_left_channel2"),
+						AppID:     app2.AppID,
+						UserID:    "some_user_id",
+						Subject:   apps.SubjectBotLeftChannel,
+						ChannelID: "some_channel_id",
+						Call:      apps.NewCall("/notify/bot_left_channel2"),
 					},
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/bot_left_channel1", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 
 				err := p.NotifyUserHasLeftChannel(apps.Context{
 					UserID: app1.BotUserID,
@@ -348,7 +379,9 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				"sub.user_joined_team.some_team_id": {
 					{
 						AppID:   app1.AppID,
+						UserID:  "some_user_id",
 						Subject: apps.SubjectUserJoinedTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/user_joined_team"),
 					},
 				},
@@ -356,6 +389,8 @@ func TestUserHasJoinedTeam(t *testing.T) {
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/user_joined_team", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToTeam", "some_user_id", "some_team_id", model.PermissionViewTeam).Return(true)
 
 				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -372,18 +407,24 @@ func TestUserHasJoinedTeam(t *testing.T) {
 				"sub.bot_joined_team": {
 					{
 						AppID:   app1.AppID,
-						Subject: apps.SubjectBotJoinedTeam,
+						UserID:  "some_user_id",
+						Subject: apps.SubjectUserJoinedTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/bot_joined_team1"),
 					},
 					{
 						AppID:   app2.AppID,
-						Subject: apps.SubjectBotJoinedTeam,
+						UserID:  "some_user_id",
+						Subject: apps.SubjectUserJoinedTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/bot_joined_team2"),
 					},
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/bot_joined_team1", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToTeam", "some_user_id", "some_team_id", model.PermissionViewTeam).Return(true)
 
 				err := p.NotifyUserHasJoinedTeam(apps.Context{
 					UserID: app1.BotUserID,
@@ -422,7 +463,9 @@ func TestUserHasLeftTeam(t *testing.T) {
 				"sub.user_left_team.some_team_id": {
 					{
 						AppID:   app1.AppID,
-						Subject: apps.SubjectUserLeftChannel,
+						UserID:  "some_user_id",
+						Subject: apps.SubjectUserLeftTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/user_left_team"),
 					},
 				},
@@ -430,6 +473,8 @@ func TestUserHasLeftTeam(t *testing.T) {
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/user_left_team", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToTeam", "some_user_id", "some_team_id", model.PermissionViewTeam).Return(true)
 
 				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserAgentContext: apps.UserAgentContext{
@@ -446,18 +491,24 @@ func TestUserHasLeftTeam(t *testing.T) {
 				"sub.bot_left_team": {
 					{
 						AppID:   app1.AppID,
+						UserID:  "some_user_id",
 						Subject: apps.SubjectBotLeftTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/bot_left_team1"),
 					},
 					{
 						AppID:   app2.AppID,
+						UserID:  "some_user_id",
 						Subject: apps.SubjectBotLeftTeam,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/bot_left_team2"),
 					},
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/bot_left_team1", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToTeam", "some_user_id", "some_team_id", model.PermissionViewTeam).Return(true)
 
 				err := p.NotifyUserHasLeftTeam(apps.Context{
 					UserID: app1.BotUserID,
@@ -481,13 +532,17 @@ func TestChannelHasBeenCreated(t *testing.T) {
 				"sub.channel_created.some_team_id": {
 					{
 						AppID:   app1.AppID,
+						UserID:  "some_user_id",
 						Subject: apps.SubjectChannelCreated,
+						TeamID:  "some_team_id",
 						Call:    apps.NewCall("/notify/channel_created"),
 					},
 				},
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/channel_created", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionToTeam", "some_user_id", "some_team_id", model.PermissionListTeamChannels).Return(true)
 
 				err := p.Notify(
 					apps.Context{
@@ -513,6 +568,7 @@ func TestUserHasBeenCreated(t *testing.T) {
 				"sub.user_created": {
 					{
 						AppID:   app1.AppID,
+						UserID:  "some_user_id",
 						Subject: apps.SubjectUserCreated,
 						Call:    apps.NewCall("/notify/user_created"),
 					},
@@ -520,6 +576,8 @@ func TestUserHasBeenCreated(t *testing.T) {
 			},
 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
 				sendCallResponse(t, "/notify/user_created", apps.NewDataResponse(nil), up[app1.AppID])
+
+				testAPI.On("HasPermissionTo", "some_user_id", model.PermissionViewMembers).Return(true)
 
 				err := p.Notify(
 					apps.Context{
@@ -578,6 +636,11 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	}
 
 	for name, subs := range tc.subs {
+		for _, sub := range subs {
+			err = sub.Validate()
+			require.NoError(t, err)
+		}
+
 		b, err := json.Marshal(subs)
 		require.NoError(t, err)
 		testAPI.On("KVGet", name).Return(b, nil)

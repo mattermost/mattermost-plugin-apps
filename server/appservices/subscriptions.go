@@ -4,13 +4,56 @@
 package appservices
 
 import (
+	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *AppServices) Subscribe(actingUserID string, sub apps.Subscription) error {
-	err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
-	if err != nil {
+type PermissionChecker interface {
+	HasPermissionTo(userID string, permission *model.Permission) bool
+	HasPermissionToChannel(userID, channelID string, permission *model.Permission) bool
+	HasPermissionToTeam(userID, teamID string, permission *model.Permission) bool
+}
+
+func CheckSubscriptionPermission(checker PermissionChecker, sub apps.Subscription) error {
+	userID := sub.UserID
+
+	switch sub.Subject {
+	case apps.SubjectUserCreated:
+		if !checker.HasPermissionTo(userID, model.PermissionViewMembers) {
+			return errors.New("no permission to read user")
+		}
+	case apps.SubjectUserJoinedChannel,
+		apps.SubjectUserLeftChannel,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
+		apps.SubjectPostCreated,
+		apps.SubjectBotMentioned:
+		if !checker.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
+			return errors.New("no permission to read channel")
+		}
+	case apps.SubjectUserJoinedTeam,
+		apps.SubjectUserLeftTeam,
+		apps.SubjectBotJoinedTeam,
+		apps.SubjectBotLeftTeam:
+		if !checker.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
+			return errors.New("no permission to view team")
+		}
+	case apps.SubjectChannelCreated:
+		if !checker.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
+			return errors.New("no permission to list channels")
+		}
+	default:
+		return errors.Errorf("Unknown subject %s", sub.Subject)
+	}
+
+	return nil
+}
+
+func (a *AppServices) Subscribe(sub apps.Subscription) error {
+	if err := CheckSubscriptionPermission(&a.conf.MattermostAPI().User, sub); err != nil {
 		return err
 	}
 
@@ -18,19 +61,21 @@ func (a *AppServices) Subscribe(actingUserID string, sub apps.Subscription) erro
 }
 
 func (a *AppServices) GetSubscriptions(actingUserID string) ([]apps.Subscription, error) {
-	err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
+	subs, err := a.store.Subscription.List()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.store.Subscription.List()
-}
-
-func (a *AppServices) Unsubscribe(actingUserID string, sub apps.Subscription) error {
-	err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
-	if err != nil {
-		return err
+	var rSubs []apps.Subscription
+	for _, s := range subs {
+		if s.UserID == actingUserID {
+			rSubs = append(rSubs, s)
+		}
 	}
 
+	return rSubs, nil
+}
+
+func (a *AppServices) Unsubscribe(sub apps.Subscription) error {
 	return a.store.Subscription.Delete(sub)
 }
