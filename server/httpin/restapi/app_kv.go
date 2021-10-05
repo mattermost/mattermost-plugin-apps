@@ -44,7 +44,7 @@ func (a *restapi) KVGet(w http.ResponseWriter, r *http.Request, in proxy.Incomin
 		httputils.WriteError(w, err)
 		return
 	}
-	httputils.WriteJSON(w, out)
+	_ = httputils.WriteJSON(w, out)
 }
 
 // KVPut stores an App-provided JSON document in the KV store.
@@ -68,7 +68,7 @@ func (a *restapi) KVPut(w http.ResponseWriter, r *http.Request, in proxy.Incomin
 		httputils.WriteError(w, err)
 		return
 	}
-	httputils.WriteJSON(w, map[string]interface{}{
+	_ = httputils.WriteJSON(w, map[string]interface{}{
 		"changed": changed,
 	})
 }

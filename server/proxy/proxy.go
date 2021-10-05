@@ -25,13 +25,13 @@ import (
 func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
 	if creq.Context.AppID == "" {
 		return apps.NewProxyCallResponse(
-			apps.NewErrorCallResponse(
+			apps.NewErrorResponse(
 				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
 	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorCallResponse(err), nil)
+		return apps.NewProxyCallResponse(apps.NewErrorResponse(err), nil)
 	}
 
 	metadata := &apps.AppMetadataForClient{
@@ -48,28 +48,28 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.C
 	log = log.With("app_id", app.AppID)
 
 	if !p.appIsEnabled(app) {
-		return apps.NewErrorCallResponse(errors.Errorf("%s is disabled", app.AppID))
+		return apps.NewErrorResponse(errors.Errorf("%s is disabled", app.AppID))
 	}
 
 	if creq.Path[0] != '/' {
-		return apps.NewErrorCallResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
+		return apps.NewErrorResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewErrorResponse(err)
 	}
 	creq.Path = cleanPath
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewErrorResponse(err)
 	}
 
 	cc := creq.Context
 	cc = in.updateContext(cc)
 	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
-		return apps.NewErrorCallResponse(err)
+		return apps.NewErrorResponse(err)
 	}
 
 	cresp := upstream.Call(up, app, creq)

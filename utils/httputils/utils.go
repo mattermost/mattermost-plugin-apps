@@ -67,15 +67,32 @@ func WriteError(w http.ResponseWriter, err error) {
 	}
 }
 
-func WriteJSON(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) {
+// WriteJSONStatus encodes and writes out an object, with a custom response
+// status code.
+func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(v)
+	return json.NewEncoder(w).Encode(v)
+}
+
+// WriteJSON encodes and writes out an object, with a 200 response status code.
+func WriteJSON(w http.ResponseWriter, v interface{}) error {
+	return WriteJSONStatus(w, http.StatusOK, v)
+}
+
+// HandleJSONData returns an http.HandleFunc that serves a JSON-encoded data
+// chunk.
+func HandleJSONData(data []byte) http.HandlerFunc {
+	return HandleData("application/json", data)
+}
+
+// HandleData returns an http.HandleFunc that serves a data chunk with a
+// specified content-type.
+func HandleData(ct string, data []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", ct)
+		_, _ = w.Write(data)
+	}
 }
 
 const InLimit = 10 * (1 << 20)

@@ -391,9 +391,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	}
 
 	proxy.EXPECT().Call(gomock.Any(), expected).Return(apps.ProxyCallResponse{
-		CallResponse: apps.CallResponse{
-			Type: apps.CallResponseTypeOK,
-		},
+		CallResponse: apps.NewDataResponse(nil),
 	})
 
 	b := new(bytes.Buffer)

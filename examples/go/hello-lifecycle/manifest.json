@@ -1,7 +1,10 @@
 {
 	"app_id": "hello-lifecycle",
 	"display_name": "Hello, Lifecycle!",
-	"app_type": "http",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-lifecycle",
+	"requested_permissions": [
+		"act_as_bot"
+	],
 	"on_install": {
 		"path": "/install"
 	},
@@ -17,8 +20,7 @@
 	"on_disable": {
 		"path": "/disable"
 	},
-	"root_url": "http://localhost:8080",
-	"requested_permissions": [
-		"act_as_bot"
-	]
+	"http": {
+		"root_url": "http://localhost:8083"
+	}
 }

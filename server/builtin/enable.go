@@ -42,9 +42,9 @@ func (a *builtinApp) enable() handler {
 				creq.Context,
 				apps.AppID(creq.GetValue(fAppID, "")))
 			if err != nil {
-				return apps.NewErrorCallResponse(err)
+				return apps.NewErrorResponse(err)
 			}
-			return mdResponse(out)
+			return apps.NewTextResponse(out)
 		},
 	}
 }

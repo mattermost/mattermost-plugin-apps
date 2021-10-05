@@ -71,9 +71,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		up := mock_upstream.NewMockUpstream(ctrl)
 
 		// set up an empty OK call response
-		b, _ := json.Marshal(apps.CallResponse{
-			Type: apps.CallResponseTypeOK,
-		})
+		b, _ := json.Marshal(apps.NewDataResponse(nil))
 		reader := ioutil.NopCloser(bytes.NewReader(b))
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 

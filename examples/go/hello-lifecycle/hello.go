@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 //go:embed manifest.json
@@ -15,15 +16,15 @@ var manifestData []byte
 
 const (
 	host = "localhost"
-	port = 8080
+	port = 8083
 )
 
 func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
 
 	// Returns the Channel Header and Command bindings for the app.
-	http.HandleFunc("/bindings", writeJSON([]byte("{}")))
+	http.HandleFunc("/bindings", httputils.HandleJSONData([]byte("{}")))
 
 	http.HandleFunc("/install", respondWithMessage("Thanks for installing me!"))
 
@@ -33,11 +34,11 @@ func main() {
 
 	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
 
-	addr := fmt.Sprintf("%v:%v", host, port)
-	rootURL := "http://" + addr
-	fmt.Printf("hello-lifecycle app listening at %s \n", rootURL)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-lifecycle app listening on %q \n", addr)
 	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
-	http.ListenAndServe(addr, nil)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Request) {
@@ -47,27 +48,11 @@ func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Requ
 
 		_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
 		if err != nil {
-			json.NewEncoder(w).Encode(apps.CallResponse{
-				Type:      apps.CallResponseTypeError,
-				ErrorText: err.Error(),
-			})
+			json.NewEncoder(w).Encode(apps.NewErrorResponse(err))
 			return
 		}
 
-		json.NewEncoder(w).Encode(apps.CallResponse{
-			Type:     apps.CallResponseTypeOK,
-			Markdown: "Created a post in your DM channel.",
-		})
+		httputils.WriteJSON(w,
+			apps.NewTextResponse("Created a post in your DM channel."))
 	}
-}
-
-func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", ct)
-		w.Write(data)
-	}
-}
-
-func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return writeData("application/json", data)
 }

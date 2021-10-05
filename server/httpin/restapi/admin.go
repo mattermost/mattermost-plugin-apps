@@ -150,5 +150,5 @@ func (a *restapi) GetApp(w http.ResponseWriter, r *http.Request, _ proxy.Incomin
 		httputils.WriteError(w, err)
 		return
 	}
-	httputils.WriteJSON(w, app)
+	_ = httputils.WriteJSON(w, app)
 }

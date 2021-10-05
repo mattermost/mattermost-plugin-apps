@@ -4,9 +4,7 @@
 package proxy
 
 import (
-	"encoding/json"
 	"io"
-	"net/http"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -22,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upopenfaas"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -115,19 +114,19 @@ func (p *Proxy) Configure(conf config.Config) error {
 	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
 		return upkubeless.MakeUpstream()
 	})
+	p.initUpstream(apps.DeployOpenFAAS, conf, log, func() (upstream.Upstream, error) {
+		return upopenfaas.MakeUpstream(p.httpOut, conf.DeveloperMode)
+	})
 	return nil
 }
 
-// CanDeploy returns the availability of deployType.  allowed indicates that the
+// CanDeploy returns the availability of deployType. allowed indicates that the
 // type can be used in the current configuration. usable indicates that it is
 // configured and can be accessed, or deployed to.
 func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
 	return p.canDeploy(p.conf.Get(), deployType)
 }
 
-// CanDeploy returns the availability of deployType.  allowed indicates that the
-// type can be used in the current configuration. usable indicates that it is
-// configured and can be accessed, or deployed to.
 func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allowed, usable bool) {
 	_, usable = p.upstreams.Load(deployType)
 
@@ -152,7 +151,9 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 		// Add more deploy types in self-managed mode.
 		supportedTypes = append(supportedTypes,
 			apps.DeployHTTP,
-			apps.DeployKubeless)
+			apps.DeployKubeless,
+			apps.DeployOpenFAAS,
+		)
 	}
 
 	for _, t := range supportedTypes {
@@ -163,10 +164,13 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 	return false, false
 }
 
+// CanDeploy returns the availability of deployType. allowed indicates that the
+// type can be used in the current configuration. usable indicates that it is
+// configured and can be accessed, or deployed to.
 func CanDeploy(p Service, deployType apps.DeployType) error {
 	_, canDeploy := p.CanDeploy(deployType)
 	if !canDeploy {
-		return errors.Errorf("%s app deployment is not configured on this instance of Mattermost", deployType)
+		return errors.Errorf("deployment type %q is not configured on this Mattermost server", deployType)
 	}
 	return nil
 }
@@ -177,15 +181,6 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 	}
 	p.builtinUpstreams[appID] = up
 	p.store.App.InitBuiltin()
-}
-
-func WriteCallError(w http.ResponseWriter, statusCode int, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(apps.CallResponse{
-		Type:      apps.CallResponseTypeError,
-		ErrorText: err.Error(),
-	})
 }
 
 func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
@@ -218,15 +213,15 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		up, err := makef()
 		switch {
 		case errors.Cause(err) == utils.ErrNotFound:
-			log.WithError(err).Debugf("Skipped %s upstream: not configured.", typ)
+			log.WithError(err).Debugf("Skipped %q upstream: not configured.", typ)
 		case err != nil:
-			log.WithError(err).Errorf("Failed to initialize %s upstream.", typ)
+			log.WithError(err).Errorf("Failed to initialize %q upstream.", typ)
 		default:
 			p.upstreams.Store(typ, up)
-			log.Debugf("Initialized %s upstream.", typ)
+			log.Debugf("Initialized %q upstream.", typ)
 		}
 	} else {
 		p.upstreams.Delete(typ)
-		log.Debugf("Upstream %s is not supported.", typ)
+		log.Debugf("Deployment type %q is not configured on this Mattermost server", typ)
 	}
 }

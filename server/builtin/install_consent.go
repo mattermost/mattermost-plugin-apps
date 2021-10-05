@@ -37,27 +37,27 @@ func (a *builtinApp) installConsent() handler {
 			consent := creq.BoolValue(fConsent)
 			id, ok := creq.State.(string)
 			if !ok {
-				return apps.NewErrorCallResponse(
+				return apps.NewErrorResponse(
 					errors.New("no app ID in state, don't know what to install"))
 			}
 			appID := apps.AppID(id)
 
 			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
-				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to load App manifest"))
+				return apps.NewErrorResponse(errors.Wrap(err, "failed to load App manifest"))
 			}
 			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
-				return apps.NewErrorCallResponse(errors.New("consent to use APIs and locations is required to install"))
+				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
 			}
 
 			_, out, err := a.proxy.InstallApp(
 				proxy.NewIncomingFromContext(creq.Context),
 				creq.Context, appID, deployType, true, secret)
 			if err != nil {
-				return apps.NewErrorCallResponse(errors.Wrap(err, "failed to install App"))
+				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
 			}
 
-			return mdResponse(out)
+			return apps.NewTextResponse(out)
 		},
 	}
 }

@@ -26,7 +26,7 @@ func (a *builtinApp) info() handler {
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			conf := a.conf.Get()
-			return mdResponse("Mattermost Apps plugin version: %s, "+
+			return apps.NewTextResponse("Mattermost Apps plugin version: %s, "+
 				"[%s](https://github.com/mattermost/%s/commit/%s), built %s, Cloud Mode: %t, Developer Mode: %t\n",
 				conf.Version,
 				conf.BuildHashShort,
