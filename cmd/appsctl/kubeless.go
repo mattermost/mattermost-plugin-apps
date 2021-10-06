@@ -63,7 +63,7 @@ func helloKubeless() apps.App {
 		DeployType: apps.DeployKubeless,
 		Manifest: apps.Manifest{
 			AppID:   "hello-kubeless",
-			Version: "demo",
+			Version: "0.8.0",
 			Deploy: apps.Deploy{
 				Kubeless: &apps.Kubeless{
 					Functions: []apps.KubelessFunction{

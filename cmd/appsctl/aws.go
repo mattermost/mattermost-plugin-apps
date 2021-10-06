@@ -158,7 +158,7 @@ func helloLambda() apps.App {
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-lambda",
-			Version: "demo",
+			Version: "0.8.0",
 			Deploy: apps.Deploy{
 				AWSLambda: &apps.AWSLambda{
 					Functions: []apps.AWSLambdaFunction{
