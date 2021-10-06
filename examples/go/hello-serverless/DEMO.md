@@ -15,7 +15,7 @@ go run ./cmd/appsctl aws init --create
 - Build and deploy 2 apps to AWS
 ```sh
 cd ./examples/go/hello-serverless && make dist-aws
-go run ./cmd/appsctl aws provision -v ./examples/go/hello-serverless/dist/bundle-aws.zip
+go run ./cmd/appsctl aws deploy -v ./examples/go/hello-serverless/dist/bundle-aws.zip
 ```
 - Install the apps
 ```
@@ -35,7 +35,7 @@ faas-cli list
 - Build and deploy an app to faasd
 ```sh
 cd ./examples/go/hello-serverless && make dist-openfaas
-go run ./cmd/appsctl openfaas provision -v ./examples/go/hello-serverless/dist/bundle-openfaas.zip
+go run ./cmd/appsctl openfaas deploy -v ./examples/go/hello-serverless/dist/bundle-openfaas.zip
 ```
 - Install the app
 ```
@@ -50,7 +50,7 @@ kubeless function list --namespace mattermost-kubeless-apps
 - Build and deploy an app to kubeless
 ```sh
 cd ./examples/ts/hello && make dist-kubeless
-go run ./cmd/appsctl kubeless provision -v ./examples/ts/hello/dist/kubeless-bundle.zip
+go run ./cmd/appsctl kubeless deploy -v ./examples/ts/hello/dist/kubeless-bundle.zip
 ```
 - Install the app
 ```

@@ -18,14 +18,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// ProvisionData contains all the necessary data for provisioning an app
-type ProvisionData struct {
+// DeployData contains all the necessary data for deploying an app.
+type DeployData struct {
 	// StaticFiles key is the name of the static file in the /static folder
-	// Staticfiles value is the S3 Key where file should be provisioned
+	// Staticfiles value is the S3 Key where file should be deployed
 	StaticFiles map[string]AssetData `json:"static_files"`
 
 	// LambdaFunctions key is the name of the lambda function zip bundle
-	// LambdaFunctions value contains info for provisioning a function in the AWS.
+	// LambdaFunctions value contains info for deploying a function in the AWS.
 	// LambdaFunctions value's Name field contains functions name in the AWS.
 	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
 	Manifest        *apps.Manifest          `json:"-"`
@@ -44,7 +44,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, error) {
+func GetDeployDataFromFile(path string, log utils.Logger) (*DeployData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -55,11 +55,11 @@ func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, er
 		return nil, errors.Wrap(err, "can't read file")
 	}
 
-	return getProvisionData(b, log)
+	return getDeployData(b, log)
 }
 
-// getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
+// getDeployData takes app bundle zip as a byte slice and returns DeployData
+func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
@@ -144,14 +144,14 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	generatedAssets := generateAssetNames(m, assets)
 	generatedFunctions := generateFunctionNames(m, resFunctions)
 
-	pd := &ProvisionData{
+	pd := &DeployData{
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
 		Manifest:        m,
 		ManifestKey:     S3ManifestName(m.AppID, m.Version),
 	}
 	if err := pd.Validate(); err != nil {
-		return nil, errors.Wrap(err, "provision data is not valid")
+		return nil, errors.Wrap(err, "deploy data is not valid")
 	}
 	return pd, nil
 }
@@ -181,7 +181,7 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 	return generatedFunctions
 }
 
-func (pd *ProvisionData) Validate() error {
+func (pd *DeployData) Validate() error {
 	var result error
 
 	if pd.Manifest == nil || !pd.Manifest.SupportsDeploy(apps.DeployAWSLambda) {

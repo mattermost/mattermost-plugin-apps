@@ -28,13 +28,13 @@ func (o *OpenFAAS) Validate() error {
 
 // OpenFAASFunction defines a mapping of call paths to a function name.
 // Functions themselves are defined in manifest.yml, in the app bundle, see
-// upopenfaas.ProvisionApp for details.
+// upopenfaas.DeployApp for details.
 type OpenFAASFunction struct {
 	// Path is used to match/map incoming Call requests.
 	Path string `json:"path"`
 
 	// Name is the "short" name of the fuinction, it is combined with the app's
-	// ID+Version when provisioned, see upopenfaas.FunctionName.
+	// ID+Version when deployed, see upopenfaas.FunctionName.
 	Name string `json:"name"`
 }
 

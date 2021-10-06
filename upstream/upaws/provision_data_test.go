@@ -10,17 +10,17 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func TestGetProvisionData(t *testing.T) {
+func TestGetDeployData(t *testing.T) {
 	testDir, found := utils.FindDir("tests")
 	require.True(t, found)
 
 	bundlepath := filepath.Join(testDir, "test-bundle.zip")
-	provisionData, err := GetProvisionDataFromFile(bundlepath, utils.NewTestLogger())
+	deployData, err := GetDeployDataFromFile(bundlepath, utils.NewTestLogger())
 	require.NoError(t, err)
-	require.Equal(t, apps.AppID("com.mattermost.servicenow"), provisionData.Manifest.AppID)
-	require.Len(t, provisionData.LambdaFunctions, 4)
-	require.Len(t, provisionData.Manifest.AWSLambda.Functions, 4)
-	require.Equal(t, "manifests/com.mattermost.servicenow_0.1.0.json", provisionData.ManifestKey)
+	require.Equal(t, apps.AppID("com.mattermost.servicenow"), deployData.Manifest.AppID)
+	require.Len(t, deployData.LambdaFunctions, 4)
+	require.Len(t, deployData.Manifest.AWSLambda.Functions, 4)
+	require.Equal(t, "manifests/com.mattermost.servicenow_0.1.0.json", deployData.ManifestKey)
 
 	for i, tc := range []struct {
 		name, handler, runtime string
@@ -46,14 +46,14 @@ func TestGetProvisionData(t *testing.T) {
 			runtime: "go1.x",
 		},
 	} {
-		function, ok := provisionData.LambdaFunctions[provisionData.Manifest.AWSLambda.Functions[i].Name]
+		function, ok := deployData.LambdaFunctions[deployData.Manifest.AWSLambda.Functions[i].Name]
 		require.True(t, ok)
 		require.Equal(t, tc.name, function.Name)
 		require.Equal(t, tc.handler, function.Handler)
 		require.Equal(t, tc.runtime, function.Runtime)
 	}
 
-	require.Len(t, provisionData.StaticFiles, 5)
+	require.Len(t, deployData.StaticFiles, 5)
 
 	for _, tc := range []struct {
 		key, value string
@@ -79,7 +79,7 @@ func TestGetProvisionData(t *testing.T) {
 			value: "static/com.mattermost.servicenow_0.1.0_app/text.txt",
 		},
 	} {
-		asset, ok := provisionData.StaticFiles[tc.key]
+		asset, ok := deployData.StaticFiles[tc.key]
 		require.True(t, ok)
 		require.Equal(t, tc.value, asset.Key)
 	}

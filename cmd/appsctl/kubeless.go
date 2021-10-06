@@ -15,10 +15,10 @@ import (
 func init() {
 	rootCmd.AddCommand(kubelessCmd)
 
-	// provision
-	kubelessCmd.AddCommand(kubelessProvisionCmd)
-	kubelessProvisionCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
-	kubelessProvisionCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
+	// deploy
+	kubelessCmd.AddCommand(kubelessDeployCmd)
+	kubelessDeployCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	kubelessDeployCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
 
 	// test
 	kubelessCmd.AddCommand(kubelessTestCmd)
@@ -26,29 +26,29 @@ func init() {
 
 var kubelessCmd = &cobra.Command{
 	Use:   "kubeless",
-	Short: "Provision Mattermost Apps to Kubeless",
+	Short: "Deploy Mattermost Apps to Kubeless",
 }
 
-var kubelessProvisionCmd = &cobra.Command{
-	Use:   "provision",
-	Short: "Provision a Mattermost app to Kubeless",
+var kubelessDeployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "Deploy a Mattermost app to Kubeless",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		m, err := upkubeless.ProvisionApp(bundlePath, log, shouldUpdate)
+		m, err := upkubeless.DeployApp(bundlePath, log, shouldUpdate)
 		if err != nil {
 			return err
 		}
 		if m.Kubeless == nil || len(m.Kubeless.Functions) == 0 {
-			return errors.New("no functions to provision, check manifest.json")
+			return errors.New("no functions to deploy, check manifest.json")
 		}
 
 		if err = updateMattermost(*m, apps.DeployKubeless, install); err != nil {
 			return err
 		}
 
-		fmt.Printf("\nProvisioned '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.Kubeless.Functions))
+		fmt.Printf("\nDeployed '%s' to Kubeless, %v functions deployed.\n", m.DisplayName, len(m.Kubeless.Functions))
 
 		if !install {
 			fmt.Printf("You can now install it in Mattermost using:\n")
@@ -81,7 +81,7 @@ func helloKubeless() apps.App {
 
 var kubelessTestCmd = &cobra.Command{
 	Use:   "test",
-	Short: "provisions and tests 'hello-lambda'",
+	Short: "deploys and tests 'hello-lambda'",
 	Long: `Test commands us the 'hello-lambda' example app for testing, see
 https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-lambda/README.md
 
