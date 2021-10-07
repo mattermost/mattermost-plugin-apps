@@ -275,7 +275,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 
 command to deploy it to AWS. This command is equivalent to
 
-	appsctl aws deply app <dist-bundle-path> --update
+	appsctl aws deploy app <dist-bundle-path> --update
 
 with the default initial IAM configuration`,
 	Args: cobra.ExactArgs(1),
