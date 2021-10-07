@@ -43,6 +43,14 @@ func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse 
 	return apps.NewProxyCallResponse(cresp, metadata)
 }
 
+func (p *Proxy) simpleCall(in Incoming, app apps.App, call apps.Call, cc apps.Context) apps.CallResponse {
+	cresp, _ := p.callApp(in, app, apps.CallRequest{
+		Call:    call,
+		Context: cc,
+	})
+	return cresp
+}
+
 func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
 	respondErr := func(err error) (apps.CallResponse, error) {
 		return apps.NewErrorResponse(err), err

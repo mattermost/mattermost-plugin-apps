@@ -68,6 +68,19 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		defer icon.Close()
 	}
 
+	// See if the app is accessible. Call its bindings path, ignore 404 errors
+	// coming back and consider everything else a "success". Note, it is
+	// possible that this check would be ineffective for a serverless app that
+	// has no bindings, and does not map its bindings path in the manifest.
+	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
+	_, err = p.callApp(in, *app, apps.CallRequest{
+		Call:    bindingsCall,
+		Context: cc,
+	})
+	if err != nil && errors.Cause(err) != utils.ErrNotFound {
+		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", bindingsCall.Path)
+	}
+
 	asAdmin, err := p.getAdminClient(in)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
@@ -95,28 +108,13 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		resp, _ := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnInstall,
-			Context: cc,
-		})
+		resp := p.simpleCall(in, *app, *app.OnInstall, cc)
 		if resp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			log.WithError(resp).Warnf("Installed %s despite on_install failure.", app.AppID)
+			log.WithError(resp).Warnf("Installed %s, despite on_install failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s despite on_install failure: %s", app.AppID, resp.Error())
 		} else if resp.Markdown != "" {
-			message += "\n" + resp.Markdown
-		}
-	} else {
-		// See if app's bindings works, any error other than NotFound is a
-		// failure.
-		_, err = p.callApp(in, *app, apps.CallRequest{
-			Call:    app.Bindings.WithDefault(apps.DefaultBindings),
-			Context: cc,
-		})
-		if err != nil && errors.Cause(err) != utils.ErrNotFound {
-			// TODO: should fail and roll back.
-			log.WithError(err).Warnf("Installed %s despite bindings failure.", app.AppID)
-			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, err.Error())
+			message += "\n\n" + resp.Markdown
 		}
 	}
 

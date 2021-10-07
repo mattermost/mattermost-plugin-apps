@@ -72,13 +72,9 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 
 	// TODO PERF: Add caching
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
-	bindingsRequest := apps.CallRequest{
-		Call: bindingsCall,
-		// no need to clean the context, Call will do.
-		Context: cc,
-	}
 
-	resp, _ := p.callApp(in, app, bindingsRequest)
+	// no need to clean the context, Call will do.
+	resp := p.simpleCall(in, app, bindingsCall, cc)
 	switch resp.Type {
 	case apps.CallResponseTypeOK:
 		var bindings = []apps.Binding{}

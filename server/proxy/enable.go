@@ -39,10 +39,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 
 	var message string
 	if app.OnEnable != nil {
-		resp, _ := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnEnable,
-			Context: cc,
-		})
+		resp := p.simpleCall(in, *app, *app.OnEnable, cc)
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
@@ -72,10 +69,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp, _ := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnDisable,
-			Context: cc,
-		})
+		resp := p.simpleCall(in, *app, *app.OnDisable, cc)
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
