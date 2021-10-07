@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -73,10 +74,14 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := u.httpClient.Do(req)
-	if err != nil {
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
+
+	case err != nil:
 		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
+
+	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)
 		return nil, errors.New(string(bb))
 	}

@@ -78,29 +78,28 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 		Context: cc,
 	}
 
-	resp := p.callApp(in, app, bindingsRequest)
-	if resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK {
+	resp, _ := p.callApp(in, app, bindingsRequest)
+	switch resp.Type {
+	case apps.CallResponseTypeOK:
+		var bindings = []apps.Binding{}
+		b, _ := json.Marshal(resp.Data)
+		err := json.Unmarshal(b, &bindings)
+		if err != nil {
+			log.WithError(err).Debugf("Bindings are not of the right type.")
+			return nil
+		}
+
+		bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
+		return bindings
+
+	case apps.CallResponseTypeError:
+		log.WithError(resp).Debugf("Error getting bindings")
+		return nil
+
+	default:
 		log.Debugf("Bindings response is nil or unexpected type.")
 		return nil
 	}
-
-	// TODO: ignore a 404, no bindings
-	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(resp).Debugf("Error getting bindings")
-		return nil
-	}
-
-	var bindings = []apps.Binding{}
-	b, _ := json.Marshal(resp.Data)
-	err := json.Unmarshal(b, &bindings)
-	if err != nil {
-		log.WithError(err).Debugf("Bindings are not of the right type.")
-		return nil
-	}
-
-	bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
-
-	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to

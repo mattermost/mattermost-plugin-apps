@@ -21,11 +21,11 @@ var secret = []byte("1234")
 var iconData []byte
 
 var manifest = apps.Manifest{
-	AppID:       "hello-world",
+	AppID:       "hello-jwt",
 	Version:     "v0.8.0",
-	DisplayName: "Hello, world!",
+	DisplayName: "Hello, JWT!",
 	Icon:        "icon.png",
-	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-world",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-jwt",
 	RequestedPermissions: []apps.Permission{
 		apps.PermissionActAsBot,
 	},

@@ -11,10 +11,12 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const MaxLambdaName = 64
@@ -27,6 +29,10 @@ func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]by
 		Payload:        payload,
 	})
 	if err != nil {
+		awsErr, ok := err.(awserr.Error)
+		if ok && awsErr.Code() == lambda.ErrCodeResourceNotFoundException {
+			return nil, utils.NewNotFoundError(awsErr)
+		}
 		return nil, errors.Wrapf(err, "invoke AWS Lambda function %s", name)
 	}
 	return result.Payload, nil

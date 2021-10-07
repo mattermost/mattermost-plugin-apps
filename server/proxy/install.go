@@ -93,30 +93,38 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", err
 	}
 
-	var message string
+	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		resp := p.callApp(in, *app, apps.CallRequest{
+		resp, _ := p.callApp(in, *app, apps.CallRequest{
 			Call:    *app.OnInstall,
 			Context: cc,
 		})
-		// TODO fail on all errors except 404
 		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(err).Warnf("OnInstall failed, installing app anyway.")
-		} else {
-			message = resp.Markdown
+			// TODO: should fail and roll back.
+			log.WithError(resp).Warnf("Installed %s despite on_install failure.", app.AppID)
+			message = fmt.Sprintf("Installed %s despite on_install failure: %s", app.AppID, resp.Error())
+		} else if resp.Markdown != "" {
+			message += "\n" + resp.Markdown
+		}
+	} else {
+		// See if app's bindings works, any error other than NotFound is a
+		// failure.
+		_, err = p.callApp(in, *app, apps.CallRequest{
+			Call:    app.Bindings.WithDefault(apps.DefaultBindings),
+			Context: cc,
+		})
+		if err != nil && errors.Cause(err) != utils.ErrNotFound {
+			// TODO: should fail and roll back.
+			log.WithError(err).Warnf("Installed %s despite bindings failure.", app.AppID)
+			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, err.Error())
 		}
 	}
-
-	if message == "" {
-		message = fmt.Sprintf("Installed %s", app.DisplayName)
-	}
-
-	log.Infof("Installed app.")
 
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
+	log.Infof(message)
 	return app, message, nil
 }
 
