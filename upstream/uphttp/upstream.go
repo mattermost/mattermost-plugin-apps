@@ -4,6 +4,7 @@
 package uphttp
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -73,29 +74,28 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 		return nil, err
 	}
 
-	client := u.httpOut.MakeClient(u.devMode)
-	jwtoken, err := createJWT(fromMattermostUserID, app.Secret)
+	data, err := json.Marshal(creq)
 	if err != nil {
 		return nil, err
 	}
 
-	piper, pipew := io.Pipe()
-	go func() {
-		encodeErr := json.NewEncoder(pipew).Encode(creq)
-		if encodeErr != nil {
-			_ = pipew.CloseWithError(encodeErr)
+	req, err := http.NewRequest(http.MethodPost, callURL, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	if app.HTTP.UseJWT {
+		jwtoken := ""
+		jwtoken, err = createJWT(fromMattermostUserID, app.Secret)
+		if err != nil {
+			return nil, err
 		}
-		pipew.Close()
-	}()
-
-	req, err := http.NewRequest(http.MethodPost, callURL, piper)
-	if err != nil {
-		return nil, err
+		req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
+		req.Header.Set("Content-Type", "application/json")
 	}
-	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	// Execute the request.
+	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
 	if err != nil {
 		return nil, err
 	}

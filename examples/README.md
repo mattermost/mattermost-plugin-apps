@@ -9,5 +9,6 @@
 | hello-webhooks | 8081 |
 | hello-oauth2 | 8082 |
 | hello-lifecycle | 8083 |
+| hello-jwt | 8084 |
 
 - js
