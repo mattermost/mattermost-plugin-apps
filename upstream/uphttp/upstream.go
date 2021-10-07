@@ -97,11 +97,11 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 	// Execute the request.
 	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
 	switch {
-	case resp.StatusCode == http.StatusNotFound:
-		return nil, utils.NewNotFoundError(err)
-
 	case err != nil:
 		return nil, err
+
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
 
 	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)

@@ -75,11 +75,11 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 
 	resp, err := u.httpClient.Do(req)
 	switch {
-	case resp.StatusCode == http.StatusNotFound:
-		return nil, utils.NewNotFoundError(err)
-
 	case err != nil:
 		return nil, err
+
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
 
 	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)

@@ -70,6 +70,10 @@ func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", httputils.HandleJSON(manifest))
 
+	// Ping to test the JWT connectivity upon install.
+	http.HandleFunc("/ping", withJWT(
+		httputils.HandleJSON(apps.NewDataResponse(nil))))
+
 	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings", withJWT(
 		httputils.HandleJSON(apps.NewDataResponse(bindings))))
@@ -84,8 +88,8 @@ func main() {
 
 	addr := ":8084" // matches manifest.json
 	fmt.Println("Listening on", addr)
-	fmt.Println("Use '/apps install url http://localhost" + addr + "/manifest.json' to install the app") // matches manifest.json
-	fmt.Printf("Use %q as the app's JWT secret\n", secret)                                                    // matches manifest.json
+	fmt.Println("Use '/apps install url http://localhost" + addr + "/manifest.json' to install the app")
+	fmt.Printf("Use %q as the app's JWT secret\n", secret)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
