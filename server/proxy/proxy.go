@@ -43,10 +43,29 @@ func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse 
 	return apps.NewProxyCallResponse(cresp, metadata)
 }
 
-func (p *Proxy) simpleCall(in Incoming, app apps.App, call apps.Call, cc apps.Context) apps.CallResponse {
+func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+	values := map[string]interface{}{}
+	for len(valuePairs) > 0 {
+		if len(valuePairs) == 1 {
+			return apps.NewErrorResponse(
+				errors.Errorf("mismatched parameter count, no value for %v", valuePairs[0]))
+		}
+		key, ok := valuePairs[0].(string)
+		if !ok {
+			return apps.NewErrorResponse(
+				errors.Errorf("mismatched type %T for key %v, expected string", valuePairs[0], valuePairs[0]))
+		}
+		values[key] = valuePairs[1]
+		valuePairs = valuePairs[2:]
+	}
+
+	if cc == nil {
+		cc = &apps.Context{}
+	}
 	cresp, _ := p.callApp(in, app, apps.CallRequest{
 		Call:    call,
-		Context: cc,
+		Context: *cc,
+		Values:  values,
 	})
 	return cresp
 }

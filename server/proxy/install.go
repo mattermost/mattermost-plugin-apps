@@ -108,7 +108,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		resp := p.simpleCall(in, *app, *app.OnInstall, cc)
+		resp := p.call(in, *app, *app.OnInstall, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			log.WithError(resp).Warnf("Installed %s, despite on_install failure.", app.AppID)
