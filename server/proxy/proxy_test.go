@@ -46,7 +46,7 @@ func TestAppMetadataForClient(t *testing.T) {
 	}
 
 	resp := p.Call(Incoming{}, creq)
-	require.Equal(t, resp.AppMetadata, &apps.AppMetadataForClient{
+	require.Equal(t, resp.AppMetadata, AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
 	})
