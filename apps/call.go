@@ -131,25 +131,6 @@ type CallResponse struct {
 	Form *Form `json:"form,omitempty"`
 }
 
-// ProxyCallResponse contains everything the CallResponse struct contains, plus some additional
-// data for the client, such as information about the App's bot account.
-//
-// Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
-// decorate the response using the ProxyCallResponse to provide additional information.
-type ProxyCallResponse struct {
-	CallResponse
-
-	// Used to provide info about the App to client, e.g. the bot user id
-	AppMetadata *AppMetadataForClient `json:"app_metadata"`
-}
-
-func NewProxyCallResponse(response CallResponse, metadata *AppMetadataForClient) ProxyCallResponse {
-	return ProxyCallResponse{
-		response,
-		metadata,
-	}
-}
-
 func NewErrorResponse(err error) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeError,

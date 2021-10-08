@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 func TestCleanUserAgentContext(t *testing.T) {
@@ -311,10 +312,10 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 
 func TestHandleCallInvalidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	proxy := mock_proxy.NewMockService(ctrl)
+	p := mock_proxy.NewMockService(ctrl)
 	testConfig, testAPI := config.NewTestService(nil)
 	router := mux.NewRouter()
-	Init(router, testConfig, proxy, nil)
+	Init(router, testConfig, p, nil)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -354,11 +355,11 @@ func TestHandleCallInvalidContext(t *testing.T) {
 
 func TestHandleCallValidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	proxy := mock_proxy.NewMockService(ctrl)
+	p := mock_proxy.NewMockService(ctrl)
 	testConfig, testAPI := config.NewTestService(nil)
 
 	router := mux.NewRouter()
-	Init(router, testConfig, proxy, nil)
+	Init(router, testConfig, p, nil)
 
 	creq := apps.CallRequest{
 		Call: apps.Call{
@@ -390,7 +391,7 @@ func TestHandleCallValidContext(t *testing.T) {
 		},
 	}
 
-	proxy.EXPECT().Call(gomock.Any(), expected).Return(apps.ProxyCallResponse{
+	p.EXPECT().Call(gomock.Any(), expected).Return(proxy.CallResponse{
 		CallResponse: apps.NewDataResponse(nil),
 	})
 

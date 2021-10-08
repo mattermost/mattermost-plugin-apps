@@ -105,8 +105,3 @@ type ListedApp struct {
 	IconURL   string                   `json:"icon_url,omitempty"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }
-
-type AppMetadataForClient struct {
-	BotUserID   string `json:"bot_user_id,omitempty"`
-	BotUsername string `json:"bot_username,omitempty"`
-}
