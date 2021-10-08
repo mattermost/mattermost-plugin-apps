@@ -19,9 +19,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// ProvisionApp creates OpenFaaS functions from an app bundle, as declared by
+// DeployApp creates OpenFaaS functions from an app bundle, as declared by
 // the app's manifest.
-func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool, gateway, prefix string) (*apps.Manifest, error) {
+func DeployApp(bundlePath string, log utils.Logger, shouldUpdate bool, gateway, prefix string) (*apps.Manifest, error) {
 	m, dir, err := upstream.GetAppBundle(bundlePath, log)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool, gatewa
 		return nil, err
 	}
 
-	// Provision functions.
+	// Deploy functions.
 	faascliPath, err := exec.LookPath("faas-cli")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find faas-cli command. Please follow the steps from https://docs.openfaas.com/cli/install/")

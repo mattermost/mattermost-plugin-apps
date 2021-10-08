@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	AccessEnvVar          = "MM_APPS_AWS_ACCESS_KEY"           // nolint:gosec
-	SecretEnvVar          = "MM_APPS_AWS_SECRET_KEY"           // nolint:gosec
-	ProvisionAccessEnvVar = "MM_APPS_PROVISION_AWS_ACCESS_KEY" // nolint:gosec
-	ProvisionSecretEnvVar = "MM_APPS_PROVISION_AWS_SECRET_KEY" // nolint:gosec
+	AccessEnvVar       = "MM_APPS_AWS_ACCESS_KEY"        // nolint:gosec
+	SecretEnvVar       = "MM_APPS_AWS_SECRET_KEY"        // nolint:gosec
+	DeployAccessEnvVar = "MM_APPS_DEPLOY_AWS_ACCESS_KEY" // nolint:gosec
+	DeploySecretEnvVar = "MM_APPS_DEPLOY_AWS_SECRET_KEY" // nolint:gosec
 
 	DeprecatedCloudAccessEnvVar = "APPS_INVOKE_AWS_ACCESS_KEY" // nolint:gosec
 	DeprecatedCloudSecretEnvVar = "APPS_INVOKE_AWS_SECRET_KEY" // nolint:gosec
