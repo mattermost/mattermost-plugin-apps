@@ -72,7 +72,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	// expanded, ignore 404 errors coming back and consider everything else a
 	// "success".
 	//
-	// Note that this check os often ineffective, but "the best we can do"
+	// Note that this check is often ineffective, but "the best we can do"
 	// before we start the diffcult-to-revert install process.
 	_, err = p.callApp(in, *app, apps.CallRequest{
 		Call:    apps.DefaultPing,
