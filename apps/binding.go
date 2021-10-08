@@ -198,12 +198,26 @@ type Binding struct {
 	// A Binding is either to a Call, or is a "container" for other locations -
 	// i.e. menu sub-items or subcommands. An app-defined Modal can be displayed
 	// by setting AsModal.
-	Call     *Call     `json:"call,omitempty"`
-	Bindings []Binding `json:"bindings,omitempty"`
+	DeprecatedCall *Call `json:"call,omitempty"`
 
-	// Form allows to embed a form into a binding, and avoid the need to
-	// Call(type=Form). At the moment, the sole use case is in-post forms, but
-	// this may prove useful in other contexts.
-	// TODO: Can embedded forms be mutable, and what does it mean?
+	// A Binding is either a direct submit, a form (embedded or fetched) to get
+	// more user input, or a "container" for other locations/bindings - i.e.
+	// menu sub-items or subcommands. An attempt to specify mnore than pne of
+	// these fields is treated as an error.
+
+	// Submit is specified to invoked a call directly when the location is
+	// activated, without any extra inputs from the user. In JSON "submit" may
+	// be specified as the call path (string), in which case no expand nor state
+	// will be used.
+	Submit *Call `json:"submit,omitempty"`
+
+	// Form is used to gather additional input from the user before submitting.
+	// A form may be embedded, or be a source reference meaning that a call to
+	// the app will be made to obtain the form. In JSON "form" may be specified
+	// as the call path (string), in which case the will be made with no expand
+	// nor state.
 	Form *Form `json:"form,omitempty"`
+
+	// Bindings specifies sub-location bindings.
+	Bindings []Binding `json:"bindings,omitempty"`
 }

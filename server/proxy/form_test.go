@@ -354,7 +354,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
 							},
@@ -372,7 +372,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
 							},
@@ -395,7 +395,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Value:    "same",
 								IconData: "opt1",
@@ -417,7 +417,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Value:    "same",
 								IconData: "opt1",
@@ -441,7 +441,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "same",
 								Value: "opt1",
@@ -463,7 +463,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "same",
 								Value: "opt1",
@@ -487,7 +487,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "opt1",
 								Value: "same",
@@ -509,7 +509,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "opt1",
 								Value: "same",
@@ -533,7 +533,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "same1",
 								Value: "same1",
@@ -563,7 +563,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{
 								Label: "same1",
 								Value: "same1",
@@ -592,7 +592,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{},
 						},
 					},
@@ -621,7 +621,7 @@ func TestCleanForm(t *testing.T) {
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
-						SelectStaticOptions: []apps.SelectOption{
+						SelectOptions: []apps.SelectOption{
 							{},
 						},
 					},

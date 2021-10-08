@@ -43,8 +43,10 @@ type Context struct {
 	ExpandedContext
 }
 
-// UserAgentContext is a subset of fields from Context that are accepted from the user agent
-// The values are vetted, and all fields present in the provided Context that are not in UserAgentContext are discarded when the Call comes from an acting user.
+// UserAgentContext is a subset of fields from Context that are accepted from
+// the user agent The values are vetted, and all fields present in the provided
+// Context that are not in UserAgentContext are discarded when the Call comes
+// from an acting user.
 type UserAgentContext struct {
 	// The optional IDs of Mattermost entities associated with the call: Team,
 	// Channel, Post, RootPost.
@@ -63,6 +65,10 @@ type UserAgentContext struct {
 	// UserAgent used to perform the call. It can be either "webapp" or "mobile".
 	// Non user interactions like notifications will have this field empty.
 	UserAgent string `json:"user_agent,omitempty"`
+
+	// IsSubmit indicates that the call was caused by a user "submit" action
+	// from a binding or a form.
+	IsSubmit bool `json:"is_submit,omitempty"`
 }
 
 // ExpandedContext contains authentication, and Mattermost entity data, as

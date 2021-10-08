@@ -91,7 +91,7 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 		Label:               "deploy-type",
 		ModalLabel:          "Deployment method",
 		SelectRefresh:       true,
-		SelectStaticOptions: opts,
+		SelectOptions: opts,
 		Value:               defaultValue,
 	}, defaultValue
 }

@@ -15,16 +15,9 @@ package apps
 // autocomplete once the subcommand is selected is designed to mirror the
 // functionality of the Modal. Some gaps and differences still remain.
 //
-// Requests for forms are calls, can use Expand, making it easy to generate
-// forms specific to the user, channel, etc.
-//
-// When a dynamic select field is selected in a Modal, or in Autocomplete, a
-// Lookup call request is made to the Form's Call. The app should respond with
-// "data":[]SelectOption, and "type":"ok".
-//
-// When a select field with "refresh" set changes value, it forces reloading of
-// the form. A call request type form is made to fetch it, with the partial
-// values provided. Expected response is a "type":"form" response.
+// A form can be dynamically fetched if it specifies its Source. Source may
+// include Expand and State, allowing to create custom-fit forms for the
+// context.
 type Form struct {
 	// Title, Header, and Footer are used for Modals only.
 	Title  string `json:"title,omitempty"`
@@ -35,9 +28,18 @@ type Form struct {
 	// TODO do we default to the App icon?
 	Icon string `json:"icon,omitempty"`
 
-	// Call is the same definition used to submit, refresh the form, and to
-	// lookup dynamic select options.
-	Call *Call `json:"call,omitempty"`
+	// DeprecatedCall is deprecated in favor of Submit, Source
+	DeprecatedCall *Call `json:"call,omitempty"`
+	
+	// Submit is the call to make when the user clicks a submit button (or enter
+	// for a command). A simple call can be specified as a path (string). It
+	// will contain no expand/state.
+	Submit *Call `json:"submit,omitempty"`
+
+	// Source is the call to make when the form's definition is required (i.e.
+	// it has no fields, or needs to be refreshed from the app). A simple call
+	// can be specified as a path (string). It will contain no expand/state.
+	Source *Call `json:"source,omitempty"`
 
 	// SubmitButtons refers to a field name that must be a FieldTypeStaticSelect
 	// or FieldTypeDynamicSelect.

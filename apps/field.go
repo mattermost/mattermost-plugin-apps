@@ -87,9 +87,12 @@ type Field struct {
 	// autocomplete.
 	SelectRefresh bool `json:"refresh,omitempty"`
 
-	// SelectStaticOptions is the list of options to display in a static select
-	// field.
-	SelectStaticOptions []SelectOption `json:"options,omitempty"`
+	// SelectOptions is the list of options to display in a static select field.
+	SelectOptions []SelectOption `json:"options,omitempty"`
+
+	// SelectLookup is the call that will return the options to populate the select.
+	// TODO document the Lookup format.
+	SelectLookup Call `json:"lookup,omitempty"`
 
 	// Text props
 	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`
