@@ -113,7 +113,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
-			message = fmt.Sprintf("Installed %s despite on_install failure: %s", app.AppID, cresp.Error())
+			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
 		} else if cresp.Markdown != "" {
 			message += "\n\n" + cresp.Markdown
 		}
