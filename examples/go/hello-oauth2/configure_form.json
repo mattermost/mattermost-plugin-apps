@@ -20,7 +20,7 @@
 		"call": {
 			"path": "/configure",
 			"expand": {
-				"admin_access_token": "all"
+				"acting_user_access_token": "all"
 			}
 		}
 	}

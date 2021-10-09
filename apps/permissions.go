@@ -77,7 +77,7 @@ func (p Permissions) Validate() error {
 	// (depends on) P2...PN.
 	for _, pp := range []Permissions{
 		{PermissionRemoteWebhooks, PermissionActAsBot},
-		{PermissionRemoteOAuth2, PermissionActAsUser, PermissionActAsAdmin},
+		{PermissionRemoteOAuth2, PermissionActAsUser},
 		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
 	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {
