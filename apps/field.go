@@ -92,7 +92,7 @@ type Field struct {
 
 	// SelectLookup is the call that will return the options to populate the select.
 	// TODO document the Lookup format.
-	SelectLookup Call `json:"lookup,omitempty"`
+	SelectLookup *Call `json:"lookup,omitempty"`
 
 	// Text props
 	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`

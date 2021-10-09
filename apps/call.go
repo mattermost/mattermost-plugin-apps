@@ -47,6 +47,33 @@ type Call struct {
 	State interface{} `json:"state,omitempty"`
 }
 
+func (c *Call) UnmarshalJSON(data []byte) error {
+	stringValue := ""
+	err := json.Unmarshal(data, &stringValue)
+	if err == nil {
+		c.Expand = nil
+		c.State = nil
+		c.Path = stringValue
+		return nil
+	}
+
+	// Need a type that is just like Call, but without UnmarshalJSON
+	structValue := struct {
+		Path   string      `json:"path,omitempty"`
+		Expand *Expand     `json:"expand,omitempty"`
+		State  interface{} `json:"state,omitempty"`
+	}{}
+	err = json.Unmarshal(data, &structValue)
+	if err != nil {
+		return err
+	}
+
+	c.Path = structValue.Path
+	c.Expand = structValue.Expand
+	c.State = structValue.State
+	return nil
+}
+
 // CallRequest envelops all requests sent to Apps.
 type CallRequest struct {
 	// A copy of the Call struct that originated the request. Path and State are
@@ -68,6 +95,35 @@ type CallRequest struct {
 	// is selected, and what query string is already entered by the user for it.
 	SelectedField string `json:"selected_field,omitempty"`
 	Query         string `json:"query,omitempty"`
+}
+
+func (creq *CallRequest) UnmarshalJSON(data []byte) error {
+	// Unmarshal the Call first
+	err := json.Unmarshal(data, &creq.Call)
+	if err != nil {
+		return err
+	}
+
+	// Need a type that is just like CallRequest, but without Call to avoid
+	// recursion.
+	structValue := struct {
+		Values        map[string]interface{} `json:"values,omitempty"`
+		Context       Context                `json:"context,omitempty"`
+		RawCommand    string                 `json:"raw_command,omitempty"`
+		SelectedField string                 `json:"selected_field,omitempty"`
+		Query         string                 `json:"query,omitempty"`
+	}{}
+	err = json.Unmarshal(data, &structValue)
+	if err != nil {
+		return err
+	}
+
+	creq.Values = structValue.Values
+	creq.Context = structValue.Context
+	creq.RawCommand = structValue.RawCommand
+	creq.SelectedField = structValue.SelectedField
+	creq.Query = structValue.Query
+	return nil
 }
 
 type CallResponseType string
