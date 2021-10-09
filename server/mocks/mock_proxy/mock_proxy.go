@@ -52,10 +52,10 @@ func (mr *MockServiceMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *g
 }
 
 // Call mocks base method.
-func (m *MockService) Call(arg0 proxy.Incoming, arg1 apps.CallRequest) apps.ProxyCallResponse {
+func (m *MockService) Call(arg0 proxy.Incoming, arg1 apps.CallRequest) proxy.CallResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Call", arg0, arg1)
-	ret0, _ := ret[0].(apps.ProxyCallResponse)
+	ret0, _ := ret[0].(proxy.CallResponse)
 	return ret0
 }
 

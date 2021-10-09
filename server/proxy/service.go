@@ -48,7 +48,7 @@ type Admin interface {
 // Invoker implements operations that invoke the Apps.
 type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(Incoming, apps.CallRequest) apps.ProxyCallResponse
+	Call(Incoming, apps.CallRequest) CallResponse
 	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
 	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
