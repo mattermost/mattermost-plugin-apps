@@ -15,9 +15,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// ProvisionApp creates Kubeless functions from an app bundle, as declared by
+// DeployApp creates Kubeless functions from an app bundle, as declared by
 // the app's manifest.
-func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Manifest, error) {
+func DeployApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Manifest, error) {
 	m, dir, err := upstream.GetAppBundle(bundlePath, log)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps
 		return nil, errors.Wrap(err, "failed to find kubeless command. Please follow the steps from https://kubeless.io/docs/quick-start/")
 	}
 
-	// Provision functions.
+	// Deploy functions.
 	for _, kf := range m.Kubeless.Functions {
 		name := FunctionName(m.AppID, m.Version, kf.Handler)
 

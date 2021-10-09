@@ -21,7 +21,7 @@ const (
 	// Environment variable used by appsctl to find OpenFaaS
 	EnvGatewayURL = "OPENFAAS_URL"
 
-	// YAML file for provisioning
+	// YAML file for deployment.
 	ManifestYaml = "manifest.yml"
 )
 

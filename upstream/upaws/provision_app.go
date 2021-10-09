@@ -14,14 +14,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-type ProvisionAppParams struct {
+type DeployAppParams struct {
 	Bucket           string
 	InvokePolicyName Name
 	ExecuteRoleName  Name
 	ShouldUpdate     bool
 }
 
-type ProvisionAppResult struct {
+type DeployAppResult struct {
 	InvokePolicyDoc  string
 	InvokePolicyARN  ARN
 	ExecuteRoleARN   ARN
@@ -32,15 +32,15 @@ type ProvisionAppResult struct {
 	Manifest         apps.Manifest
 }
 
-func ProvisionAppFromFile(c Client, path string, log utils.Logger, params ProvisionAppParams) (*ProvisionAppResult, error) {
-	provisionData, err := GetProvisionDataFromFile(path, log)
+func DeployAppFromFile(c Client, path string, log utils.Logger, params DeployAppParams) (*DeployAppResult, error) {
+	deployData, err := GetDeployDataFromFile(path, log)
 	if err != nil {
-		return nil, errors.Wrapf(err, "can't get Provision data from file %s", path)
+		return nil, errors.Wrapf(err, "can't get deploy data from file %s", path)
 	}
-	return provisionApp(c, log, provisionData, params)
+	return deployApp(c, log, deployData, params)
 }
 
-// provisionApp gets a release URL parses the release and creates an App in AWS
+// deployApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
 //  ~/my_app.zip
 //   |-- manifest.json
@@ -56,22 +56,22 @@ func ProvisionAppFromFile(c Client, path string, log utils.Logger, params Provis
 //      |-- lambda_function.py
 //      |-- __pycache__
 //      |-- certifi/
-func provisionApp(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams) (*ProvisionAppResult, error) {
-	out := ProvisionAppResult{
+func deployApp(c Client, log utils.Logger, pd *DeployData, params DeployAppParams) (*DeployAppResult, error) {
+	out := DeployAppResult{
 		Manifest: *pd.Manifest,
 	}
 
-	err := provisionS3StaticAssets(c, log, pd, params, &out)
+	err := deployS3StaticAssets(c, log, pd, params, &out)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't save manifest fo the app %s to S3", pd.Manifest.AppID)
 	}
 
-	err = provisionLambdaFunctions(c, log, pd, params, &out)
+	err = deployLambdaFunctions(c, log, pd, params, &out)
 	if err != nil {
-		return nil, errors.Wrapf(err, "can't provision functions of the app - %s", pd.Manifest.AppID)
+		return nil, errors.Wrapf(err, "can't deploy functions of the app - %s", pd.Manifest.AppID)
 	}
 
-	err = provisionS3Manifest(c, log, pd, params, &out)
+	err = deployS3Manifest(c, log, pd, params, &out)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't save manifest fo the app %s to S3", pd.Manifest.AppID)
 	}
@@ -79,7 +79,7 @@ func provisionApp(c Client, log utils.Logger, pd *ProvisionData, params Provisio
 	return &out, nil
 }
 
-func provisionS3StaticAssets(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+func deployS3StaticAssets(c Client, log utils.Logger, pd *DeployData, params DeployAppParams, out *DeployAppResult) error {
 	var arns []ARN
 	for _, asset := range pd.StaticFiles {
 		_, err := c.UploadS3(params.Bucket, asset.Key, asset.File, false)
@@ -96,12 +96,12 @@ func provisionS3StaticAssets(c Client, log utils.Logger, pd *ProvisionData, para
 	return nil
 }
 
-func provisionLambdaFunctions(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+func deployLambdaFunctions(c Client, log utils.Logger, pd *DeployData, params DeployAppParams, out *DeployAppResult) error {
 	executeRoleARN, err := c.FindRole(params.ExecuteRoleName)
 	if err != nil {
 		return err
 	}
-	log.Infow("Found execute role, provisioning functions", "ARN", executeRoleARN)
+	log.Infow("Found execute role, deploying functions", "ARN", executeRoleARN)
 
 	createdARNs := []ARN{}
 	for _, function := range pd.LambdaFunctions {
@@ -141,8 +141,8 @@ func provisionLambdaFunctions(c Client, log utils.Logger, pd *ProvisionData, par
 	return nil
 }
 
-// provisionS3Manifest saves manifest file in S3.
-func provisionS3Manifest(c Client, log utils.Logger, pd *ProvisionData, params ProvisionAppParams, out *ProvisionAppResult) error {
+// deployS3Manifest saves manifest file in S3.
+func deployS3Manifest(c Client, log utils.Logger, pd *DeployData, params DeployAppParams, out *DeployAppResult) error {
 	data, err := json.Marshal(pd.Manifest)
 	if err != nil {
 		return errors.Wrapf(err, "can't marshal manifest for app - %s", pd.Manifest.AppID)

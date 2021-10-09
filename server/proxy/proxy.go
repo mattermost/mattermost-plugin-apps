@@ -22,25 +22,50 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) Call(in Incoming, creq apps.CallRequest) apps.ProxyCallResponse {
+// CallResponse contains everything the CallResponse struct contains, plus some additional
+// data for the client, such as information about the App's bot account.
+//
+// Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
+// decorate the response using the CallResponse to provide additional information.
+type CallResponse struct {
+	apps.CallResponse
+
+	// Used to provide info about the App to client, e.g. the bot user id
+	AppMetadata AppMetadataForClient `json:"app_metadata"`
+}
+
+type AppMetadataForClient struct {
+	BotUserID   string `json:"bot_user_id,omitempty"`
+	BotUsername string `json:"bot_username,omitempty"`
+}
+
+func NewProxyCallResponse(response apps.CallResponse) CallResponse {
+	return CallResponse{
+		CallResponse: response,
+	}
+}
+
+func (r CallResponse) WithMetadata(metadata AppMetadataForClient) CallResponse {
+	r.AppMetadata = metadata
+	return r
+}
+
+func (p *Proxy) Call(in Incoming, creq apps.CallRequest) CallResponse {
 	if creq.Context.AppID == "" {
-		return apps.NewProxyCallResponse(
-			apps.NewErrorResponse(
-				utils.NewInvalidError("app_id is not set in Context, don't know what app to call")), nil)
+		return NewProxyCallResponse(apps.NewErrorResponse(
+			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
 	}
 
 	app, err := p.store.App.Get(creq.Context.AppID)
 	if err != nil {
-		return apps.NewProxyCallResponse(apps.NewErrorResponse(err), nil)
-	}
-
-	metadata := &apps.AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
+		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
 
 	cresp, _ := p.callApp(in, *app, creq)
-	return apps.NewProxyCallResponse(cresp, metadata)
+	return NewProxyCallResponse(cresp).WithMetadata(AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
+	})
 }
 
 func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
