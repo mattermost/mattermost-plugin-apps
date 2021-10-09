@@ -195,27 +195,14 @@ type Binding struct {
 	DependsOnUser    bool `json:"depends_on_user,omitempty"`
 	DependsOnPost    bool `json:"depends_on_post,omitempty"`
 
-	// A Binding is either to a Call, or is a "container" for other locations -
-	// i.e. menu sub-items or subcommands. An app-defined Modal can be displayed
-	// by setting AsModal.
-	DeprecatedCall *Call `json:"call,omitempty"`
-
-	// A Binding is either a direct submit, a form (embedded or fetched) to get
-	// more user input, or a "container" for other locations/bindings - i.e.
-	// menu sub-items or subcommands. An attempt to specify mnore than pne of
-	// these fields is treated as an error.
-
-	// Submit is specified to invoked a call directly when the location is
-	// activated, without any extra inputs from the user. In JSON "submit" may
-	// be specified as the call path (string), in which case no expand nor state
-	// will be used.
-	Submit *Call `json:"submit,omitempty"`
+	// A Binding is either a form (embedded or fetched), or a "container" for
+	// other locations/bindings - i.e. menu sub-items or subcommands. An attempt
+	// to specify mnore than one of these fields is treated as an error.
 
 	// Form is used to gather additional input from the user before submitting.
-	// A form may be embedded, or be a source reference meaning that a call to
-	// the app will be made to obtain the form. In JSON "form" may be specified
-	// as the call path (string), in which case the will be made with no expand
-	// nor state.
+	// At a minimum, it contains the Submit call path. A form may be embedded,
+	// or be a source reference meaning that a call to the app will be made to
+	// obtain the form. 
 	Form *Form `json:"form,omitempty"`
 
 	// Bindings specifies sub-location bindings.

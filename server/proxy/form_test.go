@@ -20,7 +20,7 @@ func TestCleanForm(t *testing.T) {
 			name: "no field filter on names",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -34,7 +34,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -51,7 +51,7 @@ func TestCleanForm(t *testing.T) {
 			name: "no field filter on labels",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -67,7 +67,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -86,7 +86,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with no name",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -101,7 +101,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -119,7 +119,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with same label inferred from name",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -135,7 +135,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -153,7 +153,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with same label",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -171,7 +171,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -190,7 +190,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with same label",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -208,7 +208,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -227,7 +227,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with multiword name",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -240,7 +240,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{},
@@ -253,7 +253,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter with multiword label",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -266,7 +266,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{},
@@ -279,7 +279,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter more than one field",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -302,7 +302,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -322,7 +322,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static with no options",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -334,7 +334,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{},
@@ -347,7 +347,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static options with no label",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -365,7 +365,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -388,7 +388,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static options with same label inferred from value",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -410,7 +410,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -434,7 +434,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static options with same label",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -456,7 +456,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -480,7 +480,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static options with same value",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -502,7 +502,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -526,7 +526,7 @@ func TestCleanForm(t *testing.T) {
 			name: "invalid static options don't consume namespace",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -556,7 +556,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -585,7 +585,7 @@ func TestCleanForm(t *testing.T) {
 			name: "field filter static with no valid options",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -600,7 +600,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{},
@@ -614,7 +614,7 @@ func TestCleanForm(t *testing.T) {
 			name: "invalid static field does not consume namespace",
 			in: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{
@@ -632,7 +632,7 @@ func TestCleanForm(t *testing.T) {
 			},
 			expectedOut: apps.Form{
 				Title: "Test",
-				Call: &apps.Call{
+				Submit: &apps.Call{
 					Path: "/url",
 				},
 				Fields: []apps.Field{

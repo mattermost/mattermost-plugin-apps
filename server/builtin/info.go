@@ -17,10 +17,9 @@ func (a *builtinApp) info() handler {
 				Label:       "info",
 				Location:    "info",
 				Description: "Display Apps plugin info",
-				Call: &apps.Call{
+				Form: form(apps.Call{
 					Path: pInfo,
-				},
-				Form: &noParameters,
+				}),
 			}
 		},
 

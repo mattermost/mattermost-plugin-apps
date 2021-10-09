@@ -8,13 +8,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-var uninstallCall = apps.Call{
-	Path: pUninstall,
-	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
-	},
-}
-
 func (a *builtinApp) uninstall() handler {
 	return handler{
 		commandBinding: func() apps.Binding {
@@ -23,8 +16,12 @@ func (a *builtinApp) uninstall() handler {
 				Location:    "uninstall",
 				Hint:        "[ App ID ]",
 				Description: "Uninstalls an App",
-				Call:        &uninstallCall,
-				Form:        appIDForm(uninstallCall),
+				Form: appIDForm(apps.Call{
+					Path: pUninstall,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll,
+					},
+				}),
 			}
 		},
 

@@ -21,10 +21,10 @@ const (
 
 func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleStaticJSONData(manifestData))
 
 	// Returns the Channel Header and Command bindings for the app.
-	http.HandleFunc("/bindings", httputils.HandleJSONData([]byte("{}")))
+	http.HandleFunc("/bindings", httputils.HandleStaticJSONData([]byte("{}")))
 
 	http.HandleFunc("/install", respondWithMessage("Thanks for installing me!"))
 

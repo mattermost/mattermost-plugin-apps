@@ -28,7 +28,6 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 			Location:    "install",
 			Hint:        "[app ID]",
 			Description: "Installs an App from the Marketplace",
-			Call:        &installListedCall,
 			Form:        appIDForm(installListedCall),
 		}
 	} else {
@@ -43,7 +42,6 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 					Location:    "listed",
 					Hint:        "[app ID]",
 					Description: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
-					Call:        &installListedCall,
 					Form:        appIDForm(installListedCall),
 				},
 				{
@@ -51,7 +49,6 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 					Location:    "url",
 					Hint:        "[manifest.json URL]",
 					Description: "Installs an App from an HTTP URL",
-					Call:        &installURLCall,
 					Form: &apps.Form{
 						Fields: []apps.Field{
 							{
@@ -64,7 +61,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 								IsRequired:           true,
 							},
 						},
-						Call: &installURLCall,
+						Submit: &installURLCall,
 					},
 				},
 			},

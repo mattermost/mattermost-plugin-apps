@@ -3,6 +3,8 @@
 
 package apps
 
+import "encoding/json"
+
 // Form defines what inputs a Call accepts, and how they can be gathered from
 // the user, in Modal and Autocomplete modes.
 //
@@ -19,6 +21,11 @@ package apps
 // include Expand and State, allowing to create custom-fit forms for the
 // context.
 type Form struct {
+	// Source is the call to make when the form's definition is required (i.e.
+	// it has no fields, or needs to be refreshed from the app). A simple call
+	// can be specified as a path (string). It will contain no expand/state.
+	Source *Call `json:"source,omitempty"`
+
 	// Title, Header, and Footer are used for Modals only.
 	Title  string `json:"title,omitempty"`
 	Header string `json:"header,omitempty"`
@@ -30,16 +37,11 @@ type Form struct {
 
 	// DeprecatedCall is deprecated in favor of Submit, Source
 	DeprecatedCall *Call `json:"call,omitempty"`
-	
+
 	// Submit is the call to make when the user clicks a submit button (or enter
 	// for a command). A simple call can be specified as a path (string). It
 	// will contain no expand/state.
 	Submit *Call `json:"submit,omitempty"`
-
-	// Source is the call to make when the form's definition is required (i.e.
-	// it has no fields, or needs to be refreshed from the app). A simple call
-	// can be specified as a path (string). It will contain no expand/state.
-	Source *Call `json:"source,omitempty"`
 
 	// SubmitButtons refers to a field name that must be a FieldTypeStaticSelect
 	// or FieldTypeDynamicSelect.
@@ -54,4 +56,49 @@ type Form struct {
 
 	// Fields is the list of fields in the form.
 	Fields []Field `json:"fields,omitempty"`
+}
+
+func (f *Form) UnmarshalJSON(data []byte) error {
+	stringValue := ""
+	err := json.Unmarshal(data, &stringValue)
+	if err == nil {
+		*f = Form{
+			Source: &Call{
+				Path: stringValue,
+			},
+		}
+		return nil
+	}
+
+	// Need a type that is just like Form, but without UnmarshalJSON
+	structValue := struct {
+		Source        *Call   `json:"source,omitempty"`
+		Title         string  `json:"title,omitempty"`
+		Header        string  `json:"header,omitempty"`
+		Footer        string  `json:"footer,omitempty"`
+		Icon          string  `json:"icon,omitempty"`
+		Submit        *Call   `json:"submit,omitempty"`
+		SubmitButtons string  `json:"submit_buttons,omitempty"`
+		Fields        []Field `json:"fields,omitempty"`
+	}{}
+	err = json.Unmarshal(data, &structValue)
+	if err != nil {
+		return err
+	}
+
+	*f = Form{
+		Source:        structValue.Source,
+		Title:         structValue.Title,
+		Header:        structValue.Header,
+		Footer:        structValue.Footer,
+		Icon:          structValue.Icon,
+		Submit:        structValue.Submit,
+		SubmitButtons: structValue.SubmitButtons,
+		Fields:        structValue.Fields,
+	}
+	return nil
+}
+
+func (f *Form) IsSubmittable() bool {
+	return f != nil && f.Submit != nil
 }

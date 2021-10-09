@@ -5,10 +5,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var noParameters = apps.Form{
-	Title: "command with no parameters",
-}
-
 func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
 	return apps.NewDataResponse(a.getBindings(creq))
 }

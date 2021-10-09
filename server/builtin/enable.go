@@ -8,13 +8,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-var enableCall = apps.Call{
-	Path: pEnable,
-	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
-	},
-}
-
 func (a *builtinApp) enable() handler {
 	return handler{
 		requireSysadmin: true,
@@ -25,8 +18,12 @@ func (a *builtinApp) enable() handler {
 				Location:    "enable",
 				Hint:        "[ App ID ]",
 				Description: "Enables an App",
-				Call:        &enableCall,
-				Form:        appIDForm(enableCall),
+				Form: appIDForm(apps.Call{
+					Path: pEnable,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll,
+					},
+				}),
 			}
 		},
 

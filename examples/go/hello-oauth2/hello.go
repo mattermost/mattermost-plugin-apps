@@ -45,14 +45,14 @@ func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleStaticJSONData(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", bindings)
 
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png",
-		httputils.HandleData("image/png", iconData))
+		httputils.HandleStaticData("image/png", iconData))
 
 	// Google OAuth2 handlers
 
@@ -65,21 +65,21 @@ func main() {
 	// Submit handlers
 
 	// `configure` command - sets up Google OAuth client credentials.
-	http.HandleFunc("/configure/form", httputils.HandleJSONData(configureFormData))
+	http.HandleFunc("/configure/form", httputils.HandleStaticJSONData(configureFormData))
 	http.HandleFunc("/configure/submit", configure)
 
 	// `connect` command - display the OAuth2 connect link.
 	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
 	// cached by the user agent as a {}
-	http.HandleFunc("/connect/form", httputils.HandleJSONData(connectFormData))
+	http.HandleFunc("/connect/form", httputils.HandleStaticJSONData(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
 	// `disconnect` command - disconnect your account.
-	http.HandleFunc("/disconnect/form", httputils.HandleJSONData(disconnectFormData))
+	http.HandleFunc("/disconnect/form", httputils.HandleStaticJSONData(disconnectFormData))
 	http.HandleFunc("/disconnect/submit", disconnect)
 
 	// `send` command - send a Hello message.
-	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
+	http.HandleFunc("/send/form", httputils.HandleStaticJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
 	addr := fmt.Sprintf(":%v", port)

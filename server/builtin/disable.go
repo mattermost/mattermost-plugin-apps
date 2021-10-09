@@ -8,13 +8,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-var disableCall = apps.Call{
-	Path: pDisable,
-	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
-	},
-}
-
 func (a *builtinApp) disable() handler {
 	return handler{
 		requireSysadmin: true,
@@ -25,8 +18,12 @@ func (a *builtinApp) disable() handler {
 				Location:    "disable",
 				Hint:        "[ App ID ]",
 				Description: "Disables an App",
-				Call:        &disableCall,
-				Form:        appIDForm(disableCall),
+				Form: appIDForm(apps.Call{
+					Path: pDisable,
+					Expand: &apps.Expand{
+						AdminAccessToken: apps.ExpandAll,
+					},
+				}),
 			}
 		},
 

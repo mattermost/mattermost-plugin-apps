@@ -22,7 +22,7 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 
 				// b2 overrides b1, if b1 and b2 have Bindings, they are merged
 				merged := b2
-				if len(o.Bindings) != 0 && b2.Call == nil {
+				if len(o.Bindings) != 0 && b2.Form == nil {
 					merged.Bindings = mergeBindings(o.Bindings, b2.Bindings)
 				}
 				out[i] = merged

@@ -84,15 +84,15 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 	}
 
 	return apps.Field{
-		Name:                fDeployType,
-		Type:                apps.FieldTypeStaticSelect,
-		IsRequired:          true,
-		Description:         "Select how the App will be accessed.",
-		Label:               "deploy-type",
-		ModalLabel:          "Deployment method",
-		SelectRefresh:       true,
+		Name:          fDeployType,
+		Type:          apps.FieldTypeStaticSelect,
+		IsRequired:    true,
+		Description:   "Select how the App will be accessed.",
+		Label:         "deploy-type",
+		ModalLabel:    "Deployment method",
+		SelectRefresh: true,
 		SelectOptions: opts,
-		Value:               defaultValue,
+		Value:         defaultValue,
 	}, defaultValue
 }
 
@@ -152,7 +152,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
 		Header: consent,
 		Fields: fields,
-		Call: &apps.Call{
+		Submit: &apps.Call{
 			Path: pInstallConsent,
 			Expand: &apps.Expand{
 				AdminAccessToken: apps.ExpandAll,

@@ -8,8 +8,19 @@
 					"location": "send-button",
 					"icon": "icon.png",
 					"label":"send hello message",
-					"call": {
-						"path": "/send-modal"
+					"form":	{
+						"title": "Hello, world!",
+						"icon": "icon.png",
+						"fields": [
+							{
+								"type": "text",
+								"name": "message",
+								"label": "message"
+							}
+						],
+						"submit": {
+							"path": "/send"
+						}
 					}
 				}
 			]

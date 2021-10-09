@@ -19,12 +19,6 @@ func (a *builtinApp) list() handler {
 				Location:    "list",
 				Hint:        "[ flags ]",
 				Description: "Display available and installed Apps",
-				Call: &apps.Call{
-					Path: pList,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-					},
-				},
 				Form: &apps.Form{
 					Title: "list Apps",
 					Fields: []apps.Field{
@@ -32,6 +26,12 @@ func (a *builtinApp) list() handler {
 							Label: "include-plugins",
 							Name:  fIncludePlugins,
 							Type:  apps.FieldTypeBool,
+						},
+					},
+					Submit: &apps.Call{
+						Path: pList,
+						Expand: &apps.Expand{
+							AdminAccessToken: apps.ExpandAll, // ensure sysadmin
 						},
 					},
 				},

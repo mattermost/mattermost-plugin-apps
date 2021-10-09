@@ -210,6 +210,3 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
 }
 
-func emptyForm(_ apps.CallRequest) apps.CallResponse {
-	return apps.NewFormResponse(apps.Form{})
-}

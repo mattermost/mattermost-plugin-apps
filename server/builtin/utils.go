@@ -9,21 +9,26 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func appIDForm(call apps.Call) *apps.Form {
+func form(submit apps.Call) *apps.Form {
 	return &apps.Form{
-		Fields: []apps.Field{
-			{
-				Name:                 fAppID,
-				Type:                 apps.FieldTypeDynamicSelect,
-				Description:          "select an App",
-				Label:                fAppID,
-				AutocompleteHint:     "App ID",
-				AutocompletePosition: 1,
-				IsRequired:           true,
-			},
-		},
-		Call: &call,
+		Submit: &submit,
 	}
+}
+
+func appIDForm(submit apps.Call) *apps.Form {
+	f := form(submit)
+	f.Fields = []apps.Field{
+		{
+			Name:                 fAppID,
+			Type:                 apps.FieldTypeDynamicSelect,
+			Description:          "select an App",
+			Label:                fAppID,
+			AutocompleteHint:     "App ID",
+			AutocompletePosition: 1,
+			IsRequired:           true,
+		},
+	}
+	return f
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) ([]apps.SelectOption, error) {

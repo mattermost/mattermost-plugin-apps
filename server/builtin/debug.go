@@ -30,13 +30,12 @@ func (a *builtinApp) debugBindings() handler {
 				Label:       "bindings",
 				Location:    "bindings",
 				Description: "Display all bindings for the current context",
-				Call: &apps.Call{
+				Form: form(apps.Call{
 					Path: pDebugBindings,
 					Expand: &apps.Expand{
 						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
 					},
-				},
-				Form: &noParameters,
+				}),
 			}
 		},
 
@@ -60,13 +59,12 @@ func (a *builtinApp) debugClean() handler {
 				Location:    "clean",
 				Hint:        "",
 				Description: "remove all Apps and reset the persistent store",
-				Call: &apps.Call{
+				Form: form(apps.Call{
 					Path: pDebugClean,
 					Expand: &apps.Expand{
 						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
 					},
-				},
-				Form: &noParameters,
+				}),
 			}
 		},
 

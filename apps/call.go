@@ -51,9 +51,9 @@ func (c *Call) UnmarshalJSON(data []byte) error {
 	stringValue := ""
 	err := json.Unmarshal(data, &stringValue)
 	if err == nil {
-		c.Expand = nil
-		c.State = nil
-		c.Path = stringValue
+		*c = Call{
+			Path: stringValue,
+		}
 		return nil
 	}
 
@@ -68,9 +68,11 @@ func (c *Call) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	c.Path = structValue.Path
-	c.Expand = structValue.Expand
-	c.State = structValue.State
+	*c = Call{
+		Path:   structValue.Path,
+		Expand: structValue.Expand,
+		State:  structValue.State,
+	}
 	return nil
 }
 
@@ -99,7 +101,8 @@ type CallRequest struct {
 
 func (creq *CallRequest) UnmarshalJSON(data []byte) error {
 	// Unmarshal the Call first
-	err := json.Unmarshal(data, &creq.Call)
+	call := Call{}
+	err := json.Unmarshal(data, &call)
 	if err != nil {
 		return err
 	}
@@ -118,11 +121,14 @@ func (creq *CallRequest) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	creq.Values = structValue.Values
-	creq.Context = structValue.Context
-	creq.RawCommand = structValue.RawCommand
-	creq.SelectedField = structValue.SelectedField
-	creq.Query = structValue.Query
+	*creq = CallRequest{
+		Call:          call,
+		Values:        structValue.Values,
+		Context:       structValue.Context,
+		RawCommand:    structValue.RawCommand,
+		SelectedField: structValue.SelectedField,
+		Query:         structValue.Query,
+	}
 	return nil
 }
 
@@ -268,10 +274,9 @@ func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 }
 
 func NewCall(url string) Call {
-	c := Call{
+	return Call{
 		Path: url,
 	}
-	return c
 }
 
 func (cp *Call) WithDefault(def Call) Call {
