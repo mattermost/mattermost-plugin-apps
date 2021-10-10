@@ -106,7 +106,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	// So we need to manually build the URL
 	req = req.AbsPath(url)
 
-	statusCode := 0
+	var statusCode int
 	result := req.Do().StatusCode(&statusCode)
 	received, err := result.Raw()
 	switch {
