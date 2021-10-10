@@ -13,7 +13,7 @@ import (
 )
 
 func TestDecodeField(t *testing.T) {
-	var normalizedJson = `
+	var normalizedJSON = `
 	{
 		"name": "fieldName",
 		"type": "dynamic_select",
@@ -46,7 +46,7 @@ func TestDecodeField(t *testing.T) {
 	}
 	`
 
-	var shortJson = `
+	var shortJSON = `
 	{
 		"name": "fieldName",
 		"type": "dynamic_select",
@@ -82,7 +82,7 @@ func TestDecodeField(t *testing.T) {
 		expectedError bool
 	}{
 		"normalized": {
-			in: normalizedJson,
+			in: normalizedJSON,
 			expected: apps.Field{
 				Name:                 "fieldName",
 				Type:                 "dynamic_select",
@@ -115,7 +115,7 @@ func TestDecodeField(t *testing.T) {
 			},
 		},
 		"short": {
-			in: shortJson,
+			in: shortJSON,
 			expected: apps.Field{
 				Name:                 "fieldName",
 				Type:                 "dynamic_select",
@@ -139,9 +139,7 @@ func TestDecodeField(t *testing.T) {
 						Value: "v2",
 					},
 				},
-				SelectLookup: &apps.Call{
-					Path: "/fieldLookupPath",
-				},
+				SelectLookup: apps.NewCall("/fieldLookupPath"),
 			},
 		},
 	} {

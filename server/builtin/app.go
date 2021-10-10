@@ -7,9 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"runtime/debug"
-	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -36,25 +34,24 @@ const (
 )
 
 const (
-	pDebugBindings  = "/debug-bindings"
-	pDebugClean     = "/debug-clean"
-	pInfo           = "/info"
-	pList           = "/list"
-	pUninstall      = "/uninstall"
-	pEnable         = "/enable"
-	pDisable        = "/disable"
-	pInstallURL     = "/install-url"
-	pInstallListed  = "/install-listed"
-	pInstallConsent = "/install-consent"
+	pDebugBindings       = "/debug-bindings"
+	pDebugClean          = "/debug-clean"
+	pDisable             = "/disable"
+	pDisableLookup       = "/disable/lookup"
+	pEnable              = "/enable"
+	pEnableLookup        = "/enable/lookup"
+	pInfo                = "/info"
+	pInstallConsent      = "/install-consent"
+	pInstallConsentForm  = "/install-consent/form"
+	pInstallListed       = "/install-listed"
+	pInstallListedLookup = "/install-listed/lookup"
+	pInstallURL          = "/install-url"
+	pList                = "/list"
+	pUninstall           = "/uninstall"
+	pUninstallLookup     = "/uninstall/lookup"
 )
 
-type handler struct {
-	requireSysadmin bool
-	commandBinding  func() apps.Binding
-	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(apps.CallRequest) apps.CallResponse
-	formf           func(apps.CallRequest) (*apps.Form, error)
-}
+type handler func(apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
 	conf    config.Service
@@ -73,19 +70,27 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 	}
 
 	a.router = map[string]handler{
+		// bindings
+		apps.DefaultBindings.Path: a.bindings,
+
 		// Actions available to all users
-		pInfo: a.info(),
+		pInfo: a.info,
 
 		// Actions that require sysadmin
-		pDebugBindings:  a.debugBindings(),
-		pDebugClean:     a.debugClean(),
-		pDisable:        a.disable(),
-		pEnable:         a.enable(),
-		pInstallConsent: a.installConsent(),
-		pInstallListed:  a.installListed(),
-		pInstallURL:     a.installURL(),
-		pList:           a.list(),
-		pUninstall:      a.uninstall(),
+		pDebugBindings:       requireAdmin(a.debugBindings),
+		pDebugClean:          requireAdmin(a.debugClean),
+		pDisable:             requireAdmin(a.disable),
+		pDisableLookup:       requireAdmin(a.disableLookup),
+		pEnable:              requireAdmin(a.enable),
+		pEnableLookup:        requireAdmin(a.enableLookup),
+		pInstallConsent:      requireAdmin(a.installConsent),
+		pInstallConsentForm:  requireAdmin(a.installConsentForm),
+		pInstallListed:       requireAdmin(a.installListed),
+		pInstallListedLookup: requireAdmin(a.installListedLookup),
+		pInstallURL:          requireAdmin(a.installURL),
+		pList:                requireAdmin(a.list),
+		pUninstall:           requireAdmin(a.uninstall),
+		pUninstallLookup:     requireAdmin(a.uninstallLookup),
 	}
 
 	return a
@@ -159,54 +164,24 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		return ioutil.NopCloser(bytes.NewReader(data)), nil
 	}
 
-	// The bindings call does not have a call type, so make it into a submit so
-	// that the router can handle it.
-	if creq.Path == apps.DefaultBindings.Path {
-		return readcloser(a.bindings(creq))
+	h := a.router[creq.Path]
+	if h == nil {
+		return nil, utils.NewNotFoundError(creq.Path)
 	}
-
-	callPath, callType := path.Split(creq.Path)
-	callPath = strings.TrimRight(callPath, "/")
-	h, ok := a.router[callPath]
-	if !ok {
-		return nil, utils.NewNotFoundError(callPath)
-	}
-	if h.requireSysadmin && creq.Context.AdminAccessToken == "" {
-		return nil, apps.NewErrorResponse(utils.NewUnauthorizedError("no admin token in the request"))
-	}
-
-	switch apps.CallType(callType) {
-	case apps.CallTypeForm:
-		if h.formf == nil {
-			return nil, utils.ErrNotFound
-		}
-		form, err := h.formf(creq)
-		if err != nil {
-			return nil, err
-		}
-		return readcloser(apps.NewFormResponse(*form))
-
-	case apps.CallTypeLookup:
-		if h.lookupf == nil {
-			return nil, utils.ErrNotFound
-		}
-		opts, err := h.lookupf(creq)
-		if err != nil {
-			return nil, err
-		}
-		return readcloser(apps.NewLookupResponse(opts))
-
-	case apps.CallTypeSubmit:
-		if h.submitf == nil {
-			return nil, utils.ErrNotFound
-		}
-		return readcloser(h.submitf(creq))
-	}
-
-	return nil, utils.NewNotFoundError("%s does not handle %s", callPath, callType)
+	return readcloser(
+		h(creq))
 }
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
 }
 
+func requireAdmin(h handler) handler {
+	return func(creq apps.CallRequest) apps.CallResponse {
+		if creq.Context.AdminAccessToken == "" {
+			return apps.NewErrorResponse(
+				utils.NewUnauthorizedError("no admin token in the request"))
+		}
+		return h(creq)
+	}
+}

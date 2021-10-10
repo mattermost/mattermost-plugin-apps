@@ -11,17 +11,17 @@ func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
 
 func (a *builtinApp) getBindings(creq apps.CallRequest) []apps.Binding {
 	commands := []apps.Binding{
-		a.info().commandBinding(),
+		infoCommandBinding,
 	}
 
 	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
 		commands = append(commands,
 			a.debugCommandBinding(),
-			a.disable().commandBinding(),
-			a.enable().commandBinding(),
+			disableCommandBinding,
+			enableCommandBinding,
 			a.installCommandBinding(),
-			a.list().commandBinding(),
-			a.uninstall().commandBinding(),
+			listCommandBinding,
+			uninstallCommandBinding,
 		)
 	}
 

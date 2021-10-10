@@ -66,9 +66,9 @@ type UserAgentContext struct {
 	// Non user interactions like notifications will have this field empty.
 	UserAgent string `json:"user_agent,omitempty"`
 
-	// IsSubmit indicates that the call was caused by a user "submit" action
-	// from a binding or a form.
-	IsSubmit bool `json:"is_submit,omitempty"`
+	// TrackAsSubmit indicates that the call was caused by a user "submit"
+	// action from a binding or a form.
+	TrackAsSubmit bool `json:"track_as_submit,omitempty"`
 }
 
 // ExpandedContext contains authentication, and Mattermost entity data, as

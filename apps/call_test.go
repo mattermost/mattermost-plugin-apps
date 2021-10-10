@@ -25,10 +25,10 @@ func TestUnmarshalCall(t *testing.T) {
 	}
 	`
 
-	c := apps.Call{}
-	err := json.Unmarshal([]byte(full), &c)
+	c := apps.NewCall("")
+	err := json.Unmarshal([]byte(full), c)
 	require.NoError(t, err)
-	require.Equal(t, apps.Call{
+	require.Equal(t, &apps.Call{
 		Path: "/test",
 		State: map[string]interface{}{
 			"key": "value",
@@ -39,10 +39,10 @@ func TestUnmarshalCall(t *testing.T) {
 	}, c)
 
 	const short = `"/test"`
-	c = apps.Call{}
-	err = json.Unmarshal([]byte(short), &c)
+	c = apps.NewCall("")
+	err = json.Unmarshal([]byte(short), c)
 	require.NoError(t, err)
-	require.Equal(t, apps.Call{Path: "/test"}, c)
+	require.Equal(t, apps.NewCall("/test"), c)
 }
 
 func TestUnmarshalCallRequest(t *testing.T) {

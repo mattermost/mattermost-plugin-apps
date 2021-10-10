@@ -12,54 +12,48 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) installConsent() handler {
-	return handler{
-		requireSysadmin: true,
-
-		formf: func(creq apps.CallRequest) (*apps.Form, error) {
-			id, ok := creq.State.(string)
-			if !ok {
-				return nil, errors.New("no app ID in state, don't know what to install")
-			}
-			appID := apps.AppID(id)
-
-			m, err := a.proxy.GetManifest(appID)
-			if err != nil {
-				return nil, err
-			}
-
-			return a.newInstallConsentForm(*m, creq), nil
-		},
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
-			secret := creq.GetValue(fSecret, "")
-			consent := creq.BoolValue(fConsent)
-			id, ok := creq.State.(string)
-			if !ok {
-				return apps.NewErrorResponse(
-					errors.New("no app ID in state, don't know what to install"))
-			}
-			appID := apps.AppID(id)
-
-			m, err := a.proxy.GetManifest(appID)
-			if err != nil {
-				return apps.NewErrorResponse(errors.Wrap(err, "failed to load App manifest"))
-			}
-			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
-				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
-			}
-
-			_, out, err := a.proxy.InstallApp(
-				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context, appID, deployType, true, secret)
-			if err != nil {
-				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
-			}
-
-			return apps.NewTextResponse(out)
-		},
+func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse {
+	id, ok := creq.State.(string)
+	if !ok {
+		return apps.NewErrorResponse(errors.New("no app ID in state, don't know what to install"))
 	}
+	appID := apps.AppID(id)
+
+	m, err := a.proxy.GetManifest(appID)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq))
+}
+
+func (a *builtinApp) installConsent(creq apps.CallRequest) apps.CallResponse {
+	deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
+	secret := creq.GetValue(fSecret, "")
+	consent := creq.BoolValue(fConsent)
+	id, ok := creq.State.(string)
+	if !ok {
+		return apps.NewErrorResponse(
+			errors.New("no app ID in state, don't know what to install"))
+	}
+	appID := apps.AppID(id)
+
+	m, err := a.proxy.GetManifest(appID)
+	if err != nil {
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to load App manifest"))
+	}
+	if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
+		return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
+	}
+
+	_, out, err := a.proxy.InstallApp(
+		proxy.NewIncomingFromContext(creq.Context),
+		creq.Context, appID, deployType, true, secret)
+	if err != nil {
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
+	}
+
+	return apps.NewTextResponse(out)
 }
 
 func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest) (field apps.Field, selected apps.SelectOption) {
@@ -96,7 +90,7 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 	}, defaultValue
 }
 
-func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) *apps.Form {
+func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest) apps.Form {
 	deployTypeField, selected := a.newConsentDeployTypeField(m, creq)
 	deployType := apps.DeployType(selected.Value)
 	fields := []apps.Field{}
@@ -148,17 +142,10 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	// 	iconURL = a.conf.Get().StaticURL(m.AppID, m.Icon)
 	// }
 
-	return &apps.Form{
+	return apps.Form{
 		Title:  fmt.Sprintf("Install App %s", m.DisplayName),
 		Header: consent,
 		Fields: fields,
-		Submit: &apps.Call{
-			Path: pInstallConsent,
-			Expand: &apps.Expand{
-				AdminAccessToken: apps.ExpandAll,
-			},
-			State: m.AppID,
-		},
-		// Icon: iconURL, see above TODO
+		Submit: newAdminCall(pInstallConsent).WithState(m.AppID),
 	}
 }

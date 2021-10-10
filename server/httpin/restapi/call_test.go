@@ -362,9 +362,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	Init(router, testConfig, p, nil)
 
 	creq := apps.CallRequest{
-		Call: apps.Call{
-			Path: "/path/submit",
-		},
+		Call: *apps.NewCall("/path/submit"),
 		Context: apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				AppID:  "app1",
@@ -379,9 +377,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	}, nil)
 
 	expected := apps.CallRequest{
-		Call: apps.Call{
-			Path: "/path/submit",
-		},
+		Call: *apps.NewCall("/path/submit"),
 		Context: apps.Context{
 			ActingUserID: "some_user_id",
 			UserAgentContext: apps.UserAgentContext{

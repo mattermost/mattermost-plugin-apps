@@ -9,14 +9,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func form(submit apps.Call) *apps.Form {
+func blankForm(submit *apps.Call) *apps.Form {
 	return &apps.Form{
-		Submit: &submit,
+		Submit: submit,
 	}
 }
 
-func appIDForm(submit apps.Call) *apps.Form {
-	f := form(submit)
+func appIDForm(submit, lookup *apps.Call) *apps.Form {
+	f := blankForm(submit)
 	f.Fields = []apps.Field{
 		{
 			Name:                 fAppID,
@@ -26,14 +26,15 @@ func appIDForm(submit apps.Call) *apps.Form {
 			AutocompleteHint:     "App ID",
 			AutocompletePosition: 1,
 			IsRequired:           true,
+			SelectLookup:         lookup,
 		},
 	}
 	return f
 }
 
-func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) ([]apps.SelectOption, error) {
+func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) apps.CallResponse {
 	if creq.SelectedField != fAppID {
-		return nil, errors.Errorf("unknown field %q", creq.SelectedField)
+		return apps.NewErrorResponse(errors.Errorf("unknown field %q", creq.SelectedField))
 	}
 
 	var options []apps.SelectOption
@@ -46,5 +47,13 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 			})
 		}
 	}
-	return options, nil
+	return apps.NewLookupResponse(options)
+}
+
+func newAdminCall(path string) *apps.Call {
+	call := apps.NewCall(path)
+	call.Expand = &apps.Expand{
+		AdminAccessToken: apps.ExpandAll,
+	}
+	return call
 }

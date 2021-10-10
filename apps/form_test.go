@@ -41,16 +41,12 @@ func TestUnmarshalForm(t *testing.T) {
 	err := json.Unmarshal([]byte(full), &f)
 	require.NoError(t, err)
 	require.Equal(t, apps.Form{
-		Source: &apps.Call{
-			Path: "/sourcepath",
-		},
-		Title:  "form title",
-		Header: "form header",
-		Footer: "form footer",
-		Icon:   "/iconpath",
-		Submit: &apps.Call{
-			Path: "/submitpath",
-		},
+		Source:        apps.NewCall("/sourcepath"),
+		Title:         "form title",
+		Header:        "form header",
+		Footer:        "form footer",
+		Icon:          "/iconpath",
+		Submit:        apps.NewCall("/submitpath"),
 		SubmitButtons: "fieldName",
 		Fields: []apps.Field{
 			{
@@ -68,5 +64,5 @@ func TestUnmarshalForm(t *testing.T) {
 	f = apps.Form{}
 	err = json.Unmarshal([]byte(short), &f)
 	require.NoError(t, err)
-	require.Equal(t, apps.Form{Source: &apps.Call{Path: "/test"}}, f)
+	require.Equal(t, apps.Form{Source: apps.NewCall("/test")}, f)
 }

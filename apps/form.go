@@ -99,6 +99,14 @@ func (f *Form) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func NewFormRef(source *Call) *Form {
+	return &Form{Source: source}
+}
+
+func NewBlankForm(submit *Call) *Form {
+	return &Form{Submit: submit}
+}
+
 func (f *Form) IsSubmittable() bool {
 	return f != nil && f.Submit != nil
 }

@@ -8,38 +8,27 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) uninstall() handler {
-	return handler{
-		commandBinding: func() apps.Binding {
-			return apps.Binding{
-				Label:       "uninstall",
-				Location:    "uninstall",
-				Hint:        "[ App ID ]",
-				Description: "Uninstalls an App",
-				Form: appIDForm(apps.Call{
-					Path: pUninstall,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll,
-					},
-				}),
-			}
-		},
+var uninstallCommandBinding = apps.Binding{
+	Label:       "uninstall",
+	Location:    "uninstall",
+	Hint:        "[ App ID ]",
+	Description: "Uninstalls an App",
+	Form:        appIDForm(newAdminCall(pUninstall), newAdminCall(pUninstallLookup)),
+}
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed
-			})
-		},
+func (a *builtinApp) uninstallLookup(creq apps.CallRequest) apps.CallResponse {
+	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		return app.Installed
+	})
+}
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			out, err := a.proxy.UninstallApp(
-				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context,
-				apps.AppID(creq.GetValue(fAppID, "")))
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			return apps.NewTextResponse(out)
-		},
+func (a *builtinApp) uninstall(creq apps.CallRequest) apps.CallResponse {
+	out, err := a.proxy.UninstallApp(
+		proxy.NewIncomingFromContext(creq.Context),
+		creq.Context,
+		apps.AppID(creq.GetValue(fAppID, "")))
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+	return apps.NewTextResponse(out)
 }

@@ -8,42 +8,27 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) disable() handler {
-	return handler{
-		requireSysadmin: true,
+var disableCommandBinding = apps.Binding{
+	Label:       "disable",
+	Location:    "disable",
+	Hint:        "[ App ID ]",
+	Description: "Disables an App",
+	Form:        appIDForm(newAdminCall(pDisable), newAdminCall(pDisableLookup)),
+}
 
-		commandBinding: func() apps.Binding {
-			return apps.Binding{
-				Label:       "disable",
-				Location:    "disable",
-				Hint:        "[ App ID ]",
-				Description: "Disables an App",
-				Form: appIDForm(apps.Call{
-					Path: pDisable,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll,
-					},
-				}),
-			}
-		},
+func (a *builtinApp) disableLookup(creq apps.CallRequest) apps.CallResponse {
+	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		return app.Installed && app.Enabled
+	})
+}
 
-		// Lookup returns the list of eligible Apps.
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed && app.Enabled
-			})
-		},
-
-		// Submit disables an app.
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			out, err := a.proxy.DisableApp(
-				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context,
-				apps.AppID(creq.GetValue(fAppID, "")))
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			return apps.NewTextResponse(out)
-		},
+func (a *builtinApp) disable(creq apps.CallRequest) apps.CallResponse {
+	out, err := a.proxy.DisableApp(
+		proxy.NewIncomingFromContext(creq.Context),
+		creq.Context,
+		apps.AppID(creq.GetValue(fAppID, "")))
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+	return apps.NewTextResponse(out)
 }

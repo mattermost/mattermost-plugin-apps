@@ -28,9 +28,7 @@ var sendForm = apps.Form{
 			Label: "message",
 		},
 	},
-	Submit: &apps.Call{
-		Path: "/send",
-	},
+	Submit: apps.NewCall("/send"),
 }
 
 var bindings = []apps.Binding{

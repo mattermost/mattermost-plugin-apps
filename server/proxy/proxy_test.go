@@ -40,9 +40,7 @@ func TestAppMetadataForClient(t *testing.T) {
 				AppID: "app1",
 			},
 		},
-		Call: apps.Call{
-			Path: "/",
-		},
+		Call: *apps.NewCall("/"),
 	}
 
 	resp := p.Call(Incoming{}, creq)

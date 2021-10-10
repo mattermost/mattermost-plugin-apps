@@ -202,7 +202,7 @@ type Binding struct {
 	// Form is used to gather additional input from the user before submitting.
 	// At a minimum, it contains the Submit call path. A form may be embedded,
 	// or be a source reference meaning that a call to the app will be made to
-	// obtain the form. 
+	// obtain the form.
 	Form *Form `json:"form,omitempty"`
 
 	// Bindings specifies sub-location bindings.

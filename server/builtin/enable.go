@@ -8,40 +8,27 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
-func (a *builtinApp) enable() handler {
-	return handler{
-		requireSysadmin: true,
+var enableCommandBinding = apps.Binding{
+	Label:       "enable",
+	Location:    "enable",
+	Hint:        "[ App ID ]",
+	Description: "Enables an App",
+	Form:        appIDForm(newAdminCall(pEnable), newAdminCall(pEnableLookup)),
+}
 
-		commandBinding: func() apps.Binding {
-			return apps.Binding{
-				Label:       "enable",
-				Location:    "enable",
-				Hint:        "[ App ID ]",
-				Description: "Enables an App",
-				Form: appIDForm(apps.Call{
-					Path: pEnable,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll,
-					},
-				}),
-			}
-		},
+func (a *builtinApp) enableLookup(creq apps.CallRequest) apps.CallResponse {
+	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		return app.Installed && !app.Enabled
+	})
+}
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed && !app.Enabled
-			})
-		},
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			out, err := a.proxy.EnableApp(
-				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context,
-				apps.AppID(creq.GetValue(fAppID, "")))
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			return apps.NewTextResponse(out)
-		},
+func (a *builtinApp) enable(creq apps.CallRequest) apps.CallResponse {
+	out, err := a.proxy.EnableApp(
+		proxy.NewIncomingFromContext(creq.Context),
+		creq.Context,
+		apps.AppID(creq.GetValue(fAppID, "")))
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+	return apps.NewTextResponse(out)
 }

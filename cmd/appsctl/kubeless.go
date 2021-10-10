@@ -95,9 +95,7 @@ The App needs to be built with 'make dist' in its own directory, then use
 
 		app := helloKubeless()
 		creq := apps.CallRequest{
-			Call: apps.Call{
-				Path: "/ping",
-			},
+			Call: *apps.NewCall("/ping"),
 		}
 		log.Debugw("Invoking test function",
 			"app_id", app.AppID,

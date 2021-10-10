@@ -73,7 +73,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 	// TODO PERF: Add caching
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
 	bindingsRequest := apps.CallRequest{
-		Call: bindingsCall,
+		Call: *bindingsCall,
 		// no need to clean the context, Call will do.
 		Context: cc,
 	}

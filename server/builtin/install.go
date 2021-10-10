@@ -7,20 +7,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-var installURLCall = apps.Call{
-	Path: pInstallURL,
-	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-	},
-}
-
-var installListedCall = apps.Call{
-	Path: pInstallListed,
-	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-	},
-}
-
 func (a *builtinApp) installCommandBinding() apps.Binding {
 	if a.conf.Get().MattermostCloudMode {
 		return apps.Binding{
@@ -28,7 +14,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 			Location:    "install",
 			Hint:        "[app ID]",
 			Description: "Installs an App from the Marketplace",
-			Form:        appIDForm(installListedCall),
+			Form:        appIDForm(newAdminCall(pInstallListed), newAdminCall(pInstallListedLookup)),
 		}
 	} else {
 		return apps.Binding{
@@ -42,7 +28,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 					Location:    "listed",
 					Hint:        "[app ID]",
 					Description: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
-					Form:        appIDForm(installListedCall),
+					Form:        appIDForm(newAdminCall(pInstallListed), newAdminCall(pInstallListedLookup)),
 				},
 				{
 					Label:       "url",
@@ -61,7 +47,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 								IsRequired:           true,
 							},
 						},
-						Submit: &installURLCall,
+						Submit: newAdminCall(pInstallURL),
 					},
 				},
 			},
@@ -69,50 +55,37 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 	}
 }
 
-func (a *builtinApp) installListed() handler {
-	return handler{
-		requireSysadmin: true,
-
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return !app.Installed
-			})
-			return res, err
-		},
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			m, err := a.proxy.GetManifest(appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
-		},
-	}
+func (a *builtinApp) installListedLookup(creq apps.CallRequest) apps.CallResponse {
+	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		return !app.Installed
+	})
 }
 
-func (a *builtinApp) installURL() handler {
-	return handler{
-		requireSysadmin: true,
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			manifestURL := creq.GetValue(fURL, "")
-			conf := a.conf.Get()
-			data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			m, err := apps.DecodeCompatibleManifest(data)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			_, err = a.proxy.StoreLocalManifest(*m)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
-		},
+func (a *builtinApp) installListed(creq apps.CallRequest) apps.CallResponse {
+	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	m, err := a.proxy.GetManifest(appID)
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq))
+}
+
+func (a *builtinApp) installURL(creq apps.CallRequest) apps.CallResponse {
+	manifestURL := creq.GetValue(fURL, "")
+	conf := a.conf.Get()
+	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	m, err := apps.DecodeCompatibleManifest(data)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	_, err = a.proxy.StoreLocalManifest(*m)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq))
 }

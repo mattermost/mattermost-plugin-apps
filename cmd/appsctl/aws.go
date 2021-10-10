@@ -235,9 +235,7 @@ var awsTestLambdaCmd = &cobra.Command{
 		}
 
 		creq := apps.CallRequest{
-			Call: apps.Call{
-				Path: "/ping",
-			},
+			Call: *apps.NewCall("/ping"),
 		}
 		resp, err := upTest.Roundtrip(helloLambda(), creq, false)
 		if err != nil {

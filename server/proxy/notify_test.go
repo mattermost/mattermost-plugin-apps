@@ -85,7 +85,7 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 						AppID:     app1.AppID,
 						Subject:   apps.SubjectPostCreated,
 						ChannelID: "some_channel_id",
-						Call:      apps.NewCall("/notify/post_created"),
+						Call:      *apps.NewCall("/notify/post_created"),
 					},
 				},
 			},
@@ -112,12 +112,12 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention1"),
+						Call:    *apps.NewCall("/notify/bot_mention1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention2"),
+						Call:    *apps.NewCall("/notify/bot_mention2"),
 					},
 				},
 			},
@@ -145,12 +145,12 @@ func TestNotifyMessageHasBeenPosted(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention1"),
+						Call:    *apps.NewCall("/notify/bot_mention1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotMentioned,
-						Call:    apps.NewCall("/notify/bot_mention2"),
+						Call:    *apps.NewCall("/notify/bot_mention2"),
 					},
 				},
 			},
@@ -201,7 +201,7 @@ func TestUserHasJoinedChannel(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectUserJoinedChannel,
-						Call:    apps.NewCall("/notify/user_joined_channel"),
+						Call:    *apps.NewCall("/notify/user_joined_channel"),
 					},
 				},
 				"sub.bot_joined_channel": {},
@@ -225,12 +225,12 @@ func TestUserHasJoinedChannel(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotJoinedChannel,
-						Call:    apps.NewCall("/notify/bot_joined_channel1"),
+						Call:    *apps.NewCall("/notify/bot_joined_channel1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotJoinedChannel,
-						Call:    apps.NewCall("/notify/bot_joined_channel2"),
+						Call:    *apps.NewCall("/notify/bot_joined_channel2"),
 					},
 				},
 			},
@@ -275,7 +275,7 @@ func TestUserHasLeftChannel(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectUserLeftChannel,
-						Call:    apps.NewCall("/notify/user_left_channel"),
+						Call:    *apps.NewCall("/notify/user_left_channel"),
 					},
 				},
 				"sub.bot_left_channel": {},
@@ -299,12 +299,12 @@ func TestUserHasLeftChannel(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotLeftChannel,
-						Call:    apps.NewCall("/notify/bot_left_channel1"),
+						Call:    *apps.NewCall("/notify/bot_left_channel1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotLeftChannel,
-						Call:    apps.NewCall("/notify/bot_left_channel2"),
+						Call:    *apps.NewCall("/notify/bot_left_channel2"),
 					},
 				},
 			},
@@ -349,7 +349,7 @@ func TestUserHasJoinedTeam(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectUserJoinedTeam,
-						Call:    apps.NewCall("/notify/user_joined_team"),
+						Call:    *apps.NewCall("/notify/user_joined_team"),
 					},
 				},
 				"sub.bot_joined_team": {},
@@ -373,12 +373,12 @@ func TestUserHasJoinedTeam(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotJoinedTeam,
-						Call:    apps.NewCall("/notify/bot_joined_team1"),
+						Call:    *apps.NewCall("/notify/bot_joined_team1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotJoinedTeam,
-						Call:    apps.NewCall("/notify/bot_joined_team2"),
+						Call:    *apps.NewCall("/notify/bot_joined_team2"),
 					},
 				},
 			},
@@ -423,7 +423,7 @@ func TestUserHasLeftTeam(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectUserLeftChannel,
-						Call:    apps.NewCall("/notify/user_left_team"),
+						Call:    *apps.NewCall("/notify/user_left_team"),
 					},
 				},
 				"sub.bot_left_team": {},
@@ -447,12 +447,12 @@ func TestUserHasLeftTeam(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectBotLeftTeam,
-						Call:    apps.NewCall("/notify/bot_left_team1"),
+						Call:    *apps.NewCall("/notify/bot_left_team1"),
 					},
 					{
 						AppID:   app2.AppID,
 						Subject: apps.SubjectBotLeftTeam,
-						Call:    apps.NewCall("/notify/bot_left_team2"),
+						Call:    *apps.NewCall("/notify/bot_left_team2"),
 					},
 				},
 			},
@@ -482,7 +482,7 @@ func TestChannelHasBeenCreated(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectChannelCreated,
-						Call:    apps.NewCall("/notify/channel_created"),
+						Call:    *apps.NewCall("/notify/channel_created"),
 					},
 				},
 			},
@@ -514,7 +514,7 @@ func TestUserHasBeenCreated(t *testing.T) {
 					{
 						AppID:   app1.AppID,
 						Subject: apps.SubjectUserCreated,
-						Call:    apps.NewCall("/notify/user_created"),
+						Call:    *apps.NewCall("/notify/user_created"),
 					},
 				},
 			},

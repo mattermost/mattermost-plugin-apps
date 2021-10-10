@@ -213,9 +213,7 @@ func (p *Proxy) NotifyRemoteWebhook(app apps.App, data []byte, webhookPath strin
 
 	// TODO: do we need to customize the Expand & State for the webhook Call?
 	return upstream.Notify(up, app, apps.CallRequest{
-		Call: apps.Call{
-			Path: path.Join(appspath.Webhook, webhookPath),
-		},
+		Call:    *apps.NewCall(path.Join(appspath.Webhook, webhookPath)),
 		Context: cc,
 		Values: map[string]interface{}{
 			"data": datav,

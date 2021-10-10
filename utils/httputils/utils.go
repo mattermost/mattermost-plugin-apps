@@ -99,7 +99,7 @@ func HandleStaticData(ct string, data []byte) http.HandlerFunc {
 // specified content-type.
 func HandleStaticJSON(v interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		WriteJSON(w, v)
+		_ = WriteJSON(w, v)
 	}
 }
 
