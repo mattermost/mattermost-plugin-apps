@@ -73,7 +73,6 @@ func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in
 			log.WithError(err).Warnw(logMessage)
 			http.Error(w, err.Error(), status)
 		}
-
 	}(a.conf.Logger())
 
 	var sub apps.Subscription
