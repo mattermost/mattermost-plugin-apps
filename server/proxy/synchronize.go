@@ -35,9 +35,6 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	for id := range diff {
 		app := diff[id]
 		m := listed[app.AppID]
-		values := map[string]string{
-			PrevVersion: string(app.Version),
-		}
 
 		// Store the new manifest to update the current mappings of the App
 		app.Manifest = m
@@ -49,17 +46,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				creq := apps.CallRequest{
-					Call:   *app.OnVersionChanged,
-					Values: map[string]interface{}{},
-				}
-				for k, v := range values {
-					creq.Values[k] = v
-				}
-
-				resp := p.callApp(Incoming{}, app, creq)
+				resp := p.call(Incoming{}, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
-					return errors.Wrapf(resp, "call %s failed", creq.Path)
+					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}
 				return nil
 			})
