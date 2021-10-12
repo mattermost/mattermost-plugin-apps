@@ -6,7 +6,6 @@
     "icon": "icon.png",
     "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
     "requested_permissions": [
-        "act_as_admin",
         "act_as_user",
         "remote_oauth2"
     ],

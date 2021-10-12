@@ -68,6 +68,20 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		defer icon.Close()
 	}
 
+	// See if the app is inaaccessible. Call its ping path with nothing
+	// expanded, ignore 404 errors coming back and consider everything else a
+	// "success".
+	//
+	// Note that this check is often ineffective, but "the best we can do"
+	// before we start the diffcult-to-revert install process.
+	_, err = p.callApp(in, *app, apps.CallRequest{
+		Call:    apps.DefaultPing,
+		Context: cc,
+	})
+	if err != nil && errors.Cause(err) != utils.ErrNotFound {
+		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
+	}
+
 	asAdmin, err := p.getAdminClient(in)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
@@ -93,30 +107,31 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", err
 	}
 
-	var message string
+	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		resp := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnInstall,
-			Context: cc,
-		})
-		// TODO fail on all errors except 404
-		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(err).Warnf("OnInstall failed, installing app anyway.")
-		} else {
-			message = resp.Markdown
+		cresp := p.call(in, *app, *app.OnInstall, &cc)
+		if cresp.Type == apps.CallResponseTypeError {
+			// TODO: should fail and roll back.
+			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
+			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
+		} else if cresp.Markdown != "" {
+			message += "\n\n" + cresp.Markdown
+		}
+	} else if len(app.GrantedLocations) > 0 {
+		// Make sure the app's binding call is accessible.
+		cresp := p.call(in, *app, *app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		if cresp.Type == apps.CallResponseTypeError {
+			// TODO: should fail and roll back.
+			log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
+			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, cresp.Error())
 		}
 	}
-
-	if message == "" {
-		message = fmt.Sprintf("Installed %s", app.DisplayName)
-	}
-
-	log.Infof("Installed app.")
 
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
 	p.dispatchRefreshBindingsEvent(in.ActingUserID)
 
+	log.Infof(message)
 	return app, message, nil
 }
 

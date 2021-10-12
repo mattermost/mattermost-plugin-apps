@@ -69,7 +69,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (string, error) {
 	funcName := match(m, path)
 	if funcName == "" {
-		return "", utils.ErrNotFound
+		return "", utils.NewNotFoundError("no function matched path %s", path)
 	}
 
 	// Get the function's service URL
@@ -106,15 +106,25 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	// So we need to manually build the URL
 	req = req.AbsPath(url)
 
-	received, err := req.Do().Raw()
-	if err != nil {
+	var statusCode int
+	result := req.Do().StatusCode(&statusCode)
+	received, err := result.Raw()
+	switch {
+	case statusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
+
+	case err != nil:
 		// Properly interpret line breaks
 		if strings.Contains(err.Error(), "status code 408") {
 			// Give a more meaninful error for timeout errors
 			return nil, errors.Wrap(err, "request timeout exceeded")
 		}
 		return nil, errors.New(strings.ReplaceAll(err.Error(), `\n`, "\n"))
+
+	case statusCode != http.StatusOK:
+		return nil, errors.New(string(received))
 	}
+
 	resp, err := upstream.ServerlessResponseFromJSON(received)
 	if err != nil {
 		return nil, err

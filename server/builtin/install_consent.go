@@ -126,7 +126,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	fields = append(fields, deployTypeField)
 
 	// JWT secret
-	if deployType == apps.DeployHTTP {
+	if deployType == apps.DeployHTTP && m.SupportsDeploy(apps.DeployHTTP) && m.HTTP.UseJWT {
 		fields = append(fields, apps.Field{
 			Name:        fSecret,
 			Type:        apps.FieldTypeText,

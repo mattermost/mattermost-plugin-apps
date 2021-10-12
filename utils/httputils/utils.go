@@ -80,8 +80,8 @@ func WriteJSON(w http.ResponseWriter, v interface{}) error {
 	return WriteJSONStatus(w, http.StatusOK, v)
 }
 
-// HandleStaticJSONData returns an http.HandleFunc that serves a JSON-encoded
-// data chunk.
+// HandleStaticJSONData returns an http.HandleFunc that serves a JSON-encoded data
+// chunk.
 func HandleStaticJSONData(data []byte) http.HandlerFunc {
 	return HandleStaticData("application/json", data)
 }
