@@ -242,13 +242,27 @@ func (c *CallRequest) BoolValue(name string) bool {
 		return false
 	}
 
-	if b, ok := c.Values[name].(bool); ok {
-		return b
+	isBool := func(v interface{}) (bool, bool) {
+		if b, ok := v.(bool); ok {
+			return b, true
+		}
+		if b, ok := c.Values[name].(string); ok {
+			switch b {
+			case "true":
+				return true, true
+			case "false":
+				return false, true
+			}
+		}
+		return false, false
 	}
 
+	if b, ok := isBool(c.Values[name]); ok {
+		return b
+	}
 	opt, ok := c.Values[name].(map[string]interface{})
 	if ok {
-		if v, ok2 := opt["value"].(bool); ok2 {
+		if v, ok2 := isBool(opt["value"]); ok2 {
 			return v
 		}
 	}

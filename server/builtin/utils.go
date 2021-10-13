@@ -32,7 +32,7 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 	}
 
 	var options []apps.SelectOption
-	marketplaceApps := a.proxy.GetListedApps(creq.Query, false)
+	marketplaceApps := a.proxy.GetListedApps(creq.Query, true)
 	for _, app := range marketplaceApps {
 		if includef == nil || includef(app) {
 			options = append(options, apps.SelectOption{

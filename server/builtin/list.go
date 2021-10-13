@@ -39,7 +39,7 @@ func (a *builtinApp) list() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			includePluginApps := creq.BoolValue("plugin-apps")
+			includePluginApps := creq.BoolValue(fIncludePlugins)
 
 			listed := a.proxy.GetListedApps("", includePluginApps)
 			installed := a.proxy.GetInstalledApps()
