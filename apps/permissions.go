@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
@@ -66,12 +69,15 @@ func (p Permission) String() string {
 	return m
 }
 
-func (p Permissions) IsValid() error {
+func (p Permissions) Validate() error {
+	if len(p) == 0 {
+		return nil
+	}
 	// Check for permission dependencies. (P1, P2, ..., PN) means P1 requires
 	// (depends on) P2...PN.
 	for _, pp := range []Permissions{
 		{PermissionRemoteWebhooks, PermissionActAsBot},
-		{PermissionRemoteOAuth2, PermissionActAsUser, PermissionActAsAdmin},
+		{PermissionRemoteOAuth2, PermissionActAsUser},
 		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
 	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {

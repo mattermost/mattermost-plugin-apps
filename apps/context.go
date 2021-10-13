@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
@@ -86,7 +89,7 @@ type ExpandedContext struct {
 
 type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
-	// mmclient.StoreOAuth2App
+	// appclient.StoreOAuth2App
 	OAuth2App
 	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`

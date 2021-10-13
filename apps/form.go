@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 // Form defines what inputs a Call accepts, and how they can be gathered from
@@ -48,5 +51,5 @@ type Form struct {
 	SubmitButtons string `json:"submit_buttons,omitempty"`
 
 	// Fields is the list of fields in the form.
-	Fields []*Field `json:"fields,omitempty"`
+	Fields []Field `json:"fields,omitempty"`
 }

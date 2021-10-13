@@ -8,8 +8,15 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/mattermost/mattermost-server/v6/model"
+)
+
+const (
+	host = "localhost"
+	port = 8081
 )
 
 //go:embed icon.png
@@ -31,13 +38,14 @@ func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", writeJSON(bindingsData))
+	http.HandleFunc("/bindings", httputils.HandleJSONData(bindingsData))
 
 	// Serve the icon for the App.
-	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
+	http.HandleFunc("/static/icon.png",
+		httputils.HandleData("image/png", iconData))
 
 	// install handler
 	http.HandleFunc("/install", install)
@@ -46,14 +54,18 @@ func main() {
 	http.HandleFunc("/webhook/", webhookReceived)
 
 	// `info` command - displays the webhook URL.
-	http.HandleFunc("/info/form", writeJSON(infoFormData))
+	http.HandleFunc("/info/form", httputils.HandleJSONData(infoFormData))
 	http.HandleFunc("/info/submit", info)
 
 	// `send` command - send a Hello webhook message.
-	http.HandleFunc("/send/form", writeJSON(sendFormData))
+	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-webhooks app listening on %q \n", addr)
+	fmt.Printf("Install via /apps install url %s/manifest.json \n", rootURL)
+	panic(http.ListenAndServe(addr, nil))
 }
 
 func install(w http.ResponseWriter, req *http.Request) {
@@ -64,11 +76,11 @@ func install(w http.ResponseWriter, req *http.Request) {
 	channelID := creq.Context.ChannelID
 
 	// Add the Bot user to the team and the channel.
-	asAdmin := mmclient.AsAdmin(creq.Context)
+	asAdmin := appclient.AsAdmin(creq.Context)
 	asAdmin.AddTeamMember(teamID, creq.Context.BotUserID)
 	asAdmin.AddChannelMember(channelID, creq.Context.BotUserID)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	// store the channel ID for future use
 	asBot.KVSet("channel_id", "", channelID)
 
@@ -77,14 +89,14 @@ func install(w http.ResponseWriter, req *http.Request) {
 		Message:   "@hello-webhooks is installed into this channel, try /hello-webhooks send",
 	})
 
-	json.NewEncoder(w).Encode(apps.CallResponse{Type: apps.CallResponseTypeOK})
+	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
 }
 
 func webhookReceived(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	asBot := mmclient.AsBot(creq.Context)
+	asBot := appclient.AsBot(creq.Context)
 	channelID := ""
 	asBot.KVGet("channel_id", "", &channelID)
 
@@ -93,19 +105,17 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 		Message:   fmt.Sprintf("received webhook, path `%s`, data: `%v`", creq.Path, creq.Values["data"]),
 	})
 
-	json.NewEncoder(w).Encode(apps.CallResponse{Type: apps.CallResponseTypeOK})
+	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
 }
 
 func info(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: fmt.Sprintf("Try `/hello-webhooks send %s`",
-			creq.Context.MattermostSiteURL+creq.Context.AppPath+apps.PathWebhook+
-				"/hello"+
-				"?secret="+creq.Context.App.WebhookSecret),
-	})
+	httputils.WriteJSON(w,
+		apps.NewTextResponse("Try `/hello-webhooks send %s/hello?secret=%s`",
+			creq.Context.MattermostSiteURL+creq.Context.AppPath+path.Webhook,
+			creq.Context.App.WebhookSecret))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -118,18 +128,6 @@ func send(w http.ResponseWriter, req *http.Request) {
 		"application/json",
 		bytes.NewReader([]byte(`"Hello from a webhook!"`)))
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "posted a Hello webhook message",
-	})
-}
-
-func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", ct)
-		w.Write(data)
-	}
-}
-
-func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return writeData("application/json", data)
+	httputils.WriteJSON(w,
+		apps.NewTextResponse("posted a Hello webhook message"))
 }

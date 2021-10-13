@@ -4,6 +4,7 @@
 package uphttp
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -20,22 +21,35 @@ import (
 )
 
 type Upstream struct {
-	StaticUpstream
+	httpOut    httpout.Service
+	appRootURL func(_ apps.App, path string) (string, error)
+	devMode    bool
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(httpOut httpout.Service) *Upstream {
-	staticUp := NewStaticUpstream(httpOut)
+func NewUpstream(httpOut httpout.Service, devMode bool, appRootURL func(apps.App, string) (string, error)) *Upstream {
+	if appRootURL == nil {
+		appRootURL = AppRootURL
+	}
 	return &Upstream{
-		StaticUpstream: *staticUp,
+		httpOut:    httpOut,
+		appRootURL: appRootURL,
+		devMode:    devMode,
 	}
 }
 
-func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func AppRootURL(app apps.App, _ string) (string, error) {
+	if !app.Manifest.SupportsDeploy(apps.DeployHTTP) {
+		return "", errors.New("failed to get root URL: no http section in manifest.json")
+	}
+	return app.Manifest.HTTP.RootURL, nil
+}
+
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, app, call)
+			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -43,50 +57,53 @@ func (u *Upstream) Roundtrip(app *apps.App, call *apps.CallRequest, async bool) 
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, app, call) // nolint:bodyclose
+	resp, err := u.invoke(creq.Context.ActingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, app *apps.App, call *apps.CallRequest) (*http.Response, error) {
-	if call == nil {
-		return nil, utils.NewInvalidError("empty call")
+func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
+	rootURL, err := u.appRootURL(app, creq.Path)
+	if err != nil {
+		return nil, err
 	}
-
-	callURL, err := utils.CleanURL(app.Manifest.HTTPRootURL + call.Path)
+	callURL, err := utils.CleanURL(rootURL + "/" + creq.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	client := u.httpOut.MakeClient(true)
-	jwtoken, err := createJWT(fromMattermostUserID, app.Secret)
+	data, err := json.Marshal(creq)
 	if err != nil {
 		return nil, err
 	}
 
-	piper, pipew := io.Pipe()
-	go func() {
-		encodeErr := json.NewEncoder(pipew).Encode(call)
-		if encodeErr != nil {
-			_ = pipew.CloseWithError(encodeErr)
+	req, err := http.NewRequest(http.MethodPost, callURL, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	if app.HTTP.UseJWT {
+		jwtoken := ""
+		jwtoken, err = createJWT(fromMattermostUserID, app.Secret)
+		if err != nil {
+			return nil, err
 		}
-		pipew.Close()
-	}()
-
-	req, err := http.NewRequest(http.MethodPost, callURL, piper)
-	if err != nil {
-		return nil, err
+		req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
+		req.Header.Set("Content-Type", "application/json")
 	}
-	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
+	// Execute the request.
+	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
+	switch {
+	case err != nil:
 		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
+
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
+
+	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)
 		return nil, errors.New(string(bb))
 	}

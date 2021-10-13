@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -27,6 +28,7 @@ type Service interface {
 	MattermostAPI() *pluginapi.Client
 	MattermostConfig() configservice.ConfigService
 	I18N() *i18n.Bundle
+	Telemetry() *telemetry.Telemetry
 
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
@@ -40,13 +42,14 @@ type service struct {
 	log       utils.Logger
 	mm        *pluginapi.Client
 	i18n      *i18n.Bundle
+	telemetry *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, i18nBundle *i18n.Bundle) Service {
+func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
 	return &service{
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
@@ -54,6 +57,7 @@ func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string,
 		mm:          mm,
 		lock:        &sync.RWMutex{},
 		i18n:        i18nBundle,
+		telemetry:   telemetry,
 	}
 }
 
@@ -91,6 +95,10 @@ func (s *service) I18N() *i18n.Bundle {
 	return s.i18n
 }
 
+func (s *service) Telemetry() *telemetry.Telemetry {
+	return s.telemetry
+}
+
 func (s *service) MattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
@@ -125,10 +133,10 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Infof("Failed to fetch license two times. Defaulting to on-prem mode.")
+			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
 		}
 	}
-	err := newConfig.Reconfigure(stored, mmconf, license)
+	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
 	}

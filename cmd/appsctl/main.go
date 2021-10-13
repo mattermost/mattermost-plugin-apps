@@ -14,6 +14,19 @@ var (
 
 var log = utils.MustMakeCommandLogger(zapcore.InfoLevel)
 
+var (
+	dockerRegistry        string
+	executeRoleName       string
+	groupName             string
+	install               bool
+	invokePolicyName      string
+	policyName            string
+	shouldCreate          bool
+	shouldCreateAccessKey bool
+	shouldUpdate          bool
+	userName              string
+)
+
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose (debug) output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet (errors only) output")

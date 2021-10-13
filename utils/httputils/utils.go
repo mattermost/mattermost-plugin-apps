@@ -14,8 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -69,15 +67,46 @@ func WriteError(w http.ResponseWriter, err error) {
 	}
 }
 
-func WriteJSON(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) {
+// WriteJSONStatus encodes and writes out an object, with a custom response
+// status code.
+func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(v)
+	return json.NewEncoder(w).Encode(v)
+}
+
+// WriteJSON encodes and writes out an object, with a 200 response status code.
+func WriteJSON(w http.ResponseWriter, v interface{}) error {
+	return WriteJSONStatus(w, http.StatusOK, v)
+}
+
+// HandleJSON returns an http.HandleFunc that serves a JSON-encoded data
+// chunk of an object.
+func HandleJSON(v interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		data, err := json.Marshal(v)
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(data)
+	}
+}
+
+// HandleJSONData returns an http.HandleFunc that serves a JSON-encoded data
+// chunk.
+func HandleJSONData(data []byte) http.HandlerFunc {
+	return HandleData("application/json", data)
+}
+
+// HandleData returns an http.HandleFunc that serves a data chunk with a
+// specified content-type.
+func HandleData(ct string, data []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", ct)
+		_, _ = w.Write(data)
+	}
 }
 
 const InLimit = 10 * (1 << 20)
@@ -107,47 +136,4 @@ func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error)
 		return true
 	}
 	return false
-}
-
-func CheckAuthorized(mm *pluginapi.Client, f func(_ http.ResponseWriter, _ *http.Request, sessionID, actingUserID string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		actingUserID := req.Header.Get("Mattermost-User-Id")
-		if actingUserID == "" {
-			WriteError(w, utils.ErrUnauthorized)
-			return
-		}
-		sessionID := req.Header.Get("MM_SESSION_ID")
-		if sessionID == "" {
-			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user session"))
-			return
-		}
-
-		f(w, req, sessionID, actingUserID)
-	}
-}
-
-func CheckPluginIDOrUserSession(next func(_ http.ResponseWriter, _ *http.Request, pluginID, sessionID, actingUserID string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// All other plugins are allowed
-		pluginID := r.Header.Get("Mattermost-Plugin-ID")
-		actingUserID := r.Header.Get("Mattermost-User-Id")
-		sessionID := r.Header.Get("MM_SESSION_ID")
-
-		if pluginID == "" && actingUserID == "" && sessionID == "" {
-			WriteError(w, utils.ErrUnauthorized)
-			return
-		}
-
-		if actingUserID != "" && sessionID == "" {
-			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user session"))
-			return
-		}
-
-		if actingUserID == "" && sessionID != "" {
-			WriteError(w, errors.Wrap(utils.ErrUnauthorized, "no user"))
-			return
-		}
-
-		next(w, r, pluginID, sessionID, actingUserID)
-	}
 }

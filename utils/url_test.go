@@ -57,7 +57,7 @@ func TestIsValidHttpUrl(t *testing.T) {
 			false,
 		},
 		"correct url with port": {
-			"https://localhost:8080/test",
+			"https://localhost:1111/test",
 			false,
 		},
 		"correct url without scheme": {

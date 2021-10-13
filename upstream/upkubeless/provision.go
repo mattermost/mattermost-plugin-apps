@@ -4,75 +4,44 @@
 package upkubeless
 
 import (
-	"context"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 
-	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// ProvisionApp creates all necessary functions in Kubeless, and outputs
-// the manifest to use.
-//
-// Its input is a zip file containing:
-//   |-- manifest.json
-//   |-- function files referenced in manifest.json...
-func ProvisionApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Manifest, error) {
-	dir, err := os.MkdirTemp("", "")
+// DeployApp creates Kubeless functions from an app bundle, as declared by
+// the app's manifest.
+func DeployApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Manifest, error) {
+	m, dir, err := upstream.GetAppBundle(bundlePath, log)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create temp directory to unpack the bundle")
+		return nil, err
 	}
 	defer os.RemoveAll(dir)
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain current working directory")
+	if !m.SupportsDeploy(apps.DeployKubeless) {
+		return nil, errors.Wrap(err, "no 'kubeless' section in manifest.json")
 	}
-
-	getBundle := getter.Client{
-		Mode: getter.ClientModeDir,
-		Src:  bundlePath,
-		Dst:  dir,
-		Pwd:  pwd,
-		Ctx:  context.Background(),
-	}
-	err = getBundle.Get()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get bundle "+bundlePath)
-	}
-
-	data, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load manifest.json")
-	}
-	m, err := apps.ManifestFromJSON(data)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid manifest.json")
-	}
-	log.Debugw("Loaded App bundle",
-		"bundle", bundlePath,
-		"app_id", m.AppID)
 
 	kubelessPath, err := exec.LookPath("kubeless")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find kubeless command. Please follow the steps from https://kubeless.io/docs/quick-start/")
 	}
 
-	// Provision functions.
-	for _, kf := range m.KubelessFunctions {
+	// Deploy functions.
+	for _, kf := range m.Kubeless.Functions {
 		name := FunctionName(m.AppID, m.Version, kf.Handler)
 
 		verb := "deploy"
 		if shouldUpdate {
 			verb = "update"
 		}
-		args := []string{"", "function", verb, name}
+		args := []string{kubelessPath, "function", verb, name}
 
 		args = append(args, "--handler", kf.Handler)
 		args = append(args, "--namespace", Namespace)

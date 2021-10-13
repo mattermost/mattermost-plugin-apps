@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 // Binding is the principal way for an App to attach its functionality to the
@@ -195,8 +198,8 @@ type Binding struct {
 	// A Binding is either to a Call, or is a "container" for other locations -
 	// i.e. menu sub-items or subcommands. An app-defined Modal can be displayed
 	// by setting AsModal.
-	Call     *Call      `json:"call,omitempty"`
-	Bindings []*Binding `json:"bindings,omitempty"`
+	Call     *Call     `json:"call,omitempty"`
+	Bindings []Binding `json:"bindings,omitempty"`
 
 	// Form allows to embed a form into a binding, and avoid the need to
 	// Call(type=Form). At the moment, the sole use case is in-post forms, but

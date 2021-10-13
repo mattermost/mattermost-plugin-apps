@@ -9,15 +9,17 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type TestService struct {
-	config   Config
-	mmconfig model.Config
-	mm       *pluginapi.Client
-	log      utils.Logger
-	i18n     *i18n.Bundle
+	config    Config
+	mmconfig  model.Config
+	mm        *pluginapi.Client
+	log       utils.Logger
+	telemetry *telemetry.Telemetry
+	i18n      *i18n.Bundle
 }
 
 var _ Service = (*TestService)(nil)
@@ -38,10 +40,11 @@ func NewTestService(testConfig *Config) (*TestService, *plugintest.API) {
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	return &TestService{
-		config: *testConfig,
-		log:    utils.NewTestLogger(),
-		mm:     pluginapi.NewClient(testAPI, testDriver),
-		i18n:   i18nBundle,
+		config:    *testConfig,
+		log:       utils.NewTestLogger(),
+		mm:        pluginapi.NewClient(testAPI, testDriver),
+		telemetry: telemetry.NewTelemetry(nil),
+		i18n:      i18nBundle,
 	}, testAPI
 }
 
@@ -75,6 +78,10 @@ func (s *TestService) MattermostAPI() *pluginapi.Client {
 
 func (s *TestService) I18N() *i18n.Bundle {
 	return s.i18n
+}
+
+func (s *TestService) Telemetry() *telemetry.Telemetry {
+	return s.telemetry
 }
 
 func (s *TestService) MattermostConfig() configservice.ConfigService {

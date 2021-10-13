@@ -1,23 +1,13 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
-	"unicode"
+	"encoding/json"
 
 	"github.com/mattermost/mattermost-server/v6/model"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-// AppID is a globally unique identifier that represents a Mattermost App.
-// An AppID is restricted to no more than 32 ASCII letters, numbers, '-', or '_'.
-type AppID string
-
-// AppVersion is the version of a Mattermost App. AppVersion is expected to look
-// like "v00_00_000".
-type AppVersion string
-
-// AppType is the type of an app: http, aws_lambda, or builtin.
-type AppType string
 
 // App describes an App installed on a Mattermost instance. App should be
 // abbreviated as `app`.
@@ -25,6 +15,9 @@ type App struct {
 	// Manifest contains the manifest data that the App was installed with. It
 	// may differ from what is currently in the manifest store for the app's ID.
 	Manifest
+
+	// DeployType is the type of upstream that can be used to access the App.
+	DeployType DeployType `json:"deploy_type"`
 
 	// Disabled is set to true if the app is disabled. Disabling an app does not
 	// erase any of it's data.
@@ -54,7 +47,7 @@ type App struct {
 	MattermostOAuth2 OAuth2App `json:"mattermost_oauth2,omitempty"`
 
 	// RemoteOAuth2 contains App's remote OAuth2 credentials. Use
-	// mmclient.StoreOAuth2App to update.
+	// appclient.StoreOAuth2App to update.
 	RemoteOAuth2 OAuth2App `json:"remote_oauth2,omitempty"`
 
 	// In V1, GrantedPermissions are simply copied from RequestedPermissions
@@ -69,6 +62,33 @@ type App struct {
 	GrantedLocations Locations `json:"granted_locations,omitempty"`
 }
 
+func DecodeCompatibleApp(data []byte) (app *App, err error) {
+	defer func() {
+		if app != nil {
+			err = app.Validate()
+			if err != nil {
+				app = nil
+			}
+		}
+	}()
+
+	err = json.Unmarshal(data, &app)
+	// If failed to decode as current version, opportunistically try as a
+	// v0.7.x. There was no schema version before, this condition may need to be
+	// updated in the future.
+	if err != nil || app.SchemaVersion == "" {
+		app7 := AppV0_7{}
+		_ = json.Unmarshal(data, &app7)
+		if from7 := app7.App(); from7 != nil {
+			return from7, nil
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return app, nil
+}
+
 // OAuth2App contains the setored settings for an "OAuth2 app" used by the App.
 // It is used to describe the OAuth2 connections both to Mattermost, and
 // optionally to a 3rd party remote system.
@@ -79,107 +99,9 @@ type OAuth2App struct {
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.
 type ListedApp struct {
-	Manifest  *Manifest                `json:"manifest"`
+	Manifest  Manifest                 `json:"manifest"`
 	Installed bool                     `json:"installed"`
 	Enabled   bool                     `json:"enabled"`
 	IconURL   string                   `json:"icon_url,omitempty"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
-}
-
-type AppMetadataForClient struct {
-	BotUserID   string `json:"bot_user_id,omitempty"`
-	BotUsername string `json:"bot_username,omitempty"`
-}
-
-const (
-	MinAppIDLength = 3
-	MaxAppIDLength = 32
-)
-
-func (id AppID) IsValid() error {
-	if len(id) < MinAppIDLength {
-		return utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength)
-	}
-
-	if len(id) > MaxAppIDLength {
-		return utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength)
-	}
-
-	for _, c := range id {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' || c == '.' {
-			continue
-		}
-
-		return utils.NewInvalidError("invalid character '%c' in appID %q", c, id)
-	}
-
-	return nil
-}
-
-const VersionFormat = "v00_00_000"
-
-func (v AppVersion) IsValid() error {
-	if len(v) > len(VersionFormat) {
-		return utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat)
-	}
-
-	for _, c := range v {
-		if unicode.IsLetter(c) {
-			continue
-		}
-
-		if unicode.IsNumber(c) {
-			continue
-		}
-
-		if c == '-' || c == '_' || c == '.' {
-			continue
-		}
-
-		return utils.NewInvalidError("invalid character '%c' in appVersion", c)
-	}
-
-	return nil
-}
-
-const (
-	// HTTP app (default). All communications are done via HTTP requests. Paths
-	// for both functions and static assets are appended to RootURL "as is".
-	// Mattermost authenticates to the App with an optional shared secret based
-	// JWT.
-	AppTypeHTTP AppType = "http"
-
-	// AWS Lambda app. All functions are called via AWS Lambda "Invoke" API,
-	// using path mapping provided in the app's manifest. Static assets are
-	// served out of AWS S3, using the "Download" method. Mattermost
-	// authenticates to AWS, no authentication to the App is necessary.
-	AppTypeAWSLambda AppType = "aws_lambda"
-
-	AppTypeKubeless AppType = "kubeless"
-
-	// Builtin app. All functions and resources are served by directly invoking
-	// go functions. No manifest, no Mattermost to App authentication are
-	// needed.
-	AppTypeBuiltin AppType = "builtin"
-
-	// An App running as a plugin. All communications are done via inter-plugin HTTP requests.
-	// Authentication is done via the plugin.Context.SourcePluginId field.
-	AppTypePlugin AppType = "plugin"
-)
-
-func (at AppType) IsValid() error {
-	switch at {
-	case AppTypeHTTP, AppTypeAWSLambda, AppTypeBuiltin, AppTypeKubeless, AppTypePlugin:
-		return nil
-	default:
-		return utils.NewInvalidError("%s is not a valid app type", at)
-	}
 }

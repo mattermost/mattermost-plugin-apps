@@ -25,12 +25,12 @@ app.post('/ping', (req, res) => {
 //         app_id: "hello-kubeless",
 //         display_name: "Hello, kubeless world!",
 //         app_type: "kubeless",
-//         version: "demo",
+//         version: "0.8.0",
 //         homepage_url: "https://www.mattermost.com",
 //         root_url: "http://localhost:8080",
 //         kubeless_functions: [
 //             {
-//                 call_path: "/",
+//                 path: "/",
 //                 handler: "app.Handler",
 //                 file: "app.js",
 //                 deps_file: "package.json",

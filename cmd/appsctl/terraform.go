@@ -30,9 +30,9 @@ var terraformGenerateCmd = &cobra.Command{
 	Short: "Generate Terraform data for Mattermost Cloud",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, err := upaws.GetProvisionDataFromFile(args[0], log)
+		data, err := upaws.GetDeployDataFromFile(args[0], log)
 		if err != nil {
-			return errors.Wrap(err, "can't get provision data")
+			return errors.Wrap(err, "can't get deploy data")
 		}
 
 		bytes, err := json.MarshalIndent(data, "", "\t")

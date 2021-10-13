@@ -23,7 +23,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Name: "field1",
 					},
@@ -37,7 +37,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Name: "field1",
 					},
@@ -54,7 +54,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Label: "field1",
 						Name:  "same",
@@ -70,7 +70,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Label: "field1",
 						Name:  "same",
@@ -89,7 +89,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Label: "field1",
 					},
@@ -104,7 +104,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Label: "field2",
 						Name:  "same",
@@ -122,7 +122,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeBool,
 						Name: "same",
@@ -138,7 +138,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeBool,
 						Name: "same",
@@ -156,7 +156,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -174,7 +174,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -193,7 +193,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -211,7 +211,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -230,7 +230,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "multiple word",
@@ -243,7 +243,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{},
+				Fields: []apps.Field{},
 			},
 			expectedProblems: []string{
 				`field name must be a single word: "multiple word"`,
@@ -256,7 +256,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "multiple word",
@@ -269,7 +269,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{},
+				Fields: []apps.Field{},
 			},
 			expectedProblems: []string{
 				`label must be a single word: "multiple word" (field: singleword)`,
@@ -282,7 +282,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -305,7 +305,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
 						Label: "same",
@@ -325,7 +325,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -337,7 +337,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{},
+				Fields: []apps.Field{},
 			},
 			expectedProblems: []string{
 				"no options for static select: field1",
@@ -350,7 +350,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -368,7 +368,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -391,7 +391,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -413,7 +413,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -437,7 +437,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -459,7 +459,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -483,7 +483,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -505,7 +505,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -529,7 +529,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -559,7 +559,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -588,7 +588,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -603,7 +603,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{},
+				Fields: []apps.Field{},
 			},
 			expectedProblems: []string{
 				"option with neither label nor value (field field1)",
@@ -617,7 +617,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
 						Name: "field1",
@@ -635,7 +635,7 @@ func TestCleanForm(t *testing.T) {
 				Call: &apps.Call{
 					Path: "/url",
 				},
-				Fields: []*apps.Field{
+				Fields: []apps.Field{
 					{
 						Name: "field1",
 					},
