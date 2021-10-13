@@ -1,130 +1,194 @@
 {
-  "apps.command.debug.addManifest.error.url": {
-    "hash": "sha1-cdb355c57a0b8e2db43426f83f43951edbf0bea0",
-    "other": "debes añadir una `--url`"
+  "apps.command.info.submit.ok": {
+    "hash": "sha1-6ef66a54b0883d56732e0eebc3483321c9a1ab57",
+    "other": "Plugin Mattermost Apps versión: {{.Version}}, {{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
   },
-  "apps.command.developersOnly": {
-    "hash": "sha1-5d27c2063ba05693adda4436b7ec89317f648ba9",
-    "other": "{{.Command}} sólo está disponible en el modo desarrollador. Debes habilitar el `Modo Desarrollador` y los `Comandos de prueba` en la Consola del Sistema."
-  },
-  "apps.command.disable.error.appID": {
-    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
-    "other": "debes especificar un app id"
-  },
-  "apps.command.enable.error.appID": {
-    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
-    "other": "debes especificar un app id"
-  },
-  "apps.command.enableBot": {
-    "hash": "sha1-cb813050383d2b10d06aeedb9a9de18a2aeef887",
-    "other": "la configuración de sistema `Permitir la Creación de Cuentas Bot` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
-  },
-  "apps.command.enableOAuth": {
-    "hash": "sha1-9dc3685a4939013367f1f2ec147d11711b40a77e",
-    "other": "la configuración de sistema `Habilitar el Proveedor de Servicios de OAuth 2.0` debe estar habilitada para que el plugin de Apps funcione. Por favor, ve a {{.URL}} y habilítala."
-  },
-  "apps.command.error.details": {
-    "hash": "sha1-68313a27c1ab422bc0d3de4e63dc83279152eda6",
-    "other": "Detalles del error:"
-  },
-  "apps.command.error.header": {
-    "hash": "sha1-112385d1f20f31c5c1aa7e78e93d3590064a43e7",
-    "other": "El command ha fallado."
-  },
-  "apps.command.error.invalidArguments": {
-    "hash": "sha1-325bb7060ccf3f80d5d334a8104393160a1550e3",
-    "other": "argumentos no válidos para `command.Handler`. Por favor, contacte con su administrador del sistema."
-  },
-  "apps.command.error.localized": {
-    "hash": "sha1-d71db283d610310d1e4cbb09cec9626f6e322523",
-    "other": "Error: **{{.LocalizedError}}**"
-  },
-  "apps.command.error.mustBeAdmin": {
-    "hash": "sha1-3a26a3ec99453ca4e3da6b41fa393397954eded7",
-    "other": "debe ser un administrador del sistema para ejecutar este comando"
-  },
-  "apps.command.error.needSubCommand": {
-    "hash": "sha1-2403138799c253439c295946911e52855a6446b0",
-    "other": "se esperaba un (sub-)comando"
-  },
-  "apps.command.error.noSubCommand": {
-    "hash": "sha1-6c7ab4369ce4bb3763933b17eb856028b793a90b",
-    "other": "subcomando no especificado, no se hace nada"
-  },
-  "apps.command.info.rest": {
-    "hash": "sha1-9e5bfa35ffb01cf0abe8b36c53c3194ce31a3a16",
-    "other": "{{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
-  },
-  "apps.command.info.version": {
-    "hash": "sha1-85c00fcb1b5b61695abd1921e4e52af3f7cabbd9",
-    "other": "Plugin Mattermost Apps versión: {{.Version}}, "
-  },
-  "apps.command.install.aws.error.manifest": {
-    "hash": "sha1-a2f21d16d1d5dc6f41656a06167ade07b96e4b2c",
-    "other": "no se ha podido conseguir el manifiesto desde S3"
-  },
-  "apps.command.install.aws.error.version": {
-    "hash": "sha1-1aef7f34a027166d34be775d19d2d093d01f33d4",
-    "other": "debes especificar la versión de la app"
-  },
-  "apps.command.install.error.appID": {
-    "hash": "sha1-375e94981f450b1996849add06bda8edb89d13b5",
-    "other": "debes especificar el app id"
-  },
-  "apps.command.install.error.openDialog": {
-    "hash": "sha1-aebeaae36975e8601eb40c554bb987594d0c768a",
-    "other": "no se pudo abrir el diálogo interactivo"
-  },
-  "apps.command.install.fillDialog": {
-    "hash": "sha1-7913b45acc6785a334c72fdf1b1d55fc9b435324",
-    "other": "por favor, rellena el formulario interactivo para continuar"
-  },
-  "apps.command.install.http.error.decodeManifest": {
-    "hash": "sha1-df9fc5c714531a862d86f94afdccb48b42a09359",
-    "other": "no se ha podido decodificar {{.ManifestURL}}"
-  },
-  "apps.command.install.http.error.url": {
-    "hash": "sha1-ad45e774b1e5bafc20627e9eb95cdd58d0e07c15",
-    "other": "debes especificar la URL del manifiesto"
-  },
-  "apps.command.install.marketplace.error.manifest": {
-    "hash": "sha1-19bad30cde3f6cd49d212bf1bf8199bd4589f734",
-    "other": "manifiesto no encontrado"
-  },
-  "apps.command.list.listed": {
-    "hash": "sha1-bcbe3886b5c26bd97bef30d4801b3e4db9bd0130",
-    "other": "Listado"
-  },
-  "apps.command.list.status.disabled": {
-    "hash": "sha1-8d7e420d19b7f5a6be1dbaa6f3b9d11521779b72",
-    "other": "Instalado, Desabilitado"
-  },
-  "apps.command.list.status.installed": {
-    "hash": "sha1-eeda7de85d17e0f162444c77df75bf7adf5773d8",
-    "other": "**Instalado**"
-  },
-  "apps.command.list.table.header": {
+  "apps.command.list.submit.ok.header": {
     "hash": "sha1-46a8d9b0941d59ddf86f3768abb3c061bde51ef4",
     "other": "| Nombre | Estado | Tipo | Versión | Cuenta | Lugares | Permisos |"
   },
-  "apps.command.list.version.marketplace": {
-    "hash": "sha1-d3494c598272157bab46c74c0378b9fd48790a5e",
-    "other": ", {{.Version}} en la tienda"
+  "apps.command.list.submit.ok.listed": {
+    "hash": "sha1-bcbe3886b5c26bd97bef30d4801b3e4db9bd0130",
+    "other": "Listado"
   },
-  "apps.command.notSupported": {
-    "hash": "sha1-18febfbf8a578b22b84889a3d220e6a048148fd9",
-    "other": "{{.Command}} no es un comando soportado y no debería de haber sido invocado. Por favor, contacte con su administrador de sistema"
+  "apps.command.list.submit.ok.status.disabled": {
+    "hash": "sha1-8d7e420d19b7f5a6be1dbaa6f3b9d11521779b72",
+    "other": "Instalado, Desactivado"
   },
-  "apps.command.uninstall.error.needAppId": {
-    "hash": "sha1-bab61178fc012502628c84ed889dc35071af96d2",
-    "other": "debe especificar un app id"
+  "apps.command.list.submit.ok.status.installed": {
+    "hash": "sha1-eeda7de85d17e0f162444c77df75bf7adf5773d8",
+    "other": "**Instalado**"
   },
-  "apps.command.unknown": {
-    "hash": "sha1-7d7a79f6ffebf668c930aa18cda75bb083d8b196",
-    "other": "comando desconocido: {{.Command}}"
+  "apps.command.list.submit.ok.version": {
+    "hash": "sha1-9e1e55088a483e68afe6926130ba12bdc756a980",
+    "other": "{{.CurrentVersion}}, {{.MarketplaceVersion}} en la tienda"
+  },
+  "apps.command.uninstall.description": {
+    "hash": "sha1-579e81288e0f97d04b273d28a96a790cdf94b27d",
+    "other": "Desinstala una App"
+  },
+  "apps.command.uninstall.hint": {
+    "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
+    "other": "[ ID de la App ]"
+  },
+  "apps.command.uninstall.label": {
+    "hash": "sha1-84bbfdf0d9e56680ca68c3d3a9f5fe25e912fe3b",
+    "other": "desinstalar"
   },
   "apps.utils.error.clienFromSession.failedSession": {
     "hash": "sha1-f11f2beaec2e62e5fded8febcdb5036b2f4ed3d8",
     "other": "error al cargar la sesión"
+  },
+  "command.base.description": {
+    "hash": "sha1-23304a15b9cdbd4d6aee9e9b70d58fc291f3f553",
+    "other": "Mattermost Apps"
+  },
+  "command.debug.bindings.description": {
+    "hash": "sha1-5fbd8407ec430daec2eae6b195813bd0ff46a3a1",
+    "other": "Muestra todos los enlaces para el contexto actual"
+  },
+  "command.debug.bindings.label": {
+    "hash": "sha1-da3fe922683e598dda35cf79f8402e7036236b0b",
+    "other": "enlaces"
+  },
+  "command.debug.clean.description": {
+    "hash": "sha1-0d5c3038b32f7f25b4364a693b933ebe394bc33c",
+    "other": "elimina todas las Apps y reinicia el almacenamiento persistente"
+  },
+  "command.debug.clean.label": {
+    "hash": "sha1-6a1cec45eaf37b34e1b1d89130d7746fe4006346",
+    "other": "limpiar"
+  },
+  "command.debug.clean.submit.ok": {
+    "hash": "sha1-56290358b8e6c2d856b8668240035c92f47e220a",
+    "other": "Todos los registros KV han sido eliminados y la configuración vaciada."
+  },
+  "command.debug.label": {
+    "hash": "sha1-32faaecac742100f7753f0c1d0aa0add01b4046b",
+    "other": "depurar"
+  },
+  "command.disable.description": {
+    "hash": "sha1-afb2854eae1b654460f4923cbf3e3a167986310a",
+    "other": "Desactivar una App"
+  },
+  "command.disable.hint": {
+    "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
+    "other": "[ ID de la App ]"
+  },
+  "command.disable.label": {
+    "hash": "sha1-ccf09e2d4b7f84df49380235f0a6ee7510c3b240",
+    "other": "desactivar"
+  },
+  "command.enable.description": {
+    "hash": "sha1-ea50f59efbf44d0397b08f4206a699f276d0f78b",
+    "other": "Activar una app"
+  },
+  "command.enable.hint": {
+    "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
+    "other": "[ ID de la App ]"
+  },
+  "command.enable.install.description": {
+    "hash": "sha1-a449b75bb3e8e07045b36f53f57bd339fb8a0a61",
+    "other": "Instala una App, desplegada en local o desde una URL remota"
+  },
+  "command.enable.install.hint": {
+    "hash": "sha1-cab9433e0fe5688a30aa94a039769b7370ac5d74",
+    "other": "[ listada | url ]"
+  },
+  "command.enable.install.label": {
+    "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
+    "other": "instalar"
+  },
+  "command.enable.install.listed.description": {
+    "hash": "sha1-7a7305ae3c57d7fd0f9b5ce9f5c60174894d7fd6",
+    "other": "Instala una App listada que ha sido desplegada localmente. (en el futuro, Apps seleccionadas de la tienda también se listarán aquí)"
+  },
+  "command.enable.install.listed.hint": {
+    "hash": "sha1-e74a4145d016212ce12c397155647db572c9cfe4",
+    "other": "[ ID de la App ]"
+  },
+  "command.enable.install.listed.label": {
+    "hash": "sha1-adcc7aee87e914f9b782de197376a29c2e4245de",
+    "other": "listada"
+  },
+  "command.enable.install.url.description": {
+    "hash": "sha1-2ab6b756d5a38addfb6d2665c4f52ef17707d05c",
+    "other": "Installa una App de una URL HTTP"
+  },
+  "command.enable.install.url.form.autocompleteHint": {
+    "hash": "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39",
+    "other": "URL"
+  },
+  "command.enable.install.url.form.description": {
+    "hash": "sha1-eb4fd5f39727c13ab83865fce17b1d3ac6c798e0",
+    "other": "introduce la URL del manifest.json de la App"
+  },
+  "command.enable.install.url.form.label": {
+    "hash": "sha1-81736358b1645103ae83247b10c5f82af641ddfc",
+    "other": "url"
+  },
+  "command.enable.install.url.hint": {
+    "hash": "sha1-c7fa14dc946471a117e16d97e60d85fa11cc3e8b",
+    "other": "[ URL del manifest.json ]"
+  },
+  "command.enable.install.url.label": {
+    "hash": "sha1-81736358b1645103ae83247b10c5f82af641ddfc",
+    "other": "url"
+  },
+  "command.enable.install_cloud.description": {
+    "hash": "sha1-1d4bc56861bed6f490dad169b1bf07ebc514c743",
+    "other": "Instala una App de la Tienda"
+  },
+  "command.enable.install_cloud.hint": {
+    "hash": "sha1-e74a4145d016212ce12c397155647db572c9cfe4",
+    "other": "[ ID de la App ]"
+  },
+  "command.enable.install_cloud.label": {
+    "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
+    "other": "instalar"
+  },
+  "command.enable.label": {
+    "hash": "sha1-9905c33933602ae804e94f7731ecb5faaf4d6770",
+    "other": "activar"
+  },
+  "command.enable.list.description": {
+    "hash": "sha1-6b5ea6de1aed8d2ffb96eab2674f7890de716434",
+    "other": "Muestra las Apps disponibles e instaladas"
+  },
+  "command.enable.list.form.include_plugins.label": {
+    "hash": "sha1-0b01f5e54ac7a439d0710a37a70c62277eb4892d",
+    "other": "incluye-plugins"
+  },
+  "command.enable.list.form.title": {
+    "hash": "sha1-c6898326988fb2e8e35842be8572b25cd8f07482",
+    "other": "listar Apps"
+  },
+  "command.enable.list.hint": {
+    "hash": "sha1-c64cecb2df4191bf20b5a245c4fb7e6a754f035f",
+    "other": "[ opciones ]"
+  },
+  "command.enable.list.label": {
+    "hash": "sha1-38b62be4bddaa5661c7d6b8e36e28159314df5c7",
+    "other": "listar"
+  },
+  "command.info.description": {
+    "hash": "sha1-3fd167d5b20a4af82aa1eca8a0ac28a218846b38",
+    "other": "Muestra la información del Plugin de Apps"
+  },
+  "command.info.label": {
+    "hash": "sha1-59bd0a3ff43b32849b319e645d4798d8a5d1e889",
+    "other": "información"
+  },
+  "form.appIDForm.appID.autocompleteHint": {
+    "hash": "sha1-c881342871b90b14abec42cd8f123b04b4444661",
+    "other": "ID de la App"
+  },
+  "form.appIDForm.appID.description": {
+    "hash": "sha1-9fd29ec8dc2c3501ad27bd26dd1083c7debcc2d2",
+    "other": "selecciona una App"
+  },
+  "form.appIDForm.appID.label": {
+    "hash": "sha1-7d1043473d55bfa90e8530d35801d4e381bc69f0",
+    "other": "app"
   }
 }

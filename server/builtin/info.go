@@ -4,38 +4,55 @@
 package builtin
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) info() handler {
 	return handler{
 		requireSysadmin: false,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "info",
-				Location:    "info",
-				Description: "Display Apps plugin info",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.info.label",
+					Other: "info",
+				}),
+				Location: "info",
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.info.description",
+					Other: "Display Apps plugin info",
+				}),
 				Call: &apps.Call{
 					Path: pInfo,
+					Expand: &apps.Expand{
+						Locale: apps.ExpandAll,
+					},
 				},
 				Form: &noParameters,
 			}
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
 			conf := a.conf.Get()
-			return apps.NewTextResponse("Mattermost Apps plugin version: %s, "+
-				"[%s](https://github.com/mattermost/%s/commit/%s), built %s, Cloud Mode: %t, Developer Mode: %t\n",
-				conf.Version,
-				conf.BuildHashShort,
-				config.Repository,
-				conf.BuildHash,
-				conf.BuildDate,
-				conf.MattermostCloudMode,
-				conf.DeveloperMode,
-			)
+			out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "apps.command.info.submit.ok",
+					Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
+				},
+				TemplateData: map[string]string{
+					"Version":       conf.Version,
+					"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
+					"BuildDate":     conf.BuildDate,
+					"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
+					"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
+				},
+			}) + "\n"
+			return apps.NewTextResponse(out)
 		},
 	}
 }
