@@ -4,6 +4,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -84,14 +85,20 @@ func installPlugin(bundlePath string) (*apps.Manifest, error) {
 		return nil, errors.Wrap(err, "failed to enable plugin on Mattermost")
 	}
 
-	manifestPath := appClient.Client4.URL + "/plugins/" + pluginManifest.Id + "/manifest.json"
+	manifestPath := strings.Join([]string{
+		appClient.Client4.URL,
+		"plugins",
+		pluginManifest.Id,
+		apps.PluginAppPath,
+		"manifest.json",
+	}, "/")
 	resp, err := appClient.Client4.HTTPClient.Get(manifestPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get the app manifest %s", manifestPath)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to get app manifest %s: status %v", manifestPath, resp.Status)
+		return nil, errors.Errorf("failed to get the app manifest %s: status %v", manifestPath, resp.Status)
 	}
 
 	data, err := httputils.LimitReadAll(resp.Body, maxManifestSize)
