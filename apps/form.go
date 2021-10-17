@@ -53,3 +53,16 @@ type Form struct {
 	// Fields is the list of fields in the form.
 	Fields []Field `json:"fields,omitempty"`
 }
+
+func (f *Form) Clone() *Form {
+	if f == nil {
+		return &Form{}
+	}
+	clone := *f
+	clone.Call = f.Call.Clone()
+	clone.Fields = []Field{}
+	for _, field := range f.Fields {
+		clone.Fields = append(clone.Fields, *field.Clone())
+	}
+	return &clone
+}

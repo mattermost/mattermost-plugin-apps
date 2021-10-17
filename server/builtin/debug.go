@@ -21,6 +21,13 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 	}
 }
 
+var debugBindingsCall = apps.Call{
+	Path: pDebugBindings,
+	Expand: &apps.Expand{
+		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+	},
+}
+
 func (a *builtinApp) debugBindings() handler {
 	return handler{
 		requireSysadmin: true,
@@ -30,21 +37,26 @@ func (a *builtinApp) debugBindings() handler {
 				Label:       "bindings",
 				Location:    "bindings",
 				Description: "Display all bindings for the current context",
-				Call: &apps.Call{
-					Path: pDebugBindings,
-					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-					},
-				},
-				Form: &noParameters,
+				Call:        &debugBindingsCall,
+				Form:        appIDForm(debugBindingsCall),
 			}
 		},
 
+		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+				return app.Installed && app.Enabled
+			})
+		},
+
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			bindings, err := a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
+			app, err := a.proxy.GetInstalledApp(apps.AppID(creq.GetValue(fAppID, AppID)))
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
+			bindings := a.proxy.GetAppBindings(
+				proxy.NewIncomingFromContext(creq.Context),
+				creq.Context,
+				*app)
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},
 	}

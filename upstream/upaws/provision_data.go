@@ -93,6 +93,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
+			defer lambdaFunctionFile.Close()
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
@@ -129,6 +130,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
 		for _, manifestFunction := range m.AWSLambda.Functions {
+			log.Debugf("<>/<> %s %s", manifestFunction.Name, bundleFunction.Name)
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,

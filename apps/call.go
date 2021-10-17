@@ -199,22 +199,44 @@ func NewCall(url string) Call {
 	return c
 }
 
-func (cp *Call) WithDefault(def Call) Call {
-	if cp == nil {
+func (c *Call) WithDefault(def Call) Call {
+	if c == nil {
 		return def
 	}
-	c := *cp
+	clone := *c
 
-	if c.Path == "" {
-		c.Path = def.Path
+	if clone.Path == "" {
+		clone.Path = def.Path
 	}
-	if c.Expand == nil {
-		c.Expand = def.Expand
+	if clone.Expand == nil {
+		clone.Expand = def.Expand
 	}
-	if c.State == nil {
-		c.State = def.State
+	if clone.State == nil {
+		clone.State = def.State
 	}
-	return c
+	return clone
+}
+
+func (c *Call) Clone() *Call {
+	if c == nil {
+		return &Call{}
+	}
+
+	clone := *c
+	if clone.Expand != nil {
+		cloneExpand := *clone.Expand
+		clone.Expand = &cloneExpand
+	}
+
+	// Only know how to clone map values for State.
+	if state, ok := clone.State.(map[string]interface{}); ok {
+		cloneState := map[string]interface{}{}
+		for k, v := range state {
+			cloneState[k] = v
+		}
+		clone.State = cloneState
+	}
+	return &clone
 }
 
 func (c *CallRequest) GetValue(name, defaultValue string) string {

@@ -70,6 +70,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
+	GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp

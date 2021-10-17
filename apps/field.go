@@ -96,3 +96,14 @@ type Field struct {
 	TextMinLength int              `json:"min_length,omitempty"`
 	TextMaxLength int              `json:"max_length,omitempty"`
 }
+
+func (f *Field) Clone() *Field {
+	if f == nil {
+		return &Field{}
+	}
+	clone := *f
+	clone.SelectStaticOptions = make([]SelectOption, len(f.SelectStaticOptions))
+	copy(clone.SelectStaticOptions, f.SelectStaticOptions)
+	// Can not clone Value since don't know the type.
+	return &clone
+}
