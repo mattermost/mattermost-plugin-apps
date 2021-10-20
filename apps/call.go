@@ -219,7 +219,7 @@ func (c *Call) WithDefault(def Call) Call {
 
 func (c *Call) Clone() *Call {
 	if c == nil {
-		return &Call{}
+		return nil
 	}
 
 	clone := *c

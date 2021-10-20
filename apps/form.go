@@ -60,7 +60,7 @@ func (f *Form) Clone() *Form {
 	}
 	clone := *f
 	clone.Call = f.Call.Clone()
-	clone.Fields = []Field{}
+	clone.Fields = nil
 	for _, field := range f.Fields {
 		clone.Fields = append(clone.Fields, *field.Clone())
 	}
