@@ -28,7 +28,7 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 
 	allListed, _, err := appClient.GetListedApps("", true)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get current listed apps from Mattermost")
 	}
 	d := apps.Deploy{}
 	for _, listed := range allListed {
@@ -42,7 +42,7 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	m.Deploy = d.UpdateDeploy(m.Deploy, deployType)
 	_, err = appClient.StoreListedApp(m)
 	if err != nil {
-		return errors.Wrap(err, "failed to add local manifest")
+		return errors.Wrap(err, "failed to add local manifest to Mattermost")
 	}
 	log.Debugw("Updated local manifest", "app_id", m.AppID, "deploy_type", deployType)
 

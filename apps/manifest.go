@@ -14,6 +14,10 @@ import (
 
 const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
 
+var DefaultPing = Call{
+	Path: "/ping",
+}
+
 var DefaultBindings = Call{
 	Path: "/bindings",
 }

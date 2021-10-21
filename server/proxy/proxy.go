@@ -62,43 +62,77 @@ func (p *Proxy) Call(in Incoming, creq apps.CallRequest) CallResponse {
 		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
 
-	cresp := p.callApp(in, *app, creq)
+	cresp, _ := p.callApp(in, *app, creq)
 	return NewProxyCallResponse(cresp).WithMetadata(AppMetadataForClient{
 		BotUserID:   app.BotUserID,
 		BotUsername: app.BotUsername,
 	})
 }
 
-func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.CallResponse {
+func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+	values := map[string]interface{}{}
+	for len(valuePairs) > 0 {
+		if len(valuePairs) == 1 {
+			return apps.NewErrorResponse(
+				errors.Errorf("mismatched parameter count, no value for %v", valuePairs[0]))
+		}
+		key, ok := valuePairs[0].(string)
+		if !ok {
+			return apps.NewErrorResponse(
+				errors.Errorf("mismatched type %T for key %v, expected string", valuePairs[0], valuePairs[0]))
+		}
+		values[key] = valuePairs[1]
+		valuePairs = valuePairs[2:]
+	}
+
+	if cc == nil {
+		cc = &apps.Context{}
+	}
+	cresp, _ := p.callApp(in, app, apps.CallRequest{
+		Call:    call,
+		Context: *cc,
+		Values:  values,
+	})
+	return cresp
+}
+
+func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
+	respondErr := func(err error) (apps.CallResponse, error) {
+		return apps.NewErrorResponse(err), err
+	}
+
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", app.AppID)
 
 	if !p.appIsEnabled(app) {
-		return apps.NewErrorResponse(errors.Errorf("%s is disabled", app.AppID))
+		return respondErr(errors.Errorf("%s is disabled", app.AppID))
 	}
 
 	if creq.Path[0] != '/' {
-		return apps.NewErrorResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
+		return respondErr(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return apps.NewErrorResponse(err)
+		return respondErr(err)
 	}
 	creq.Path = cleanPath
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorResponse(err)
+		return respondErr(err)
 	}
 
 	cc := creq.Context
 	cc = in.updateContext(cc)
 	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
 	if err != nil {
-		return apps.NewErrorResponse(err)
+		return respondErr(err)
 	}
 
-	cresp := upstream.Call(up, app, creq)
+	cresp, err := upstream.Call(up, app, creq)
+	if err != nil {
+		return cresp, err
+	}
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
 	}
@@ -120,7 +154,7 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) apps.C
 		}
 	}
 
-	return cresp
+	return cresp, nil
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.

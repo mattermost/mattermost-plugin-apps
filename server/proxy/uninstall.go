@@ -21,12 +21,9 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 
 	var message string
 	if app.OnUninstall != nil {
-		resp := p.callApp(in, *app, apps.CallRequest{
-			Call:    *app.OnUninstall,
-			Context: cc,
-		})
+		resp := p.call(in, *app, *app.OnUninstall, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(err).Warnf("OnUninstall failed, uninstalling app anyway")
+			log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
 		} else {
 			message = resp.Markdown
 		}

@@ -14,6 +14,9 @@ import (
 type HTTP struct {
 	// All call and static paths are relative to the RootURL.
 	RootURL string `json:"root_url,omitempty"`
+
+	// UseJWT instructs the proxy to authenticate outgoing requests with a JWT.
+	UseJWT bool `json:"use_jwt,omitempty"`
 }
 
 func (h *HTTP) Validate() error {

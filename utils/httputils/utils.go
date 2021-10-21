@@ -85,6 +85,20 @@ func WriteJSON(w http.ResponseWriter, v interface{}) error {
 	return WriteJSONStatus(w, http.StatusOK, v)
 }
 
+// HandleJSON returns an http.HandleFunc that serves a JSON-encoded data
+// chunk of an object.
+func HandleJSON(v interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		data, err := json.Marshal(v)
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(data)
+	}
+}
+
 // HandleJSONData returns an http.HandleFunc that serves a JSON-encoded data
 // chunk.
 func HandleJSONData(data []byte) http.HandlerFunc {
