@@ -84,7 +84,10 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 		return nil, err
 	}
 
-	if app.HTTP.UseJWT {
+	// TODO: find a better way to control the use of JWT that both OpenFaaS and
+	// HTTP can share. For now, hard-limit the use of JWT to the HTTP gateway
+	// itself.
+	if app.HTTP != nil && app.HTTP.UseJWT {
 		jwtoken := ""
 		jwtoken, err = createJWT(fromMattermostUserID, app.Secret)
 		if err != nil {
