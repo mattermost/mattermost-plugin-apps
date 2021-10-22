@@ -13,6 +13,7 @@ import (
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
+	httputils "github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -301,17 +302,17 @@ func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interfa
 }
 
 // NotifyRemoteWebhook mocks base method.
-func (m *MockService) NotifyRemoteWebhook(arg0 apps.App, arg1 []byte, arg2 string) error {
+func (m *MockService) NotifyRemoteWebhook(arg0 apps.AppID, arg1 httputils.ServerlessRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRemoteWebhook indicates an expected call of NotifyRemoteWebhook.
-func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1)
 }
 
 // NotifyUserHasJoinedChannel mocks base method.

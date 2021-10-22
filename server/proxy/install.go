@@ -56,7 +56,8 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		app.Secret = secret
 	}
 
-	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) &&
+		app.RemoteWebhookAuthType == apps.SecretAuth {
 		app.WebhookSecret = model.NewId()
 	}
 

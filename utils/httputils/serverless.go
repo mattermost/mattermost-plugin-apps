@@ -1,7 +1,7 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
-package upstream
+package httputils
 
 import (
 	"encoding/json"
@@ -18,6 +18,7 @@ type ServerlessRequest struct {
 	Path       string            `json:"path"`
 	HTTPMethod string            `json:"httpMethod"`
 	Headers    map[string]string `json:"headers"`
+	RawQuery   string            `json:"rawQuery,omitempty"`
 	Body       string            `json:"body"`
 }
 
@@ -28,6 +29,26 @@ type ServerlessResponse struct {
 	Headers         map[string]string `json:"headers"`
 	IsBase64Encoded bool              `json:"isBase64Encoded"`
 	Body            string            `json:"body"`
+}
+
+func ServerlessRequestFromHTTP(req *http.Request, limit int64) (*ServerlessRequest, error) {
+	data, err := LimitReadAll(req.Body, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	sreq := ServerlessRequest{
+		HTTPMethod: req.Method,
+		Path:       req.URL.Path,
+		RawQuery:   req.URL.RawQuery,
+		Body:       string(data),
+		Headers:    map[string]string{},
+	}
+	for key := range req.Header {
+		sreq.Headers[key] = req.Header.Get(key)
+	}
+
+	return &sreq, nil
 }
 
 func ServerlessResponseFromJSON(data []byte) (*ServerlessResponse, error) {
@@ -42,7 +63,7 @@ func ServerlessResponseFromJSON(data []byte) (*ServerlessResponse, error) {
 	return &resp, nil
 }
 
-func ServerlessRequestFromCall(creq apps.CallRequest) ([]byte, error) {
+func ServerlessCallRequestData(creq apps.CallRequest) ([]byte, error) {
 	body, err := json.Marshal(creq)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to encode serverless request")

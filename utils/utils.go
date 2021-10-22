@@ -32,7 +32,7 @@ func CodeBlock(in string) string {
 }
 
 func JSONBlock(in interface{}) string {
-	return fmt.Sprintf("\n```json\n%s\n```\n", in)
+	return fmt.Sprintf("\n```json\n%s\n```\n", Pretty(in))
 }
 
 // FindDir looks for the given directory in nearby ancestors relative to the current working

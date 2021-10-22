@@ -182,6 +182,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
+	// p.log.Debugf("<>/<> ServeHTTP %s %q", req.Method, req.URL.Path)
 	p.httpIn.ServeHTTP(c, w, req)
 }
 

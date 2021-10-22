@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"crypto/subtle"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,40 +10,32 @@ import (
 )
 
 func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
-	appID := appIDVar(req)
-	if appID == "" {
-		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
-		return
-	}
+	log := g.conf.Logger()
+	err := func() error {
+		appID := appIDVar(req)
+		if appID == "" {
+			return utils.NewInvalidError("app_id not specified")
+		}
+		log = log.With("app_id", appID)
 
-	secret := req.URL.Query().Get("secret")
-	if secret == "" {
-		httputils.WriteError(w, utils.NewInvalidError("webhook secret was not provided"))
-		return
-	}
-	app, err := g.proxy.GetInstalledApp(appID)
+		sreq, err := httputils.ServerlessRequestFromHTTP(req, g.conf.Get().MaxWebhookSize)
+		if err != nil {
+			return err
+		}
+		sreq.Path = mux.Vars(req)["path"]
+		log = log.With("path", sreq.Path)
+
+		err = g.proxy.NotifyRemoteWebhook(appID, *sreq)
+		if err != nil {
+			return err
+		}
+
+		log.Debugf("processed remote webhook")
+		return nil
+	}()
+
 	if err != nil {
+		log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
-		return
 	}
-	if subtle.ConstantTimeCompare([]byte(secret), []byte(app.WebhookSecret)) != 1 {
-		httputils.WriteError(w, utils.NewInvalidError("webhook secret mismatched"))
-		return
-	}
-
-	conf := g.conf.Get()
-	data, err := httputils.LimitReadAll(req.Body, conf.MaxWebhookSize)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-
-	vars := mux.Vars(req)
-	path := vars["path"]
-	if path == "" {
-		httputils.WriteError(w, utils.NewInvalidError("webhook call path not specified"))
-		return
-	}
-
-	_ = g.proxy.NotifyRemoteWebhook(*app, data, path)
 }

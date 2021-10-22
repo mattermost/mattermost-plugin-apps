@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 const Namespace = "mattermost-kubeless-apps"
@@ -52,7 +53,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 	}
 
 	// Build the JSON request
-	creqData, err := upstream.ServerlessRequestFromCall(creq)
+	creqData, err := httputils.ServerlessCallRequestData(creq)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
@@ -125,7 +126,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 		return nil, errors.New(string(received))
 	}
 
-	resp, err := upstream.ServerlessResponseFromJSON(received)
+	resp, err := httputils.ServerlessResponseFromJSON(received)
 	if err != nil {
 		return nil, err
 	}

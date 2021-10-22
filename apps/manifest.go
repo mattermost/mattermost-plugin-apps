@@ -109,6 +109,10 @@ type Manifest struct {
 	// Requested Access
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
+	// RemoteWebhookAuthType specifies how incoming webhook messages from remote
+	// systems should be authenticated by Mattermost.
+	RemoteWebhookAuthType RemoteWebhookAuthType `json:"remote_webhook_auth_type,omitempty"`
+
 	// RequestedLocations is the list of top-level locations that the
 	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
 	// "/command/apptrigger"}``.
@@ -268,3 +272,19 @@ func (v AppVersion) Validate() error {
 
 	return result
 }
+
+type RemoteWebhookAuthType string
+
+const (
+	// No authentication means that the message will be accepted, and passed to
+	// tha app. The app can perform its own authentication then. This is also
+	// the default type.
+	NoAuth = RemoteWebhookAuthType("none")
+
+	// Secret authentication expects the App secret to be passed in the incoming
+	// request's query as ?secret=appsecret.
+	SecretAuth = RemoteWebhookAuthType("secret")
+
+	// JWT authentication: not implemented yet
+	JWTAuth = RemoteWebhookAuthType("jwt")
+)

@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upopenfaas"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type Proxy struct {
@@ -58,7 +59,7 @@ type Invoker interface {
 // Notifier implements user-less notification sinks.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+	NotifyRemoteWebhook(apps.AppID, httputils.ServerlessRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error

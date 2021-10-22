@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 // Upstream wraps an awsClient to make requests to the App. It should not be
@@ -76,15 +77,15 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 		typ = lambda.InvocationTypeEvent
 	}
 
-	sreq, err := upstream.ServerlessRequestFromCall(creq)
+	payload, err := httputils.ServerlessCallRequestData(creq)
 	if err != nil {
 		return nil, err
 	}
-	bb, err := u.awsClient.InvokeLambda(name, typ, sreq)
+	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
 	if async || err != nil {
 		return nil, err
 	}
-	resp, err := upstream.ServerlessResponseFromJSON(bb)
+	resp, err := httputils.ServerlessResponseFromJSON(bb)
 	if err != nil {
 		return nil, err
 	}
