@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -161,7 +162,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 	// The bindings call does not have a call type, so make it into a submit so
 	// that the router can handle it.
-	if creq.Path == apps.DefaultBindings.Path {
+	if creq.Path == appspath.Bindings {
 		return readcloser(a.bindings(creq))
 	}
 

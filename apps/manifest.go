@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -19,7 +20,7 @@ var DefaultPing = Call{
 }
 
 var DefaultBindings = Call{
-	Path: "/bindings",
+	Path: path.Bindings,
 }
 
 var DefaultGetOAuth2ConnectURL = Call{
@@ -39,6 +40,10 @@ var DefaultOnOAuth2Complete = Call{
 		OAuth2App:             ExpandAll,
 		OAuth2User:            ExpandAll,
 	},
+}
+
+var DefaultOnRemoteWebhook = Call{
+	Path: path.Webhook,
 }
 
 type Manifest struct {
@@ -105,6 +110,11 @@ type Manifest struct {
 	// the OAuth2 user token, and store it persistently for future use using
 	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
+
+	// OnRemoteWebhook gets invoked when an HTTP webhook is received from a
+	// remote system, and is optionally authenticated by Mattermost. The request
+	// is passed to the call serialized as ServerlessRequest (JSON).
+	OnRemoteWebhook *Call `json:"on_remote_webhook,omitempty"`
 
 	// Requested Access
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`

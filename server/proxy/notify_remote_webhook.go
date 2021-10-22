@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -63,17 +62,21 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req httputils.ServerlessRe
 		datav = req.Body
 	}
 
+	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
+	call.Path = path.Join(call.Path, req.Path)
+
 	conf := p.conf.Get()
 	cc := contextForApp(*app, apps.Context{}, conf)
 	// Set acting user to bot.
 	cc.ActingUserID = app.BotUserID
 	cc.ActingUserAccessToken = app.BotAccessToken
+	cc, err = p.expandContext(Incoming{}, *app, &cc, call.Expand)
+	if err != nil {
+		return err
+	}
 
-	// TODO: do we need to customize the Expand & State for the webhook Call?
 	return upstream.Notify(up, *app, apps.CallRequest{
-		Call: apps.Call{
-			Path: path.Join(appspath.Webhook, req.Path),
-		},
+		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{
 			"headers":    req.Headers,
