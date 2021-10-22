@@ -97,6 +97,8 @@ type Field struct {
 	TextMaxLength int              `json:"max_length,omitempty"`
 }
 
+// Clone makes a copy of a Field. It does not clone Value since it does not know
+// the type.
 func (f *Field) Clone() *Field {
 	if f == nil {
 		return &Field{}
@@ -104,6 +106,5 @@ func (f *Field) Clone() *Field {
 	clone := *f
 	clone.SelectStaticOptions = make([]SelectOption, len(f.SelectStaticOptions))
 	copy(clone.SelectStaticOptions, f.SelectStaticOptions)
-	// Can not clone Value since don't know the type.
 	return &clone
 }

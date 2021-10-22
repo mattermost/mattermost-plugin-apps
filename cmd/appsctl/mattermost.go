@@ -61,8 +61,6 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	return nil
 }
 
-const maxManifestSize = 10 * 1024 * 1024 // 10Mb
-
 func installPlugin(bundlePath string) (*apps.Manifest, error) {
 	appClient, err := getMattermostClient()
 	if err != nil {
@@ -101,7 +99,7 @@ func installPlugin(bundlePath string) (*apps.Manifest, error) {
 		return nil, errors.Errorf("failed to get the app manifest %s: status %v", manifestPath, resp.Status)
 	}
 
-	data, err := httputils.LimitReadAll(resp.Body, maxManifestSize)
+	data, err := httputils.LimitReadAll(resp.Body, apps.MaxManifestSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the app manifest")
 	}
