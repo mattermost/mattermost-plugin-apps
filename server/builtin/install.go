@@ -78,9 +78,7 @@ func (a *builtinApp) installListed() handler {
 		requireSysadmin: true,
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return !app.Installed
-			})
+			res, err := a.lookupAppID(creq, nil)
 			return res, err
 		},
 
