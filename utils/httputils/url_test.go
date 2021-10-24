@@ -1,11 +1,11 @@
-package utils_test
+package httputils_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func TestIsValidHttpUrl(t *testing.T) {
@@ -70,7 +70,7 @@ func TestIsValidHttpUrl(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			err := utils.IsValidHTTPURL(test.URL)
+			err := httputils.IsValidURL(test.URL)
 
 			if test.ExpectedError {
 				assert.Error(t, err)

@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -41,7 +42,7 @@ type Admin interface {
 	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
-	StoreLocalManifest(apps.Manifest) (string, error)
+	UpdateAppListing(appclient.UpdateAppListingRequest) (*apps.Manifest, error)
 	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
 }
 
@@ -130,7 +131,7 @@ func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
 func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allowed, usable bool) {
 	_, usable = p.upstreams.Load(deployType)
 
-	supportedTypes := []apps.DeployType{}
+	supportedTypes := apps.DeployTypes{}
 
 	// Initialize with the set supported in all configurations.
 	supportedTypes = append(supportedTypes,

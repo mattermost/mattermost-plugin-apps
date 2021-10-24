@@ -10,6 +10,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -17,8 +18,8 @@ import (
 )
 
 func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
-	api.HandleFunc(path.StoreListedApp,
-		proxy.RequireSysadminOrPlugin(mm, a.StoreListedApp)).Methods("POST")
+	api.HandleFunc(path.UpdateAppListing,
+		proxy.RequireSysadminOrPlugin(mm, a.UpdateAppListing)).Methods("POST")
 	api.HandleFunc(path.InstallApp,
 		proxy.RequireSysadminOrPlugin(mm, a.InstallApp)).Methods("POST")
 	api.HandleFunc(path.EnableApp,
@@ -29,24 +30,35 @@ func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
 		proxy.RequireSysadminOrPlugin(mm, a.UninstallApp)).Methods("POST")
 }
 
-// StoreListedApp adds (or updates) the specified Manifest to the local manifest
-// store, making the App installable.
+// UpdateAppListing adds (or updates) the specified Manifest to the local
+// manifest store, making the App installable. The resulting listed manifest
+// will combine the deployment information from the prior listing, and the new
+// manifests as follows:
+//   1. The "core" manifest (except Deploy) is updated to the new values.
+//   2. Deployment types from the previously listed manifest are updated from the new manifest, or preserved.
+//   3. Deployment types specified in "add_deployments" are copied from the new manifest.
+//   4. "remove"
 //   Path: /api/v1/add-listed-app
 //   Method: POST
-//   Input: Manifest
-//   Output: None
-func (a *restapi) StoreListedApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	var m apps.Manifest
-	err := json.NewDecoder(r.Body).Decode(&m)
+//   Input: JSON{
+//      Manifest...
+//      "add_deployments": []string e.g. ["aws_lambda","http"]
+//      "remove_deployments": []string e.g. ["aws_lambda","http"]
+//   Output: The updated listing manifest
+func (a *restapi) UpdateAppListing(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+	req := appclient.UpdateAppListingRequest{}
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
+		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
 		return
 	}
-	_, err = a.proxy.StoreLocalManifest(m)
+	m, err := a.proxy.UpdateAppListing(req)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
+
+	_ = httputils.WriteJSON(w, m)
 }
 
 // InstallApp installs an App that is already deployed, either locally or in the

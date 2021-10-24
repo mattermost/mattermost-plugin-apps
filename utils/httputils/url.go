@@ -1,4 +1,4 @@
-package utils
+package httputils
 
 import (
 	"net/url"
@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// IsValidHTTPURL checks if a given URL is a valid URL with a host and a http or http scheme.
-func IsValidHTTPURL(rawURL string) error {
+// IsValidURL checks if a given URL is a valid URL with a host and a http or http scheme.
+func IsValidURL(rawURL string) error {
 	u, err := url.ParseRequestURI(rawURL)
 	if err != nil {
 		return err

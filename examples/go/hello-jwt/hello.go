@@ -88,7 +88,7 @@ func main() {
 
 	addr := ":8084" // matches manifest.json
 	fmt.Println("Listening on", addr)
-	fmt.Println("Use '/apps install url http://localhost" + addr + "/manifest.json' to install the app")
+	fmt.Println("Use '/apps install http http://localhost" + addr + "/manifest.json' to install the app")
 	fmt.Printf("Use %q as the app's JWT secret\n", secret)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

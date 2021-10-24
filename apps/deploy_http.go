@@ -7,6 +7,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 // HTTP contains metadata for an app that is already, deployed externally
@@ -26,7 +27,7 @@ func (h *HTTP) Validate() error {
 	if h.RootURL == "" {
 		return utils.NewInvalidError("root_url must be set for HTTP apps")
 	}
-	err := utils.IsValidHTTPURL(h.RootURL)
+	err := httputils.IsValidURL(h.RootURL)
 	if err != nil {
 		return utils.NewInvalidError("invalid root_url: %q: %v", h.RootURL, err)
 	}
