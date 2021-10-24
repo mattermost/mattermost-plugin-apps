@@ -12,6 +12,8 @@ import (
 // DeployType determines how Apps are deployed and accessed.
 type DeployType string
 
+type DeployTypes []DeployType
+
 const (
 	// AWS Lambda-deployable app. All functions are called via AWS Lambda
 	// "Invoke" API, using path mapping provided in the app's manifest. Static
@@ -40,6 +42,15 @@ const (
 	// Authentication is done via the plugin.Context.SourcePluginId field.
 	DeployPlugin DeployType = "plugin"
 )
+
+var KnownDeployTypes = DeployTypes{
+	DeployAWSLambda,
+	DeployBuiltin,
+	DeployHTTP,
+	DeployKubeless,
+	DeployOpenFAAS,
+	DeployPlugin,
+}
 
 // Deploy contains App's deployment data, only the fields supported by the App
 // should be populated.
@@ -99,6 +110,15 @@ func (t DeployType) String() string {
 	}
 }
 
+func (t DeployTypes) Contains(typ DeployType) bool {
+	for _, current := range t {
+		if current == typ {
+			return true
+		}
+	}
+	return false
+}
+
 func (d Deploy) Validate() error {
 	var result error
 
@@ -154,7 +174,7 @@ func (d Deploy) DeployTypes() (out []DeployType) {
 	return out
 }
 
-func (d Deploy) SupportsDeploy(dtype DeployType) bool {
+func (d Deploy) Contains(dtype DeployType) bool {
 	switch dtype {
 	case DeployAWSLambda:
 		return d.AWSLambda != nil
@@ -170,22 +190,17 @@ func (d Deploy) SupportsDeploy(dtype DeployType) bool {
 	return false
 }
 
-func (d Deploy) UpdateDeploy(newDeploy Deploy, deployType DeployType) Deploy {
-	var result Deploy
-	if d.AWSLambda != nil || deployType == DeployAWSLambda {
-		result.AWSLambda = newDeploy.AWSLambda
+func (d *Deploy) CopyType(src Deploy, typ DeployType) {
+	switch typ {
+	case DeployAWSLambda:
+		d.AWSLambda = src.AWSLambda
+	case DeployHTTP:
+		d.HTTP = src.HTTP
+	case DeployKubeless:
+		d.Kubeless = src.Kubeless
+	case DeployOpenFAAS:
+		d.OpenFAAS = src.OpenFAAS
+	case DeployPlugin:
+		d.Plugin = src.Plugin
 	}
-	if d.HTTP != nil || deployType == DeployHTTP {
-		result.HTTP = newDeploy.HTTP
-	}
-	if d.Kubeless != nil || deployType == DeployKubeless {
-		result.Kubeless = newDeploy.Kubeless
-	}
-	if d.OpenFAAS != nil || deployType == DeployOpenFAAS {
-		result.OpenFAAS = newDeploy.OpenFAAS
-	}
-	if d.Plugin != nil || deployType == DeployPlugin {
-		result.Plugin = newDeploy.Plugin
-	}
-	return result
 }

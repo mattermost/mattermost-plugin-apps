@@ -14,10 +14,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req httputils.ServerlessRequest) error {
+func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.ServerlessRequest) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err

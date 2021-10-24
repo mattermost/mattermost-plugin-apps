@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 // Upstream wraps an awsClient to make requests to the App. It should not be
@@ -53,7 +52,7 @@ func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, err
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if !app.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
+	if !app.Manifest.Contains(apps.DeployAWSLambda) {
 		return nil, errors.New("no 'aws_lambda' section in manifest.json")
 	}
 	name := match(creq.Path, &app.Manifest)
@@ -77,7 +76,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 		typ = lambda.InvocationTypeEvent
 	}
 
-	payload, err := httputils.ServerlessCallRequestData(creq)
+	payload, err := apps.CallRequestToServerlessJSON(creq)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +84,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 	if async || err != nil {
 		return nil, err
 	}
-	resp, err := httputils.ServerlessResponseFromJSON(bb)
+	resp, err := apps.ServerlessResponseFromJSON(bb)
 	if err != nil {
 		return nil, err
 	}

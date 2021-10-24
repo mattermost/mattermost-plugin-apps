@@ -123,6 +123,9 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 	if m == nil {
 		return nil, errors.New("no manifest found")
 	}
+	if !m.Contains(apps.DeployAWSLambda) {
+		return nil, errors.New(`"aws_lambda" is not present n the manifest`)
+	}
 
 	resFunctions := []FunctionData{}
 
@@ -185,7 +188,7 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 func (pd *DeployData) Validate() error {
 	var result error
 
-	if pd.Manifest == nil || !pd.Manifest.SupportsDeploy(apps.DeployAWSLambda) {
+	if pd.Manifest == nil || !pd.Manifest.Contains(apps.DeployAWSLambda) {
 		result = multierror.Append(result,
 			errors.New("no manifest or AWS Lamda metadata"))
 	}

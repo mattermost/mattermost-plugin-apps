@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
@@ -181,7 +182,7 @@ func (m Manifest) Validate() error {
 		result = multierror.Append(result,
 			utils.NewInvalidError("homepage_url is empty"))
 	}
-	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
+	if err := httputils.IsValidURL(m.HomepageURL); err != nil {
 		result = multierror.Append(result,
 			utils.NewInvalidError("homepage_url %q invalid: %v", m.HomepageURL, err))
 	}

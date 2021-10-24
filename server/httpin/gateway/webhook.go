@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -18,7 +19,7 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 		log = log.With("app_id", appID)
 
-		sreq, err := httputils.ServerlessRequestFromHTTP(req, g.conf.Get().MaxWebhookSize)
+		sreq, err := serverlessRequestFromHTTP(req, g.conf.Get().MaxWebhookSize)
 		if err != nil {
 			return err
 		}
@@ -38,4 +39,24 @@ func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
 		log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
+}
+
+func serverlessRequestFromHTTP(req *http.Request, limit int64) (*apps.ServerlessRequest, error) {
+	data, err := httputils.LimitReadAll(req.Body, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	sreq := apps.ServerlessRequest{
+		HTTPMethod: req.Method,
+		Path:       req.URL.Path,
+		RawQuery:   req.URL.RawQuery,
+		Body:       string(data),
+		Headers:    map[string]string{},
+	}
+	for key := range req.Header {
+		sreq.Headers[key] = req.Header.Get(key)
+	}
+
+	return &sreq, nil
 }

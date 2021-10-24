@@ -44,7 +44,7 @@ const (
 	pUninstall      = "/uninstall"
 	pEnable         = "/enable"
 	pDisable        = "/disable"
-	pInstallURL     = "/install-url"
+	pInstallHTTP    = "/install-http"
 	pInstallListed  = "/install-listed"
 	pInstallConsent = "/install-consent"
 )
@@ -84,7 +84,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 		pEnable:         a.enable(),
 		pInstallConsent: a.installConsent(),
 		pInstallListed:  a.installListed(),
-		pInstallURL:     a.installURL(),
+		pInstallHTTP:    a.installHTTP(),
 		pList:           a.list(),
 		pUninstall:      a.uninstall(),
 	}
@@ -98,6 +98,7 @@ func Manifest(conf config.Config) apps.Manifest {
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		Deploy:      apps.Deploy{},
 	}
 }
 

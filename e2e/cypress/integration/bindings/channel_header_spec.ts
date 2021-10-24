@@ -13,7 +13,7 @@ import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/
 const helloAppHost = Cypress.config('helloAppHost');
 const helloManifestRoute = `${helloAppHost}/manifest.json`;
 
-const installAppCommand = `/apps install url ${helloManifestRoute}`;
+const installAppCommand = `/apps install http ${helloManifestRoute}`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;

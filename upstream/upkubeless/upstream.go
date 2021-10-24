@@ -21,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 const Namespace = "mattermost-kubeless-apps"
@@ -42,7 +41,7 @@ func MakeUpstream() (*Upstream, error) {
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if !app.SupportsDeploy(apps.DeployKubeless) {
+	if !app.Contains(apps.DeployKubeless) {
 		return nil, errors.New("no 'kubeless' section in manifest.json")
 	}
 	clientset := kubelessutil.GetClientOutOfCluster()
@@ -52,8 +51,8 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 		return nil, err
 	}
 
-	// Build the JSON request
-	creqData, err := httputils.ServerlessCallRequestData(creq)
+	// Build the "Serverless" JSON request
+	creqData, err := apps.CallRequestToServerlessJSON(creq)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
@@ -126,7 +125,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 		return nil, errors.New(string(received))
 	}
 
-	resp, err := httputils.ServerlessResponseFromJSON(received)
+	resp, err := apps.ServerlessResponseFromJSON(received)
 	if err != nil {
 		return nil, err
 	}
