@@ -41,10 +41,10 @@ const (
 
 type SelectOption struct {
 	// Label is the display name/label for the option's value.
-	Label string `json:"label"`
+	Label string `json:"label,omitempty"`
 
 	Value    string `json:"value"`
-	IconData string `json:"icon_data"`
+	IconData string `json:"icon_data,omitempty"`
 }
 
 type Field struct {
