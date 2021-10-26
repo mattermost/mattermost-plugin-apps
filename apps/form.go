@@ -37,9 +37,6 @@ type Form struct {
 	// TODO do we default to the App icon?
 	Icon string `json:"icon,omitempty"`
 
-	// DeprecatedCall is deprecated in favor of Submit, Source
-	DeprecatedCall *Call `json:"call,omitempty"`
-
 	// Submit is the call to make when the user clicks a submit button (or enter
 	// for a command). A simple call can be specified as a path (string). It
 	// will contain no expand/state.
