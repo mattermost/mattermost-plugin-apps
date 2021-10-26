@@ -94,8 +94,8 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 			return nil, err
 		}
 		req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
-		req.Header.Set("Content-Type", "application/json")
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	// Execute the request.
 	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
