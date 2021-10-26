@@ -84,6 +84,8 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+
 	// TODO: find a better way to control the use of JWT that both OpenFaaS and
 	// HTTP can share. For now, hard-limit the use of JWT to the HTTP gateway
 	// itself.
@@ -95,7 +97,6 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 		}
 		req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	// Execute the request.
 	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
