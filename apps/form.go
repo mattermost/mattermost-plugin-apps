@@ -3,7 +3,9 @@
 
 package apps
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Form defines what inputs a Call accepts, and how they can be gathered from
 // the user, in Modal and Autocomplete modes.

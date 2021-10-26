@@ -48,7 +48,7 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 		"Received call response",
 		"app_id", creq.Context.AppID,
 		"acting_user_id", in.ActingUserID,
-		"error", res.ErrorText,
+		"text", res.Text,
 		"type", res.Type,
 		"path", creq.Path,
 	)

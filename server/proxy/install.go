@@ -114,8 +114,8 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 			// TODO: should fail and roll back.
 			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
-		} else if cresp.Markdown != "" {
-			message += "\n\n" + cresp.Markdown
+		} else if cresp.Text != "" {
+			message += "\n\n" + cresp.Text
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.

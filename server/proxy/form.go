@@ -45,7 +45,8 @@ func cleanForm(in apps.Form) (apps.Form, []error) {
 			continue
 		}
 
-		if f.Type == apps.FieldTypeStaticSelect {
+		switch f.Type {
+		case apps.FieldTypeStaticSelect:
 			clean, ee := cleanStaticSelect(f)
 			problems = append(problems, ee...)
 			if len(clean.SelectOptions) == 0 {
@@ -53,6 +54,11 @@ func cleanForm(in apps.Form) (apps.Form, []error) {
 				continue
 			}
 			f = clean
+		case apps.FieldTypeDynamicSelect:
+			if f.SelectLookup == nil {
+				problems = append(problems, errors.Errorf("no lookup call for dynamic select: %s", f.Name))
+				continue
+			}
 		}
 
 		out.Fields = append(out.Fields, f)

@@ -50,12 +50,12 @@ const (
 type CallResponse struct {
 	Type CallResponseType `json:"type"`
 
-	// Used in CallResponseTypeOK to return the displayble, and JSON results
-	Markdown string      `json:"markdown,omitempty"`
-	Data     interface{} `json:"data,omitempty"`
+	// Text is used for OK and Error response, and will show the text in the
+	// proper output.
+	Text string `json:"text,omitempty"`
 
-	// Used in CallResponseTypeError
-	ErrorText string `json:"error,omitempty"`
+	// Used in CallResponseTypeOK to return the displayble, and JSON results
+	Data interface{} `json:"data,omitempty"`
 
 	// Used in CallResponseTypeNavigate
 	NavigateToURL      string `json:"navigate_to_url,omitempty"`
@@ -72,7 +72,7 @@ func NewErrorResponse(err error) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeError,
 		// TODO <>/<> ticket use MD instead of ErrorText
-		ErrorText: err.Error(),
+		Text: err.Error(),
 	}
 }
 
@@ -85,8 +85,8 @@ func NewDataResponse(data interface{}) CallResponse {
 
 func NewTextResponse(format string, args ...interface{}) CallResponse {
 	return CallResponse{
-		Type:     CallResponseTypeOK,
-		Markdown: fmt.Sprintf(format, args...),
+		Type: CallResponseTypeOK,
+		Text: fmt.Sprintf(format, args...),
 	}
 }
 
@@ -106,7 +106,7 @@ func NewLookupResponse(opts []SelectOption) CallResponse {
 // Error() makes CallResponse a valid error, for convenience
 func (cr CallResponse) Error() string {
 	if cr.Type == CallResponseTypeError {
-		return cr.ErrorText
+		return cr.Text
 	}
 	return ""
 }

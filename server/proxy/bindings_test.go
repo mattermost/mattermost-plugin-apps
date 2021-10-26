@@ -248,6 +248,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 						{
 							Location: "send",
 							Label:    "Send",
+							Submit:   &apps.Call{Path: "/path"},
 						},
 					},
 				}, {
@@ -256,6 +257,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 						{
 							Location: "send-me",
 							Label:    "Send me",
+							Submit:   &apps.Call{Path: "/path"},
 						},
 					},
 				}, {
@@ -264,6 +266,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 						{
 							Location: "ignored",
 							Label:    "ignored",
+							Submit:   &apps.Call{Path: "/path"},
 						},
 					},
 				},
@@ -327,12 +330,14 @@ func TestGetBindingsCommands(t *testing.T) {
 									Icon:        "https://example.com/image.png",
 									Hint:        "message command hint",
 									Description: "message command description",
+									Submit:      &apps.Call{Path: "/path"},
 								}, {
 									Location:    "message-modal",
 									Label:       "message-modal",
 									Icon:        "message-modal command icon",
 									Hint:        "message-modal command hint",
 									Description: "message-modal command description",
+									Submit:      &apps.Call{Path: "/path"},
 								}, {
 									Location:    "manage",
 									Label:       "manage",
@@ -346,12 +351,14 @@ func TestGetBindingsCommands(t *testing.T) {
 											Icon:        "subscribe command icon",
 											Hint:        "subscribe command hint",
 											Description: "subscribe command description",
+											Submit:      &apps.Call{Path: "/path"},
 										}, {
 											Location:    "unsubscribe",
 											Label:       "unsubscribe",
 											Icon:        "unsubscribe command icon",
 											Hint:        "unsubscribe command hint",
 											Description: "unsubscribe command description",
+											Submit:      &apps.Call{Path: "/path"},
 										},
 									},
 								},
@@ -391,6 +398,7 @@ func TestGetBindingsCommands(t *testing.T) {
 									Icon:        "connect command icon",
 									Hint:        "connect command hint",
 									Description: "connect command description",
+									Submit:      &apps.Call{Path: "/path"},
 								},
 							},
 						},
@@ -403,6 +411,7 @@ func TestGetBindingsCommands(t *testing.T) {
 	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
+			Label:    string(apps.LocationCommand),
 			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
@@ -419,6 +428,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							Icon:        "https://example.com/image.png",
 							Hint:        "message command hint",
 							Description: "message command description",
+							Submit:      &apps.Call{Path: "/path"},
 						}, {
 							AppID:       apps.AppID("app1"),
 							Location:    "message-modal",
@@ -426,6 +436,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message-modal command icon",
 							Hint:        "message-modal command hint",
 							Description: "message-modal command description",
+							Submit:      &apps.Call{Path: "/path"},
 						}, {
 							AppID:       apps.AppID("app1"),
 							Location:    "manage",
@@ -441,6 +452,7 @@ func TestGetBindingsCommands(t *testing.T) {
 									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/subscribe command icon",
 									Hint:        "subscribe command hint",
 									Description: "subscribe command description",
+									Submit:      &apps.Call{Path: "/path"},
 								}, {
 									AppID:       apps.AppID("app1"),
 									Location:    "unsubscribe",
@@ -448,6 +460,7 @@ func TestGetBindingsCommands(t *testing.T) {
 									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/unsubscribe command icon",
 									Hint:        "unsubscribe command hint",
 									Description: "unsubscribe command description",
+									Submit:      &apps.Call{Path: "/path"},
 								},
 							},
 						},
@@ -468,6 +481,7 @@ func TestGetBindingsCommands(t *testing.T) {
 							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/connect command icon",
 							Hint:        "connect command hint",
 							Description: "connect command description",
+							Submit:      &apps.Call{Path: "/path"},
 						},
 					},
 				},
@@ -513,6 +527,7 @@ func TestDuplicateCommand(t *testing.T) {
 									Location: "sub1",
 									Label:    "sub1",
 									Icon:     "sub1 icon 1",
+									Submit:   &apps.Call{Path: "/path"},
 								},
 								{
 									Location: "sub1",
@@ -547,6 +562,7 @@ func TestDuplicateCommand(t *testing.T) {
 	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
+			Label:    string(apps.LocationCommand),
 			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
@@ -561,6 +577,7 @@ func TestDuplicateCommand(t *testing.T) {
 							Location: "sub1",
 							Label:    "sub1",
 							Icon:     "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/sub1 icon 1",
+							Submit:   &apps.Call{Path: "/path"},
 						},
 					},
 				},
@@ -606,6 +623,7 @@ func TestInvalidCommand(t *testing.T) {
 									Location: "sub1",
 									Label:    "sub1",
 									Icon:     "sub1 icon 1",
+									Submit:   &apps.Call{Path: "/path"},
 								},
 								{
 									Location: "multiple word",
@@ -628,6 +646,7 @@ func TestInvalidCommand(t *testing.T) {
 	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
+			Label:    string(apps.LocationCommand),
 			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
@@ -642,6 +661,7 @@ func TestInvalidCommand(t *testing.T) {
 							Location: "sub1",
 							Label:    "sub1",
 							Icon:     "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/sub1 icon 1",
+							Submit:   &apps.Call{Path: "/path"},
 						},
 					},
 				},

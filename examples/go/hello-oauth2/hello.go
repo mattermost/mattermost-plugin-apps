@@ -179,7 +179,7 @@ func disconnect(w http.ResponseWriter, req *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "Disconnected your Google account",
+		Text: "Disconnected your Google account",
 	})
 }
 

@@ -195,14 +195,18 @@ type Binding struct {
 	DependsOnUser    bool `json:"depends_on_user,omitempty"`
 	DependsOnPost    bool `json:"depends_on_post,omitempty"`
 
-	// A Binding is either a form (embedded or fetched), or a "container" for
-	// other locations/bindings - i.e. menu sub-items or subcommands. An attempt
-	// to specify mnore than one of these fields is treated as an error.
+	// A Binding is either an action, a form (embedded or fetched), or a
+	// "container" for other locations/bindings - i.e. menu sub-items or
+	// subcommands. An attempt to specify mnore than one of these fields is
+	// treated as an error.
+
+	// Submit is used to execute the action associated to this binding.
+	Submit *Call `json:"submit,omitempty"`
 
 	// Form is used to gather additional input from the user before submitting.
-	// At a minimum, it contains the Submit call path. A form may be embedded,
-	// or be a source reference meaning that a call to the app will be made to
-	// obtain the form.
+	// At a minimum, it contains the Submit call path or a Source call path. A
+	// form may be embedded, or be a source reference meaning that a call to
+	// the app will be made to obtain the form.
 	Form *Form `json:"form,omitempty"`
 
 	// Bindings specifies sub-location bindings.

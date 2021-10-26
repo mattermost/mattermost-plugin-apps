@@ -108,8 +108,12 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 	log = log.With("app_id", app.AppID)
 
 	for _, b := range bindings {
-		if b.Location == "" {
+		if strings.TrimSpace(string(b.Location)) == "" {
 			b.Location = apps.Location(app.Manifest.AppID)
+		}
+
+		if strings.TrimSpace(b.Label) == "" {
+			b.Label = string(b.Location)
 		}
 
 		fql := locPrefix.Make(b.Location)
@@ -176,7 +180,19 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 			}
 		}
 
-		if len(b.Bindings) != 0 {
+		// Can only define the form, the submit call or have sub bindings
+		hasBindings := len(b.Bindings) > 0
+		hasForm := b.Form != nil
+		hasSubmit := b.Submit != nil
+		if (!hasBindings && !hasForm && !hasSubmit) ||
+			(hasBindings && hasForm) ||
+			(hasBindings && hasSubmit) ||
+			(hasForm && hasSubmit) {
+			log.Debugw("Only Form, submit or subbindings must be defined", "form", b.Form, "subbindings", b.Bindings, "submit", b.Submit)
+			continue
+		}
+
+		if hasBindings {
 			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
@@ -185,7 +201,11 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 			b.Bindings = scanned
 		}
 
-		if b.Form != nil {
+		if hasForm {
+			if b.Form.Submit == nil && b.Form.Source == nil {
+				log.Debugw("Form must define either a Submit or a Source", "form", b.Form)
+				continue
+			}
 			clean, problems := cleanForm(*b.Form)
 			for _, prob := range problems {
 				log.WithError(prob).Debugf("invalid form field in binding")
