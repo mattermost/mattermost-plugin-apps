@@ -179,6 +179,42 @@
     "hash": "sha1-59bd0a3ff43b32849b319e645d4798d8a5d1e889",
     "other": "información"
   },
+  "command.install.form.field.consent.modal_label": {
+    "hash": "sha1-86241c6566020a9e0c79c6e7ff1266087eacc85f",
+    "other": "Estoy de acuerdo con otorgar a la App acceso a estas APIs y Localizaciones"
+  },
+  "command.install.form.field.deploy_type.command_label": {
+    "hash": "sha1-99a17d097f90def9c7d53ddf54dd72ac5ce12e6d",
+    "other": "despliegue"
+  },
+  "command.install.form.field.deploy_type.description": {
+    "hash": "sha1-a11a731ce1b7ebc0dbeb62c8ebc51da855307f51",
+    "other": "Selecciona cómo se accederá a la App."
+  },
+  "command.install.form.field.deploy_type.modal_label": {
+    "hash": "sha1-72dfb44876d57d50a2502e745ea25e5fdbaff551",
+    "other": "Método de despliegue"
+  },
+  "command.install.form.field.secret.description": {
+    "hash": "sha1-ac18a8be4df65f64058c5df926ecd0ea05895b8d",
+    "other": "Instalar App {{.DisplayName}}"
+  },
+  "command.install.form.field.secret.modal_label": {
+    "hash": "sha1-5ca8185e5dbf272436f422621c8c5167f90791e4",
+    "other": "Secreto JWT saliente"
+  },
+  "command.install.form.header.consent.header": {
+    "hash": "sha1-aee99d7be8db6220814c5b38303158a8bf7ed5ab",
+    "other": "La aplicación **{{.DisplayName}}** requiere el consentimiento de un administrador de sistema para:"
+  },
+  "command.install.form.header.consent.locations": {
+    "hash": "sha1-e906dfc4307c81731ef36cadaf7b88132e4c618a",
+    "other": "- Añade los siguientes elementos a la **Interfaz de usuario de Mattermost**:"
+  },
+  "command.install.form.header.consent.permissions": {
+    "hash": "sha1-96cd775b1f61d848cdeeec6fdd8d7f9e74693a30",
+    "other": "- Accede a la **API de Mattermost** con los siguientes permisos:"
+  },
   "form.appIDForm.appID.autocompleteHint": {
     "hash": "sha1-c881342871b90b14abec42cd8f123b04b4444661",
     "other": "ID de la App"

@@ -130,13 +130,14 @@ func (a *builtinApp) installListed() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			m, err := a.proxy.GetManifest(appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, loc))
 		},
 	}
 }
@@ -146,6 +147,7 @@ func (a *builtinApp) installURL() handler {
 		requireSysadmin: true,
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
+			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
 			manifestURL := creq.GetValue(fURL, "")
 			conf := a.conf.Get()
 			data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
@@ -161,7 +163,7 @@ func (a *builtinApp) installURL() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, loc))
 		},
 	}
 }
