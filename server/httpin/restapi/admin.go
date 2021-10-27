@@ -35,15 +35,15 @@ func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
 // will combine the deployment information from the prior listing, and the new
 // manifests as follows:
 //   1. The "core" manifest (except Deploy) is updated to the new values.
-//   2. Deployment types from the previously listed manifest are updated from the new manifest, or preserved.
-//   3. Deployment types specified in "add_deployments" are copied from the new manifest.
+//   2. Deploy types from the previously listed manifest are updated from the new manifest, or preserved.
+//   3. Deploy types specified in "add_deploys" are copied from the new manifest.
 //   4. "remove"
 //   Path: /api/v1/add-listed-app
 //   Method: POST
 //   Input: JSON{
 //      Manifest...
-//      "add_deployments": []string e.g. ["aws_lambda","http"]
-//      "remove_deployments": []string e.g. ["aws_lambda","http"]
+//      "add_deploys": []string e.g. ["aws_lambda","http"]
+//      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
 func (a *restapi) UpdateAppListing(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
 	req := appclient.UpdateAppListingRequest{}

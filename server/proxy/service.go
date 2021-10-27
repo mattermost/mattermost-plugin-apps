@@ -223,6 +223,6 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		}
 	} else {
 		p.upstreams.Delete(typ)
-		log.Debugf("Deployment type %q is not configured on this Mattermost server", typ)
+		log.Debugf("Deploy type %q is not configured on this Mattermost server", typ)
 	}
 }

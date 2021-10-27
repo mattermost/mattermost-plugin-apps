@@ -177,13 +177,13 @@ type UpdateAppListingRequest struct {
 	// with the prerviously listed one.
 	Replace bool
 
-	// AddDeployments specifies which deployment types should be added to the
+	// AddDeploys specifies which deployment types should be added to the
 	// listing.
-	AddDeployments apps.DeployTypes `json:"add_deployments,omitempty"`
+	AddDeploys apps.DeployTypes `json:"add_deploys,omitempty"`
 
-	// RemoveDeployments specifies which deployment types should be removed from
+	// RemoveDeploys specifies which deployment types should be removed from
 	// the listing.
-	RemoveDeployments apps.DeployTypes `json:"remove_deployments,omitempty"`
+	RemoveDeploys apps.DeployTypes `json:"remove_deploys,omitempty"`
 }
 
 // UpdateAppListing adds a specified App manifest to the local store.
