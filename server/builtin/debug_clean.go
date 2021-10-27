@@ -21,7 +21,7 @@ func (a *builtinApp) debugClean() handler {
 				Call: &apps.Call{
 					Path: pDebugClean,
 					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+						ActingUser: apps.ExpandSummary,
 					},
 				},
 				Form: &noParameters,

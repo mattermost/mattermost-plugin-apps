@@ -11,14 +11,14 @@ import (
 var installHTTPCall = apps.Call{
 	Path: pInstallHTTP,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
 var installListedCall = apps.Call{
 	Path: pInstallListed,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+		ActingUser: apps.ExpandSummary,
 	},
 }
 

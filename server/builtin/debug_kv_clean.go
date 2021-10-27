@@ -11,6 +11,9 @@ import (
 
 var debugKVCleanCall = apps.Call{
 	Path: pDebugKVClean,
+	Expand: &apps.Expand{
+		ActingUser: apps.ExpandSummary,
+	},
 }
 
 func (a *builtinApp) debugKVClean() handler {

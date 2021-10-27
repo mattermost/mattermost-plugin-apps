@@ -2,7 +2,6 @@ package builtin
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 var noParameters = apps.Form{
@@ -18,7 +17,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest) []apps.Binding {
 		a.info().commandBinding(),
 	}
 
-	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
+	if creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin() {
 		commands = append(commands,
 			a.debugCommandBinding(),
 			a.disable().commandBinding(),

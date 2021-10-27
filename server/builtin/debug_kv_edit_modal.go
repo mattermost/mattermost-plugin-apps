@@ -65,7 +65,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 				Call: &apps.Call{
 					Path: pDebugKVEditModal,
 					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll,
+						ActingUser: apps.ExpandSummary,
 					},
 					State: key,
 				},

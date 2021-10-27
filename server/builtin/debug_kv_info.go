@@ -12,6 +12,9 @@ import (
 
 var debugKVInfoCall = apps.Call{
 	Path: pDebugKVInfo,
+	Expand: &apps.Expand{
+		ActingUser: apps.ExpandSummary,
+	},
 }
 
 func (a *builtinApp) debugKVInfo() handler {

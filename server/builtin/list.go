@@ -22,7 +22,7 @@ func (a *builtinApp) list() handler {
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+						ActingUser: apps.ExpandSummary,
 					},
 				},
 				Form: &apps.Form{

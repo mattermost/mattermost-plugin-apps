@@ -12,6 +12,9 @@ import (
 
 var debugKVListCall = apps.Call{
 	Path: pDebugKVList,
+	Expand: &apps.Expand{
+		ActingUser: apps.ExpandSummary,
+	},
 }
 
 func (a *builtinApp) debugKVList() handler {

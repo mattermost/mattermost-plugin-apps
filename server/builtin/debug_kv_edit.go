@@ -13,6 +13,9 @@ import (
 
 var debugKVEditCall = apps.Call{
 	Path: pDebugKVEdit,
+	Expand: &apps.Expand{
+		ActingUser: apps.ExpandSummary,
+	},
 }
 
 func (a *builtinApp) debugKVEdit() handler {

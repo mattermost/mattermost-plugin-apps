@@ -19,6 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 const (
@@ -119,6 +120,12 @@ func Manifest(conf config.Config) apps.Manifest {
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		Deploy:      apps.Deploy{},
+		Bindings: &apps.Call{
+			Path: appspath.Bindings,
+			Expand: &apps.Expand{
+				ActingUser: apps.ExpandSummary,
+			},
+		},
 	}
 }
 
@@ -195,8 +202,13 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 	}
 
 	if h.requireSysadmin {
-		if err = utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID); err != nil {
-			return nil, apps.NewErrorResponse(err)
+		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
+			return nil, apps.NewErrorResponse(utils.NewInvalidError(
+				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+		}
+		if !creq.Context.ActingUser.IsSystemAdmin() {
+			return nil, apps.NewErrorResponse(utils.NewUnauthorizedError(
+				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
 		}
 	}
 
