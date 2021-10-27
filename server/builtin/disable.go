@@ -24,7 +24,7 @@ func (a *builtinApp) disable() handler {
 				Label:       "disable",
 				Location:    "disable",
 				Hint:        "[ App ID ]",
-				Description: "Disables an App",
+				Description: "Disable an App.",
 				Call:        &disableCall,
 				Form:        appIDForm(disableCall),
 			}

@@ -29,7 +29,7 @@ func (a *builtinApp) debugBindings() handler {
 			return apps.Binding{
 				Label:       "bindings",
 				Location:    "bindings",
-				Description: "Display all bindings for the current context",
+				Description: "Display apps' bindings for the current context.",
 				Call:        &debugBindingsCall,
 				Form:        form,
 			}

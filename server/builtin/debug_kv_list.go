@@ -23,7 +23,7 @@ func (a *builtinApp) debugKVList() handler {
 				Label:       "list",
 				Location:    "list",
 				Hint:        "[ AppID ]",
-				Description: "display the list of KV keys for an app, in a specific namespace.",
+				Description: "Display the list of KV keys for an app, in a specific namespace.",
 				Call:        &debugKVInfoCall,
 				Form:        appIDForm(debugKVListCall, namespaceField, base64Field),
 			}

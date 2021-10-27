@@ -28,7 +28,7 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 			Label:       "install",
 			Location:    "install",
 			Hint:        "[app ID]",
-			Description: "Installs an App from the Marketplace",
+			Description: "Install an App from the Marketplace.",
 			Call:        &installListedCall,
 			Form:        appIDForm(installListedCall),
 		}
@@ -37,13 +37,13 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 			Label:       "install",
 			Location:    "install",
 			Hint:        "[ listed | url ]",
-			Description: "Installs an App, locally deployed or from a remote URL",
+			Description: "Install an App, locally deployed or from a remote URL.",
 			Bindings: []apps.Binding{
 				{
 					Label:       "listed",
 					Location:    "listed",
 					Hint:        "[app ID]",
-					Description: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
+					Description: "Install a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
 					Call:        &installListedCall,
 					Form:        appIDForm(installListedCall),
 				},
@@ -51,15 +51,15 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 					Label:       "http",
 					Location:    "http",
 					Hint:        "[URL to manifest.json]",
-					Description: "Installs an HTTP App from a URL",
+					Description: "Install an HTTP App from a URL.",
 					Call:        &installHTTPCall,
 					Form: &apps.Form{
 						Fields: []apps.Field{
 							{
 								Name:                 fURL,
-								Type:                 apps.FieldTypeText,
-								Description:          "enter the HTTP URL for the app's manifest.json",
 								Label:                fURL,
+								Type:                 apps.FieldTypeText,
+								Description:          "enter the HTTP URL for the app's manifest.json.",
 								AutocompleteHint:     "URL",
 								AutocompletePosition: 1,
 								IsRequired:           true,

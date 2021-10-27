@@ -23,7 +23,7 @@ func (a *builtinApp) debugKVInfo() handler {
 				Label:       "info",
 				Location:    "info",
 				Hint:        "[ AppID ]",
-				Description: "display KV store statistics for an app",
+				Description: "Display KV store statistics for an app.",
 				Call:        &debugKVInfoCall,
 				Form:        appIDForm(debugKVInfoCall),
 			}

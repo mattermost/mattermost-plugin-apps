@@ -24,7 +24,7 @@ func (a *builtinApp) enable() handler {
 				Label:       "enable",
 				Location:    "enable",
 				Hint:        "[ App ID ]",
-				Description: "Enables an App",
+				Description: "Enable an App.",
 				Call:        &enableCall,
 				Form:        appIDForm(enableCall),
 			}

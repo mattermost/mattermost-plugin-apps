@@ -18,7 +18,7 @@ func (a *builtinApp) list() handler {
 				Label:       "list",
 				Location:    "list",
 				Hint:        "[ flags ]",
-				Description: "Display available and installed Apps",
+				Description: "Display available and installed Apps.",
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{

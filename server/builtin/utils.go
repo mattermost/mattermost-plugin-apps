@@ -14,9 +14,9 @@ func appIDForm(call apps.Call, extraFields ...apps.Field) *apps.Form {
 		Fields: []apps.Field{
 			{
 				Name:                 fAppID,
-				Type:                 apps.FieldTypeDynamicSelect,
-				Description:          "select an App",
 				Label:                fAppID,
+				Type:                 apps.FieldTypeDynamicSelect,
+				Description:          "Select an App.",
 				AutocompleteHint:     "App ID",
 				AutocompletePosition: 1,
 				IsRequired:           true,

@@ -22,7 +22,7 @@ func (a *builtinApp) uninstall() handler {
 				Label:       "uninstall",
 				Location:    "uninstall",
 				Hint:        "[ App ID ]",
-				Description: "Uninstalls an App",
+				Description: "Uninstall an App.",
 				Call:        &uninstallCall,
 				Form:        appIDForm(uninstallCall),
 			}

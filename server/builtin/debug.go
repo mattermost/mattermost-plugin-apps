@@ -9,14 +9,15 @@ import (
 
 func (a *builtinApp) debugCommandBinding() apps.Binding {
 	return apps.Binding{
-		Label: "debug",
-		// Location: "debug",
+		Label:    "debug",
+		Location: "debug",
 		Bindings: []apps.Binding{
 			a.debugBindings().commandBinding(),
 			a.debugClean().commandBinding(),
 			{
-				Label: "kv",
-				// Location: "kv",
+				Label:       "kv",
+				Location:    "kv",
+				Description: "View and update apps' KV stores.",
 				Bindings: []apps.Binding{
 					a.debugKVClean().commandBinding(),
 					a.debugKVEdit().commandBinding(),
@@ -30,9 +31,9 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 
 var namespaceField = apps.Field{
 	Name:             fNamespace,
+	Label:            fNamespace,
 	Type:             apps.FieldTypeText,
 	Description:      "Select a namespace, see `debug kv info` for the list of app's namespaces.",
-	Label:            fNamespace,
 	AutocompleteHint: "[ namespace ]",
 	IsRequired:       true,
 	TextMaxLength:    2,
@@ -40,8 +41,8 @@ var namespaceField = apps.Field{
 
 var base64Field = apps.Field{
 	Name:        fBase64,
-	Type:        apps.FieldTypeBool,
-	Description: "base64-encode keys for pasting into `/apps debug kv edit` command",
 	Label:       fBase64,
+	Type:        apps.FieldTypeBool,
+	Description: "base64-encode keys for pasting into `/apps debug kv edit` command.",
 	Value:       true,
 }

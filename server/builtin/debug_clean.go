@@ -17,7 +17,7 @@ func (a *builtinApp) debugClean() handler {
 				Label:       "clean",
 				Location:    "clean",
 				Hint:        "",
-				Description: "remove all Apps and reset the persistent store",
+				Description: "Remove all Apps and reset the persistent store.",
 				Call: &apps.Call{
 					Path: pDebugClean,
 					Expand: &apps.Expand{

@@ -16,7 +16,7 @@ func (a *builtinApp) info() handler {
 			return apps.Binding{
 				Label:       "info",
 				Location:    "info",
-				Description: "Display Apps plugin info",
+				Description: "Display Apps plugin information.",
 				Call: &apps.Call{
 					Path: pInfo,
 				},
