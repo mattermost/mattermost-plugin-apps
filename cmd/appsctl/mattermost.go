@@ -32,8 +32,8 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	// Update the listed app manifest and append the new deployment type if it's
 	// not already listed.
 	_, err = appClient.UpdateAppListing(appclient.UpdateAppListingRequest{
-		Manifest:       m,
-		AddDeployments: apps.DeployTypes{deployType},
+		Manifest:   m,
+		AddDeploys: apps.DeployTypes{deployType},
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to add local manifest to Mattermost")

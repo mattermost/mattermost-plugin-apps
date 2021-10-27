@@ -120,7 +120,6 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		})
 	}
 
-	// Deployment type
 	deployTypeField, deployType := a.newConsentDeployTypeField(m, creq, deployType)
 	fields = append(fields, deployTypeField)
 
