@@ -32,11 +32,9 @@ func (a *builtinApp) debugCommandBinding() apps.Binding {
 var namespaceField = apps.Field{
 	Name:             fNamespace,
 	Label:            fNamespace,
-	Type:             apps.FieldTypeText,
+	Type:             apps.FieldTypeDynamicSelect,
 	Description:      "Select a namespace, see `debug kv info` for the list of app's namespaces.",
 	AutocompleteHint: "[ namespace ]",
-	IsRequired:       true,
-	TextMaxLength:    2,
 }
 
 var base64Field = apps.Field{

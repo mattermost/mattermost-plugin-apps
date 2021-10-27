@@ -7,7 +7,10 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 var debugKVListCall = apps.Call{
@@ -50,7 +53,12 @@ func (a *builtinApp) debugKVList() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			message := fmt.Sprintf("%v total keys for `%s`, namespace `%s`\n", len(keys), appID, namespace)
+			message := fmt.Sprintf("%v total keys for `%s`", len(keys), appID)
+			if namespace != "" {
+				message += fmt.Sprintf(", namespace `%s`\n", namespace)
+			} else {
+				message += "\n"
+			}
 			if encode {
 				message += "**NOTE**: keys are base64-encoded for pasting into " +
 					"`/apps debug kv edit` command. Use `/apps debug kv list --base64 false` " +
@@ -68,10 +76,42 @@ func (a *builtinApp) debugKVList() handler {
 			return apps.NewTextResponse(message)
 		},
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed
-			})
-		},
+		lookupf: a.debugAppNamespaceLookup,
 	}
+}
+
+func (a *builtinApp) debugAppNamespaceLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
+	switch creq.SelectedField {
+	case fAppID:
+		return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+			return app.Installed
+		})
+
+	case fNamespace:
+		return a.lookupNamespace(creq)
+	}
+	return nil, utils.ErrNotFound
+}
+
+func (a *builtinApp) lookupNamespace(creq apps.CallRequest) ([]apps.SelectOption, error) {
+	if creq.SelectedField != fNamespace {
+		return nil, errors.Errorf("unknown field %q", creq.SelectedField)
+	}
+	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	if appID == "" {
+		return nil, errors.Errorf("please select --" + fAppID + " first")
+	}
+
+	var options []apps.SelectOption
+	_, namespaces, err := a.debugListKeys(appID)
+	if err != nil {
+		return nil, err
+	}
+	for ns, c := range namespaces {
+		options = append(options, apps.SelectOption{
+			Value: ns,
+			Label: fmt.Sprintf("%q (%v keys)", ns, c),
+		})
+	}
+	return options, nil
 }

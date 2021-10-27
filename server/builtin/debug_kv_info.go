@@ -34,28 +34,12 @@ func (a *builtinApp) debugKVInfo() handler {
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			app, err := a.proxy.GetInstalledApp(appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			n := 0
-			namespaces := map[string]int{}
-			err = a.appservices.KVList(app.BotUserID, "", func(key string) error {
-				_, _, ns, _, e := store.ParseHashkey(key)
-				if e != nil {
-					return e
-				}
-				namespaces[ns] = namespaces[ns] + 1
-				n++
-				return nil
-			})
+			n, namespaces, err := a.debugListKeys(appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
 			message := fmt.Sprintf("%v total keys for `%s`.\n", n, appID)
-
 			if len(namespaces) > 0 {
 				message += "\nNamespaces:\n"
 			}
@@ -72,4 +56,28 @@ func (a *builtinApp) debugKVInfo() handler {
 			return a.lookupAppID(creq, nil)
 		},
 	}
+}
+
+func (a *builtinApp) debugListKeys(appID apps.AppID) (int, map[string]int, error) {
+	app, err := a.proxy.GetInstalledApp(appID)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	n := 0
+	namespaces := map[string]int{}
+	err = a.appservices.KVList(app.BotUserID, "", func(key string) error {
+		_, _, ns, _, e := store.ParseHashkey(key)
+		if e != nil {
+			return e
+		}
+		namespaces[ns] = namespaces[ns] + 1
+		n++
+		return nil
+	})
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return n, namespaces, nil
 }

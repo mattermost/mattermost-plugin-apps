@@ -40,7 +40,7 @@ func (a *builtinApp) debugKVEdit() handler {
 					apps.Field{
 						Name:        fNamespace,
 						Label:       fNamespace,
-						Type:        apps.FieldTypeText,
+						Type:        apps.FieldTypeDynamicSelect,
 						Description: "App-specific namespace (up to 2 letters). Requires `--app` and `--id`.",
 					},
 					apps.Field{
@@ -86,10 +86,6 @@ func (a *builtinApp) debugKVEdit() handler {
 			return apps.NewFormResponse(*form)
 		},
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed
-			})
-		},
+		lookupf: a.debugAppNamespaceLookup,
 	}
 }
