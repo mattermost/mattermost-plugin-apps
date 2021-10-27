@@ -77,6 +77,9 @@ func (s *appKVStore) List(
 			}
 
 			err = processf(key)
+			if err != nil {
+				return err
+			}
 		}
 
 		if len(keys) < keysPerPage {
