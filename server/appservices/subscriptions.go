@@ -60,20 +60,8 @@ func (a *AppServices) Subscribe(sub apps.Subscription) error {
 	return a.store.Subscription.Save(sub)
 }
 
-func (a *AppServices) GetSubscriptions(actingUserID string) ([]apps.Subscription, error) {
-	subs, err := a.store.Subscription.List()
-	if err != nil {
-		return nil, err
-	}
-
-	var rSubs []apps.Subscription
-	for _, s := range subs {
-		if s.UserID == actingUserID {
-			rSubs = append(rSubs, s)
-		}
-	}
-
-	return rSubs, nil
+func (a *AppServices) GetSubscriptions(userID string) ([]apps.Subscription, error) {
+	return a.store.Subscription.ListByUserID(userID)
 }
 
 func (a *AppServices) Unsubscribe(sub apps.Subscription) error {

@@ -36,7 +36,7 @@ func (a *restapi) Subscribe(w http.ResponseWriter, r *http.Request, in proxy.Inc
 	a.handleSubscribeCore(w, r, in, true)
 }
 
-// GetSubscriptions returns the App's current list of subscriptions.
+// GetSubscriptions returns a users current list of subscriptions.
 //   Path: /api/v1/subscribe
 //   Method: GET
 //   Input: None

@@ -17,6 +17,7 @@ type SubscriptionStore interface {
 	Delete(apps.Subscription) error
 	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
 	List() ([]apps.Subscription, error)
+	ListByUserID(userID string) ([]apps.Subscription, error)
 	Save(sub apps.Subscription) error
 }
 
@@ -101,6 +102,22 @@ func (s subscriptionStore) List() ([]apps.Subscription, error) {
 		subs = append(subs, sub...)
 	}
 	return subs, nil
+}
+
+func (s subscriptionStore) ListByUserID(userID string) ([]apps.Subscription, error) {
+	subs, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var rSubs []apps.Subscription
+	for _, s := range subs {
+		if s.UserID == userID {
+			rSubs = append(rSubs, s)
+		}
+	}
+
+	return rSubs, nil
 }
 
 func (s subscriptionStore) Save(sub apps.Subscription) error {
