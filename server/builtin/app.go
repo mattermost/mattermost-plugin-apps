@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -27,26 +28,38 @@ const (
 )
 
 const (
-	fURL            = "url"
-	fConsent        = "consent"
-	fSecret         = "secret"
+	fAction         = "action"
 	fAppID          = "app"
-	fVersion        = "version"
-	fIncludePlugins = "include_plugins"
+	fBase64         = "base64"
+	fBase64Key      = "base64_key"
+	fConsent        = "consent"
+	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fID             = "id"
+	fIncludePlugins = "include_plugins"
+	fNamespace      = "namespace"
+	fNewValue       = "new_value"
+	fSecret         = "secret"
+	fURL            = "url"
+	fVersion        = "version"
 )
 
 const (
-	pDebugBindings  = "/debug-bindings"
-	pDebugClean     = "/debug-clean"
-	pInfo           = "/info"
-	pList           = "/list"
-	pUninstall      = "/uninstall"
-	pEnable         = "/enable"
-	pDisable        = "/disable"
-	pInstallHTTP    = "/install-http"
-	pInstallListed  = "/install-listed"
-	pInstallConsent = "/install-consent"
+	pDebugBindings    = "/debug/bindings"
+	pDebugClean       = "/debug/clean"
+	pDebugKVInfo      = "/debug/kv/info"
+	pDebugKVEdit      = "/debug/kv/edit"
+	pDebugKVEditModal = "/debug/kv/edit-modal"
+	pDebugKVClean     = "/debug/kv/clean"
+	pDebugKVList      = "/debug/kv/list"
+	pDisable          = "/disable"
+	pEnable           = "/enable"
+	pInfo             = "/info"
+	pInstallConsent   = "/install-consent"
+	pInstallHTTP      = "/install/http"
+	pInstallListed    = "/install/listed"
+	pList             = "/list"
+	pUninstall        = "/uninstall"
 )
 
 type handler struct {
@@ -58,19 +71,21 @@ type handler struct {
 }
 
 type builtinApp struct {
-	conf    config.Service
-	proxy   proxy.Service
-	httpOut httpout.Service
-	router  map[string]handler
+	conf        config.Service
+	proxy       proxy.Service
+	appservices appservices.Service
+	httpOut     httpout.Service
+	router      map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
-		conf:    conf,
-		proxy:   proxy,
-		httpOut: httpOut,
+		conf:        conf,
+		proxy:       proxy,
+		appservices: appservices,
+		httpOut:     httpOut,
 	}
 
 	a.router = map[string]handler{
@@ -78,15 +93,20 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 		pInfo: a.info(),
 
 		// Actions that require sysadmin
-		pDebugBindings:  a.debugBindings(),
-		pDebugClean:     a.debugClean(),
-		pDisable:        a.disable(),
-		pEnable:         a.enable(),
-		pInstallConsent: a.installConsent(),
-		pInstallListed:  a.installListed(),
-		pInstallHTTP:    a.installHTTP(),
-		pList:           a.list(),
-		pUninstall:      a.uninstall(),
+		pDebugBindings:    a.debugBindings(),
+		pDebugClean:       a.debugClean(),
+		pDebugKVClean:     a.debugKVClean(),
+		pDebugKVEdit:      a.debugKVEdit(),
+		pDebugKVEditModal: a.debugKVEditModal(),
+		pDebugKVInfo:      a.debugKVInfo(),
+		pDebugKVList:      a.debugKVList(),
+		pDisable:          a.disable(),
+		pEnable:           a.enable(),
+		pInstallConsent:   a.installConsent(),
+		pInstallHTTP:      a.installHTTP(),
+		pInstallListed:    a.installListed(),
+		pList:             a.list(),
+		pUninstall:        a.uninstall(),
 	}
 
 	return a
@@ -173,8 +193,11 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 	if !ok {
 		return nil, utils.NewNotFoundError(callPath)
 	}
-	if h.requireSysadmin && creq.Context.AdminAccessToken == "" {
-		return nil, apps.NewErrorResponse(utils.NewUnauthorizedError("no admin token in the request"))
+
+	if h.requireSysadmin {
+		if err = utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID); err != nil {
+			return nil, apps.NewErrorResponse(err)
+		}
 	}
 
 	switch apps.CallType(callType) {

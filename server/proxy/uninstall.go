@@ -12,7 +12,7 @@ import (
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, _, log := p.conf.Basic()
+	conf, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -69,7 +69,10 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 	}
 
 	// remove data
-	if err = p.store.AppKV.DeleteAll(app.BotUserID); err != nil {
+	err = p.store.AppKV.List(app.BotUserID, "", func(key string) error {
+		return mm.KV.Delete(key)
+	})
+	if err != nil {
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 

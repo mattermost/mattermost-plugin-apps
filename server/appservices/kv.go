@@ -20,3 +20,10 @@ func (a *AppServices) KVDelete(botUserID, prefix, id string) error {
 	}
 	return a.store.AppKV.Delete(botUserID, prefix, id)
 }
+
+func (a *AppServices) KVList(botUserID, prefix string, processf func(key string) error) error {
+	if err := a.ensureFromBot(botUserID); err != nil {
+		return err
+	}
+	return a.store.AppKV.List(botUserID, prefix, processf)
+}

@@ -30,6 +30,7 @@ type Service interface {
 	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
 	KVGet(botUserID, prefix, id string, ref interface{}) error
 	KVDelete(botUserID, prefix, id string) error
+	KVList(botUserID, namespace string, processf func(key string) error) error
 
 	// Remote (3rd party) OAuth2
 

@@ -9,8 +9,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func appIDForm(call apps.Call) *apps.Form {
-	return &apps.Form{
+func appIDForm(call apps.Call, extraFields ...apps.Field) *apps.Form {
+	form := &apps.Form{
 		Fields: []apps.Field{
 			{
 				Name:                 fAppID,
@@ -24,6 +24,8 @@ func appIDForm(call apps.Call) *apps.Form {
 		},
 		Call: &call,
 	}
+	form.Fields = append(form.Fields, extraFields...)
+	return form
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) ([]apps.SelectOption, error) {
