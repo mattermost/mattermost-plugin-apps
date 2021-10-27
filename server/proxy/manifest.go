@@ -25,7 +25,7 @@ func (p *Proxy) UpdateAppListing(req appclient.UpdateAppListingRequest) (*apps.M
 		if prev != nil {
 			prevDeploy = prev.Deploy
 		}
-		req.Manifest.Deploy = mergeDeployData(prevDeploy, req.Manifest.Deploy, req.AddDeployments, req.RemoveDeployments)
+		req.Manifest.Deploy = mergeDeployData(prevDeploy, req.Manifest.Deploy, req.AddDeploys, req.RemoveDeploys)
 	}
 
 	err := p.store.Manifest.StoreLocal(req.Manifest)

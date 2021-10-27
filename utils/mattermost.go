@@ -13,7 +13,7 @@ func CodeBlock(in string) string {
 }
 
 func JSONBlock(in interface{}) string {
-	return fmt.Sprintf("\n```json\n%s\n```\n", Pretty(in))
+	return CodeBlock(Pretty(in))
 }
 
 func EnsureSysAdmin(mm *pluginapi.Client, userID string) error {

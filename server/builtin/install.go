@@ -111,7 +111,7 @@ func (a *builtinApp) installHTTP() handler {
 			}
 			m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
 				Manifest:       *m,
-				AddDeployments: apps.DeployTypes{apps.DeployHTTP},
+				AddDeploys: apps.DeployTypes{apps.DeployHTTP},
 			})
 			if err != nil {
 				return apps.NewErrorResponse(err)

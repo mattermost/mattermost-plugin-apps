@@ -12,7 +12,7 @@ import (
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	conf, mm, log := p.conf.Basic()
+	_, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -59,13 +59,6 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 	// delete app
 	if err = p.store.App.Delete(app.AppID); err != nil {
 		return "", errors.Wrapf(err, "can't delete app - %s", app.AppID)
-	}
-
-	// in on-prem mode the manifest need to be deleted as every install add a manifest anyway
-	if !conf.MattermostCloudMode {
-		if err = p.store.Manifest.DeleteLocal(app.AppID); err != nil {
-			return "", errors.Wrapf(err, "can't delete manifest for uninstalled app - %s", app.AppID)
-		}
 	}
 
 	// remove data
