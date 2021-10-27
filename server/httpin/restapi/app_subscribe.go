@@ -11,7 +11,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -64,43 +63,37 @@ func (a *restapi) Unsubscribe(w http.ResponseWriter, r *http.Request, in proxy.I
 }
 
 func (a *restapi) handleSubscribeCore(w http.ResponseWriter, r *http.Request, in proxy.Incoming, isSubscribe bool) {
-	var err error
-	var logMessage string
-	status := http.StatusOK
-
-	defer func(log utils.Logger) {
-		if err != nil {
-			log.WithError(err).Warnw(logMessage)
-			http.Error(w, err.Error(), status)
+	log := a.conf.Logger()
+	status, logMessage, err := func() (int, string, error) {
+		var sub apps.Subscription
+		if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
+			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
-	}(a.conf.Logger())
 
-	var sub apps.Subscription
-	if err = json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		status = http.StatusBadRequest
-		logMessage = "Failed to parse Subscription"
-		return
-	}
+		sub.UserID = in.ActingUserID
 
-	sub.UserID = in.ActingUserID
+		if err := sub.Validate(); err != nil {
+			return http.StatusBadRequest, "Invalid Subscription", err
+		}
 
-	if err = sub.Validate(); err != nil {
-		status = http.StatusBadRequest
-		logMessage = "Invalid Subscription"
-		return
-	}
+		// TODO replace with an appropriate API-level call that would validate,
+		// deduplicate, etc.
+		var err error
+		if isSubscribe {
+			err = a.appServices.Subscribe(sub)
+		} else {
+			err = a.appServices.Unsubscribe(sub)
+		}
 
-	// TODO replace with an appropriate API-level call that would validate,
-	// deduplicate, etc.
-	if isSubscribe {
-		err = a.appServices.Subscribe(sub)
-	} else {
-		err = a.appServices.Unsubscribe(sub)
-	}
+		if err != nil {
+			return httputils.ErrorToStatus(err), "Failed to handle subscribe request", err
+		}
+
+		return http.StatusOK, "", err
+	}()
 
 	if err != nil {
-		status = httputils.ErrorToStatus(err)
-		logMessage = "Failed to handle subscribe request"
-		return
+		log.WithError(err).Warnw(logMessage)
+		http.Error(w, err.Error(), status)
 	}
 }
