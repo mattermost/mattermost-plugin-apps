@@ -40,7 +40,7 @@ func NewUpstream(httpOut httpout.Service, devMode bool, appRootURL func(apps.App
 }
 
 func AppRootURL(app apps.App, _ string) (string, error) {
-	if !app.Manifest.SupportsDeploy(apps.DeployHTTP) {
+	if !app.Manifest.Contains(apps.DeployHTTP) {
 		return "", errors.New("failed to get root URL: no http section in manifest.json")
 	}
 	return app.Manifest.HTTP.RootURL, nil
@@ -89,7 +89,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 	// TODO: find a better way to control the use of JWT that both OpenFaaS and
 	// HTTP can share. For now, hard-limit the use of JWT to the HTTP gateway
 	// itself.
-	if app.HTTP != nil && app.HTTP.UseJWT {
+	if app.Manifest.Contains(apps.DeployHTTP) && app.Manifest.HTTP.UseJWT {
 		jwtoken := ""
 		jwtoken, err = createJWT(fromMattermostUserID, app.Secret)
 		if err != nil {

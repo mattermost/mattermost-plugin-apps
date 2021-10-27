@@ -29,7 +29,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
-	if !m.SupportsDeploy(deployType) {
+	if !m.Contains(deployType) {
 		return nil, "", errors.Errorf("app does not support %s deployment", deployType)
 	}
 	err = CanDeploy(p, deployType)

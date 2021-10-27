@@ -5,10 +5,11 @@ package builtin
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
-var installURLCall = apps.Call{
-	Path: pInstallURL,
+var installHTTPCall = apps.Call{
+	Path: pInstallHTTP,
 	Expand: &apps.Expand{
 		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
 	},
@@ -47,24 +48,24 @@ func (a *builtinApp) installCommandBinding() apps.Binding {
 					Form:        appIDForm(installListedCall),
 				},
 				{
-					Label:       "url",
-					Location:    "url",
-					Hint:        "[manifest.json URL]",
-					Description: "Installs an App from an HTTP URL",
-					Call:        &installURLCall,
+					Label:       "http",
+					Location:    "http",
+					Hint:        "[URL to manifest.json]",
+					Description: "Installs an HTTP App from a URL",
+					Call:        &installHTTPCall,
 					Form: &apps.Form{
 						Fields: []apps.Field{
 							{
 								Name:                 fURL,
 								Type:                 apps.FieldTypeText,
-								Description:          "enter the URL for the app's manifest.json",
+								Description:          "enter the HTTP URL for the app's manifest.json",
 								Label:                fURL,
 								AutocompleteHint:     "URL",
 								AutocompletePosition: 1,
 								IsRequired:           true,
 							},
 						},
-						Call: &installURLCall,
+						Call: &installHTTPCall,
 					},
 				},
 			},
@@ -77,9 +78,7 @@ func (a *builtinApp) installListed() handler {
 		requireSysadmin: true,
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return !app.Installed
-			})
+			res, err := a.lookupAppID(creq, nil)
 			return res, err
 		},
 
@@ -90,12 +89,12 @@ func (a *builtinApp) installListed() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, ""))
 		},
 	}
 }
 
-func (a *builtinApp) installURL() handler {
+func (a *builtinApp) installHTTP() handler {
 	return handler{
 		requireSysadmin: true,
 
@@ -110,12 +109,15 @@ func (a *builtinApp) installURL() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			_, err = a.proxy.StoreLocalManifest(*m)
+			m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
+				Manifest:       *m,
+				AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+			})
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, apps.DeployHTTP))
 		},
 	}
 }

@@ -41,8 +41,11 @@ var openfaasDeployCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if m.OpenFAAS == nil || len(m.OpenFAAS.Functions) == 0 {
-			return errors.New("no functions to deploy, check manifest.json")
+		if !m.Contains(apps.DeployOpenFAAS) {
+			return errors.New("manifest.json unexpectedly contains no OpenFaaS data")
+		}
+		if len(m.OpenFAAS.Functions) == 0 {
+			return errors.New("no OpenFaaS functions to deploy in manifest.json")
 		}
 
 		if err = updateMattermost(*m, apps.DeployOpenFAAS, install); err != nil {

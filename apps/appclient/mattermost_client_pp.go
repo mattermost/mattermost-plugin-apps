@@ -168,14 +168,32 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 	return model.BuildResponse(r), nil
 }
 
-// StoreListedApp adds a specified App manifest to the local store.
-func (c *ClientPP) StoreListedApp(m apps.Manifest) (*model.Response, error) {
-	b, err := json.Marshal(&m)
+type UpdateAppListingRequest struct {
+	// Manifest is the new app manifest to list.
+	apps.Manifest
+
+	// Replace causes the previously listed manifest to be dropped entirely.
+	// When false, the deployment data from the new manifest will be combined
+	// with the prerviously listed one.
+	Replace bool
+
+	// AddDeploys specifies which deployment types should be added to the
+	// listing.
+	AddDeploys apps.DeployTypes `json:"add_deploys,omitempty"`
+
+	// RemoveDeploys specifies which deployment types should be removed from
+	// the listing.
+	RemoveDeploys apps.DeployTypes `json:"remove_deploys,omitempty"`
+}
+
+// UpdateAppListing adds a specified App manifest to the local store.
+func (c *ClientPP) UpdateAppListing(req UpdateAppListingRequest) (*model.Response, error) {
+	b, err := json.Marshal(&req)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := c.DoAPIPOST(c.apipath(appspath.StoreListedApp), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.UpdateAppListing), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
