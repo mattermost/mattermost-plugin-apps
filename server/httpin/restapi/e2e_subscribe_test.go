@@ -25,7 +25,6 @@ func TestSubscribeE2E(t *testing.T) {
 			AppID:     "test-apiId",
 			Subject:   apps.SubjectUserJoinedChannel,
 			ChannelID: th.ServerTestHelper.BasicChannel.Id,
-			TeamID:    th.ServerTestHelper.BasicTeam.Id,
 			Call: apps.Call{
 				Path: "/some/path",
 			},
@@ -51,7 +50,6 @@ func TestSubscribeE2E(t *testing.T) {
 			AppID:     "test-apiId",
 			Subject:   apps.SubjectUserJoinedChannel,
 			ChannelID: th.ServerTestHelper.BasicChannel.Id,
-			TeamID:    th.ServerTestHelper.BasicTeam.Id,
 			Call: apps.Call{
 				Path: "/some/path",
 			},
@@ -87,7 +85,6 @@ func TestSubscribeE2E(t *testing.T) {
 			AppID:     "test-apiId",
 			Subject:   apps.SubjectUserJoinedChannel,
 			ChannelID: th.ServerTestHelper.BasicChannel.Id,
-			TeamID:    th.ServerTestHelper.BasicTeam.Id,
 			Call: apps.Call{
 				Path: "/some/path",
 			},
@@ -106,7 +103,6 @@ func TestSubscribeE2E(t *testing.T) {
 			AppID:     "test-apiId",
 			Subject:   apps.SubjectUserJoinedChannel,
 			ChannelID: th.ServerTestHelper.BasicChannel.Id,
-			TeamID:    th.ServerTestHelper.BasicTeam.Id,
 			Call: apps.Call{
 				Path: "/some/path",
 			},
