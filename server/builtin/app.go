@@ -31,7 +31,6 @@ const (
 	fConsent        = "consent"
 	fSecret         = "secret"
 	fAppID          = "app"
-	fVersion        = "version"
 	fIncludePlugins = "include_plugins"
 	fDeployType     = "deploy_type"
 )
@@ -217,8 +216,4 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
-}
-
-func emptyForm(_ apps.CallRequest) apps.CallResponse {
-	return apps.NewFormResponse(apps.Form{})
 }

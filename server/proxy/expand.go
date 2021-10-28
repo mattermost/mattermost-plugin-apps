@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"log"
 	"path"
 
 	"github.com/pkg/errors"
@@ -51,7 +50,6 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 		}
 
-		log.Printf("in: %#+v\n", in)
 		err = in.ensureAdminToken(mm)
 		if err != nil {
 			return emptyCC, errors.Wrap(err, "failed to ensure there is a admin Token")

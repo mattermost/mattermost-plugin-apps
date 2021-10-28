@@ -44,80 +44,80 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 			Call: &installListedCall,
 			Form: a.appIDForm(installListedCall, loc),
 		}
-	} else {
-		return apps.Binding{
-			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.enable.install.label",
-				Other: "install",
-			}),
-			Location: "install",
-			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.enable.install.hint",
-				Other: "[ listed | url ]",
-			}),
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.enable.install.description",
-				Other: "Installs an App, locally deployed or from a remote URL",
-			}),
-			Bindings: []apps.Binding{
-				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.listed.label",
-						Other: "listed",
-					}),
-					Location: "listed",
-					Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.listed.hint",
-						Other: "[app ID]",
-					}),
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.listed.description",
-						Other: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
-					}),
-					Call: &installListedCall,
-					Form: a.appIDForm(installListedCall, loc),
-				},
-				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.http.label",
-						Other: "http",
-					}),
-					Location: "http",
-					Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.http.hint",
-						Other: "[URL to manifest.json]",
-					}),
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.http.description",
-						Other: "Installs an HTTP App from a URL",
-					}),
-					Call: &installHTTPCall,
-					Form: &apps.Form{
-						Fields: []apps.Field{
-							{
-								Name: fURL,
-								Type: apps.FieldTypeText,
-								Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.http.form.description",
-									Other: "enter the HTTP URL for the app's manifest.json",
-								}),
-								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.http.form.label",
-									Other: "url",
-								}),
-								AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.http.form.autocompleteHint",
-									Other: "URL",
-								}),
-								AutocompletePosition: 1,
-								IsRequired:           true,
-							},
+	}
+
+	return apps.Binding{
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.install.label",
+			Other: "install",
+		}),
+		Location: "install",
+		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.install.hint",
+			Other: "[ listed | url ]",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.install.description",
+			Other: "Installs an App, locally deployed or from a remote URL",
+		}),
+		Bindings: []apps.Binding{
+			{
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.listed.label",
+					Other: "listed",
+				}),
+				Location: "listed",
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.listed.hint",
+					Other: "[app ID]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.listed.description",
+					Other: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
+				}),
+				Call: &installListedCall,
+				Form: a.appIDForm(installListedCall, loc),
+			},
+			{
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.http.label",
+					Other: "http",
+				}),
+				Location: "http",
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.http.hint",
+					Other: "[URL to manifest.json]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.install.http.description",
+					Other: "Installs an HTTP App from a URL",
+				}),
+				Call: &installHTTPCall,
+				Form: &apps.Form{
+					Fields: []apps.Field{
+						{
+							Name: fURL,
+							Type: apps.FieldTypeText,
+							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "command.enable.install.http.form.description",
+								Other: "enter the HTTP URL for the app's manifest.json",
+							}),
+							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "command.enable.install.http.form.label",
+								Other: "url",
+							}),
+							AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "command.enable.install.http.form.autocompleteHint",
+								Other: "URL",
+							}),
+							AutocompletePosition: 1,
+							IsRequired:           true,
 						},
-						Call: &installHTTPCall,
 					},
+					Call: &installHTTPCall,
 				},
 			},
-		}
+		},
 	}
 }
 
