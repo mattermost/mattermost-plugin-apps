@@ -98,7 +98,12 @@ func (sub Subscription) Validate() error {
 	}
 
 	switch sub.Subject {
-	case SubjectUserCreated:
+	case SubjectUserCreated,
+		SubjectBotJoinedChannel,
+		SubjectBotLeftChannel,
+		SubjectBotJoinedTeam,
+		SubjectBotLeftTeam,
+		SubjectBotMentioned:
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
@@ -108,10 +113,7 @@ func (sub Subscription) Validate() error {
 
 	case SubjectUserJoinedChannel,
 		SubjectUserLeftChannel,
-		SubjectBotJoinedChannel,
-		SubjectBotLeftChannel,
-		SubjectPostCreated,
-		SubjectBotMentioned:
+		SubjectPostCreated:
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
@@ -122,8 +124,6 @@ func (sub Subscription) Validate() error {
 
 	case SubjectUserJoinedTeam,
 		SubjectUserLeftTeam,
-		SubjectBotJoinedTeam,
-		SubjectBotLeftTeam,
 		SubjectChannelCreated:
 		if sub.TeamID == "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
@@ -132,6 +132,8 @@ func (sub Subscription) Validate() error {
 		if sub.ChannelID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
 		}
+	default:
+		result = multierror.Append(result, utils.NewInvalidError("Unknown subject %s", sub.Subject))
 	}
 
 	return result

@@ -27,9 +27,16 @@ type subscriptionStore struct {
 
 var _ SubscriptionStore = (*subscriptionStore)(nil)
 
-func subsKey(subject apps.Subject, teamID, channelID string) string {
+func subsKey(subject apps.Subject, teamID, channelID string) (string, error) {
 	idSuffix := ""
 	switch subject {
+	case apps.SubjectUserCreated,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
+		apps.SubjectBotJoinedTeam,
+		apps.SubjectBotLeftTeam,
+		apps.SubjectBotMentioned:
+		// Global, no suffix
 	case apps.SubjectUserJoinedChannel,
 		apps.SubjectUserLeftChannel,
 		apps.SubjectPostCreated:
@@ -38,15 +45,21 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 		apps.SubjectUserLeftTeam,
 		apps.SubjectChannelCreated:
 		idSuffix = "." + teamID
+	default:
+		return "", errors.Errorf("Unknown subject %s", subject)
 	}
-	return config.KVSubPrefix + string(subject) + idSuffix
+	return config.KVSubPrefix + string(subject) + idSuffix, nil
 }
 
 func (s subscriptionStore) Delete(sub apps.Subscription) error {
-	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	if err != nil {
+		return err
+	}
+
 	// get all subscriptions for the subject
 	var subs []apps.Subscription
-	err := s.conf.MattermostAPI().KV.Get(key, &subs)
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}
@@ -73,9 +86,13 @@ func (s subscriptionStore) Delete(sub apps.Subscription) error {
 }
 
 func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
-	key := subsKey(subject, teamID, channelID)
+	key, err := subsKey(subject, teamID, channelID)
+	if err != nil {
+		return nil, err
+	}
+
 	var subs []apps.Subscription
-	err := s.conf.MattermostAPI().KV.Get(key, &subs)
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +138,13 @@ func (s subscriptionStore) ListByUserID(userID string) ([]apps.Subscription, err
 }
 
 func (s subscriptionStore) Save(sub apps.Subscription) error {
-	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	if err != nil {
+		return err
+	}
 	// get all subscriptions for the subject
 	var subs []apps.Subscription
-	err := s.conf.MattermostAPI().KV.Get(key, &subs)
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}

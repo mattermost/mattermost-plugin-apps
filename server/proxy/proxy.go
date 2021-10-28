@@ -184,7 +184,7 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 
 func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub)
+		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub, base.ChannelID, base.TeamID)
 		if err != nil {
 			// Don't log the error it can be to spammy
 			continue
