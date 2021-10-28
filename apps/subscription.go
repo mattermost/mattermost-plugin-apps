@@ -89,14 +89,49 @@ type Subscription struct {
 func (sub Subscription) Validate() error {
 	var result error
 	if sub.Subject == "" {
-		result = multierror.Append(result,
-			utils.NewInvalidError("subject most not be empty"))
+		result = multierror.Append(result, utils.NewInvalidError("subject most not be empty"))
 	}
 
 	emptyCall := Call{}
 	if sub.Call == emptyCall {
-		result = multierror.Append(result,
-			utils.NewInvalidError("call most not be empty"))
+		result = multierror.Append(result, utils.NewInvalidError("call most not be empty"))
+	}
+
+	switch sub.Subject {
+	case SubjectUserCreated:
+		if sub.TeamID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
+		}
+		if sub.ChannelID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		}
+
+	case SubjectUserJoinedChannel,
+		SubjectUserLeftChannel,
+		SubjectBotJoinedChannel,
+		SubjectBotLeftChannel,
+		SubjectPostCreated,
+		SubjectBotMentioned:
+		if sub.TeamID == "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
+		}
+
+		if sub.ChannelID == "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must not be empty"))
+		}
+
+	case SubjectUserJoinedTeam,
+		SubjectUserLeftTeam,
+		SubjectBotJoinedTeam,
+		SubjectBotLeftTeam,
+		SubjectChannelCreated:
+		if sub.TeamID == "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
+		}
+
+		if sub.ChannelID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		}
 	}
 
 	return result
