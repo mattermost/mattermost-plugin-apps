@@ -5,11 +5,12 @@ package builtin
 
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var installURLCall = apps.Call{
-	Path: pInstallURL,
+var installHTTPCall = apps.Call{
+	Path: pInstallHTTP,
 	Expand: &apps.Expand{
 		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
 	},
@@ -76,41 +77,41 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 				},
 				{
 					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.url.label",
-						Other: "url",
+						ID:    "command.enable.install.http.label",
+						Other: "http",
 					}),
-					Location: "url",
+					Location: "http",
 					Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.url.hint",
-						Other: "[manifest.json URL]",
+						ID:    "command.enable.install.http.hint",
+						Other: "[URL to manifest.json]",
 					}),
 					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.install.url.description",
-						Other: "Installs an App from an HTTP URL",
+						ID:    "command.enable.install.http.description",
+						Other: "Installs an HTTP App from a URL",
 					}),
-					Call: &installURLCall,
+					Call: &installHTTPCall,
 					Form: &apps.Form{
 						Fields: []apps.Field{
 							{
 								Name: fURL,
 								Type: apps.FieldTypeText,
 								Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.url.form.description",
-									Other: "enter the URL for the app's manifest.json",
+									ID:    "command.enable.install.http.form.description",
+									Other: "enter the HTTP URL for the app's manifest.json",
 								}),
 								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.url.form.label",
+									ID:    "command.enable.install.http.form.label",
 									Other: "url",
 								}),
 								AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "command.enable.install.url.form.autocompleteHint",
+									ID:    "command.enable.install.http.form.autocompleteHint",
 									Other: "URL",
 								}),
 								AutocompletePosition: 1,
 								IsRequired:           true,
 							},
 						},
-						Call: &installURLCall,
+						Call: &installHTTPCall,
 					},
 				},
 			},
@@ -123,9 +124,7 @@ func (a *builtinApp) installListed() handler {
 		requireSysadmin: true,
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return !app.Installed
-			})
+			res, err := a.lookupAppID(creq, nil)
 			return res, err
 		},
 
@@ -137,12 +136,12 @@ func (a *builtinApp) installListed() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, loc))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, "", loc))
 		},
 	}
 }
 
-func (a *builtinApp) installURL() handler {
+func (a *builtinApp) installHTTP() handler {
 	return handler{
 		requireSysadmin: true,
 
@@ -158,12 +157,15 @@ func (a *builtinApp) installURL() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			_, err = a.proxy.StoreLocalManifest(*m)
+			m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
+				Manifest:   *m,
+				AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+			})
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, loc))
+			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, apps.DeployHTTP, loc))
 		},
 	}
 }

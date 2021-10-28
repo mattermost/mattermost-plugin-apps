@@ -24,7 +24,7 @@ func DeployApp(bundlePath string, log utils.Logger, shouldUpdate bool) (*apps.Ma
 	}
 	defer os.RemoveAll(dir)
 
-	if !m.SupportsDeploy(apps.DeployKubeless) {
+	if !m.Contains(apps.DeployKubeless) {
 		return nil, errors.Wrap(err, "no 'kubeless' section in manifest.json")
 	}
 

@@ -19,34 +19,20 @@ func (a *builtinApp) installConsent() handler {
 
 		formf: func(creq apps.CallRequest) (*apps.Form, error) {
 			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
-			id, ok := creq.State.(string)
-			if !ok {
-				return nil, errors.New("no app ID in state, don't know what to install")
-			}
-			appID := apps.AppID(id)
-
-			m, err := a.proxy.GetManifest(appID)
+			m, err := a.stateAsManifest(creq)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "failed to find a valid manifest in State")
 			}
-
-			return a.newInstallConsentForm(*m, creq, loc), nil
+			return a.newInstallConsentForm(*m, creq, "", loc), nil
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 			secret := creq.GetValue(fSecret, "")
 			consent := creq.BoolValue(fConsent)
-			id, ok := creq.State.(string)
-			if !ok {
-				return apps.NewErrorResponse(
-					errors.New("no app ID in state, don't know what to install"))
-			}
-			appID := apps.AppID(id)
-
-			m, err := a.proxy.GetManifest(appID)
+			m, err := a.stateAsManifest(creq)
 			if err != nil {
-				return apps.NewErrorResponse(errors.Wrap(err, "failed to load App manifest"))
+				return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 			}
 			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
 				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
@@ -54,7 +40,7 @@ func (a *builtinApp) installConsent() handler {
 
 			_, out, err := a.proxy.InstallApp(
 				proxy.NewIncomingFromContext(creq.Context),
-				creq.Context, appID, deployType, true, secret)
+				creq.Context, m.AppID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
 			}
@@ -64,26 +50,31 @@ func (a *builtinApp) installConsent() handler {
 	}
 }
 
-func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest, loc *i18n.Localizer) (field apps.Field, selected apps.SelectOption) {
+func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest, requestedType apps.DeployType, loc *i18n.Localizer) (
+	apps.Field, apps.DeployType) {
 	opts := []apps.SelectOption{}
-	// Deploy types are not localized
-	for _, deployType := range m.DeployTypes() {
-		_, canUse := a.proxy.CanDeploy(deployType)
+
+	// See if there's user selection for the current value of the field.
+	requestedType = apps.DeployType(creq.GetValue(fDeployType, string(requestedType)))
+
+	var selectedValue *apps.SelectOption
+	var selectedType apps.DeployType
+	for _, typ := range m.DeployTypes() {
+		_, canUse := a.proxy.CanDeploy(typ)
 		if canUse {
-			opts = append(opts, apps.SelectOption{
-				Label: deployType.String(),
-				Value: string(deployType),
-			})
+			opt := apps.SelectOption{
+				Label: typ.String(),
+				Value: string(typ),
+			}
+			opts = append(opts, opt)
+			if typ == requestedType {
+				selectedValue = &opt
+				selectedType = typ
+			}
 		}
 	}
-
-	dtype := apps.DeployType(creq.GetValue(fDeployType, ""))
-	defaultValue := apps.SelectOption{
-		Label: dtype.String(),
-		Value: string(dtype),
-	}
 	if len(opts) == 1 {
-		defaultValue = opts[0]
+		selectedValue = &opts[0]
 	}
 
 	return apps.Field{
@@ -104,13 +95,11 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 		}),
 		SelectRefresh:       true,
 		SelectStaticOptions: opts,
-		Value:               defaultValue,
-	}, defaultValue
+		Value:               selectedValue,
+	}, selectedType
 }
 
-func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest, loc *i18n.Localizer) *apps.Form {
-	deployTypeField, selected := a.newConsentDeployTypeField(m, creq, loc)
-	deployType := apps.DeployType(selected.Value)
+func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest, deployType apps.DeployType, loc *i18n.Localizer) *apps.Form {
 	fields := []apps.Field{}
 
 	// Consent
@@ -147,6 +136,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		}))
 		consent = header + consent + "---\n"
 
+		value := creq.BoolValue(fConsent)
 		fields = append(fields, apps.Field{
 			Name: fConsent,
 			Type: apps.FieldTypeBool,
@@ -156,14 +146,15 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			}),
 			Description: "",
 			IsRequired:  true,
+			Value:       value,
 		})
 	}
 
-	// Deployment type
+	deployTypeField, deployType := a.newConsentDeployTypeField(m, creq, deployType, loc)
 	fields = append(fields, deployTypeField)
 
 	// JWT secret
-	if deployType == apps.DeployHTTP && m.SupportsDeploy(apps.DeployHTTP) && m.HTTP.UseJWT {
+	if deployType == apps.DeployHTTP && m.Contains(apps.DeployHTTP) && m.HTTP.UseJWT {
 		fields = append(fields, apps.Field{
 			Name: fSecret,
 			Type: apps.FieldTypeText,
@@ -211,4 +202,14 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		},
 		// Icon: iconURL, see above TODO
 	}
+}
+
+func (a *builtinApp) stateAsManifest(creq apps.CallRequest) (*apps.Manifest, error) {
+	id, ok := creq.State.(string)
+	if !ok {
+		return nil, errors.New("no app ID in State, don't know what to install")
+	}
+	appID := apps.AppID(id)
+
+	return a.proxy.GetManifest(appID)
 }

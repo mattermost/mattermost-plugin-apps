@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	appclient "github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -356,21 +357,6 @@ func (mr *MockServiceMockRecorder) NotifyUserHasLeftTeam(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftTeam), arg0)
 }
 
-// StoreLocalManifest mocks base method.
-func (m *MockService) StoreLocalManifest(arg0 apps.Manifest) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreLocalManifest", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// StoreLocalManifest indicates an expected call of StoreLocalManifest.
-func (mr *MockServiceMockRecorder) StoreLocalManifest(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreLocalManifest", reflect.TypeOf((*MockService)(nil).StoreLocalManifest), arg0)
-}
-
 // SynchronizeInstalledApps mocks base method.
 func (m *MockService) SynchronizeInstalledApps() error {
 	m.ctrl.T.Helper()
@@ -398,4 +384,19 @@ func (m *MockService) UninstallApp(arg0 proxy.Incoming, arg1 apps.Context, arg2 
 func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UninstallApp", reflect.TypeOf((*MockService)(nil).UninstallApp), arg0, arg1, arg2)
+}
+
+// UpdateAppListing mocks base method.
+func (m *MockService) UpdateAppListing(arg0 appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAppListing", arg0)
+	ret0, _ := ret[0].(*apps.Manifest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateAppListing indicates an expected call of UpdateAppListing.
+func (mr *MockServiceMockRecorder) UpdateAppListing(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAppListing", reflect.TypeOf((*MockService)(nil).UpdateAppListing), arg0)
 }

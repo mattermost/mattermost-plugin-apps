@@ -49,7 +49,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 }
 
 func (u *Upstream) invoke(app apps.App, fromMattermostUserID string, creq apps.CallRequest) (*http.Response, error) {
-	if !app.SupportsDeploy(apps.DeployPlugin) {
+	if !app.Contains(apps.DeployPlugin) {
 		return nil, errors.New("app is not available as type plugin")
 	}
 
