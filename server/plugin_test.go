@@ -61,6 +61,7 @@ func TestOnActivate(t *testing.T) {
 
 	expectLog(testAPI, "LogDebug", 9)
 	expectLog(testAPI, "LogInfo", 5)
+	expectLog(testAPI, "LogError", 3)
 
 	testAPI.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 
