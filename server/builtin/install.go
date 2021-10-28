@@ -12,14 +12,16 @@ import (
 var installHTTPCall = apps.Call{
 	Path: pInstallHTTP,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+		AdminAccessToken:      apps.ExpandAll, // ensure sysadmin
+		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
 
 var installListedCall = apps.Call{
 	Path: pInstallListed,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+		AdminAccessToken:      apps.ExpandAll, // ensure sysadmin
+		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
 

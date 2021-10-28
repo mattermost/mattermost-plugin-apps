@@ -118,6 +118,7 @@ func App(conf config.Config) apps.App {
 			apps.LocationCommand,
 		},
 		GrantedPermissions: apps.Permissions{
+			apps.PermissionActAsUser,
 			apps.PermissionActAsAdmin,
 		},
 	}

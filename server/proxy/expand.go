@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"log"
 	"path"
 
 	"github.com/pkg/errors"
@@ -45,28 +46,18 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		return emptyCC, err
 	}
 
-	var userSession *model.Session
 	if expand.AdminAccessToken != "" {
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
 		}
-		err := utils.EnsureSysAdmin(p.conf.MattermostAPI(), cc.ActingUserID)
+
+		log.Printf("in: %#+v\n", in)
+		err = in.ensureAdminToken(mm)
 		if err != nil {
-			return emptyCC, utils.NewForbiddenError("user is not a sysadmin")
+			return emptyCC, errors.Wrap(err, "failed to ensure there is a admin Token")
 		}
-		// See if we can derive the admin token from the "base" context
+
 		cc.AdminAccessToken = in.AdminAccessToken
-		if cc.AdminAccessToken == "" {
-			cc.AdminAccessToken = in.ActingUserAccessToken
-		}
-		// Try to obtain it from the present session
-		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-			if err != nil {
-				return emptyCC, utils.NewForbiddenError("failed to load user session")
-			}
-			cc.AdminAccessToken = userSession.Token
-		}
 		if cc.AdminAccessToken == "" {
 			return cc, errors.New("admin access token is not available")
 		}
@@ -76,17 +67,13 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
-		cc.ActingUserAccessToken = in.ActingUserAccessToken
-		if cc.ActingUserAccessToken == "" {
-			if userSession == nil {
-				var err error
-				userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-				if err != nil {
-					return emptyCC, utils.NewForbiddenError("failed to load user session")
-				}
-			}
-			cc.ActingUserAccessToken = userSession.Token
+
+		err = in.ensureUserToken(mm)
+		if err != nil {
+			return emptyCC, errors.Wrap(err, "failed to ensure there is a user Token")
 		}
+
+		cc.ActingUserAccessToken = in.ActingUserAccessToken
 		if cc.ActingUserAccessToken == "" {
 			return emptyCC, utils.NewForbiddenError("acting user token is not available")
 		}
