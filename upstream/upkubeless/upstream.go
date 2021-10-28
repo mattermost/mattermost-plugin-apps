@@ -41,7 +41,7 @@ func MakeUpstream() (*Upstream, error) {
 }
 
 func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
-	if !app.SupportsDeploy(apps.DeployKubeless) {
+	if !app.Contains(apps.DeployKubeless) {
 		return nil, errors.New("no 'kubeless' section in manifest.json")
 	}
 	clientset := kubelessutil.GetClientOutOfCluster()

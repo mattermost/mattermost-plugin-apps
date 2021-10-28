@@ -50,7 +50,7 @@ func (u *Upstream) appRootURL(app apps.App, path string) (string, error) {
 }
 
 func RootURL(m apps.Manifest, gateway, path string) (string, error) {
-	if m.OpenFAAS == nil {
+	if !m.Contains(apps.DeployOpenFAAS) {
 		return "", errors.Errorf("failed to get root URL: app %s has no open_faas section in manifest.json", m.AppID)
 	}
 

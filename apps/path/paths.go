@@ -21,11 +21,11 @@ const (
 	Call = "/call"
 
 	// Administration.
-	EnableApp      = "/enable-app"
-	DisableApp     = "/disable-app"
-	InstallApp     = "/install-app"
-	UninstallApp   = "/uninstall-app"
-	StoreListedApp = "/add-listed-app"
+	EnableApp        = "/enable-app"
+	DisableApp       = "/disable-app"
+	InstallApp       = "/install-app"
+	UninstallApp     = "/uninstall-app"
+	UpdateAppListing = "/update-app-listing"
 
 	// Marketplace and local manifest store.
 	Marketplace = "/marketplace"
