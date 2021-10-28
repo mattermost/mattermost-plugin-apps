@@ -112,8 +112,8 @@ func (sub Subscription) Validate() error {
 		SubjectBotLeftChannel,
 		SubjectPostCreated,
 		SubjectBotMentioned:
-		if sub.TeamID == "" {
-			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
+		if sub.TeamID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
 
 		if sub.ChannelID == "" {

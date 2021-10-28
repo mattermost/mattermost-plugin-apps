@@ -597,6 +597,8 @@ func TestUserHasBeenCreated(t *testing.T) {
 }
 
 func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
+	t.Helper()
+
 	ctrl := gomock.NewController(t)
 
 	conf, testAPI := config.NewTestService(&config.Config{
