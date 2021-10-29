@@ -17,8 +17,8 @@
 				"is_required": true
 			}
 		],
-		"call": {
-			"path": "/configure",
+		"submit": {
+			"path": "/configure/submit",
 			"expand": {
 				"acting_user_access_token": "all"
 			}

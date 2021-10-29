@@ -10,8 +10,8 @@
 				"label": "message"
 			}
 		],
-		"call": {
-			"path": "/send"
+		"submit": {
+			"path": "/send/submit"
 		}
 	}
 }

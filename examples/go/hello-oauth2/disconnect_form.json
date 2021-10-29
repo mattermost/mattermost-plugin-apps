@@ -3,8 +3,8 @@
 	"form": {
 		"title": "Disconnect your Google account",
 		"icon": "icon.png",
-		"call": {
-			"path": "/disconnect",
+		"submit": {
+			"path": "/disconnect/submit",
 			"expand": {
 				"acting_user_access_token": "all"
 			}

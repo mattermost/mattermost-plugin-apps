@@ -13,15 +13,19 @@
 						{
 							"location": "send",
 							"label": "send",
-							"call": {
-								"path": "/send"
+							"form": {
+								"source": {
+									"path": "/send/form"
+								}
 							}
 						},
 						{
 							"location": "info",
 							"label": "info",
-							"call": {
-								"path": "/info"
+							"form": {
+								"source": {
+									"path": "/info/form"
+								}
 							}
 						}
 					]

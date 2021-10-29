@@ -13,8 +13,10 @@
 						{
 							"location": "send",
 							"label": "send",
-							"call": {
-								"path": "/send"
+							"form": {
+								"source": {
+									"path": "/send/form"
+								}
 							}
 						}
 					]

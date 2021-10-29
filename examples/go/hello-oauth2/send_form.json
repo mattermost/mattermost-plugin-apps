@@ -3,8 +3,8 @@
 	"form": {
 		"title": "Send a Google-connected 'hello, world!' message",
 		"icon": "icon.png",
-		"call": {
-			"path": "/send",
+		"submit": {
+			"path": "/send/submit",
 			"expand": {
 				"oauth2_user": "all"
 			}

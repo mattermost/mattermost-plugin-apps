@@ -3,8 +3,8 @@
 	"form": {
 		"title": "Send a test webhook message",
 		"icon": "icon.png",
-		"call": {
-			"path": "/send"
+		"submit": {
+			"path": "/send/submit"
 		},
 		"fields": [
 			{

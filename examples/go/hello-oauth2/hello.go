@@ -108,7 +108,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 		connect := apps.Binding{
 			Location: "connect",
 			Label:    "connect",
-			Form:     apps.NewBlankForm(apps.NewCall("/connect")),
+			Form:     apps.NewFormRef(apps.NewCall("/connect/form")),
 		}
 
 		commandBinding.Bindings = append(commandBinding.Bindings, connect)
@@ -116,13 +116,13 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 		send := apps.Binding{
 			Location: "send",
 			Label:    "send",
-			Form:     apps.NewBlankForm(apps.NewCall("/send")),
+			Form:     apps.NewFormRef(apps.NewCall("/send/form")),
 		}
 
 		disconnect := apps.Binding{
 			Location: "disconnect",
 			Label:    "disconnect",
-			Form:     apps.NewBlankForm(apps.NewCall("/disconnect")),
+			Form:     apps.NewFormRef(apps.NewCall("/disconnect/form")),
 		}
 		commandBinding.Bindings = append(commandBinding.Bindings, send, disconnect)
 	}
@@ -131,7 +131,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 		configure := apps.Binding{
 			Location: "configure",
 			Label:    "configure",
-			Form:     apps.NewBlankForm(apps.NewCall("/configure")),
+			Form:     apps.NewFormRef(apps.NewCall("/configure/form")),
 		}
 		commandBinding.Bindings = append(commandBinding.Bindings, configure)
 	}

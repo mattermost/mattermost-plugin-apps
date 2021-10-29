@@ -3,8 +3,8 @@
 	"form": {
 		"title": "Display the webhook URL",
 		"icon": "icon.png",
-		"call": {
-			"path": "/info",
+		"submit": {
+			"path": "/info/submit",
 			"expand": {
 				"app": "all"
 			}

@@ -53,10 +53,8 @@ var bindings = []apps.Binding{
 					{
 						Location: "send",
 						Label:    "send",
-						Form: &apps.Form{
-							Submit: &apps.Call{
-								Path: "/send",
-							},
+						Submit: &apps.Call{
+							Path: "/send",
 						},
 					},
 				},
@@ -78,7 +76,7 @@ func main() {
 		httputils.HandleStaticJSON(apps.NewDataResponse(bindings))))
 
 	// The main handler for sending a Hello message.
-	http.HandleFunc("/send/submit", withJWT(
+	http.HandleFunc("/send", withJWT(
 		send))
 
 	// Serves the icon for the app.

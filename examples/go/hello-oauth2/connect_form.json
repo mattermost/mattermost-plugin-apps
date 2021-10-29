@@ -3,8 +3,8 @@
 	"form": {
 		"title": "Connect to Google",
 		"icon": "icon.png",
-		"call": {
-			"path": "/connect",
+		"submit": {
+			"path": "/connect/submit",
 			"expand": {
 				"oauth2_app": "all"
 			}
