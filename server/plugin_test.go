@@ -1,9 +1,11 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/v6/plugin/plugintest/mock"
@@ -82,8 +84,11 @@ func TestOnDeactivate(t *testing.T) {
 
 	p.API = testAPI
 
+	testAPI.On("GetBundlePath").Return("/", nil)
+	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id", nil)
+	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id", nil, i18nBundle)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 

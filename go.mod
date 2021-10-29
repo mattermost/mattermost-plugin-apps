@@ -13,6 +13,7 @@ require (
 	github.com/kubeless/kubeless v1.0.8
 	github.com/mattermost/mattermost-plugin-api v0.0.21
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20210901153517-42e75fad4dae
+	github.com/nicksnyder/go-i18n/v2 v2.0.3
 	github.com/openfaas/faas-cli v0.0.0-20210705110531-a230119be00f
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.2.0
