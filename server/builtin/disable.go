@@ -6,14 +6,26 @@ package builtin
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var disableCommandBinding = apps.Binding{
-	Label:       "disable",
-	Location:    "disable",
-	Hint:        "[ App ID ]",
-	Description: "Disables an App",
-	Form:        appIDForm(newAdminCall(pDisable), newAdminCall(pDisableLookup)),
+func (a *builtinApp) disableCommandBinding(loc *i18n.Localizer) apps.Binding {
+	return apps.Binding{
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.disable.label",
+			Other: "disable",
+		}),
+		Location: "disable",
+		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.disable.hint",
+			Other: "[ App ID ]",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.disable.description",
+			Other: "Disables an App",
+		}),
+		Form: a.appIDForm(newAdminCall(pDisable), newAdminCall(pDisableLookup), loc),
+	}
 }
 
 func (a *builtinApp) disableLookup(creq apps.CallRequest) apps.CallResponse {

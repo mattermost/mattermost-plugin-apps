@@ -40,8 +40,11 @@ var kubelessDeployCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if m.Kubeless == nil || len(m.Kubeless.Functions) == 0 {
-			return errors.New("no functions to deploy, check manifest.json")
+		if !m.Contains(apps.DeployKubeless) {
+			return errors.New("manifest.json unexpectedly contains no Kubless data")
+		}
+		if len(m.Kubeless.Functions) == 0 {
+			return errors.New("no Kubeless functions to deploy in manifest.json")
 		}
 
 		if err = updateMattermost(*m, apps.DeployKubeless, install); err != nil {

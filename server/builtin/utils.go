@@ -4,32 +4,37 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func blankForm(submit *apps.Call) *apps.Form {
+func (a *builtinApp) appIDForm(submitCall *apps.Call, lookupCall *apps.Call, loc *i18n.Localizer) *apps.Form {
 	return &apps.Form{
-		Submit: submit,
-	}
-}
-
-func appIDForm(submit, lookup *apps.Call) *apps.Form {
-	f := blankForm(submit)
-	f.Fields = []apps.Field{
-		{
-			Name:                 fAppID,
-			Type:                 apps.FieldTypeDynamicSelect,
-			Description:          "select an App",
-			Label:                fAppID,
-			AutocompleteHint:     "App ID",
-			AutocompletePosition: 1,
-			IsRequired:           true,
-			SelectLookup:         lookup,
+		Fields: []apps.Field{
+			{
+				Name: fAppID,
+				Type: apps.FieldTypeDynamicSelect,
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.description",
+					Other: "select an App",
+				}),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.label",
+					Other: "app",
+				}),
+				AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.autocompleteHint",
+					Other: "App ID",
+				}),
+				AutocompletePosition: 1,
+				IsRequired:           true,
+				SelectLookup:         lookupCall,
+			},
 		},
+		Submit: submitCall,
 	}
-	return f
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) apps.CallResponse {

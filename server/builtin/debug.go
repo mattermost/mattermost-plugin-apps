@@ -8,25 +8,41 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func (a *builtinApp) debugCommandBinding() apps.Binding {
+func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
-		Label:    "debug",
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.debug.label",
+			Other: "debug",
+		}),
 		Location: "debug",
 		Bindings: []apps.Binding{
 			{
-				Label:       "bindings",
-				Location:    "bindings",
-				Description: "Display all bindings for the current context",
-				Form:        blankForm(newAdminCall(pDebugBindings)),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.bindings.label",
+					Other: "bindings",
+				}),
+				Location: "bindings",
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.bindings.description",
+					Other: "Display all bindings for the current context",
+				}),
+				Submit: newAdminCall(pDebugBindings),
 			},
 			{
-				Label:       "clean",
-				Location:    "clean",
-				Hint:        "",
-				Description: "remove all Apps and reset the persistent store",
-				Form:        blankForm(newAdminCall(pDebugClean)),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.clean.label",
+					Other: "clean",
+				}),
+				Location: "clean",
+				Hint:     "",
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.clean.description",
+					Other: "remove all Apps and reset the persistent store",
+				}),
+				Submit: newAdminCall(pDebugClean).WithLocale(),
 			},
 		},
 	}
@@ -41,7 +57,11 @@ func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 }
 
 func (a *builtinApp) debugClean(creq apps.CallRequest) apps.CallResponse {
+	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
 	_ = a.conf.MattermostAPI().KV.DeleteAll()
 	_ = a.conf.StoreConfig(config.StoredConfig{})
-	return apps.NewTextResponse("Deleted all KV records and emptied the config.")
+	return apps.NewTextResponse(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "command.debug.clean.submit.ok",
+		Other: "Deleted all KV records and emptied the config.",
+	}))
 }

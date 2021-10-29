@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+//go:build e2e
 // +build e2e
 
 package restapi
@@ -53,6 +54,8 @@ func Setup(t testing.TB) *TestHelper {
 	th.ServerTestHelper = serverTestHelper
 
 	th.ClientPP = th.CreateClientPP()
+	th.ClientPP.AuthToken = th.ServerTestHelper.Client.AuthToken
+	th.ClientPP.AuthType = th.ServerTestHelper.Client.AuthType
 	th.SystemAdminClientPP = th.CreateClientPP()
 	th.SystemAdminClientPP.AuthToken = th.ServerTestHelper.SystemAdminClient.AuthToken
 	th.SystemAdminClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
@@ -124,6 +127,17 @@ func (th *TestHelper) CreateLocalClient(socketPath string) *appclient.ClientPP {
 	return client
 }
 
+func (th *TestHelper) TestForUser(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
+	var testName string
+	if len(name) > 0 {
+		testName = name[0] + "/"
+	}
+
+	t.Run(testName+"UserClientPP", func(t *testing.T) {
+		f(t, th.ClientPP)
+	})
+}
+
 func (th *TestHelper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
 	var testName string
 	if len(name) > 0 {
@@ -144,4 +158,9 @@ func (th *TestHelper) TestForLocal(t *testing.T, f func(*testing.T, *appclient.C
 	t.Run(testName+"LocalClientPP", func(t *testing.T) {
 		f(t, th.LocalClientPP)
 	})
+}
+
+func (th *TestHelper) TestForUserAndSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
+	th.TestForUser(t, f)
+	th.TestForSystemAdmin(t, f)
 }

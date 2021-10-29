@@ -2,9 +2,32 @@ package utils
 
 import (
 	"net/url"
+	"os"
 	"path"
 	"strings"
+
+	"github.com/mattermost/mattermost-server/v6/utils/fileutils"
 )
+
+// FindDir looks for the given directory in nearby ancestors relative to the current working
+// directory as well as the directory of the executable, falling back to `./` if not found.
+func FindDir(dir string) (string, bool) {
+	commonBaseSearchPaths := []string{
+		".",
+		"..",
+		"../..",
+		"../../..",
+		"../../../..",
+	}
+	found := fileutils.FindPath(dir, commonBaseSearchPaths, func(fileInfo os.FileInfo) bool {
+		return fileInfo.IsDir()
+	})
+	if found == "" {
+		return "./", false
+	}
+
+	return found, true
+}
 
 func CleanPath(p string) (string, error) {
 	if p == "" {

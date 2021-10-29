@@ -53,17 +53,22 @@ func WriteError(w http.ResponseWriter, err error) {
 		http.Error(w, "invalid (unknown?) error", http.StatusInternalServerError)
 		return
 	}
+
+	http.Error(w, err.Error(), ErrorToStatus(err))
+}
+
+func ErrorToStatus(err error) int {
 	switch errors.Cause(err) {
 	case utils.ErrForbidden:
-		http.Error(w, err.Error(), http.StatusForbidden)
+		return http.StatusForbidden
 	case utils.ErrUnauthorized:
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return http.StatusUnauthorized
 	case utils.ErrNotFound:
-		http.Error(w, err.Error(), http.StatusNotFound)
+		return http.StatusNotFound
 	case utils.ErrInvalid:
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		return http.StatusBadRequest
 	default:
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return http.StatusInternalServerError
 	}
 }
 

@@ -6,14 +6,26 @@ package builtin
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var enableCommandBinding = apps.Binding{
-	Label:       "enable",
-	Location:    "enable",
-	Hint:        "[ App ID ]",
-	Description: "Enables an App",
-	Form:        appIDForm(newAdminCall(pEnable), newAdminCall(pEnableLookup)),
+func (a *builtinApp) enableCommandBinding(loc *i18n.Localizer) apps.Binding {
+	return apps.Binding{
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.label",
+			Other: "enable",
+		}),
+		Location: "enable",
+		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.hint",
+			Other: "[ App ID ]",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.enable.description",
+			Other: "Enables an App",
+		}),
+		Form: a.appIDForm(newAdminCall(pEnable), newAdminCall(pEnableLookup), loc),
+	}
 }
 
 func (a *builtinApp) enableLookup(creq apps.CallRequest) apps.CallResponse {

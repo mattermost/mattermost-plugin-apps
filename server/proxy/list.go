@@ -44,7 +44,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 			continue
 		}
 
-		if !includePluginApps && m.SupportsDeploy(apps.DeployPlugin) {
+		if !includePluginApps && m.Contains(apps.DeployPlugin) {
 			continue
 		}
 

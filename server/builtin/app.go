@@ -36,19 +36,19 @@ const (
 const (
 	pDebugBindings       = "/debug-bindings"
 	pDebugClean          = "/debug-clean"
-	pDisable             = "/disable"
-	pDisableLookup       = "/disable/lookup"
-	pEnable              = "/enable"
-	pEnableLookup        = "/enable/lookup"
 	pInfo                = "/info"
-	pInstallConsent      = "/install-consent"
-	pInstallConsentForm  = "/install-consent/form"
-	pInstallListed       = "/install-listed"
-	pInstallListedLookup = "/install-listed/lookup"
-	pInstallURL          = "/install-url"
 	pList                = "/list"
 	pUninstall           = "/uninstall"
 	pUninstallLookup     = "/uninstall/lookup"
+	pEnable              = "/enable"
+	pEnableLookup        = "/enable/lookup"
+	pDisable             = "/disable"
+	pDisableLookup       = "/disable/lookup"
+	pInstallHTTP         = "/install-http"
+	pInstallListed       = "/install-listed"
+	pInstallListedLookup = "/install-listed/lookup"
+	pInstallConsent      = "/install-consent"
+	pInstallConsentForm  = "/install-consent/form"
 )
 
 type handler func(apps.CallRequest) apps.CallResponse
@@ -70,9 +70,6 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 	}
 
 	a.router = map[string]handler{
-		// bindings
-		apps.DefaultBindings.Path: a.bindings,
-
 		// Actions available to all users
 		pInfo: a.info,
 
@@ -87,7 +84,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 		pInstallConsentForm:  requireAdmin(a.installConsentForm),
 		pInstallListed:       requireAdmin(a.installListed),
 		pInstallListedLookup: requireAdmin(a.installListedLookup),
-		pInstallURL:          requireAdmin(a.installURL),
+		pInstallHTTP:         requireAdmin(a.installHTTP),
 		pList:                requireAdmin(a.list),
 		pUninstall:           requireAdmin(a.uninstall),
 		pUninstallLookup:     requireAdmin(a.uninstallLookup),
@@ -102,6 +99,13 @@ func Manifest(conf config.Config) apps.Manifest {
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		Bindings: &apps.Call{
+			Path: "/bindings",
+			Expand: &apps.Expand{
+				Locale: apps.ExpandAll,
+			},
+		},
+		Deploy: apps.Deploy{},
 	}
 }
 
@@ -164,12 +168,11 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		return ioutil.NopCloser(bytes.NewReader(data)), nil
 	}
 
-	h := a.router[creq.Path]
-	if h == nil {
+	h, ok := a.router[creq.Path]
+	if !ok {
 		return nil, utils.NewNotFoundError(creq.Path)
 	}
-	return readcloser(
-		h(creq))
+	return readcloser(h(creq))
 }
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {

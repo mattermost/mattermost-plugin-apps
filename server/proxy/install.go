@@ -29,7 +29,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
-	if !m.SupportsDeploy(deployType) {
+	if !m.Contains(deployType) {
 		return nil, "", errors.Errorf("app does not support %s deployment", deployType)
 	}
 	err = CanDeploy(p, deployType)
@@ -119,7 +119,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(in, *app, *app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(in, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)

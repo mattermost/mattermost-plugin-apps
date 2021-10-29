@@ -74,7 +74,7 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
 
 	// no need to clean the context, Call will do.
-	resp := p.call(in, app, *bindingsCall, &cc)
+	resp := p.call(in, app, bindingsCall, &cc)
 	switch resp.Type {
 	case apps.CallResponseTypeOK:
 		var bindings = []apps.Binding{}

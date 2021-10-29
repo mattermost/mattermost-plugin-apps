@@ -55,10 +55,11 @@ func (c *Call) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewCall(url string) *Call {
-	return &Call{
-		Path: url,
+func NewCall(path string) *Call {
+	c := Call{
+		Path: path,
 	}
+	return &c
 }
 
 func (c *Call) WithState(state interface{}) *Call {
@@ -70,9 +71,9 @@ func (c *Call) WithState(state interface{}) *Call {
 	return &clone
 }
 
-func (c *Call) WithDefault(def Call) *Call {
+func (c *Call) WithDefault(def Call) Call {
 	if c == nil {
-		return &def
+		return def
 	}
 	clone := *c
 
@@ -84,6 +85,42 @@ func (c *Call) WithDefault(def Call) *Call {
 	}
 	if clone.State == nil {
 		clone.State = def.State
+	}
+	return clone
+}
+
+func (c *Call) WithLocale() *Call {
+	clone := c.Clone()
+	if clone == nil {
+		clone = &Call{}
+	}
+
+	if clone.Expand == nil {
+		clone.Expand = &Expand{}
+	}
+
+	clone.Expand.Locale = ExpandAll
+	return clone
+}
+
+func (c *Call) Clone() *Call {
+	if c == nil {
+		return nil
+	}
+
+	clone := *c
+	if clone.Expand != nil {
+		cloneExpand := *clone.Expand
+		clone.Expand = &cloneExpand
+	}
+
+	// Only know how to clone map values for State.
+	if state, ok := clone.State.(map[string]interface{}); ok {
+		cloneState := map[string]interface{}{}
+		for k, v := range state {
+			cloneState[k] = v
+		}
+		clone.State = cloneState
 	}
 	return &clone
 }
