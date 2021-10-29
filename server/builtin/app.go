@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const (
@@ -51,7 +52,7 @@ const (
 
 type handler struct {
 	requireSysadmin bool
-	commandBinding  func() apps.Binding
+	commandBinding  func(*i18n.Localizer) apps.Binding
 	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
 	submitf         func(apps.CallRequest) apps.CallResponse
 	formf           func(apps.CallRequest) (*apps.Form, error)
@@ -98,7 +99,13 @@ func Manifest(conf config.Config) apps.Manifest {
 		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
-		Deploy:      apps.Deploy{},
+		Bindings: &apps.Call{
+			Path: "/bindings",
+			Expand: &apps.Expand{
+				Locale: apps.ExpandAll,
+			},
+		},
+		Deploy: apps.Deploy{},
 	}
 }
 

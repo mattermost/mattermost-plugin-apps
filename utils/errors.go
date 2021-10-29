@@ -1,6 +1,9 @@
 package utils
 
-import "github.com/pkg/errors"
+import (
+	"github.com/mattermost/mattermost-plugin-api/i18n"
+	"github.com/pkg/errors"
+)
 
 var ErrAlreadyExists = errors.New("already exists")
 var ErrForbidden = errors.New("forbidden")
@@ -32,3 +35,27 @@ func NewForbiddenError(args ...interface{}) error     { return NewError(ErrForbi
 func NewInvalidError(args ...interface{}) error       { return NewError(ErrInvalid, args...) }
 func NewNotFoundError(args ...interface{}) error      { return NewError(ErrNotFound, args...) }
 func NewUnauthorizedError(args ...interface{}) error  { return NewError(ErrUnauthorized, args...) }
+
+type LocError []*i18n.LocalizeConfig
+
+func NewLocError(err *i18n.LocalizeConfig) LocError {
+	return LocError{err}
+}
+func (err LocError) Error(bundle *i18n.Bundle, loc *i18n.Localizer) string {
+	errStr := ""
+	for _, e := range err {
+		if e.TemplateData == nil {
+			e.TemplateData = map[string]interface{}{}
+		}
+		e.TemplateData.(map[string]interface{})["Error"] = errStr
+		errStr = bundle.LocalizeWithConfig(loc, e)
+	}
+
+	return errStr
+}
+func (err LocError) Wrap(e *i18n.LocalizeConfig) LocError {
+	if err == nil {
+		return LocError{e}
+	}
+	return append(err, e)
+}

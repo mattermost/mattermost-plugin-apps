@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -27,7 +28,13 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 
 func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := p.notifyForSubscription(&base, sub)
+		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub, base.ChannelID, base.TeamID)
+		if err != nil {
+			// Don't log the error it can be to spammy
+			continue
+		}
+
+		err = p.notifyForSubscription(&base, sub)
 		if err != nil {
 			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
 				"app_id", sub.AppID,
@@ -74,7 +81,6 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 
 	mentions := possibleAtMentions(post.Message)
 
-	botCanRead := map[string]bool{}
 	if len(mentions) > 0 {
 		appsMap := p.store.App.AsMap()
 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
@@ -89,18 +95,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 			}
 			for _, mention := range mentions {
 				if mention == app.BotUsername {
-					_, ok := botCanRead[app.BotUserID]
-					if ok {
-						// already processed this bot for this post
-						continue
-					}
-
-					canRead := p.conf.MattermostAPI().User.HasPermissionToChannel(app.BotUserID, post.ChannelId, model.PermissionReadChannel)
-					botCanRead[app.BotUserID] = canRead
-
-					if canRead {
-						subs = append(subs, sub)
-					}
+					subs = append(subs, sub)
 				}
 			}
 		}

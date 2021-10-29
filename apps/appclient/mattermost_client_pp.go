@@ -99,34 +99,40 @@ func (c *ClientPP) KVDelete(id string, prefix string) (*model.Response, error) {
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) Subscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
+func (c *ClientPP) Subscribe(request *apps.Subscription) (*model.Response, error) {
 	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe), request.ToJSON()) // nolint:bodyclose
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	subResponse, err := apps.SubscriptionResponseFromJSON(r.Body)
-	if err != nil {
-		return nil, model.BuildResponse(r), err
-	}
-
-	return subResponse, model.BuildResponse(r), nil
+	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*apps.SubscriptionResponse, *model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), request.ToJSON()) // nolint:bodyclose
+func (c *ClientPP) GetSubscriptions() ([]apps.Subscription, *model.Response, error) {
+	r, err := c.DoAPIGET(c.apipath(appspath.Subscribe), "") // nolint:bodyclose
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	subResponse, err := apps.SubscriptionResponseFromJSON(r.Body)
+	var subs []apps.Subscription
+	err = json.NewDecoder(r.Body).Decode(&subs)
 	if err != nil {
 		return nil, model.BuildResponse(r), err
 	}
 
-	return subResponse, model.BuildResponse(r), nil
+	return subs, model.BuildResponse(r), nil
+}
+
+func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*model.Response, error) {
+	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), request.ToJSON()) // nolint:bodyclose
+	if err != nil {
+		return model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*model.Response, error) {

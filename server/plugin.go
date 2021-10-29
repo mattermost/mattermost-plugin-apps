@@ -5,6 +5,7 @@ package main
 
 import (
 	gohttp "net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
@@ -66,6 +68,11 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
+	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
+	if err != nil {
+		return err
+	}
+
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
 		p.API.LogWarn("telemetry client not started", "error", err.Error())
@@ -73,7 +80,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.tracker = telemetry.NewTelemetry(nil)
 
-	p.conf = config.NewService(mm, p.BuildConfig, botUserID, p.tracker)
+	p.conf = config.NewService(mm, p.BuildConfig, botUserID, p.tracker, i18nBundle)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)

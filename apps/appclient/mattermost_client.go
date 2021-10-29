@@ -83,30 +83,30 @@ func (c *Client) KVDelete(id string, prefix string) error {
 	return nil
 }
 
-func (c *Client) Subscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
-	subResponse, res, err := c.ClientPP.Subscribe(sub)
+func (c *Client) Subscribe(sub *apps.Subscription) error {
+	res, err := c.ClientPP.Subscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
-	return subResponse, nil
+	return nil
 }
 
-func (c *Client) Unsubscribe(sub *apps.Subscription) (*apps.SubscriptionResponse, error) {
-	subResponse, res, err := c.ClientPP.Unsubscribe(sub)
+func (c *Client) Unsubscribe(sub *apps.Subscription) error {
+	res, err := c.ClientPP.Unsubscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
-	return subResponse, nil
+	return nil
 }
 
 func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) error {

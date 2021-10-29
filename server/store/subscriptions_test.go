@@ -336,7 +336,8 @@ func TestSubsKey(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			r := subsKey(testcase.Subject, testcase.TeamID, testcase.ChannelID)
+			r, err := subsKey(testcase.Subject, testcase.TeamID, testcase.ChannelID)
+			require.NoError(t, err)
 			require.Equal(t, testcase.Expected, r)
 		})
 	}
