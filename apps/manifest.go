@@ -114,7 +114,7 @@ type Manifest struct {
 
 	// OnRemoteWebhook gets invoked when an HTTP webhook is received from a
 	// remote system, and is optionally authenticated by Mattermost. The request
-	// is passed to the call serialized as ServerlessRequest (JSON).
+	// is passed to the call serialized as HTTPCallRequest (JSON).
 	OnRemoteWebhook *Call `json:"on_remote_webhook,omitempty"`
 
 	// Requested Access

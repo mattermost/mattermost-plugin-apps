@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.ServerlessRequest) error {
+func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -29,9 +29,9 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.ServerlessRequest
 	}
 
 	switch app.RemoteWebhookAuthType {
-	case "", apps.NoAuth:
+	case apps.NoAuth:
 
-	case apps.SecretAuth:
+	case "", apps.SecretAuth:
 		var q url.Values
 		q, err = url.ParseQuery(req.RawQuery)
 		if err != nil {

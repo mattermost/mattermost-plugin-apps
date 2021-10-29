@@ -314,6 +314,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	p := mock_proxy.NewMockService(ctrl)
 	testConfig, testAPI := config.NewTestService(nil)
+
 	router := mux.NewRouter()
 	Init(router, testConfig, p, nil)
 

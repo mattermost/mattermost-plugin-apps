@@ -6,6 +6,8 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -21,14 +23,14 @@ func (a *builtinApp) debugKVInfo() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "info",
 				Location:    "info",
-				Hint:        "[ AppID ]",
-				Description: "Display KV store statistics for an app.",
+				Label:       "info",                                    // <>/<> Localize
+				Hint:        "[ AppID ]",                               // <>/<> Localize
+				Description: "Display KV store statistics for an app.", // <>/<> Localize
 				Call:        &debugKVInfoCall,
-				Form:        appIDForm(debugKVInfoCall),
+				Form:        a.appIDForm(debugKVInfoCall, loc),
 			}
 		},
 
@@ -39,7 +41,7 @@ func (a *builtinApp) debugKVInfo() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			message := fmt.Sprintf("%v total keys for `%s`.\n", n, appID)
+			message := fmt.Sprintf("%v total keys for `%s`.\n", n, appID) // <>/<> Localize
 			if len(namespaces) > 0 {
 				message += "\nNamespaces:\n"
 			}

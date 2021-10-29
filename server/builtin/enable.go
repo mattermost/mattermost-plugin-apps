@@ -6,6 +6,7 @@ package builtin
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var enableCall = apps.Call{
@@ -19,14 +20,23 @@ func (a *builtinApp) enable() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "enable",
-				Location:    "enable",
-				Hint:        "[ App ID ]",
-				Description: "Enable an App.",
-				Call:        &enableCall,
-				Form:        appIDForm(enableCall),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.label",
+					Other: "enable",
+				}),
+				Location: "enable",
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.hint",
+					Other: "[ App ID ]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.description",
+					Other: "Enables an App",
+				}),
+				Call: &enableCall,
+				Form: a.appIDForm(enableCall, loc),
 			}
 		},
 

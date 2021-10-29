@@ -11,6 +11,10 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
@@ -19,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 const (
@@ -65,7 +68,7 @@ const (
 
 type handler struct {
 	requireSysadmin bool
-	commandBinding  func() apps.Binding
+	commandBinding  func(*i18n.Localizer) apps.Binding
 	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
 	submitf         func(apps.CallRequest) apps.CallResponse
 	formf           func(apps.CallRequest) (*apps.Form, error)
@@ -124,6 +127,7 @@ func Manifest(conf config.Config) apps.Manifest {
 			Path: appspath.Bindings,
 			Expand: &apps.Expand{
 				ActingUser: apps.ExpandSummary,
+				Locale:     apps.ExpandAll,
 			},
 		},
 	}

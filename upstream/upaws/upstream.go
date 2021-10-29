@@ -76,7 +76,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 		typ = lambda.InvocationTypeEvent
 	}
 
-	payload, err := apps.CallRequestToServerlessJSON(creq)
+	payload, err := creq.ToHTTPCallRequestJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 	if async || err != nil {
 		return nil, err
 	}
-	resp, err := apps.ServerlessResponseFromJSON(bb)
+	resp, err := apps.HTTPCallResponseFromJSON(bb)
 	if err != nil {
 		return nil, err
 	}

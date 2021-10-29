@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var debugKVEditCall = apps.Call{
@@ -22,33 +23,32 @@ func (a *builtinApp) debugKVEdit() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "edit",
 				Location:    "edit",
-				Hint:        "",
-				Description: "View or edit specific KV keys of an app.",
+				Label:       "edit",                                     // <>/<> Localize
+				Description: "View or edit specific KV keys of an app.", // <>/<> Localize
 				Call:        &debugKVEditCall,
-				Form: appIDForm(debugKVEditCall,
+				Form: a.appIDForm(debugKVEditCall, loc,
 					apps.Field{
 						Name:             fBase64Key,
-						Label:            "base64-key",
+						Label:            "base64-key", // <>/<> Localize
 						Type:             apps.FieldTypeText,
-						Description:      "base64-encoded key, from `debug kv list`. No other flags needed.",
-						AutocompleteHint: "[ key ]",
+						Description:      "base64-encoded key, from `debug kv list`. No other flags needed.", // <>/<> Localize
+						AutocompleteHint: "[ key ]",                                                          // <>/<> Localize
 					},
 					apps.Field{
 						Name:        fNamespace,
-						Label:       fNamespace,
+						Label:       fNamespace, // <>/<> Localize
 						Type:        apps.FieldTypeDynamicSelect,
-						Description: "App-specific namespace (up to 2 letters). Requires `--app` and `--id`.",
+						Description: "App-specific namespace (up to 2 letters). Requires `--app` and `--id`.", // <>/<> Localize
 					},
 					apps.Field{
 						Name:             fID,
-						Label:            fID,
+						Label:            fID, // <>/<> Localize
 						Type:             apps.FieldTypeText,
-						Description:      "App-specific ID, any length.",
-						AutocompleteHint: "[ id ]",
+						Description:      "App-specific ID, any length.", // <>/<> Localize
+						AutocompleteHint: "[ id ]",                       // <>/<> Localize
 					},
 				),
 			}

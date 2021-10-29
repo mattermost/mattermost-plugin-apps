@@ -7,31 +7,48 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) list() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "list",
-				Location:    "list",
-				Hint:        "[ flags ]",
-				Description: "Display available and installed Apps.",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.list.label",
+					Other: "list",
+				}),
+				Location: "list",
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.list.hint",
+					Other: "[ flags ]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.enable.list.description",
+					Other: "Display available and installed Apps",
+				}),
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{
 						ActingUser: apps.ExpandSummary,
+						Locale:     apps.ExpandAll,
 					},
 				},
 				Form: &apps.Form{
-					Title: "list Apps",
+					Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.enable.list.form.title",
+						Other: "list Apps",
+					}),
 					Fields: []apps.Field{
 						{
-							Label: "include-plugins",
-							Name:  fIncludePlugins,
-							Type:  apps.FieldTypeBool,
+							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "command.enable.list.form.include_plugins.label",
+								Other: "include-plugins",
+							}),
+							Name: fIncludePlugins,
+							Type: apps.FieldTypeBool,
 						},
 					},
 				},
@@ -39,14 +56,18 @@ func (a *builtinApp) list() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			includePluginApps := creq.BoolValue(fIncludePlugins)
+			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+			includePluginApps := creq.BoolValue("plugin-apps")
 
 			listed := a.proxy.GetListedApps("", includePluginApps)
 			installed := a.proxy.GetInstalledApps()
 
 			// All of this information is non sensitive.
 			// Checks for the user's permissions might be needed in the future.
-			txt := "| Name | Status | Type | Version | Account | Locations | Permissions |\n"
+			txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "apps.command.list.submit.ok.header",
+				Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
+			}) + "\n"
 			txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 			for _, app := range installed {
@@ -59,16 +80,32 @@ func (a *builtinApp) list() handler {
 					continue
 				}
 
-				status := "**Installed**"
+				status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "apps.command.list.submit.ok.status.installed",
+					Other: "**Installed**",
+				})
 				if app.Disabled {
-					status = "Installed, Disabled"
+					status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "apps.command.list.submit.ok.status.disabled",
+						Other: "Installed, Disabled",
+					})
 				}
 
 				version := string(app.Version)
 				if string(m.Version) != version {
-					version += fmt.Sprintf(", %s in marketplace", m.Version)
+					version = a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+						DefaultMessage: &i18n.Message{
+							ID:    "apps.command.list.submit.ok.version",
+							Other: "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
+						},
+						TemplateData: map[string]string{
+							"CurrentVersion":     string(app.Version),
+							"MarketplaceVersion": string(m.Version),
+						},
+					})
 				}
 
+				// TODO Translate the account part
 				account := ""
 				if app.BotUserID != "" {
 					account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
@@ -90,13 +127,18 @@ func (a *builtinApp) list() handler {
 					name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 			}
 
+			listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "apps.command.list.submit.ok.listed",
+				Other: "Listed",
+			})
+
 			for _, l := range listed {
 				app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
 				if app != nil {
 					continue
 				}
 
-				status := "Listed"
+				status := listedString
 
 				version := string(l.Manifest.Version)
 

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -24,14 +25,14 @@ func (a *builtinApp) debugKVList() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "list",
 				Location:    "list",
-				Hint:        "[ AppID ]",
-				Description: "Display the list of KV keys for an app, in a specific namespace.",
+				Label:       "list",                                                             // <>/<> Localize
+				Hint:        "[ AppID ]",                                                        // <>/<> Localize
+				Description: "Display the list of KV keys for an app, in a specific namespace.", // <>/<> Localize
 				Call:        &debugKVInfoCall,
-				Form:        appIDForm(debugKVListCall, namespaceField, base64Field),
+				Form:        a.appIDForm(debugKVListCall, loc, namespaceField, base64Field),
 			}
 		},
 
@@ -53,7 +54,7 @@ func (a *builtinApp) debugKVList() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			message := fmt.Sprintf("%v total keys for `%s`", len(keys), appID)
+			message := fmt.Sprintf("%v total keys for `%s`", len(keys), appID) // <>/<> Localize
 			if namespace != "" {
 				message += fmt.Sprintf(", namespace `%s`\n", namespace)
 			} else {

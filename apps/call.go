@@ -192,9 +192,9 @@ func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 	return &c, nil
 }
 
-func NewCall(url string) Call {
+func NewCall(path string) Call {
 	c := Call{
-		Path: url,
+		Path: path,
 	}
 	return c
 }
@@ -217,7 +217,7 @@ func (c *Call) WithDefault(def Call) Call {
 	return clone
 }
 
-func (c *Call) Clone() *Call {
+func (c *Call) PartialCopy() *Call {
 	if c == nil {
 		return nil
 	}
@@ -239,17 +239,17 @@ func (c *Call) Clone() *Call {
 	return &clone
 }
 
-func (c *CallRequest) GetValue(name, defaultValue string) string {
-	if len(c.Values) == 0 {
+func (creq *CallRequest) GetValue(name, defaultValue string) string {
+	if len(creq.Values) == 0 {
 		return defaultValue
 	}
 
-	s, ok := c.Values[name].(string)
+	s, ok := creq.Values[name].(string)
 	if ok && s != "" {
 		return s
 	}
 
-	opt, ok := c.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]interface{})
 	if ok {
 		if v, ok2 := opt["value"].(string); ok2 {
 			return v
@@ -259,8 +259,8 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 	return defaultValue
 }
 
-func (c *CallRequest) BoolValue(name string) bool {
-	if len(c.Values) == 0 {
+func (creq *CallRequest) BoolValue(name string) bool {
+	if len(creq.Values) == 0 {
 		return false
 	}
 
@@ -268,7 +268,7 @@ func (c *CallRequest) BoolValue(name string) bool {
 		if b, ok := v.(bool); ok {
 			return b, true
 		}
-		if b, ok := c.Values[name].(string); ok {
+		if b, ok := creq.Values[name].(string); ok {
 			switch b {
 			case "true":
 				return true, true
@@ -279,10 +279,10 @@ func (c *CallRequest) BoolValue(name string) bool {
 		return false, false
 	}
 
-	if b, ok := isBool(c.Values[name]); ok {
+	if b, ok := isBool(creq.Values[name]); ok {
 		return b
 	}
-	opt, ok := c.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]interface{})
 	if ok {
 		if v, ok2 := isBool(opt["value"]); ok2 {
 			return v

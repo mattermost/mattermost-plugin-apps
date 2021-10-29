@@ -28,7 +28,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 			}
 
 			return &apps.Form{
-				Title:  "Edit KV record",
+				Title:  "Edit KV record", // <>/<> Localize
 				Header: fmt.Sprintf("Key:\n```\n%s\n```\n", key),
 				Fields: []apps.Field{
 					{

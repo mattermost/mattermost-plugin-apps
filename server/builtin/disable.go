@@ -6,6 +6,7 @@ package builtin
 import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var disableCall = apps.Call{
@@ -19,14 +20,23 @@ func (a *builtinApp) disable() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "disable",
-				Location:    "disable",
-				Hint:        "[ App ID ]",
-				Description: "Disable an App.",
-				Call:        &disableCall,
-				Form:        appIDForm(disableCall),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.disable.label",
+					Other: "disable",
+				}),
+				Location: "disable",
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.disable.hint",
+					Other: "[ App ID ]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.disable.description",
+					Other: "Disables an App",
+				}),
+				Call: &disableCall,
+				Form: a.appIDForm(disableCall, loc),
 			}
 		},
 

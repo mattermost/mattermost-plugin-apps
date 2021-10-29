@@ -302,7 +302,7 @@ func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interfa
 }
 
 // NotifyRemoteWebhook mocks base method.
-func (m *MockService) NotifyRemoteWebhook(arg0 apps.AppID, arg1 apps.ServerlessRequest) error {
+func (m *MockService) NotifyRemoteWebhook(arg0 apps.AppID, arg1 apps.HTTPCallRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1)
 	ret0, _ := ret[0].(error)

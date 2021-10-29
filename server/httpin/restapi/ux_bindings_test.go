@@ -20,6 +20,7 @@ import (
 func TestHandleGetBindingsValidContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	proxy := mock_proxy.NewMockService(ctrl)
+
 	conf := config.NewTestConfigService(nil)
 
 	router := mux.NewRouter()

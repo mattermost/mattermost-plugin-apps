@@ -6,6 +6,8 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -20,14 +22,14 @@ func (a *builtinApp) debugKVClean() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
 				Label:       "clean",
 				Location:    "clean",
 				Hint:        "[ AppID ]",
 				Description: "Deletes KV keys for an app, in a specific namespace.",
 				Call:        &debugKVInfoCall,
-				Form:        appIDForm(debugKVListCall, namespaceField),
+				Form:        a.appIDForm(debugKVListCall, loc, namespaceField),
 			}
 		},
 

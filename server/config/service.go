@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
@@ -25,6 +27,7 @@ type Service interface {
 	Logger() utils.Logger
 	MattermostAPI() *pluginapi.Client
 	MattermostConfig() configservice.ConfigService
+	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 
 	Reconfigure(StoredConfig, ...Configurable) error
@@ -38,6 +41,7 @@ type service struct {
 	botUserID string
 	log       utils.Logger
 	mm        *pluginapi.Client
+	i18n      *i18n.Bundle
 	telemetry *telemetry.Telemetry
 
 	lock             *sync.RWMutex
@@ -45,13 +49,14 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry) Service {
+func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
 	return &service{
 		BuildConfig: buildConfig,
 		botUserID:   botUserID,
 		log:         utils.NewPluginLogger(mm),
 		mm:          mm,
 		lock:        &sync.RWMutex{},
+		i18n:        i18nBundle,
 		telemetry:   telemetry,
 	}
 }
@@ -84,6 +89,10 @@ func (s *service) MattermostAPI() *pluginapi.Client {
 
 func (s *service) Logger() utils.Logger {
 	return s.log
+}
+
+func (s *service) I18N() *i18n.Bundle {
+	return s.i18n
 }
 
 func (s *service) Telemetry() *telemetry.Telemetry {

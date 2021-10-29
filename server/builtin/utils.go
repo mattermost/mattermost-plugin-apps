@@ -4,20 +4,30 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func appIDForm(call apps.Call, extraFields ...apps.Field) *apps.Form {
+func (a *builtinApp) appIDForm(call apps.Call, loc *i18n.Localizer, extraFields ...apps.Field) *apps.Form {
 	form := &apps.Form{
 		Fields: []apps.Field{
 			{
-				Name:                 fAppID,
-				Label:                fAppID,
-				Type:                 apps.FieldTypeDynamicSelect,
-				Description:          "Select an App.",
-				AutocompleteHint:     "App ID",
+				Name: fAppID,
+				Type: apps.FieldTypeDynamicSelect,
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.description",
+					Other: "select an App",
+				}),
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.label",
+					Other: "app",
+				}),
+				AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "form.appIDForm.appID.autocompleteHint",
+					Other: "App ID",
+				}),
 				AutocompletePosition: 1,
 				IsRequired:           true,
 			},

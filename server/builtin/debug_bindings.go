@@ -7,12 +7,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var debugBindingsCall = apps.Call{
 	Path: pDebugBindings,
 	Expand: &apps.Expand{
-		ActingUser: apps.ExpandSummary, 
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
@@ -20,18 +21,24 @@ func (a *builtinApp) debugBindings() handler {
 	return handler{
 		requireSysadmin: true,
 
-		commandBinding: func() apps.Binding {
-			form := appIDForm(debugBindingsCall)
+		commandBinding: func(loc *i18n.Localizer) apps.Binding {
+			form := a.appIDForm(debugBindingsCall, loc)
 			if len(form.Fields) > 0 && form.Fields[0].Name == fAppID {
 				form.Fields[0].IsRequired = false
 			}
 
 			return apps.Binding{
-				Label:       "bindings",
-				Location:    "bindings",
-				Description: "Display apps' bindings for the current context.",
-				Call:        &debugBindingsCall,
-				Form:        form,
+				Location: "bindings",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.bindings.label",
+					Other: "bindings",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.bindings.description",
+					Other: "Display all bindings for the current context",
+				}),
+				Call: &debugBindingsCall,
+				Form: form,
 			}
 		},
 
