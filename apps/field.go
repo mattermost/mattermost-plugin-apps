@@ -97,9 +97,9 @@ type Field struct {
 	TextMaxLength int              `json:"max_length,omitempty"`
 }
 
-// Clone makes a copy of a Field. It does not clone Value since it does not know
+// PartialCopy makes a copy of a Field. It does not clone Value since it does not know
 // the type.
-func (f *Field) Clone() *Field {
+func (f *Field) PartialCopy() *Field {
 	if f == nil {
 		return &Field{}
 	}

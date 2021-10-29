@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ServerlessRequest is a scoped down version of
+// HTTPCallRequest is a scoped down version of
 // https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
-type ServerlessRequest struct {
+type HTTPCallRequest struct {
 	Path       string            `json:"path"`
 	HTTPMethod string            `json:"httpMethod"`
 	Headers    map[string]string `json:"headers"`
@@ -20,20 +20,20 @@ type ServerlessRequest struct {
 	Body       string            `json:"body"`
 }
 
-// ServerlessResponse is a scoped down version of
+// HTTPCallResponse is a scoped down version of
 // https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyResponse
-type ServerlessResponse struct {
+type HTTPCallResponse struct {
 	StatusCode      int               `json:"statusCode"`
 	Headers         map[string]string `json:"headers"`
 	IsBase64Encoded bool              `json:"isBase64Encoded"`
 	Body            string            `json:"body"`
 }
 
-func ServerlessResponseFromJSON(data []byte) (*ServerlessResponse, error) {
-	resp := ServerlessResponse{}
+func HTTPCallResponseFromJSON(data []byte) (*HTTPCallResponse, error) {
+	resp := HTTPCallResponse{}
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding serverless response")
+		return nil, errors.Wrap(err, "error decoding JSON-encoded HTTP response")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("function failed with status code %v, body %v", resp.StatusCode, resp.Body)
@@ -41,12 +41,12 @@ func ServerlessResponseFromJSON(data []byte) (*ServerlessResponse, error) {
 	return &resp, nil
 }
 
-func CallRequestToServerlessJSON(creq CallRequest) ([]byte, error) {
+func (creq CallRequest) ToHTTPCallRequestJSON() ([]byte, error) {
 	body, err := json.Marshal(creq)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to encode serverless request")
+		return nil, errors.Wrap(err, "failed to encode HTTP request as JSON")
 	}
-	request := ServerlessRequest{
+	request := HTTPCallRequest{
 		Path:       creq.Path,
 		HTTPMethod: http.MethodPost,
 		Headers:    map[string]string{"Content-Type": "application/json"},
@@ -54,7 +54,7 @@ func CallRequestToServerlessJSON(creq CallRequest) ([]byte, error) {
 	}
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to encode serverless request")
+		return nil, errors.Wrap(err, "failed to encode HTTP call request as JSON")
 	}
 	return payload, nil
 }

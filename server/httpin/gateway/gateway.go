@@ -24,10 +24,6 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservice
 	}
 
 	subrouter := router.PathPrefix(path.Apps).Subrouter()
-	// subrouter.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-	// 	g.conf.Logger().Warnw("not found", "path", req.URL.Path, "method", req.Method)
-	// 	http.Error(w, fmt.Sprintf("Not found: %s %q", req.Method, req.URL.Path), http.StatusNotFound)
-	// })
 
 	// Static
 	subrouter.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",

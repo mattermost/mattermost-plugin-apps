@@ -59,7 +59,7 @@ type Invoker interface {
 // Notifier implements user-less notification sinks.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(apps.AppID, apps.ServerlessRequest) error
+	NotifyRemoteWebhook(apps.AppID, apps.HTTPCallRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error

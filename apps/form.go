@@ -54,15 +54,15 @@ type Form struct {
 	Fields []Field `json:"fields,omitempty"`
 }
 
-func (f *Form) Clone() *Form {
+func (f *Form) PartialCopy() *Form {
 	if f == nil {
 		return &Form{}
 	}
 	clone := *f
-	clone.Call = f.Call.Clone()
+	clone.Call = f.Call.PartialCopy()
 	clone.Fields = nil
 	for _, field := range f.Fields {
-		clone.Fields = append(clone.Fields, *field.Clone())
+		clone.Fields = append(clone.Fields, *field.PartialCopy())
 	}
 	return &clone
 }
