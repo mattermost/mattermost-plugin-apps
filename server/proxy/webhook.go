@@ -29,9 +29,9 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) 
 	}
 
 	switch app.RemoteWebhookAuthType {
-	case "", apps.NoAuth:
+	case apps.NoAuth:
 
-	case apps.SecretAuth:
+	case "", apps.SecretAuth:
 		var q url.Values
 		q, err = url.ParseQuery(req.RawQuery)
 		if err != nil {
