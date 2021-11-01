@@ -50,7 +50,6 @@ type service struct {
 }
 
 func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
-	// utils.NewPluginLogger(mm).Debugf("<>/<> NewService 1 %q", BuildHash)
 	return &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
@@ -129,7 +128,6 @@ func (s *service) reloadMattermostConfig() *model.Config {
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
-	s.log.Debugf("<>/<> 0 %q %q", BuildHash, newConfig.BuildHash)
 
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
@@ -142,12 +140,10 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 		}
 	}
 
-	s.log.Debugf("<>/<> 1 %q %q", BuildHash, newConfig.BuildHash)
 	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
 	}
-	s.log.Debugf("<>/<> 2 %q %q", BuildHash, newConfig.BuildHash)
 
 	s.lock.Lock()
 	s.conf = &newConfig
@@ -160,7 +156,6 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 		}
 	}
 
-	s.log.Debugf("<>/<> 3 %q %q", BuildHash, newConfig.BuildHash)
 	return nil
 }
 
