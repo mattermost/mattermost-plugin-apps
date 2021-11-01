@@ -33,7 +33,7 @@ import (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	config.BuildConfig
+	manifest model.Manifest
 
 	conf config.Service
 	log  utils.Logger
@@ -49,9 +49,9 @@ type Plugin struct {
 	tracker         *telemetry.Telemetry
 }
 
-func NewPlugin(buildConfig config.BuildConfig) *Plugin {
+func NewPlugin(pluginManifest model.Manifest) *Plugin {
 	return &Plugin{
-		BuildConfig: buildConfig,
+		manifest: pluginManifest,
 	}
 }
 
@@ -80,7 +80,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.tracker = telemetry.NewTelemetry(nil)
 
-	p.conf = config.NewService(mm, p.BuildConfig, botUserID, p.tracker, i18nBundle)
+	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)

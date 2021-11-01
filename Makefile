@@ -20,9 +20,9 @@ GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update t
 BUILD_DATE = $(shell date -u)
 BUILD_HASH = $(shell git rev-parse HEAD)
 BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server.BuildDate=$(BUILD_DATE)"
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server.BuildHash=$(BUILD_HASH)"
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server.BuildHashShort=$(BUILD_HASH_SHORT)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildDate=$(BUILD_DATE)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHash=$(BUILD_HASH)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHashShort=$(BUILD_HASH_SHORT)"
 GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
 GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
 
