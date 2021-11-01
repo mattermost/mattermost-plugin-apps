@@ -14,20 +14,10 @@ func (a *builtinApp) appIDForm(call apps.Call, loc *i18n.Localizer) *apps.Form {
 	return &apps.Form{
 		Fields: []apps.Field{
 			{
-				Name: fAppID,
-				Type: apps.FieldTypeDynamicSelect,
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.description",
-					Other: "select an App",
-				}),
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.label",
-					Other: "app",
-				}),
-				AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.autocompleteHint",
-					Other: "App ID",
-				}),
+				Name:                 fAppID,
+				Type:                 apps.FieldTypeDynamicSelect,
+				Label:                a.conf.Local(loc, "field.appID.label"),
+				Description:          a.conf.Local(loc, "field.appID.description"),
 				AutocompletePosition: 1,
 				IsRequired:           true,
 			},
