@@ -45,7 +45,7 @@ func (a *builtinApp) info() handler {
 					Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
 				},
 				TemplateData: map[string]string{
-					"Version":       conf.Version,
+					"Version":       conf.PluginManifest.Version,
 					"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
 					"BuildDate":     conf.BuildDate,
 					"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),

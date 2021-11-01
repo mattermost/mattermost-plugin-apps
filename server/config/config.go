@@ -39,12 +39,9 @@ type StoredConfig struct {
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
 }
 
-type BuildConfig struct {
-	model.Manifest
-	BuildDate      string
-	BuildHash      string
-	BuildHashShort string
-}
+var BuildDate string
+var BuildHash string
+var BuildHashShort string
 
 // Config represents the the metadata handed to all request runners (command,
 // http).
@@ -52,7 +49,11 @@ type BuildConfig struct {
 // Config should be abbreviated as `conf`.
 type Config struct {
 	StoredConfig
-	BuildConfig
+
+	PluginManifest model.Manifest
+	BuildDate      string
+	BuildHash      string
+	BuildHashShort string
 
 	DeveloperMode       bool
 	MattermostCloudMode bool
@@ -119,7 +120,7 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 	conf.MattermostSiteURL = *mattermostSiteURL
 	conf.MattermostSiteHostname = mattermostURL.Hostname()
 	conf.MattermostLocalURL = localURL
-	conf.PluginURLPath = "/plugins/" + conf.BuildConfig.Manifest.Id
+	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
 	conf.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + conf.PluginURLPath
 
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
@@ -166,6 +167,6 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"version": conf.Manifest.Version,
+		"version": conf.PluginManifest.Version,
 	}
 }
