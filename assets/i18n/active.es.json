@@ -135,15 +135,15 @@
     "hash": "sha1-81736358b1645103ae83247b10c5f82af641ddfc",
     "other": "url"
   },
-  "command.enable.install.cloud.description": {
+  "command.enable.install_cloud.description": {
     "hash": "sha1-1d4bc56861bed6f490dad169b1bf07ebc514c743",
     "other": "Instala una App de la Tienda"
   },
-  "command.enable.install.cloud.hint": {
+  "command.enable.install_cloud.hint": {
     "hash": "sha1-e74a4145d016212ce12c397155647db572c9cfe4",
     "other": "[ ID de la App ]"
   },
-  "command.enable.install.cloud.label": {
+  "command.enable.install_cloud.label": {
     "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
     "other": "instalar"
   },

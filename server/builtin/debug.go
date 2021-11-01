@@ -18,8 +18,8 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 			a.debugClean().commandBinding(loc),
 			{
 				Location:    "kv",
-				Label:       "kv",                               // <>/<> TODO localize
-				Description: "View and update apps' KV stores.", // <>/<> TODO localize
+				Label:       a.conf.Local(loc, "command.debug.kv.label"),
+				Description: a.conf.Local(loc, "command.debug.kv.description"),
 				Bindings: []apps.Binding{
 					a.debugKVClean().commandBinding(loc),
 					a.debugKVEdit().commandBinding(loc),
@@ -53,11 +53,11 @@ func (a *builtinApp) debugNamespaceField(loc *i18n.Localizer) apps.Field {
 
 func (a *builtinApp) debugBase64Field(loc *i18n.Localizer) apps.Field {
 	return apps.Field{
-		Name:        fBase64,
-		Type:        apps.FieldTypeBool,
+		Name:             fBase64,
+		Type:             apps.FieldTypeBool,
 		Label:            a.conf.Local(loc, "field.kv.base64key.label"),
 		Description:      a.conf.Local(loc, "field.kv.base64key.description"),
 		AutocompleteHint: a.conf.Local(loc, "field.kv.base64key.hint"),
-		Value:       true,
+		Value:            true,
 	}
 }
