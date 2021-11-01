@@ -95,7 +95,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
-		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
+		Version:     apps.AppVersion(conf.PluginManifest.Version + "-" + conf.BuildHashShort),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		Bindings: &apps.Call{

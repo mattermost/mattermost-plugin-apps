@@ -37,27 +37,28 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	BuildConfig
-	botUserID string
-	log       utils.Logger
-	mm        *pluginapi.Client
-	i18n      *i18n.Bundle
-	telemetry *telemetry.Telemetry
+	pluginManifest model.Manifest
+	botUserID      string
+	log            utils.Logger
+	mm             *pluginapi.Client
+	i18n           *i18n.Bundle
+	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
+	// utils.NewPluginLogger(mm).Debugf("<>/<> NewService 1 %q", BuildHash)
 	return &service{
-		BuildConfig: buildConfig,
-		botUserID:   botUserID,
-		log:         utils.NewPluginLogger(mm),
-		mm:          mm,
-		lock:        &sync.RWMutex{},
-		i18n:        i18nBundle,
-		telemetry:   telemetry,
+		pluginManifest: pliginManifest,
+		botUserID:      botUserID,
+		log:            utils.NewPluginLogger(mm),
+		mm:             mm,
+		lock:           &sync.RWMutex{},
+		i18n:           i18nBundle,
+		telemetry:      telemetry,
 	}
 }
 
@@ -76,8 +77,11 @@ func (s *service) Get() Config {
 
 	if conf == nil {
 		return Config{
-			BuildConfig: s.BuildConfig,
-			BotUserID:   s.botUserID,
+			PluginManifest: s.pluginManifest,
+			BuildDate:      BuildDate,
+			BuildHash:      BuildHash,
+			BuildHashShort: BuildHashShort,
+			BotUserID:      s.botUserID,
 		}
 	}
 	return *conf
@@ -125,6 +129,7 @@ func (s *service) reloadMattermostConfig() *model.Config {
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
+	s.log.Debugf("<>/<> 0 %q %q", BuildHash, newConfig.BuildHash)
 
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
@@ -136,10 +141,13 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
 		}
 	}
+
+	s.log.Debugf("<>/<> 1 %q %q", BuildHash, newConfig.BuildHash)
 	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
 	}
+	s.log.Debugf("<>/<> 2 %q %q", BuildHash, newConfig.BuildHash)
 
 	s.lock.Lock()
 	s.conf = &newConfig
@@ -152,6 +160,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 		}
 	}
 
+	s.log.Debugf("<>/<> 3 %q %q", BuildHash, newConfig.BuildHash)
 	return nil
 }
 
