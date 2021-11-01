@@ -16,19 +16,10 @@ func (a *builtinApp) list() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.list.label",
-					Other: "list",
-				}),
-				Location: "list",
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.list.hint",
-					Other: "[ flags ]",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.list.description",
-					Other: "Display available and installed Apps",
-				}),
+				Location:    "list",
+				Label:       a.conf.Local(loc, "command.list.label"),
+				Description: a.conf.Local(loc, "command.list.description"),
+				Hint:        a.conf.Local(loc, "command.list.hint"),
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{
@@ -37,18 +28,12 @@ func (a *builtinApp) list() handler {
 					},
 				},
 				Form: &apps.Form{
-					Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.enable.list.form.title",
-						Other: "list Apps",
-					}),
 					Fields: []apps.Field{
 						{
-							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "command.enable.list.form.include_plugins.label",
-								Other: "include-plugins",
-							}),
-							Name: fIncludePlugins,
-							Type: apps.FieldTypeBool,
+							Name:        fIncludePlugins,
+							Type:        apps.FieldTypeBool,
+							Label:       a.conf.Local(loc, "field.include_plugins.label"),
+							Description: a.conf.Local(loc, "field.include_plugins.description"),
 						},
 					},
 				},
@@ -56,19 +41,16 @@ func (a *builtinApp) list() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
-			includePluginApps := creq.BoolValue("plugin-apps")
+			loc := a.newLocalizer(creq)
+			includePluginApps := creq.BoolValue(fIncludePlugins)
 
 			listed := a.proxy.GetListedApps("", includePluginApps)
 			installed := a.proxy.GetInstalledApps()
 
 			// All of this information is non sensitive.
 			// Checks for the user's permissions might be needed in the future.
-			txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "apps.command.list.submit.ok.header",
-				Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
-			}) + "\n"
-			txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
+			txt := a.conf.Local(loc, "command.list.submit.header")
+			txt += "\n| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 			for _, app := range installed {
 				m, _ := a.proxy.GetManifest(app.AppID)
@@ -80,22 +62,16 @@ func (a *builtinApp) list() handler {
 					continue
 				}
 
-				status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.list.submit.ok.status.installed",
-					Other: "**Installed**",
-				})
+				status := a.conf.Local(loc, "command.list.submit.status.installed")
 				if app.Disabled {
-					status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "apps.command.list.submit.ok.status.disabled",
-						Other: "Installed, Disabled",
-					})
+					status = a.conf.Local(loc, "command.list.submit.status.disabled")
 				}
 
 				version := string(app.Version)
 				if string(m.Version) != version {
 					version = a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 						DefaultMessage: &i18n.Message{
-							ID:    "apps.command.list.submit.ok.version",
+							ID:    "command.list.submit.version",
 							Other: "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
 						},
 						TemplateData: map[string]string{
@@ -127,23 +103,17 @@ func (a *builtinApp) list() handler {
 					name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 			}
 
-			listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "apps.command.list.submit.ok.listed",
-				Other: "Listed",
-			})
-
+			listedString := a.conf.Local(loc, "command.list.submit.listed")
 			for _, l := range listed {
 				app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
 				if app != nil {
 					continue
 				}
-
 				status := listedString
-
 				version := string(l.Manifest.Version)
-
 				name := fmt.Sprintf("[%s](%s) (`%s`)",
 					l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
+
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
 					name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
 			}

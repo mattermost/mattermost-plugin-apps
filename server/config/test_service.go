@@ -96,3 +96,11 @@ func (s *TestService) StoreConfig(sc StoredConfig) error {
 	s.config.StoredConfig = sc
 	return nil
 }
+
+func (s *TestService) Local(loc *i18n.Localizer, id string) string {
+	return id
+}
+
+func (s *TestService) LocalWithTemplate(loc *i18n.Localizer, id string, data map[string]string) string {
+	return id
+}
