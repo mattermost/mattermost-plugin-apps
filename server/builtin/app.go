@@ -119,7 +119,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
-		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
+		Version:     apps.AppVersion(conf.PluginManifest.Version),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
 		Deploy:      apps.Deploy{},
@@ -253,4 +253,8 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 
 func emptyForm(_ apps.CallRequest) apps.CallResponse {
 	return apps.NewFormResponse(apps.Form{})
+}
+
+func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
+	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }

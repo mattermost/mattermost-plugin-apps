@@ -22,21 +22,12 @@ func (a *builtinApp) enable() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.label",
-					Other: "enable",
-				}),
-				Location: "enable",
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.hint",
-					Other: "[ App ID ]",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.enable.description",
-					Other: "Enables an App",
-				}),
-				Call: &enableCall,
-				Form: a.appIDForm(enableCall, loc),
+				Location:    "enable",
+				Label:       a.conf.Local(loc, "command.enable.label"),
+				Description: a.conf.Local(loc, "command.enable.description"),
+				Hint:        a.conf.Local(loc, "command.enable.hint"),
+				Call:        &enableCall,
+				Form:        a.appIDForm(enableCall, loc),
 			}
 		},
 

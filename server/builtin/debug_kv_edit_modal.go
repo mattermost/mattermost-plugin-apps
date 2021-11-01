@@ -27,13 +27,14 @@ func (a *builtinApp) debugKVEditModal() handler {
 				return nil, err
 			}
 
+			loc := a.newLocalizer(creq)
 			return &apps.Form{
-				Title:  "Edit KV record", // <>/<> Localize
+				Title:  a.conf.Local(loc, "modal.kv.edit.title"),
 				Header: fmt.Sprintf("Key:\n```\n%s\n```\n", key),
 				Fields: []apps.Field{
 					{
 						Name:        fCurrentValue,
-						ModalLabel:  "Current value",
+						ModalLabel:  a.conf.Local(loc, "field.kv.current_value.modal_label"),
 						Type:        apps.FieldTypeText,
 						ReadOnly:    true,
 						Value:       string(value),
@@ -41,22 +42,22 @@ func (a *builtinApp) debugKVEditModal() handler {
 					},
 					{
 						Name:        fNewValue,
-						ModalLabel:  "New value to save",
+						ModalLabel:  a.conf.Local(loc, "field.kv.new_value.modal_label"),
 						Type:        apps.FieldTypeText,
 						TextSubtype: apps.TextFieldSubtypeTextarea,
 					},
 					{
 						Name:       fAction,
-						ModalLabel: "Action to take",
+						ModalLabel: a.conf.Local(loc, "field.kv.action.modal_label"),
 						Type:       apps.FieldTypeStaticSelect,
 						SelectStaticOptions: []apps.SelectOption{
 							{
-								Label: "Store New Value",
 								Value: "store",
+								Label: a.conf.Local(loc, "option.kv.store.label"),
 							},
 							{
-								Label: "Delete Key",
 								Value: "delete",
+								Label: a.conf.Local(loc, "option.kv.delete.label"),
 							},
 						},
 					},
@@ -76,6 +77,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 			action := creq.GetValue(fAction, "")
 			newValue := creq.GetValue(fNewValue, "")
 			key, _ := creq.State.(string)
+			loc := a.newLocalizer(creq)
 
 			mm := a.conf.MattermostAPI()
 			switch action {
@@ -84,14 +86,24 @@ func (a *builtinApp) debugKVEditModal() handler {
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				return apps.NewTextResponse("Stored:\n```\nKey: %s\n\n%s\n```\n", key, newValue)
+				return apps.NewTextResponse(
+					a.conf.LocalWithTemplate(loc, "modal.kv.edit.submit.stored",
+						map[string]string{
+							"Key":   key,
+							"Value": newValue,
+						}))
 
 			case "delete":
 				err := mm.KV.Delete(key)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				return apps.NewTextResponse("Deleted:\n```\nKey: %s\n```\n", key)
+				return apps.NewTextResponse(
+					a.conf.LocalWithTemplate(loc, "modal.kv.edit.submit.deleted",
+						map[string]string{
+							"Key":   key,
+							"Value": newValue,
+						}))
 
 			default:
 				return apps.NewErrorResponse(errors.New("don't know what to do: %q"))

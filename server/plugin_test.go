@@ -16,15 +16,7 @@ import (
 
 func TestOnActivate(t *testing.T) {
 	testAPI := &plugintest.API{}
-	p := NewPlugin(
-		config.BuildConfig{
-			Manifest:       manifest,
-			BuildHash:      BuildHash,
-			BuildHashShort: BuildHashShort,
-			BuildDate:      BuildDate,
-		},
-	)
-
+	p := NewPlugin(manifest)
 	p.API = testAPI
 
 	testAPI.On("GetServerVersion").Return("5.30.1")
@@ -73,26 +65,21 @@ func TestOnActivate(t *testing.T) {
 
 func TestOnDeactivate(t *testing.T) {
 	testAPI := &plugintest.API{}
-	p := NewPlugin(
-		config.BuildConfig{
-			Manifest:       manifest,
-			BuildHash:      BuildHash,
-			BuildHashShort: BuildHashShort,
-			BuildDate:      BuildDate,
-		},
-	)
+	p := NewPlugin(manifest)
 
 	p.API = testAPI
-
+	i18nBundlePath := filepath.Join("assets", "i18n")
 	testAPI.On("GetBundlePath").Return("/", nil)
-	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
+	i18nBundle, _ := i18n.InitBundle(testAPI, i18nBundlePath)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, p.BuildConfig, "the_bot_id", nil, i18nBundle)
+	var err error
+	p.conf, err = config.NewService(mm, manifest, "the_bot_id", nil, i18nBundle, map[string]string{})
+	require.NoError(t, err)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
-	err := p.OnDeactivate()
+	err = p.OnDeactivate()
 	require.NoError(t, err)
 }
 

@@ -26,30 +26,20 @@ func (a *builtinApp) debugKVEdit() handler {
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
 				Location:    "edit",
-				Label:       "edit",                                     // <>/<> Localize
-				Description: "View or edit specific KV keys of an app.", // <>/<> Localize
+				Label:       a.conf.Local(loc, "command.debug.kv.edit.label"),
+				Description: a.conf.Local(loc, "command.debug.kv.edit.description"),
+				Hint:        a.conf.Local(loc, "command.debug.kv.edit.hint"),
 				Call:        &debugKVEditCall,
 				Form: a.appIDForm(debugKVEditCall, loc,
 					apps.Field{
 						Name:             fBase64Key,
-						Label:            "base64-key", // <>/<> Localize
 						Type:             apps.FieldTypeText,
-						Description:      "base64-encoded key, from `debug kv list`. No other flags needed.", // <>/<> Localize
-						AutocompleteHint: "[ key ]",                                                          // <>/<> Localize
+						Label:            a.conf.Local(loc, "field.kv.base64key.label"),
+						Description:      a.conf.Local(loc, "field.kv.base64key.description"),
+						AutocompleteHint: a.conf.Local(loc, "field.kv.base64key.hint"),
 					},
-					apps.Field{
-						Name:        fNamespace,
-						Label:       fNamespace, // <>/<> Localize
-						Type:        apps.FieldTypeDynamicSelect,
-						Description: "App-specific namespace (up to 2 letters). Requires `--app` and `--id`.", // <>/<> Localize
-					},
-					apps.Field{
-						Name:             fID,
-						Label:            fID, // <>/<> Localize
-						Type:             apps.FieldTypeText,
-						Description:      "App-specific ID, any length.", // <>/<> Localize
-						AutocompleteHint: "[ id ]",                       // <>/<> Localize
-					},
+					a.debugNamespaceField(loc),
+					a.debugIDField(loc),
 				),
 			}
 		},

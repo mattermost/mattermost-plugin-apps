@@ -216,7 +216,7 @@ func (s *manifestStore) StoreLocal(m apps.Manifest) error {
 	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
-	m.SchemaVersion = conf.BuildConfig.Version
+	m.SchemaVersion = conf.PluginManifest.Version
 
 	data, err := json.Marshal(m)
 	if err != nil {

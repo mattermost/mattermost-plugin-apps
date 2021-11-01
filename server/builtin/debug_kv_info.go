@@ -5,6 +5,7 @@ package builtin
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
@@ -26,9 +27,9 @@ func (a *builtinApp) debugKVInfo() handler {
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
 				Location:    "info",
-				Label:       "info",                                    // <>/<> Localize
-				Hint:        "[ AppID ]",                               // <>/<> Localize
-				Description: "Display KV store statistics for an app.", // <>/<> Localize
+				Label:       a.conf.Local(loc, "command.debug.kv.info.label"),
+				Description: a.conf.Local(loc, "command.debug.kv.info.description"),
+				Hint:        a.conf.Local(loc, "command.debug.kv.info.hint"),
 				Call:        &debugKVInfoCall,
 				Form:        a.appIDForm(debugKVInfoCall, loc),
 			}
@@ -40,14 +41,19 @@ func (a *builtinApp) debugKVInfo() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
+			loc := a.newLocalizer(creq)
 
-			message := fmt.Sprintf("%v total keys for `%s`.\n", n, appID) // <>/<> Localize
+			message := a.conf.LocalWithTemplate(loc, "command.debug.kv.info.submit.message",
+				map[string]string{
+					"Count": strconv.Itoa(n),
+					"AppID": string(appID),
+				})
 			if len(namespaces) > 0 {
-				message += "\nNamespaces:\n"
+				message += a.conf.Local(loc, "command.debug.kv.info.submit.namespace")
 			}
 			for ns, c := range namespaces {
 				if ns == "" {
-					ns = "(none)"
+					ns = a.conf.Local(loc, "command.debug.kv.info.submit.none")
 				}
 				message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
 			}

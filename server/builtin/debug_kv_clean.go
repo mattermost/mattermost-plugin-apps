@@ -4,7 +4,7 @@
 package builtin
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
@@ -24,12 +24,12 @@ func (a *builtinApp) debugKVClean() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label:       "clean",
 				Location:    "clean",
-				Hint:        "[ AppID ]",
-				Description: "Deletes KV keys for an app, in a specific namespace.",
+				Label:       a.conf.Local(loc, "command.debug.kv.clean.label"),
+				Description: a.conf.Local(loc, "command.debug.kv.clean.description"),
+				Hint:        a.conf.Local(loc, "command.debug.kv.clean.hint"),
 				Call:        &debugKVInfoCall,
-				Form:        a.appIDForm(debugKVListCall, loc, namespaceField),
+				Form:        a.appIDForm(debugKVListCall, loc, a.debugNamespaceField(loc)),
 			}
 		},
 
@@ -50,7 +50,13 @@ func (a *builtinApp) debugKVClean() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewTextResponse(fmt.Sprintf("Deleted %v  keys for `%s`, namespace `%s`.\n", n, appID, namespace))
+			return apps.NewTextResponse(a.conf.LocalWithTemplate(a.newLocalizer(creq),
+				"command.debug.kv.clean.submit",
+				map[string]string{
+					"Count":     strconv.Itoa(n),
+					"AppID":     string(appID),
+					"Namespace": namespace,
+				}))
 		},
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {

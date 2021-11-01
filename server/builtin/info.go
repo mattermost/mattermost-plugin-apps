@@ -17,15 +17,9 @@ func (a *builtinApp) info() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.info.label",
-					Other: "info",
-				}),
-				Location: "info",
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.info.description",
-					Other: "Display Apps plugin info",
-				}),
+				Location:    "info",
+				Label:       a.conf.Local(loc, "command.info.label"),
+				Description: a.conf.Local(loc, "command.info.description"),
 				Call: &apps.Call{
 					Path: pInfo,
 					Expand: &apps.Expand{
@@ -37,21 +31,17 @@ func (a *builtinApp) info() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+			loc := a.newLocalizer(creq)
 			conf := a.conf.Get()
-			out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-				DefaultMessage: &i18n.Message{
-					ID:    "apps.command.info.submit.ok",
-					Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
-				},
-				TemplateData: map[string]string{
-					"Version":       conf.Version,
+			out := a.conf.LocalWithTemplate(loc, "command.info.submit",
+				map[string]string{
+					"Version":       conf.PluginManifest.Version,
 					"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
 					"BuildDate":     conf.BuildDate,
 					"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
 					"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
 				},
-			}) + "\n"
+			) + "\n"
 			return apps.NewTextResponse(out)
 		},
 	}

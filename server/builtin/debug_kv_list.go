@@ -6,6 +6,7 @@ package builtin
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
@@ -28,11 +29,12 @@ func (a *builtinApp) debugKVList() handler {
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
 				Location:    "list",
-				Label:       "list",                                                             // <>/<> Localize
-				Hint:        "[ AppID ]",                                                        // <>/<> Localize
-				Description: "Display the list of KV keys for an app, in a specific namespace.", // <>/<> Localize
+				Label:       a.conf.Local(loc, "command.debug.kv.list.label"),
+				Description: a.conf.Local(loc, "command.debug.kv.list.description"),
+				Hint:        a.conf.Local(loc, "command.debug.kv.list.hint"),
 				Call:        &debugKVInfoCall,
-				Form:        a.appIDForm(debugKVListCall, loc, namespaceField, base64Field),
+				Form: a.appIDForm(debugKVListCall, loc,
+					a.debugNamespaceField(loc), a.debugBase64Field(loc)),
 			}
 		},
 
@@ -54,16 +56,23 @@ func (a *builtinApp) debugKVList() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			message := fmt.Sprintf("%v total keys for `%s`", len(keys), appID) // <>/<> Localize
+			loc := a.newLocalizer(creq)
+			message := a.conf.LocalWithTemplate(loc, "command.debug.kv.list.submit.message",
+				map[string]string{
+					"Count": strconv.Itoa(len(keys)),
+					"AppID": string(appID),
+				})
+
 			if namespace != "" {
-				message += fmt.Sprintf(", namespace `%s`\n", namespace)
+				message += a.conf.LocalWithTemplate(loc, "command.debug.kv.list.submit.namespace",
+					map[string]string{
+						"Namespace": namespace,
+					})
 			} else {
 				message += "\n"
 			}
 			if encode {
-				message += "**NOTE**: keys are base64-encoded for pasting into " +
-					"`/apps debug kv edit` command. Use `/apps debug kv list --base64 false` " +
-					"to output raw values.\n"
+				message += a.conf.Local(loc, "command.debug.kv.list.submit.note")
 				for _, key := range keys {
 					message += fmt.Sprintf("- `%s`\n", base64.URLEncoding.EncodeToString([]byte(key)))
 				}

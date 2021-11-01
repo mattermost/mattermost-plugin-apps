@@ -13,7 +13,8 @@ import (
 var debugBindingsCall = apps.Call{
 	Path: pDebugBindings,
 	Expand: &apps.Expand{
-		ActingUser: apps.ExpandSummary,
+		ActingUser:       apps.ExpandSummary,
+		AdminAccessToken: apps.ExpandAll,
 	},
 }
 
@@ -28,17 +29,11 @@ func (a *builtinApp) debugBindings() handler {
 			}
 
 			return apps.Binding{
-				Location: "bindings",
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.debug.bindings.label",
-					Other: "bindings",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.debug.bindings.description",
-					Other: "Display all bindings for the current context",
-				}),
-				Call: &debugBindingsCall,
-				Form: form,
+				Location:    "bindings",
+				Label:       a.conf.Local(loc, "command.debug.bindings.label"),
+				Description: a.conf.Local(loc, "command.debug.bindings.description"),
+				Call:        &debugBindingsCall,
+				Form:        form,
 			}
 		},
 

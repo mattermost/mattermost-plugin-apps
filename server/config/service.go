@@ -2,6 +2,8 @@ package config
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/i18n"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
@@ -32,33 +35,40 @@ type Service interface {
 
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
+
+	// Convenience localozation methods.
+	// TODO - these should migrate to proxy.Request when introduced, making loc unnecessary.
+	Local(loc *i18n.Localizer, def string) string
+	LocalWithTemplate(loc *i18n.Localizer, def string, data map[string]string) string
 }
 
 var _ Service = (*service)(nil)
 
 type service struct {
-	BuildConfig
-	botUserID string
-	log       utils.Logger
-	mm        *pluginapi.Client
-	i18n      *i18n.Bundle
-	telemetry *telemetry.Telemetry
+	pluginManifest model.Manifest
+	botUserID      string
+	log            utils.Logger
+	mm             *pluginapi.Client
+	i18n           *i18n.Bundle
+	i18nEN         map[string]string
+	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, enMap map[string]string) (Service, error) {
 	return &service{
-		BuildConfig: buildConfig,
-		botUserID:   botUserID,
-		log:         utils.NewPluginLogger(mm),
-		mm:          mm,
-		lock:        &sync.RWMutex{},
-		i18n:        i18nBundle,
-		telemetry:   telemetry,
-	}
+		pluginManifest: pliginManifest,
+		botUserID:      botUserID,
+		log:            utils.NewPluginLogger(mm),
+		i18nEN:         enMap,
+		mm:             mm,
+		lock:           &sync.RWMutex{},
+		i18n:           i18nBundle,
+		telemetry:      telemetry,
+	}, nil
 }
 
 // Basic is a convenience method, included in the interface so one can write:
@@ -76,8 +86,11 @@ func (s *service) Get() Config {
 
 	if conf == nil {
 		return Config{
-			BuildConfig: s.BuildConfig,
-			BotUserID:   s.botUserID,
+			PluginManifest: s.pluginManifest,
+			BuildDate:      BuildDate,
+			BuildHash:      BuildHash,
+			BuildHashShort: BuildHashShort,
+			BotUserID:      s.botUserID,
 		}
 	}
 	return *conf
@@ -136,6 +149,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
 		}
 	}
+
 	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
@@ -174,4 +188,48 @@ func (s *service) StoreConfig(sc StoredConfig) error {
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)
+}
+
+func (s *service) Local(loc *i18n.Localizer, id string) string {
+	def := s.checkLocalStringID(id)
+	return s.I18N().LocalizeDefaultMessage(loc, &i18n.Message{ID: id, Other: def})
+}
+
+func (s *service) LocalWithTemplate(loc *i18n.Localizer, id string, data map[string]string) string {
+	def := s.checkLocalStringID(id)
+	return s.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		DefaultMessage: &i18n.Message{ID: id, Other: def},
+		TemplateData:   data,
+	})
+}
+
+func (s *service) checkLocalStringID(id string) string {
+	def, ok := s.i18nEN[id]
+	if ok {
+		return def
+	}
+	if s.Get().DeveloperMode {
+		s.log.Errorw("i18n: string id is undefined in bundle", "id", id)
+	}
+	return "(undefined)"
+}
+
+func LoadENLocalizationMap(api plugin.API, i18Path string) (map[string]string, error) {
+	bundlePath, err := api.GetBundlePath()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get bundle path")
+	}
+
+	data, err := os.ReadFile(filepath.Join(bundlePath, i18Path, "active.en.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]string{}
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
