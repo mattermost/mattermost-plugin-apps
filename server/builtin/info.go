@@ -35,7 +35,7 @@ func (a *builtinApp) info() handler {
 			conf := a.conf.Get()
 			out := a.conf.LocalWithTemplate(loc, "command.info.submit",
 				map[string]string{
-					"Version":       conf.Version,
+					"Version":       conf.PluginManifest.Version,
 					"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
 					"BuildDate":     conf.BuildDate,
 					"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),

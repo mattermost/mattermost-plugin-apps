@@ -33,7 +33,7 @@ import (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	config.BuildConfig
+	manifest model.Manifest
 
 	conf config.Service
 	log  utils.Logger
@@ -49,9 +49,9 @@ type Plugin struct {
 	tracker         *telemetry.Telemetry
 }
 
-func NewPlugin(buildConfig config.BuildConfig) *Plugin {
+func NewPlugin(pluginManifest model.Manifest) *Plugin {
 	return &Plugin{
-		BuildConfig: buildConfig,
+		manifest: pluginManifest,
 	}
 }
 
@@ -85,10 +85,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to load EN (default) localization file")
 	}
-	p.conf, err = config.NewService(mm, p.BuildConfig, botUserID, p.tracker, i18nBundle, i18nEN)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize config")
-	}
+	p.conf = config.NewService(mm, manifest, botUserID, p.tracker, i18nBundle, i18nEN)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)

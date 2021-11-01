@@ -45,30 +45,30 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	BuildConfig
-	botUserID string
-	log       utils.Logger
-	mm        *pluginapi.Client
-	i18n      *i18n.Bundle
-	i18nEN    map[string]string
-	telemetry *telemetry.Telemetry
+	pluginManifest model.Manifest
+	botUserID      string
+	log            utils.Logger
+	mm             *pluginapi.Client
+	i18n           *i18n.Bundle
+	i18nEN         map[string]string
+	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, buildConfig BuildConfig, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, enMap map[string]string) (Service, error) {
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, enMap map[string]string) Service {
 	return &service{
-		BuildConfig: buildConfig,
-		botUserID:   botUserID,
-		log:         utils.NewPluginLogger(mm),
-		i18nEN:      enMap,
-		mm:          mm,
-		lock:        &sync.RWMutex{},
-		i18n:        i18nBundle,
-		telemetry:   telemetry,
-	}, nil
+		pluginManifest: pliginManifest,
+		botUserID:      botUserID,
+		log:            utils.NewPluginLogger(mm),
+		mm:             mm,
+		lock:           &sync.RWMutex{},
+		i18n:           i18nBundle,
+		i18nEN:         enMap,
+		telemetry:      telemetry,
+	}
 }
 
 // Basic is a convenience method, included in the interface so one can write:
@@ -86,8 +86,11 @@ func (s *service) Get() Config {
 
 	if conf == nil {
 		return Config{
-			BuildConfig: s.BuildConfig,
-			BotUserID:   s.botUserID,
+			PluginManifest: s.pluginManifest,
+			BuildDate:      BuildDate,
+			BuildHash:      BuildHash,
+			BuildHashShort: BuildHashShort,
+			BotUserID:      s.botUserID,
 		}
 	}
 	return *conf
@@ -146,6 +149,7 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
 		}
 	}
+
 	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
