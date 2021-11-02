@@ -65,6 +65,11 @@ func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []
 	if !p.appIsEnabled(app) {
 		return nil
 	}
+
+	if len(app.GrantedLocations) == 0 {
+		return nil
+	}
+
 	log := p.conf.Logger().With("app_id", app.AppID)
 
 	appID := app.AppID
