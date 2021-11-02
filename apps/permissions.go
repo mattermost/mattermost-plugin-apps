@@ -26,10 +26,6 @@ const (
 	// OAuth2 accounts, and then use user API tokens.
 	PermissionActAsUser Permission = "act_as_user"
 
-	// PermissionActAsAdmin means that the app is allowed to request admin-level
-	// access tokens in its calls.
-	PermissionActAsAdmin Permission = "act_as_admin"
-
 	// PermissionRemoteOAuth2 means that the app is allowed to use remote (3rd
 	// party) OAuth2 support, and will store secrets to 3rd party system(s).
 	PermissionRemoteOAuth2 Permission = "remote_oauth2"
@@ -53,8 +49,6 @@ func (p Permission) String() string {
 	switch p {
 	case PermissionUserJoinedChannelNotification:
 		m = "be notified when users join channels"
-	case PermissionActAsAdmin:
-		m = "use Mattermost REST API as a sysadmin"
 	case PermissionActAsUser:
 		m = "use Mattermost REST API as connected users"
 	case PermissionActAsBot:

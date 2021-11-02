@@ -45,46 +45,17 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		return emptyCC, err
 	}
 
-	var userSession *model.Session
-	if expand.AdminAccessToken != "" {
-		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
-		}
-		err := utils.EnsureSysAdmin(p.conf.MattermostAPI(), cc.ActingUserID)
-		if err != nil {
-			return emptyCC, utils.NewForbiddenError("user is not a sysadmin")
-		}
-		// See if we can derive the admin token from the "base" context
-		cc.AdminAccessToken = in.AdminAccessToken
-		if cc.AdminAccessToken == "" {
-			cc.AdminAccessToken = in.ActingUserAccessToken
-		}
-		// Try to obtain it from the present session
-		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-			if err != nil {
-				return emptyCC, utils.NewForbiddenError("failed to load user session")
-			}
-			cc.AdminAccessToken = userSession.Token
-		}
-		if cc.AdminAccessToken == "" {
-			return cc, errors.New("admin access token is not available")
-		}
-	}
-
 	if expand.ActingUserAccessToken != "" {
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
 		cc.ActingUserAccessToken = in.ActingUserAccessToken
 		if cc.ActingUserAccessToken == "" {
-			if userSession == nil {
-				var err error
-				userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-				if err != nil {
-					return emptyCC, utils.NewForbiddenError("failed to load user session")
-				}
+			userSession, err := utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
+			if err != nil {
+				return emptyCC, utils.NewForbiddenError("failed to load user session")
 			}
+
 			cc.ActingUserAccessToken = userSession.Token
 		}
 		if cc.ActingUserAccessToken == "" {
@@ -295,10 +266,6 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 
 func getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client, in Incoming) (mmclient.Client, error) {
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
-		// If the app has admin permission anyway, use the RPC client for performance reasons
-		return mmclient.NewRPCClient(mm), nil
-
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
 		err := in.ensureUserToken(mm)

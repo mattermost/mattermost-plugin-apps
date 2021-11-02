@@ -44,13 +44,6 @@ type Expand struct {
 	// https://mattermost.atlassian.net/browse/MM-31117
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 
-	// AdminAccessToken: all. Include admin-level access token in the request.
-	// Requires act_as_admin permission to have been granted to the app. This
-	// should be a special Mattermost OAuth2 token, but until it's implemented
-	// the MM session token is used.
-	// https://mattermost.atlassian.net/browse/MM-28542
-	AdminAccessToken ExpandLevel `json:"admin_access_token,omitempty"`
-
 	// Channel: all for model.Channel, summary for Id, DeleteAt, TeamId, Type,
 	// DisplayName, Name
 	Channel ExpandLevel `json:"channel,omitempty"`
