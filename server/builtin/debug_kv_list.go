@@ -28,11 +28,20 @@ func (a *builtinApp) debugKVList() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "list",
-				Label:       a.conf.Local(loc, "command.debug.kv.list.label"),
-				Description: a.conf.Local(loc, "command.debug.kv.list.description"),
-				Hint:        a.conf.Local(loc, "command.debug.kv.list.hint"),
-				Call:        &debugKVInfoCall,
+				Location: "list",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.list.label",
+					Other: "list",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.list.description",
+					Other: "Display the list of KV keys for an app, in a specific namespace.",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.list.hint",
+					Other: "[ AppID Namespace ]",
+				}),
+				Call: &debugKVInfoCall,
 				Form: a.appIDForm(debugKVListCall, loc,
 					a.debugNamespaceField(loc), a.debugBase64Field(loc)),
 			}
@@ -57,22 +66,35 @@ func (a *builtinApp) debugKVList() handler {
 			}
 
 			loc := a.newLocalizer(creq)
-			message := a.conf.LocalWithTemplate(loc, "command.debug.kv.list.submit.message",
-				map[string]string{
+			message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "command.debug.kv.list.submit.message",
+					Other: "{{.Count}} total keys for `{{.AppID}}`\n",
+				},
+				TemplateData: map[string]string{
 					"Count": strconv.Itoa(len(keys)),
 					"AppID": string(appID),
-				})
+				},
+			})
 
 			if namespace != "" {
-				message += a.conf.LocalWithTemplate(loc, "command.debug.kv.list.submit.namespace",
-					map[string]string{
+				message += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+					DefaultMessage: &i18n.Message{
+						ID:    "command.debug.kv.list.submit.namespace",
+						Other: ", namespace `%s`\n",
+					},
+					TemplateData: map[string]string{
 						"Namespace": namespace,
-					})
+					},
+				})
 			} else {
 				message += "\n"
 			}
 			if encode {
-				message += a.conf.Local(loc, "command.debug.kv.list.submit.note")
+				message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.list.submit.note",
+					Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\n",
+				})
 				for _, key := range keys {
 					message += fmt.Sprintf("- `%s`\n", base64.URLEncoding.EncodeToString([]byte(key)))
 				}

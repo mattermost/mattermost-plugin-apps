@@ -16,10 +16,19 @@ func (a *builtinApp) list() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "list",
-				Label:       a.conf.Local(loc, "command.list.label"),
-				Description: a.conf.Local(loc, "command.list.description"),
-				Hint:        a.conf.Local(loc, "command.list.hint"),
+				Location: "list",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.list.label",
+					Other: "list",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.list.description",
+					Other: "Display available and installed Apps",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.list.hint",
+					Other: "[ flags ]",
+				}),
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{
@@ -30,10 +39,16 @@ func (a *builtinApp) list() handler {
 				Form: &apps.Form{
 					Fields: []apps.Field{
 						{
-							Name:        fIncludePlugins,
-							Type:        apps.FieldTypeBool,
-							Label:       a.conf.Local(loc, "field.include_plugins.label"),
-							Description: a.conf.Local(loc, "field.include_plugins.description"),
+							Name: fIncludePlugins,
+							Type: apps.FieldTypeBool,
+							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "field.include_plugins.label",
+								Other: "include-plugins",
+							}),
+							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "field.include_plugins.description",
+								Other: "include compatible Mattermost plugins in the output.",
+							}),
 						},
 					},
 				},
@@ -49,7 +64,10 @@ func (a *builtinApp) list() handler {
 
 			// All of this information is non sensitive.
 			// Checks for the user's permissions might be needed in the future.
-			txt := a.conf.Local(loc, "command.list.submit.header")
+			txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.list.submit.header",
+				Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
+			})
 			txt += "\n| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 			for _, app := range installed {
@@ -62,9 +80,15 @@ func (a *builtinApp) list() handler {
 					continue
 				}
 
-				status := a.conf.Local(loc, "command.list.submit.status.installed")
+				status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.list.submit.status.installed",
+					Other: "**Installed**",
+				})
 				if app.Disabled {
-					status = a.conf.Local(loc, "command.list.submit.status.disabled")
+					status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.list.submit.status.disabled",
+						Other: "Installed, Disabled",
+					})
 				}
 
 				version := string(app.Version)
@@ -103,7 +127,10 @@ func (a *builtinApp) list() handler {
 					name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 			}
 
-			listedString := a.conf.Local(loc, "command.list.submit.listed")
+			listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.list.submit.listed",
+				Other: "Listed",
+			})
 			for _, l := range listed {
 				app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
 				if app != nil {

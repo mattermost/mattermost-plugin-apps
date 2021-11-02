@@ -26,42 +26,87 @@ var installListedCall = apps.Call{
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 	if a.conf.Get().MattermostCloudMode {
 		return apps.Binding{
-			Location:    "install",
-			Label:       a.conf.Local(loc, "command.install.cloud.label"),
-			Description: a.conf.Local(loc, "command.install.cloud.description"),
-			Hint:        a.conf.Local(loc, "command.install.cloud.hint"),
-			Call:        &installListedCall,
-			Form:        a.appIDForm(installListedCall, loc),
+			Location: "install",
+			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.cloud.label",
+				Other: "install",
+			}),
+			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.cloud.hint",
+				Other: "[ app ID ]",
+			}),
+			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.cloud.description",
+				Other: "Install an App from the Marketplace",
+			}),
+			Call: &installListedCall,
+			Form: a.appIDForm(installListedCall, loc),
 		}
 	} else {
 		return apps.Binding{
-			Location:    "install",
-			Label:       a.conf.Local(loc, "command.install.label"),
-			Description: a.conf.Local(loc, "command.install.description"),
-			Hint:        a.conf.Local(loc, "command.install.hint"),
+			Location: "install",
+			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.label",
+				Other: "install",
+			}),
+			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.hint",
+				Other: "[ listed | url ]",
+			}),
+			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.description",
+				Other: "Install an App, locally deployed or from a remote URL",
+			}),
 			Bindings: []apps.Binding{
 				{
-					Location:    "listed",
-					Label:       a.conf.Local(loc, "command.install.listed.label"),
-					Description: a.conf.Local(loc, "command.install.listed.description"),
-					Hint:        a.conf.Local(loc, "command.install.listed.hint"),
-					Call:        &installListedCall,
-					Form:        a.appIDForm(installListedCall, loc),
+					Location: "listed",
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.listed.label",
+						Other: "listed",
+					}),
+					Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.listed.hint",
+						Other: "[ app ID ]",
+					}),
+					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.listed.description",
+						Other: "Install a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
+					}),
+					Call: &installListedCall,
+					Form: a.appIDForm(installListedCall, loc),
 				},
 				{
-					Location:    "http",
-					Label:       a.conf.Local(loc, "command.install.http.label"),
-					Hint:        a.conf.Local(loc, "command.install.http.hint"),
-					Description: a.conf.Local(loc, "command.install.http.description"),
-					Call:        &installHTTPCall,
+					Location: "http",
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.http.label",
+						Other: "http",
+					}),
+					Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.http.hint",
+						Other: "[ manifest.json URL ]",
+					}),
+					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.install.http.description",
+						Other: "Install an App from an HTTP URL",
+					}),
+					Call: &installHTTPCall,
 					Form: &apps.Form{
 						Fields: []apps.Field{
 							{
-								Name:                 fURL,
-								Type:                 apps.FieldTypeText,
-								Label:                a.conf.Local(loc, "field.url.label"),
-								Description:          a.conf.Local(loc, "field.url.description"),
-								AutocompleteHint:     a.conf.Local(loc, "field.url.hint"),
+								Name: fURL,
+								Type: apps.FieldTypeText,
+								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+									ID:    "field.url.label",
+									Other: "url",
+								}),
+								Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+									ID:    "field.url.description",
+									Other: "enter the URL for the app's manifest.json",
+								}),
+								AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+									ID:    "field.url.hint",
+									Other: "HTTP(s) URL",
+								}),
 								AutocompletePosition: 1,
 								IsRequired:           true,
 							},

@@ -25,19 +25,22 @@ func (a *builtinApp) debugKVEdit() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "edit",
-				Label:       a.conf.Local(loc, "command.debug.kv.edit.label"),
-				Description: a.conf.Local(loc, "command.debug.kv.edit.description"),
-				Hint:        a.conf.Local(loc, "command.debug.kv.edit.hint"),
-				Call:        &debugKVEditCall,
+				Location: "edit",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.edit.label",
+					Other: "edit",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.edit.description",
+					Other: "View or edit specific KV keys of an app.",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.edit.hint",
+					Other: "[ AppID keyspec ]",
+				}),
+				Call: &debugKVEditCall,
 				Form: a.appIDForm(debugKVEditCall, loc,
-					apps.Field{
-						Name:             fBase64Key,
-						Type:             apps.FieldTypeText,
-						Label:            a.conf.Local(loc, "field.kv.base64key.label"),
-						Description:      a.conf.Local(loc, "field.kv.base64key.description"),
-						AutocompleteHint: a.conf.Local(loc, "field.kv.base64key.hint"),
-					},
+					a.debugBase64Field(loc),
 					a.debugNamespaceField(loc),
 					a.debugIDField(loc),
 				),

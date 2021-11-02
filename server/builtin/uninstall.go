@@ -20,12 +20,21 @@ func (a *builtinApp) uninstall() handler {
 	return handler{
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "uninstall",
-				Label:       a.conf.Local(loc, "command.uninstall.label"),
-				Description: a.conf.Local(loc, "command.uninstall.description"),
-				Hint:        a.conf.Local(loc, "command.uninstall.hint"),
-				Call:        &uninstallCall,
-				Form:        a.appIDForm(uninstallCall, loc),
+				Location: "uninstall",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.uninstall.label",
+					Other: "uninstall",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.uninstall.hint",
+					Other: "[ App ID ]",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.uninstall.description",
+					Other: "Uninstall an App",
+				}),
+				Call: &uninstallCall,
+				Form: a.appIDForm(uninstallCall, loc),
 			}
 		},
 

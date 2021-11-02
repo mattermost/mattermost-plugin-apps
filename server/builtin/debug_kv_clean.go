@@ -24,12 +24,21 @@ func (a *builtinApp) debugKVClean() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "clean",
-				Label:       a.conf.Local(loc, "command.debug.kv.clean.label"),
-				Description: a.conf.Local(loc, "command.debug.kv.clean.description"),
-				Hint:        a.conf.Local(loc, "command.debug.kv.clean.hint"),
-				Call:        &debugKVInfoCall,
-				Form:        a.appIDForm(debugKVListCall, loc, a.debugNamespaceField(loc)),
+				Location: "clean",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.clean.label",
+					Other: "clean",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.clean.description",
+					Other: "Delete KV keys for an app, in a specific namespace.",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.clean.hint",
+					Other: "[ App ID ]",
+				}),
+				Call: &debugKVInfoCall,
+				Form: a.appIDForm(debugKVListCall, loc, a.debugNamespaceField(loc)),
 			}
 		},
 
@@ -50,13 +59,18 @@ func (a *builtinApp) debugKVClean() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			return apps.NewTextResponse(a.conf.LocalWithTemplate(a.newLocalizer(creq),
-				"command.debug.kv.clean.submit",
-				map[string]string{
+			loc := a.newLocalizer(creq)
+			return apps.NewTextResponse(a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "command.debug.kv.clean.submit",
+					Other: "Deleted {{.Count}} keys for `{{.AppID}}`, namespace `{{.Namespace}}`.",
+				},
+				TemplateData: map[string]string{
 					"Count":     strconv.Itoa(n),
 					"AppID":     string(appID),
 					"Namespace": namespace,
-				}))
+				},
+			}))
 		},
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {

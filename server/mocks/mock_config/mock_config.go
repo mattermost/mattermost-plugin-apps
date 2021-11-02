@@ -14,7 +14,6 @@ import (
 	telemetry "github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
-	i18n0 "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // MockService is a mock of Service interface.
@@ -82,34 +81,6 @@ func (m *MockService) I18N() *i18n.Bundle {
 func (mr *MockServiceMockRecorder) I18N() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "I18N", reflect.TypeOf((*MockService)(nil).I18N))
-}
-
-// Local mocks base method.
-func (m *MockService) Local(arg0 *i18n0.Localizer, arg1 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Local", arg0, arg1)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Local indicates an expected call of Local.
-func (mr *MockServiceMockRecorder) Local(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Local", reflect.TypeOf((*MockService)(nil).Local), arg0, arg1)
-}
-
-// LocalWithTemplate mocks base method.
-func (m *MockService) LocalWithTemplate(arg0 *i18n0.Localizer, arg1 string, arg2 map[string]string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LocalWithTemplate", arg0, arg1, arg2)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// LocalWithTemplate indicates an expected call of LocalWithTemplate.
-func (mr *MockServiceMockRecorder) LocalWithTemplate(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalWithTemplate", reflect.TypeOf((*MockService)(nil).LocalWithTemplate), arg0, arg1, arg2)
 }
 
 // Logger mocks base method.

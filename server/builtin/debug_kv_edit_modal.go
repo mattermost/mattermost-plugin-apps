@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 )
 
@@ -29,35 +30,53 @@ func (a *builtinApp) debugKVEditModal() handler {
 
 			loc := a.newLocalizer(creq)
 			return &apps.Form{
-				Title:  a.conf.Local(loc, "modal.kv.edit.title"),
+				Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "modal.kv.edit.title",
+					Other: "Edit app's KV record",
+				}),
 				Header: fmt.Sprintf("Key:\n```\n%s\n```\n", key),
 				Fields: []apps.Field{
 					{
-						Name:        fCurrentValue,
-						ModalLabel:  a.conf.Local(loc, "field.kv.current_value.modal_label"),
+						Name: fCurrentValue,
+						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.kv.current_value.modal_label",
+							Other: "Current value",
+						}),
 						Type:        apps.FieldTypeText,
 						ReadOnly:    true,
 						Value:       string(value),
 						TextSubtype: apps.TextFieldSubtypeTextarea,
 					},
 					{
-						Name:        fNewValue,
-						ModalLabel:  a.conf.Local(loc, "field.kv.new_value.modal_label"),
+						Name: fNewValue,
+						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.kv.new_value.modal_label",
+							Other: "New value to save",
+						}),
 						Type:        apps.FieldTypeText,
 						TextSubtype: apps.TextFieldSubtypeTextarea,
 					},
 					{
-						Name:       fAction,
-						ModalLabel: a.conf.Local(loc, "field.kv.action.modal_label"),
-						Type:       apps.FieldTypeStaticSelect,
+						Name: fAction,
+						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.kv.action.modal_label",
+							Other: "Action to take",
+						}),
+						Type: apps.FieldTypeStaticSelect,
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value: "store",
-								Label: a.conf.Local(loc, "option.kv.store.label"),
+								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+									ID:    "option.kv.store.label",
+									Other: "Store New Value",
+								}),
 							},
 							{
 								Value: "delete",
-								Label: a.conf.Local(loc, "option.kv.delete.label"),
+								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+									ID:    "option.kv.delete.label",
+									Other: "Delete Key",
+								}),
 							},
 						},
 					},
@@ -87,11 +106,16 @@ func (a *builtinApp) debugKVEditModal() handler {
 					return apps.NewErrorResponse(err)
 				}
 				return apps.NewTextResponse(
-					a.conf.LocalWithTemplate(loc, "modal.kv.edit.submit.stored",
-						map[string]string{
+					a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+						DefaultMessage: &i18n.Message{
+							ID:    "modal.kv.edit.submit.stored",
+							Other: "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
+						},
+						TemplateData: map[string]string{
 							"Key":   key,
 							"Value": newValue,
-						}))
+						},
+					}))
 
 			case "delete":
 				err := mm.KV.Delete(key)
@@ -99,11 +123,15 @@ func (a *builtinApp) debugKVEditModal() handler {
 					return apps.NewErrorResponse(err)
 				}
 				return apps.NewTextResponse(
-					a.conf.LocalWithTemplate(loc, "modal.kv.edit.submit.deleted",
-						map[string]string{
-							"Key":   key,
-							"Value": newValue,
-						}))
+					a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+						DefaultMessage: &i18n.Message{
+							ID:    "modal.kv.edit.submit.deleted",
+							Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
+						},
+						TemplateData: map[string]string{
+							"Key": key,
+						},
+					}))
 
 			default:
 				return apps.NewErrorResponse(errors.New("don't know what to do: %q"))

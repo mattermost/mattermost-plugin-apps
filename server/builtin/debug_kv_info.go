@@ -26,12 +26,21 @@ func (a *builtinApp) debugKVInfo() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "info",
-				Label:       a.conf.Local(loc, "command.debug.kv.info.label"),
-				Description: a.conf.Local(loc, "command.debug.kv.info.description"),
-				Hint:        a.conf.Local(loc, "command.debug.kv.info.hint"),
-				Call:        &debugKVInfoCall,
-				Form:        a.appIDForm(debugKVInfoCall, loc),
+				Location: "info",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.info.label",
+					Other: "info",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.info.description",
+					Other: "Display KV store statistics for an app..",
+				}),
+				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.info.hint",
+					Other: "[ AppID ]",
+				}),
+				Call: &debugKVInfoCall,
+				Form: a.appIDForm(debugKVInfoCall, loc),
 			}
 		},
 
@@ -43,17 +52,29 @@ func (a *builtinApp) debugKVInfo() handler {
 			}
 			loc := a.newLocalizer(creq)
 
-			message := a.conf.LocalWithTemplate(loc, "command.debug.kv.info.submit.message",
-				map[string]string{
+			message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "command.debug.kv.info.submit.message",
+					Other: "{{.Count}} total keys for `{{.AppID}}`.\n",
+				},
+				TemplateData: map[string]string{
 					"Count": strconv.Itoa(n),
 					"AppID": string(appID),
-				})
+				},
+			})
+
 			if len(namespaces) > 0 {
-				message += a.conf.Local(loc, "command.debug.kv.info.submit.namespace")
+				message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.kv.info.submit.namespaces",
+					Other: "\nNamespaces:\n",
+				})
 			}
 			for ns, c := range namespaces {
 				if ns == "" {
-					ns = a.conf.Local(loc, "command.debug.kv.info.submit.none")
+					ns = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.debug.kv.info.submit.none",
+						Other: "(none)",
+					})
 				}
 				message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
 			}
