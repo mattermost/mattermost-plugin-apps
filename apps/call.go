@@ -199,35 +199,57 @@ func NewCall(path string) Call {
 	return c
 }
 
-func (cp *Call) WithDefault(def Call) Call {
-	if cp == nil {
+func (c *Call) WithDefault(def Call) Call {
+	if c == nil {
 		return def
 	}
-	c := *cp
+	clone := *c
 
-	if c.Path == "" {
-		c.Path = def.Path
+	if clone.Path == "" {
+		clone.Path = def.Path
 	}
-	if c.Expand == nil {
-		c.Expand = def.Expand
+	if clone.Expand == nil {
+		clone.Expand = def.Expand
 	}
-	if c.State == nil {
-		c.State = def.State
+	if clone.State == nil {
+		clone.State = def.State
 	}
-	return c
+	return clone
 }
 
-func (c *CallRequest) GetValue(name, defaultValue string) string {
-	if len(c.Values) == 0 {
+func (c *Call) PartialCopy() *Call {
+	if c == nil {
+		return nil
+	}
+
+	clone := *c
+	if clone.Expand != nil {
+		cloneExpand := *clone.Expand
+		clone.Expand = &cloneExpand
+	}
+
+	// Only know how to clone map values for State.
+	if state, ok := clone.State.(map[string]interface{}); ok {
+		cloneState := map[string]interface{}{}
+		for k, v := range state {
+			cloneState[k] = v
+		}
+		clone.State = cloneState
+	}
+	return &clone
+}
+
+func (creq *CallRequest) GetValue(name, defaultValue string) string {
+	if len(creq.Values) == 0 {
 		return defaultValue
 	}
 
-	s, ok := c.Values[name].(string)
+	s, ok := creq.Values[name].(string)
 	if ok && s != "" {
 		return s
 	}
 
-	opt, ok := c.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]interface{})
 	if ok {
 		if v, ok2 := opt["value"].(string); ok2 {
 			return v
@@ -237,18 +259,32 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 	return defaultValue
 }
 
-func (c *CallRequest) BoolValue(name string) bool {
-	if len(c.Values) == 0 {
+func (creq *CallRequest) BoolValue(name string) bool {
+	if len(creq.Values) == 0 {
 		return false
 	}
 
-	if b, ok := c.Values[name].(bool); ok {
-		return b
+	isBool := func(v interface{}) (bool, bool) {
+		if b, ok := v.(bool); ok {
+			return b, true
+		}
+		if b, ok := creq.Values[name].(string); ok {
+			switch b {
+			case "true":
+				return true, true
+			case "false":
+				return false, true
+			}
+		}
+		return false, false
 	}
 
-	opt, ok := c.Values[name].(map[string]interface{})
+	if b, ok := isBool(creq.Values[name]); ok {
+		return b
+	}
+	opt, ok := creq.Values[name].(map[string]interface{})
 	if ok {
-		if v, ok2 := opt["value"].(bool); ok2 {
+		if v, ok2 := isBool(opt["value"]); ok2 {
 			return v
 		}
 	}

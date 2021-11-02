@@ -21,5 +21,6 @@
 	},
 	"http": {
 		"root_url": "http://localhost:8081"
-	}
+	},
+	"remote_webhook_auth_type": "secret"
 }

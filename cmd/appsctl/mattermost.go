@@ -2,12 +2,15 @@
 package main
 
 import (
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func getMattermostClient() (*appclient.Client, error) {
@@ -46,4 +49,54 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	}
 
 	return nil
+}
+
+func installPlugin(bundlePath string) (*apps.Manifest, error) {
+	appClient, err := getMattermostClient()
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(bundlePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open the plugin bundle")
+	}
+	defer f.Close()
+
+	pluginManifest, _, err := appClient.UploadPluginForced(f)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to upload the plugin to Mattermost")
+	}
+
+	_, err = appClient.EnablePlugin(pluginManifest.Id)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to enable plugin on Mattermost")
+	}
+
+	manifestPath := strings.Join([]string{
+		appClient.Client4.URL,
+		"plugins",
+		pluginManifest.Id,
+		apps.PluginAppPath,
+		"manifest.json",
+	}, "/")
+	resp, err := appClient.Client4.HTTPClient.Get(manifestPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get the app manifest %s", manifestPath)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("failed to get the app manifest %s: status %v", manifestPath, resp.Status)
+	}
+
+	data, err := httputils.LimitReadAll(resp.Body, apps.MaxManifestSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the app manifest")
+	}
+
+	m, err := apps.DecodeCompatibleManifest(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse the app manifest")
+	}
+	return m, nil
 }

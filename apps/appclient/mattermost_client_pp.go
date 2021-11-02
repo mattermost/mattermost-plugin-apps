@@ -135,12 +135,8 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*model.Response, err
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) (*model.Response, error) {
-	data := utils.ToJSON(apps.OAuth2App{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-	})
-	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), data) // nolint:bodyclose
+func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*model.Response, error) {
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), utils.ToJSON(oauth2App)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}

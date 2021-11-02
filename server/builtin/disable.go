@@ -12,7 +12,7 @@ import (
 var disableCall = apps.Call{
 	Path: pDisable,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
@@ -22,18 +22,18 @@ func (a *builtinApp) disable() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
+				Location: "disable",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.disable.label",
 					Other: "disable",
 				}),
-				Location: "disable",
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.disable.hint",
 					Other: "[ App ID ]",
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.disable.description",
-					Other: "Disables an App",
+					Other: "Disable an App",
 				}),
 				Call: &disableCall,
 				Form: a.appIDForm(disableCall, loc),

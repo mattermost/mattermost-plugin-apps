@@ -51,6 +51,8 @@ const (
 	// invoke a Call with "/webhook/{PATH}"."
 	Webhook = "/webhook"
 
+	Bindings = "/bindings"
+
 	// Static assets are served from {PluginURL}/static/...
 	StaticFolder = "static"
 	Static       = "/" + StaticFolder

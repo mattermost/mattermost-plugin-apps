@@ -53,3 +53,16 @@ type Form struct {
 	// Fields is the list of fields in the form.
 	Fields []Field `json:"fields,omitempty"`
 }
+
+func (f *Form) PartialCopy() *Form {
+	if f == nil {
+		return &Form{}
+	}
+	clone := *f
+	clone.Call = f.Call.PartialCopy()
+	clone.Fields = nil
+	for _, field := range f.Fields {
+		clone.Fields = append(clone.Fields, *field.PartialCopy())
+	}
+	return &clone
+}

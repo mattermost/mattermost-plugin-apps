@@ -12,7 +12,7 @@ import (
 var uninstallCall = apps.Call{
 	Path: pUninstall,
 	Expand: &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
@@ -20,18 +20,18 @@ func (a *builtinApp) uninstall() handler {
 	return handler{
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
+				Location: "uninstall",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.label",
+					ID:    "command.uninstall.label",
 					Other: "uninstall",
 				}),
-				Location: "uninstall",
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.hint",
+					ID:    "command.uninstall.hint",
 					Other: "[ App ID ]",
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.description",
-					Other: "Uninstalls an App",
+					ID:    "command.uninstall.description",
+					Other: "Uninstall an App",
 				}),
 				Call: &uninstallCall,
 				Form: a.appIDForm(uninstallCall, loc),

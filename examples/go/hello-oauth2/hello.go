@@ -162,7 +162,10 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
 	asUser := appclient.AsActingUser(creq.Context)
-	asUser.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
+	asUser.StoreOAuth2App(creq.Context.AppID, apps.OAuth2App{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	})
 
 	json.NewEncoder(w).Encode(
 		apps.NewTextResponse("updated OAuth client credentials"))

@@ -55,7 +55,7 @@ func MakeService(confService config.Service, api plugin.API, httpOut httpout.Ser
 	return s, nil
 }
 
-func (s *Service) hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {
+func Hashkey(globalNamespace, botUserID, appNamespace, key string) (string, error) {
 	gns := []byte(globalNamespace)
 	b := []byte(botUserID)
 	k := []byte(key)
@@ -103,7 +103,7 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 	return string(key)
 }
 
-func parseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
+func ParseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
 	k := []byte(key)
 	if len(k) != model.KeyValueKeyMaxRunes {
 		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KeyValueKeyMaxRunes)
