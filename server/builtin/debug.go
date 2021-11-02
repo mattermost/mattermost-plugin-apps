@@ -12,7 +12,10 @@ import (
 func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "debug",
-		Label:    a.conf.Local(loc, "command.debug.label"),
+		Label:    a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "command.debug.label",
+						Other: "debug",
+					}),
 		Bindings: []apps.Binding{
 			a.debugBindings().commandBinding(loc),
 			a.debugClean().commandBinding(loc),

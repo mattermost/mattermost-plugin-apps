@@ -16,13 +16,19 @@ func (a *builtinApp) debugClean() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
-				Location:    "clean",
-				Label:       a.conf.Local(loc, "command.debug.clean.label"),
-				Description: a.conf.Local(loc, "command.debug.clean.description"),
+				Location: "clean",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.clean.label",
+					Other: "clean",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.clean.description",
+					Other: "Remove all Apps and reset the persistent store",
+				}),
 				Call: &apps.Call{
 					Path: pDebugClean,
 					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
+						AdminAccessToken: apps.ExpandAll, 
 						Locale:           apps.ExpandAll,
 					},
 				},
@@ -34,7 +40,10 @@ func (a *builtinApp) debugClean() handler {
 			loc := a.newLocalizer(creq)
 			_ = a.conf.MattermostAPI().KV.DeleteAll()
 			_ = a.conf.StoreConfig(config.StoredConfig{})
-			return apps.NewTextResponse(a.conf.Local(loc, "command.debug.clean.submit"))
+			return apps.NewTextResponse(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.debug.clean.submit",
+				Other: "Deleted all KV records and emptied the config.",
+			}))
 		},
 	}
 }

@@ -68,10 +68,9 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	i18BundlePath := filepath.Join("assets", "i18n")
-	i18nBundle, err := i18n.InitBundle(p.API, i18BundlePath)
+	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize i18n bundle")
+		return err
 	}
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
@@ -81,14 +80,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.tracker = telemetry.NewTelemetry(nil)
 
-	i18nEN, err := config.LoadENLocalizationMap(p.API, i18BundlePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load EN (default) localization file")
-	}
-	p.conf, err = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle, i18nEN)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize config")
-	}
+	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
