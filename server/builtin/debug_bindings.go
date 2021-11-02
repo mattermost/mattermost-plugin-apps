@@ -65,7 +65,6 @@ func (a *builtinApp) debugBindings() handler {
 				bindings = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
-
 		},
 	}
 }
