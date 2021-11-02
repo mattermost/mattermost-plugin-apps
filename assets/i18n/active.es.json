@@ -59,10 +59,6 @@
     "hash": "sha1-6ef66a54b0883d56732e0eebc3483321c9a1ab57",
     "other": "Plugin Mattermost Apps versión: {{.Version}}, {{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
   },
-  "command.install.cloud.hint": {
-    "hash": "sha1-e74a4145d016212ce12c397155647db572c9cfe4",
-    "other": "[ ID de la App ]"
-  },
   "command.install.cloud.label": {
     "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
     "other": "instalar"

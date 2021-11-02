@@ -10,8 +10,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (a *builtinApp) appIDForm(call apps.Call, loc *i18n.Localizer) *apps.Form {
-	return &apps.Form{
+func (a *builtinApp) appIDForm(call apps.Call, loc *i18n.Localizer, extraFields ...apps.Field) *apps.Form {
+	form := &apps.Form{
 		Fields: []apps.Field{
 			{
 				Name: fAppID,
@@ -30,6 +30,8 @@ func (a *builtinApp) appIDForm(call apps.Call, loc *i18n.Localizer) *apps.Form {
 		},
 		Call: &call,
 	}
+	form.Fields = append(form.Fields, extraFields...)
+	return form
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) ([]apps.SelectOption, error) {

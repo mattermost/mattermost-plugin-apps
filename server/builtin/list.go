@@ -32,8 +32,8 @@ func (a *builtinApp) list() handler {
 				Call: &apps.Call{
 					Path: pList,
 					Expand: &apps.Expand{
-						AdminAccessToken: apps.ExpandAll, // ensure sysadmin
-						Locale:           apps.ExpandAll,
+						ActingUser: apps.ExpandSummary,
+						Locale:     apps.ExpandAll,
 					},
 				},
 				Form: &apps.Form{

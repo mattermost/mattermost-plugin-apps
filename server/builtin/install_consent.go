@@ -198,6 +198,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			Path: pInstallConsent,
 			Expand: &apps.Expand{
 				AdminAccessToken: apps.ExpandAll,
+				ActingUser:       apps.ExpandSummary,
 			},
 			State: m.AppID,
 		},
