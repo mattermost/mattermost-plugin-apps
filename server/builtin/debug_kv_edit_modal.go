@@ -29,6 +29,26 @@ func (a *builtinApp) debugKVEditModal() handler {
 			}
 
 			loc := a.newLocalizer(creq)
+
+			buttons := []apps.SelectOption{
+				{
+					Value: "store",
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "option.kv.store.label",
+						Other: "Store New Value",
+					}),
+				},
+			}
+			if len(value) > 0 {
+				buttons = append(buttons, apps.SelectOption{
+					Value: "delete",
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "option.kv.delete.label",
+						Other: "Delete Key",
+					}),
+				})
+			}
+
 			return &apps.Form{
 				Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "modal.kv.edit.title",
@@ -37,48 +57,33 @@ func (a *builtinApp) debugKVEditModal() handler {
 				Header: fmt.Sprintf("Key:\n```\n%s\n```\n", key),
 				Fields: []apps.Field{
 					{
-						Name: fCurrentValue,
+						Name:        fCurrentValue,
+						Type:        apps.FieldTypeText,
+						TextSubtype: apps.TextFieldSubtypeTextarea,
 						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.kv.current_value.modal_label",
 							Other: "Current value",
 						}),
-						Type:        apps.FieldTypeText,
-						ReadOnly:    true,
-						Value:       string(value),
-						TextSubtype: apps.TextFieldSubtypeTextarea,
+						ReadOnly: true,
+						Value:    string(value),
 					},
 					{
-						Name: fNewValue,
+						Name:        fNewValue,
+						Type:        apps.FieldTypeText,
+						TextSubtype: apps.TextFieldSubtypeTextarea,
 						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.kv.new_value.modal_label",
 							Other: "New value to save",
 						}),
-						Type:        apps.FieldTypeText,
-						TextSubtype: apps.TextFieldSubtypeTextarea,
 					},
 					{
 						Name: fAction,
+						Type: apps.FieldTypeStaticSelect,
 						ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.kv.action.modal_label",
 							Other: "Action to take",
 						}),
-						Type: apps.FieldTypeStaticSelect,
-						SelectStaticOptions: []apps.SelectOption{
-							{
-								Value: "store",
-								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "option.kv.store.label",
-									Other: "Store New Value",
-								}),
-							},
-							{
-								Value: "delete",
-								Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-									ID:    "option.kv.delete.label",
-									Other: "Delete Key",
-								}),
-							},
-						},
+						SelectStaticOptions: buttons,
 					},
 				},
 				SubmitButtons: fAction,
