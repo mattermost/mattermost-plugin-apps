@@ -52,6 +52,7 @@ const (
 	pDebugBindings    = "/debug/bindings"
 	pDebugClean       = "/debug/clean"
 	pDebugKVInfo      = "/debug/kv/info"
+	pDebugKVCreate    = "/debug/kv/create"
 	pDebugKVEdit      = "/debug/kv/edit"
 	pDebugKVEditModal = "/debug/kv/edit-modal"
 	pDebugKVClean     = "/debug/kv/clean"
@@ -100,6 +101,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugBindings:    a.debugBindings(),
 		pDebugClean:       a.debugClean(),
 		pDebugKVClean:     a.debugKVClean(),
+		pDebugKVCreate:    a.debugKVCreate(),
 		pDebugKVEdit:      a.debugKVEdit(),
 		pDebugKVEditModal: a.debugKVEditModal(),
 		pDebugKVInfo:      a.debugKVInfo(),
