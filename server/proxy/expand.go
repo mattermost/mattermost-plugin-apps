@@ -48,14 +48,10 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
-		cc.ActingUserAccessToken = in.ActingUserAccessToken
-		if cc.ActingUserAccessToken == "" {
-			userSession, err := utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-			if err != nil {
-				return emptyCC, utils.NewForbiddenError("failed to load user session")
-			}
 
-			cc.ActingUserAccessToken = userSession.Token
+		cc.ActingUserAccessToken, err = in.UserAccessToken()
+		if err != nil {
+			return emptyCC, errors.New("failed to load user session")
 		}
 	}
 
@@ -301,11 +297,11 @@ func (p *Proxy) getExpandClient(app apps.App, in Incoming) (mmclient.Client, err
 	switch {
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
-		err := in.ensureUserToken(mm)
+		token, err := in.UserAccessToken()
 		if err != nil {
 			return nil, err
 		}
-		return mmclient.NewHTTPClient(conf, in.ActingUserAccessToken), nil
+		return mmclient.NewHTTPClient(conf, token), nil
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
 		return mmclient.NewHTTPClient(conf, app.BotAccessToken), nil

@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -19,30 +20,28 @@ import (
 type Incoming struct {
 	PluginID              string
 	ActingUserID          string
-	ActingUserAccessToken string
-	SessionID             string
+	actingUserAccessToken string
 	SysAdminChecked       bool
+	sessionService        session.Service
 }
 
 func NewIncomingFromContext(cc apps.Context) Incoming {
 	return Incoming{
 		ActingUserID:          cc.ActingUserID,
-		ActingUserAccessToken: cc.ActingUserAccessToken,
+		actingUserAccessToken: cc.ActingUserAccessToken,
 	}
 }
 
 func RequireUser(f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
-		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
-		if actingUserID == "" || sessionID == "" {
-			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
+		if actingUserID == "" {
+			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID is required"))
 			return
 		}
 
 		f(w, req, Incoming{
 			ActingUserID: actingUserID,
-			SessionID:    sessionID,
 		})
 	}
 }
@@ -50,9 +49,8 @@ func RequireUser(f func(http.ResponseWriter, *http.Request, Incoming)) http.Hand
 func RequireSysadmin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Request, Incoming)) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		actingUserID := req.Header.Get(config.MattermostUserIDHeader)
-		sessionID := req.Header.Get(config.MattermostSessionIDHeader)
-		if actingUserID == "" || sessionID == "" {
-			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID and session ID are required"))
+		if actingUserID == "" {
+			httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID is required"))
 			return
 		}
 		err := utils.EnsureSysAdmin(mm, actingUserID)
@@ -63,7 +61,6 @@ func RequireSysadmin(mm *pluginapi.Client, f func(http.ResponseWriter, *http.Req
 
 		f(w, req, Incoming{
 			ActingUserID:    actingUserID,
-			SessionID:       sessionID,
 			SysAdminChecked: true,
 		})
 	}
@@ -87,33 +84,28 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 	updated := cc
 	updated.ActingUserID = in.ActingUserID
 	updated.ExpandedContext = apps.ExpandedContext{
-		ActingUserAccessToken: in.ActingUserAccessToken,
+		ActingUserAccessToken: in.actingUserAccessToken,
 	}
 	return updated
 }
 
-func (in *Incoming) ensureUserToken(mm *pluginapi.Client) error {
-	if in.ActingUserAccessToken != "" {
-		return nil
+func (in Incoming) UserAccessToken() (string, error) {
+	if in.actingUserAccessToken != "" {
+		return in.actingUserAccessToken, nil
 	}
-	if in.SessionID == "" {
-		return utils.NewUnauthorizedError("no user token nor session ID")
-	}
-	session, err := utils.LoadSession(mm, in.SessionID, in.ActingUserID)
-	if err != nil {
-		return errors.Wrap(err, "failed to obtain user token from session")
-	}
-	in.ActingUserAccessToken = session.Token
-	return nil
+
+	// TODO
+
+	return "", nil
 }
 
 func (p *Proxy) getClient(in Incoming) (mmclient.Client, error) {
-	conf, mm, _ := p.conf.Basic()
+	conf, _, _ := p.conf.Basic()
 
-	err := in.ensureUserToken(mm)
+	token, err := in.UserAccessToken()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
 	}
 
-	return mmclient.NewHTTPClient(conf, in.ActingUserAccessToken), nil
+	return mmclient.NewHTTPClient(conf, token), nil
 }
