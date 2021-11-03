@@ -6,13 +6,14 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (a *restapi) initGetBindings(api *mux.Router) {
-	api.HandleFunc(apps.DefaultBindings.Path,
+	api.HandleFunc(path.Bindings,
 		proxy.RequireUser(a.GetBindings)).Methods("GET")
 }
 

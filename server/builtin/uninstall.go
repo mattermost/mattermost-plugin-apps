@@ -4,15 +4,16 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var uninstallCall = apps.Call{
 	Path: pUninstall,
 	Expand: &apps.Expand{
-		AdminAccessToken:      apps.ExpandAll,
+		ActingUser:            apps.ExpandSummary,
 		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
@@ -21,18 +22,18 @@ func (a *builtinApp) uninstall() handler {
 	return handler{
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
+				Location: "uninstall",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.label",
+					ID:    "command.uninstall.label",
 					Other: "uninstall",
 				}),
-				Location: "uninstall",
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.hint",
+					ID:    "command.uninstall.hint",
 					Other: "[ App ID ]",
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "apps.command.uninstall.description",
-					Other: "Uninstalls an App",
+					ID:    "command.uninstall.description",
+					Other: "Uninstall an App",
 				}),
 				Call: &uninstallCall,
 				Form: a.appIDForm(uninstallCall, loc),

@@ -65,7 +65,7 @@ func (s *oauth2Store) SaveUser(botUserID, mattermostUserID string, ref interface
 	if botUserID == "" || mattermostUserID == "" {
 		return utils.NewInvalidError("bot and user IDs must be provided")
 	}
-	userkey, err := s.hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+	userkey, err := Hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (s *oauth2Store) SaveUser(botUserID, mattermostUserID string, ref interface
 }
 
 func (s *oauth2Store) GetUser(botUserID, mattermostUserID string, ref interface{}) error {
-	userkey, err := s.hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+	userkey, err := Hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
 	if err != nil {
 		return err
 	}

@@ -139,8 +139,7 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 	cc.OAuth2 = apps.OAuth2Context{}
 	if app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		if expand.OAuth2App != "" {
-			cc.OAuth2.ClientID = app.RemoteOAuth2.ClientID
-			cc.OAuth2.ClientSecret = app.RemoteOAuth2.ClientSecret
+			cc.OAuth2.OAuth2App = app.RemoteOAuth2
 			cc.OAuth2.ConnectURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Connect
 			cc.OAuth2.CompleteURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Complete
 		}

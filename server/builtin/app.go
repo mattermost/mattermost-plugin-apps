@@ -11,13 +11,18 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const (
@@ -27,25 +32,37 @@ const (
 )
 
 const (
-	fURL            = "url"
-	fConsent        = "consent"
-	fSecret         = "secret"
+	fAction         = "action"
 	fAppID          = "app"
-	fIncludePlugins = "include_plugins"
+	fBase64         = "base64"
+	fBase64Key      = "base64_key"
+	fConsent        = "consent"
+	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fID             = "id"
+	fIncludePlugins = "include_plugins"
+	fNamespace      = "namespace"
+	fNewValue       = "new_value"
+	fSecret         = "secret"
+	fURL            = "url"
 )
 
 const (
-	pDebugBindings  = "/debug-bindings"
-	pDebugClean     = "/debug-clean"
-	pInfo           = "/info"
-	pList           = "/list"
-	pUninstall      = "/uninstall"
-	pEnable         = "/enable"
-	pDisable        = "/disable"
-	pInstallHTTP    = "/install-http"
-	pInstallListed  = "/install-listed"
-	pInstallConsent = "/install-consent"
+	pDebugBindings    = "/debug/bindings"
+	pDebugClean       = "/debug/clean"
+	pDebugKVInfo      = "/debug/kv/info"
+	pDebugKVEdit      = "/debug/kv/edit"
+	pDebugKVEditModal = "/debug/kv/edit-modal"
+	pDebugKVClean     = "/debug/kv/clean"
+	pDebugKVList      = "/debug/kv/list"
+	pDisable          = "/disable"
+	pEnable           = "/enable"
+	pInfo             = "/info"
+	pInstallConsent   = "/install-consent"
+	pInstallHTTP      = "/install/http"
+	pInstallListed    = "/install/listed"
+	pList             = "/list"
+	pUninstall        = "/uninstall"
 )
 
 type handler struct {
@@ -57,19 +74,21 @@ type handler struct {
 }
 
 type builtinApp struct {
-	conf    config.Service
-	proxy   proxy.Service
-	httpOut httpout.Service
-	router  map[string]handler
+	conf        config.Service
+	proxy       proxy.Service
+	appservices appservices.Service
+	httpOut     httpout.Service
+	router      map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
-		conf:    conf,
-		proxy:   proxy,
-		httpOut: httpOut,
+		conf:        conf,
+		proxy:       proxy,
+		appservices: appservices,
+		httpOut:     httpOut,
 	}
 
 	a.router = map[string]handler{
@@ -77,15 +96,20 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 		pInfo: a.info(),
 
 		// Actions that require sysadmin
-		pDebugBindings:  a.debugBindings(),
-		pDebugClean:     a.debugClean(),
-		pDisable:        a.disable(),
-		pEnable:         a.enable(),
-		pInstallConsent: a.installConsent(),
-		pInstallListed:  a.installListed(),
-		pInstallHTTP:    a.installHTTP(),
-		pList:           a.list(),
-		pUninstall:      a.uninstall(),
+		pDebugBindings:    a.debugBindings(),
+		pDebugClean:       a.debugClean(),
+		pDebugKVClean:     a.debugKVClean(),
+		pDebugKVEdit:      a.debugKVEdit(),
+		pDebugKVEditModal: a.debugKVEditModal(),
+		pDebugKVInfo:      a.debugKVInfo(),
+		pDebugKVList:      a.debugKVList(),
+		pDisable:          a.disable(),
+		pEnable:           a.enable(),
+		pInstallConsent:   a.installConsent(),
+		pInstallHTTP:      a.installHTTP(),
+		pInstallListed:    a.installListed(),
+		pList:             a.list(),
+		pUninstall:        a.uninstall(),
 	}
 
 	return a
@@ -97,13 +121,14 @@ func Manifest(conf config.Config) apps.Manifest {
 		Version:     apps.AppVersion(conf.PluginManifest.Version),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		Deploy:      apps.Deploy{},
 		Bindings: &apps.Call{
-			Path: "/bindings",
+			Path: appspath.Bindings,
 			Expand: &apps.Expand{
-				Locale: apps.ExpandAll,
+				ActingUser: apps.ExpandSummary,
+				Locale:     apps.ExpandAll,
 			},
 		},
-		Deploy: apps.Deploy{},
 	}
 }
 
@@ -169,7 +194,7 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 	// The bindings call does not have a call type, so make it into a submit so
 	// that the router can handle it.
-	if creq.Path == apps.DefaultBindings.Path {
+	if creq.Path == appspath.Bindings {
 		return readcloser(a.bindings(creq))
 	}
 
@@ -179,8 +204,16 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 	if !ok {
 		return nil, utils.NewNotFoundError(callPath)
 	}
-	if h.requireSysadmin && creq.Context.AdminAccessToken == "" {
-		return nil, apps.NewErrorResponse(utils.NewUnauthorizedError("no admin token in the request"))
+
+	if h.requireSysadmin {
+		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
+			return nil, apps.NewErrorResponse(utils.NewInvalidError(
+				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+		}
+		if !creq.Context.ActingUser.IsSystemAdmin() {
+			return nil, apps.NewErrorResponse(utils.NewUnauthorizedError(
+				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
+		}
 	}
 
 	switch apps.CallType(callType) {
@@ -216,4 +249,8 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
+}
+
+func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
+	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }

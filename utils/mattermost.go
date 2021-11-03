@@ -12,7 +12,7 @@ import (
 )
 
 func CodeBlock(in string) string {
-	return fmt.Sprintf("```\n%s\n```\n", in)
+	return fmt.Sprintf("\n```\n%s\n```\n", in)
 }
 
 func JSONBlock(in interface{}) string {

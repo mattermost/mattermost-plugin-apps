@@ -109,8 +109,8 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	return nil
 }
 
-func (c *Client) StoreOAuth2App(appID apps.AppID, clientID, clientSecret string) error {
-	res, err := c.ClientPP.StoreOAuth2App(appID, clientID, clientSecret)
+func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) error {
+	res, err := c.ClientPP.StoreOAuth2App(appID, oauth2App)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err

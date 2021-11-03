@@ -6,9 +6,10 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) info() handler {
@@ -17,11 +18,11 @@ func (a *builtinApp) info() handler {
 
 		commandBinding: func(loc *i18n.Localizer) apps.Binding {
 			return apps.Binding{
+				Location: "info",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.info.label",
 					Other: "info",
 				}),
-				Location: "info",
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.info.description",
 					Other: "Display Apps plugin info",
@@ -37,11 +38,11 @@ func (a *builtinApp) info() handler {
 		},
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+			loc := a.newLocalizer(creq)
 			conf := a.conf.Get()
 			out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
-					ID:    "apps.command.info.submit.ok",
+					ID:    "command.info.submit",
 					Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
 				},
 				TemplateData: map[string]string{

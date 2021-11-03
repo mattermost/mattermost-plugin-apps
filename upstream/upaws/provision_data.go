@@ -93,6 +93,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
+			defer lambdaFunctionFile.Close()
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
