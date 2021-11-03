@@ -7,7 +7,6 @@ import (
 )
 
 func TestHashkey(t *testing.T) {
-	s := &Service{}
 	for _, tc := range []struct {
 		name                                string
 		globalPrefix, botUserID, prefix, id string
@@ -117,7 +116,7 @@ func TestHashkey(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			key, err := s.hashkey(tc.globalPrefix, tc.botUserID, tc.prefix, tc.id)
+			key, err := Hashkey(tc.globalPrefix, tc.botUserID, tc.prefix, tc.id)
 			if tc.expectedError != "" {
 				require.NotNil(t, err)
 				require.Equal(t, tc.expectedError, err.Error())
@@ -126,7 +125,7 @@ func TestHashkey(t *testing.T) {
 				require.Equal(t, tc.expected, key)
 				require.Equal(t, tc.expectedLen, len(key))
 
-				gp, b, p, h, _ := parseHashkey(key)
+				gp, b, p, h, _ := ParseHashkey(key)
 				require.Equal(t, tc.globalPrefix, gp)
 				require.Equal(t, tc.botUserID, b)
 				require.Equal(t, tc.prefix, p)

@@ -41,10 +41,10 @@ const (
 
 type SelectOption struct {
 	// Label is the display name/label for the option's value.
-	Label string `json:"label"`
+	Label string `json:"label,omitempty"`
 
 	Value    string `json:"value"`
-	IconData string `json:"icon_data"`
+	IconData string `json:"icon_data,omitempty"`
 }
 
 type Field struct {
@@ -95,4 +95,16 @@ type Field struct {
 	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`
 	TextMinLength int              `json:"min_length,omitempty"`
 	TextMaxLength int              `json:"max_length,omitempty"`
+}
+
+// PartialCopy makes a copy of a Field. It does not clone Value since it does not know
+// the type.
+func (f *Field) PartialCopy() *Field {
+	if f == nil {
+		return &Field{}
+	}
+	clone := *f
+	clone.SelectStaticOptions = make([]SelectOption, len(f.SelectStaticOptions))
+	copy(clone.SelectStaticOptions, f.SelectStaticOptions)
+	return &clone
 }

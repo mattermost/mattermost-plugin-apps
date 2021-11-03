@@ -139,6 +139,20 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2)
 }
 
+// GetAppBindings mocks base method.
+func (m *MockService) GetAppBindings(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.App) []apps.Binding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAppBindings", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]apps.Binding)
+	return ret0
+}
+
+// GetAppBindings indicates an expected call of GetAppBindings.
+func (mr *MockServiceMockRecorder) GetAppBindings(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAppBindings", reflect.TypeOf((*MockService)(nil).GetAppBindings), arg0, arg1, arg2)
+}
+
 // GetBindings mocks base method.
 func (m *MockService) GetBindings(arg0 proxy.Incoming, arg1 apps.Context) ([]apps.Binding, error) {
 	m.ctrl.T.Helper()
@@ -288,17 +302,17 @@ func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interfa
 }
 
 // NotifyRemoteWebhook mocks base method.
-func (m *MockService) NotifyRemoteWebhook(arg0 apps.App, arg1 []byte, arg2 string) error {
+func (m *MockService) NotifyRemoteWebhook(arg0 apps.AppID, arg1 apps.HTTPCallRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRemoteWebhook indicates an expected call of NotifyRemoteWebhook.
-func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1)
 }
 
 // NotifyUserHasJoinedChannel mocks base method.

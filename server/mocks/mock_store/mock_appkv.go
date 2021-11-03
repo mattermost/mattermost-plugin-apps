@@ -47,20 +47,6 @@ func (mr *MockAppKVStoreMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAppKVStore)(nil).Delete), arg0, arg1, arg2)
 }
 
-// DeleteAll mocks base method.
-func (m *MockAppKVStore) DeleteAll(arg0 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAll", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteAll indicates an expected call of DeleteAll.
-func (mr *MockAppKVStoreMockRecorder) DeleteAll(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAll", reflect.TypeOf((*MockAppKVStore)(nil).DeleteAll), arg0)
-}
-
 // Get mocks base method.
 func (m *MockAppKVStore) Get(arg0, arg1, arg2 string, arg3 interface{}) error {
 	m.ctrl.T.Helper()
@@ -73,6 +59,20 @@ func (m *MockAppKVStore) Get(arg0, arg1, arg2 string, arg3 interface{}) error {
 func (mr *MockAppKVStoreMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppKVStore)(nil).Get), arg0, arg1, arg2, arg3)
+}
+
+// List mocks base method.
+func (m *MockAppKVStore) List(arg0, arg1 string, arg2 func(string) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// List indicates an expected call of List.
+func (mr *MockAppKVStoreMockRecorder) List(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAppKVStore)(nil).List), arg0, arg1, arg2)
 }
 
 // Set mocks base method.
