@@ -27,9 +27,97 @@
     "hash": "sha1-56290358b8e6c2d856b8668240035c92f47e220a",
     "other": "Todos los registros KV han sido eliminados y la configuración vaciada."
   },
+  "command.debug.kv.clean.description": {
+    "hash": "sha1-9822cb58757bebcd574224abc7a4dc18d27bcc5a",
+    "other": "Delete KV keys for an app, in a specific namespace."
+  },
+  "command.debug.kv.clean.hint": {
+    "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
+    "other": "[ ID de la App ]"
+  },
+  "command.debug.kv.clean.label": {
+    "hash": "sha1-6a1cec45eaf37b34e1b1d89130d7746fe4006346",
+    "other": "limpiar"
+  },
+  "command.debug.kv.clean.submit": {
+    "hash": "sha1-6f6339c02e57a9d4d9bf6f60debdcf93704b6287",
+    "other": "{{.Count}} claves borradas para la app `{{.AppID}}`, en el espacio de nombres `{{.Namespace}}`."
+  },
+  "command.debug.kv.description": {
+    "hash": "sha1-e1fa6aeef5735d0028d691b561735fb2b003c801",
+    "other": "Ver y actualizar el almacenamiento KV de apps."
+  },
+  "command.debug.kv.edit.description": {
+    "hash": "sha1-97886690d4279f841f284cdedcdfd7ce2db985e0",
+    "other": "Ver o editar claves KV específicas de una app."
+  },
+  "command.debug.kv.edit.hint": {
+    "hash": "sha1-3d1439404cb4bb9d427220f7c8b43f9fdc482c8a",
+    "other": "[ IDDeLaApp DefiniciónDeLaClave ]"
+  },
+  "command.debug.kv.edit.label": {
+    "hash": "sha1-9ead47a82a0d25985f22f10651d1f93b3abba317",
+    "other": "editar"
+  },
+  "command.debug.kv.info.description": {
+    "hash": "sha1-7ea3c12a8b2a5bbf8c4ddd2795d7c6e624e1f4c9",
+    "other": "Muestra las estadísticas de el almacenamiento KV de una app."
+  },
+  "command.debug.kv.info.hint": {
+    "hash": "sha1-330cc3efcea83622cf29d65a3ec0839b119f2eb8",
+    "other": "[ ID de la App ]"
+  },
+  "command.debug.kv.info.label": {
+    "hash": "sha1-59bd0a3ff43b32849b319e645d4798d8a5d1e889",
+    "other": "información"
+  },
+  "command.debug.kv.info.submit.message": {
+    "hash": "sha1-690ffca7e47656bbed7ca686c1a0334b12a903ec",
+    "other": "{{.Count}} claves para `{{.AppID}}`.\\n"
+  },
+  "command.debug.kv.info.submit.namespaces": {
+    "hash": "sha1-d3fa7dbb871314a86aaa76157e29171e69ebf9c6",
+    "other": "\\nEspacio de nombres:\\n"
+  },
+  "command.debug.kv.info.submit.none": {
+    "hash": "sha1-3c6b183d348f955357b33a3fba45083e98ab8125",
+    "other": "(ninguno)"
+  },
+  "command.debug.kv.label": {
+    "hash": "sha1-88f2baedfb0a00b41fccfc4b3c3fe259d351c59d",
+    "other": "kv"
+  },
+  "command.debug.kv.list.description": {
+    "hash": "sha1-60bccabc22ce8356c99a626a18137ead0788df36",
+    "other": "Muestra la lista de claves KV de una app, en un espacio de nombres específico."
+  },
+  "command.debug.kv.list.hint": {
+    "hash": "sha1-02b0f69292b129332c101d90ba3fed5c6556d78d",
+    "other": "[ IDDeLaApp EspacioDeNombres ]"
+  },
+  "command.debug.kv.list.label": {
+    "hash": "sha1-38b62be4bddaa5661c7d6b8e36e28159314df5c7",
+    "other": "listar"
+  },
+  "command.debug.kv.list.submit.message": {
+    "hash": "sha1-1949620e8d48967f12088688d88dd81f1e64dbeb",
+    "other": "{{.Count}} claves para `{{.AppID}}`\\n"
+  },
+  "command.debug.kv.list.submit.namespace": {
+    "hash": "sha1-ded14301bc4b2aa6359b500d8ff137065ec9efd0",
+    "other": ", espacio de nombres `%s`\\n"
+  },
+  "command.debug.kv.list.submit.note": {
+    "hash": "sha1-fa6d7f375bae152dfc73bc64e30fd2875acb17f1",
+    "other": "**ATENCIÓN**: las claves están codificadas en base64 para pegar en el comando `/apps depurar kv editar`. Use `/apps depurar kv listar --base64 false` para mostrar los valores sin codificar.\\n"
+  },
   "command.debug.label": {
     "hash": "sha1-32faaecac742100f7753f0c1d0aa0add01b4046b",
     "other": "depurar"
+  },
+  "command.disable.description": {
+    "hash": "sha1-44ef16aa264bdd1a0a92840ec4c6acdc4e3990ad",
+    "other": "Desactiva una App"
   },
   "command.disable.hint": {
     "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
@@ -38,6 +126,10 @@
   "command.disable.label": {
     "hash": "sha1-ccf09e2d4b7f84df49380235f0a6ee7510c3b240",
     "other": "desactivar"
+  },
+  "command.enable.description": {
+    "hash": "sha1-8053c616a33afb8e966048d8d2dbe9573a08953d",
+    "other": "Activa una App"
   },
   "command.enable.hint": {
     "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
@@ -59,13 +151,29 @@
     "hash": "sha1-6ef66a54b0883d56732e0eebc3483321c9a1ab57",
     "other": "Plugin Mattermost Apps versión: {{.Version}}, {{.URL}}, compilado {{.BuildDate}}, Modo Cloud: {{.CloudMode}}, Modo Desarrollador: {{.DeveloperMode}}"
   },
+  "command.install.cloud.description": {
+    "hash": "sha1-912a9952afd8c3f99604f122d400e3a9094cca1b",
+    "other": "Instala una App desde la Tienda"
+  },
+  "command.install.cloud.hint": {
+    "hash": "sha1-ec1376075b3e4121b07aa757e54b9d828c18dd03",
+    "other": "[ ID de la App ]"
+  },
   "command.install.cloud.label": {
     "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
     "other": "instalar"
   },
+  "command.install.description": {
+    "hash": "sha1-ea23088981c7e59938b3ab772f20951a147f47ce",
+    "other": "Instala una App, desplegada localmente o desde una URL remota"
+  },
   "command.install.hint": {
     "hash": "sha1-cab9433e0fe5688a30aa94a039769b7370ac5d74",
     "other": "[ listada | url ]"
+  },
+  "command.install.http.description": {
+    "hash": "sha1-381a5b4338ef7a050dfc81106abe5a6f717352f7",
+    "other": "Instala una App desde una URL HTTP"
   },
   "command.install.http.hint": {
     "hash": "sha1-11d3703646d3941c1eaee9ebb7951584f9b04276",
@@ -78,6 +186,10 @@
   "command.install.label": {
     "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
     "other": "instalar"
+  },
+  "command.install.listed.description": {
+    "hash": "sha1-2257f07084e09ad5f9e0263d2dcb323ee8af8638",
+    "other": "Instala una App listada que se ha desplegado localmente. (en el futuro, Install a listed App that has been locally deployed. (in the future, Apps de la Tienda seleccionadas serán listadas aquí también)."
   },
   "command.install.listed.hint": {
     "hash": "sha1-ec1376075b3e4121b07aa757e54b9d828c18dd03",
@@ -119,6 +231,10 @@
     "hash": "sha1-9e1e55088a483e68afe6926130ba12bdc756a980",
     "other": "{{.CurrentVersion}}, {{.MarketplaceVersion}} en la tienda"
   },
+  "command.uninstall.description": {
+    "hash": "sha1-2b98ec0c787fc031aa939b4507bccf5b17c9ad2a",
+    "other": "Desinstalar una App"
+  },
   "command.uninstall.hint": {
     "hash": "sha1-8d9176b8639637a3578e300a241f77e47e5ab598",
     "other": "[ ID de la App ]"
@@ -127,9 +243,17 @@
     "hash": "sha1-84bbfdf0d9e56680ca68c3d3a9f5fe25e912fe3b",
     "other": "desinstalar"
   },
+  "field.appID.description": {
+    "hash": "sha1-4fbefffb0e725b57c3386debb16a3a9816bd5786",
+    "other": "Selecciona una App o introduzca el ID de la App"
+  },
   "field.appID.label": {
     "hash": "sha1-7d1043473d55bfa90e8530d35801d4e381bc69f0",
     "other": "app"
+  },
+  "field.consent.modal_label": {
+    "hash": "sha1-cade3c01e2d9f44fb5505150e5832f7323b5ba76",
+    "other": "Accedo a otorgar a la app accesso a las APIs y Localizaciones"
   },
   "field.deploy_type.description": {
     "hash": "sha1-a11a731ce1b7ebc0dbeb62c8ebc51da855307f51",
@@ -143,16 +267,116 @@
     "hash": "sha1-72dfb44876d57d50a2502e745ea25e5fdbaff551",
     "other": "Método de despliegue"
   },
+  "field.include_plugins.description": {
+    "hash": "sha1-00db9ab07a73e0d3d9ed536d113c224eff8d5070",
+    "other": "incluye plugins de Mattermost compatibles en el resultado."
+  },
   "field.include_plugins.label": {
     "hash": "sha1-0b01f5e54ac7a439d0710a37a70c62277eb4892d",
     "other": "incluye-plugins"
+  },
+  "field.kv.action.modal_label": {
+    "hash": "sha1-bed7788f6ce884d756c1d543442c907b524ee153",
+    "other": "Acción a tomar"
+  },
+  "field.kv.base64key.description": {
+    "hash": "sha1-2b869036bc51143eaa4dfc9e2202093ebc212388",
+    "other": "clave codificada en base64, véase el resultado de `depurar kv listar`."
+  },
+  "field.kv.base64key.hint": {
+    "hash": "sha1-54a26d9beb2c4821858e544c29d8b5c4b5f9d05c",
+    "other": "[ clave codificada en base64 ]"
+  },
+  "field.kv.base64key.label": {
+    "hash": "sha1-c612ebb5cf0ab5b4ace1892252122d62477b9254",
+    "other": "clave_base64"
+  },
+  "field.kv.current_value.modal_label": {
+    "hash": "sha1-ed2757f1ed21915706134a6d00c283c0961a392e",
+    "other": "Valor actual"
+  },
+  "field.kv.id.description": {
+    "hash": "sha1-e3b4b6ef32f266b846fd9ba3101ef7caee510265",
+    "other": "Identificador específico de la App, cualquier longitud."
+  },
+  "field.kv.id.hint": {
+    "hash": "sha1-4d0399e24129a58a6ca5e61c2cc5ad3a6495bcaf",
+    "other": "[ id ]"
+  },
+  "field.kv.id.label": {
+    "hash": "sha1-87ea5dfc8b8e384d848979496e706390b497e547",
+    "other": "id"
+  },
+  "field.kv.namespace.description": {
+    "hash": "sha1-cab9549f4027bf46008d86e496b2e24d6858abbf",
+    "other": "Espacio de nombres específico de la App (hasta 2 letras). Ver `depurar kv información` para la lista de los espacio de nombres de la app."
+  },
+  "field.kv.namespace.hint": {
+    "hash": "sha1-5d9bfb9b6262c54bb1100917fa473de89cffd254",
+    "other": "espacio de nombres (hasta 2 letras)"
+  },
+  "field.kv.namespace.label": {
+    "hash": "sha1-1963ebc61173a88a0385135580dc1b7cd78e2c17",
+    "other": "espacio_de_nombres"
+  },
+  "field.kv.new_value.modal_label": {
+    "hash": "sha1-f25a975fada89ba424a1c07bec84a4e04e774540",
+    "other": "Nuevo valor para guardar"
+  },
+  "field.secret.description.use_jwt": {
+    "hash": "sha1-198036933aeaec01ea2d7ba8dcd7d932458998ec",
+    "other": "El secreto se usa para enviar JWTs en mensajes salientes hacia la app. Normalmente, debería de obtenerse de la página web de la app, {{.HomepageURL}}"
   },
   "field.secret.modal_label.use_jwt": {
     "hash": "sha1-5ca8185e5dbf272436f422621c8c5167f90791e4",
     "other": "Secreto JWT saliente"
   },
+  "field.url.description": {
+    "hash": "sha1-eb4fd5f39727c13ab83865fce17b1d3ac6c798e0",
+    "other": "introduce la URL del manifest.json de la app"
+  },
+  "field.url.hint": {
+    "hash": "sha1-1b7e196700d763492f1e643276a3ddf1c8c5ec8e",
+    "other": "URL HTTP(s)"
+  },
   "field.url.label": {
     "hash": "sha1-81736358b1645103ae83247b10c5f82af641ddfc",
     "other": "url"
+  },
+  "modal.install_consent.header.header": {
+    "hash": "sha1-dfb19a2a8f609de30362461a13ef8047401ff3e2",
+    "other": "La aplicación **{{.DisplayName}}** requiere consentimiento de un administrador de sistema para:\\n\\n"
+  },
+  "modal.install_consent.header.locations": {
+    "hash": "sha1-713f571dcb1b85e2dd15bd3c972c083d2a6a113b",
+    "other": "\\n- Añade los siguientes elementos a la **Interfaz de Usuario de Mattermost**:\\n"
+  },
+  "modal.install_consent.header.permissions": {
+    "hash": "sha1-c0f8de8ab469ac1b526a6a5eb8fab17d701fe5fd",
+    "other": "- Accede a las **API de Mattermost** con los siguientes permisos:\\n"
+  },
+  "modal.install_consent.title": {
+    "hash": "sha1-ac18a8be4df65f64058c5df926ecd0ea05895b8d",
+    "other": "Instalar la App {{.DisplayName}}"
+  },
+  "modal.kv.edit.submit.deleted": {
+    "hash": "sha1-2c39386d9b4228e08dd1b3b490d2532633032d6e",
+    "other": "Borrado:\\n```\\nClave: {{.Key}}\\n```\\n"
+  },
+  "modal.kv.edit.submit.stored": {
+    "hash": "sha1-608270012940b252267acd47fcb829207bfbb923",
+    "other": "Guardado:\\n```\\nClave: {{.Key}}\\n\\n{{.Value}}\\n```\\n"
+  },
+  "modal.kv.edit.title": {
+    "hash": "sha1-c71ff690a2f2c5a085cfbc64593abf7c5d0cd34b",
+    "other": "Editar el registro KV de la App"
+  },
+  "option.kv.delete.label": {
+    "hash": "sha1-f8cf57928260401f15b138976e2ef0861449c0ea",
+    "other": "Borrar Clave"
+  },
+  "option.kv.store.label": {
+    "hash": "sha1-35804ea4586e39295ac89b3d786d815f43304e54",
+    "other": "Guardar nuevo valor"
   }
 }

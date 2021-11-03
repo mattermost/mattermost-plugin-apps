@@ -33,7 +33,7 @@ func (a *builtinApp) debugKVInfo() handler {
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.debug.kv.info.description",
-					Other: "Display KV store statistics for an app..",
+					Other: "Display KV store statistics for an app.",
 				}),
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.debug.kv.info.hint",
