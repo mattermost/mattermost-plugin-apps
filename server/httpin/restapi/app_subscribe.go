@@ -17,13 +17,13 @@ import (
 func (a *restapi) initSubscriptions(api *mux.Router, mm *pluginapi.Client) {
 	// Subscribe
 	api.HandleFunc(path.Subscribe,
-		proxy.RequireUser(a.Subscribe)).Methods("POST")
+		proxy.RequireUser(a.Subscribe)).Methods(http.MethodPost)
 	// GetSubscriptions
 	api.HandleFunc(path.Subscribe,
 		proxy.RequireUser(a.GetSubscriptions)).Methods("GET")
 	// Unsubscribe
 	api.HandleFunc(path.Unsubscribe,
-		proxy.RequireUser(a.Unsubscribe)).Methods("POST")
+		proxy.RequireUser(a.Unsubscribe)).Methods(http.MethodPost)
 }
 
 // Subscribe starts or updates an App subscription to Mattermost events.

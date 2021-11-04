@@ -7,7 +7,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -55,7 +54,7 @@ func (a *builtinApp) debugBindings() handler {
 			var bindings []apps.Binding
 			if appID == "" {
 				var err error
-				bindings, err = a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
+				bindings, err = a.proxy.GetBindings(a.newContextFromAppContext(creq), creq.Context)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
@@ -64,7 +63,7 @@ func (a *builtinApp) debugBindings() handler {
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				bindings = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
+				bindings = a.proxy.GetAppBindings(a.newContextFromAppContext(creq), creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},

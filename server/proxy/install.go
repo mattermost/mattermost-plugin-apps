@@ -17,12 +17,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
+func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf, _, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	m, err := p.store.Manifest.Get(appID)
@@ -75,7 +76,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	//
 	// Note that this check is often ineffective, but "the best we can do"
 	// before we start the diffcult-to-revert install process.
-	_, err = p.callApp(in, *app, apps.CallRequest{
+	_, err = p.callApp(c, *app, apps.CallRequest{
 		Call:    apps.DefaultPing,
 		Context: cc,
 	})
@@ -83,7 +84,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
-	asAdmin, err := p.getClient(in)
+	asAdmin, err := c.GetMMClient()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
@@ -94,7 +95,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, in.ActingUserID)
+		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, c.ActingUserID)
 		if err != nil {
 			return nil, "", err
 		}
@@ -108,7 +109,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		cresp := p.call(in, *app, *app.OnInstall, &cc)
+		cresp := p.call(c, *app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
@@ -118,7 +119,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(in, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(c, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
@@ -128,9 +129,10 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+	p.dispatchRefreshBindingsEvent(c.ActingUserID)
 
 	log.Infof(message)
+
 	return app, message, nil
 }
 
@@ -217,7 +219,8 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 	// Create an access token on a fresh app install
 	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) &&
 		app.BotAccessTokenID == "" {
-		token, err := mm.CreateUserAccessToken(bot.UserId, "Mattermost App Token")
+		// Use the Plugin API as OAuth sessions can't create access tokens
+		token, err := p.conf.MattermostAPI().User.CreateAccessToken(bot.UserId, "Mattermost App Token")
 		if err != nil {
 			return errors.Wrap(err, "failed to create bot user's access token")
 		}

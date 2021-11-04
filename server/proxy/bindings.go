@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -37,7 +38,7 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error) {
+func (p *Proxy) GetBindings(c *request.Context, cc apps.Context) ([]apps.Binding, error) {
 	all := make(chan []apps.Binding)
 	defer close(all)
 
@@ -46,7 +47,7 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 		app := allApps[i]
 
 		go func(app apps.App) {
-			bb := p.GetAppBindings(in, cc, app)
+			bb := p.GetAppBindings(c, cc, app)
 			all <- bb
 		}(app)
 	}
@@ -61,7 +62,7 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 
 // GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
-func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding {
+func (p *Proxy) GetAppBindings(c *request.Context, cc apps.Context, app apps.App) []apps.Binding {
 	if !p.appIsEnabled(app) {
 		return nil
 	}
@@ -73,13 +74,14 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []app
 	log := p.conf.Logger().With("app_id", app.AppID)
 
 	appID := app.AppID
+	c.AppID = appID
 	cc.AppID = appID
 
 	// TODO PERF: Add caching
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
 
 	// no need to clean the context, Call will do.
-	resp := p.call(in, app, bindingsCall, &cc)
+	resp := p.call(c, app, bindingsCall, &cc)
 	switch resp.Type {
 	case apps.CallResponseTypeOK:
 		var bindings = []apps.Binding{}

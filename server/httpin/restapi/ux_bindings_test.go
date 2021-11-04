@@ -14,17 +14,22 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 )
 
 func TestHandleGetBindingsValidContext(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	proxy := mock_proxy.NewMockService(ctrl)
-
 	conf := config.NewTestConfigService(nil)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	proxy := mock_proxy.NewMockService(ctrl)
+	appServices := mock_appservices.NewMockService(ctrl)
+	sessionService := mock_session.NewMockService(ctrl)
+
 	router := mux.NewRouter()
-	Init(router, conf, proxy, nil)
+	Init(router, conf, proxy, appServices, sessionService)
 
 	expected := apps.Context{
 		UserAgentContext: apps.UserAgentContext{

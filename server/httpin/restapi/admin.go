@@ -13,21 +13,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
-	api.HandleFunc(path.UpdateAppListing,
-		proxy.RequireSysadminOrPlugin(mm, a.UpdateAppListing)).Methods("POST")
-	api.HandleFunc(path.InstallApp,
-		proxy.RequireSysadminOrPlugin(mm, a.InstallApp)).Methods("POST")
-	api.HandleFunc(path.EnableApp,
-		proxy.RequireSysadminOrPlugin(mm, a.EnableApp)).Methods("POST")
-	api.HandleFunc(path.DisableApp,
-		proxy.RequireSysadminOrPlugin(mm, a.DisableApp)).Methods("POST")
-	api.HandleFunc(path.UninstallApp,
-		proxy.RequireSysadminOrPlugin(mm, a.UninstallApp)).Methods("POST")
+func (a *restapi) initAdmin(api *mux.Router, c *request.Context) {
+	api.Handle(path.UpdateAppListing,
+		request.AddContext(a.UpdateAppListing, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+	api.Handle(path.InstallApp,
+		request.AddContext(a.InstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+	api.Handle(path.EnableApp,
+		request.AddContext(a.EnableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+	api.Handle(path.DisableApp,
+		request.AddContext(a.DisableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+	api.Handle(path.UninstallApp,
+		request.AddContext(a.UninstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 }
 
 // UpdateAppListing adds (or updates) the specified Manifest to the local
@@ -45,7 +46,7 @@ func (a *restapi) initAdmin(api *mux.Router, mm *pluginapi.Client) {
 //      "add_deploys": []string e.g. ["aws_lambda","http"]
 //      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
-func (a *restapi) UpdateAppListing(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) UpdateAppListing(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	req := appclient.UpdateAppListingRequest{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -67,7 +68,7 @@ func (a *restapi) UpdateAppListing(w http.ResponseWriter, r *http.Request, in pr
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
 //   Output: None
-func (a *restapi) InstallApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) InstallApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -75,7 +76,7 @@ func (a *restapi) InstallApp(w http.ResponseWriter, r *http.Request, in proxy.In
 		return
 	}
 
-	_, _, err = a.proxy.InstallApp(in, apps.Context{}, input.AppID, input.DeployType, false, "")
+	_, _, err = a.proxy.InstallApp(c, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -87,14 +88,14 @@ func (a *restapi) InstallApp(w http.ResponseWriter, r *http.Request, in proxy.In
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) EnableApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) EnableApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
-	_, err = a.proxy.EnableApp(in, apps.Context{}, input.AppID)
+	_, err = a.proxy.EnableApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -106,14 +107,14 @@ func (a *restapi) EnableApp(w http.ResponseWriter, r *http.Request, in proxy.Inc
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) DisableApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) DisableApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
-	_, err = a.proxy.DisableApp(in, apps.Context{}, input.AppID)
+	_, err = a.proxy.DisableApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -125,14 +126,14 @@ func (a *restapi) DisableApp(w http.ResponseWriter, r *http.Request, in proxy.In
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) UninstallApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) UninstallApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
-	_, err = a.proxy.UninstallApp(in, apps.Context{}, input.AppID)
+	_, err = a.proxy.UninstallApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

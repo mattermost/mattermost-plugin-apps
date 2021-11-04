@@ -17,6 +17,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
@@ -31,10 +33,11 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
-	conf      config.Service
-	store     *store.Service
-	httpOut   httpout.Service
-	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
+	conf           config.Service
+	store          *store.Service
+	httpOut        httpout.Service
+	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
+	sessionService session.Service
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
@@ -42,20 +45,20 @@ type Proxy struct {
 
 // Admin defines the REST API methods to manipulate Apps.
 type Admin interface {
-	DisableApp(Incoming, apps.Context, apps.AppID) (string, error)
-	EnableApp(Incoming, apps.Context, apps.AppID) (string, error)
-	InstallApp(_ Incoming, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
+	DisableApp(*request.Context, apps.Context, apps.AppID) (string, error)
+	EnableApp(*request.Context, apps.Context, apps.AppID) (string, error)
+	InstallApp(_ *request.Context, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
 	UpdateAppListing(appclient.UpdateAppListingRequest) (*apps.Manifest, error)
-	UninstallApp(Incoming, apps.Context, apps.AppID) (string, error)
+	UninstallApp(*request.Context, apps.Context, apps.AppID) (string, error)
 }
 
 // Invoker implements operations that invoke the Apps.
 type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(Incoming, apps.CallRequest) CallResponse
-	CompleteRemoteOAuth2(_ Incoming, _ apps.AppID, urlValues map[string]interface{}) error
-	GetBindings(Incoming, apps.Context) ([]apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(Incoming, apps.AppID) (string, error)
+	Call(*request.Context, apps.CallRequest) CallResponse
+	CompleteRemoteOAuth2(_ *request.Context, _ apps.AppID, urlValues map[string]interface{}) error
+	GetBindings(*request.Context, apps.Context) ([]apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(*request.Context, apps.AppID) (string, error)
 	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
 }
 
@@ -74,7 +77,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
-	GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding
+	GetAppBindings(c *request.Context, cc apps.Context, app apps.App) []apps.Binding
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
@@ -94,13 +97,14 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
 		store:            store,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
+		sessionService:   session,
 	}
 }
 

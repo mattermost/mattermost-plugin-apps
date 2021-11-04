@@ -11,6 +11,7 @@ import (
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -28,7 +29,7 @@ func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Con
 
 var emptyCC = apps.Context{}
 
-func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
+func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
 	if base == nil {
 		base = &apps.Context{}
 	}
@@ -39,7 +40,7 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		return cc, nil
 	}
 
-	client, err := p.getExpandClient(app, in)
+	client, err := p.getExpandClient(c, app)
 	if err != nil {
 		return emptyCC, err
 	}
@@ -49,7 +50,7 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
 
-		cc.ActingUserAccessToken, err = in.UserAccessToken()
+		cc.ActingUserAccessToken, err = c.UserAccessToken()
 		if err != nil {
 			return emptyCC, errors.New("failed to load user session")
 		}
@@ -288,16 +289,17 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	return nil
 }
 
-func (p *Proxy) getExpandClient(app apps.App, in Incoming) (mmclient.Client, error) {
+func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Client, error) {
 	if p.expandClientOverride != nil {
 		return p.expandClientOverride, nil
 	}
 
-	conf, mm, _ := p.conf.Basic()
+	conf := p.conf.Get()
+
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && c.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
-		token, err := in.UserAccessToken()
+		token, err := c.UserAccessToken()
 		if err != nil {
 			return nil, err
 		}

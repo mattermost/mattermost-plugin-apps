@@ -10,6 +10,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 )
 
 type restapi struct {
@@ -18,7 +20,7 @@ type restapi struct {
 	appServices appservices.Service
 }
 
-func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices appservices.Service) {
+func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices appservices.Service, sessionService session.Service) {
 	mm := conf.MattermostAPI()
 	a := &restapi{
 		conf:        conf,
@@ -28,14 +30,16 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 
 	api := router.PathPrefix(path.API).Subrouter()
 
+	c := request.NewContext(mm, conf, sessionService)
+
 	a.initPing(api)
 
 	// Proxy API, intended to be used by the user-agents (mobile, desktop, and
 	// web).
-	a.initCall(api)
+	a.initCall(api, c)
 
 	// User-agent APIs.
-	a.initGetBindings(api)
+	a.initGetBindings(api, c)
 	a.initGetBotIDs(api)
 	a.initGetOAuthAppIDs(api)
 
@@ -46,9 +50,9 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 	a.initOAuth2Store(api)
 
 	// Admin API, can be used by plugins, external services, or the user agent.
-	a.initAdmin(api, mm)
+	a.initAdmin(api, c)
 	a.initGetApp(api, mm)
-	a.initMarketplace(api)
+	a.initMarketplace(api, c)
 }
 
 func appIDVar(r *http.Request) apps.AppID {

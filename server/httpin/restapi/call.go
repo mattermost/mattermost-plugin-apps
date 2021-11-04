@@ -9,16 +9,16 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 var emptyCC = apps.Context{}
 
-func (a *restapi) initCall(api *mux.Router) {
-	api.HandleFunc(path.Call,
-		proxy.RequireUser(a.Call)).Methods("POST")
+func (a *restapi) initCall(api *mux.Router, c *request.Context) {
+	api.Handle(path.Call,
+		request.AddContext(a.Call, c).RequireUser()).Methods(http.MethodPost)
 }
 
 // Call handles a call request for an App.
@@ -26,28 +26,30 @@ func (a *restapi) initCall(api *mux.Router) {
 //   Method: POST
 //   Input: CallRequest
 //   Output: CallResponse
-func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
+func (a *restapi) Call(c *request.Context, w http.ResponseWriter, req *http.Request) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
 		return
 	}
 
+	c.AppID = creq.Context.AppID
+
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(in.ActingUserID, creq.Context)
+	creq.Context, err = a.cleanUserAgentContext(c.ActingUserID, creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
 	}
 
-	res := a.proxy.Call(in, *creq)
+	res := a.proxy.Call(c, *creq)
 
 	a.conf.Logger().Debugw(
 		"Received call response",
 		"app_id", creq.Context.AppID,
-		"acting_user_id", in.ActingUserID,
+		"acting_user_id", c.ActingUserID,
 		"error", res.ErrorText,
 		"type", res.Type,
 		"path", creq.Path,

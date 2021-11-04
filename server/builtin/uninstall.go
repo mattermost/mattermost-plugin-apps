@@ -7,7 +7,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 var uninstallCall = apps.Call{
@@ -48,7 +47,7 @@ func (a *builtinApp) uninstall() handler {
 
 		submitf: func(creq apps.CallRequest) apps.CallResponse {
 			out, err := a.proxy.UninstallApp(
-				proxy.NewIncomingFromContext(creq.Context),
+				a.newContextFromAppContext(creq),
 				creq.Context,
 				apps.AppID(creq.GetValue(fAppID, "")))
 			if err != nil {

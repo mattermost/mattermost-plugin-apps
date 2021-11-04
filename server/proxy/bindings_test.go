@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 )
@@ -288,7 +289,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}}
 
 			proxy := newTestProxyForBindings(t, testData, ctrl)
-			out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+			out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -507,7 +508,7 @@ func TestGetBindingsCommands(t *testing.T) {
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -524,7 +525,7 @@ func TestGetBindingsCommands(t *testing.T) {
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -541,7 +542,7 @@ func TestGetBindingsCommands(t *testing.T) {
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -635,7 +636,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+	out, err := proxy.GetBindings(request.Context{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -716,7 +717,7 @@ func TestInvalidCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+	out, err := proxy.GetBindings(request.Context{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }

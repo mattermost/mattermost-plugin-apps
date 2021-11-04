@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -44,7 +45,7 @@ func (r CallResponse) WithMetadata(metadata AppMetadataForClient) CallResponse {
 	return r
 }
 
-func (p *Proxy) Call(in Incoming, creq apps.CallRequest) CallResponse {
+func (p *Proxy) Call(c *request.Context, creq apps.CallRequest) CallResponse {
 	if creq.Context.AppID == "" {
 		return NewProxyCallResponse(apps.NewErrorResponse(
 			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
@@ -55,14 +56,14 @@ func (p *Proxy) Call(in Incoming, creq apps.CallRequest) CallResponse {
 		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
 
-	cresp, _ := p.callApp(in, *app, creq)
+	cresp, _ := p.callApp(c, *app, creq)
 	return NewProxyCallResponse(cresp).WithMetadata(AppMetadataForClient{
 		BotUserID:   app.BotUserID,
 		BotUsername: app.BotUsername,
 	})
 }
 
-func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+func (p *Proxy) call(c *request.Context, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
 	values := map[string]interface{}{}
 	for len(valuePairs) > 0 {
 		if len(valuePairs) == 1 {
@@ -81,7 +82,7 @@ func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cresp, _ := p.callApp(in, app, apps.CallRequest{
+	cresp, _ := p.callApp(c, app, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
 		Values:  values,
@@ -89,7 +90,7 @@ func (p *Proxy) call(in Incoming, app apps.App, call apps.Call, cc *apps.Context
 	return cresp
 }
 
-func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
+func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
 	respondErr := func(err error) (apps.CallResponse, error) {
 		return apps.NewErrorResponse(err), err
 	}
@@ -116,8 +117,8 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.
 	}
 
 	cc := creq.Context
-	cc = in.updateContext(cc)
-	creq.Context, err = p.expandContext(in, app, &cc, creq.Expand)
+	cc = c.UpdateAppContext(cc)
+	creq.Context, err = p.expandContext(c, app, &cc, creq.Expand)
 	if err != nil {
 		return respondErr(err)
 	}

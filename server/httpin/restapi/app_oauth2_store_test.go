@@ -17,20 +17,23 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 )
 
 func TestOAuth2StoreUser(t *testing.T) {
 	t.Run("small payload", func(t *testing.T) {
+		conf := config.NewTestConfigService(nil)
+
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		conf := config.NewTestConfigService(nil)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
+		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(router, conf, proxy, appServices)
+		Init(router, conf, proxy, appServices, sessionService)
 
 		payload := []byte("some payload")
 		expectedPayload := payload
@@ -55,16 +58,18 @@ func TestOAuth2StoreUser(t *testing.T) {
 	})
 
 	t.Run("payload too big", func(t *testing.T) {
+		conf := config.NewTestConfigService(nil)
+
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		conf := config.NewTestConfigService(nil)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
+		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(router, conf, proxy, appServices)
+		Init(router, conf, proxy, appServices, sessionService)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

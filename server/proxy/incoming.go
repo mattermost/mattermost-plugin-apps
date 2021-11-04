@@ -78,15 +78,6 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(http.ResponseWriter, *
 	}
 }
 
-func (in Incoming) updateContext(cc apps.Context) apps.Context {
-	updated := cc
-	updated.ActingUserID = in.ActingUserID
-	updated.ExpandedContext = apps.ExpandedContext{
-		ActingUserAccessToken: in.actingUserAccessToken,
-	}
-	return updated
-}
-
 func (in Incoming) UserAccessToken() (string, error) {
 	if in.actingUserAccessToken != "" {
 		return in.actingUserAccessToken, nil

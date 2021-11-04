@@ -21,9 +21,9 @@ func (a *restapi) initKV(api *mux.Router) {
 	api.HandleFunc(path.KV+"/{key}",
 		proxy.RequireUser(a.KVGet)).Methods("GET")
 	api.HandleFunc(path.KV+"/{prefix}/{key}",
-		proxy.RequireUser(a.KVPut)).Methods("PUT", "POST")
+		proxy.RequireUser(a.KVPut)).Methods("PUT", http.MethodPost)
 	api.HandleFunc(path.KV+"/{key}",
-		proxy.RequireUser(a.KVPut)).Methods("PUT", "POST")
+		proxy.RequireUser(a.KVPut)).Methods("PUT", http.MethodPost)
 	api.HandleFunc(path.KV+"/{prefix}/{key}",
 		proxy.RequireUser(a.KVDelete)).Methods("DELETE")
 	api.HandleFunc(path.KV+"/{key}",

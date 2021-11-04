@@ -16,7 +16,7 @@ type VersionInfo struct {
 
 func (a *restapi) initPing(api *mux.Router) {
 	api.HandleFunc(path.Ping,
-		proxy.RequireUser(a.Ping)).Methods("POST")
+		proxy.RequireUser(a.Ping)).Methods(http.MethodPost)
 }
 
 func (a *restapi) Ping(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {

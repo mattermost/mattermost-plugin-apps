@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -69,7 +70,10 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) 
 	// Set acting user to bot.
 	cc.ActingUserID = app.BotUserID
 	cc.ActingUserAccessToken = app.BotAccessToken
-	cc, err = p.expandContext(Incoming{}, *app, &cc, call.Expand)
+
+	c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService)
+
+	cc, err = p.expandContext(c, *app, &cc, call.Expand)
 	if err != nil {
 		return err
 	}

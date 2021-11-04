@@ -16,7 +16,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
@@ -310,12 +312,17 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 }
 
 func TestHandleCallInvalidContext(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	p := mock_proxy.NewMockService(ctrl)
 	testConfig, testAPI := config.NewTestService(nil)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := mock_proxy.NewMockService(ctrl)
+	appServices := mock_appservices.NewMockService(ctrl)
+	sessionService := mock_session.NewMockService(ctrl)
+
 	router := mux.NewRouter()
-	Init(router, testConfig, p, nil)
+	Init(router, testConfig, proxy, appServices, sessionService)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -334,7 +341,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
-	req, err := http.NewRequest("POST", u, b)
+	req, err := http.NewRequest(http.MethodPost, u, b)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
@@ -353,12 +360,16 @@ func TestHandleCallInvalidContext(t *testing.T) {
 }
 
 func TestHandleCallValidContext(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	p := mock_proxy.NewMockService(ctrl)
 	testConfig, testAPI := config.NewTestService(nil)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := mock_proxy.NewMockService(ctrl)
+	appServices := mock_appservices.NewMockService(ctrl)
+	sessionService := mock_session.NewMockService(ctrl)
+
 	router := mux.NewRouter()
-	Init(router, testConfig, p, nil)
+	Init(router, testConfig, p, appServices, sessionService)
 
 	creq := apps.CallRequest{
 		Call: apps.Call{
@@ -399,7 +410,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
-	req, err := http.NewRequest("POST", u, b)
+	req, err := http.NewRequest(http.MethodPost, u, b)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()

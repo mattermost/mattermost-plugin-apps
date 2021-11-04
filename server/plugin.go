@@ -26,6 +26,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -38,9 +39,10 @@ type Plugin struct {
 	conf config.Service
 	log  utils.Logger
 
-	store       *store.Service
-	appservices appservices.Service
-	proxy       proxy.Service
+	store          *store.Service
+	appservices    appservices.Service
+	proxy          proxy.Service
+	sessionService session.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
@@ -111,22 +113,25 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.appservices = appservices.NewService(p.conf, p.store)
 
+	p.sessionService = session.NewService(mm, p.store)
+
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut)
+
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService)
 	err = p.proxy.Configure(conf)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
 	p.proxy.AddBuiltinUpstream(
 		builtin.AppID,
-		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut),
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut, p.sessionService),
 	)
 	p.log.Debugf("Initialized the app proxy")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices, p.sessionService,
 		restapi.Init,
 		gateway.Init,
 	)

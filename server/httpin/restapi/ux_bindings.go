@@ -8,13 +8,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initGetBindings(api *mux.Router) {
-	api.HandleFunc(path.Bindings,
-		proxy.RequireUser(a.GetBindings)).Methods("GET")
+func (a *restapi) initGetBindings(api *mux.Router, c *request.Context) {
+	api.Handle(path.Bindings,
+		request.AddContext(a.GetBindings, c).RequireUser()).Methods("GET")
 }
 
 // GetBindings returns combined bindings for all Apps.
@@ -22,10 +22,10 @@ func (a *restapi) initGetBindings(api *mux.Router) {
 //   Method: GET
 //   Input: none
 //   Output: []Binding
-func (a *restapi) GetBindings(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
+func (a *restapi) GetBindings(c *request.Context, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
 
-	bindings, err := a.proxy.GetBindings(in, apps.Context{
+	bindings, err := a.proxy.GetBindings(c, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),

@@ -10,8 +10,11 @@
 				"label": "message"
 			}
 		],
-		"call": {
-			"path": "/send"
+        "call": {
+			"path": "/send",
+			"expand": {
+				"acting_user_access_token": "all"
+			}
 		}
 	}
 }

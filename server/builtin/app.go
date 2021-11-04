@@ -21,6 +21,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -75,21 +77,23 @@ type handler struct {
 }
 
 type builtinApp struct {
-	conf        config.Service
-	proxy       proxy.Service
-	appservices appservices.Service
-	httpOut     httpout.Service
-	router      map[string]handler
+	conf           config.Service
+	proxy          proxy.Service
+	appservices    appservices.Service
+	httpOut        httpout.Service
+	sessionService session.Service
+	router         map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) *builtinApp {
 	a := &builtinApp{
-		conf:        conf,
-		proxy:       proxy,
-		appservices: appservices,
-		httpOut:     httpOut,
+		conf:           conf,
+		proxy:          proxy,
+		appservices:    appservices,
+		httpOut:        httpOut,
+		sessionService: sessionService,
 	}
 
 	a.router = map[string]handler{
@@ -254,4 +258,8 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
+}
+
+func (a *builtinApp) newContextFromAppContext(creq apps.CallRequest) *request.Context {
+	return request.NewContextFromAppContext(creq.Context, a.conf.MattermostAPI(), a.conf, a.sessionService)
 }

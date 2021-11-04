@@ -22,6 +22,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -39,13 +40,14 @@ func TestKV(t *testing.T) {
 	mockStore := &store.Service{
 		AppKV: mocked,
 	}
-
+	proxy := mock_proxy.NewMockService(ctrl)
 	appService := appservices.NewService(testConfig, mockStore)
+	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	Init(router, testConfig, nil, appService)
+	Init(router, testConfig, proxy, appService, sessionService)
 
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
@@ -93,16 +95,18 @@ func TestKV(t *testing.T) {
 
 func TestKVPut(t *testing.T) {
 	t.Run("payload too big", func(t *testing.T) {
+		conf := config.NewTestConfigService(nil)
+
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		conf := config.NewTestConfigService(nil)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
+		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(router, conf, proxy, appServices)
+		Init(router, conf, proxy, appServices, sessionService)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

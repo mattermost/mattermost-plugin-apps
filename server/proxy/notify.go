@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -57,7 +58,9 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	creq.Context, err = p.expandContext(Incoming{}, *app, base, sub.Call.Expand)
+	c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService)
+
+	creq.Context, err = p.expandContext(c, *app, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}

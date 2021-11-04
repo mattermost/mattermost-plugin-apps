@@ -9,9 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
-func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
 	_, mm, log := p.conf.Basic()
 	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
@@ -21,7 +22,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 
 	var message string
 	if app.OnUninstall != nil {
-		resp := p.call(in, *app, *app.OnUninstall, &cc)
+		resp := p.call(c, *app, *app.OnUninstall, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
 		} else {
@@ -33,10 +34,11 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getClient(in)
+	asAdmin, err := c.GetMMClient()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
+
 	// delete oauth app
 	if app.MattermostOAuth2 != nil {
 		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.Id); err != nil {
@@ -73,7 +75,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 
 	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+	p.dispatchRefreshBindingsEvent(c.ActingUserID)
 
 	return message, nil
 }

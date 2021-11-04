@@ -9,9 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
-func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
 	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
@@ -21,7 +22,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	asAdmin, err := p.getClient(in)
+	asAdmin, err := c.GetMMClient()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
@@ -39,14 +40,16 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.call(in, *app, *app.OnEnable, &cc)
+		resp := p.call(c, *app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
 			message = resp.Markdown
 		}
 	}
+
 	log.Infof("Enabled app")
+
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	if message == "" {
@@ -55,7 +58,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
 	log := p.conf.Logger().With("app_id", appID)
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
@@ -69,7 +72,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.call(in, *app, *app.OnDisable, &cc)
+		resp := p.call(c, *app, *app.OnDisable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
@@ -81,7 +84,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getClient(in)
+	asAdmin, err := c.GetMMClient()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
@@ -95,8 +98,10 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
+
 	log.Infof("Disabled app")
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+
+	p.dispatchRefreshBindingsEvent(c.ActingUserID)
 
 	return message, nil
 }
