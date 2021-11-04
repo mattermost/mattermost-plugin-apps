@@ -111,7 +111,7 @@ func (a *builtinApp) list() handler {
 				if app.BotUserID != "" {
 					account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
 				}
-				if app.MattermostOAuth2.Id != "" {
+				if app.MattermostOAuth2 != nil {
 					if account != "" {
 						account += ", "
 					}

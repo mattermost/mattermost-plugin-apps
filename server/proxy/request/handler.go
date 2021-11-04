@@ -15,20 +15,20 @@ type check func(w http.ResponseWriter, r *http.Request) bool // check return tru
 
 type contextHandlerFunc func(c *Context, w http.ResponseWriter, r *http.Request)
 
-type contextHandler struct {
+type ContextHandler struct {
 	handler contextHandlerFunc
 	context *Context
 	checks  []check
 }
 
-func AddContext(handler contextHandlerFunc, c *Context) *contextHandler {
-	return &contextHandler{
+func AddContext(handler contextHandlerFunc, c *Context) *ContextHandler {
+	return &ContextHandler{
 		handler: handler,
 		context: c,
 	}
 }
 
-func (h *contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *ContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	context := h.context.Clone()
 	context.RequestID = model.NewId()
 	context.Log = context.Log.With(
@@ -50,13 +50,13 @@ func getUserID(r *http.Request) string {
 	return r.Header.Get(config.MattermostUserIDHeader)
 }
 
-func (h *contextHandler) RequireUser() *contextHandler {
+func (h *ContextHandler) RequireUser() *ContextHandler {
 	h.checks = append(h.checks, h.checkUser)
 
 	return h
 }
 
-func (h *contextHandler) checkUser(w http.ResponseWriter, r *http.Request) bool {
+func (h *ContextHandler) checkUser(w http.ResponseWriter, r *http.Request) bool {
 	actingUserID := getUserID(r)
 	if actingUserID == "" {
 		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID is required"))
@@ -68,13 +68,13 @@ func (h *contextHandler) checkUser(w http.ResponseWriter, r *http.Request) bool 
 	return true
 }
 
-func (h *contextHandler) RequireSysadmin() *contextHandler {
+func (h *ContextHandler) RequireSysadmin() *ContextHandler {
 	h.checks = append(h.checks, h.checkSysadmin)
 
 	return h
 }
 
-func (h *contextHandler) checkSysadmin(w http.ResponseWriter, r *http.Request) bool {
+func (h *ContextHandler) checkSysadmin(w http.ResponseWriter, r *http.Request) bool {
 	if successful := h.checkUser(w, r); !successful {
 		return successful
 	}
@@ -90,7 +90,7 @@ func (h *contextHandler) checkSysadmin(w http.ResponseWriter, r *http.Request) b
 	return true
 }
 
-func (h *contextHandler) RequireSysadminOrPlugin() *contextHandler {
+func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
 	check := func(w http.ResponseWriter, r *http.Request) bool {
 		pluginID := r.Header.Get(config.MattermostPluginIDHeader)
 		if pluginID != "" {

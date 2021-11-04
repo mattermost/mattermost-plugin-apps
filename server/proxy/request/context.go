@@ -27,27 +27,16 @@ type Context struct {
 	sysAdminChecked       bool
 }
 
-// Clone creates a shallow copy of context, allowing clones to apply per-request changes.
-// TODO
-func (c *Context) Clone() *Context {
-	return &Context{
-		Log:            c.Log,
-		mm:             c.mm,
-		sessionService: c.sessionService,
+type ContextOption func(*Context)
+
+func WithAppContext(cc apps.Context) ContextOption {
+	return func(c *Context) {
+		c.SetActingUserID(cc.ActingUserID)
+		c.actingUserAccessToken = cc.ActingUserAccessToken
 	}
 }
 
-func NewContextFromAppContext(cc apps.Context, mm *pluginapi.Client, config config.Service, session session.Service) *Context {
-	c := NewContext(mm, config, session)
-
-	c.SetAppID(cc.AppID)
-	c.SetActingUserID(cc.ActingUserID)
-	c.actingUserAccessToken = cc.ActingUserAccessToken
-
-	return c
-}
-
-func NewContext(mm *pluginapi.Client, config config.Service, session session.Service) *Context {
+func NewContext(mm *pluginapi.Client, config config.Service, session session.Service, opts ...ContextOption) *Context {
 	c := &Context{
 		mm:             mm,
 		config:         config,
@@ -55,7 +44,20 @@ func NewContext(mm *pluginapi.Client, config config.Service, session session.Ser
 		Log:            utils.NewPluginLogger(mm),
 	}
 
+	for _, opt := range opts {
+		opt(c)
+	}
+
 	return c
+}
+
+// Clone creates a shallow copy of context, allowing clones to apply per-request changes.
+func (c *Context) Clone() *Context {
+	return &Context{
+		Log:            c.Log,
+		mm:             c.mm,
+		sessionService: c.sessionService,
+	}
 }
 
 func (c *Context) UpdateAppContext(cc apps.Context) apps.Context {

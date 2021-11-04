@@ -13,6 +13,8 @@ import (
 )
 
 func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+	c.SetAppID(appID)
+
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -58,6 +60,8 @@ func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID)
 }
 
 func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+	c.SetAppID(appID)
+
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)

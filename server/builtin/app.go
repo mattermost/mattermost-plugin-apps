@@ -261,5 +261,5 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 }
 
 func (a *builtinApp) newContextFromAppContext(creq apps.CallRequest) *request.Context {
-	return request.NewContextFromAppContext(creq.Context, a.conf.MattermostAPI(), a.conf, a.sessionService)
+	return request.NewContext(a.conf.MattermostAPI(), a.conf, a.sessionService, request.WithAppContext(creq.Context))
 }

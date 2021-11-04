@@ -13,6 +13,8 @@ import (
 )
 
 func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+	c.SetAppID(appID)
+
 	mm := p.conf.MattermostAPI()
 	app, err := p.store.App.Get(appID)
 	if err != nil {
