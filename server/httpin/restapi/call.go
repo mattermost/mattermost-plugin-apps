@@ -33,12 +33,12 @@ func (a *restapi) Call(c *request.Context, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	c.AppID = creq.Context.AppID
+	c.SetAppID(creq.Context.AppID)
 
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(c.ActingUserID, creq.Context)
+	creq.Context, err = a.cleanUserAgentContext(c.ActingUserID(), creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return

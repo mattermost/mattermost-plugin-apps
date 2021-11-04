@@ -95,8 +95,7 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 		return apps.NewErrorResponse(err), err
 	}
 
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", app.AppID)
+	conf := p.conf.Get()
 
 	if !p.appIsEnabled(app) {
 		return respondErr(errors.Errorf("%s is disabled", app.AppID))
@@ -135,14 +134,14 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 		if cresp.Form.Icon != "" {
 			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
 			if err != nil {
-				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				c.Log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
 				cresp.Form.Icon = ""
 			} else {
 				cresp.Form.Icon = icon
 			}
 			clean, problems := cleanForm(*cresp.Form)
 			for _, prob := range problems {
-				log.WithError(prob).Debugw("invalid form")
+				c.Log.WithError(prob).Debugw("invalid form")
 			}
 			cresp.Form = &clean
 		}

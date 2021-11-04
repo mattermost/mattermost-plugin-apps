@@ -297,7 +297,7 @@ func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Clie
 	conf := p.conf.Get()
 
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && c.ActingUserID != "":
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && c.ActingUserID() != "":
 		// The OAuth2 token should be used here once it's implemented
 		token, err := c.UserAccessToken()
 		if err != nil {

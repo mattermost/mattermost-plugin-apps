@@ -1,8 +1,6 @@
 package request
 
 import (
-	"log"
-
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -23,8 +21,8 @@ type Context struct {
 
 	RequestID             string
 	PluginID              string
-	AppID                 apps.AppID
-	ActingUserID          string
+	appID                 apps.AppID
+	actingUserID          string
 	actingUserAccessToken string
 	sysAdminChecked       bool
 }
@@ -39,20 +37,17 @@ func (c *Context) Clone() *Context {
 	}
 }
 
-type contextOption func(*Context)
-
-// TODO: Are other fields needed?
 func NewContextFromAppContext(cc apps.Context, mm *pluginapi.Client, config config.Service, session session.Service) *Context {
 	c := NewContext(mm, config, session)
 
-	c.AppID = cc.AppID
-	c.ActingUserID = cc.ActingUserID
+	c.SetAppID(cc.AppID)
+	c.SetActingUserID(cc.ActingUserID)
 	c.actingUserAccessToken = cc.ActingUserAccessToken
 
 	return c
 }
 
-func NewContext(mm *pluginapi.Client, config config.Service, session session.Service, opts ...contextOption) *Context {
+func NewContext(mm *pluginapi.Client, config config.Service, session session.Service) *Context {
 	c := &Context{
 		mm:             mm,
 		config:         config,
@@ -60,47 +55,59 @@ func NewContext(mm *pluginapi.Client, config config.Service, session session.Ser
 		Log:            utils.NewPluginLogger(mm),
 	}
 
-	/*
-		// TODO
-		for _, opt := range opts {
-			opt(c)
-		}
-	*/
-
 	return c
 }
 
-func (c Context) UpdateAppContext(cc apps.Context) apps.Context {
+func (c *Context) UpdateAppContext(cc apps.Context) apps.Context {
 	updated := cc
-	updated.ActingUserID = c.ActingUserID
+	updated.ActingUserID = c.ActingUserID()
 	updated.ExpandedContext = apps.ExpandedContext{
 		ActingUserAccessToken: c.actingUserAccessToken,
 	}
 	return updated
 }
 
-func (c Context) UserAccessToken() (string, error) {
+func (c *Context) AppID() apps.AppID {
+	return c.appID
+}
+
+func (c *Context) SetAppID(appID apps.AppID) {
+	c.Log = c.Log.With("app_id", appID)
+
+	c.appID = appID
+}
+
+func (c *Context) ActingUserID() string {
+	return c.actingUserID
+}
+
+func (c *Context) SetActingUserID(userID string) {
+	c.Log = c.Log.With("user_id", userID)
+
+	c.actingUserID = userID
+}
+
+func (c *Context) UserAccessToken() (string, error) {
 	if c.actingUserAccessToken != "" {
 		return c.actingUserAccessToken, nil
 	}
 
-	if c.AppID == "" {
+	appID := c.AppID()
+	if c.AppID() == "" {
 		return "", errors.New("missing appID in context")
 	}
 
-	session, err := c.sessionService.GetOrCreate(c.AppID, c.ActingUserID)
+	session, err := c.sessionService.GetOrCreate(appID, c.ActingUserID())
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get session")
 	}
-	log.Printf("session: %#+v\n", session)
-	log.Printf("err: %#+v\n", err)
 
 	c.actingUserAccessToken = session.Token
 
 	return c.actingUserAccessToken, nil
 }
 
-func (c Context) GetMMClient() (mmclient.Client, error) {
+func (c *Context) GetMMClient() (mmclient.Client, error) {
 	conf := c.config.Get()
 
 	token, err := c.UserAccessToken()

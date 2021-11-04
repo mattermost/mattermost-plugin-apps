@@ -63,7 +63,7 @@ func (h *contextHandler) checkUser(w http.ResponseWriter, r *http.Request) bool 
 		return false
 	}
 
-	h.context.ActingUserID = actingUserID
+	h.context.SetActingUserID(actingUserID)
 
 	return true
 }
@@ -79,7 +79,7 @@ func (h *contextHandler) checkSysadmin(w http.ResponseWriter, r *http.Request) b
 		return successful
 	}
 
-	err := utils.EnsureSysAdmin(h.context.mm, h.context.ActingUserID)
+	err := utils.EnsureSysAdmin(h.context.mm, h.context.ActingUserID())
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user is not a system admin"))
 		return false

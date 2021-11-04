@@ -24,8 +24,7 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", appID)
+	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
@@ -88,14 +87,14 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
-	err = p.ensureBot(asAdmin, log, app, icon)
+	err = p.ensureBot(c, asAdmin, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, c.ActingUserID)
+		oAuthApp, err = p.ensureOAuthApp(c, asAdmin, conf, *app, trusted, c.ActingUserID())
 		if err != nil {
 			return nil, "", err
 		}
@@ -112,7 +111,7 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 		cresp := p.call(c, *app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
+			c.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
 		} else if cresp.Markdown != "" {
 			message += "\n\n" + cresp.Markdown
@@ -122,23 +121,23 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 		cresp := p.call(c, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
+			c.Log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, cresp.Error())
 		}
 	}
 
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(c.ActingUserID)
+	p.dispatchRefreshBindingsEvent(c.ActingUserID())
 
-	log.Infof(message)
+	c.Log.Infof(message)
 
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(c *request.Context, client mmclient.Client, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
 	if app.MattermostOAuth2 == nil {
-		log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2)
+		c.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2)
 
 		return app.MattermostOAuth2, nil
 	}
@@ -160,12 +159,12 @@ func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf co
 		return nil, errors.Wrap(err, "failed to create OAuth2 App")
 	}
 
-	log.Debugw("App install flow: Created OAuth2 App", "id", oauthApp.Id)
+	c.Log.Debugw("App install flow: Created OAuth2 App", "id", oauthApp.Id)
 
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(c *request.Context, mm mmclient.Client, app *apps.App, icon io.Reader) error {
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
@@ -179,7 +178,7 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 			return err
 		}
 
-		log.Debugw("App install flow: Created Bot Account ",
+		c.Log.Debugw("App install flow: Created Bot Account ",
 			"username", bot.Username)
 	} else {
 		if !user.IsBot {

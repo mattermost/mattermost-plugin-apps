@@ -71,10 +71,8 @@ func (p *Proxy) GetAppBindings(c *request.Context, cc apps.Context, app apps.App
 		return nil
 	}
 
-	log := p.conf.Logger().With("app_id", app.AppID)
-
 	appID := app.AppID
-	c.AppID = appID
+	c.SetAppID(appID)
 	cc.AppID = appID
 
 	// TODO PERF: Add caching
@@ -88,31 +86,30 @@ func (p *Proxy) GetAppBindings(c *request.Context, cc apps.Context, app apps.App
 		b, _ := json.Marshal(resp.Data)
 		err := json.Unmarshal(b, &bindings)
 		if err != nil {
-			log.WithError(err).Debugf("Bindings are not of the right type.")
+			c.Log.WithError(err).Debugf("Bindings are not of the right type.")
 			return nil
 		}
 
-		bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
+		bindings = p.scanAppBindings(c, app, bindings, "", cc.UserAgent)
 		return bindings
 
 	case apps.CallResponseTypeError:
-		log.WithError(resp).Debugf("Error getting bindings")
+		c.Log.WithError(resp).Debugf("Error getting bindings")
 		return nil
 
 	default:
-		log.Debugf("Bindings response is nil or unexpected type.")
+		c.Log.Debugf("Bindings response is nil or unexpected type.")
 		return nil
 	}
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
+func (p *Proxy) scanAppBindings(c *request.Context, app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
 	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", app.AppID)
+	conf, _, _ := p.conf.Basic()
 
 	for _, b := range bindings {
 		if b.Location == "" {
@@ -128,7 +125,7 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 			}
 		}
 		if !allowed {
-			log.Debugw("location is not granted to app", "location", fql)
+			c.Log.Debugw("location is not granted to app", "location", fql)
 			continue
 		}
 
@@ -139,7 +136,7 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 			}
 
 			if strings.ContainsAny(label, " \t") {
-				log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
+				c.Log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
 				continue
 			}
 		}
@@ -165,7 +162,7 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 		if b.Icon != "" {
 			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
-				log.WithError(err).Debugw("Invalid icon path in binding",
+				c.Log.WithError(err).Debugw("Invalid icon path in binding",
 					"app_id", app.AppID,
 					"icon", b.Icon)
 				b.Icon = ""
@@ -178,13 +175,13 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 		if fql == apps.LocationChannelHeader.Make(b.Location) {
 			// Must have an icon on webapp to show the icon
 			if b.Icon == "" && userAgent == "webapp" {
-				log.Debugw("Channel header button for webapp without icon", "label", b.Label)
+				c.Log.Debugw("Channel header button for webapp without icon", "label", b.Label)
 				continue
 			}
 		}
 
 		if len(b.Bindings) != 0 {
-			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
+			scanned := p.scanAppBindings(c, app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
 				continue
@@ -195,7 +192,7 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 		if b.Form != nil {
 			clean, problems := cleanForm(*b.Form)
 			for _, prob := range problems {
-				log.WithError(prob).Debugf("invalid form field in binding")
+				c.Log.WithError(prob).Debugf("invalid form field in binding")
 			}
 			b.Form = &clean
 		}

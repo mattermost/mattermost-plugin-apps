@@ -636,7 +636,7 @@ func TestDuplicateCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	out, err := proxy.GetBindings(request.Context{}, apps.Context{})
+	out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -717,7 +717,7 @@ func TestInvalidCommand(t *testing.T) {
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 
-	out, err := proxy.GetBindings(request.Context{}, apps.Context{})
+	out, err := proxy.GetBindings(&request.Context{}, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }

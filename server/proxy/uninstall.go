@@ -13,8 +13,7 @@ import (
 )
 
 func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
-	_, mm, log := p.conf.Basic()
-	log = log.With("app_id", appID)
+	mm := p.conf.MattermostAPI()
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -24,7 +23,7 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 	if app.OnUninstall != nil {
 		resp := p.call(c, *app, *app.OnUninstall, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
+			c.Log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
 		} else {
 			message = resp.Markdown
 		}
@@ -71,11 +70,11 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 
-	log.Infof("Uninstalled app.")
+	c.Log.Infof("Uninstalled app.")
 
 	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(c.ActingUserID)
+	p.dispatchRefreshBindingsEvent(c.ActingUserID())
 
 	return message, nil
 }

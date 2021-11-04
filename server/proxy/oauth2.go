@@ -17,7 +17,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(c *request.Context, appID apps.AppID) 
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
-	state, err := p.store.OAuth2.CreateState(c.ActingUserID)
+	state, err := p.store.OAuth2.CreateState(c.ActingUserID())
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +51,7 @@ func (p *Proxy) CompleteRemoteOAuth2(c *request.Context, appID apps.AppID, urlVa
 	if urlState == "" {
 		return utils.NewUnauthorizedError("no state arg in the URL")
 	}
-	err = p.store.OAuth2.ValidateStateOnce(urlState, c.ActingUserID)
+	err = p.store.OAuth2.ValidateStateOnce(urlState, c.ActingUserID())
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (p *Proxy) CompleteRemoteOAuth2(c *request.Context, appID apps.AppID, urlVa
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
-	p.conf.Telemetry().TrackOAuthComplete(string(appID), c.ActingUserID)
+	p.conf.Telemetry().TrackOAuthComplete(string(appID), c.ActingUserID())
 
 	return nil
 }

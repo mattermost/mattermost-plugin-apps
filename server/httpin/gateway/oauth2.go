@@ -10,8 +10,6 @@ import (
 
 func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
-	// TODO: Use logging from context
-	log := g.conf.Logger().With("app_id", appID, "acting_user_id", c.ActingUserID)
 
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
@@ -20,7 +18,7 @@ func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter,
 
 	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(c, appID)
 	if err != nil {
-		log.WithError(err).Warnf("Failed to get remote OAuth2 connect URL")
+		c.Log.WithError(err).Warnf("Failed to get remote OAuth2 connect URL")
 		httputils.WriteError(w, err)
 		return
 	}
@@ -30,9 +28,6 @@ func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter,
 
 func (g *gateway) remoteOAuth2Complete(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
-	// TODO: Use logging from context
-	log := g.conf.Logger().With("app_id", appID, "acting_user_id", c.ActingUserID)
-
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
@@ -46,7 +41,7 @@ func (g *gateway) remoteOAuth2Complete(c *request.Context, w http.ResponseWriter
 
 	err := g.proxy.CompleteRemoteOAuth2(c, appID, urlValues)
 	if err != nil {
-		log.WithError(err).Warnf("Failed to complete remote OAuth2")
+		c.Log.WithError(err).Warnf("Failed to complete remote OAuth2")
 		httputils.WriteError(w, err)
 		return
 	}

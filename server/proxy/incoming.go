@@ -11,7 +11,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -76,25 +75,4 @@ func RequireSysadminOrPlugin(mm *pluginapi.Client, f func(http.ResponseWriter, *
 
 		RequireSysadmin(mm, f)(w, r)
 	}
-}
-
-func (in Incoming) UserAccessToken() (string, error) {
-	if in.actingUserAccessToken != "" {
-		return in.actingUserAccessToken, nil
-	}
-
-	// TODO
-
-	return "", nil
-}
-
-func (p *Proxy) getClient(in Incoming) (mmclient.Client, error) {
-	conf, _, _ := p.conf.Basic()
-
-	token, err := in.UserAccessToken()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
-	}
-
-	return mmclient.NewHTTPClient(conf, token), nil
 }
