@@ -4,9 +4,8 @@
 package config
 
 const (
-	MattermostSessionIDHeader = "Mattermost-Session-Id"
-	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
-	MattermostUserIDHeader    = "Mattermost-User-Id"
+	MattermostPluginIDHeader = "Mattermost-Plugin-Id"
+	MattermostUserIDHeader   = "Mattermost-User-Id"
 )
 
 // Internal configuration apps.of mattermost-plugin-apps
@@ -70,6 +69,8 @@ const (
 
 	// KVLocalManifestPrefix is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man."
+
+	KVTokenPrefix = ".t"
 
 	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
 	// usually upon a Mattermost instance startup.

@@ -37,8 +37,6 @@ func (a7 AppV0_7) App() *App {
 		BotUsername:        a7.BotUsername,
 		BotAccessToken:     a7.BotAccessToken,
 		BotAccessTokenID:   a7.BotAccessTokenID,
-		Trusted:            a7.Trusted,
-		MattermostOAuth2:   a7.MattermostOAuth2,
 		RemoteOAuth2:       a7.RemoteOAuth2,
 		GrantedPermissions: a7.GrantedPermissions,
 		GrantedLocations:   a7.GrantedLocations,

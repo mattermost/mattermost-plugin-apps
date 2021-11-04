@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 

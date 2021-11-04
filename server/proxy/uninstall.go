@@ -38,8 +38,8 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
 	// delete oauth app
-	if app.MattermostOAuth2.ClientID != "" {
-		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.ClientID); err != nil {
+	if app.MattermostOAuth2 != nil {
+		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.Id); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
 		}
 	}

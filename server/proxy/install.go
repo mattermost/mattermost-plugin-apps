@@ -98,9 +98,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		if err != nil {
 			return nil, "", err
 		}
-		app.MattermostOAuth2.ClientID = oAuthApp.Id
-		app.MattermostOAuth2.ClientSecret = oAuthApp.ClientSecret
-		app.Trusted = trusted
+		app.MattermostOAuth2 = oAuthApp
 	}
 
 	err = p.store.App.Save(*app)
@@ -137,24 +135,23 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 }
 
 func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
-	if app.MattermostOAuth2.ClientID != "" {
-		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
-		if err == nil {
-			log.Debugw("App install flow: Using existing OAuth2 App",
-				"id", oauthApp.Id)
-			return oauthApp, nil
-		}
+	if app.MattermostOAuth2 == nil {
+		log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2)
+
+		return app.MattermostOAuth2, nil
 	}
 
 	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
 	oauthApp := &model.OAuthApp{
-		CreatorId:    actingUserID,
-		Name:         app.DisplayName,
-		Description:  app.Description,
-		CallbackUrls: []string{oauth2CallbackURL},
-		Homepage:     app.HomepageURL,
-		IsTrusted:    noUserConsent,
+		CreatorId:          actingUserID,
+		Name:               app.DisplayName,
+		Description:        app.Description,
+		CallbackUrls:       []string{oauth2CallbackURL},
+		Homepage:           app.HomepageURL,
+		IsTrusted:          noUserConsent,
+		Scopes:             nil,
+		AppsFrameworkAppID: string(app.AppID),
 	}
 	err := client.CreateOAuthApp(oauthApp)
 	if err != nil {

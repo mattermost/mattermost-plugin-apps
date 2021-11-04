@@ -12,7 +12,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -22,7 +21,6 @@ type Incoming struct {
 	ActingUserID          string
 	actingUserAccessToken string
 	SysAdminChecked       bool
-	sessionService        session.Service
 }
 
 func NewIncomingFromContext(cc apps.Context) Incoming {

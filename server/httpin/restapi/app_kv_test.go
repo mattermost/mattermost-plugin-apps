@@ -60,7 +60,6 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest("PUT", itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
-	req.Header.Set(config.MattermostSessionIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -78,7 +77,6 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest("GET", itemURL, nil)
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
-	req.Header.Set(config.MattermostSessionIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -116,7 +114,6 @@ func TestKVPut(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
 		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)

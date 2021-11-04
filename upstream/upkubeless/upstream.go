@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
@@ -74,6 +77,7 @@ func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (
 	}
 
 	// Get the function's service URL
+	//svc, err := clientset.CoreV1().Services(Namespace).Get(context.TODO(), funcName, metav1.GetOptions{})
 	svc, err := clientset.CoreV1().Services(Namespace).Get(funcName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the kubernetes service for function %s", funcName)
@@ -108,6 +112,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	req = req.AbsPath(url)
 
 	var statusCode int
+	// result := req.Do(context.TODO()).StatusCode(&statusCode)
 	result := req.Do().StatusCode(&statusCode)
 	received, err := result.Raw()
 	switch {

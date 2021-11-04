@@ -23,6 +23,7 @@ type Service struct {
 	Manifest     ManifestStore
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
+	Session      SessionStore
 
 	conf    config.Service
 	httpOut httpout.Service
@@ -40,6 +41,7 @@ func MakeService(confService config.Service, api plugin.API, httpOut httpout.Ser
 	s.AppKV = &appKVStore{Service: s}
 	s.OAuth2 = &oauth2Store{Service: s}
 	s.Subscription = &subscriptionStore{Service: s}
+	s.Session = &sessionStore{Service: s}
 
 	conf := confService.Get()
 	var err error

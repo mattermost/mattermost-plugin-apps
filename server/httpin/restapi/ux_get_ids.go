@@ -46,8 +46,8 @@ func (a *restapi) GetOAuthAppIDs(w http.ResponseWriter, r *http.Request, _ proxy
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {
-		if app.MattermostOAuth2.ClientID != "" {
-			ids = append(ids, app.MattermostOAuth2.ClientID)
+		if app.MattermostOAuth2.Id != "" {
+			ids = append(ids, app.MattermostOAuth2.Id)
 		}
 	}
 	b, _ := json.Marshal(ids)

@@ -111,11 +111,11 @@ func (a *builtinApp) list() handler {
 				if app.BotUserID != "" {
 					account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
 				}
-				if app.MattermostOAuth2.ClientID != "" {
+				if app.MattermostOAuth2.Id != "" {
 					if account != "" {
 						account += ", "
 					}
-					account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.ClientID)
+					account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.Id)
 					if app.RemoteOAuth2.ClientID != "" {
 						account += fmt.Sprintf("/`%s`", app.RemoteOAuth2.ClientID)
 					}

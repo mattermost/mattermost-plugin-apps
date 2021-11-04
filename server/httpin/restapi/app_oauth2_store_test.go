@@ -41,7 +41,6 @@ func TestOAuth2StoreUser(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
 		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -77,7 +76,6 @@ func TestOAuth2StoreUser(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
 		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)

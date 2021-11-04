@@ -21,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upopenfaas"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -118,7 +117,8 @@ func (p *Proxy) Configure(conf config.Config) error {
 		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
 	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
-		return upkubeless.MakeUpstream()
+		// return upkubeless.MakeUpstream()
+		return nil, nil
 	})
 	p.initUpstream(apps.DeployOpenFAAS, conf, log, func() (upstream.Upstream, error) {
 		return upopenfaas.MakeUpstream(p.httpOut, conf.DeveloperMode)

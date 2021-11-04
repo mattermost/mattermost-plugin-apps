@@ -37,14 +37,10 @@ type App struct {
 	BotAccessToken   string `json:"bot_access_token,omitempty"`
 	BotAccessTokenID string `json:"bot_access_token_id,omitempty"`
 
-	// Trusted means that Mattermost will issue the Apps' users their tokens as
-	// needed, without asking for the user's consent.
-	Trusted bool `json:"trusted,omitempty"`
-
 	// MattermostOAuth2 contains App's Mattermost OAuth2 credentials. An
 	// Mattermost server OAuth2 app is created (or updated) when a Mattermost
 	// App is installed on the instance.
-	MattermostOAuth2 OAuth2App `json:"mattermost_oauth2,omitempty"`
+	MattermostOAuth2 *model.OAuthApp `json:"mattermost_oauth2,omitempty"`
 
 	// RemoteOAuth2 contains App's remote OAuth2 credentials. Use
 	// appclient.StoreOAuth2App to update.
