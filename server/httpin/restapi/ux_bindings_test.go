@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 func TestHandleGetBindingsValidContext(t *testing.T) {
@@ -29,7 +30,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(router, conf, proxy, appServices, sessionService)
+	Init(request.NewContext(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
 
 	expected := apps.Context{
 		UserAgentContext: apps.UserAgentContext{

@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -56,7 +57,7 @@ func (a *builtinApp) list() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			includePluginApps := creq.BoolValue(fIncludePlugins)
 

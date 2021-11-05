@@ -4,6 +4,8 @@
 package builtin
 
 import (
+	"context"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -48,11 +50,11 @@ func (a *builtinApp) enable() handler {
 			})
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 
 			out, err := a.proxy.EnableApp(
-				a.newContext(request.WithAppContext(creq.Context), request.WithAppID(appID)),
+				a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(appID)),
 				creq.Context,
 				appID,
 			)

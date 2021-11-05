@@ -8,6 +8,7 @@ package upkubeless
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ func MakeUpstream() (*Upstream, error) {
 	return &Upstream{}, nil
 }
 
-func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if !app.Contains(apps.DeployKubeless) {
 		return nil, errors.New("no 'kubeless' section in manifest.json")
 	}
@@ -61,7 +62,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
 
-	crespData, err := u.invoke(clientset, url, http.MethodPost, creqData, async)
+	crespData, err := u.invoke(ctx, clientset, url, http.MethodPost, creqData, async)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (
 	return fURL, nil
 }
 
-func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, data []byte, async bool) ([]byte, error) {
+func (u *Upstream) invoke(_ context.Context, clientset kubernetes.Interface, url, method string, data []byte, async bool) ([]byte, error) {
 	timestamp := time.Now().UTC()
 	eventID, err := kubelessutil.GetRandString(11)
 	if err != nil {
@@ -138,7 +139,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 	return []byte(resp.Body), nil
 }
 
-func (u *Upstream) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(_ context.Context, _ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, 0, errors.New("not implemented")
 }
 

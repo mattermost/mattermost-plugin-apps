@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) error {
+func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req apps.HTTPCallRequest) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -71,14 +71,12 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) 
 	cc.ActingUserID = app.BotUserID
 	cc.ActingUserAccessToken = app.BotAccessToken
 
-	c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService)
-
 	cc, err = p.expandContext(c, *app, &cc, call.Expand)
 	if err != nil {
 		return err
 	}
 
-	return upstream.Notify(up, *app, apps.CallRequest{
+	return upstream.Notify(c.Ctx, up, *app, apps.CallRequest{
 		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{

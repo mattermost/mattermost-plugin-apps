@@ -4,6 +4,7 @@
 package store
 
 import (
+	"context"
 	"crypto/sha1" // nolint:gosec
 	"encoding/json"
 	"fmt"
@@ -301,7 +302,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 // getFromS3 returns manifest data for an app from the S3
 func (s *manifestStore) getDataFromS3(appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := upaws.S3ManifestName(appID, version)
-	data, err := s.aws.GetS3(s.s3AssetBucket, name)
+	data, err := s.aws.GetS3(context.Background(), s.s3AssetBucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)
 	}

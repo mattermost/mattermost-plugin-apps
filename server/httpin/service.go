@@ -10,10 +10,8 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 type Service interface {
@@ -26,26 +24,26 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(router *mux.Router, conf config.Service, proxy proxy.Service, appServices appservices.Service, sessionService session.Service,
-	initf ...func(*mux.Router, config.Service, proxy.Service, appservices.Service, session.Service)) Service {
+func NewService(c *request.Context, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
+	initf ...func(*request.Context, *mux.Router, proxy.Service, appservices.Service)) Service {
 	for _, f := range initf {
-		f(router, conf, proxy, appServices, sessionService)
+		f(c, router, proxy, appServices)
 	}
-	router.Use(recoveryHandler(conf.Logger(), conf.Get().DeveloperMode))
+	router.Use(recoveryHandler(c.Clone()))
 	router.Handle("{anything:.*}", http.NotFoundHandler())
 
 	return &service{
 		router: router,
 	}
 }
-func recoveryHandler(log utils.Logger, developerMode bool) func(http.Handler) http.Handler {
+func recoveryHandler(c *request.Context) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func(log utils.Logger, developerMode bool) {
+			defer func() {
 				if x := recover(); x != nil {
 					stack := string(debug.Stack())
 
-					log.Errorw(
+					c.Log.Errorw(
 						"Recovered from a panic in an HTTP handler",
 						"url", r.URL.String(),
 						"error", x,
@@ -54,7 +52,7 @@ func recoveryHandler(log utils.Logger, developerMode bool) func(http.Handler) ht
 
 					txt := "Paniced while handling the request. "
 
-					if developerMode {
+					if c.Config().Get().DeveloperMode {
 						txt += fmt.Sprintf("Error: %v. Stack: %v", x, stack)
 					} else {
 						txt += "Please check the server logs for more details."
@@ -62,7 +60,7 @@ func recoveryHandler(log utils.Logger, developerMode bool) func(http.Handler) ht
 
 					http.Error(w, txt, http.StatusInternalServerError)
 				}
-			}(log, developerMode)
+			}()
 
 			next.ServeHTTP(w, r)
 		})

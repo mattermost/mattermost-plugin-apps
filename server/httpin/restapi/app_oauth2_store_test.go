@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 func TestOAuth2StoreUser(t *testing.T) {
@@ -33,7 +34,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(router, conf, proxy, appServices, sessionService)
+		Init(request.NewContext(nil, conf, sessionService), router, proxy, appServices)
 
 		payload := []byte("some payload")
 		expectedPayload := payload
@@ -69,7 +70,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(router, conf, proxy, appServices, sessionService)
+		Init(request.NewContext(nil, conf, sessionService), router, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

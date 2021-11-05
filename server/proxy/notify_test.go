@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -29,7 +30,7 @@ type notifyTestcase struct {
 func sendCallResponse(t *testing.T, path string, cresp apps.CallResponse, up *mock_upstream.MockUpstream) {
 	b, _ := json.Marshal(cresp)
 	reader := ioutil.NopCloser(bytes.NewReader(b))
-	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 		require.Equal(t, path, creq.Path)
 		return reader, nil
 	})

@@ -4,6 +4,8 @@
 package builtin
 
 import (
+	"context"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -35,7 +37,7 @@ func (a *builtinApp) debugClean() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			_ = a.conf.MattermostAPI().KV.DeleteAll()
 			_ = a.conf.StoreConfig(config.StoredConfig{})

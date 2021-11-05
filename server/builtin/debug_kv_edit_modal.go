@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -99,7 +100,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 			}, nil
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			action := creq.GetValue(fAction, "")
 			newValue := creq.GetValue(fNewValue, "")
 			key, _ := creq.State.(string)

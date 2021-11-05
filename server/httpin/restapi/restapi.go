@@ -8,29 +8,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
 )
 
 type restapi struct {
-	conf        config.Service
 	proxy       proxy.Service
 	appServices appservices.Service
 }
 
-func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices appservices.Service, sessionService session.Service) {
-	mm := conf.MattermostAPI()
+func Init(c *request.Context, router *mux.Router, p proxy.Service, appServices appservices.Service) {
 	a := &restapi{
-		conf:        conf,
 		proxy:       p,
 		appServices: appServices,
 	}
 
 	api := router.PathPrefix(path.API).Subrouter()
-
-	c := request.NewContext(mm, conf, sessionService)
 
 	a.initPing(api, c)
 

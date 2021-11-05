@@ -1,6 +1,8 @@
 package request
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -18,13 +20,15 @@ type Context struct {
 	Log            utils.Logger
 	sessionService session.Service
 
-	RequestID string
+	requestID string
 	pluginID  string
 
 	appID                 apps.AppID
 	actingUserID          string
 	actingUserAccessToken string
 	sysAdminChecked       bool
+
+	Ctx context.Context
 }
 
 type ContextOption func(*Context)
@@ -42,12 +46,19 @@ func WithAppID(appID apps.AppID) ContextOption {
 	}
 }
 
+func WithCtx(ctx context.Context) ContextOption {
+	return func(c *Context) {
+		c.Ctx = ctx
+	}
+}
+
 func NewContext(mm *pluginapi.Client, config config.Service, session session.Service, opts ...ContextOption) *Context {
 	c := &Context{
 		mm:             mm,
 		config:         config,
 		Log:            config.Logger(),
 		sessionService: session,
+		Ctx:            context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -64,7 +75,7 @@ func (c *Context) Clone() *Context {
 		config:                c.config,
 		Log:                   c.Log,
 		sessionService:        c.sessionService,
-		RequestID:             c.RequestID,
+		requestID:             c.requestID,
 		pluginID:              c.pluginID,
 		appID:                 c.appID,
 		actingUserID:          c.actingUserID,
@@ -80,6 +91,10 @@ func (c *Context) UpdateAppContext(cc apps.Context) apps.Context {
 		ActingUserAccessToken: c.actingUserAccessToken,
 	}
 	return updated
+}
+
+func (c *Context) MattermostAPI() *pluginapi.Client {
+	return c.mm
 }
 
 func (c *Context) Config() config.Service {

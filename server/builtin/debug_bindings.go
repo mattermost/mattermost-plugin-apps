@@ -4,6 +4,8 @@
 package builtin
 
 import (
+	"context"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -50,12 +52,12 @@ func (a *builtinApp) debugBindings() handler {
 			})
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			var bindings []apps.Binding
 			if appID == "" {
 				var err error
-				bindings, err = a.proxy.GetBindings(a.newContext(request.WithAppContext(creq.Context)), creq.Context)
+				bindings, err = a.proxy.GetBindings(a.newContext(ctx, request.WithAppContext(creq.Context)), creq.Context)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
@@ -64,7 +66,7 @@ func (a *builtinApp) debugBindings() handler {
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				bindings = a.proxy.GetAppBindings(a.newContext(request.WithAppContext(creq.Context), request.WithAppID(appID)), creq.Context, *app)
+				bindings = a.proxy.GetAppBindings(a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(appID)), creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},

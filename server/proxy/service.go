@@ -59,13 +59,13 @@ type Invoker interface {
 	CompleteRemoteOAuth2(_ *request.Context, _ apps.AppID, urlValues map[string]interface{}) error
 	GetBindings(*request.Context, apps.Context) ([]apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(*request.Context, apps.AppID) (string, error)
-	GetStatic(_ apps.AppID, path string) (io.ReadCloser, int, error)
+	GetStatic(_ *request.Context, _ apps.AppID, path string) (io.ReadCloser, int, error)
 }
 
 // Notifier implements user-less notification sinks.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(apps.AppID, apps.HTTPCallRequest) error
+	NotifyRemoteWebhook(*request.Context, apps.AppID, apps.HTTPCallRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error

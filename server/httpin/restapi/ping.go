@@ -19,7 +19,7 @@ func (a *restapi) initPing(api *mux.Router, c *request.Context) {
 		request.AddContext(a.Ping, c).RequireUser()).Methods(http.MethodPost)
 }
 
-func (a *restapi) Ping(_ *request.Context, w http.ResponseWriter, r *http.Request) {
-	info := a.conf.Get().GetPluginVersionInfo()
+func (a *restapi) Ping(c *request.Context, w http.ResponseWriter, r *http.Request) {
+	info := c.Config().Get().GetPluginVersionInfo()
 	_ = httputils.WriteJSON(w, info)
 }

@@ -38,7 +38,7 @@ func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Reques
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(c.ActingUserID(), creq.Context)
+	creq.Context, err = a.cleanUserAgentContext(c, c.ActingUserID(), creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
@@ -55,14 +55,14 @@ func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Reques
 
 	// Only track submit calls
 	if strings.HasSuffix(creq.Path, "submit") {
-		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
+		c.Config().Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
 	}
 
 	_ = httputils.WriteJSON(w, res)
 }
 
-func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
-	mm := a.conf.MattermostAPI()
+func (a *restapi) cleanUserAgentContext(c *request.Context, userID string, orig apps.Context) (apps.Context, error) {
+	mm := c.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{
 		UserAgentContext: orig.UserAgentContext,

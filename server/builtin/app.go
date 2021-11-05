@@ -2,6 +2,7 @@ package builtin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -72,7 +73,7 @@ type handler struct {
 	requireSysadmin bool
 	commandBinding  func(*i18n.Localizer) apps.Binding
 	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(apps.CallRequest) apps.CallResponse
+	submitf         func(context.Context, apps.CallRequest) apps.CallResponse
 	formf           func(apps.CallRequest) (*apps.Form, error)
 }
 
@@ -153,7 +154,7 @@ func App(conf config.Config) apps.App {
 	}
 }
 
-func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
+func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {
 			stack := string(debug.Stack())
@@ -246,13 +247,13 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		if h.submitf == nil {
 			return nil, utils.ErrNotFound
 		}
-		return readcloser(h.submitf(creq))
+		return readcloser(h.submitf(ctx, creq))
 	}
 
 	return nil, utils.NewNotFoundError("%s does not handle %s", callPath, callType)
 }
 
-func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
+func (a *builtinApp) GetStatic(_ context.Context, _ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
 }
 
@@ -260,6 +261,6 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }
 
-func (a *builtinApp) newContext(opts ...request.ContextOption) *request.Context {
+func (a *builtinApp) newContext(ctx context.Context, opts ...request.ContextOption) *request.Context {
 	return request.NewContext(a.conf.MattermostAPI(), a.conf, a.sessionService, opts...)
 }

@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -26,7 +27,7 @@ func (a *builtinApp) installConsent() handler {
 			return a.newInstallConsentForm(*m, creq, "", loc), nil
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
 			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 			secret := creq.GetValue(fSecret, "")
 			consent := creq.BoolValue(fConsent)
@@ -39,7 +40,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 
 			_, out, err := a.proxy.InstallApp(
-				a.newContext(request.WithAppContext(creq.Context), request.WithAppID(m.AppID)),
+				a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(m.AppID)),
 				creq.Context, m.AppID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))

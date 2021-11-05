@@ -26,14 +26,14 @@ func (g *gateway) doHandleWebhook(c *request.Context, w http.ResponseWriter, r *
 	}
 	c.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(r, g.conf.Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(r, c.Config().Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}
 	sreq.Path = mux.Vars(r)["path"]
 	c.Log = c.Log.With("call_path", sreq.Path)
 
-	err = g.proxy.NotifyRemoteWebhook(appID, *sreq)
+	err = g.proxy.NotifyRemoteWebhook(c, appID, *sreq)
 	if err != nil {
 		return err
 	}

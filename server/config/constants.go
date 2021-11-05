@@ -3,6 +3,8 @@
 
 package config
 
+import "time"
+
 const (
 	MattermostPluginIDHeader = "Mattermost-Plugin-Id"
 	MattermostUserIDHeader   = "Mattermost-User-Id"
@@ -26,6 +28,10 @@ const (
 	WebSocketEventRefreshBindings = "refresh_bindings"
 	WebSocketEventPluginEnabled   = "plugin_enabled"
 	WebSocketEventPluginDisabled  = "plugin_disabled"
+)
+
+const (
+	RequestTimeout = time.Second * 30
 )
 
 const (

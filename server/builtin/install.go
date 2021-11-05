@@ -4,6 +4,8 @@
 package builtin
 
 import (
+	"context"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -131,7 +133,7 @@ func (a *builtinApp) installListed() handler {
 			return res, err
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			m, err := a.proxy.GetManifest(appID)
@@ -148,7 +150,7 @@ func (a *builtinApp) installHTTP() handler {
 	return handler{
 		requireSysadmin: true,
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			manifestURL := creq.GetValue(fURL, "")
 			conf := a.conf.Get()

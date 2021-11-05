@@ -4,6 +4,7 @@
 package proxy
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -46,7 +47,10 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
-			c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(app.AppID))
+			ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+			defer cancel()
+
+			c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(app.AppID), request.WithCtx(ctx))
 			err := p.callOnce(func() error {
 				resp := p.call(c, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {

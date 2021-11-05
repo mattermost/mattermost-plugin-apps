@@ -243,9 +243,9 @@ func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1 interfac
 }
 
 // GetStatic mocks base method.
-func (m *MockService) GetStatic(arg0 apps.AppID, arg1 string) (io.ReadCloser, int, error) {
+func (m *MockService) GetStatic(arg0 *request.Context, arg1 apps.AppID, arg2 string) (io.ReadCloser, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1, arg2)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
@@ -253,9 +253,9 @@ func (m *MockService) GetStatic(arg0 apps.AppID, arg1 string) (io.ReadCloser, in
 }
 
 // GetStatic indicates an expected call of GetStatic.
-func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockService)(nil).GetStatic), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockService)(nil).GetStatic), arg0, arg1, arg2)
 }
 
 // InstallApp mocks base method.
@@ -303,17 +303,17 @@ func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interfa
 }
 
 // NotifyRemoteWebhook mocks base method.
-func (m *MockService) NotifyRemoteWebhook(arg0 apps.AppID, arg1 apps.HTTPCallRequest) error {
+func (m *MockService) NotifyRemoteWebhook(arg0 *request.Context, arg1 apps.AppID, arg2 apps.HTTPCallRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1)
+	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRemoteWebhook indicates an expected call of NotifyRemoteWebhook.
-func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
 }
 
 // NotifyUserHasJoinedChannel mocks base method.

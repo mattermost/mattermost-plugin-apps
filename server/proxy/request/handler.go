@@ -1,6 +1,7 @@
 package request
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -29,21 +30,24 @@ func AddContext(handler contextHandlerFunc, c *Context) *ContextHandler {
 }
 
 func (h *ContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	context := h.context.Clone()
-	context.RequestID = model.NewId()
-	context.Log = context.Log.With(
+	c := h.context.Clone()
+	c.requestID = model.NewId()
+	c.Log = c.Log.With(
 		"path", r.URL.Path,
-		"request", context.RequestID,
+		"request", c.requestID,
 	)
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+	c.Ctx = ctx
 
 	for _, check := range h.checks {
-		succeeded := check(context, w, r)
+		succeeded := check(c, w, r)
 		if !succeeded {
 			return
 		}
 	}
 
-	h.handler(context, w, r)
+	h.handler(c, w, r)
 }
 
 func getUserID(r *http.Request) string {

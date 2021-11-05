@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"encoding/base64"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -48,7 +49,7 @@ func (a *builtinApp) debugKVEdit() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			base64Key := creq.GetValue(fBase64Key, "")
 			namespace := creq.GetValue(fNamespace, "")

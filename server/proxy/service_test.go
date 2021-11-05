@@ -40,7 +40,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		// set up an empty OK call response
 		b, _ := json.Marshal(apps.NewDataResponse(nil))
 		reader := ioutil.NopCloser(bytes.NewReader(b))
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 		upstreams[app.Manifest.AppID] = up
 		appStore.EXPECT().Get(app.AppID).Return(&app, nil)

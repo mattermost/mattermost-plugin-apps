@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -44,7 +45,7 @@ func (a *builtinApp) debugKVInfo() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			n, namespaces, err := a.debugListKeys(appID)
 			if err != nil {

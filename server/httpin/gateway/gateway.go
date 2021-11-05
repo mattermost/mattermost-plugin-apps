@@ -8,27 +8,20 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
 )
 
 type gateway struct {
-	conf  config.Service
 	proxy proxy.Service
 }
 
-func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservices.Service, sessionService session.Service) {
-	mm := conf.MattermostAPI()
+func Init(c *request.Context, router *mux.Router, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
-		conf:  conf,
 		proxy: p,
 	}
 
 	subrouter := router.PathPrefix(path.Apps).Subrouter()
-
-	c := request.NewContext(mm, conf, sessionService)
 
 	// Static
 	subrouter.Handle("/{appid}/"+path.StaticFolder+"/{name}",

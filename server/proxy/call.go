@@ -122,7 +122,7 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 		return respondErr(err)
 	}
 
-	cresp, err := upstream.Call(up, app, creq)
+	cresp, err := upstream.Call(c.Ctx, up, app, creq)
 	if err != nil {
 		return cresp, err
 	}
@@ -166,7 +166,7 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) GetStatic(c *request.Context, appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -176,13 +176,13 @@ func (p *Proxy) GetStatic(appID apps.AppID, path string) (io.ReadCloser, int, er
 		return nil, status, err
 	}
 
-	return p.getStatic(*app, path)
+	return p.getStatic(c, *app, path)
 }
 
-func (p *Proxy) getStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) getStatic(c *request.Context, app apps.App, path string) (io.ReadCloser, int, error) {
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(app, path)
+	return up.GetStatic(c.Ctx, app, path)
 }

@@ -4,6 +4,7 @@
 package proxy
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
@@ -35,18 +36,19 @@ func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 			continue
 		}
 
-		err = p.notifyForSubscription(&base, sub)
+		c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(sub.AppID))
+		c.Log = c.Log.With("subject", sub.Subject)
+
+		err = p.notifyForSubscription(c, &base, sub)
 		if err != nil {
-			p.conf.Logger().WithError(err).Debugw("Error sending subscription notification to app",
-				"app_id", sub.AppID,
-				"subject", sub.Subject)
+			c.Log.WithError(err).Debugw("Error sending subscription notification to app")
 		}
 	}
 
 	return nil
 }
 
-func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription) error {
+func (p *Proxy) notifyForSubscription(c *request.Context, base *apps.Context, sub apps.Subscription) error {
 	creq := apps.CallRequest{
 		Call: sub.Call,
 	}
@@ -58,8 +60,6 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService)
-
 	creq.Context, err = p.expandContext(c, *app, base, sub.Call.Expand)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (p *Proxy) notifyForSubscription(base *apps.Context, sub apps.Subscription)
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(up, *app, creq)
+	return upstream.Notify(context.TODO(), up, *app, creq)
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {

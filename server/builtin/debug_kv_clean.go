@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -43,7 +44,7 @@ func (a *builtinApp) debugKVClean() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			namespace := creq.GetValue(fNamespace, "")
 			app, err := a.proxy.GetInstalledApp(appID)

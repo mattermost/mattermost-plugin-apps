@@ -4,6 +4,7 @@
 package builtin
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -47,7 +48,7 @@ func (a *builtinApp) debugKVList() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			namespace := creq.GetValue(fNamespace, "")
 			encode := creq.BoolValue(fBase64)

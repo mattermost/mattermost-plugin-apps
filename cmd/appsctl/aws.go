@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -185,7 +187,10 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 
-		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
+		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+		defer cancel()
+
+		resp, _, err := upTest.GetStatic(ctx, helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -239,7 +244,11 @@ var awsTestLambdaCmd = &cobra.Command{
 				Path: "/ping",
 			},
 		}
-		resp, err := upTest.Roundtrip(helloLambda(), creq, false)
+
+		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+		defer cancel()
+
+		resp, err := upTest.Roundtrip(ctx, helloLambda(), creq, false)
 		if err != nil {
 			return err
 		}
