@@ -6,19 +6,23 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+type SessionService interface {
+	GetOrCreate(appID apps.AppID, userID string) (*model.Session, error)
+}
 
 type Context struct {
 	mm             *pluginapi.Client
 	config         config.Service
 	Log            utils.Logger
-	sessionService session.Service
+	sessionService SessionService
 
 	requestID string
 	pluginID  string
@@ -52,7 +56,7 @@ func WithCtx(ctx context.Context) ContextOption {
 	}
 }
 
-func NewContext(mm *pluginapi.Client, config config.Service, session session.Service, opts ...ContextOption) *Context {
+func NewContext(mm *pluginapi.Client, config config.Service, session SessionService, opts ...ContextOption) *Context {
 	c := &Context{
 		mm:             mm,
 		config:         config,
@@ -81,6 +85,7 @@ func (c *Context) Clone() *Context {
 		actingUserID:          c.actingUserID,
 		actingUserAccessToken: c.actingUserAccessToken,
 		sysAdminChecked:       c.sysAdminChecked,
+		Ctx:                   c.Ctx,
 	}
 }
 

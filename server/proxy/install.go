@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -83,18 +82,14 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
-	asAdmin, err := c.GetMMClient()
-	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	err = p.ensureBot(c, asAdmin, app, icon)
+	err = p.ensureBot(c, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(c, asAdmin, conf, *app, trusted, c.ActingUserID())
+		oAuthApp, err = p.ensureOAuthApp(c, conf, *app, trusted, c.ActingUserID())
 		if err != nil {
 			return nil, "", err
 		}
@@ -135,9 +130,10 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(c *request.Context, client mmclient.Client, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
-	if app.MattermostOAuth2 == nil {
-		c.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2)
+func (p *Proxy) ensureOAuthApp(c *request.Context, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+	mm := p.conf.MattermostAPI()
+	if app.MattermostOAuth2 != nil {
+		c.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
 
 		return app.MattermostOAuth2, nil
 	}
@@ -154,7 +150,7 @@ func (p *Proxy) ensureOAuthApp(c *request.Context, client mmclient.Client, conf 
 		Scopes:             nil,
 		AppsFrameworkAppID: string(app.AppID),
 	}
-	err := client.CreateOAuthApp(oauthApp)
+	err := mm.OAuth.Create(oauthApp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create OAuth2 App")
 	}
@@ -164,16 +160,17 @@ func (p *Proxy) ensureOAuthApp(c *request.Context, client mmclient.Client, conf 
 	return oauthApp, nil
 }
 
-func (p *Proxy) ensureBot(c *request.Context, mm mmclient.Client, app *apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(c *request.Context, app *apps.App, icon io.Reader) error {
+	mm := p.conf.MattermostAPI()
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
-	user, _ := mm.GetUserByUsername(bot.Username)
+	user, _ := mm.User.GetByUsername(bot.Username)
 	if user == nil {
-		err := mm.CreateBot(bot)
+		err := mm.Bot.Create(bot)
 		if err != nil {
 			return err
 		}
@@ -188,15 +185,15 @@ func (p *Proxy) ensureBot(c *request.Context, mm mmclient.Client, app *apps.App,
 		// Check if disabled
 		if user.DeleteAt != 0 {
 			var err error
-			bot, err = mm.EnableBot(user.Id)
+			bot, err = mm.Bot.UpdateActive(user.Id, true)
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err := mm.GetBot(user.Id)
+		_, err := mm.Bot.Get(user.Id, false)
 		if err != nil {
-			err = mm.CreateBot(bot)
+			err = mm.Bot.Create(bot)
 			if err != nil {
 				return err
 			}
@@ -209,7 +206,7 @@ func (p *Proxy) ensureBot(c *request.Context, mm mmclient.Client, app *apps.App,
 	app.BotUsername = bot.Username
 
 	if icon != nil {
-		err := mm.SetProfileImage(app.BotUserID, icon)
+		err := mm.User.SetProfileImage(app.BotUserID, icon)
 		if err != nil {
 			return errors.Wrap(err, "failed to update bot profile icon")
 		}

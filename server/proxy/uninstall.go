@@ -39,9 +39,14 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 	}
 
 	// delete oauth app
+	c.Log.Errorf("app.MattermostOAuth2: %#+v\n", app.MattermostOAuth2)
 	if app.MattermostOAuth2 != nil {
 		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.Id); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
+		}
+
+		if err = p.sessionService.RevokeSessionsForApp(c, app.AppID); err != nil {
+			return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 		}
 	}
 

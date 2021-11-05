@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -17,6 +18,7 @@ const (
 
 type Service interface {
 	GetOrCreate(appID apps.AppID, userID string) (*model.Session, error)
+	RevokeSessionsForApp(c *request.Context, appID apps.AppID) error
 }
 
 var _ Service = (*service)(nil)
@@ -51,6 +53,10 @@ func (s *service) GetOrCreate(appID apps.AppID, userID string) (*model.Session, 
 		return nil, errors.Wrap(err, "failed to get session from store")
 	}
 
+	return s.createSession(appID, userID)
+}
+
+func (s *service) createSession(appID apps.AppID, userID string) (*model.Session, error) {
 	user, err := s.mm.User.Get(userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch user for new session")
@@ -61,7 +67,7 @@ func (s *service) GetOrCreate(appID apps.AppID, userID string) (*model.Session, 
 		return nil, errors.Wrap(err, "failed to fetch app for new session")
 	}
 
-	session = &model.Session{
+	session := &model.Session{
 		UserId:    userID,
 		Roles:     user.Roles,
 		IsOAuth:   true,
@@ -114,6 +120,29 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 	err = s.store.Session.Save(appID, userID, session)
 	if err != nil {
 		return errors.Wrap(err, "failed to save new session in store")
+	}
+
+	return nil
+}
+
+func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) error {
+	sessions, err := s.store.Session.ListForApp(appID)
+	if err != nil {
+		return errors.Wrap(err, "failed to list app sessions for revocation")
+	}
+
+	for _, session := range sessions {
+		err = s.mm.Session.Revoke(session.Id)
+		if err != nil {
+			c.Log.WithError(err).Warnw("failed to revoke app session")
+		}
+
+		err = s.store.Session.DeleteByID(session.Id)
+		if err != nil {
+			c.Log.WithError(err).Warnw("failed to delete revoked session from store")
+		}
+
+		c.Log.Warnf("revoked session: %#+v\n", session.Id)
 	}
 
 	return nil

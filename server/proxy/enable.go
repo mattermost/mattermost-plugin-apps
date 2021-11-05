@@ -91,6 +91,10 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
+	if err = p.sessionService.RevokeSessionsForApp(c, app.AppID); err != nil {
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
+	}
+
 	app.Disabled = true
 	err = p.store.App.Save(*app)
 	if err != nil {
