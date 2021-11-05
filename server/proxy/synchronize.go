@@ -46,7 +46,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
-			c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService)
+			c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(app.AppID))
 			err := p.callOnce(func() error {
 				resp := p.call(c, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
@@ -55,7 +55,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				return nil
 			})
 			if err != nil {
-				p.conf.Logger().WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+				c.Log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
 					"app_id", app.AppID)
 			}
 		}

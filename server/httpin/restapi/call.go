@@ -46,13 +46,11 @@ func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Reques
 
 	res := a.proxy.Call(c, *creq)
 
-	a.conf.Logger().Debugw(
+	c.Log.Debugw(
 		"Received call response",
-		"app_id", creq.Context.AppID,
-		"acting_user_id", c.ActingUserID,
 		"error", res.ErrorText,
 		"type", res.Type,
-		"path", creq.Path,
+		"call_path", creq.Path,
 	)
 
 	// Only track submit calls

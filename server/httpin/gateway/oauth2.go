@@ -10,11 +10,11 @@ import (
 
 func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
-
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
+	c.SetAppID(appID)
 
 	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(c, appID)
 	if err != nil {
@@ -32,6 +32,7 @@ func (g *gateway) remoteOAuth2Complete(c *request.Context, w http.ResponseWriter
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
+	c.SetAppID(appID)
 
 	q := r.URL.Query()
 	urlValues := map[string]interface{}{}

@@ -6,39 +6,40 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	log, err := g.doHandleWebhook(w, r, g.conf.Logger())
+func (g *gateway) handleWebhook(c *request.Context, w http.ResponseWriter, r *http.Request) {
+	err := g.doHandleWebhook(c, w, r)
 	if err != nil {
-		log.WithError(err).Warnw("failed to process remote webhook")
+		c.Log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
 }
 
-func (g *gateway) doHandleWebhook(w http.ResponseWriter, r *http.Request, log utils.Logger) (utils.Logger, error) {
+func (g *gateway) doHandleWebhook(c *request.Context, w http.ResponseWriter, r *http.Request) error {
 	appID := appIDVar(r)
 	if appID == "" {
-		return log, utils.NewInvalidError("app_id not specified")
+		return utils.NewInvalidError("app_id not specified")
 	}
-	log = log.With("app_id", appID)
+	c.SetAppID(appID)
 
 	sreq, err := newHTTPCallRequest(r, g.conf.Get().MaxWebhookSize)
 	if err != nil {
-		return log, err
+		return err
 	}
 	sreq.Path = mux.Vars(r)["path"]
-	log = log.With("path", sreq.Path)
+	c.Log = c.Log.With("call_path", sreq.Path)
 
 	err = g.proxy.NotifyRemoteWebhook(appID, *sreq)
 	if err != nil {
-		return log, err
+		return err
 	}
 
-	log.Debugf("processed remote webhook")
-	return log, nil
+	c.Log.Debugf("processed remote webhook")
+	return nil
 }
 
 func newHTTPCallRequest(r *http.Request, limit int64) (*apps.HTTPCallRequest, error) {

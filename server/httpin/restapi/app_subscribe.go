@@ -47,7 +47,7 @@ func (a *restapi) GetSubscriptions(c *request.Context, w http.ResponseWriter, r 
 
 	err = httputils.WriteJSON(w, subs)
 	if err != nil {
-		a.conf.Logger().WithError(err).Errorf("Error marshaling subscriptions")
+		c.Log.WithError(err).Errorf("Error marshaling subscriptions")
 	}
 }
 
@@ -61,7 +61,6 @@ func (a *restapi) Unsubscribe(c *request.Context, w http.ResponseWriter, r *http
 }
 
 func (a *restapi) handleSubscribeCore(c *request.Context, w http.ResponseWriter, r *http.Request, isSubscribe bool) {
-	log := a.conf.Logger()
 	status, logMessage, err := func() (int, string, error) {
 		var sub apps.Subscription
 		if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
@@ -91,7 +90,7 @@ func (a *restapi) handleSubscribeCore(c *request.Context, w http.ResponseWriter,
 	}()
 
 	if err != nil {
-		log.WithError(err).Warnw(logMessage)
+		c.Log.WithError(err).Warnw(logMessage)
 		http.Error(w, err.Error(), status)
 	}
 }

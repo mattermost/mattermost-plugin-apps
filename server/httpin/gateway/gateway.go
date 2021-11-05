@@ -35,10 +35,10 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservice
 		request.AddContext(g.static, c).RequireUser()).Methods(http.MethodGet)
 
 	// Incoming remote webhooks
-	subrouter.HandleFunc("/{appid}"+path.Webhook,
-		g.handleWebhook).Methods(http.MethodPost)
-	subrouter.HandleFunc("/{appid}"+path.Webhook+"/{path}",
-		g.handleWebhook).Methods(http.MethodPost)
+	subrouter.Handle("/{appid}"+path.Webhook,
+		request.AddContext(g.handleWebhook, c)).Methods(http.MethodPost)
+	subrouter.Handle("/{appid}"+path.Webhook+"/{path}",
+		request.AddContext(g.handleWebhook, c)).Methods(http.MethodPost)
 
 	// Remote OAuth2
 	subrouter.Handle("/{appid}"+path.RemoteOAuth2Connect,

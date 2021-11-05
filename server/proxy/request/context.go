@@ -15,12 +15,12 @@ import (
 type Context struct {
 	mm             *pluginapi.Client
 	config         config.Service
+	Log            utils.Logger
 	sessionService session.Service
 
-	Log utils.Logger
+	RequestID string
+	pluginID  string
 
-	RequestID             string
-	PluginID              string
 	appID                 apps.AppID
 	actingUserID          string
 	actingUserAccessToken string
@@ -36,12 +36,18 @@ func WithAppContext(cc apps.Context) ContextOption {
 	}
 }
 
+func WithAppID(appID apps.AppID) ContextOption {
+	return func(c *Context) {
+		c.SetAppID(appID)
+	}
+}
+
 func NewContext(mm *pluginapi.Client, config config.Service, session session.Service, opts ...ContextOption) *Context {
 	c := &Context{
 		mm:             mm,
 		config:         config,
-		sessionService: session,
 		Log:            utils.NewPluginLogger(mm),
+		sessionService: session,
 	}
 
 	for _, opt := range opts {
@@ -56,6 +62,7 @@ func (c *Context) Clone() *Context {
 	return &Context{
 		Log:            c.Log,
 		mm:             c.mm,
+		config:         c.config,
 		sessionService: c.sessionService,
 	}
 }
@@ -67,6 +74,14 @@ func (c *Context) UpdateAppContext(cc apps.Context) apps.Context {
 		ActingUserAccessToken: c.actingUserAccessToken,
 	}
 	return updated
+}
+
+func (c *Context) Config() config.Service {
+	return c.config
+}
+
+func (c *Context) PluginID() string {
+	return c.pluginID
 }
 
 func (c *Context) AppID() apps.AppID {

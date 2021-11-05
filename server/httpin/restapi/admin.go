@@ -155,6 +155,8 @@ func (a *restapi) GetApp(c *request.Context, w http.ResponseWriter, r *http.Requ
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))
 		return
 	}
+	c.SetAppID(appID)
+
 	app, err := a.proxy.GetInstalledApp(appID)
 	if err != nil {
 		httputils.WriteError(w, err)

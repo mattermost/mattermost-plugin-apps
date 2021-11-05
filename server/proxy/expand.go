@@ -33,7 +33,8 @@ func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Conte
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf := p.conf.Get()
+	conf := c.Config().Get()
+
 	cc := contextForApp(app, *base, conf)
 	if expand == nil {
 		// nothing more to do

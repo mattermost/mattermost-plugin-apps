@@ -11,13 +11,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) static(_ *request.Context, w http.ResponseWriter, r *http.Request) {
+func (g *gateway) static(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
-	log := g.conf.Logger().With("app_id", appID)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
+	c.SetAppID(appID)
 
 	vars := mux.Vars(r)
 	if len(vars) == 0 {
@@ -34,7 +34,7 @@ func (g *gateway) static(_ *request.Context, w http.ResponseWriter, r *http.Requ
 
 	body, status, err := g.proxy.GetStatic(appID, assetName)
 	if err != nil {
-		log.WithError(err).Debugw("Failed to get asset", "asset_name", assetName)
+		c.Log.WithError(err).Debugw("Failed to get asset", "asset_name", assetName)
 		httputils.WriteError(w, err)
 		return
 	}

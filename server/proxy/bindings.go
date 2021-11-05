@@ -109,7 +109,8 @@ func (p *Proxy) scanAppBindings(c *request.Context, app apps.App, bindings []app
 	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
-	conf, _, _ := p.conf.Basic()
+
+	conf := c.Config().Get()
 
 	for _, b := range bindings {
 		if b.Location == "" {
