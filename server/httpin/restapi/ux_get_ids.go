@@ -7,17 +7,17 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
-func (a *restapi) initGetBotIDs(api *mux.Router) {
-	api.HandleFunc(path.BotIDs,
-		proxy.RequireUser(a.GetBotIDs)).Methods("GET")
+func (a *restapi) initGetBotIDs(api *mux.Router, c *request.Context) {
+	api.Handle(path.BotIDs,
+		request.AddContext(a.GetBotIDs, c).RequireUser()).Methods(http.MethodGet)
 }
 
-func (a *restapi) initGetOAuthAppIDs(api *mux.Router) {
-	api.HandleFunc(path.OAuthAppIDs,
-		proxy.RequireUser(a.GetOAuthAppIDs)).Methods("GET")
+func (a *restapi) initGetOAuthAppIDs(api *mux.Router, c *request.Context) {
+	api.Handle(path.OAuthAppIDs,
+		request.AddContext(a.GetOAuthAppIDs, c).RequireUser()).Methods(http.MethodGet)
 }
 
 // GetBotIDs returns the list of all Apps' bot user IDs.
@@ -25,7 +25,7 @@ func (a *restapi) initGetOAuthAppIDs(api *mux.Router) {
 //   Method: GET
 //   Input: none
 //   Output: []string - the list of Bot user IDs for all installed Apps.
-func (a *restapi) GetBotIDs(w http.ResponseWriter, r *http.Request, _ proxy.Incoming) {
+func (a *restapi) GetBotIDs(_ *request.Context, w http.ResponseWriter, r *http.Request) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {
@@ -42,7 +42,7 @@ func (a *restapi) GetBotIDs(w http.ResponseWriter, r *http.Request, _ proxy.Inco
 //   Method: GET
 //   Input: none
 //   Output: []string - the list of OAuth ClientIDs for all installed Apps.
-func (a *restapi) GetOAuthAppIDs(w http.ResponseWriter, r *http.Request, _ proxy.Incoming) {
+func (a *restapi) GetOAuthAppIDs(_ *request.Context, w http.ResponseWriter, r *http.Request) {
 	apps := a.proxy.GetInstalledApps()
 	ids := []string{}
 	for _, app := range apps {

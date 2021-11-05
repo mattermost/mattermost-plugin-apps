@@ -54,7 +54,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	u := "/api/v1/bindings?" + q
-	req, err := http.NewRequest("GET", u, nil)
+	req, err := http.NewRequest(http.MethodGet, u, nil)
 	require.NoError(t, err)
 
 	req.Header.Add(config.MattermostUserIDHeader, "some_user_id")

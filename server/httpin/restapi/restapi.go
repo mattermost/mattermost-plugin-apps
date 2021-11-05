@@ -32,7 +32,7 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 
 	c := request.NewContext(mm, conf, sessionService)
 
-	a.initPing(api)
+	a.initPing(api, c)
 
 	// Proxy API, intended to be used by the user-agents (mobile, desktop, and
 	// web).
@@ -40,18 +40,18 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, appServices 
 
 	// User-agent APIs.
 	a.initGetBindings(api, c)
-	a.initGetBotIDs(api)
-	a.initGetOAuthAppIDs(api)
+	a.initGetBotIDs(api, c)
+	a.initGetOAuthAppIDs(api, c)
 
 	// App Service API, intended to be used by Apps. Subscriptions, KV, OAuth2
 	// services.
-	a.initSubscriptions(api, mm)
-	a.initKV(api)
-	a.initOAuth2Store(api)
+	a.initSubscriptions(api, c)
+	a.initKV(api, c)
+	a.initOAuth2Store(api, c)
 
 	// Admin API, can be used by plugins, external services, or the user agent.
 	a.initAdmin(api, c)
-	a.initGetApp(api, mm)
+	a.initGetApp(api, c)
 	a.initMarketplace(api, c)
 }
 

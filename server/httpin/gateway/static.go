@@ -6,20 +6,20 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) static(w http.ResponseWriter, req *http.Request, _ proxy.Incoming) {
-	appID := appIDVar(req)
+func (g *gateway) static(_ *request.Context, w http.ResponseWriter, r *http.Request) {
+	appID := appIDVar(r)
 	log := g.conf.Logger().With("app_id", appID)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
 
-	vars := mux.Vars(req)
+	vars := mux.Vars(r)
 	if len(vars) == 0 {
 		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
 		return
@@ -39,7 +39,7 @@ func (g *gateway) static(w http.ResponseWriter, req *http.Request, _ proxy.Incom
 		return
 	}
 
-	copyHeader(w.Header(), req.Header)
+	copyHeader(w.Header(), r.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteError(w, err)

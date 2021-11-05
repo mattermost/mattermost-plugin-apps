@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -14,12 +14,12 @@ type VersionInfo struct {
 	Version string `json:"version"`
 }
 
-func (a *restapi) initPing(api *mux.Router) {
-	api.HandleFunc(path.Ping,
-		proxy.RequireUser(a.Ping)).Methods(http.MethodPost)
+func (a *restapi) initPing(api *mux.Router, c *request.Context) {
+	api.Handle(path.Ping,
+		request.AddContext(a.Ping, c).RequireUser()).Methods(http.MethodPost)
 }
 
-func (a *restapi) Ping(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
+func (a *restapi) Ping(_ *request.Context, w http.ResponseWriter, r *http.Request) {
 	info := a.conf.Get().GetPluginVersionInfo()
 	_ = httputils.WriteJSON(w, info)
 }

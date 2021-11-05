@@ -26,8 +26,8 @@ func (a *restapi) initCall(api *mux.Router, c *request.Context) {
 //   Method: POST
 //   Input: CallRequest
 //   Output: CallResponse
-func (a *restapi) Call(c *request.Context, w http.ResponseWriter, req *http.Request) {
-	creq, err := apps.CallRequestFromJSONReader(req.Body)
+func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Request) {
+	creq, err := apps.CallRequestFromJSONReader(r.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
 		return

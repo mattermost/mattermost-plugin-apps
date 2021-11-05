@@ -31,8 +31,8 @@ func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservice
 	c := request.NewContext(mm, conf, sessionService)
 
 	// Static
-	subrouter.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
-		proxy.RequireUser(g.static)).Methods(http.MethodGet)
+	subrouter.Handle("/{appid}/"+path.StaticFolder+"/{name}",
+		request.AddContext(g.static, c).RequireUser()).Methods(http.MethodGet)
 
 	// Incoming remote webhooks
 	subrouter.HandleFunc("/{appid}"+path.Webhook,

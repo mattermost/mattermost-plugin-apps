@@ -7,12 +7,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -140,11 +137,11 @@ func (a *restapi) UninstallApp(c *request.Context, w http.ResponseWriter, r *htt
 	}
 }
 
-func (a *restapi) initGetApp(main *mux.Router, mm *pluginapi.Client) {
+func (a *restapi) initGetApp(main *mux.Router, c *request.Context) {
 	appsRouters := main.PathPrefix(path.Apps).Subrouter()
 	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
-	appRouter.HandleFunc("",
-		proxy.RequireSysadminOrPlugin(mm, a.GetApp)).Methods("GET")
+	appRouter.Handle("",
+		request.AddContext(a.GetApp, c)).Methods(http.MethodGet)
 }
 
 // GetApp returns the App's record.
@@ -152,7 +149,7 @@ func (a *restapi) initGetApp(main *mux.Router, mm *pluginapi.Client) {
 //   Method: GET
 //   Input: none
 //   Output: App
-func (a *restapi) GetApp(w http.ResponseWriter, r *http.Request, _ proxy.Incoming) {
+func (a *restapi) GetApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))

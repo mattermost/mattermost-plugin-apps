@@ -52,14 +52,14 @@ func TestKV(t *testing.T) {
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
 
-	req, err := http.NewRequest("PUT", itemURL, bytes.NewReader(item))
+	req, err := http.NewRequest(http.MethodPut, itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	resp.Body.Close()
 
-	req, err = http.NewRequest("PUT", itemURL, bytes.NewReader(item))
+	req, err = http.NewRequest(http.MethodPut, itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestKV(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
-	req, err = http.NewRequest("GET", itemURL, nil)
+	req, err = http.NewRequest(http.MethodGet, itemURL, nil)
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)

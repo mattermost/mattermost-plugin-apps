@@ -14,7 +14,7 @@ import (
 
 func (a *restapi) initGetBindings(api *mux.Router, c *request.Context) {
 	api.Handle(path.Bindings,
-		request.AddContext(a.GetBindings, c).RequireUser()).Methods("GET")
+		request.AddContext(a.GetBindings, c).RequireUser()).Methods(http.MethodGet)
 }
 
 // GetBindings returns combined bindings for all Apps.
@@ -22,8 +22,8 @@ func (a *restapi) initGetBindings(api *mux.Router, c *request.Context) {
 //   Method: GET
 //   Input: none
 //   Output: []Binding
-func (a *restapi) GetBindings(c *request.Context, w http.ResponseWriter, req *http.Request) {
-	q := req.URL.Query()
+func (a *restapi) GetBindings(c *request.Context, w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
 
 	bindings, err := a.proxy.GetBindings(c, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
