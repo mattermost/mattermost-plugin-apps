@@ -260,6 +260,6 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }
 
-func (a *builtinApp) newContextFromAppContext(creq apps.CallRequest) *request.Context {
-	return request.NewContext(a.conf.MattermostAPI(), a.conf, a.sessionService, request.WithAppContext(creq.Context))
+func (a *builtinApp) newContext(opts ...request.ContextOption) *request.Context {
+	return request.NewContext(a.conf.MattermostAPI(), a.conf, a.sessionService, opts...)
 }

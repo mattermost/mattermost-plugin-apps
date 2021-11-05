@@ -45,11 +45,13 @@ func (p *Proxy) GetBindings(c *request.Context, cc apps.Context) ([]apps.Binding
 	allApps := store.SortApps(p.store.App.AsMap())
 	for i := range allApps {
 		app := allApps[i]
+		copy := c.Clone()
+		copy.SetAppID(app.AppID)
 
-		go func(app apps.App) {
+		go func(c *request.Context, app apps.App) {
 			bb := p.GetAppBindings(c, cc, app)
 			all <- bb
-		}(app)
+		}(copy, app)
 	}
 
 	ret := []apps.Binding{}
@@ -72,7 +74,6 @@ func (p *Proxy) GetAppBindings(c *request.Context, cc apps.Context, app apps.App
 	}
 
 	appID := app.AppID
-	c.SetAppID(appID)
 	cc.AppID = appID
 
 	// TODO PERF: Add caching

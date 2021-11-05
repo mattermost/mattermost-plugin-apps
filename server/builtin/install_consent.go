@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 func (a *builtinApp) installConsent() handler {
@@ -38,7 +39,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 
 			_, out, err := a.proxy.InstallApp(
-				a.newContextFromAppContext(creq),
+				a.newContext(request.WithAppContext(creq.Context), request.WithAppID(m.AppID)),
 				creq.Context, m.AppID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))

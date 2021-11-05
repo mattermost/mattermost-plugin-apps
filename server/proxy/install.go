@@ -24,8 +24,6 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
-	c.SetAppID(appID)
-
 	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {

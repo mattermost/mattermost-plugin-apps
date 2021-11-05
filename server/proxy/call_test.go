@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestAppMetadataForClient(t *testing.T) {
@@ -38,7 +39,9 @@ func TestAppMetadataForClient(t *testing.T) {
 		},
 	}
 
-	resp := p.Call(&request.Context{}, creq)
+	c := request.NewContext(nil, p.conf, nil)
+	c.Log = utils.NewTestLogger()
+	resp := p.Call(c, creq)
 	require.Equal(t, resp.AppMetadata, AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",

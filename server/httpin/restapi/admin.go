@@ -73,6 +73,8 @@ func (a *restapi) InstallApp(c *request.Context, w http.ResponseWriter, r *http.
 		return
 	}
 
+	c.SetAppID(input.AppID)
+
 	_, _, err = a.proxy.InstallApp(c, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
@@ -92,6 +94,9 @@ func (a *restapi) EnableApp(c *request.Context, w http.ResponseWriter, r *http.R
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
+
+	c.SetAppID(input.AppID)
+
 	_, err = a.proxy.EnableApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
@@ -111,6 +116,9 @@ func (a *restapi) DisableApp(c *request.Context, w http.ResponseWriter, r *http.
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
+
+	c.SetAppID(input.AppID)
+
 	_, err = a.proxy.DisableApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
@@ -130,6 +138,9 @@ func (a *restapi) UninstallApp(c *request.Context, w http.ResponseWriter, r *htt
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
+
+	c.SetAppID(input.AppID)
+
 	_, err = a.proxy.UninstallApp(c, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)

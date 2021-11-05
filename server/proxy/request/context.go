@@ -46,7 +46,7 @@ func NewContext(mm *pluginapi.Client, config config.Service, session session.Ser
 	c := &Context{
 		mm:             mm,
 		config:         config,
-		Log:            utils.NewPluginLogger(mm),
+		Log:            config.Logger(),
 		sessionService: session,
 	}
 
@@ -60,10 +60,16 @@ func NewContext(mm *pluginapi.Client, config config.Service, session session.Ser
 // Clone creates a shallow copy of context, allowing clones to apply per-request changes.
 func (c *Context) Clone() *Context {
 	return &Context{
-		Log:            c.Log,
-		mm:             c.mm,
-		config:         c.config,
-		sessionService: c.sessionService,
+		mm:                    c.mm,
+		config:                c.config,
+		Log:                   c.Log,
+		sessionService:        c.sessionService,
+		RequestID:             c.RequestID,
+		pluginID:              c.pluginID,
+		appID:                 c.appID,
+		actingUserID:          c.actingUserID,
+		actingUserAccessToken: c.actingUserAccessToken,
+		sysAdminChecked:       c.sysAdminChecked,
 	}
 }
 
