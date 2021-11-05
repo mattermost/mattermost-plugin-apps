@@ -3,9 +3,6 @@ package utils
 import (
 	"fmt"
 
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -17,13 +14,6 @@ func CodeBlock(in string) string {
 
 func JSONBlock(in interface{}) string {
 	return CodeBlock(Pretty(in))
-}
-
-func EnsureSysAdmin(mm *pluginapi.Client, userID string) error {
-	if !mm.User.HasPermissionTo(userID, model.PermissionManageSystem) {
-		return NewUnauthorizedError("user must be a sysadmin")
-	}
-	return nil
 }
 
 func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.Session, error) {
@@ -41,23 +31,6 @@ func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.S
 		return nil, NewUnauthorizedError("user ID mismatch")
 	}
 	return session, nil
-}
-
-func ClientFromSession(mm *pluginapi.Client, mattermostSiteURL, sessionID, actingUserID string) (*model.Client4, LocError, error) {
-	session, err := LoadSession(mm, sessionID, actingUserID)
-	if err != nil {
-		return nil, NewLocError(&i18n.LocalizeConfig{
-			DefaultMessage: &i18n.Message{
-				ID:    "apps.utils.error.clienFromSession.failedSession",
-				Other: "failed to load session",
-			},
-		}), errors.Wrap(err, "failed to load session")
-	}
-
-	client := model.NewAPIv4Client(mattermostSiteURL)
-	client.SetToken(session.Token)
-
-	return client, nil, nil
 }
 
 func GetLocale(mm *pluginapi.Client, config *model.Config, userID string) string {

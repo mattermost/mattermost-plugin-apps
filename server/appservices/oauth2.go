@@ -11,11 +11,6 @@ import (
 )
 
 func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
-	err := utils.EnsureSysAdmin(a.conf.MattermostAPI(), actingUserID)
-	if err != nil {
-		return err
-	}
-
 	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err

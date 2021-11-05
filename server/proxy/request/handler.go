@@ -79,8 +79,7 @@ func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
 		return successful
 	}
 
-	err := utils.EnsureSysAdmin(c.mm, c.ActingUserID())
-	if err != nil {
+	if !c.mm.User.HasPermissionTo(c.ActingUserID(), model.PermissionManageSystem) {
 		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user is not a system admin"))
 		return false
 	}

@@ -16,11 +16,11 @@ func (a *restapi) initOAuth2Store(api *mux.Router, c *request.Context) {
 	// TODO appid should come from OAuth2 user session, see
 	// https://mattermost.atlassian.net/browse/MM-34377
 	api.Handle(path.OAuth2App+"/{appid}",
-		request.AddContext(a.OAuth2StoreApp, c).RequireUser()).Methods(http.MethodPost)
+		request.AddContext(a.OAuth2StoreApp, c).RequireSysadmin()).Methods(http.MethodPut, http.MethodPost)
 	api.Handle(path.OAuth2User+"/{appid}",
-		request.AddContext(a.OAuth2StoreUser, c)).Methods(http.MethodPut, http.MethodPost)
+		request.AddContext(a.OAuth2StoreUser, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
 	api.Handle(path.OAuth2User+"/{appid}",
-		request.AddContext(a.OAuth2GetUser, c)).Methods(http.MethodGet)
+		request.AddContext(a.OAuth2GetUser, c).RequireUser()).Methods(http.MethodGet)
 }
 
 func (a *restapi) OAuth2StoreApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
