@@ -41,6 +41,9 @@ type Context struct {
 
 	// More data as requested by call.Expand
 	ExpandedContext
+
+	// DeveloperMode is set if the apps plugin itself is running in Dev mode.
+	DeveloperMode bool `json:"developer_mode,omitempty"`
 }
 
 // UserAgentContext is a subset of fields from Context that are accepted from the user agent

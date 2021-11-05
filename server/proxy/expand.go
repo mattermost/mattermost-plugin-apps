@@ -22,6 +22,7 @@ func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Con
 	out.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
 	out.BotUserID = app.BotUserID
 	out.BotAccessToken = app.BotAccessToken
+	out.DeveloperMode = conf.DeveloperMode
 	return out
 }
 
