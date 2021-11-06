@@ -145,7 +145,6 @@ func App(conf config.Config) apps.App {
 		},
 		GrantedPermissions: apps.Permissions{
 			apps.PermissionActAsUser,
-			apps.PermissionActAsAdmin,
 		},
 	}
 }

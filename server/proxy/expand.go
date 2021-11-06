@@ -44,30 +44,18 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		return emptyCC, err
 	}
 
-	if expand.AdminAccessToken != "" {
-		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
-		}
-
-		err = in.ensureAdminToken(mm)
-		if err != nil {
-			return emptyCC, errors.Wrap(err, "failed to ensure there is a admin Token")
-		}
-
-		cc.AdminAccessToken = in.AdminAccessToken
-		if cc.AdminAccessToken == "" {
-			return cc, errors.New("admin access token is not available")
-		}
-	}
-
 	if expand.ActingUserAccessToken != "" {
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
+		cc.ActingUserAccessToken = in.ActingUserAccessToken
+		if cc.ActingUserAccessToken == "" {
+			userSession, err := utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
+			if err != nil {
+				return emptyCC, utils.NewForbiddenError("failed to load user session")
+			}
 
-		err = in.ensureUserToken(mm)
-		if err != nil {
-			return emptyCC, errors.Wrap(err, "failed to ensure there is a user Token")
+			cc.ActingUserAccessToken = userSession.Token
 		}
 
 		cc.ActingUserAccessToken = in.ActingUserAccessToken
@@ -316,10 +304,6 @@ func (p *Proxy) getExpandClient(app apps.App, in Incoming) (mmclient.Client, err
 
 	conf, mm, _ := p.conf.Basic()
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
-		// If the app has admin permission anyway, use the RPC client for performance reasons
-		return mmclient.NewRPCClient(mm), nil
-
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
 		err := in.ensureUserToken(mm)

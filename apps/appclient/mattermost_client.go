@@ -28,10 +28,6 @@ func AsActingUser(cc apps.Context) *Client {
 	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
 }
 
-func AsAdmin(cc apps.Context) *Client {
-	return as(cc.ActingUserID, cc.AdminAccessToken, cc)
-}
-
 func NewClient(userID, token, mattermostSiteURL string) *Client {
 	c := Client{
 		userID:   userID,
