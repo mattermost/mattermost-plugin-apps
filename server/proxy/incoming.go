@@ -110,21 +110,34 @@ func (in *Incoming) ensureUserToken(mm *pluginapi.Client) error {
 	return nil
 }
 
+func (in *Incoming) ensureAdminToken(mm *pluginapi.Client) error {
+	if in.AdminAccessToken != "" {
+		return nil
+	}
+
+	if !in.SysAdminChecked {
+		err := utils.EnsureSysAdmin(mm, in.ActingUserID)
+		if err != nil {
+			return errors.Wrap(err, "failed to get admin access to Mattermost")
+		}
+	}
+	err := in.ensureUserToken(mm)
+	if err != nil {
+		return errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
+	}
+	in.AdminAccessToken = in.ActingUserAccessToken
+
+	return nil
+}
+
 func (p *Proxy) getAdminClient(in Incoming) (mmclient.Client, error) {
 	conf, mm, _ := p.conf.Basic()
 
 	if in.AdminAccessToken == "" {
-		if !in.SysAdminChecked {
-			err := utils.EnsureSysAdmin(mm, in.ActingUserID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get admin access to Mattermost")
-			}
-		}
-		err := in.ensureUserToken(mm)
+		err := in.ensureAdminToken(mm)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
 		}
-		in.AdminAccessToken = in.ActingUserAccessToken
 	}
 
 	asAdmin := mmclient.NewHTTPClient(conf, in.AdminAccessToken)

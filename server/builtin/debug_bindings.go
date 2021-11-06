@@ -4,17 +4,18 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var debugBindingsCall = apps.Call{
 	Path: pDebugBindings,
 	Expand: &apps.Expand{
-		ActingUser:       apps.ExpandSummary,
-		AdminAccessToken: apps.ExpandAll,
+		ActingUser:            apps.ExpandSummary,
+		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
 
@@ -66,7 +67,6 @@ func (a *builtinApp) debugBindings() handler {
 				bindings = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
-
 		},
 	}
 }
