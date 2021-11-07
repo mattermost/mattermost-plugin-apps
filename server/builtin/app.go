@@ -45,7 +45,6 @@ const (
 	fNewValue       = "new_value"
 	fSecret         = "secret"
 	fURL            = "url"
-	fVersion        = "version"
 )
 
 const (
@@ -251,10 +250,6 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
-}
-
-func emptyForm(_ apps.CallRequest) apps.CallResponse {
-	return apps.NewFormResponse(apps.Form{})
 }
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {

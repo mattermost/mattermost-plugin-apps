@@ -6,9 +6,10 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) info() handler {

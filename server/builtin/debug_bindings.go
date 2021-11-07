@@ -4,10 +4,11 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var debugBindingsCall = apps.Call{

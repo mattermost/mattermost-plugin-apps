@@ -58,9 +58,6 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 
 			cc.ActingUserAccessToken = userSession.Token
 		}
-		if cc.ActingUserAccessToken == "" {
-			return emptyCC, utils.NewForbiddenError("acting user token is not available")
-		}
 	}
 
 	cc.App = stripApp(app, expand.App)

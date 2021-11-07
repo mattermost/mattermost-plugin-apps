@@ -29,7 +29,6 @@ func (a *builtinApp) debugClean() handler {
 					Path: pDebugClean,
 					Expand: &apps.Expand{
 						ActingUser: apps.ExpandSummary,
-						Locale:     apps.ExpandAll,
 					},
 				},
 				Form: &noParameters,

@@ -6,10 +6,11 @@ package builtin
 import (
 	"encoding/base64"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var debugKVEditCall = apps.Call{
