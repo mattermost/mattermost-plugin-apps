@@ -20,7 +20,6 @@ type Incoming struct {
 	PluginID              string
 	ActingUserID          string
 	ActingUserAccessToken string
-	AdminAccessToken      string
 	SessionID             string
 	SysAdminChecked       bool
 }
@@ -29,7 +28,6 @@ func NewIncomingFromContext(cc apps.Context) Incoming {
 	return Incoming{
 		ActingUserID:          cc.ActingUserID,
 		ActingUserAccessToken: cc.ActingUserAccessToken,
-		AdminAccessToken:      cc.AdminAccessToken,
 	}
 }
 
@@ -90,7 +88,6 @@ func (in Incoming) updateContext(cc apps.Context) apps.Context {
 	updated.ActingUserID = in.ActingUserID
 	updated.ExpandedContext = apps.ExpandedContext{
 		ActingUserAccessToken: in.ActingUserAccessToken,
-		AdminAccessToken:      in.AdminAccessToken,
 	}
 	return updated
 }
@@ -110,23 +107,13 @@ func (in *Incoming) ensureUserToken(mm *pluginapi.Client) error {
 	return nil
 }
 
-func (p *Proxy) getAdminClient(in Incoming) (mmclient.Client, error) {
+func (p *Proxy) getClient(in Incoming) (mmclient.Client, error) {
 	conf, mm, _ := p.conf.Basic()
 
-	if in.AdminAccessToken == "" {
-		if !in.SysAdminChecked {
-			err := utils.EnsureSysAdmin(mm, in.ActingUserID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get admin access to Mattermost")
-			}
-		}
-		err := in.ensureUserToken(mm)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
-		}
-		in.AdminAccessToken = in.ActingUserAccessToken
+	err := in.ensureUserToken(mm)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
 	}
 
-	asAdmin := mmclient.NewHTTPClient(conf, in.AdminAccessToken)
-	return asAdmin, nil
+	return mmclient.NewHTTPClient(conf, in.ActingUserAccessToken), nil
 }
