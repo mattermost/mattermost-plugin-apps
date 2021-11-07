@@ -38,7 +38,7 @@ func (a *builtinApp) debugKVClean() handler {
 					Other: "[ App ID ]",
 				}),
 				Call: &debugKVCleanCall,
-				Form: a.appIDForm(debugKVListCall, loc, a.debugNamespaceField(loc)),
+				Form: a.appIDForm(debugKVCleanCall, loc, a.debugNamespaceField(loc)),
 			}
 		},
 
