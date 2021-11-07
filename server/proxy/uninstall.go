@@ -33,7 +33,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getAdminClient(in)
+	asAdmin, err := p.getClient(in)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}

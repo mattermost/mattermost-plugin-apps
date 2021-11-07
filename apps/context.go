@@ -73,7 +73,6 @@ type ExpandedContext struct {
 
 	ActingUser            *model.User    `json:"acting_user,omitempty"`
 	ActingUserAccessToken string         `json:"acting_user_access_token,omitempty"`
-	AdminAccessToken      string         `json:"admin_access_token,omitempty"`
 	OAuth2                OAuth2Context  `json:"oauth2,omitempty"`
 	App                   *App           `json:"app,omitempty"`
 	Channel               *model.Channel `json:"channel,omitempty"`

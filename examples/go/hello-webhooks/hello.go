@@ -76,7 +76,7 @@ func install(w http.ResponseWriter, req *http.Request) {
 	channelID := creq.Context.ChannelID
 
 	// Add the Bot user to the team and the channel.
-	asAdmin := appclient.AsAdmin(creq.Context)
+	asAdmin := appclient.AsActingUser(creq.Context)
 	asAdmin.AddTeamMember(teamID, creq.Context.BotUserID)
 	asAdmin.AddChannelMember(channelID, creq.Context.BotUserID)
 
