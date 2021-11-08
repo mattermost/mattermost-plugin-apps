@@ -1,6 +1,8 @@
 package store
 
 import (
+	"strings"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
@@ -13,8 +15,14 @@ import (
 type SessionStore interface {
 	Get(appID apps.AppID, userID string) (*model.Session, error)
 	ListForApp(appID apps.AppID) ([]*model.Session, error)
+	ListForUser(userID string) ([]*model.Session, error)
 	Save(appID apps.AppID, userID string, session *model.Session) error
-	DeleteByID(sessionID string) error
+	Delete(appID apps.AppID, userID string) error
+}
+
+type AppSession struct {
+	model.Session
+	appID string
 }
 
 type sessionStore struct {
@@ -24,11 +32,24 @@ type sessionStore struct {
 var _ SessionStore = (*sessionStore)(nil)
 
 func sessionKey(appID apps.AppID, userID string) string {
-	return appKey(appID) + "." + userID
+	return appKey(appID) + "_" + userID
 }
 
 func appKey(appID apps.AppID) string {
-	return config.KVTokenPrefix + "." + string(appID)
+	return config.KVTokenPrefix + "_" + string(appID)
+}
+
+func parseKey(key string) (apps.AppID, string, error) {
+	s := strings.Split(key, "_")
+	if len(s) != 3 {
+		return "", "", errors.New("invalid key pattern")
+	}
+
+	if s[0] != config.KVTokenPrefix {
+		return "", "", errors.New("invalid key prefix")
+	}
+
+	return apps.AppID(s[1]), s[2], nil
 }
 
 func (s sessionStore) Get(appID apps.AppID, userID string) (*model.Session, error) {
@@ -84,12 +105,41 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 	return ret, nil
 }
 
-func (s sessionStore) DeleteByID(sessionID string) error {
-	/*
-		err := s.conf.MattermostAPI().KV.Delete(key)
+func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
+	ret := make([]*model.Session, 0)
+
+	for i := 0; ; i++ {
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
-	*/
-	return nil
+
+		for _, k := range keys {
+			_, keyUserID, err := parseKey(k)
+			if err != nil {
+				continue
+			}
+
+			if keyUserID != userID {
+				continue
+			}
+
+			session, err := s.get(k)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed get session for key, %s", k)
+			}
+
+			ret = append(ret, session)
+		}
+
+		if len(keys) < keysPerPage {
+			break
+		}
+	}
+
+	return ret, nil
+}
+
+func (s sessionStore) Delete(appID apps.AppID, userID string) error {
+	return s.conf.MattermostAPI().KV.Delete(sessionKey(appID, userID))
 }

@@ -4,12 +4,15 @@
 package builtin
 
 import (
+	"context"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
 )
 
 var debugKVCreateCall = apps.Call{
@@ -49,7 +52,7 @@ func (a *builtinApp) debugKVCreate() handler {
 			}
 		},
 
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			namespace := creq.GetValue(fNamespace, "")
 			id := creq.GetValue(fID, "")
@@ -65,7 +68,7 @@ func (a *builtinApp) debugKVCreate() handler {
 				return apps.NewErrorResponse(err)
 			}
 			if len(buf) > 0 {
-				return apps.NewErrorResponse(errors.New("Key already exists, please use `/apps debug kv edit"))
+				return apps.NewErrorResponse(errors.New("key already exists, please use `/apps debug kv edit"))
 			}
 
 			_, err = a.appservices.KVSet(app.BotUserID, namespace, id, []byte("{}"))

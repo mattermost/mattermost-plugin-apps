@@ -6,7 +6,6 @@ package builtin
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
@@ -44,7 +43,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 			}
 			if len(value) > 0 {
 				buttons = append(buttons, apps.SelectOption{
-					Value: http.MethodDelete,
+					Value: "delete",
 					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "option.kv.delete.label",
 						Other: "Delete Key",
@@ -125,7 +124,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 						},
 					}))
 
-			case http.MethodDelete:
+			case "delete":
 				err := mm.KV.Delete(key)
 				if err != nil {
 					return apps.NewErrorResponse(err)

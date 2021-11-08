@@ -37,6 +37,20 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					a.debugKVList().commandBinding(loc),
 				},
 			},
+			{
+				Location: "sessions",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.session.label",
+					Other: "sessions",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.session.description",
+					Other: "View App specific sessions.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugSessionsList().commandBinding(loc),
+				},
+			},
 		},
 	}
 }

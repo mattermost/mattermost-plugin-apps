@@ -1,6 +1,9 @@
 package session
 
 import (
+	"log"
+	"time"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
@@ -18,6 +21,7 @@ const (
 
 type Service interface {
 	GetOrCreate(appID apps.AppID, userID string) (*model.Session, error)
+	ListForUser(userID string) ([]*model.Session, error)
 	RevokeSessionsForApp(c *request.Context, appID apps.AppID) error
 }
 
@@ -75,9 +79,9 @@ func (s *service) createSession(appID apps.AppID, userID string) (*model.Session
 	}
 	session.GenerateCSRF()
 
-	oAuthApp := app.MattermostOAuth2
-	if oAuthApp != nil {
-		// TODO: The buit-in app also needs some (?) of this props. Does it also need an OAuth app?
+	// TODO: The buit-in app also needs some (?) of this props. Does it also need an OAuth app?
+	if app.DeployType != apps.DeployBuiltin {
+		oAuthApp := app.MattermostOAuth2
 		session.AddProp(model.SessionPropPlatform, oAuthApp.Name)
 		session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
 		session.AddProp(model.SessionPropAppsFrameworkAppID, oAuthApp.AppsFrameworkAppID)
@@ -106,16 +110,28 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 
 	now := model.GetMillis()
 	remaining := session.ExpiresAt - now
+
+	remainingT := time.UnixMilli(session.ExpiresAt).Sub(time.UnixMilli(now))
+	log.Printf("remainingT: %#+v\n", remainingT.String())
 	if remaining > minSessionLength {
+		log.Println("No need to extend session length")
 		return nil
 	}
 
+	log.Println("Extending session length")
+
 	newExpireyTime := now + (1000 * 60 * sessionLengthInMinutes)
+
+	newExpireyTimeT := time.UnixMilli(newExpireyTime)
+	log.Printf("newExpireyTime:%#+v\n", newExpireyTimeT.String())
 
 	err := s.mm.Session.ExtendExpiry(session.Id, newExpireyTime)
 	if err != nil {
 		return err
 	}
+
+	// Update store
+	session.ExpiresAt = newExpireyTime
 
 	err = s.store.Session.Save(appID, userID, session)
 	if err != nil {
@@ -125,19 +141,28 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 	return nil
 }
 
+func (s service) ListForUser(userID string) ([]*model.Session, error) {
+	return s.store.Session.ListForUser(userID)
+}
+
 func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) error {
 	sessions, err := s.store.Session.ListForApp(appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}
 
+	log.Printf("sessions: %#+v\n", sessions)
+
 	for _, session := range sessions {
-		err = s.mm.Session.Revoke(session.Id)
-		if err != nil {
-			c.Log.WithError(err).Warnw("failed to revoke app session")
+		// Revoke active sessions
+		if !session.IsExpired() {
+			err = s.mm.Session.Revoke(session.Id)
+			if err != nil {
+				c.Log.WithError(err).Warnw("failed to revoke app session")
+			}
 		}
 
-		err = s.store.Session.DeleteByID(session.Id)
+		err = s.store.Session.Delete(session.TOOD, session.UserId)
 		if err != nil {
 			c.Log.WithError(err).Warnw("failed to delete revoked session from store")
 		}
