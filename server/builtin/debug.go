@@ -31,6 +31,7 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 				}),
 				Bindings: []apps.Binding{
 					a.debugKVClean().commandBinding(loc),
+					a.debugKVCreate().commandBinding(loc),
 					a.debugKVEdit().commandBinding(loc),
 					a.debugKVInfo().commandBinding(loc),
 					a.debugKVList().commandBinding(loc),

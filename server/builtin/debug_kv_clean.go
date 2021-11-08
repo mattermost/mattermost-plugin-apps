@@ -37,8 +37,8 @@ func (a *builtinApp) debugKVClean() handler {
 					ID:    "command.debug.kv.clean.hint",
 					Other: "[ App ID ]",
 				}),
-				Call: &debugKVInfoCall,
-				Form: a.appIDForm(debugKVListCall, loc, a.debugNamespaceField(loc)),
+				Call: &debugKVCleanCall,
+				Form: a.appIDForm(debugKVCleanCall, loc, a.debugNamespaceField(loc)),
 			}
 		},
 

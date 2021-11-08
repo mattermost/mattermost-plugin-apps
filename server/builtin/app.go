@@ -45,13 +45,13 @@ const (
 	fNewValue       = "new_value"
 	fSecret         = "secret"
 	fURL            = "url"
-	fVersion        = "version"
 )
 
 const (
 	pDebugBindings    = "/debug/bindings"
 	pDebugClean       = "/debug/clean"
 	pDebugKVInfo      = "/debug/kv/info"
+	pDebugKVCreate    = "/debug/kv/create"
 	pDebugKVEdit      = "/debug/kv/edit"
 	pDebugKVEditModal = "/debug/kv/edit-modal"
 	pDebugKVClean     = "/debug/kv/clean"
@@ -100,6 +100,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugBindings:    a.debugBindings(),
 		pDebugClean:       a.debugClean(),
 		pDebugKVClean:     a.debugKVClean(),
+		pDebugKVCreate:    a.debugKVCreate(),
 		pDebugKVEdit:      a.debugKVEdit(),
 		pDebugKVEditModal: a.debugKVEditModal(),
 		pDebugKVInfo:      a.debugKVInfo(),
@@ -143,7 +144,7 @@ func App(conf config.Config) apps.App {
 			apps.LocationCommand,
 		},
 		GrantedPermissions: apps.Permissions{
-			apps.PermissionActAsAdmin,
+			apps.PermissionActAsUser,
 		},
 	}
 }
@@ -249,10 +250,6 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
-}
-
-func emptyForm(_ apps.CallRequest) apps.CallResponse {
-	return apps.NewFormResponse(apps.Form{})
 }
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
