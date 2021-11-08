@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	kubelessclient "k8s.io/client-go/tools/clientcmd"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -31,7 +32,7 @@ var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream() (*Upstream, error) {
 	_, err := kubelessutil.BuildOutOfClusterConfig()
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || kubelessclient.IsEmptyConfig(err) {
 		return nil, utils.NewNotFoundError(err)
 	}
 	if err != nil {

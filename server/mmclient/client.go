@@ -14,8 +14,10 @@ type Client interface {
 	SetProfileImage(userID string, content io.Reader) error
 
 	GetChannel(channelID string) (*model.Channel, error)
+	GetChannelMember(channelID, userID string) (*model.ChannelMember, error)
 
 	GetTeam(teamID string) (*model.Team, error)
+	GetTeamMember(teamID, userID string) (*model.TeamMember, error)
 
 	GetPost(postID string) (*model.Post, error)
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -32,44 +31,16 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf, mm, _ := p.conf.Basic()
-
+	conf := p.conf.Get()
 	cc := contextForApp(app, *base, conf)
 	if expand == nil {
 		// nothing more to do
 		return cc, nil
 	}
 
-	client, err := getExpandClient(app, conf, mm, in)
+	client, err := p.getExpandClient(app, in)
 	if err != nil {
 		return emptyCC, err
-	}
-
-	var userSession *model.Session
-	if expand.AdminAccessToken != "" {
-		if !app.GrantedPermissions.Contains(apps.PermissionActAsAdmin) {
-			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsAdmin)
-		}
-		err := utils.EnsureSysAdmin(p.conf.MattermostAPI(), cc.ActingUserID)
-		if err != nil {
-			return emptyCC, utils.NewForbiddenError("user is not a sysadmin")
-		}
-		// See if we can derive the admin token from the "base" context
-		cc.AdminAccessToken = in.AdminAccessToken
-		if cc.AdminAccessToken == "" {
-			cc.AdminAccessToken = in.ActingUserAccessToken
-		}
-		// Try to obtain it from the present session
-		if cc.AdminAccessToken == "" && in.SessionID != "" {
-			userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-			if err != nil {
-				return emptyCC, utils.NewForbiddenError("failed to load user session")
-			}
-			cc.AdminAccessToken = userSession.Token
-		}
-		if cc.AdminAccessToken == "" {
-			return cc, errors.New("admin access token is not available")
-		}
 	}
 
 	if expand.ActingUserAccessToken != "" {
@@ -78,17 +49,12 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		}
 		cc.ActingUserAccessToken = in.ActingUserAccessToken
 		if cc.ActingUserAccessToken == "" {
-			if userSession == nil {
-				var err error
-				userSession, err = utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-				if err != nil {
-					return emptyCC, utils.NewForbiddenError("failed to load user session")
-				}
+			userSession, err := utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
+			if err != nil {
+				return emptyCC, utils.NewForbiddenError("failed to load user session")
 			}
+
 			cc.ActingUserAccessToken = userSession.Token
-		}
-		if cc.ActingUserAccessToken == "" {
-			return emptyCC, utils.NewForbiddenError("acting user token is not available")
 		}
 	}
 
@@ -111,6 +77,15 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		base.Channel = ch
 	}
 	cc.Channel = stripChannel(base.Channel, expand.Channel)
+
+	if expand.ChannelMember != "" && base.ChannelID != "" && base.ActingUserID != "" && base.ChannelMember == nil {
+		cm, err := client.GetChannelMember(base.ChannelID, base.ActingUserID)
+		if err != nil {
+			return emptyCC, errors.Wrapf(err, "failed to expand channel membership %s", base.ChannelID)
+		}
+		base.ChannelMember = cm
+	}
+	cc.ChannelMember = stripChannelMember(base.ChannelMember, expand.ChannelMember)
 
 	if expand.Post != "" && base.PostID != "" && base.Post == nil {
 		post, err := client.GetPost(base.PostID)
@@ -138,6 +113,15 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		base.Team = team
 	}
 	cc.Team = stripTeam(base.Team, expand.Team)
+
+	if expand.TeamMember != "" && base.TeamID != "" && base.ActingUserID != "" && base.TeamMember == nil {
+		tm, err := client.GetTeamMember(base.TeamID, base.ActingUserID)
+		if err != nil {
+			return emptyCC, errors.Wrapf(err, "failed to expand team membership %s", base.TeamID)
+		}
+		base.TeamMember = tm
+	}
+	cc.TeamMember = stripTeamMember(base.TeamMember, expand.TeamMember)
 
 	// TODO: expand Mentions, maybe replacing User?
 	// https://mattermost.atlassian.net/browse/MM-30403
@@ -231,6 +215,13 @@ func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel
 	}
 }
 
+func stripChannelMember(cm *model.ChannelMember, level apps.ExpandLevel) *model.ChannelMember {
+	if cm == nil || (level != apps.ExpandAll && level != apps.ExpandSummary) {
+		return nil
+	}
+	return cm
+}
+
 func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
 	if team == nil {
 		return team
@@ -251,6 +242,13 @@ func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
 		Email:       team.Email,
 		Type:        team.Type,
 	}
+}
+
+func stripTeamMember(tm *model.TeamMember, level apps.ExpandLevel) *model.TeamMember {
+	if tm == nil || (level != apps.ExpandAll && level != apps.ExpandSummary) {
+		return nil
+	}
+	return tm
 }
 
 func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
@@ -293,12 +291,13 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	return nil
 }
 
-func getExpandClient(app apps.App, conf config.Config, mm *pluginapi.Client, in Incoming) (mmclient.Client, error) {
-	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsAdmin):
-		// If the app has admin permission anyway, use the RPC client for performance reasons
-		return mmclient.NewRPCClient(mm), nil
+func (p *Proxy) getExpandClient(app apps.App, in Incoming) (mmclient.Client, error) {
+	if p.expandClientOverride != nil {
+		return p.expandClientOverride, nil
+	}
 
+	conf, mm, _ := p.conf.Basic()
+	switch {
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
 		// The OAuth2 token should be used here once it's implemented
 		err := in.ensureUserToken(mm)

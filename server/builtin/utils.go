@@ -45,7 +45,7 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 		if includef == nil || includef(app) {
 			options = append(options, apps.SelectOption{
 				Value: string(app.Manifest.AppID),
-				Label: string(app.Manifest.DisplayName),
+				Label: app.Manifest.DisplayName,
 			})
 		}
 	}

@@ -4,15 +4,17 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var uninstallCall = apps.Call{
 	Path: pUninstall,
 	Expand: &apps.Expand{
-		ActingUser: apps.ExpandSummary,
+		ActingUser:            apps.ExpandSummary,
+		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
 

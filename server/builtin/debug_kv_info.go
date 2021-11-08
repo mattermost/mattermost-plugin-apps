@@ -100,7 +100,7 @@ func (a *builtinApp) debugListKeys(appID apps.AppID) (int, map[string]int, error
 		if e != nil {
 			return e
 		}
-		namespaces[ns] = namespaces[ns] + 1
+		namespaces[ns]++
 		n++
 		return nil
 	})
