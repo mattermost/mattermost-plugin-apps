@@ -41,7 +41,7 @@ func (a *builtinApp) debugKVEdit() handler {
 				}),
 				Call: &debugKVEditCall,
 				Form: a.appIDForm(debugKVEditCall, loc,
-					a.debugBase64Field(loc),
+					a.debugBase64KeyField(loc),
 					a.debugNamespaceField(loc),
 					a.debugIDField(loc),
 				),

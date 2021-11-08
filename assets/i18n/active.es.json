@@ -103,10 +103,6 @@
     "hash": "sha1-1949620e8d48967f12088688d88dd81f1e64dbeb",
     "other": "{{.Count}} claves para `{{.AppID}}`\\n"
   },
-  "command.debug.kv.list.submit.namespace": {
-    "hash": "sha1-ded14301bc4b2aa6359b500d8ff137065ec9efd0",
-    "other": ", espacio de nombres `%s`\\n"
-  },
   "command.debug.kv.list.submit.note": {
     "hash": "sha1-fa6d7f375bae152dfc73bc64e30fd2875acb17f1",
     "other": "**ATENCIÓN**: las claves están codificadas en base64 para pegar en el comando `/apps depurar kv editar`. Use `/apps depurar kv listar --base64 false` para mostrar los valores sin codificar.\\n"

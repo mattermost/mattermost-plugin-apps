@@ -9,6 +9,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 var debugKVCleanCall = apps.Call{
@@ -74,9 +75,14 @@ func (a *builtinApp) debugKVClean() handler {
 		},
 
 		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-				return app.Installed
-			})
+			switch creq.SelectedField {
+			case fAppID:
+				return a.lookupAppID(creq, nil)
+
+			case fNamespace:
+				return a.lookupNamespace(creq)
+			}
+			return nil, utils.ErrNotFound
 		},
 	}
 }
