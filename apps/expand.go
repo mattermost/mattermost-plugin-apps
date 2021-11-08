@@ -48,6 +48,10 @@ type Expand struct {
 	// DisplayName, Name
 	Channel ExpandLevel `json:"channel,omitempty"`
 
+	// ChannelMember: expand model.ChannelMember if ChannelID and
+	// ActingUserID are set.
+	ChannelMember ExpandLevel `json:"channel_member,omitempty"`
+
 	// Not currently implemented
 	Mentioned ExpandLevel `json:"mentioned,omitempty"`
 
@@ -56,9 +60,12 @@ type Expand struct {
 	Post     ExpandLevel `json:"post,omitempty"`
 	RootPost ExpandLevel `json:"root_post,omitempty"`
 
-	// Team: all for model.team, summary for Id, DisplayName, Name, Description,
+	// Team: all for model.Team, summary for Id, DisplayName, Name, Description,
 	// Email, Type.
 	Team ExpandLevel `json:"team,omitempty"`
+
+	// TeamMember: expand model.TeamMember if TeamID and ActingUserID are set.
+	TeamMember ExpandLevel `json:"team_member,omitempty"`
 
 	// User: all for model.User, summary for BotDescription, DeleteAt, Email,
 	// FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,

@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
@@ -35,6 +36,9 @@ type Proxy struct {
 	store     *store.Service
 	httpOut   httpout.Service
 	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
+
+	// expandClientOverride is set by the tests to use the mock client
+	expandClientOverride mmclient.Client
 }
 
 // Admin defines the REST API methods to manipulate Apps.

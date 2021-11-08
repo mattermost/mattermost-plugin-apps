@@ -43,10 +43,18 @@ func (r *rpcClient) GetChannel(channelID string) (*model.Channel, error) {
 	return r.mm.Channel.Get(channelID)
 }
 
+func (r *rpcClient) GetChannelMember(channelID, userID string) (*model.ChannelMember, error) {
+	return r.mm.Channel.GetMember(channelID, userID)
+}
+
 // Team section
 
 func (r *rpcClient) GetTeam(teamID string) (*model.Team, error) {
 	return r.mm.Team.Get(teamID)
+}
+
+func (r *rpcClient) GetTeamMember(teamID, userID string) (*model.TeamMember, error) {
+	return r.mm.Team.GetMember(teamID, userID)
 }
 
 // Post section

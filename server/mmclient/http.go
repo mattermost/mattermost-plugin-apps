@@ -85,6 +85,15 @@ func (h *httpClient) GetChannel(channelID string) (*model.Channel, error) {
 	return channel, nil
 }
 
+func (h *httpClient) GetChannelMember(channelID, userID string) (*model.ChannelMember, error) {
+	channelMember, _, err := h.mm.GetChannelMember(channelID, userID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return channelMember, nil
+}
+
 // Team section
 
 func (h *httpClient) GetTeam(teamID string) (*model.Team, error) {
@@ -94,6 +103,15 @@ func (h *httpClient) GetTeam(teamID string) (*model.Team, error) {
 	}
 
 	return team, nil
+}
+
+func (h *httpClient) GetTeamMember(teamID, userID string) (*model.TeamMember, error) {
+	teamMember, _, err := h.mm.GetTeamMember(teamID, userID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return teamMember, nil
 }
 
 // Post section
