@@ -33,6 +33,17 @@ jobs:
           command: |
             make mock
             git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
+  check-i18n:
+    docker:
+      - image: circleci/golang:1.16.0
+    steps:
+      - checkout
+      - run:
+          name: Checking if extracted i18n files are up to date
+          command: |
+            go install github.com/nicksnyder/go-i18n/v2/goi18n@v2.1.2
+            make i18n-extract-server
+            git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
 
   test-e2e-postgres11:
     docker:
@@ -288,6 +299,7 @@ workflows:
                 - master
     jobs:
       - check-mocks
+      - check-i18n
       - plugin-ci/lint
       - plugin-ci/test
       - e2e-cypress-tests-pinned
@@ -296,7 +308,11 @@ workflows:
       - plugin-ci/build
   ci:
     jobs:
-      -  check-mocks:
+      - check-mocks:
+          filters:
+            tags:
+              only: /^v.*/
+      - check-i18n:
           filters:
             tags:
               only: /^v.*/
@@ -328,6 +344,7 @@ workflows:
           context: plugin-ci
           requires:
             - check-mocks
+            - check-i18n
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11
@@ -343,6 +360,7 @@ workflows:
           context: matterbuild-github-token
           requires:
             - check-mocks
+            - check-i18n
             - plugin-ci/lint
             - plugin-ci/coverage
             - test-e2e-postgres11

@@ -7,6 +7,7 @@ LDFLAGS += -X "github.com/mattermost/mattermost-plugin-api/experimental/telemetr
 
 default: all
 
+.PHONY: i18n-extract-server
 i18n-extract-server:
 	@goi18n extract -format json -outdir assets/i18n/ server/ utils/ apps/ cmd/ upstream/
 	@for x in assets/i18n/active.*.json; do echo $$x | sed 's/active/translate/' | sed 's/^/touch /' | bash; done
@@ -15,6 +16,7 @@ i18n-extract-server:
 	@echo "If you don't want to change any locale file, simply remove the assets/i18n/translate.??.json file before calling \"make i18n-merge-server\""
 	@echo "If you want to add a new language (for example french), simply run \"touch assets/i18n/active.fr.json\" and then run the \"make i18n-extract-server\" again"
 
+.PHONY: i18n-merge-server
 i18n-merge-server:
 	@goi18n merge -format json -outdir assets/i18n/ assets/i18n/active.*.json assets/i18n/translate.*.json
 	@rm -f assets/i18n/translate.*.json
