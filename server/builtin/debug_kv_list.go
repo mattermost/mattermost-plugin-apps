@@ -69,7 +69,7 @@ func (a *builtinApp) debugKVList() handler {
 			message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "command.debug.kv.list.submit.message",
-					Other: "{{.Count}} total keys for `{{.AppID}}`\n",
+					Other: "{{.Count}} total keys for `{{.AppID}}`\\n",
 				},
 				TemplateData: map[string]string{
 					"Count": strconv.Itoa(len(keys)),
@@ -81,7 +81,7 @@ func (a *builtinApp) debugKVList() handler {
 				message += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "command.debug.kv.list.submit.namespace",
-						Other: ", namespace `%s`\n",
+						Other: ", namespace `%s`\\n",
 					},
 					TemplateData: map[string]string{
 						"Namespace": namespace,
@@ -93,7 +93,7 @@ func (a *builtinApp) debugKVList() handler {
 			if encode {
 				message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.debug.kv.list.submit.note",
-					Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\n",
+					Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\\n",
 				})
 				for _, key := range keys {
 					message += fmt.Sprintf("- `%s`\n", base64.URLEncoding.EncodeToString([]byte(key)))

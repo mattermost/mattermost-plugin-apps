@@ -115,7 +115,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 					a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 						DefaultMessage: &i18n.Message{
 							ID:    "modal.kv.edit.submit.stored",
-							Other: "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
+							Other: "Stored:\\n```\\nKey: {{.Key}}\\n\\n{{.Value}}\\n```\\n",
 						},
 						TemplateData: map[string]string{
 							"Key":   key,
@@ -132,7 +132,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 					a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 						DefaultMessage: &i18n.Message{
 							ID:    "modal.kv.edit.submit.deleted",
-							Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
+							Other: "Deleted:\\n```\\nKey: {{.Key}}\\n```\\n",
 						},
 						TemplateData: map[string]string{
 							"Key": key,

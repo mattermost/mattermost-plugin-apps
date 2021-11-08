@@ -107,7 +107,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	if len(m.RequestedLocations) > 0 {
 		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.install_consent.header.locations",
-			Other: "\n- Add the following elements to the **Mattermost User Interface**:\n",
+			Other: "\\n- Add the following elements to the **Mattermost User Interface**:\\n",
 		})
 		// (Mattermost) locations themselves are not localized
 		for _, l := range m.RequestedLocations {
@@ -117,7 +117,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	if len(m.RequestedPermissions) > 0 {
 		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.install_consent.header.permissions",
-			Other: "- Access **Mattermost API** with the following permissions:\n",
+			Other: "- Access **Mattermost API** with the following permissions:\\n",
 		})
 		// Permissions are not localized
 		for _, permission := range m.RequestedPermissions {
@@ -128,7 +128,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		header := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.install_consent.header.header",
-				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:\n\n",
+				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:\\n\\n",
 			},
 			TemplateData: map[string]string{
 				"DisplayName": m.DisplayName,

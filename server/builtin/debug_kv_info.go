@@ -55,7 +55,7 @@ func (a *builtinApp) debugKVInfo() handler {
 			message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "command.debug.kv.info.submit.message",
-					Other: "{{.Count}} total keys for `{{.AppID}}`.\n",
+					Other: "{{.Count}} total keys for `{{.AppID}}`.\\n",
 				},
 				TemplateData: map[string]string{
 					"Count": strconv.Itoa(n),
@@ -66,7 +66,7 @@ func (a *builtinApp) debugKVInfo() handler {
 			if len(namespaces) > 0 {
 				message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.debug.kv.info.submit.namespaces",
-					Other: "\nNamespaces:\n",
+					Other: "\\nNamespaces:\\n",
 				})
 			}
 			for ns, c := range namespaces {
