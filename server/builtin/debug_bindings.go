@@ -14,7 +14,8 @@ import (
 var debugBindingsCall = apps.Call{
 	Path: pDebugBindings,
 	Expand: &apps.Expand{
-		ActingUser: apps.ExpandSummary,
+		ActingUser:            apps.ExpandSummary,
+		ActingUserAccessToken: apps.ExpandAll,
 	},
 }
 
