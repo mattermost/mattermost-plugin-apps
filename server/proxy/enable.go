@@ -83,9 +83,10 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
-	// The app sessions need to get revoked: https://community-daily.mattermost.com/core/pl/nb9prunjtpyxbgce5cqjyqdgir
-	// if app.MattermostOAuth2 != nil {
-	// }
+	//  Only clear the store. Existing session will still work until they expire. https://mattermost.atlassian.net/browse/MM-40012
+	if err = p.store.Session.DeleteAllForApp(app.AppID); err != nil {
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
+	}
 
 	app.Disabled = true
 	err = p.store.App.Save(*app)
