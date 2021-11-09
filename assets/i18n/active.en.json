@@ -1,5 +1,4 @@
 {
-  "apps.utils.error.clienFromSession.failedSession": "failed to load session",
   "command.base.description": "Mattermost Apps",
   "command.debug.bindings.description": "Display all bindings for the current context",
   "command.debug.bindings.label": "bindings",
@@ -31,6 +30,11 @@
   "command.debug.kv.list.submit.namespace": ", namespace `{{.Namespace}}`\n",
   "command.debug.kv.list.submit.note": "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\n",
   "command.debug.label": "debug",
+  "command.debug.session.description": "View App specific sessions.",
+  "command.debug.session.label": "sessions",
+  "command.debug.session.list.description": "List all App specific sessions.",
+  "command.debug.session.list.label": "list",
+  "command.debug.session.list.submit.header": "| SessionID | AppID | ExpiresAt | ExpiresIn | Token |",
   "command.disable.description": "Disable an App",
   "command.disable.hint": "[ App ID ]",
   "command.disable.label": "disable",
