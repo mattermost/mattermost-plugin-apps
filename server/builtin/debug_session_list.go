@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -53,17 +53,17 @@ func (a *builtinApp) debugSessionsList() handler {
 			})
 			txt += "\n| :--| :-- |:-- | :-- |\n"
 
-			for _, session := range sessions {
-				sessionID := session.Id
-				appID := session.Props[model.SessionPropAppsFrameworkAppID]
+			for _, s := range sessions {
+				sessionID := s.Id
+				appID := session.GetAppID(s)
 				if appID == "" {
 					// Assume it's the builtin app
 					appID = AppID
 				}
 
-				expiresAt := time.UnixMilli(session.ExpiresAt).String()
-				expiresIn := time.Until(time.UnixMilli(session.ExpiresAt)).String()
-				token := utils.LastN(session.Token, 4)
+				expiresAt := time.UnixMilli(s.ExpiresAt).String()
+				expiresIn := time.Until(time.UnixMilli(s.ExpiresAt)).String()
+				token := utils.LastN(s.Token, 4)
 
 				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|\n",
 					sessionID, appID, expiresAt, expiresIn, token)

@@ -178,7 +178,8 @@ func TestExpand(t *testing.T) {
 							err := json.Unmarshal([]byte(expandData), &e)
 							require.NoError(t, err)
 
-							cc, err := p.expandContext(&request.Context{}, app, &clone, &e)
+							c := request.NewContext(nil, conf, nil)
+							cc, err := p.expandContext(c, app, &clone, &e)
 							if err != nil {
 								require.EqualValues(t, expected, err.Error())
 							} else {

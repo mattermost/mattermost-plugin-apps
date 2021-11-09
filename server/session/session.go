@@ -1,9 +1,6 @@
 package session
 
 import (
-	"log"
-	"time"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
@@ -110,20 +107,11 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 
 	now := model.GetMillis()
 	remaining := session.ExpiresAt - now
-
-	remainingT := time.UnixMilli(session.ExpiresAt).Sub(time.UnixMilli(now))
-	log.Printf("remainingT: %#+v\n", remainingT.String())
 	if remaining > minSessionLength {
-		log.Println("No need to extend session length")
 		return nil
 	}
 
-	log.Println("Extending session length")
-
 	newExpireyTime := now + (1000 * 60 * sessionLengthInMinutes)
-
-	newExpireyTimeT := time.UnixMilli(newExpireyTime)
-	log.Printf("newExpireyTime:%#+v\n", newExpireyTimeT.String())
 
 	err := s.mm.Session.ExtendExpiry(session.Id, newExpireyTime)
 	if err != nil {
@@ -151,8 +139,6 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}
 
-	log.Printf("sessions: %#+v\n", sessions)
-
 	for _, session := range sessions {
 		// Revoke active sessions
 		if !session.IsExpired() {
@@ -162,7 +148,7 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 			}
 		}
 
-		err = s.store.Session.Delete(session.TOOD, session.UserId)
+		err = s.store.Session.Delete(GetAppID(session), session.UserId)
 		if err != nil {
 			c.Log.WithError(err).Warnw("failed to delete revoked session from store")
 		}
@@ -171,4 +157,8 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 	}
 
 	return nil
+}
+
+func GetAppID(session *model.Session) apps.AppID {
+	return apps.AppID(session.Props[model.SessionPropAppsFrameworkAppID])
 }

@@ -18,11 +18,7 @@ type SessionStore interface {
 	ListForUser(userID string) ([]*model.Session, error)
 	Save(appID apps.AppID, userID string, session *model.Session) error
 	Delete(appID apps.AppID, userID string) error
-}
-
-type AppSession struct {
-	model.Session
-	appID string
+	DeleteAllForApp(appID apps.AppID) error
 }
 
 type sessionStore struct {
@@ -79,8 +75,8 @@ func (s sessionStore) Save(appID apps.AppID, userID string, session *model.Sessi
 	return nil
 }
 
-func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
-	ret := make([]*model.Session, 0)
+func (s sessionStore) listKeysForApp(appID apps.AppID) ([]string, error) {
+	ret := make([]string, 0)
 
 	for i := 0; ; i++ {
 		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage, pluginapi.WithPrefix(appKey(appID)))
@@ -88,18 +84,31 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
 
-		for _, k := range keys {
-			session, err := s.get(k)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed get session for key, %s", k)
-			}
-
-			ret = append(ret, session)
-		}
+		ret = append(ret, keys...)
 
 		if len(keys) < keysPerPage {
 			break
 		}
+	}
+
+	return ret, nil
+}
+
+func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
+	keys, err := s.listKeysForApp(appID)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]*model.Session, 0)
+
+	for _, k := range keys {
+		session, err := s.get(k)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed get session for key, %s", k)
+		}
+
+		ret = append(ret, session)
 	}
 
 	return ret, nil
@@ -138,6 +147,22 @@ func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
 	}
 
 	return ret, nil
+}
+
+func (s sessionStore) DeleteAllForApp(appID apps.AppID) error {
+	keys, err := s.listKeysForApp(appID)
+	if err != nil {
+		return err
+	}
+
+	for _, k := range keys {
+		err := s.conf.MattermostAPI().KV.Delete(k)
+		if err != nil {
+			return errors.Wrapf(err, "failed delete session for key: %s, appID: %s", k, appID)
+		}
+	}
+
+	return nil
 }
 
 func (s sessionStore) Delete(appID apps.AppID, userID string) error {
