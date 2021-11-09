@@ -136,7 +136,7 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*model.Response, err
 }
 
 func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), utils.ToJSON(oauth2App)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App), utils.ToJSON(oauth2App)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -146,7 +146,7 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*
 }
 
 func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User), utils.ToJSON(ref)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -156,7 +156,7 @@ func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Re
 }
 
 func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User)+"/"+string(appID), "") // nolint:bodyclose
+	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}

@@ -15,12 +15,12 @@ import (
 func (a *restapi) initOAuth2Store(api *mux.Router, c *request.Context) {
 	// TODO appid should come from OAuth2 user session, see
 	// https://mattermost.atlassian.net/browse/MM-34377
-	api.Handle(path.OAuth2App+"/{appid}",
-		request.AddContext(a.OAuth2StoreApp, c).RequireSysadmin()).Methods(http.MethodPut, http.MethodPost)
-	api.Handle(path.OAuth2User+"/{appid}",
-		request.AddContext(a.OAuth2StoreUser, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
-	api.Handle(path.OAuth2User+"/{appid}",
-		request.AddContext(a.OAuth2GetUser, c).RequireUser()).Methods(http.MethodGet)
+	api.Handle(path.OAuth2App,
+		request.AddContext(a.OAuth2StoreApp, c).RequireSysadmin().RequireApp()).Methods(http.MethodPut, http.MethodPost)
+	api.Handle(path.OAuth2User,
+		request.AddContext(a.OAuth2StoreUser, c).RequireUser().RequireApp()).Methods(http.MethodPut, http.MethodPost)
+	api.Handle(path.OAuth2User,
+		request.AddContext(a.OAuth2GetUser, c).RequireUser().RequireApp()).Methods(http.MethodGet)
 }
 
 func (a *restapi) OAuth2StoreApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
@@ -30,7 +30,7 @@ func (a *restapi) OAuth2StoreApp(c *request.Context, w http.ResponseWriter, r *h
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2App(appIDVar(r), c.ActingUserID(), oapp)
+	err = a.appServices.StoreOAuth2App(c.AppID(), c.ActingUserID(), oapp)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -43,7 +43,7 @@ func (a *restapi) OAuth2StoreUser(c *request.Context, w http.ResponseWriter, r *
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2User(appIDVar(r), c.ActingUserID(), data)
+	err = a.appServices.StoreOAuth2User(c.AppID(), c.ActingUserID(), data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -52,7 +52,7 @@ func (a *restapi) OAuth2StoreUser(c *request.Context, w http.ResponseWriter, r *
 
 func (a *restapi) OAuth2GetUser(c *request.Context, w http.ResponseWriter, r *http.Request) {
 	var v interface{}
-	err := a.appServices.GetOAuth2User(appIDVar(r), c.ActingUserID(), &v)
+	err := a.appServices.GetOAuth2User(c.AppID(), c.ActingUserID(), &v)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
