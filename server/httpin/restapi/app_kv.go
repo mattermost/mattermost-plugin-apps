@@ -21,7 +21,7 @@ func (a *restapi) initKV(api *mux.Router, c *request.Context) {
 	api.Handle(path.KV+"/{key}",
 		request.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPut)
+		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
 
 	api.Handle(path.KV+"/{key}",
 		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)

@@ -91,9 +91,9 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
-	if app.MattermostOAuth2 != nil {
-		// The app sessions need to get revoked: https://community-daily.mattermost.com/core/pl/nb9prunjtpyxbgce5cqjyqdgir
-	}
+	// The app sessions need to get revoked: https://community-daily.mattermost.com/core/pl/nb9prunjtpyxbgce5cqjyqdgir
+	// if app.MattermostOAuth2 != nil {
+	// }
 
 	app.Disabled = true
 	err = p.store.App.Save(*app)

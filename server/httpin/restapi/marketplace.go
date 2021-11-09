@@ -11,7 +11,7 @@ import (
 )
 
 func (a *restapi) initMarketplace(api *mux.Router, c *request.Context) {
-	api.Handle(path.Marketplace, request.AddContext(a.GetMarketplace, c).RequireSysadmin()).Methods(http.MethodGet)
+	api.Handle(path.Marketplace, request.AddContext(a.GetMarketplace, c).RequireUser()).Methods(http.MethodGet)
 }
 
 func (a *restapi) GetMarketplace(_ *request.Context, w http.ResponseWriter, r *http.Request) {
