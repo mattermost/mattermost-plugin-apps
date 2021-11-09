@@ -5,8 +5,7 @@
 	"icon": "icon.png",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-world",
 	"requested_permissions": [
-		"act_as_bot",
-        "act_as_user"
+		"act_as_bot"
 	],
 	"requested_locations": [
 		"/channel_header",
