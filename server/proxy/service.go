@@ -121,6 +121,7 @@ func (p *Proxy) Configure(conf config.Config) error {
 		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
 	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
+		// Kubeless is not longer supported: https://mattermost.atlassian.net/browse/MM-40011
 		// return upkubeless.MakeUpstream()
 		return nil, nil
 	})

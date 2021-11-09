@@ -299,12 +299,7 @@ func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Clie
 
 	switch {
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && c.ActingUserID() != "":
-		// The OAuth2 token should be used here once it's implemented
-		token, err := c.UserAccessToken()
-		if err != nil {
-			return nil, err
-		}
-		return mmclient.NewHTTPClient(conf, token), nil
+		return c.GetMMClient()
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
 		return mmclient.NewHTTPClient(conf, app.BotAccessToken), nil

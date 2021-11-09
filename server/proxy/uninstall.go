@@ -33,14 +33,9 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	asAdmin, err := c.GetMMClient()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-
 	if app.MattermostOAuth2 != nil {
 		// Delete oauth app.
-		if err = asAdmin.DeleteOAuthApp(app.MattermostOAuth2.Id); err != nil {
+		if err = mm.OAuth.Delete(app.MattermostOAuth2.Id); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s", app.AppID)
 		}
 
@@ -52,13 +47,13 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 
 	// revoke bot account token if there is one
 	if app.BotAccessTokenID != "" {
-		if err = asAdmin.RevokeUserAccessToken(app.BotAccessTokenID); err != nil {
+		if err = mm.User.RevokeAccessToken(app.BotAccessTokenID); err != nil {
 			return "", errors.Wrapf(err, "failed to revoke bot access token for %s", app.AppID)
 		}
 	}
 
 	// disable the bot account
-	if _, err = asAdmin.DisableBot(app.BotUserID); err != nil {
+	if _, err = mm.Bot.UpdateActive(app.BotUserID, false); err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 

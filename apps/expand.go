@@ -39,8 +39,6 @@ type Expand struct {
 
 	// ActingUserAccessToken: all. Include user-level access token in the
 	// request. Requires act_as_user permission to have been granted to the app.
-	// This should be user's Mattermost OAuth2 token, but until it's implemented
-	// the MM session token is used.
 	// https://mattermost.atlassian.net/browse/MM-31117
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 

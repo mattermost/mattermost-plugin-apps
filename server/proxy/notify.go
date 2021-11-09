@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -36,7 +37,10 @@ func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 			continue
 		}
 
-		c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(sub.AppID))
+		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+		defer cancel()
+
+		c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(sub.AppID), request.WithCtx(ctx))
 		c.Log = c.Log.With("subject", sub.Subject)
 
 		err = p.notifyForSubscription(c, &base, sub)
@@ -70,7 +74,7 @@ func (p *Proxy) notifyForSubscription(c *request.Context, base *apps.Context, su
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(context.TODO(), up, *app, creq)
+	return upstream.Notify(c.Ctx(), up, *app, creq)
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {

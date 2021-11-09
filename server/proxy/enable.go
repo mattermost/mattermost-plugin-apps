@@ -21,11 +21,7 @@ func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID)
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	asAdmin, err := c.GetMMClient()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	_, err = asAdmin.EnableBot(app.BotUserID)
+	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -82,11 +78,7 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	asAdmin, err := c.GetMMClient()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	_, err = asAdmin.DisableBot(app.BotUserID)
+	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}

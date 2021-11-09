@@ -1,6 +1,8 @@
 //go:build ignore
 // +build ignore
 
+// Kubeless is not longer supported: https://mattermost.atlassian.net/browse/MM-40011
+
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
@@ -78,7 +80,6 @@ func resolvePath(clientset kubernetes.Interface, m apps.Manifest, path string) (
 	}
 
 	// Get the function's service URL
-	//svc, err := clientset.CoreV1().Services(Namespace).Get(context.TODO(), funcName, metav1.GetOptions{})
 	svc, err := clientset.CoreV1().Services(Namespace).Get(funcName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the kubernetes service for function %s", funcName)
@@ -113,7 +114,6 @@ func (u *Upstream) invoke(_ context.Context, clientset kubernetes.Interface, url
 	req = req.AbsPath(url)
 
 	var statusCode int
-	// result := req.Do(context.TODO()).StatusCode(&statusCode)
 	result := req.Do().StatusCode(&statusCode)
 	received, err := result.Raw()
 	switch {

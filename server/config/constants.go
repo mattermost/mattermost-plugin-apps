@@ -3,7 +3,9 @@
 
 package config
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	MattermostSessionIDHeader = "Mattermost-Session-Id"

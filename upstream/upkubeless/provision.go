@@ -1,6 +1,8 @@
 //go:build ignore
 // +build ignore
 
+// Kubeless is not longer supported: https://mattermost.atlassian.net/browse/MM-40011
+
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 

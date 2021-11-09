@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// Configurator should be abbreviated as `cfg`
 type Configurable interface {
 	Configure(Config) error
 }
