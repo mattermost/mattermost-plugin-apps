@@ -7,6 +7,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -38,7 +39,7 @@ func (h *ContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
-	c.Ctx = ctx
+	c.ctx = ctx
 
 	for _, check := range h.checks {
 		succeeded := check(c, w, r)
@@ -79,6 +80,10 @@ func (h *ContextHandler) RequireSysadmin() *ContextHandler {
 }
 
 func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
+	if c.sysAdminChecked {
+		return true
+	}
+
 	if successful := checkUser(c, w, r); !successful {
 		return successful
 	}
@@ -104,6 +109,37 @@ func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
 	}
 
 	h.checks = append(h.checks, check)
+
+	return h
+}
+
+func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
+	sessionID := r.Header.Get(config.MattermostSessionIDHeader)
+	if sessionID == "" {
+		httputils.WriteError(w, errors.New("a session is required"))
+		return false
+	}
+
+	s, err := c.mm.Session.Get(sessionID)
+	if err != nil {
+		httputils.WriteError(w, errors.New("session check failed"))
+		return false
+	}
+
+	// TODO(Ben): similify
+	appID := apps.AppID(s.Props[model.SessionPropAppsFrameworkAppID])
+	if appID == "" {
+		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "not an app session"))
+		return false
+	}
+
+	c.SetAppID(appID)
+
+	return true
+}
+
+func (h *ContextHandler) RequireApp() *ContextHandler {
+	h.checks = append(h.checks, checkApp)
 
 	return h
 }

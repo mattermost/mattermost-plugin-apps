@@ -21,7 +21,7 @@ type Service interface {
 	// Subscriptions
 
 	Subscribe(sub apps.Subscription) error
-	GetSubscriptions(actingUserID string) ([]apps.Subscription, error)
+	GetSubscriptions(appID apps.AppID, actingUserID string) ([]apps.Subscription, error)
 	Unsubscribe(sub apps.Subscription) error
 
 	// KV

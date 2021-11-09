@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
@@ -69,5 +70,6 @@ func recoveryHandler(c *request.Context) func(http.Handler) http.Handler {
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+	r.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
 	s.router.ServeHTTP(w, r)
 }

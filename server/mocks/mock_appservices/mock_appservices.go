@@ -49,18 +49,18 @@ func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *
 }
 
 // GetSubscriptions mocks base method.
-func (m *MockService) GetSubscriptions(arg0 string) ([]apps.Subscription, error) {
+func (m *MockService) GetSubscriptions(arg0 apps.AppID, arg1 string) ([]apps.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
+	ret := m.ctrl.Call(m, "GetSubscriptions", arg0, arg1)
 	ret0, _ := ret[0].([]apps.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSubscriptions indicates an expected call of GetSubscriptions.
-func (mr *MockServiceMockRecorder) GetSubscriptions(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetSubscriptions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockService)(nil).GetSubscriptions), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockService)(nil).GetSubscriptions), arg0, arg1)
 }
 
 // KVDelete mocks base method.

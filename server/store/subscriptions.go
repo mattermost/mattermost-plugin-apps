@@ -17,7 +17,7 @@ type SubscriptionStore interface {
 	Delete(apps.Subscription) error
 	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
 	List() ([]apps.Subscription, error)
-	ListByUserID(userID string) ([]apps.Subscription, error)
+	ListByUserID(appID apps.AppID, userID string) ([]apps.Subscription, error)
 	Save(sub apps.Subscription) error
 }
 
@@ -103,7 +103,7 @@ func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) (
 }
 
 func (s subscriptionStore) List() ([]apps.Subscription, error) {
-	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
+	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, keysPerPage, pluginapi.WithPrefix(config.KVSubPrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s subscriptionStore) List() ([]apps.Subscription, error) {
 	return subs, nil
 }
 
-func (s subscriptionStore) ListByUserID(userID string) ([]apps.Subscription, error) {
+func (s subscriptionStore) ListByUserID(appID apps.AppID, userID string) ([]apps.Subscription, error) {
 	subs, err := s.List()
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (s subscriptionStore) ListByUserID(userID string) ([]apps.Subscription, err
 
 	var rSubs []apps.Subscription
 	for _, s := range subs {
-		if s.UserID == userID {
+		if s.AppID == appID && s.UserID == userID {
 			rSubs = append(rSubs, s)
 		}
 	}

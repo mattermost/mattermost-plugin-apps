@@ -76,7 +76,7 @@ func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req ap
 		return err
 	}
 
-	return upstream.Notify(c.Ctx, up, *app, apps.CallRequest{
+	return upstream.Notify(c.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{

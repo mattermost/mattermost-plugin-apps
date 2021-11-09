@@ -72,8 +72,8 @@ func (a *AppServices) Subscribe(sub apps.Subscription) error {
 	return a.store.Subscription.Save(sub)
 }
 
-func (a *AppServices) GetSubscriptions(userID string) ([]apps.Subscription, error) {
-	return a.store.Subscription.ListByUserID(userID)
+func (a *AppServices) GetSubscriptions(appID apps.AppID, userID string) ([]apps.Subscription, error) {
+	return a.store.Subscription.ListByUserID(appID, userID)
 }
 
 func (a *AppServices) Unsubscribe(sub apps.Subscription) error {

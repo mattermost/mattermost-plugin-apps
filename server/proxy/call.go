@@ -122,7 +122,7 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 		return respondErr(err)
 	}
 
-	cresp, err := upstream.Call(c.Ctx, up, app, creq)
+	cresp, err := upstream.Call(c.Ctx(), up, app, creq)
 	if err != nil {
 		return cresp, err
 	}
@@ -184,5 +184,5 @@ func (p *Proxy) getStatic(c *request.Context, app apps.App, path string) (io.Rea
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(c.Ctx, app, path)
+	return up.GetStatic(c.Ctx(), app, path)
 }

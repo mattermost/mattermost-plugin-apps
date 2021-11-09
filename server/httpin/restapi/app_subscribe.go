@@ -15,13 +15,13 @@ import (
 func (a *restapi) initSubscriptions(api *mux.Router, c *request.Context) {
 	// Subscribe
 	api.Handle(path.Subscribe,
-		request.AddContext(a.Subscribe, c).RequireUser()).Methods(http.MethodPost)
+		request.AddContext(a.Subscribe, c).RequireUser().RequireApp()).Methods(http.MethodPost)
 	// GetSubscriptions
 	api.Handle(path.Subscribe,
-		request.AddContext(a.GetSubscriptions, c).RequireUser()).Methods(http.MethodGet)
+		request.AddContext(a.GetSubscriptions, c).RequireUser().RequireApp()).Methods(http.MethodGet)
 	// Unsubscribe
 	api.Handle(path.Unsubscribe,
-		request.AddContext(a.Unsubscribe, c).RequireUser()).Methods(http.MethodPost)
+		request.AddContext(a.Unsubscribe, c).RequireUser().RequireApp()).Methods(http.MethodPost)
 }
 
 // Subscribe starts or updates an App subscription to Mattermost events.
@@ -39,7 +39,7 @@ func (a *restapi) Subscribe(c *request.Context, w http.ResponseWriter, r *http.R
 //   Input: None
 //   Output: []Subscription
 func (a *restapi) GetSubscriptions(c *request.Context, w http.ResponseWriter, r *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(c.ActingUserID())
+	subs, err := a.appServices.GetSubscriptions(c.AppID(), c.ActingUserID())
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -67,6 +67,7 @@ func (a *restapi) handleSubscribeCore(c *request.Context, w http.ResponseWriter,
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
 
+		sub.AppID = c.AppID()
 		sub.UserID = c.ActingUserID()
 
 		if err := sub.Validate(); err != nil {

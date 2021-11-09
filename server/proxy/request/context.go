@@ -19,6 +19,8 @@ type SessionService interface {
 }
 
 type Context struct {
+	ctx context.Context
+
 	mm             *pluginapi.Client
 	config         config.Service
 	Log            utils.Logger
@@ -31,11 +33,19 @@ type Context struct {
 	actingUserID          string
 	actingUserAccessToken string
 	sysAdminChecked       bool
-
-	Ctx context.Context
 }
 
 type ContextOption func(*Context)
+
+func WithCtx(ctx context.Context) ContextOption {
+	return func(c *Context) {
+		if ctx == nil {
+			panic("nil context")
+		}
+
+		c.ctx = ctx
+	}
+}
 
 func WithAppContext(cc apps.Context) ContextOption {
 	return func(c *Context) {
@@ -50,19 +60,13 @@ func WithAppID(appID apps.AppID) ContextOption {
 	}
 }
 
-func WithCtx(ctx context.Context) ContextOption {
-	return func(c *Context) {
-		c.Ctx = ctx
-	}
-}
-
 func NewContext(mm *pluginapi.Client, config config.Service, session SessionService, opts ...ContextOption) *Context {
 	c := &Context{
+		ctx:            context.Background(),
 		mm:             mm,
 		config:         config,
 		Log:            config.Logger(),
 		sessionService: session,
-		Ctx:            context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -75,6 +79,7 @@ func NewContext(mm *pluginapi.Client, config config.Service, session SessionServ
 // Clone creates a shallow copy of context, allowing clones to apply per-request changes.
 func (c *Context) Clone() *Context {
 	return &Context{
+		ctx:                   c.ctx,
 		mm:                    c.mm,
 		config:                c.config,
 		Log:                   c.Log,
@@ -85,7 +90,6 @@ func (c *Context) Clone() *Context {
 		actingUserID:          c.actingUserID,
 		actingUserAccessToken: c.actingUserAccessToken,
 		sysAdminChecked:       c.sysAdminChecked,
-		Ctx:                   c.Ctx,
 	}
 }
 
@@ -96,6 +100,10 @@ func (c *Context) UpdateAppContext(cc apps.Context) apps.Context {
 		ActingUserAccessToken: c.actingUserAccessToken,
 	}
 	return updated
+}
+
+func (c *Context) Ctx() context.Context {
+	return c.ctx
 }
 
 func (c *Context) MattermostAPI() *pluginapi.Client {

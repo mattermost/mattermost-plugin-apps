@@ -6,8 +6,9 @@ package config
 import "time"
 
 const (
-	MattermostPluginIDHeader = "Mattermost-Plugin-Id"
-	MattermostUserIDHeader   = "Mattermost-User-Id"
+	MattermostSessionIDHeader = "Mattermost-Session-Id"
+	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
+	MattermostUserIDHeader    = "Mattermost-User-Id"
 )
 
 // Internal configuration apps.of mattermost-plugin-apps

@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
+	request "github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -48,4 +49,33 @@ func (m *MockService) GetOrCreate(arg0 apps.AppID, arg1 string) (*model.Session,
 func (mr *MockServiceMockRecorder) GetOrCreate(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreate", reflect.TypeOf((*MockService)(nil).GetOrCreate), arg0, arg1)
+}
+
+// ListForUser mocks base method.
+func (m *MockService) ListForUser(arg0 string) ([]*model.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForUser", arg0)
+	ret0, _ := ret[0].([]*model.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForUser indicates an expected call of ListForUser.
+func (mr *MockServiceMockRecorder) ListForUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForUser", reflect.TypeOf((*MockService)(nil).ListForUser), arg0)
+}
+
+// RevokeSessionsForApp mocks base method.
+func (m *MockService) RevokeSessionsForApp(arg0 *request.Context, arg1 apps.AppID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeSessionsForApp", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeSessionsForApp indicates an expected call of RevokeSessionsForApp.
+func (mr *MockServiceMockRecorder) RevokeSessionsForApp(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeSessionsForApp", reflect.TypeOf((*MockService)(nil).RevokeSessionsForApp), arg0, arg1)
 }
