@@ -64,7 +64,7 @@ func (h *ContextHandler) RequireUser() *ContextHandler {
 func checkUser(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	actingUserID := getUserID(r)
 	if actingUserID == "" {
-		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user ID is required"))
+		httputils.WriteError(w, utils.NewUnauthorizedError("user ID is required"))
 		return false
 	}
 
@@ -89,7 +89,7 @@ func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if !c.mm.User.HasPermissionTo(c.ActingUserID(), model.PermissionManageSystem) {
-		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "user is not a system admin"))
+		httputils.WriteError(w, utils.NewUnauthorizedError("user is not a system admin"))
 		return false
 	}
 
@@ -116,7 +116,7 @@ func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
 func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	sessionID := r.Header.Get(config.MattermostSessionIDHeader)
 	if sessionID == "" {
-		httputils.WriteError(w, errors.New("a session is required"))
+		httputils.WriteError(w, utils.NewUnauthorizedError("a session is required"))
 		return false
 	}
 
@@ -129,7 +129,7 @@ func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	// TODO(Ben): similify
 	appID := apps.AppID(s.Props[model.SessionPropAppsFrameworkAppID])
 	if appID == "" {
-		httputils.WriteError(w, errors.Wrap(utils.ErrUnauthorized, "not an app session"))
+		httputils.WriteError(w, utils.NewUnauthorizedError("not an app session"))
 		return false
 	}
 

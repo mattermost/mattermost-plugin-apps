@@ -593,7 +593,7 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	conf, testAPI := config.NewTestService(&config.Config{
+	conf, api := config.NewTestService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
 	})
 
@@ -637,8 +637,8 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 
 		b, err := json.Marshal(subs)
 		require.NoError(t, err)
-		testAPI.On("KVGet", name).Return(b, nil)
+		api.On("KVGet", name).Return(b, nil)
 	}
 
-	tc.run(p, upMockMap, testAPI)
+	tc.run(p, upMockMap, api)
 }
