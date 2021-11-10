@@ -17,18 +17,18 @@ const (
 
 func (a *restapi) initKV(api *mux.Router, c *request.Context) {
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
+		request.AddContext(a.KVGet, c).RequireUser().RequireApp()).Methods(http.MethodGet)
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
+		request.AddContext(a.KVGet, c).RequireUser().RequireApp()).Methods(http.MethodGet)
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
+		request.AddContext(a.KVPut, c).RequireUser().RequireApp()).Methods(http.MethodPut, http.MethodPost)
 
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
+		request.AddContext(a.KVPut, c).RequireUser().RequireApp()).Methods(http.MethodPut, http.MethodPost)
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
+		request.AddContext(a.KVDelete, c).RequireUser().RequireApp()).Methods(http.MethodDelete)
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
+		request.AddContext(a.KVDelete, c).RequireUser().RequireApp()).Methods(http.MethodDelete)
 }
 
 // KVGet returns a value stored by the App in the KV store.
