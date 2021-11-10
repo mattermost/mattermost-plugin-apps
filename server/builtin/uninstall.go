@@ -52,7 +52,7 @@ func (a *builtinApp) uninstall() handler {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 
 			out, err := a.proxy.UninstallApp(
-				a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(appID)),
+				a.newContext(ctx, creq.Context, request.WithAppID(appID)),
 				creq.Context,
 				appID,
 			)

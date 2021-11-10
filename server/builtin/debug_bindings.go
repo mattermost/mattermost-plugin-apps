@@ -57,7 +57,7 @@ func (a *builtinApp) debugBindings() handler {
 			var bindings []apps.Binding
 			if appID == "" {
 				var err error
-				bindings, err = a.proxy.GetBindings(a.newContext(ctx, request.WithAppContext(creq.Context)), creq.Context)
+				bindings, err = a.proxy.GetBindings(a.newContext(ctx, creq.Context), creq.Context)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
@@ -66,7 +66,7 @@ func (a *builtinApp) debugBindings() handler {
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				bindings = a.proxy.GetAppBindings(a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(appID)), creq.Context, *app)
+				bindings = a.proxy.GetAppBindings(a.newContext(ctx, creq.Context, request.WithAppID(appID)), creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},

@@ -40,7 +40,7 @@ func (a *builtinApp) installConsent() handler {
 			}
 
 			_, out, err := a.proxy.InstallApp(
-				a.newContext(ctx, request.WithAppContext(creq.Context), request.WithAppID(m.AppID)),
+				a.newContext(ctx, creq.Context, request.WithAppID(m.AppID)),
 				creq.Context, m.AppID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
