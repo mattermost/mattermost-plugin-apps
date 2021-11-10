@@ -26,7 +26,7 @@ func (a *builtinApp) appIDForm(submitCall *apps.Call, lookupCall *apps.Call, loc
 				}),
 				AutocompletePosition: 1,
 				IsRequired:           true,
-				SelectLookup:         lookupCall,
+				SelectLookupOptions:  lookupCall,
 			},
 		},
 		Submit: submitCall,

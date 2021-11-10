@@ -193,7 +193,7 @@ func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix
 			(hasBindings && hasForm) ||
 			(hasBindings && hasSubmit) ||
 			(hasForm && hasSubmit) {
-			log.Debugw("Only Form, submit or subbindings must be defined", "form", b.Form, "subbindings", b.Bindings, "submit", b.Submit)
+			log.Debugw("Only Form, submit or sub-bindings must be defined", "form", b.Form, "sub-bindings", b.Bindings, "submit", b.Submit)
 			continue
 		}
 

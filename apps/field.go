@@ -87,12 +87,12 @@ type Field struct {
 	// autocomplete.
 	SelectRefresh bool `json:"refresh,omitempty"`
 
-	// SelectOptions is the list of options to display in a static select field.
-	SelectOptions []SelectOption `json:"options,omitempty"`
+	// SelectStaticOptions is the list of options to display in a static select field.
+	SelectStaticOptions []SelectOption `json:"options,omitempty"`
 
-	// SelectLookup is the call that will return the options to populate the select.
+	// SelectLookupOptions is the call that will return the options to populate the select.
 	// TODO document the Lookup format.
-	SelectLookup *Call `json:"lookup,omitempty"`
+	SelectLookupOptions *Call `json:"lookup,omitempty"`
 
 	// Text props
 	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`
@@ -107,7 +107,7 @@ func (f *Field) PartialCopy() *Field {
 		return &Field{}
 	}
 	clone := *f
-	clone.SelectOptions = make([]SelectOption, len(f.SelectOptions))
-	copy(clone.SelectOptions, f.SelectOptions)
+	clone.SelectStaticOptions = make([]SelectOption, len(f.SelectStaticOptions))
+	copy(clone.SelectStaticOptions, f.SelectStaticOptions)
 	return &clone
 }

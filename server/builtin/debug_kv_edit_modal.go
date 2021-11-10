@@ -126,7 +126,7 @@ func (a *builtinApp) debugKVEditModalForm(creq apps.CallRequest) apps.CallRespon
 					ID:    "field.kv.action.modal_label",
 					Other: "Action to take",
 				}),
-				SelectOptions: buttons,
+				SelectStaticOptions: buttons,
 			},
 		},
 		SubmitButtons: fAction,

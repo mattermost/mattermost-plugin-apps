@@ -197,7 +197,7 @@ type Binding struct {
 
 	// A Binding is either an action, a form (embedded or fetched), or a
 	// "container" for other locations/bindings - i.e. menu sub-items or
-	// subcommands. An attempt to specify mnore than one of these fields is
+	// subcommands. An attempt to specify more than one of these fields is
 	// treated as an error.
 
 	// Submit is used to execute the action associated to this binding.

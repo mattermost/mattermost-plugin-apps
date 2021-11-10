@@ -25,7 +25,7 @@ import (
 type Form struct {
 	// Source is the call to make when the form's definition is required (i.e.
 	// it has no fields, or needs to be refreshed from the app). A simple call
-	// can be specified as a path (string). It will contain no expand/state.
+	// can be specified as a path (string).
 	Source *Call `json:"source,omitempty"`
 
 	// Title, Header, and Footer are used for Modals only.

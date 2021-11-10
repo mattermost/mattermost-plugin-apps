@@ -90,7 +90,7 @@ func (c *Call) WithDefault(def Call) Call {
 }
 
 func (c *Call) WithLocale() *Call {
-	clone := c.Clone()
+	clone := c.PartialCopy()
 	if clone == nil {
 		clone = &Call{}
 	}
@@ -104,28 +104,6 @@ func (c *Call) WithLocale() *Call {
 }
 
 func (c *Call) PartialCopy() *Call {
-	if c == nil {
-		return nil
-	}
-
-	clone := *c
-	if clone.Expand != nil {
-		cloneExpand := *clone.Expand
-		clone.Expand = &cloneExpand
-	}
-
-	// Only know how to clone map values for State.
-	if state, ok := clone.State.(map[string]interface{}); ok {
-		cloneState := map[string]interface{}{}
-		for k, v := range state {
-			cloneState[k] = v
-		}
-		clone.State = cloneState
-	}
-	return &clone
-}
-
-func (c *Call) Clone() *Call {
 	if c == nil {
 		return nil
 	}
