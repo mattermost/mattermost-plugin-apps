@@ -76,15 +76,15 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 		typ = lambda.InvocationTypeEvent
 	}
 
-	sreq, err := upstream.ServerlessRequestFromCall(creq)
+	payload, err := creq.ToHTTPCallRequestJSON()
 	if err != nil {
 		return nil, err
 	}
-	bb, err := u.awsClient.InvokeLambda(name, typ, sreq)
+	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
 	if async || err != nil {
 		return nil, err
 	}
-	resp, err := upstream.ServerlessResponseFromJSON(bb)
+	resp, err := apps.HTTPCallResponseFromJSON(bb)
 	if err != nil {
 		return nil, err
 	}

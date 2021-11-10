@@ -109,3 +109,17 @@ func NewBlankForm(submit *Call) *Form {
 func (f *Form) IsSubmittable() bool {
 	return f != nil && f.Submit != nil
 }
+
+func (f *Form) PartialCopy() *Form {
+	if f == nil {
+		return &Form{}
+	}
+	clone := *f
+	clone.Submit = f.Submit.PartialCopy()
+	clone.Source = f.Source.PartialCopy()
+	clone.Fields = nil
+	for _, field := range f.Fields {
+		clone.Fields = append(clone.Fields, *field.PartialCopy())
+	}
+	return &clone
+}

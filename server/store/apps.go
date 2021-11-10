@@ -143,7 +143,7 @@ func (s *appStore) Save(app apps.App) error {
 	conf, mm, log := s.conf.Basic()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
-	app.Manifest.SchemaVersion = conf.BuildConfig.Version
+	app.Manifest.SchemaVersion = conf.PluginManifest.Version
 
 	data, err := json.Marshal(app)
 	if err != nil {

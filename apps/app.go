@@ -95,6 +95,10 @@ func DecodeCompatibleApp(data []byte) (app *App, err error) {
 type OAuth2App struct {
 	ClientID     string `json:"client_id,omitempty"`
 	ClientSecret string `json:"client_secret,omitempty"`
+
+	// Data allows apps to store custom data in their OAuth configuration. A
+	// frequent use case is storing app-level service account credentials.
+	Data interface{} `json:"data,omitempty"`
 }
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.

@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	kubelessclient "k8s.io/client-go/tools/clientcmd"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -31,7 +32,7 @@ var _ upstream.Upstream = (*Upstream)(nil)
 
 func MakeUpstream() (*Upstream, error) {
 	_, err := kubelessutil.BuildOutOfClusterConfig()
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || kubelessclient.IsEmptyConfig(err) {
 		return nil, utils.NewNotFoundError(err)
 	}
 	if err != nil {
@@ -51,8 +52,8 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 		return nil, err
 	}
 
-	// Build the JSON request
-	creqData, err := upstream.ServerlessRequestFromCall(creq)
+	// Build the "Serverless" JSON request
+	creqData, err := creq.ToHTTPCallRequestJSON()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert call into invocation payload")
 	}
@@ -125,7 +126,7 @@ func (u *Upstream) invoke(clientset kubernetes.Interface, url, method string, da
 		return nil, errors.New(string(received))
 	}
 
-	resp, err := upstream.ServerlessResponseFromJSON(received)
+	resp, err := apps.HTTPCallResponseFromJSON(received)
 	if err != nil {
 		return nil, err
 	}

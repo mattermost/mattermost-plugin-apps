@@ -21,7 +21,7 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	asAdmin, err := p.getAdminClient(in)
+	asAdmin, err := p.getClient(in)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
@@ -81,7 +81,7 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getAdminClient(in)
+	asAdmin, err := p.getClient(in)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}

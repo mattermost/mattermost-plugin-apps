@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
@@ -35,6 +36,9 @@ type Proxy struct {
 	store     *store.Service
 	httpOut   httpout.Service
 	upstreams sync.Map // key: apps.AppID, value upstream.Upstream
+
+	// expandClientOverride is set by the tests to use the mock client
+	expandClientOverride mmclient.Client
 }
 
 // Admin defines the REST API methods to manipulate Apps.
@@ -59,7 +63,7 @@ type Invoker interface {
 // Notifier implements user-less notification sinks.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(app apps.App, data []byte, path string) error
+	NotifyRemoteWebhook(apps.AppID, apps.HTTPCallRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error
@@ -71,6 +75,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
+	GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp

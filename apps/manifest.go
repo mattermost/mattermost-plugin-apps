@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -20,7 +21,7 @@ var DefaultPing = Call{
 }
 
 var DefaultBindings = Call{
-	Path: "/bindings",
+	Path: path.Bindings,
 }
 
 var DefaultGetOAuth2ConnectURL = Call{
@@ -40,6 +41,10 @@ var DefaultOnOAuth2Complete = Call{
 		OAuth2App:             ExpandAll,
 		OAuth2User:            ExpandAll,
 	},
+}
+
+var DefaultOnRemoteWebhook = Call{
+	Path: path.Webhook,
 }
 
 type Manifest struct {
@@ -107,8 +112,17 @@ type Manifest struct {
 	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
+	// OnRemoteWebhook gets invoked when an HTTP webhook is received from a
+	// remote system, and is optionally authenticated by Mattermost. The request
+	// is passed to the call serialized as HTTPCallRequest (JSON).
+	OnRemoteWebhook *Call `json:"on_remote_webhook,omitempty"`
+
 	// Requested Access
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
+
+	// RemoteWebhookAuthType specifies how incoming webhook messages from remote
+	// systems should be authenticated by Mattermost.
+	RemoteWebhookAuthType RemoteWebhookAuthType `json:"remote_webhook_auth_type,omitempty"`
 
 	// RequestedLocations is the list of top-level locations that the
 	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
@@ -269,3 +283,19 @@ func (v AppVersion) Validate() error {
 
 	return result
 }
+
+type RemoteWebhookAuthType string
+
+const (
+	// No authentication means that the message will be accepted, and passed to
+	// tha app. The app can perform its own authentication then. This is also
+	// the default type.
+	NoAuth = RemoteWebhookAuthType("none")
+
+	// Secret authentication expects the App secret to be passed in the incoming
+	// request's query as ?secret=appsecret.
+	SecretAuth = RemoteWebhookAuthType("secret")
+
+	// JWT authentication: not implemented yet
+	JWTAuth = RemoteWebhookAuthType("jwt")
+)

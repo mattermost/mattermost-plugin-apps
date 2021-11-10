@@ -6,8 +6,9 @@ package builtin
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {

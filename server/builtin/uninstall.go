@@ -4,9 +4,10 @@
 package builtin
 
 import (
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {

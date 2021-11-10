@@ -77,15 +77,15 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 		Type:       apps.FieldTypeStaticSelect,
 		IsRequired: true,
 		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.form.field.deploy_type.description",
+			ID:    "field.deploy_type.description",
 			Other: "Select how the App will be accessed.",
 		}),
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.form.field.deploy_type.command_label",
+			ID:    "field.deploy_type.label",
 			Other: "deploy-type",
 		}),
 		ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.form.field.deploy_type.modal_label",
+			ID:    "field.deploy_type.modal_label",
 			Other: "Deployment method",
 		}),
 		SelectRefresh: true,
@@ -98,46 +98,46 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	fields := []apps.Field{}
 
 	// Consent
-	consent := ""
+	h := ""
 	if len(m.RequestedLocations) > 0 {
-		consent += fmt.Sprintf("\n%s\n", a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.form.header.consent.locations",
-			Other: "- Add the following elements to the **Mattermost User Interface**:",
-		}))
-		// Locations are not localized
+		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "modal.install_consent.header.locations",
+			Other: "\n- Add the following elements to the **Mattermost User Interface**:\n",
+		})
+		// (Mattermost) locations themselves are not localized
 		for _, l := range m.RequestedLocations {
-			consent += fmt.Sprintf("  - %s\n", l.Markdown())
+			h += fmt.Sprintf("  - %s\n", l.Markdown())
 		}
 	}
 	if len(m.RequestedPermissions) > 0 {
-		consent += fmt.Sprintf("%s\n", a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.form.header.consent.permissions",
-			Other: "- Access **Mattermost API** with the following permissions:",
-		}))
+		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "modal.install_consent.header.permissions",
+			Other: "- Access **Mattermost API** with the following permissions:\n",
+		})
 		// Permissions are not localized
 		for _, permission := range m.RequestedPermissions {
-			consent += fmt.Sprintf("  - %s\n", permission.String())
+			h += fmt.Sprintf("  - %s\n", permission.String())
 		}
 	}
-	if consent != "" {
-		header := fmt.Sprintf("%s\n\n", a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	if h != "" {
+		header := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
-				ID:    "command.install.form.header.consent.header",
-				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:",
+				ID:    "modal.install_consent.header.header",
+				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:\n\n",
 			},
 			TemplateData: map[string]string{
 				"DisplayName": m.DisplayName,
 			},
-		}))
-		consent = header + consent + "---\n"
+		})
+		h = header + h + "---\n"
 
 		value := creq.BoolValue(fConsent)
 		fields = append(fields, apps.Field{
 			Name: fConsent,
 			Type: apps.FieldTypeBool,
 			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.install.form.field.consent.modal_label",
-				Other: "Agree to grant the App access to APIs and Locations",
+				ID:    "field.consent.modal_label",
+				Other: "Agree to grant the app access to APIs and Locations",
 			}),
 			Description: "",
 			IsRequired:  true,
@@ -154,12 +154,13 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 			Name: fSecret,
 			Type: apps.FieldTypeText,
 			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.install.form.field.secret.modal_label",
+				ID:    "field.secret.modal_label.use_jwt",
 				Other: "Outgoing JWT Secret",
 			}),
+
 			Description: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
-					ID:    "command.install.form.field.secret.description",
+					ID:    "field.secret.description.use_jwt",
 					Other: "The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the App's web site, {{.HomepageURL}}",
 				},
 				TemplateData: map[string]string{
@@ -179,14 +180,14 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	return apps.Form{
 		Title: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
-				ID:    "command.install.form.field.secret.description",
+				ID:    "modal.install_consent.title",
 				Other: "Install App {{.DisplayName}}",
 			},
 			TemplateData: map[string]string{
-				"HomepageURL": m.DisplayName,
+				"DisplayName": m.DisplayName,
 			},
 		}),
-		Header: consent,
+		Header: h,
 		Fields: fields,
 		Submit: newAdminCall(pInstallConsent).WithState(m.AppID),
 		Source: newAdminCall(pInstallConsentForm).WithState(m.AppID),

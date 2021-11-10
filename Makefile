@@ -20,9 +20,9 @@ GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update t
 BUILD_DATE = $(shell date -u)
 BUILD_HASH = $(shell git rev-parse HEAD)
 BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
-LDFLAGS += -X "main.BuildDate=$(BUILD_DATE)"
-LDFLAGS += -X "main.BuildHash=$(BUILD_HASH)"
-LDFLAGS += -X "main.BuildHashShort=$(BUILD_HASH_SHORT)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildDate=$(BUILD_DATE)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHash=$(BUILD_HASH)"
+LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHashShort=$(BUILD_HASH_SHORT)"
 GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
 GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
 
@@ -96,6 +96,7 @@ endif
 mock:
 ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen@v1.6.0
+	mockgen -destination server/mocks/mock_mmclient/mock_mmclient.go github.com/mattermost/mattermost-plugin-apps/server/mmclient Client
 	mockgen -destination server/mocks/mock_appservices/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/appservices Service
 	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
 	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/upstream Upstream

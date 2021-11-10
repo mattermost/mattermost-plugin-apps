@@ -12,7 +12,8 @@ import (
 )
 
 func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
+	_, mm, log := p.conf.Basic()
+	log = log.With("app_id", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -32,7 +33,7 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 		message = fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getAdminClient(in)
+	asAdmin, err := p.getClient(in)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}
@@ -61,7 +62,10 @@ func (p *Proxy) UninstallApp(in Incoming, cc apps.Context, appID apps.AppID) (st
 	}
 
 	// remove data
-	if err = p.store.AppKV.DeleteAll(app.BotUserID); err != nil {
+	err = p.store.AppKV.List(app.BotUserID, "", func(key string) error {
+		return mm.KV.Delete(key)
+	})
+	if err != nil {
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 

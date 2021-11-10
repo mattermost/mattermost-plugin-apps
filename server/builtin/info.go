@@ -6,9 +6,10 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -40,7 +41,7 @@ func (a *builtinApp) info(creq apps.CallRequest) apps.CallResponse {
 			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
 		},
 		TemplateData: map[string]string{
-			"Version":       conf.Version,
+			"Version":       conf.PluginManifest.Version,
 			"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
 			"BuildDate":     conf.BuildDate,
 			"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),

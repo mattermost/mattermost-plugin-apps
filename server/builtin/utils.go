@@ -10,23 +10,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func (a *builtinApp) appIDForm(submitCall *apps.Call, lookupCall *apps.Call, loc *i18n.Localizer) *apps.Form {
-	return &apps.Form{
+func (a *builtinApp) appIDForm(submitCall *apps.Call, lookupCall *apps.Call, loc *i18n.Localizer, extraFields ...apps.Field) *apps.Form {
+	form := &apps.Form{
 		Fields: []apps.Field{
 			{
 				Name: fAppID,
 				Type: apps.FieldTypeDynamicSelect,
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.description",
-					Other: "select an App",
+					ID:    "field.appID.description",
+					Other: "Select an App or enter the App ID",
 				}),
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.label",
+					ID:    "field.appID.label",
 					Other: "app",
-				}),
-				AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "form.appIDForm.appID.autocompleteHint",
-					Other: "App ID",
 				}),
 				AutocompletePosition: 1,
 				IsRequired:           true,
@@ -35,6 +31,8 @@ func (a *builtinApp) appIDForm(submitCall *apps.Call, lookupCall *apps.Call, loc
 		},
 		Submit: submitCall,
 	}
+	form.Fields = append(form.Fields, extraFields...)
+	return form
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.ListedApp) bool) apps.CallResponse {
@@ -43,12 +41,12 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 	}
 
 	var options []apps.SelectOption
-	marketplaceApps := a.proxy.GetListedApps(creq.Query, false)
+	marketplaceApps := a.proxy.GetListedApps(creq.Query, true)
 	for _, app := range marketplaceApps {
 		if includef == nil || includef(app) {
 			options = append(options, apps.SelectOption{
 				Value: string(app.Manifest.AppID),
-				Label: string(app.Manifest.DisplayName),
+				Label: app.Manifest.DisplayName,
 			})
 		}
 	}
@@ -58,7 +56,8 @@ func (a *builtinApp) lookupAppID(creq apps.CallRequest, includef func(apps.Liste
 func newAdminCall(path string) *apps.Call {
 	call := apps.NewCall(path)
 	call.Expand = &apps.Expand{
-		AdminAccessToken: apps.ExpandAll,
+		ActingUser:            apps.ExpandSummary,
+		ActingUserAccessToken: apps.ExpandAll,
 	}
 	return call
 }

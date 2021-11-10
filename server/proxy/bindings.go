@@ -46,7 +46,7 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 		app := allApps[i]
 
 		go func(app apps.App) {
-			bb := p.getBindingsForApp(in, cc, app)
+			bb := p.GetAppBindings(in, cc, app)
 			all <- bb
 		}(app)
 	}
@@ -59,12 +59,17 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 	return ret, nil
 }
 
-// getBindingsForApp fetches bindings for a specific apps. We should avoid
+// GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
-func (p *Proxy) getBindingsForApp(in Incoming, cc apps.Context, app apps.App) []apps.Binding {
+func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding {
 	if !p.appIsEnabled(app) {
 		return nil
 	}
+
+	if len(app.GrantedLocations) == 0 {
+		return nil
+	}
+
 	log := p.conf.Logger().With("app_id", app.AppID)
 
 	appID := app.AppID

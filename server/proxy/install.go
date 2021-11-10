@@ -56,7 +56,8 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		app.Secret = secret
 	}
 
-	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
+	if app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) &&
+		app.RemoteWebhookAuthType == apps.SecretAuth || app.RemoteWebhookAuthType == "" {
 		app.WebhookSecret = model.NewId()
 	}
 
@@ -82,7 +83,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
-	asAdmin, err := p.getAdminClient(in)
+	asAdmin, err := p.getClient(in)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
 	}

@@ -1,13 +1,13 @@
 package builtin
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+	loc := a.newLocalizer(creq)
 	return apps.NewDataResponse(a.getBindings(creq, loc))
 }
 
@@ -16,7 +16,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 		a.infoCommandBinding(loc),
 	}
 
-	if utils.EnsureSysAdmin(a.conf.MattermostAPI(), creq.Context.ActingUserID) == nil {
+	if creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin() {
 		commands = append(commands,
 			a.debugCommandBinding(loc),
 			a.disableCommandBinding(loc),
@@ -32,7 +32,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 			Location: apps.LocationCommand,
 			Bindings: []apps.Binding{
 				{
-					Label:    "apps",
+					Label:    "apps", //  "/apps" in all locales
 					Location: "apps",
 					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "command.base.description",

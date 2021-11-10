@@ -6,7 +6,7 @@
 	"icon": "icon.png",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-webhooks",
 	"requested_permissions": [
-		"act_as_admin",
+		"act_as_user",
 		"act_as_bot",
 		"remote_webhooks"
 	],
@@ -16,10 +16,11 @@
 	"on_install": {
 		"path": "/install",
 		"expand": {
-			"admin_access_token": "all"
+			"user_access_token": "all"
 		}
 	},
 	"http": {
 		"root_url": "http://localhost:8081"
-	}
+	},
+	"remote_webhook_auth_type": "secret"
 }

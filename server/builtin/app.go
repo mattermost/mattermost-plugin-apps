@@ -9,7 +9,13 @@ import (
 	"net/http"
 	"runtime/debug"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -24,18 +30,36 @@ const (
 )
 
 const (
-	fURL            = "url"
-	fConsent        = "consent"
-	fSecret         = "secret"
+	fAction         = "action"
 	fAppID          = "app"
-	fVersion        = "version"
-	fIncludePlugins = "include_plugins"
+	fBase64         = "base64"
+	fBase64Key      = "base64_key"
+	fConsent        = "consent"
+	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fID             = "id"
+	fIncludePlugins = "include_plugins"
+	fNamespace      = "namespace"
+	fNewValue       = "new_value"
+	fSecret         = "secret"
+	fURL            = "url"
 )
 
 const (
 	pDebugBindings       = "/debug-bindings"
+	pDebugBindingsLookup = "/debug-bindings/lookup"
 	pDebugClean          = "/debug-clean"
+	pDebugKVInfo         = "/debug/kv/info"
+	pDebugKVInfoLookup   = "/debug/kv/info/lookup"
+	pDebugKVCreate       = "/debug/kv/create"
+	pDebugKVCreateLookup = "/debug/kv/create/lookup"
+	pDebugKVEdit         = "/debug/kv/edit"
+	pDebugKVEditLookup   = "/debug/kv/edit/lookup"
+	pDebugKVEditModal    = "/debug/kv/edit-modal"
+	pDebugKVClean        = "/debug/kv/clean"
+	pDebugKVCleanLookup  = "/debug/kv/lookup"
+	pDebugKVList         = "/debug/kv/list"
+	pDebugKVListLookup   = "/debug/kv/list/lookup"
 	pInfo                = "/info"
 	pList                = "/list"
 	pUninstall           = "/uninstall"
@@ -54,19 +78,21 @@ const (
 type handler func(apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
-	conf    config.Service
-	proxy   proxy.Service
-	httpOut httpout.Service
-	router  map[string]handler
+	conf        config.Service
+	proxy       proxy.Service
+	appservices appservices.Service
+	httpOut     httpout.Service
+	router      map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service) *builtinApp {
 	a := &builtinApp{
-		conf:    conf,
-		proxy:   proxy,
-		httpOut: httpOut,
+		conf:        conf,
+		proxy:       proxy,
+		appservices: appservices,
+		httpOut:     httpOut,
 	}
 
 	a.router = map[string]handler{
@@ -75,7 +101,19 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 
 		// Actions that require sysadmin
 		pDebugBindings:       requireAdmin(a.debugBindings),
+		pDebugBindingsLookup: requireAdmin(a.debugBindingsLookup),
 		pDebugClean:          requireAdmin(a.debugClean),
+		pDebugKVClean:        requireAdmin(a.debugKVClean),
+		pDebugKVCleanLookup:  requireAdmin(a.debugKVCleanLookup),
+		pDebugKVCreate:       requireAdmin(a.debugKVCreate),
+		pDebugKVCreateLookup: requireAdmin(a.debugKVCreateLookup),
+		pDebugKVEdit:         requireAdmin(a.debugKVEdit),
+		pDebugKVEditLookup:   requireAdmin(a.debugKVEditLookup),
+		pDebugKVEditModal:    requireAdmin(a.debugKVEditModal),
+		pDebugKVInfo:         requireAdmin(a.debugKVInfo),
+		pDebugKVInfoLookup:   requireAdmin(a.debugKVInfoLookup),
+		pDebugKVList:         requireAdmin(a.debugKVList),
+		pDebugKVListLookup:   requireAdmin(a.debugKVListLookup),
 		pDisable:             requireAdmin(a.disable),
 		pDisableLookup:       requireAdmin(a.disableLookup),
 		pEnable:              requireAdmin(a.enable),
@@ -96,16 +134,17 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, httpOut httpout.Ser
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
 		AppID:       AppID,
-		Version:     apps.AppVersion(conf.BuildConfig.BuildHashShort),
+		Version:     apps.AppVersion(conf.PluginManifest.Version),
 		DisplayName: AppDisplayName,
 		Description: AppDescription,
+		Deploy:      apps.Deploy{},
 		Bindings: &apps.Call{
-			Path: "/bindings",
+			Path: appspath.Bindings,
 			Expand: &apps.Expand{
-				Locale: apps.ExpandAll,
+				ActingUser: apps.ExpandSummary,
+				Locale:     apps.ExpandAll,
 			},
 		},
-		Deploy: apps.Deploy{},
 	}
 }
 
@@ -119,7 +158,7 @@ func App(conf config.Config) apps.App {
 			apps.LocationCommand,
 		},
 		GrantedPermissions: apps.Permissions{
-			apps.PermissionActAsAdmin,
+			apps.PermissionActAsUser,
 		},
 	}
 }
@@ -181,10 +220,18 @@ func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, err
 
 func requireAdmin(h handler) handler {
 	return func(creq apps.CallRequest) apps.CallResponse {
-		if creq.Context.AdminAccessToken == "" {
-			return apps.NewErrorResponse(
-				utils.NewUnauthorizedError("no admin token in the request"))
+		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
+			return apps.NewErrorResponse(utils.NewInvalidError(
+				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+		}
+		if !creq.Context.ActingUser.IsSystemAdmin() {
+			return apps.NewErrorResponse(utils.NewUnauthorizedError(
+				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
 		}
 		return h(creq)
 	}
+}
+
+func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
+	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }

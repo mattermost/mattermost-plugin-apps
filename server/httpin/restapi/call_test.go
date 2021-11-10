@@ -270,7 +270,6 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 			BotAccessToken:        "ignored_bot_access_token",
 			ActingUser:            &model.User{},
 			ActingUserAccessToken: "ignored_user_access_token",
-			AdminAccessToken:      "ignored_admin_access_token",
 			OAuth2:                apps.OAuth2Context{},
 			App:                   &apps.App{},
 			Channel:               &model.Channel{},
