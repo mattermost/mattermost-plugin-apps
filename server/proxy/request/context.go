@@ -163,7 +163,7 @@ func (c *Context) GetMMClient() (mmclient.Client, error) {
 
 	token, err := c.UserAccessToken()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to use the current user's token for admin access to Mattermost")
+		return nil, errors.Wrap(err, "failed to use the current user's token for access to Mattermost")
 	}
 
 	return mmclient.NewHTTPClient(conf, token), nil
