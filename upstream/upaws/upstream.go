@@ -126,13 +126,13 @@ func (u *Upstream) ListS3Apps(appPrefix string) ([]apps.AppID, error) {
 		return nil, utils.NewNotFoundError(appPrefix)
 	}
 	sorted := []string{}
-	for k := range keys {
-		sorted = append(sorted, k)
+	for keys := range keys {
+		sorted = append(sorted, keys)
 	}
 	sort.Strings(sorted)
 	out := []apps.AppID{}
-	for _, k := range sorted {
-		out = append(out, apps.AppID(k))
+	for _, keys := range sorted {
+		out = append(out, apps.AppID(keys))
 	}
 	return out, nil
 }
@@ -158,8 +158,8 @@ func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]str
 		return nil, utils.NewNotFoundError(versionPrefix)
 	}
 	sorted := []string{}
-	for k := range keys {
-		sorted = append(sorted, k)
+	for keys := range keys {
+		sorted = append(sorted, keys)
 	}
 	sort.Strings(sorted)
 	return sorted, nil

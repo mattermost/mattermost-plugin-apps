@@ -111,15 +111,15 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 		return nil
 	}
 
-	newExpireyTime := now + (1000 * 60 * sessionLengthInMinutes)
+	newExpiryTime := now + (1000 * 60 * sessionLengthInMinutes)
 
-	err := s.mm.Session.ExtendExpiry(session.Id, newExpireyTime)
+	err := s.mm.Session.ExtendExpiry(session.Id, newExpiryTime)
 	if err != nil {
 		return err
 	}
 
 	// Update store
-	session.ExpiresAt = newExpireyTime
+	session.ExpiresAt = newExpiryTime
 
 	err = s.store.Session.Save(appID, userID, session)
 	if err != nil {

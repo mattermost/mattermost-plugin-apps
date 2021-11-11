@@ -102,10 +102,10 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 
 	ret := make([]*model.Session, 0)
 
-	for _, k := range keys {
-		session, err := s.get(k)
+	for _, key := range keys {
+		session, err := s.get(key)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed get session for key, %s", k)
+			return nil, errors.Wrapf(err, "failed get session for key, %s", key)
 		}
 
 		ret = append(ret, session)
@@ -123,8 +123,8 @@ func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
 
-		for _, k := range keys {
-			_, keyUserID, err := parseKey(k)
+		for _, key := range keys {
+			_, keyUserID, err := parseKey(key)
 			if err != nil {
 				continue
 			}
@@ -133,9 +133,9 @@ func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
 				continue
 			}
 
-			session, err := s.get(k)
+			session, err := s.get(key)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed get session for key, %s", k)
+				return nil, errors.Wrapf(err, "failed get session for key, %s", key)
 			}
 
 			ret = append(ret, session)
@@ -155,10 +155,10 @@ func (s sessionStore) DeleteAllForApp(appID apps.AppID) error {
 		return err
 	}
 
-	for _, k := range keys {
-		err := s.conf.MattermostAPI().KV.Delete(k)
+	for _, key := range keys {
+		err := s.conf.MattermostAPI().KV.Delete(key)
 		if err != nil {
-			return errors.Wrapf(err, "failed delete session for key: %s, appID: %s", k, appID)
+			return errors.Wrapf(err, "failed delete session for key: %s, appID: %s", key, appID)
 		}
 	}
 
