@@ -35,9 +35,6 @@ func TestKV(t *testing.T) {
 		&model.User{
 			IsBot: true,
 		}, nil)
-	session := &model.Session{}
-	session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
-	api.On("GetSession", "some_session_id").Return(session, nil)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -67,7 +64,6 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest(http.MethodPut, itemURL, bytes.NewReader(item))
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
-	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
 	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -85,7 +81,6 @@ func TestKV(t *testing.T) {
 	req, err = http.NewRequest(http.MethodGet, itemURL, nil)
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
-	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
 	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
@@ -104,9 +99,6 @@ func TestKVPut(t *testing.T) {
 	t.Run("payload too big", func(t *testing.T) {
 		conf, api := config.NewTestService(nil)
 		defer api.AssertExpectations(t)
-		session := &model.Session{}
-		session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
-		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -129,7 +121,6 @@ func TestKVPut(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
 		req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-		req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
