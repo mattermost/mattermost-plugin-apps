@@ -43,6 +43,9 @@ func (th *TestHelper) TearDown() {
 }
 
 func Setup(t testing.TB) *TestHelper {
+	os.Setenv("MM_FEATUREFLAGS_APPSENABLED", "true")
+	defer os.Unsetenv("MM_FEATUREFLAGS_APPSENABLED")
+
 	th := &TestHelper{}
 
 	serverTestHelper := api4.Setup(t)
@@ -55,10 +58,10 @@ func Setup(t testing.TB) *TestHelper {
 	// enable bot creation by default
 	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
+		*cfg.ServiceSettings.EnableOAuthServiceProvider = true
 		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "127.0.0.1"
 		*cfg.ServiceSettings.SiteURL = fmt.Sprintf("http://localhost:%d", port)
 		*cfg.ServiceSettings.ListenAddress = fmt.Sprintf(":%d", port)
-		cfg.FeatureFlags.AppsEnabled = true
 	})
 
 	th.ServerTestHelper = serverTestHelper
