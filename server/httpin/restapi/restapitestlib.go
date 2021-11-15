@@ -44,7 +44,7 @@ func (th *TestHelper) TearDown() {
 
 func Setup(t testing.TB) *TestHelper {
 	os.Setenv("MM_FEATUREFLAGS_APPSENABLED", "true")
-	defer os.Unsetenv("MM_FEATUREFLAGS_APPSENABLED")
+	t.Cleanup(func() { _ = os.Unsetenv("MM_FEATUREFLAGS_APPSENABLED") })
 
 	th := &TestHelper{}
 
