@@ -65,16 +65,14 @@ func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req ap
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, req.Path)
 
-	conf := p.conf.Get()
-	cc := contextForApp(*app, apps.Context{}, conf)
-	// Set acting user to bot.
-	cc.ActingUserID = app.BotUserID
-	cc.ActingUserAccessToken = app.BotAccessToken
-
-	cc, err = p.expandContext(c, *app, &cc, call.Expand)
+	cc, err := p.expandContext(c, *app, nil, call.Expand)
 	if err != nil {
 		return err
 	}
+
+	// Set acting user to bot.
+	cc.ActingUserID = cc.BotUserID
+	cc.ActingUserAccessToken = cc.BotAccessToken
 
 	return upstream.Notify(c.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,

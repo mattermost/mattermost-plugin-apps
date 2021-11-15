@@ -87,13 +87,9 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return nil, "", err
 	}
 
-	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(c, conf, *app, trusted, c.ActingUserID())
-		if err != nil {
-			return nil, "", err
-		}
-		app.MattermostOAuth2 = oAuthApp
+	err = p.ensureOAuthApp(c, conf, app, trusted, c.ActingUserID())
+	if err != nil {
+		return nil, "", err
 	}
 
 	err = p.store.App.Save(*app)
@@ -130,17 +126,17 @@ func (p *Proxy) InstallApp(c *request.Context, cc apps.Context, appID apps.AppID
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(c *request.Context, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
+func (p *Proxy) ensureOAuthApp(c *request.Context, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) error {
 	mm := p.conf.MattermostAPI()
 	if app.MattermostOAuth2 != nil {
 		c.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
 
-		return app.MattermostOAuth2, nil
+		return nil
 	}
 
 	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
-	oauthApp := &model.OAuthApp{
+	oAuthApp := &model.OAuthApp{
 		CreatorId:          actingUserID,
 		Name:               app.DisplayName,
 		Description:        app.Description,
@@ -150,14 +146,16 @@ func (p *Proxy) ensureOAuthApp(c *request.Context, conf config.Config, app apps.
 		Scopes:             nil,
 		AppsFrameworkAppID: string(app.AppID),
 	}
-	err := mm.OAuth.Create(oauthApp)
+	err := mm.OAuth.Create(oAuthApp)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create OAuth2 App")
+		return errors.Wrap(err, "failed to create OAuth2 App")
 	}
 
-	c.Log.Debugw("App install flow: Created OAuth2 App", "id", oauthApp.Id)
+	app.MattermostOAuth2 = oAuthApp
 
-	return oauthApp, nil
+	c.Log.Debugw("App install flow: Created OAuth2 App", "id", app.MattermostOAuth2.Id)
+
+	return nil
 }
 
 func (p *Proxy) ensureBot(c *request.Context, app *apps.App, icon io.Reader) error {
@@ -210,19 +208,6 @@ func (p *Proxy) ensureBot(c *request.Context, app *apps.App, icon io.Reader) err
 		if err != nil {
 			return errors.Wrap(err, "failed to update bot profile icon")
 		}
-	}
-
-	// Create an access token on a fresh app install
-	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) &&
-		app.BotAccessTokenID == "" {
-		// Use the Plugin API as OAuth sessions can't create access tokens
-		token, err := p.conf.MattermostAPI().User.CreateAccessToken(bot.UserId, "Mattermost App Token")
-		if err != nil {
-			return errors.Wrap(err, "failed to create bot user's access token")
-		}
-
-		app.BotAccessToken = token.Token
-		app.BotAccessTokenID = token.Id
 	}
 
 	return nil

@@ -35,8 +35,6 @@ func (a7 AppV0_7) App() *App {
 		WebhookSecret:      a7.WebhookSecret,
 		BotUserID:          a7.BotUserID,
 		BotUsername:        a7.BotUsername,
-		BotAccessToken:     a7.BotAccessToken,
-		BotAccessTokenID:   a7.BotAccessTokenID,
 		RemoteOAuth2:       a7.RemoteOAuth2,
 		GrantedPermissions: a7.GrantedPermissions,
 		GrantedLocations:   a7.GrantedLocations,

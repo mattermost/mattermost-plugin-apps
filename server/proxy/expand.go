@@ -9,22 +9,32 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Context {
+func (p *Proxy) contextForApp(app apps.App, base apps.Context) (apps.Context, error) {
+	conf := p.conf.Get()
+
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
 	out.MattermostSiteURL = conf.MattermostSiteURL
+	out.DeveloperMode = conf.DeveloperMode
 	out.AppID = app.AppID
 	out.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
+
 	out.BotUserID = app.BotUserID
-	out.BotAccessToken = app.BotAccessToken
-	out.DeveloperMode = conf.DeveloperMode
-	return out
+
+	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
+		botAccessToken, err := p.getBotAccessToken(app)
+		if err != nil {
+			return emptyCC, err
+		}
+		out.BotAccessToken = botAccessToken
+	}
+
+	return out, nil
 }
 
 var emptyCC = apps.Context{}
@@ -35,7 +45,11 @@ func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Conte
 	}
 	conf := c.Config().Get()
 
-	cc := contextForApp(app, *base, conf)
+	cc, err := p.contextForApp(app, *base)
+	if err != nil {
+		return emptyCC, err
+	}
+
 	if expand == nil {
 		// nothing more to do
 		return cc, nil
@@ -302,9 +316,22 @@ func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Clie
 		return c.GetMMClient()
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		return mmclient.NewHTTPClient(conf, app.BotAccessToken), nil
+		accessToken, err := p.getBotAccessToken(app)
+		if err != nil {
+			return nil, err
+		}
+		return mmclient.NewHTTPClient(conf, accessToken), nil
 
 	default:
 		return nil, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
 	}
+}
+
+func (p *Proxy) getBotAccessToken(app apps.App) (string, error) {
+	session, err := p.sessionService.GetOrCreate(app.AppID, app.BotUserID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get bot session")
+	}
+
+	return session.Token, nil
 }

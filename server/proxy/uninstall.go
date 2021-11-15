@@ -45,13 +45,6 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 		}
 	}
 
-	// revoke bot account token if there is one
-	if app.BotAccessTokenID != "" {
-		if err = mm.User.RevokeAccessToken(app.BotAccessTokenID); err != nil {
-			return "", errors.Wrapf(err, "failed to revoke bot access token for %s", app.AppID)
-		}
-	}
-
 	// disable the bot account
 	if _, err = mm.Bot.UpdateActive(app.BotUserID, false); err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
