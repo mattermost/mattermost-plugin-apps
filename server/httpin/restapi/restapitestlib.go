@@ -103,17 +103,6 @@ func (th *TestHelper) SetupPP(t testing.TB) {
 
 	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
 	require.Nil(t, appErr)
-
-	plugins, appErr := th.ServerTestHelper.App.GetPlugins()
-	require.Nil(t, appErr)
-
-	isEnabled := false
-	for _, plugin := range plugins.Active {
-		if plugin.Id == pluginID {
-			isEnabled = true
-		}
-	}
-	require.True(t, isEnabled)
 }
 
 // Sets up the PP for test
