@@ -103,8 +103,8 @@ func SetupPP(th *TestHelper, t testing.TB) {
 		return
 	}
 
-	_, _, activationErr := pluginsEnvironment.Activate(pluginID)
-	require.NoError(t, activationErr)
+	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
+	require.Nil(t, appErr)
 	require.True(t, th.ServerTestHelper.App.GetPluginsEnvironment().IsActive(pluginID))
 }
 
