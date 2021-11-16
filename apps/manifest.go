@@ -216,7 +216,7 @@ type AppID string
 
 const (
 	MinAppIDLength = 3
-	MaxAppIDLength = 32
+	MaxAppIDLength = 26
 )
 
 func (id AppID) Validate() error {
