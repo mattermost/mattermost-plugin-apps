@@ -15,10 +15,17 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
+func TestAppInstallE2E(t *testing.T) {
+	th := Setup(t)
+	th.SetupPP(t)
+
+	th.SetupApp(t, apps.Manifest{
+		AppID: apps.AppID("some_app_id"),
+	})
+}
 func TestSubscribeE2E(t *testing.T) {
 	th := Setup(t)
-	SetupPP(th, t)
-	defer th.TearDown()
+	th.SetupPP(t)
 
 	t.Run("Unauthenticated requests are rejected", func(t *testing.T) {
 		subscription := &apps.Subscription{

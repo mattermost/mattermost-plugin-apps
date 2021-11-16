@@ -1,15 +1,21 @@
 version: 2.1
 
 orbs:
-  plugin-ci: mattermost/plugin-ci@volatile
+  aws-s3: circleci/aws-s3@1.0.16
+  codecov: codecov/codecov@1.1.1
+
+executors:
+  default:
+    docker:
+      - image: cimg/go:1.17.3
 
 aliases:
 - &restore_go_cache
   restore_cache:
-    key: go-mod-v1-{{ checksum "go.sum" }}
+    key: go-mod-v2-{{ checksum "go.sum" }}
 - &save_go_cache
   save_cache:
-    key: go-mod-v1-{{ checksum "go.sum" }}
+    key: go-mod-v2-{{ checksum "go.sum" }}
     paths:
     - "/go/pkg/mod"
 - &restore_cypress_cache
@@ -22,20 +28,65 @@ aliases:
       - ./tests-e2e/node_modules
       - /home/circleci/.cache/Cypress
 
+commands:
+  deploy:
+    parameters:
+      bucket:
+        type: string
+      filename:
+        type: string
+    steps:
+      - aws-s3/copy:
+          from: << parameters.filename >>
+          to: << parameters.bucket >>
+          arguments: '--acl public-read --cache-control no-cache'
+
+  install-golangci-lint:
+    description: Install golangci-lint
+    parameters:
+      version:
+        type: string
+        default: 1.31.0
+      gobin:
+        type: string
+        default: $GOPATH/bin
+      prefix:
+        type: string
+        default: v2
+        description: Prefix for cache key to store the binary.
+    steps:
+      - restore_cache:
+          name: Restore golangci-lint cache
+          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
+      - run:
+          name: Install golangci-lint
+          command: |
+            mkdir -p << parameters.gobin >>
+            command -v << parameters.gobin >>/golangci-lint && exit
+            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
+      - save_cache:
+          name: Save golangci-lint cache
+          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
+          paths: [<< parameters.gobin >>/golangci-lint]
+
 jobs:
   check-mocks:
-    docker:
-      - image: circleci/golang:1.17.3
+    executor:
+      name: default
     steps:
       - checkout
+      - *restore_go_cache
       - run:
           name: Checking if generated mocks are up to date
           command: |
             make mock
             git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
+      - *save_go_cache
+
   check-i18n:
-    docker:
-      - image: circleci/golang:1.17.3
+    executor:
+      name: default
     steps:
       - checkout
       - run:
@@ -45,15 +96,80 @@ jobs:
             make i18n-extract-server
             git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
 
+  lint:
+    executor:
+      name: default
+    resource_class: large
+    steps:
+      - checkout
+      - *restore_go_cache
+      - install-golangci-lint
+      - run:
+          name: Checking code style
+          command: make check-style
+      - run: go mod tidy -v
+      - run:
+          name: Checking diff of go mod files
+          command: |
+            git --no-pager diff --exit-code go.mod go.sum || (echo "Please run \"go mod tidy\" and commit the changes in go.mod and go.sum." && exit 1)
+      - *save_go_cache
+
+  test:
+    executor:
+      name: default
+    steps:
+      - checkout
+      - *restore_go_cache
+      - run: make test
+      - *save_go_cache
+
+  coverage:
+    executor:
+      name: default
+    steps:
+      - checkout
+      - *restore_go_cache
+      - run:
+          name: Generating Coverage Results
+          command: make coverage
+      - *save_go_cache
+      - codecov/upload:
+        file: server/coverage.txt
+
+  build:
+    executor:
+      name: default
+    steps:
+      - checkout
+      - run:
+          name: Building Plugin Bundle
+          command: make dist
+      - run:
+          name: Generating Release Notes
+          command: |
+            printf "Supported Mattermost Server Versions: **$(cat plugin.json | jq .min_server_version -r)+** \n## Enhancements\n\n## Fixes\n"  >> dist/release-notes.md
+            if [[ $(git tag -l | wc -l) -eq 1 ]]; then
+              git log --pretty='format:- %h %s' --abbrev-commit --no-decorate --no-color $(git rev-list --max-parents=0 HEAD) HEAD >> dist/release-notes.md
+            else
+              git log --pretty='format:- %h %s' --abbrev-commit --no-decorate --no-color $(git describe --tags --abbrev=0 $(git describe --tags --abbrev=0)^)..HEAD >> dist/release-notes.md
+            fi
+      - persist_to_workspace:
+          root: dist
+          paths:
+            - "*.tar.gz"
+            - "release-notes.md"
+      - store_artifacts:
+          path: dist
+
   test-e2e-postgres11:
     docker:
-      - image: circleci/golang:1.17.3
-      - image: circleci/postgres:11-alpine
+      - image: cimg/go:1.17.3
+      - image: cimg/postgres:11.13
         environment:
           POSTGRES_USER: mmuser
           POSTGRES_DB: mattermost_test
     executor:
-      name: plugin-ci/default
+      name: default
     steps:
       - run:
           name: Waiting for Postgres to be ready
@@ -78,12 +194,13 @@ jobs:
           command: MM_SERVER_PATH=$(pwd)/mattermost-server make test-e2e
       - *save_go_cache
   e2e-cypress-tests-pinned:
-    resource_class: large
+    resource_class: xlarge
     docker:
-      - image: circleci/golang:1.17.3-node-browsers
+      - image: cimg/go:1.17.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
-      - image: circleci/postgres:10-alpine-ram
+          MM_SERVICESETTINGS_ENABLEDEVELOPER: true
+      - image: cimg/postgres:11.13
         environment:
           POSTGRES_USER: mmuser
           POSTGRES_PASSWORD: mostest
@@ -182,12 +299,13 @@ jobs:
       - store_artifacts:
           path: e2e/cypress/videos
   e2e-cypress-tests-master:
-    resource_class: large
+    resource_class: xlarge
     docker:
-      - image: circleci/golang:1.17.3-node-browsers
+      - image: cimg/go:1.17.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
-      - image: circleci/postgres:10-alpine-ram
+          MM_SERVICESETTINGS_ENABLEDEVELOPER: true
+      - image: cimg/postgres:11.13
         environment:
           POSTGRES_USER: mmuser
           POSTGRES_PASSWORD: mostest
@@ -286,6 +404,27 @@ jobs:
       - store_artifacts:
           path: e2e/cypress/videos
 
+  deploy-ci:
+    docker:
+      - image: cimg/python:2.7
+    steps:
+      - attach_workspace:
+          at: dist
+      - run: 'mv dist/*.tar.gz dist/$CIRCLE_PROJECT_REPONAME-ci.tar.gz'
+      - deploy:
+          filename: "dist/*.tar.gz"
+          bucket: "s3://mattermost-plugins-ci/ci/"
+
+  deploy-release-github:
+    docker:
+      - image: cibuilds/github:0.13
+    steps:
+      - attach_workspace:
+          at: dist
+      - run:
+          name: "Publish Release on Github"
+          command: |
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -b "$(< ./dist/release-notes.md)" -c ${CIRCLE_SHA1} -n ${CIRCLE_TAG} -delete ${CIRCLE_TAG} dist/*.tar.gz
 
 workflows:
   version: 2
@@ -300,12 +439,12 @@ workflows:
     jobs:
       - check-mocks
       - check-i18n
-      - plugin-ci/lint
-      - plugin-ci/test
+      - lint
+      - test
+      - build
       - e2e-cypress-tests-pinned
       - e2e-cypress-tests-master
       - test-e2e-postgres11
-      - plugin-ci/build
   ci:
     jobs:
       - check-mocks:
@@ -316,11 +455,11 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-      - plugin-ci/lint:
+      - lint:
           filters:
             tags:
               only: /^v.*/
-      - plugin-ci/coverage:
+      - coverage:
           filters:
             tags:
               only: /^v.*/
@@ -333,11 +472,11 @@ workflows:
           filters:
             branches:
               only: master
-      - plugin-ci/build:
+      - build:
           filters:
             tags:
               only: /^v.*/
-      - plugin-ci/deploy-ci:
+      - deploy-ci:
           filters:
             branches:
               only: master
@@ -345,13 +484,13 @@ workflows:
           requires:
             - check-mocks
             - check-i18n
-            - plugin-ci/lint
-            - plugin-ci/coverage
+            - lint
+            - coverage
             - test-e2e-postgres11
             - e2e-cypress-tests-pinned
             - e2e-cypress-tests-master
-            - plugin-ci/build
-      - plugin-ci/deploy-release-github:
+            - build
+      - deploy-release-github:
           filters:
             tags:
               only: /^v.*/
@@ -361,7 +500,7 @@ workflows:
           requires:
             - check-mocks
             - check-i18n
-            - plugin-ci/lint
-            - plugin-ci/coverage
+            - lint
+            - coverage
             - test-e2e-postgres11
-            - plugin-ci/build
+            - build

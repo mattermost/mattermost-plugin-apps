@@ -1,4 +1,3 @@
-OS := $(shell uname 2> /dev/null)
 GO ?= $(shell command -v go 2> /dev/null)
 NPM ?= $(shell command -v npm 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)
@@ -9,22 +8,10 @@ GO_TEST_FLAGS ?= -race
 GO_BUILD_FLAGS ?=
 MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
+DEFAULT_GOOS := $(shell go env GOOS)
+DEFAULT_GOARCH := $(shell go env GOARCH)
 
 export GO111MODULE=on
-
-MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
-MINIMUM_SUPPORTED_GO_MINOR_VERSION = 16
-GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
-GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
-GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to at least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
-BUILD_DATE = $(shell date -u)
-BUILD_HASH = $(shell git rev-parse HEAD)
-BUILD_HASH_SHORT = $(shell git rev-parse --short HEAD)
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildDate=$(BUILD_DATE)"
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHash=$(BUILD_HASH)"
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-apps/server/config.BuildHashShort=$(BUILD_HASH_SHORT)"
-GO_BUILD_FLAGS += -ldflags '$(LDFLAGS)'
-GO_TEST_FLAGS += -ldflags '$(LDFLAGS)'
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
@@ -47,30 +34,6 @@ endif
 .PHONY: all
 all: check-style test dist
 
-## Propagates plugin manifest information into the server/ and webapp/ folders.
-.PHONY: apply
-apply:
-	./build/bin/manifest apply
-
-## Runs gofmt against all packages.
-.PHONY: gofmt
-gofmt:
-ifneq ($(HAS_SERVER),)
-	@echo Running gofmt
-	@for package in $$(go list ./server/...); do \
-		echo "Checking "$$package; \
-		files=$$(go list -f '{{range .GoFiles}}{{$$.Dir}}/{{.}} {{end}}' $$package); \
-		if [ "$$files" ]; then \
-			gofmt_output=$$(gofmt -d -s $$files 2>&1); \
-			if [ "$$gofmt_output" ]; then \
-				echo "$$gofmt_output"; \
-				echo "Gofmt failure"; \
-				exit 1; \
-			fi; \
-		fi; \
-	done
-	@echo Gofmt success
-endif
 ## Runs eslint and golangci-lint
 .PHONY: check-style
 check-style: webapp/node_modules
@@ -91,43 +54,32 @@ ifneq ($(HAS_SERVER),)
 	golangci-lint run ./...
 endif
 
-## Generates mock golang interfaces for testing
-.PHONY: mock clean_mock
-mock:
-ifneq ($(HAS_SERVER),)
-	go install github.com/golang/mock/mockgen@v1.6.0
-	mockgen -destination server/mocks/mock_mmclient/mock_mmclient.go github.com/mattermost/mattermost-plugin-apps/server/mmclient Client
-	mockgen -destination server/mocks/mock_appservices/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/appservices Service
-	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
-	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/upstream Upstream
-	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store AppStore
-	mockgen -destination server/mocks/mock_store/mock_appkv.go github.com/mattermost/mattermost-plugin-apps/server/store AppKVStore
-	mockgen -destination server/mocks/mock_config/mock_config.go github.com/mattermost/mattermost-plugin-apps/server/config Service
-	mockgen -destination server/mocks/mock_session/mock_session.go github.com/mattermost/mattermost-plugin-apps/server/session Service
-endif
-
-## Generates mock golang interfaces for testing
-clean_mock:
-ifneq ($(HAS_SERVER),)
-	rm -rf ./server/mocks
-endif
-
-
-## Builds the server, if it exists, for all supported architectures.
+## Builds the server, if it exists, for all supported architectures, unless MM_SERVICESETTINGS_ENABLEDEVELOPER is set
 .PHONY: server
 server:
 ifneq ($(HAS_SERVER),)
 	mkdir -p server/dist;
 ifeq ($(MM_DEBUG),)
-	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o dist/plugin-linux-amd64;
-	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o dist/plugin-darwin-amd64;
-	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o dist/plugin-windows-amd64.exe;
+ifneq ($(MM_SERVICESETTINGS_ENABLEDEVELOPER),)
+	cd server && $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-$(DEFAULT_GOOS)-$(DEFAULT_GOARCH);
+else
+	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-linux-amd64;
+	cd server && env GOOS=linux GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-linux-arm64;
+	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-darwin-amd64;
+	cd server && env GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-darwin-arm64;
+	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -trimpath -o dist/plugin-windows-amd64.exe;
+endif
 else
 	$(info DEBUG mode is on; to disable, unset MM_DEBUG)
-
-	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-darwin-amd64;
-	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-linux-amd64;
-	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-windows-amd64.exe;
+ifneq ($(MM_SERVICESETTINGS_ENABLEDEVELOPER),)
+	cd server && $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-$(DEFAULT_GOOS)-$(DEFAULT_GOARCH);
+else
+	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-linux-amd64;
+	cd server && env GOOS=linux GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-linux-arm64;
+	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-darwin-amd64;
+	cd server && env GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-darwin-arm64;
+	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -trimpath -o dist/plugin-windows-amd64.exe;
+endif
 endif
 endif
 
@@ -175,7 +127,7 @@ endif
 
 ## Builds and bundles the plugin.
 .PHONY: dist
-dist:	apply server webapp bundle
+dist:	server webapp bundle
 
 ## Builds and installs the plugin to a server.
 .PHONY: deploy
@@ -238,22 +190,13 @@ detach: setup-attach
 
 ## Runs any lints and unit tests defined for the server and webapp, if they exist.
 .PHONY: test
-test: test-unit
-
-.PHONY: test-unit
-test-unit: webapp/node_modules
-	@echo Running unit tests
+test: webapp/node_modules
 ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./...
 endif
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) run test;
 endif
-
-.PHONY: test-e2e
-test-e2e: dist
-	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
