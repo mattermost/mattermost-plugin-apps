@@ -10,15 +10,18 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 // Note: run
@@ -40,15 +43,25 @@ func (th *TestHelper) TearDown() {
 }
 
 func Setup(t testing.TB) *TestHelper {
+	os.Setenv("MM_FEATUREFLAGS_APPSENABLED", "true")
+	t.Cleanup(func() { _ = os.Unsetenv("MM_FEATUREFLAGS_APPSENABLED") })
+
 	th := &TestHelper{}
 
 	serverTestHelper := api4.Setup(t)
 	serverTestHelper.InitBasic()
 
+	t.Cleanup(th.TearDown)
+
+	port := serverTestHelper.Server.ListenAddr.Port
+
 	// enable bot creation by default
 	serverTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
-		*cfg.ServiceSettings.SiteURL = "http://localhost:8065"
+		*cfg.ServiceSettings.EnableOAuthServiceProvider = true
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "127.0.0.1"
+		*cfg.ServiceSettings.SiteURL = fmt.Sprintf("http://localhost:%d", port)
+		*cfg.ServiceSettings.ListenAddress = fmt.Sprintf(":%d", port)
 	})
 
 	th.ServerTestHelper = serverTestHelper
@@ -76,13 +89,7 @@ func Setup(t testing.TB) *TestHelper {
 }
 
 // Sets up the PP for test
-func SetupPP(th *TestHelper, t testing.TB) {
-	pluginsEnvironment := th.ServerTestHelper.App.GetPluginsEnvironment()
-	if pluginsEnvironment == nil {
-		mlog.Debug("Missing plugin environment")
-		return
-	}
-
+func (th *TestHelper) SetupPP(t testing.TB) {
 	bundle := os.Getenv("PLUGIN_BUNDLE")
 	require.NotEmpty(t, bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
 
@@ -97,15 +104,36 @@ func SetupPP(th *TestHelper, t testing.TB) {
 	require.Nil(t, appErr)
 	require.Equal(t, pluginID, manifest.Id)
 
-	_, err = pluginsEnvironment.Available()
-	if err != nil {
-		mlog.Error("Unable to get available plugins", mlog.Err(err))
-		return
-	}
+	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
+	require.Nil(t, appErr)
+}
 
-	_, _, activationErr := pluginsEnvironment.Activate(pluginID)
-	require.NoError(t, activationErr)
-	require.True(t, th.ServerTestHelper.App.GetPluginsEnvironment().IsActive(pluginID))
+// Sets up the PP for test
+func (th *TestHelper) SetupApp(t *testing.T, m apps.Manifest) {
+	http.HandleFunc(apps.DefaultPing.Path, httputils.HandleJSON(apps.NewDataResponse(nil)))
+	appServer := httptest.NewServer(http.DefaultServeMux)
+	t.Cleanup(appServer.Close)
+
+	m.HTTP = &apps.HTTP{
+		RootURL: appServer.URL,
+		UseJWT:  false,
+	}
+	m.HomepageURL = appServer.URL
+
+	err := m.Validate()
+	require.NoError(t, err)
+
+	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
+		Manifest:   m,
+		Replace:    true,
+		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+	})
+	assert.NoError(t, err)
+	api4.CheckOKStatus(t, resp)
+
+	resp, err = th.SystemAdminClientPP.InstallApp(m.AppID, apps.DeployHTTP)
+	assert.NoError(t, err)
+	api4.CheckOKStatus(t, resp)
 }
 
 func (th *TestHelper) CreateClientPP() *appclient.ClientPP {
