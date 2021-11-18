@@ -92,6 +92,19 @@ func (c *Client) Subscribe(sub *apps.Subscription) error {
 	return nil
 }
 
+func (c *Client) GetSubscriptions() ([]apps.Subscription, error) {
+	subs, res, err := c.ClientPP.GetSubscriptions()
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return subs, nil
+}
+
 func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	res, err := c.ClientPP.Unsubscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
@@ -141,6 +154,19 @@ func (c *Client) GetOAuth2User(appID apps.AppID, ref interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
+	cresp, res, err := c.ClientPP.Call(creq)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return cresp, nil
 }
 
 func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {

@@ -308,6 +308,27 @@ func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.Lis
 	return listed, model.BuildResponse(r), nil
 }
 
+func (c *ClientPP) Call(creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
+	b, err := json.Marshal(&creq)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r, err := c.DoAPIPOST(c.apipath(appspath.Call), string(b)) // nolint:bodyclose
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	var cresp apps.CallResponse
+	err = json.NewDecoder(r.Body).Decode(&cresp)
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+
+	return &cresp, model.BuildResponse(r), nil
+}
+
 func (c *ClientPP) getPluginsRoute() string {
 	return "/plugins"
 }

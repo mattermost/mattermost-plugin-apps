@@ -13,7 +13,7 @@ import (
 
 func TestKVE2E(t *testing.T) {
 	th := Setup(t)
-	th.SetupPP(t)
+	th.SetupPP()
 
 	t.Run("test KV API", func(t *testing.T) {
 		id := "testId"
