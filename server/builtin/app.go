@@ -96,6 +96,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 	}
 
 	a.router = map[string]handler{
+		appspath.Bindings: a.bindings,
+
 		// Actions available to all users
 		pInfo: a.info,
 
