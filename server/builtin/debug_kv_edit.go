@@ -28,11 +28,15 @@ func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding
 			ID:    "command.debug.kv.edit.hint",
 			Other: "[ AppID keyspec ]",
 		}),
-		Form: a.appIDForm(newAdminCall(pDebugKVEdit).WithLocale(), newAdminCall(pDebugKVEditLookup), loc,
-			a.debugBase64KeyField(loc),
-			a.debugNamespaceField(loc),
-			a.debugIDField(loc),
-		),
+		Form: &apps.Form{
+			Submit: newUserCall(pDebugKVEdit),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+				a.namespaceField(0, false, loc),
+				a.debugBase64KeyField(loc),
+				a.debugIDField(loc),
+			},
+		},
 	}
 }
 
@@ -62,8 +66,4 @@ func (a *builtinApp) debugKVEdit(creq apps.CallRequest) apps.CallResponse {
 
 	creq.State = key
 	return a.debugKVEditModalForm(creq)
-}
-
-func (a *builtinApp) debugKVEditLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.debugAppNamespaceLookup(creq)
 }

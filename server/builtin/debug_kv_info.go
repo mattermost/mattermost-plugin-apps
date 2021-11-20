@@ -52,7 +52,12 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 			ID:    "command.debug.kv.info.hint",
 			Other: "[ AppID ]",
 		}),
-		Form: a.appIDForm(newAdminCall(pDebugKVInfo).WithLocale(), newAdminCall(pDebugKVInfoLookup), loc),
+		Form: &apps.Form{
+			Submit: newUserCall(pDebugKVInfo),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+			},
+		},
 	}
 }
 
@@ -91,8 +96,4 @@ func (a *builtinApp) debugKVInfo(creq apps.CallRequest) apps.CallResponse {
 		message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
 	}
 	return apps.NewTextResponse(message)
-}
-
-func (a *builtinApp) debugKVInfoLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.lookupAppID(creq, nil)
 }

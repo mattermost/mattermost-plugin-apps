@@ -41,7 +41,7 @@ func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Type: apps.FieldTypeBool,
 				},
 			},
-			Submit: newAdminCall(pList).WithLocale(),
+			Submit: newUserCall(pList).WithLocale(),
 		},
 	}
 }

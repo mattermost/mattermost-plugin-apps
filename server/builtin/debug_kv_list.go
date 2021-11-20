@@ -9,47 +9,9 @@ import (
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-func (a *builtinApp) debugAppNamespaceLookup(creq apps.CallRequest) apps.CallResponse {
-	switch creq.SelectedField {
-	case fAppID:
-		return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-			return app.Installed
-		})
-
-	case fNamespace:
-		return a.lookupNamespace(creq)
-	}
-	return apps.NewErrorResponse(utils.ErrNotFound)
-}
-
-func (a *builtinApp) lookupNamespace(creq apps.CallRequest) apps.CallResponse {
-	if creq.SelectedField != fNamespace {
-		return apps.NewErrorResponse(errors.Errorf("unknown field %q", creq.SelectedField))
-	}
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	if appID == "" {
-		return apps.NewErrorResponse(errors.Errorf("please select --" + fAppID + " first"))
-	}
-
-	var options []apps.SelectOption
-	_, namespaces, err := a.debugListKeys(appID)
-	if err != nil {
-		return apps.NewErrorResponse(err)
-	}
-	for ns, c := range namespaces {
-		options = append(options, apps.SelectOption{
-			Value: ns,
-			Label: fmt.Sprintf("%q (%v keys)", ns, c),
-		})
-	}
-	return apps.NewLookupResponse(options)
-}
 
 func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
@@ -66,8 +28,13 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 			ID:    "command.debug.kv.list.hint",
 			Other: "[ AppID Namespace ]",
 		}),
-		Form: a.appIDForm(newAdminCall(pDebugKVList).WithLocale(), newAdminCall(pDebugKVListLookup), loc,
-			a.debugNamespaceField(loc), a.debugBase64Field(loc)),
+		Form: &apps.Form{
+			Submit: newUserCall(pDebugKVInfo),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+				a.namespaceField(0, false, loc),
+			},
+		},
 	}
 }
 
@@ -130,8 +97,4 @@ func (a *builtinApp) debugKVList(creq apps.CallRequest) apps.CallResponse {
 		message += "```\n"
 	}
 	return apps.NewTextResponse(message)
-}
-
-func (a *builtinApp) debugKVListLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.debugAppNamespaceLookup(creq)
 }

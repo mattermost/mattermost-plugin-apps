@@ -62,20 +62,29 @@ func NewCall(path string) *Call {
 	return &c
 }
 
-func (c *Call) WithState(state interface{}) *Call {
-	clone := Call{}
-	if c != nil {
-		clone = *c
+func (c Call) WithExpand(expand Expand) *Call {
+	c.Expand = &expand
+	return &c
+}
+
+func (c Call) WithState(state interface{}) *Call {
+	c.State = state
+	return &c
+}
+
+func (c Call) WithLocale() *Call {
+	if c.Expand == nil {
+		c.Expand = &Expand{}
 	}
-	clone.State = state
-	return &clone
+	c.Expand.Locale = ExpandAll
+	return &c
 }
 
 func (c *Call) WithDefault(def Call) Call {
 	if c == nil {
-		return def
+		return *def.PartialCopy()
 	}
-	clone := *c
+	clone := c.PartialCopy()
 
 	if clone.Path == "" {
 		clone.Path = def.Path
@@ -86,21 +95,7 @@ func (c *Call) WithDefault(def Call) Call {
 	if clone.State == nil {
 		clone.State = def.State
 	}
-	return clone
-}
-
-func (c *Call) WithLocale() *Call {
-	clone := c.PartialCopy()
-	if clone == nil {
-		clone = &Call{}
-	}
-
-	if clone.Expand == nil {
-		clone.Expand = &Expand{}
-	}
-
-	clone.Expand.Locale = ExpandAll
-	return clone
+	return *clone
 }
 
 func (c *Call) PartialCopy() *Call {
@@ -117,6 +112,13 @@ func (c *Call) PartialCopy() *Call {
 	// Only know how to clone map values for State.
 	if state, ok := clone.State.(map[string]interface{}); ok {
 		cloneState := map[string]interface{}{}
+		for k, v := range state {
+			cloneState[k] = v
+		}
+		clone.State = cloneState
+	}
+	if state, ok := clone.State.(map[string]string); ok {
+		cloneState := map[string]string{}
 		for k, v := range state {
 			cloneState[k] = v
 		}

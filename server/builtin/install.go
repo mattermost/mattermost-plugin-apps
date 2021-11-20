@@ -26,7 +26,12 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 				ID:    "command.install.cloud.description",
 				Other: "Install an App from the Marketplace",
 			}),
-			Form: a.appIDForm(newAdminCall(pInstallListed).WithLocale(), newAdminCall(pInstallListedLookup), loc),
+			Form: &apps.Form{
+				Submit: newUserCall(pInstallListed),
+				Fields: []apps.Field{
+					a.appIDField(LookupNotInstalledApps, 1, true, loc),
+				},
+			},
 		}
 	}
 	return apps.Binding{
@@ -58,7 +63,12 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 					ID:    "command.enable.install.listed.description",
 					Other: "Installs a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
 				}),
-				Form: a.appIDForm(newAdminCall(pInstallListed).WithLocale(), newAdminCall(pInstallListedLookup), loc),
+				Form: &apps.Form{
+					Submit: newUserCall(pInstallListed),
+					Fields: []apps.Field{
+						a.appIDField(LookupNotInstalledApps, 1, true, loc),
+					},
+				},
 			},
 			{
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -95,17 +105,11 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 							IsRequired:           true,
 						},
 					},
-					Submit: newAdminCall(pInstallHTTP).WithLocale(),
+					Submit: newUserCall(pInstallHTTP).WithLocale(),
 				},
 			},
 		},
 	}
-}
-
-func (a *builtinApp) installListedLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return !app.Installed
-	})
 }
 
 func (a *builtinApp) installListed(creq apps.CallRequest) apps.CallResponse {

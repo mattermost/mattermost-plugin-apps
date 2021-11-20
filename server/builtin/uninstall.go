@@ -25,14 +25,14 @@ func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
 			ID:    "apps.command.uninstall.description",
 			Other: "Uninstalls an App",
 		}),
-		Form: a.appIDForm(newAdminCall(pUninstall), newAdminCall(pUninstallLookup), loc),
-	}
-}
 
-func (a *builtinApp) uninstallLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return app.Installed
-	})
+		Form: &apps.Form{
+			Submit: newUserCall(pUninstall),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+			},
+		},
+	}
 }
 
 func (a *builtinApp) uninstall(creq apps.CallRequest) apps.CallResponse {

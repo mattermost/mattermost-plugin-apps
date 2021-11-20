@@ -126,10 +126,10 @@ func (a *builtinApp) debugKVEditModalForm(creq apps.CallRequest) apps.CallRespon
 					ID:    "field.kv.action.modal_label",
 					Other: "Action to take",
 				}),
-				SelectStaticOptions: buttons,
+				SelectOptions: buttons,
 			},
 		},
 		SubmitButtons: fAction,
-		Submit:        newAdminCall(pDebugKVEditModal).WithState(key).WithLocale(),
+		Submit:        newUserCall(pDebugKVEditModal).WithState(key),
 	})
 }

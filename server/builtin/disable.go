@@ -25,14 +25,13 @@ func (a *builtinApp) disableCommandBinding(loc *i18n.Localizer) apps.Binding {
 			ID:    "command.disable.description",
 			Other: "Disables an App",
 		}),
-		Form: a.appIDForm(newAdminCall(pDisable), newAdminCall(pDisableLookup), loc),
+		Form: &apps.Form{
+			Submit: newUserCall(pDisable),
+			Fields: []apps.Field{
+				a.appIDField(LookupEnabledApps, 1, true, loc),
+			},
+		},
 	}
-}
-
-func (a *builtinApp) disableLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.lookupAppID(creq, func(app apps.ListedApp) bool {
-		return app.Installed && app.Enabled
-	})
 }
 
 func (a *builtinApp) disable(creq apps.CallRequest) apps.CallResponse {

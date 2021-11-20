@@ -572,6 +572,14 @@ func TestGetBindingsCommands(t *testing.T) {
 
 		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 		require.NoError(t, err)
+		require.Equal(t, 2, len(out))
+		if out[0].AppID != "app1" {
+			out[0], out[1] = out[1], out[0]
+		}
+		require.Equal(t, "app1", out[0])
+		require.Equal(t, expected[0], out[0])
+
+		fmt.Printf("<>/<> 1 \n")
 		EqualBindings(t, expected, out)
 	})
 

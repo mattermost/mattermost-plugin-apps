@@ -30,10 +30,13 @@ func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Bindi
 			ID:    "command.debug.kv.create.hint",
 			Other: "[ AppID keyspec ]",
 		}),
-		Form: a.appIDForm(newAdminCall(pDebugKVCreate).WithLocale(), newAdminCall(pDebugKVCreateLookup), loc,
-			a.debugNamespaceField(loc),
-			idF,
-		),
+		Form: &apps.Form{
+			Submit: newUserCall(pDebugKVCreate),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+				a.namespaceField(2, false, loc),
+			},
+		},
 	}
 }
 
@@ -69,8 +72,4 @@ func (a *builtinApp) debugKVCreate(creq apps.CallRequest) apps.CallResponse {
 
 	creq.State = key
 	return a.debugKVEditModalForm(creq)
-}
-
-func (a *builtinApp) debugKVCreateLookup(creq apps.CallRequest) apps.CallResponse {
-	return a.debugAppNamespaceLookup(creq)
 }

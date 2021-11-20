@@ -89,7 +89,7 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 			Other: "Deployment method",
 		}),
 		SelectRefresh:       true,
-		SelectStaticOptions: opts,
+		SelectOptions: opts,
 		Value:               selectedValue,
 	}, selectedType
 }
@@ -189,8 +189,8 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		}),
 		Header: h,
 		Fields: fields,
-		Submit: newAdminCall(pInstallConsent).WithState(m.AppID),
-		Source: newAdminCall(pInstallConsentForm).WithState(m.AppID),
+		Submit: newUserCall(pInstallConsent).WithState(m.AppID),
+		Source: newUserCall(pInstallConsentForm).WithState(m.AppID),
 	}
 }
 

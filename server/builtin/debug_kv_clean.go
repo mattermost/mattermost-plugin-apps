@@ -9,7 +9,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -27,7 +26,13 @@ func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Bindin
 			ID:    "command.debug.kv.clean.hint",
 			Other: "[ App ID ]",
 		}),
-		Form: a.appIDForm(newAdminCall(pDebugKVClean).WithLocale(), newAdminCall(pDebugKVCleanLookup), loc, a.debugNamespaceField(loc)),
+		Form: &apps.Form{
+			Submit: newUserCall(pDebugKVClean),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+				a.namespaceField(2, false, loc),
+			},
+		},
 	}
 }
 
@@ -60,15 +65,4 @@ func (a *builtinApp) debugKVClean(creq apps.CallRequest) apps.CallResponse {
 			"Namespace": namespace,
 		},
 	}))
-}
-
-func (a *builtinApp) debugKVCleanLookup(creq apps.CallRequest) apps.CallResponse {
-	switch creq.SelectedField {
-	case fAppID:
-		return a.lookupAppID(creq, nil)
-
-	case fNamespace:
-		return a.lookupNamespace(creq)
-	}
-	return apps.NewErrorResponse(utils.ErrNotFound)
 }

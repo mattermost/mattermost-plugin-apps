@@ -46,33 +46,28 @@ const (
 )
 
 const (
-	pDebugBindings       = "/debug-bindings"
-	pDebugBindingsLookup = "/debug-bindings/lookup"
-	pDebugClean          = "/debug-clean"
-	pDebugKVInfo         = "/debug/kv/info"
-	pDebugKVInfoLookup   = "/debug/kv/info/lookup"
-	pDebugKVCreate       = "/debug/kv/create"
-	pDebugKVCreateLookup = "/debug/kv/create/lookup"
-	pDebugKVEdit         = "/debug/kv/edit"
-	pDebugKVEditLookup   = "/debug/kv/edit/lookup"
-	pDebugKVEditModal    = "/debug/kv/edit-modal"
-	pDebugKVClean        = "/debug/kv/clean"
-	pDebugKVCleanLookup  = "/debug/kv/lookup"
-	pDebugKVList         = "/debug/kv/list"
-	pDebugKVListLookup   = "/debug/kv/list/lookup"
-	pInfo                = "/info"
-	pList                = "/list"
-	pUninstall           = "/uninstall"
-	pUninstallLookup     = "/uninstall/lookup"
-	pEnable              = "/enable"
-	pEnableLookup        = "/enable/lookup"
-	pDisable             = "/disable"
-	pDisableLookup       = "/disable/lookup"
-	pInstallHTTP         = "/install-http"
-	pInstallListed       = "/install-listed"
-	pInstallListedLookup = "/install-listed/lookup"
-	pInstallConsent      = "/install-consent"
-	pInstallConsentForm  = "/install-consent/form"
+	pDebugBindings      = "/debug-bindings"
+	pDebugClean         = "/debug-clean"
+	pDebugKVInfo        = "/debug/kv/info"
+	pDebugKVCreate      = "/debug/kv/create"
+	pDebugKVEdit        = "/debug/kv/edit"
+	pDebugKVEditModal   = "/debug/kv/edit-modal"
+	pDebugKVClean       = "/debug/kv/clean"
+	pDebugKVList        = "/debug/kv/list"
+	pInfo               = "/info"
+	pList               = "/list"
+	pUninstall          = "/uninstall"
+	pEnable             = "/enable"
+	pDisable            = "/disable"
+	pInstallHTTP        = "/install-http"
+	pInstallListed      = "/install-listed"
+	pInstallConsent     = "/install-consent"
+	pInstallConsentForm = "/install-consent/form"
+)
+
+const (
+	pLookupAppID     = "/q/app_id"
+	pLookupNamespace = "/q/namespace"
 )
 
 type handler func(apps.CallRequest) apps.CallResponse
@@ -96,38 +91,33 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 	}
 
 	a.router = map[string]handler{
+		// App's own bindings.
 		appspath.Bindings: a.bindings,
 
-		// Actions available to all users
+		// Actions available to all users.
 		pInfo: a.info,
 
-		// Actions that require sysadmin
-		pDebugBindings:       requireAdmin(a.debugBindings),
-		pDebugBindingsLookup: requireAdmin(a.debugBindingsLookup),
-		pDebugClean:          requireAdmin(a.debugClean),
-		pDebugKVClean:        requireAdmin(a.debugKVClean),
-		pDebugKVCleanLookup:  requireAdmin(a.debugKVCleanLookup),
-		pDebugKVCreate:       requireAdmin(a.debugKVCreate),
-		pDebugKVCreateLookup: requireAdmin(a.debugKVCreateLookup),
-		pDebugKVEdit:         requireAdmin(a.debugKVEdit),
-		pDebugKVEditLookup:   requireAdmin(a.debugKVEditLookup),
-		pDebugKVEditModal:    requireAdmin(a.debugKVEditModal),
-		pDebugKVInfo:         requireAdmin(a.debugKVInfo),
-		pDebugKVInfoLookup:   requireAdmin(a.debugKVInfoLookup),
-		pDebugKVList:         requireAdmin(a.debugKVList),
-		pDebugKVListLookup:   requireAdmin(a.debugKVListLookup),
-		pDisable:             requireAdmin(a.disable),
-		pDisableLookup:       requireAdmin(a.disableLookup),
-		pEnable:              requireAdmin(a.enable),
-		pEnableLookup:        requireAdmin(a.enableLookup),
-		pInstallConsent:      requireAdmin(a.installConsent),
-		pInstallConsentForm:  requireAdmin(a.installConsentForm),
-		pInstallListed:       requireAdmin(a.installListed),
-		pInstallListedLookup: requireAdmin(a.installListedLookup),
-		pInstallHTTP:         requireAdmin(a.installHTTP),
-		pList:                requireAdmin(a.list),
-		pUninstall:           requireAdmin(a.uninstall),
-		pUninstallLookup:     requireAdmin(a.uninstallLookup),
+		// Actions that require sysadmin.
+		pDebugBindings:      requireAdmin(a.debugBindings),
+		pDebugClean:         requireAdmin(a.debugClean),
+		pDebugKVClean:       requireAdmin(a.debugKVClean),
+		pDebugKVCreate:      requireAdmin(a.debugKVCreate),
+		pDebugKVEdit:        requireAdmin(a.debugKVEdit),
+		pDebugKVEditModal:   requireAdmin(a.debugKVEditModal),
+		pDebugKVInfo:        requireAdmin(a.debugKVInfo),
+		pDebugKVList:        requireAdmin(a.debugKVList),
+		pDisable:            requireAdmin(a.disable),
+		pEnable:             requireAdmin(a.enable),
+		pInstallConsent:     requireAdmin(a.installConsent),
+		pInstallConsentForm: requireAdmin(a.installConsentForm),
+		pInstallListed:      requireAdmin(a.installListed),
+		pInstallHTTP:        requireAdmin(a.installHTTP),
+		pList:               requireAdmin(a.list),
+		pUninstall:          requireAdmin(a.uninstall),
+
+		// Lookups.
+		pLookupAppID:     requireAdmin(a.lookupAppID),
+		pLookupNamespace: requireAdmin(a.lookupNamespace),
 	}
 
 	return a
