@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
@@ -22,7 +24,7 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 
 				// b2 overrides b1, if b1 and b2 have Bindings, they are merged
 				merged := b2
-				if len(o.Bindings) != 0 && b2.Form == nil {
+				if len(o.Bindings) != 0 {
 					merged.Bindings = mergeBindings(o.Bindings, b2.Bindings)
 				}
 				out[i] = merged
@@ -70,8 +72,8 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []app
 		return nil
 	}
 
-	log := p.conf.Logger().With("app_id", app.AppID)
-
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", app.AppID)
 	appID := app.AppID
 	cc.AppID = appID
 
@@ -90,7 +92,7 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []app
 			return nil
 		}
 
-		bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
+		bindings = cleanAppBindings(app, bindings, "", cc.UserAgent, conf, log)
 		return bindings
 
 	case apps.CallResponseTypeError:
@@ -103,125 +105,142 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []app
 	}
 }
 
-// scanAppBindings removes bindings to locations that have not been granted to
+// cleanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
+func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config, baseLog utils.Logger) []apps.Binding {
 	out := []apps.Binding{}
-	locationsUsed := map[apps.Location]bool{}
-	labelsUsed := map[string]bool{}
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", app.AppID)
+	usedLocations := map[apps.Location]bool{}
+	usedCommandLabels := map[string]bool{}
 
 	for _, b := range bindings {
-		if strings.TrimSpace(string(b.Location)) == "" {
-			b.Location = apps.Location(app.Manifest.AppID)
-		}
+		fql := locPrefix.Sub(b.Location)
+		log := baseLog.With("location", fql)
 
-		if strings.TrimSpace(b.Label) == "" {
-			b.Label = string(b.Location)
+		clean, problems := cleanAppBinding(app, b, locPrefix, userAgent, conf, log)
+		for _, problem := range problems {
+			log.WithError(problem).Debugf("error in binding")
 		}
-
-		fql := locPrefix.Make(b.Location)
-		allowed := false
-		for _, grantedLoc := range app.GrantedLocations {
-			if fql.In(grantedLoc) || grantedLoc.In(fql) {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			log.Debugw("location is not granted to app", "location", fql)
+		if clean == nil {
+			log.Infof("ignored invalid binding, see debug log for details")
 			continue
 		}
 
-		if fql.In(apps.LocationCommand) {
-			label := b.Label
-			if label == "" {
-				label = string(b.Location)
-			}
-
-			if strings.ContainsAny(label, " \t") {
-				log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
-				continue
-			}
+		fql = locPrefix.Sub(clean.Location)
+		if usedLocations[clean.Location] {
+			log.Infof("ignored diplicate command binding for location %q", clean.Location)
+			continue
 		}
-
-		if fql.IsTop() {
-			if locationsUsed[b.Location] {
-				continue
-			}
-			locationsUsed[b.Location] = true
-		} else {
-			if b.Location == "" || b.Label == "" {
-				continue
-			}
-			if locationsUsed[b.Location] || labelsUsed[b.Label] {
-				continue
-			}
-
-			locationsUsed[b.Location] = true
-			labelsUsed[b.Label] = true
-			b.AppID = app.Manifest.AppID
-		}
-
-		if b.Icon != "" {
-			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
-			if err != nil {
-				log.WithError(err).Debugw("Invalid icon path in binding",
-					"app_id", app.AppID,
-					"icon", b.Icon)
-				b.Icon = ""
-			} else {
-				b.Icon = icon
-			}
-		}
-
-		// First level of Channel Header
-		if fql == apps.LocationChannelHeader.Make(b.Location) {
-			// Must have an icon on webapp to show the icon
-			if b.Icon == "" && userAgent == "webapp" {
-				log.Debugw("Channel header button for webapp without icon", "label", b.Label)
-				continue
-			}
-		}
-
-		// Can only define the form, the submit call or have sub bindings
-		hasBindings := len(b.Bindings) > 0
-		hasForm := b.Form != nil
-		hasSubmit := b.Submit != nil
-		if (!hasBindings && !hasForm && !hasSubmit) ||
-			(hasBindings && hasForm) ||
-			(hasBindings && hasSubmit) ||
-			(hasForm && hasSubmit) {
-			log.Debugw("Only Form, submit or sub-bindings must be defined", "form", b.Form, "sub-bindings", b.Bindings, "submit", b.Submit)
+		if fql.In(apps.LocationCommand) && usedCommandLabels[clean.Label] {
+			log.Infof("ignored diplicate command binding for label %q", clean.Label)
 			continue
 		}
 
-		if hasBindings {
-			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
-			if len(scanned) == 0 {
-				// We do not add bindings without any valid sub-bindings
-				continue
-			}
-			b.Bindings = scanned
-		}
-
-		if hasForm {
-			if b.Form.Submit == nil && b.Form.Source == nil {
-				log.Debugw("Form must define either a Submit or a Source", "form", b.Form)
-				continue
-			}
-			clean, problems := cleanForm(*b.Form)
-			for _, prob := range problems {
-				log.WithError(prob).Debugf("invalid form field in binding")
-			}
-			b.Form = &clean
-		}
-
-		out = append(out, b)
+		out = append(out, *clean)
 	}
 
 	return out
+}
+
+func cleanAppBinding(
+	app apps.App,
+	b apps.Binding,
+	locPrefix apps.Location,
+	userAgent string,
+	conf config.Config,
+	baseLog utils.Logger,
+) (*apps.Binding, []error) {
+	var problems []error
+
+	// Cleanup Location.
+	if b.Location == "" {
+		b.Location = apps.Location(app.Manifest.AppID)
+	}
+	if trimmed := apps.Location(strings.TrimSpace(string(b.Location))); trimmed != b.Location {
+		problems = append(problems, errors.Errorf("trimmed whitespace from location %s", trimmed))
+		b.Location = trimmed
+	}
+
+	fql := locPrefix.Sub(b.Location)
+	allowed := false
+	for _, grantedLoc := range app.GrantedLocations {
+		// TODO Why `grantedLoc.In(fql)`?
+		if fql.In(grantedLoc) || grantedLoc.In(fql) {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		problems = append(problems, utils.NewForbiddenError("location %q is not granted", fql))
+		return nil, problems
+	}
+
+	// Cleanup AppID.
+	if !fql.IsTop() {
+		b.AppID = app.AppID
+	}
+
+	// Cleanup (command) label.
+	if fql != apps.LocationCommand && fql.In(apps.LocationCommand) {
+		// A command binding must have a valid label. Default to Location if needed.
+		if b.Label == "" {
+			b.Label = string(b.Location)
+		}
+		if trimmed := strings.TrimSpace(b.Label); trimmed != b.Label {
+			problems = append(problems, errors.Errorf("trimmed whitespace from label %s", trimmed))
+			b.Label = trimmed
+		}
+		if strings.ContainsAny(b.Label, " \t") {
+			problems = append(problems, errors.Errorf("command label %q has multiple words", b.Label))
+			return nil, problems
+		}
+	}
+
+	// Cleanup Icon.
+	if b.Icon != "" {
+		icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
+		if err == nil {
+			b.Icon = icon
+		} else {
+			problems = append(problems, errors.Errorf("invalid icon path %q in binding", b.Icon))
+			b.Icon = ""
+		}
+	}
+
+	if fql == apps.LocationChannelHeader.Sub(b.Location) {
+		// A channel header binding must have an icon, for webapp anyway.
+		if b.Icon == "" && userAgent == "webapp" {
+			problems = append(problems, errors.Errorf("no icon in channel header binding %s", fql))
+			return nil, problems
+		}
+	}
+
+	// A binding can have sub-bindings, a direct submit, or a form.
+	hasBindings := len(b.Bindings) > 0
+	hasForm := b.Form != nil
+	hasSubmit := b.Submit != nil
+	switch {
+	// valid cases
+	case hasBindings && !hasForm && !hasSubmit:
+		b.Bindings = cleanAppBindings(app, b.Bindings, fql, userAgent, conf, baseLog)
+		if len(b.Bindings) == 0 {
+			// We do not add bindings without any valid sub-bindings
+			return nil, problems
+		}
+
+	case hasForm && !hasSubmit && !hasBindings:
+		clean, formProblems := cleanForm(*b.Form)
+		problems = append(problems, formProblems...)
+		b.Form = &clean
+
+	case hasSubmit && !hasBindings && !hasForm:
+		// nothing to clean for submit
+
+	default:
+		problems = append(problems, errors.New(`(only) one of  "submit", "form", or "bindings" must be set in a binding`))
+		return nil, problems
+	}
+
+	return &b, problems
 }
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {

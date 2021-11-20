@@ -33,7 +33,7 @@ func (l Location) In(other Location) bool {
 	return strings.HasPrefix(string(l), string(other))
 }
 
-func (l Location) Make(sub Location) Location {
+func (l Location) Sub(sub Location) Location {
 	out := l
 	if len(sub) == 0 {
 		return out

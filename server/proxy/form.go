@@ -21,6 +21,11 @@ func cleanForm(in apps.Form) (apps.Form, []error) {
 	out.Fields = []apps.Field{}
 	problems := []error{}
 	usedLabels := map[string]bool{}
+
+	if in.Submit == nil && in.Source == nil {
+		problems = append(problems, errors.New("form must define either a submit or a source"))
+	}
+
 	for _, f := range in.Fields {
 		if f.Name == "" {
 			problems = append(problems, errors.Errorf("field with no name, label %s", f.Label))

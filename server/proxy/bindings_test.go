@@ -22,6 +22,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -299,20 +300,21 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 }
 
 func TestGetBindingsCommands(t *testing.T) {
-	app1TestData := bindingTestData{
-		app: apps.App{
-			DeployType: apps.DeployBuiltin,
-			Manifest: apps.Manifest{
-				AppID:       apps.AppID("app1"),
-				DisplayName: "App 1",
-			},
-			GrantedLocations: apps.Locations{
-				apps.LocationChannelHeader,
-				apps.LocationPostMenu,
-				apps.LocationCommand,
-			},
+	app1 := apps.App{
+		DeployType: apps.DeployBuiltin,
+		Manifest: apps.Manifest{
+			AppID:       apps.AppID("app1"),
+			DisplayName: "App 1",
 		},
-		bindings: []apps.Binding{
+		GrantedLocations: apps.Locations{
+			apps.LocationChannelHeader,
+			apps.LocationPostMenu,
+			apps.LocationCommand,
+		},
+	}
+
+	app1Bindings := func() []apps.Binding {
+		return []apps.Binding{
 			{
 				Location: apps.LocationCommand,
 				Bindings: []apps.Binding{
@@ -365,23 +367,29 @@ func TestGetBindingsCommands(t *testing.T) {
 					},
 				},
 			},
-		},
+		}
 	}
 
-	app2TestData := bindingTestData{
-		app: apps.App{
-			DeployType: apps.DeployBuiltin,
-			Manifest: apps.Manifest{
-				AppID:       apps.AppID("app2"),
-				DisplayName: "App 2",
-			},
-			GrantedLocations: apps.Locations{
-				apps.LocationChannelHeader,
-				apps.LocationPostMenu,
-				apps.LocationCommand,
-			},
-		},
-		bindings: []apps.Binding{
+	expectedApp1Bindings := app1Bindings()
+	expectedApp1Bindings[0].Bindings[0].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon"
+	expectedApp1Bindings[0].Bindings[0].Bindings[0].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Bindings[0].Icon = "https://example.com/image.png"
+	expectedApp1Bindings[0].Bindings[0].Bindings[1].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Bindings[1].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message-modal command icon"
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].Icon = ""
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].Bindings[0].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].Bindings[0].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/subscribe command icon"
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].Bindings[1].AppID = "app1"
+	expectedApp1Bindings[0].Bindings[0].Bindings[2].Bindings[1].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/unsubscribe command icon"
+
+	app2 := app1
+	app2.AppID = apps.AppID("app2")
+	app2.DisplayName = "App 2"
+
+	app2Bindings := func() []apps.Binding {
+		return []apps.Binding{
 			{
 				Location: apps.LocationCommand,
 				Bindings: []apps.Binding{
@@ -404,183 +412,42 @@ func TestGetBindingsCommands(t *testing.T) {
 					},
 				},
 			},
-		},
+		}
 	}
-	expectedApp2Bindings := []apps.Binding{
+
+	expectedApp2Bindings := app2Bindings()
+	expectedApp2Bindings[0].Bindings[0].AppID = "app2"
+	expectedApp2Bindings[0].Bindings[0].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon"
+	expectedApp2Bindings[0].Bindings[0].Bindings[0].AppID = "app2"
+	expectedApp2Bindings[0].Bindings[0].Bindings[0].Icon = "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/connect command icon"
+
+	app1TestData := bindingTestData{
+		app:      app1,
+		bindings: app1Bindings(),
+	}
+
+	app2TestData := bindingTestData{
+		app:      app2,
+		bindings: app2Bindings(),
+	}
+
+	expectedCombined := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Label:    string(apps.LocationCommand),
-			Bindings: []apps.Binding{
-				{
-					AppID:       apps.AppID("app1"),
-					Location:    "baseCommandLocation",
-					Label:       "baseCommandLabel",
-					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
-					Hint:        "base command hint",
-					Description: "base command description",
-					Bindings: []apps.Binding{
-						{
-							AppID:       apps.AppID("app1"),
-							Location:    "message",
-							Label:       "message",
-							Icon:        "https://example.com/image.png",
-							Hint:        "message command hint",
-							Description: "message command description",
-							Submit:      &apps.Call{Path: "/path"},
-						}, {
-							AppID:       apps.AppID("app1"),
-							Location:    "message-modal",
-							Label:       "message-modal",
-							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message-modal command icon",
-							Hint:        "message-modal command hint",
-							Description: "message-modal command description",
-							Submit:      &apps.Call{Path: "/path"},
-						}, {
-							AppID:       apps.AppID("app1"),
-							Location:    "manage",
-							Label:       "manage",
-							Icon:        "",
-							Hint:        "manage command hint",
-							Description: "manage command description",
-							Bindings: []apps.Binding{
-								{
-									AppID:       apps.AppID("app1"),
-									Location:    "subscribe",
-									Label:       "subscribe",
-									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/subscribe command icon",
-									Hint:        "subscribe command hint",
-									Description: "subscribe command description",
-									Submit:      &apps.Call{Path: "/path"},
-								}, {
-									AppID:       apps.AppID("app1"),
-									Location:    "unsubscribe",
-									Label:       "unsubscribe",
-									Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/unsubscribe command icon",
-									Hint:        "unsubscribe command hint",
-									Description: "unsubscribe command description",
-									Submit:      &apps.Call{Path: "/path"},
-								},
-							},
-						},
-					},
-				},
-				{
-					AppID:       apps.AppID("app2"),
-					Location:    "app2BaseCommandLocation",
-					Label:       "app2BaseCommandLabel",
-					Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
-					Hint:        "app2 base command hint",
-					Description: "app2 base command description",
-					Bindings: []apps.Binding{
-						{
-							AppID:       apps.AppID("app2"),
-							Location:    "connect",
-							Label:       "connect",
-							Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/connect command icon",
-							Hint:        "connect command hint",
-							Description: "connect command description",
-							Submit:      &apps.Call{Path: "/path"},
-						},
-					},
-				},
-			},
+			Bindings: append(expectedApp1Bindings[0].Bindings, expectedApp2Bindings[0].Bindings...),
 		},
 	}
 
 	t.Run("Bindings from two enabled apps", func(t *testing.T) {
 		testData := []bindingTestData{app1TestData, app2TestData}
-
-		expected := []apps.Binding{
-			{
-				Location: apps.LocationCommand,
-				Bindings: []apps.Binding{
-					{
-						AppID:       apps.AppID("app1"),
-						Location:    "baseCommandLocation",
-						Label:       "baseCommandLabel",
-						Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/base command icon",
-						Hint:        "base command hint",
-						Description: "base command description",
-						Bindings: []apps.Binding{
-							{
-								AppID:       apps.AppID("app1"),
-								Location:    "message",
-								Label:       "message",
-								Icon:        "https://example.com/image.png",
-								Hint:        "message command hint",
-								Description: "message command description",
-							}, {
-								AppID:       apps.AppID("app1"),
-								Location:    "message-modal",
-								Label:       "message-modal",
-								Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/message-modal command icon",
-								Hint:        "message-modal command hint",
-								Description: "message-modal command description",
-							}, {
-								AppID:       apps.AppID("app1"),
-								Location:    "manage",
-								Label:       "manage",
-								Icon:        "",
-								Hint:        "manage command hint",
-								Description: "manage command description",
-								Bindings: []apps.Binding{
-									{
-										AppID:       apps.AppID("app1"),
-										Location:    "subscribe",
-										Label:       "subscribe",
-										Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/subscribe command icon",
-										Hint:        "subscribe command hint",
-										Description: "subscribe command description",
-									}, {
-										AppID:       apps.AppID("app1"),
-										Location:    "unsubscribe",
-										Label:       "unsubscribe",
-										Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app1/static/unsubscribe command icon",
-										Hint:        "unsubscribe command hint",
-										Description: "unsubscribe command description",
-									},
-								},
-							},
-						},
-					},
-					{
-						AppID:       apps.AppID("app2"),
-						Location:    "app2BaseCommandLocation",
-						Label:       "app2BaseCommandLabel",
-						Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/app2 base command icon",
-						Hint:        "app2 base command hint",
-						Description: "app2 base command description",
-						Bindings: []apps.Binding{
-							{
-								AppID:       apps.AppID("app2"),
-								Location:    "connect",
-								Label:       "connect",
-								Icon:        "https://test.mattermost.com/plugins/com.mattermost.apps/apps/app2/static/connect command icon",
-								Hint:        "connect command hint",
-								Description: "connect command description",
-							},
-						},
-					},
-				},
-			},
-		}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 
 		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 		require.NoError(t, err)
-		require.Equal(t, 2, len(out))
-		if out[0].AppID != "app1" {
-			out[0], out[1] = out[1], out[0]
-		}
-		require.Equal(t, "app1", out[0])
-		require.Equal(t, expected[0], out[0])
 
-		fmt.Printf("<>/<> 1 \n")
-		EqualBindings(t, expected, out)
+		EqualBindings(t, expectedCombined, out)
 	})
 
 	t.Run("Apps without granted locations doesn't get a request", func(t *testing.T) {
@@ -590,31 +457,24 @@ func TestGetBindingsCommands(t *testing.T) {
 
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-
-		expected := expectedApp2Bindings
-
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 
 		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 		require.NoError(t, err)
-		EqualBindings(t, expected, out)
+		EqualBindings(t, expectedApp2Bindings, out)
 	})
 
 	t.Run("Disabled app doesn't get a request", func(t *testing.T) {
-		app1TestData := app1TestData
-		app1TestData.app.Disabled = true
-		testData := []bindingTestData{app1TestData, app2TestData}
-
+		d := app2TestData // clone
+		d.app.Disabled = true
+		testData := []bindingTestData{app1TestData, d}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		expected := expectedApp2Bindings
-
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-
 		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
 		require.NoError(t, err)
-		EqualBindings(t, expected, out)
+		EqualBindings(t, expectedApp1Bindings, out)
 	})
 }
 
@@ -681,7 +541,6 @@ func TestDuplicateCommand(t *testing.T) {
 	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Label:    string(apps.LocationCommand),
 			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
@@ -765,7 +624,6 @@ func TestInvalidCommand(t *testing.T) {
 	expected := []apps.Binding{
 		{
 			Location: apps.LocationCommand,
-			Label:    string(apps.LocationCommand),
 			Bindings: []apps.Binding{
 				{
 					AppID:       apps.AppID("app1"),
@@ -856,5 +714,258 @@ func EqualBindings(t *testing.T, expected, actual []apps.Binding) {
 
 	if diff := cmp.Diff(expected, actual, opt); diff != "" {
 		t.Errorf("Bindings mismatch (-expected +actual):\n%s", diff)
+	}
+}
+
+func TestCleanAppBinding(t *testing.T) {
+	app := apps.App{
+		Manifest: apps.Manifest{
+			AppID: "appid",
+		},
+		GrantedLocations: apps.Locations{
+			apps.LocationCommand,
+			apps.LocationChannelHeader,
+		},
+	}
+
+	conf := config.Config{}
+	log := utils.NewTestLogger()
+
+	type TC struct {
+		in               apps.Binding
+		locPrefix        apps.Location
+		userAgent        string
+		expected         *apps.Binding
+		expectedProblems []string
+	}
+
+	for name, tc := range map[string]TC{
+		"happy simplest": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "appid",
+				Label:    "appid",
+				Submit:   apps.NewCall("/hello"),
+			},
+		},
+		"trim location": {
+			in: apps.Binding{
+				Location: " test-1 \t",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test-1",
+				Label:    "test-1",
+				Submit:   apps.NewCall("/hello"),
+			},
+			expectedProblems: []string{
+				"trimmed whitespace from location test-1",
+			},
+		},
+		"ERROR location PostMenu not granted": {
+			in: apps.Binding{
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationPostMenu,
+			expected:  nil,
+			expectedProblems: []string{
+				"location \"/post_menu/test\" is not granted: forbidden",
+			},
+		},
+		"trim command label": {
+			in: apps.Binding{
+				Location: "test",
+				Label:    "\ntest-label \t",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test",
+				Label:    "test-label",
+				Submit:   apps.NewCall("/hello"),
+			},
+			expectedProblems: []string{
+				"trimmed whitespace from label test-label",
+			},
+		},
+		"ERROR whitsepace in command label": {
+			in: apps.Binding{
+				Location: "test",
+				Label:    "test label",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected:  nil,
+			expectedProblems: []string{
+				"command label \"test label\" has multiple words",
+			},
+		},
+		"normalize icon path": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+				Icon:   "a///static.icon",
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "appid",
+				Label:    "appid",
+				Icon:     "/apps/appid/static/a/static.icon",
+				Submit:   apps.NewCall("/hello"),
+			},
+		},
+		"invalid icon path": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+				Icon:   "../a/...//static.icon",
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "appid",
+				Label:    "appid",
+				Submit:   apps.NewCall("/hello"),
+			},
+			expectedProblems: []string{
+				"invalid icon path \"../a/...//static.icon\" in binding",
+			},
+		},
+		"ERROR: icon required for ChannelHeader in webapp": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationChannelHeader,
+			userAgent: "webapp",
+			expected:  nil,
+			expectedProblems: []string{
+				"no icon in channel header binding /channel_header/appid",
+			},
+		},
+		"icon not required for ChannelHeader in mobile": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationChannelHeader,
+			userAgent: "something-else",
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "appid",
+				Submit:   apps.NewCall("/hello"),
+			},
+		},
+		"ERROR: no submit/form/bindings": {
+			in: apps.Binding{
+				Location: "test",
+			},
+			locPrefix: apps.LocationChannelHeader,
+			expected:  nil,
+			expectedProblems: []string{
+				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
+			},
+		},
+		"ERROR: submit and form": {
+			in: apps.Binding{
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+				Form:     apps.NewBlankForm(apps.NewCall("/hello")),
+			},
+			locPrefix: apps.LocationChannelHeader,
+			expected:  nil,
+			expectedProblems: []string{
+				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
+			},
+		},
+		"ERROR: submit and bindings": {
+			in: apps.Binding{
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+				Bindings: []apps.Binding{
+					{
+						Location: "test1",
+					},
+					{
+						Location: "test2",
+					},
+				},
+			},
+			locPrefix: apps.LocationChannelHeader,
+			expected:  nil,
+			expectedProblems: []string{
+				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
+			},
+		},
+		"clean sub-bindings": {
+			in: apps.Binding{
+				Location: "test",
+				Bindings: []apps.Binding{
+					{
+						Location: "test1",
+						Submit:   apps.NewCall("/hello"),
+					},
+					{
+						Location: "test2",
+						Submit:   apps.NewCall("/hello"),
+					},
+				},
+			},
+			locPrefix: apps.LocationChannelHeader,
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test",
+				Bindings: []apps.Binding{
+					{
+						AppID:    "appid",
+						Location: "test1",
+						Submit:   apps.NewCall("/hello"),
+					},
+					{
+						AppID:    "appid",
+						Location: "test2",
+						Submit:   apps.NewCall("/hello"),
+					},
+				},
+			},
+		},
+		"clean form": {
+			in: apps.Binding{
+				Location: "test",
+				Form: &apps.Form{
+					Submit: apps.NewCall("/hello"),
+					Fields: []apps.Field{
+						{Name: "in valid"},
+					},
+				},
+			},
+			locPrefix: apps.LocationChannelHeader,
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test",
+				Form: &apps.Form{
+					Submit: apps.NewCall("/hello"),
+					Fields: []apps.Field{},
+				},
+			},
+			expectedProblems: []string{
+				`field name must be a single word: "in valid"`,
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			b, problems := cleanAppBinding(app, tc.in, tc.locPrefix, tc.userAgent, conf, log)
+			var allProblems []string
+			for _, p := range problems {
+				allProblems = append(allProblems, p.Error())
+			}
+			require.Equal(t, tc.expectedProblems, allProblems)
+			require.EqualValues(t, tc.expected, b)
+		})
 	}
 }
