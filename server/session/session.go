@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
 const (
@@ -148,7 +149,7 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 			}
 		}
 
-		err = s.store.Session.Delete(GetAppID(session), session.UserId)
+		err = s.store.Session.Delete(sessionutils.GetAppID(session), session.UserId)
 		if err != nil {
 			c.Log.WithError(err).Warnw("failed to delete revoked session from store")
 		}
@@ -157,8 +158,4 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 	}
 
 	return nil
-}
-
-func GetAppID(session *model.Session) apps.AppID {
-	return apps.AppID(session.Props[model.SessionPropAppsFrameworkAppID])
 }

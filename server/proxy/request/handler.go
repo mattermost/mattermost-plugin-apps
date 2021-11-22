@@ -7,10 +7,10 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
 type check func(*Context, http.ResponseWriter, *http.Request) bool // check return true if the it was successful
@@ -130,8 +130,7 @@ func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	// TODO(Ben): similify
-	appID := apps.AppID(s.Props[model.SessionPropAppsFrameworkAppID])
+	appID := sessionutils.GetAppID(s)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("not an app session"))
 		return false

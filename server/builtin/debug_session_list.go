@@ -11,8 +11,8 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
 func (a *builtinApp) debugSessionsList() handler {
@@ -55,7 +55,7 @@ func (a *builtinApp) debugSessionsList() handler {
 
 			for _, s := range sessions {
 				sessionID := s.Id
-				appID := session.GetAppID(s)
+				appID := sessionutils.GetAppID(s)
 				if appID == "" {
 					// Assume it's the builtin app
 					appID = AppID
