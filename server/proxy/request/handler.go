@@ -85,7 +85,7 @@ func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if successful := checkUser(c, w, r); !successful {
-		return successful
+		return false
 	}
 
 	if !c.mm.User.HasPermissionTo(c.ActingUserID(), model.PermissionManageSystem) {
@@ -98,10 +98,14 @@ func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+func checkPlugin(c *Context, w http.ResponseWriter, r *http.Request) bool {
+	pluginID := r.Header.Get(config.MattermostPluginIDHeader)
+	return pluginID != ""
+}
+
 func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
 	check := func(c *Context, w http.ResponseWriter, r *http.Request) bool {
-		pluginID := r.Header.Get(config.MattermostPluginIDHeader)
-		if pluginID != "" {
+		if checkPlugin(c, w, r) {
 			return true
 		}
 
