@@ -107,8 +107,8 @@ func hashkey(globalNamespace, botUserID, appNamespace, id []byte) string {
 
 func ParseHashkey(key string) (globalNamespace, botUserID, appNamespace, idhash string, err error) {
 	k := []byte(key)
-	if len(k) != model.KeyValueKeyMaxRunes {
-		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be %v", len(k), model.KeyValueKeyMaxRunes)
+	if len(k) > model.KeyValueKeyMaxRunes {
+		return "", "", "", "", errors.Errorf("invalid key length %v bytes, must be smaller then %v", len(k), model.KeyValueKeyMaxRunes)
 	}
 	gns := k[0:2]
 	b := k[2:28]

@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -125,11 +126,12 @@ func TestHashkey(t *testing.T) {
 				require.Equal(t, tc.expected, key)
 				require.Equal(t, tc.expectedLen, len(key))
 
-				gp, b, p, h, _ := ParseHashkey(key)
-				require.Equal(t, tc.globalPrefix, gp)
-				require.Equal(t, tc.botUserID, b)
-				require.Equal(t, tc.prefix, p)
-				require.NotEmpty(t, h)
+				gp, b, p, h, err := ParseHashkey(key)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.globalPrefix, gp)
+				assert.Equal(t, tc.botUserID, b)
+				assert.Equal(t, tc.prefix, p)
+				assert.NotEmpty(t, h)
 			}
 		})
 	}
