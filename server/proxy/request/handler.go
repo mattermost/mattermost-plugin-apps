@@ -37,7 +37,7 @@ func (h *ContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"path", r.URL.Path,
 		"request", c.requestID,
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), config.RequestTimeout)
 	defer cancel()
 	c.ctx = ctx
 
