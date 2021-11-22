@@ -66,38 +66,35 @@ func TestSubscribeE2E(t *testing.T) {
 			},
 		}
 
-		// TODO(Ben): Enable test for user1, user2 and admin
-		//th.TestForUserAndSystemAdmin(t, func(t *testing.T, client *appclient.ClientPP) {
-		// Subscribe
+		app.TestForTwoUsersAndBot(func(t *testing.T, client *TestClientPP) {
+			// Subscribe
 
-		client := app.AsUser
+			resp, err := client.Subscribe(&subscription)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
 
-		resp, err := client.Subscribe(&subscription)
-		assert.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
+			// List subscriptions
+			subs, resp, err := client.GetSubscriptions()
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.Len(t, subs, 1)
 
-		// List subscriptions
-		subs, resp, err := client.GetSubscriptions()
-		assert.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
-		assert.Len(t, subs, 1)
+			expectedSub := subscription
+			expectedSub.AppID = app.Manifest.AppID
+			expectedSub.UserID = client.UserID
+			assert.Equal(t, expectedSub, subs[0])
 
-		expectedSub := subscription
-		expectedSub.AppID = app.Manifest.AppID
-		expectedSub.UserID = th.ServerTestHelper.BasicUser.Id
-		assert.Equal(t, expectedSub, subs[0])
+			// Unsubscribe
+			resp, err = client.Unsubscribe(&subscription)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
 
-		// Unsubscribe
-		resp, err = client.Unsubscribe(&subscription)
-		assert.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
-
-		// List subscriptions
-		subs, resp, err = client.GetSubscriptions()
-		assert.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
-		assert.Len(t, subs, 0)
-		//		})
+			// List subscriptions
+			subs, resp, err = client.GetSubscriptions()
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.Len(t, subs, 0)
+		})
 	})
 
 	t.Run("Users can't delete other users subscriptions", func(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -37,15 +38,20 @@ type TestHelper struct {
 	UserClientPP        *appclient.ClientPP
 	User2ClientPP       *appclient.ClientPP
 	SystemAdminClientPP *appclient.ClientPP
-	BotClientPP         *appclient.ClientPP
 	LocalClientPP       *appclient.ClientPP
 }
 
+type TestClientPP struct {
+	*appclient.ClientPP
+	UserID string
+}
+
 type TestApp struct {
+	t        *testing.T
 	Manifest apps.Manifest
-	AsUser   *appclient.ClientPP
-	AsUser2  *appclient.ClientPP
-	AsBot    *appclient.ClientPP
+	AsUser   *TestClientPP
+	AsUser2  *TestClientPP
+	AsBot    *TestClientPP
 }
 
 func (th *TestHelper) TearDown() {
@@ -83,10 +89,11 @@ func Setup(t *testing.T) *TestHelper {
 
 	th.ServerTestHelper = serverTestHelper
 
-	// TODO(Ben): Cleanup client creation
+	userClient4 := th.ServerTestHelper.CreateClient()
+	th.ServerTestHelper.LoginBasicWithClient(userClient4)
 	th.UserClientPP = th.CreateClientPP()
-	th.UserClientPP.AuthToken = th.ServerTestHelper.Client.AuthToken
-	th.UserClientPP.AuthType = th.ServerTestHelper.Client.AuthType
+	th.UserClientPP.AuthToken = userClient4.AuthToken
+	th.UserClientPP.AuthType = userClient4.AuthType
 
 	user2Client4 := th.ServerTestHelper.CreateClient()
 	th.ServerTestHelper.LoginBasic2WithClient(user2Client4)
@@ -94,21 +101,13 @@ func Setup(t *testing.T) *TestHelper {
 	th.User2ClientPP.AuthToken = user2Client4.AuthToken
 	th.User2ClientPP.AuthType = user2Client4.AuthType
 
+	systemAminClient4 := th.ServerTestHelper.CreateClient()
+	th.ServerTestHelper.LoginSystemAdminWithClient(systemAminClient4)
 	th.SystemAdminClientPP = th.CreateClientPP()
-	th.SystemAdminClientPP.AuthToken = th.ServerTestHelper.SystemAdminClient.AuthToken
-	th.SystemAdminClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
-	th.LocalClientPP = th.CreateLocalClient("TODO")
+	th.SystemAdminClientPP.AuthToken = systemAminClient4.AuthToken
+	th.SystemAdminClientPP.AuthType = systemAminClient4.AuthType
 
-	bot := th.ServerTestHelper.CreateBotWithSystemAdminClient()
-	_, _, appErr := th.ServerTestHelper.App.AddUserToTeam(th.ServerTestHelper.Context, th.ServerTestHelper.BasicTeam.Id, bot.UserId, "")
-	require.Nil(t, appErr)
-
-	rtoken, _, err := th.ServerTestHelper.SystemAdminClient.CreateUserAccessToken(bot.UserId, "test token")
-	require.NoError(t, err)
-
-	th.BotClientPP = th.CreateClientPP()
-	th.BotClientPP.AuthToken = rtoken.Token
-	th.BotClientPP.AuthType = th.ServerTestHelper.SystemAdminClient.AuthType
+	th.LocalClientPP = th.CreateLocalClient(*th.ServerTestHelper.App.Config().ServiceSettings.LocalModeSocketLocation)
 
 	return th
 }
@@ -135,111 +134,15 @@ func (th *TestHelper) SetupPP() {
 	require.Nil(appErr)
 }
 
-// Sets up the PP for test
-func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
-	th.t.Helper()
-	require := require.New(th.t)
-	assert := assert.New(th.t)
-
-	var (
-		asUser  *appclient.Client
-		asUser2 *appclient.Client
-		asBot   *appclient.Client
-	)
-
-	router := mux.NewRouter()
-	router.HandleFunc(apps.DefaultPing.Path, httputils.HandleJSON(apps.NewDataResponse(nil)))
-	router.HandleFunc("/setup/user", func(w http.ResponseWriter, r *http.Request) {
-		creq, err := apps.CallRequestFromJSONReader(r.Body)
-		require.NoError(err)
-		require.NotNil(creq)
-
-		asUser = appclient.AsActingUser(creq.Context)
-		asBot = appclient.AsBot(creq.Context)
-
-		httputils.WriteJSON(w, apps.NewDataResponse(nil))
-	})
-	router.HandleFunc("/setup/user2", func(w http.ResponseWriter, r *http.Request) {
-		creq, err := apps.CallRequestFromJSONReader(r.Body)
-		require.NoError(err)
-		require.NotNil(creq)
-
-		asUser2 = appclient.AsActingUser(creq.Context)
-
-		httputils.WriteJSON(w, apps.NewDataResponse(nil))
-	})
-	appServer := httptest.NewServer(router)
-	th.t.Cleanup(appServer.Close)
-
-	m.HTTP = &apps.HTTP{
-		RootURL: appServer.URL,
-		UseJWT:  false,
-	}
-	m.HomepageURL = appServer.URL
-	m.RequestedPermissions = apps.Permissions{
-		apps.PermissionActAsBot,
-		apps.PermissionActAsUser,
-	}
-
-	err := m.Validate()
-	require.NoError(err)
-
-	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
-		Manifest:   m,
-		Replace:    true,
-		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
-	})
-	assert.NoError(err)
-	api4.CheckOKStatus(th.t, resp)
-
-	resp, err = th.SystemAdminClientPP.InstallApp(m.AppID, apps.DeployHTTP)
-	assert.NoError(err)
-	api4.CheckOKStatus(th.t, resp)
-
-	creq := apps.CallRequest{
-		Context: apps.Context{
-			UserAgentContext: apps.UserAgentContext{
-				AppID:     m.AppID,
-				ChannelID: th.ServerTestHelper.BasicChannel.Id,
-				TeamID:    th.ServerTestHelper.BasicTeam.Id,
-			},
-		},
-		Call: apps.Call{
-			Path: "/setup/user",
-			Expand: &apps.Expand{
-				ActingUserAccessToken: apps.ExpandAll,
-			},
-		},
-	}
-
-	cres, _, err := th.UserClientPP.Call(creq)
-	assert.NoError(err)
-	assert.NotNil(cres)
-	assert.Equal(apps.CallResponseTypeOK, cres.Type)
-	assert.Empty(cres.ErrorText)
-
-	creq.Call.Path = "/setup/user2"
-
-	cres, _, err = th.User2ClientPP.Call(creq)
-	assert.NoError(err)
-	assert.NotNil(cres)
-	assert.Equal(apps.CallResponseTypeOK, cres.Type)
-	assert.Empty(cres.ErrorText)
-
-	require.NotNil(asBot)
-	require.NotNil(asUser)
-	require.NotNil(asUser2)
-
-	return TestApp{
-		Manifest: m,
-		AsUser:   asUser.ClientPP,
-		AsUser2:  asUser2.ClientPP,
-		AsBot:    asBot.ClientPP,
-	}
-}
-
 func (th *TestHelper) CreateClientPP() *appclient.ClientPP {
-	return appclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
+	cfg := th.ServerTestHelper.App.Config()
+
+	mattermostURL, err := url.Parse(*cfg.ServiceSettings.SiteURL)
+	require.NoError(th.t, err)
+
+	url := fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port) + mattermostURL.Path
+
+	return appclient.NewAppsPluginAPIClient(url)
 }
 
 func (th *TestHelper) CreateLocalClient(socketPath string) *appclient.ClientPP {
@@ -293,4 +196,175 @@ func (th *TestHelper) TestForLocal(t *testing.T, f func(*testing.T, *appclient.C
 func (th *TestHelper) TestForUserAndSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
 	th.TestForUser(t, f)
 	th.TestForSystemAdmin(t, f)
+}
+
+// Sets up the PP for test
+func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
+	th.t.Helper()
+	require := require.New(th.t)
+	assert := assert.New(th.t)
+
+	var (
+		asUser *appclient.Client
+		userID string
+
+		asUser2 *appclient.Client
+		user2ID string
+
+		asBot     *appclient.Client
+		botUserID string
+	)
+
+	router := mux.NewRouter()
+	router.HandleFunc(apps.DefaultPing.Path, httputils.HandleJSON(apps.NewDataResponse(nil)))
+	router.HandleFunc("/setup/user", func(w http.ResponseWriter, r *http.Request) {
+		creq, err := apps.CallRequestFromJSONReader(r.Body)
+		require.NoError(err)
+		require.NotNil(creq)
+
+		asUser = appclient.AsActingUser(creq.Context)
+		userID = creq.Context.ActingUserID
+
+		asBot = appclient.AsBot(creq.Context)
+		botUserID = creq.Context.BotUserID
+
+		httputils.WriteJSON(w, apps.NewDataResponse(nil))
+	})
+	router.HandleFunc("/setup/user2", func(w http.ResponseWriter, r *http.Request) {
+		creq, err := apps.CallRequestFromJSONReader(r.Body)
+		require.NoError(err)
+		require.NotNil(creq)
+
+		asUser2 = appclient.AsActingUser(creq.Context)
+		user2ID = creq.Context.ActingUserID
+
+		httputils.WriteJSON(w, apps.NewDataResponse(nil))
+	})
+	appServer := httptest.NewServer(router)
+	th.t.Cleanup(appServer.Close)
+
+	m.HTTP = &apps.HTTP{
+		RootURL: appServer.URL,
+		UseJWT:  false,
+	}
+	m.HomepageURL = appServer.URL
+	m.RequestedPermissions = apps.Permissions{
+		apps.PermissionActAsBot,
+		apps.PermissionActAsUser,
+	}
+
+	err := m.Validate()
+	require.NoError(err)
+
+	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
+		Manifest:   m,
+		Replace:    true,
+		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+	})
+	assert.NoError(err)
+	api4.CheckOKStatus(th.t, resp)
+
+	resp, err = th.SystemAdminClientPP.InstallApp(m.AppID, apps.DeployHTTP)
+	assert.NoError(err)
+	api4.CheckOKStatus(th.t, resp)
+
+	creq := apps.CallRequest{
+		Context: apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				AppID:     m.AppID,
+				ChannelID: th.ServerTestHelper.BasicChannel.Id,
+				TeamID:    th.ServerTestHelper.BasicTeam.Id,
+			},
+		},
+		Call: apps.Call{
+			Path: "/setup/user",
+			Expand: &apps.Expand{
+				ActingUserAccessToken: apps.ExpandAll,
+			},
+		},
+	}
+
+	cres, resp, err := th.UserClientPP.Call(creq)
+	assert.NoError(err)
+	api4.CheckOKStatus(th.t, resp)
+	assert.NotNil(cres)
+	assert.Equal(apps.CallResponseTypeOK, cres.Type)
+	assert.Empty(cres.ErrorText)
+
+	creq.Call.Path = "/setup/user2"
+
+	cres, resp, err = th.User2ClientPP.Call(creq)
+	assert.NoError(err)
+	api4.CheckOKStatus(th.t, resp)
+	assert.NotNil(cres)
+	assert.Equal(apps.CallResponseTypeOK, cres.Type)
+	assert.Empty(cres.ErrorText)
+
+	require.NotNil(asBot)
+	require.NotNil(asUser)
+	require.NotNil(asUser2)
+
+	_, resp, err = th.ServerTestHelper.SystemAdminClient.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, botUserID)
+	assert.NoError(err)
+	api4.CheckCreatedStatus(th.t, resp)
+
+	_, resp, err = th.ServerTestHelper.SystemAdminClient.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, botUserID)
+	assert.NoError(err)
+	api4.CheckCreatedStatus(th.t, resp)
+
+	_, resp, err = th.ServerTestHelper.SystemAdminClient.AddChannelMember(th.ServerTestHelper.BasicChannel2.Id, botUserID)
+	assert.NoError(err)
+	api4.CheckCreatedStatus(th.t, resp)
+
+	return TestApp{
+		t:        th.t,
+		Manifest: m,
+		AsUser:   &TestClientPP{asUser.ClientPP, userID},
+		AsUser2:  &TestClientPP{asUser2.ClientPP, user2ID},
+		AsBot:    &TestClientPP{asBot.ClientPP, botUserID},
+	}
+}
+
+func (ta TestApp) TestForUser(f func(*testing.T, *TestClientPP), name ...string) {
+	var testName string
+	if len(name) > 0 {
+		testName = name[0] + "/"
+	}
+
+	ta.t.Run(testName+"AsUser", func(t *testing.T) {
+		f(t, ta.AsUser)
+	})
+}
+
+func (ta TestApp) TestForUser2(f func(*testing.T, *TestClientPP), name ...string) {
+	var testName string
+	if len(name) > 0 {
+		testName = name[0] + "/"
+	}
+
+	ta.t.Run(testName+"AsUser2", func(t *testing.T) {
+		f(t, ta.AsUser)
+	})
+}
+
+func (ta TestApp) TestForBot(f func(*testing.T, *TestClientPP), name ...string) {
+	var testName string
+	if len(name) > 0 {
+		testName = name[0] + "/"
+	}
+
+	ta.t.Run(testName+"AsBot", func(t *testing.T) {
+		f(t, ta.AsBot)
+	})
+}
+
+func (ta TestApp) TestForUserAndBot(f func(*testing.T, *TestClientPP), name ...string) {
+	ta.TestForUser(f)
+	ta.TestForBot(f)
+}
+
+func (ta TestApp) TestForTwoUsersAndBot(f func(*testing.T, *TestClientPP), name ...string) {
+	ta.TestForUser(f)
+	ta.TestForUser2(f)
+	ta.TestForBot(f)
 }
