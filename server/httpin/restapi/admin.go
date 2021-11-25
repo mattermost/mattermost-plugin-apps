@@ -4,28 +4,28 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initAdmin(api *mux.Router, c *incoming.Request) {
-	api.Handle(path.UpdateAppListing,
-		incoming.AddContext(a.UpdateAppListing, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
-	api.Handle(path.InstallApp,
-		incoming.AddContext(a.InstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
-	api.Handle(path.EnableApp,
-		incoming.AddContext(a.EnableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
-	api.Handle(path.DisableApp,
-		incoming.AddContext(a.DisableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
-	api.Handle(path.UninstallApp,
-		incoming.AddContext(a.UninstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+func (a *restapi) initAdmin(rh *httpin.Handler) {
+	rh.HandleFunc(path.UpdateAppListing,
+		a.UpdateAppListing, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	rh.HandleFunc(path.InstallApp,
+		a.InstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	rh.HandleFunc(path.EnableApp,
+		a.EnableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	rh.HandleFunc(path.DisableApp,
+		a.DisableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	rh.HandleFunc(path.UninstallApp,
+		a.UninstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
 }
 
 // UpdateAppListing adds (or updates) the specified Manifest to the local
@@ -43,14 +43,14 @@ func (a *restapi) initAdmin(api *mux.Router, c *incoming.Request) {
 //      "add_deploys": []string e.g. ["aws_lambda","http"]
 //      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
-func (a *restapi) UpdateAppListing(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	req := appclient.UpdateAppListingRequest{}
-	err := json.NewDecoder(r.Body).Decode(&req)
+func (a *restapi) UpdateAppListing(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	listReq := appclient.UpdateAppListingRequest{}
+	err := json.NewDecoder(r.Body).Decode(&listReq)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
 		return
 	}
-	m, err := a.proxy.UpdateAppListing(req)
+	m, err := a.proxy.UpdateAppListing(listReq)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -65,7 +65,7 @@ func (a *restapi) UpdateAppListing(c *incoming.Request, w http.ResponseWriter, r
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
 //   Output: None
-func (a *restapi) InstallApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) InstallApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -73,9 +73,9 @@ func (a *restapi) InstallApp(c *incoming.Request, w http.ResponseWriter, r *http
 		return
 	}
 
-	c.SetAppID(input.AppID)
+	req.SetAppID(input.AppID)
 
-	_, _, err = a.proxy.InstallApp(c, apps.Context{}, input.AppID, input.DeployType, false, "")
+	_, _, err = a.proxy.InstallApp(req, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -87,7 +87,7 @@ func (a *restapi) InstallApp(c *incoming.Request, w http.ResponseWriter, r *http
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) EnableApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) EnableApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -95,9 +95,9 @@ func (a *restapi) EnableApp(c *incoming.Request, w http.ResponseWriter, r *http.
 		return
 	}
 
-	c.SetAppID(input.AppID)
+	req.SetAppID(input.AppID)
 
-	_, err = a.proxy.EnableApp(c, apps.Context{}, input.AppID)
+	_, err = a.proxy.EnableApp(req, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -109,7 +109,7 @@ func (a *restapi) EnableApp(c *incoming.Request, w http.ResponseWriter, r *http.
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) DisableApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) DisableApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -117,9 +117,9 @@ func (a *restapi) DisableApp(c *incoming.Request, w http.ResponseWriter, r *http
 		return
 	}
 
-	c.SetAppID(input.AppID)
+	req.SetAppID(input.AppID)
 
-	_, err = a.proxy.DisableApp(c, apps.Context{}, input.AppID)
+	_, err = a.proxy.DisableApp(req, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -131,7 +131,7 @@ func (a *restapi) DisableApp(c *incoming.Request, w http.ResponseWriter, r *http
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) UninstallApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) UninstallApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -139,20 +139,20 @@ func (a *restapi) UninstallApp(c *incoming.Request, w http.ResponseWriter, r *ht
 		return
 	}
 
-	c.SetAppID(input.AppID)
+	req.SetAppID(input.AppID)
 
-	_, err = a.proxy.UninstallApp(c, apps.Context{}, input.AppID)
+	_, err = a.proxy.UninstallApp(req, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 }
 
-func (a *restapi) initGetApp(main *mux.Router, c *incoming.Request) {
-	appsRouters := main.PathPrefix(path.Apps).Subrouter()
-	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
-	appRouter.Handle("",
-		incoming.AddContext(a.GetApp, c)).Methods(http.MethodGet)
+func (a *restapi) initGetApp(rh *httpin.Handler) {
+	appsRouters := rh.Router.PathPrefix(path.Apps).Subrouter()
+	rh.Router = appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
+	rh.HandleFunc("",
+		a.GetApp).Methods(http.MethodGet)
 }
 
 // GetApp returns the App's record.
@@ -160,13 +160,13 @@ func (a *restapi) initGetApp(main *mux.Router, c *incoming.Request) {
 //   Method: GET
 //   Input: none
 //   Output: App
-func (a *restapi) GetApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) GetApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))
 		return
 	}
-	c.SetAppID(appID)
+	req.SetAppID(appID)
 
 	app, err := a.proxy.GetInstalledApp(appID)
 	if err != nil {

@@ -4,20 +4,19 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *restapi) initGetBotIDs(api *mux.Router, c *incoming.Request) {
-	api.Handle(path.BotIDs,
-		incoming.AddContext(a.GetBotIDs, c).RequireUser()).Methods(http.MethodGet)
+func (a *restapi) initGetBotIDs(rh *httpin.Handler) {
+	rh.HandleFunc(path.BotIDs,
+		a.GetBotIDs, httpin.RequireUser).Methods(http.MethodGet)
 }
 
-func (a *restapi) initGetOAuthAppIDs(api *mux.Router, c *incoming.Request) {
-	api.Handle(path.OAuthAppIDs,
-		incoming.AddContext(a.GetOAuthAppIDs, c).RequireUser()).Methods(http.MethodGet)
+func (a *restapi) initGetOAuthAppIDs(rh *httpin.Handler) {
+	rh.HandleFunc(path.OAuthAppIDs,
+		a.GetOAuthAppIDs, httpin.RequireUser).Methods(http.MethodGet)
 }
 
 // GetBotIDs returns the list of all Apps' bot user IDs.

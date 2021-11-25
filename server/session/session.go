@@ -98,7 +98,7 @@ func (s *service) createSession(appID apps.AppID, userID string) (*model.Session
 		return nil, errors.Wrap(err, "failed to save new session in store")
 	}
 
-	s.log.Debugw("created new access token", "app_id", appID, "user_id", userID, "token", utils.LastN(session.Token, 3))
+	s.log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "token", utils.LastN(session.Token, 3))
 
 	return session, nil
 }

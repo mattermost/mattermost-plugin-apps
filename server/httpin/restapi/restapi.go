@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
@@ -17,35 +17,35 @@ type restapi struct {
 	appServices appservices.Service
 }
 
-func Init(c *incoming.Request, router *mux.Router, p proxy.Service, appServices appservices.Service) {
+func Init(rh httpin.Handler, p proxy.Service, appServices appservices.Service) {
 	a := &restapi{
 		proxy:       p,
 		appServices: appServices,
 	}
 
-	api := router.PathPrefix(path.API).Subrouter()
+	rh.Router = rh.Router.PathPrefix(path.API).Subrouter()
 
-	a.initPing(api, c)
+	a.initPing(&rh)
 
 	// Proxy API, intended to be used by the user-agents (mobile, desktop, and
 	// web).
-	a.initCall(api, c)
+	a.initCall(&rh)
 
 	// User-agent APIs.
-	a.initGetBindings(api, c)
-	a.initGetBotIDs(api, c)
-	a.initGetOAuthAppIDs(api, c)
+	a.initGetBindings(&rh)
+	a.initGetBotIDs(&rh)
+	a.initGetOAuthAppIDs(&rh)
 
 	// App Service API, intended to be used by Apps. Subscriptions, KV, OAuth2
 	// services.
-	a.initSubscriptions(api, c)
-	a.initKV(api, c)
-	a.initOAuth2Store(api, c)
+	a.initSubscriptions(&rh)
+	a.initKV(&rh)
+	a.initOAuth2Store(&rh)
 
 	// Admin API, can be used by plugins, external services, or the user agent.
-	a.initAdmin(api, c)
-	a.initGetApp(api, c)
-	a.initMarketplace(api, c)
+	a.initAdmin(&rh)
+	a.initGetApp(&rh)
+	a.initMarketplace(&rh)
 }
 
 func appIDVar(r *http.Request) apps.AppID {

@@ -3,15 +3,14 @@ package restapi
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initMarketplace(api *mux.Router, c *incoming.Request) {
-	api.Handle(path.Marketplace, incoming.AddContext(a.GetMarketplace, c).RequireUser()).Methods(http.MethodGet)
+func (a *restapi) initMarketplace(rh *httpin.Handler) {
+	rh.HandleFunc(path.Marketplace, a.GetMarketplace, httpin.RequireUser).Methods(http.MethodGet)
 }
 
 func (a *restapi) GetMarketplace(_ *incoming.Request, w http.ResponseWriter, r *http.Request) {

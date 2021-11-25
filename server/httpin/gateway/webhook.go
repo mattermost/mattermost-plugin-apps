@@ -11,34 +11,34 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	err := g.doHandleWebhook(c, w, r)
+func (g *gateway) handleWebhook(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	err := g.doHandleWebhook(req, w, r)
 	if err != nil {
-		c.Log.WithError(err).Warnw("failed to process remote webhook")
+		req.Log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
 }
 
-func (g *gateway) doHandleWebhook(c *incoming.Request, w http.ResponseWriter, r *http.Request) error {
+func (g *gateway) doHandleWebhook(req *incoming.Request, w http.ResponseWriter, r *http.Request) error {
 	appID := appIDVar(r)
 	if appID == "" {
 		return utils.NewInvalidError("app_id not specified")
 	}
-	c.SetAppID(appID)
+	req.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(r, c.Config().Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(r, req.Config().Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}
 	sreq.Path = mux.Vars(r)["path"]
-	c.Log = c.Log.With("call_path", sreq.Path)
+	req.Log = req.Log.With("call_path", sreq.Path)
 
-	err = g.proxy.NotifyRemoteWebhook(c, appID, *sreq)
+	err = g.proxy.NotifyRemoteWebhook(req, appID, *sreq)
 	if err != nil {
 		return err
 	}
 
-	c.Log.Debugf("processed remote webhook")
+	req.Log.Debugf("processed remote webhook")
 	return nil
 }
 

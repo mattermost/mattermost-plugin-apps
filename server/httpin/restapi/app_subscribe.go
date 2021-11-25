@@ -4,24 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initSubscriptions(api *mux.Router, c *incoming.Request) {
+func (a *restapi) initSubscriptions(rh *httpin.Handler) {
 	// Subscribe
-	api.Handle(path.Subscribe,
-		incoming.AddContext(a.Subscribe, c).RequireUser().RequireApp()).Methods(http.MethodPost)
+	rh.HandleFunc(path.Subscribe,
+		a.Subscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
 	// GetSubscriptions
-	api.Handle(path.Subscribe,
-		incoming.AddContext(a.GetSubscriptions, c).RequireUser().RequireApp()).Methods(http.MethodGet)
+	rh.HandleFunc(path.Subscribe,
+		a.GetSubscriptions, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 	// Unsubscribe
-	api.Handle(path.Unsubscribe,
-		incoming.AddContext(a.Unsubscribe, c).RequireUser().RequireApp()).Methods(http.MethodPost)
+	rh.HandleFunc(path.Unsubscribe,
+		a.Unsubscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
 }
 
 // Subscribe starts or updates an App subscription to Mattermost events.
@@ -29,8 +28,8 @@ func (a *restapi) initSubscriptions(api *mux.Router, c *incoming.Request) {
 //   Method: POST
 //   Input: Subscription
 //   Output: None
-func (a *restapi) Subscribe(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(c, w, r, true)
+func (a *restapi) Subscribe(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	a.handleSubscribeCore(req, w, r, true)
 }
 
 // GetSubscriptions returns a users current list of subscriptions.
@@ -38,8 +37,8 @@ func (a *restapi) Subscribe(c *incoming.Request, w http.ResponseWriter, r *http.
 //   Method: GET
 //   Input: None
 //   Output: []Subscription
-func (a *restapi) GetSubscriptions(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(c.AppID(), c.ActingUserID())
+func (a *restapi) GetSubscriptions(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	subs, err := a.appServices.GetSubscriptions(req.AppID(), req.ActingUserID())
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -47,7 +46,7 @@ func (a *restapi) GetSubscriptions(c *incoming.Request, w http.ResponseWriter, r
 
 	err = httputils.WriteJSON(w, subs)
 	if err != nil {
-		c.Log.WithError(err).Errorf("Error marshaling subscriptions")
+		req.Log.WithError(err).Errorf("Error marshaling subscriptions")
 	}
 }
 
@@ -56,19 +55,19 @@ func (a *restapi) GetSubscriptions(c *incoming.Request, w http.ResponseWriter, r
 //   Method: POST
 //   Input: Subscription
 //   Output: None
-func (a *restapi) Unsubscribe(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(c, w, r, false)
+func (a *restapi) Unsubscribe(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	a.handleSubscribeCore(req, w, r, false)
 }
 
-func (a *restapi) handleSubscribeCore(c *incoming.Request, w http.ResponseWriter, r *http.Request, isSubscribe bool) {
+func (a *restapi) handleSubscribeCore(req *incoming.Request, w http.ResponseWriter, r *http.Request, isSubscribe bool) {
 	status, logMessage, err := func() (int, string, error) {
 		var sub apps.Subscription
 		if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
 
-		sub.AppID = c.AppID()
-		sub.UserID = c.ActingUserID()
+		sub.AppID = req.AppID()
+		sub.UserID = req.ActingUserID()
 
 		if err := sub.Validate(); err != nil {
 			return http.StatusBadRequest, "Invalid Subscription", err
@@ -91,7 +90,7 @@ func (a *restapi) handleSubscribeCore(c *incoming.Request, w http.ResponseWriter
 	}()
 
 	if err != nil {
-		c.Log.WithError(err).Warnw(logMessage)
+		req.Log.WithError(err).Warnw(logMessage)
 		http.Error(w, err.Error(), status)
 	}
 }

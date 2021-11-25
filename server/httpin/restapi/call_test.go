@@ -16,6 +16,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
@@ -339,7 +340,8 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
+	rh := httpin.NewHandler(conf.MattermostAPI(), conf, sessionService, router)
+	Init(rh, proxy, appServices)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -386,7 +388,8 @@ func TestHandleCallValidContext(t *testing.T) {
 	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, p, appServices)
+	rh := httpin.NewHandler(conf.MattermostAPI(), conf, sessionService, router)
+	Init(rh, p, appServices)
 
 	creq := apps.CallRequest{
 		Call: apps.Call{
