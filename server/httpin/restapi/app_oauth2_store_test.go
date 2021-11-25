@@ -43,7 +43,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		server := httptest.NewServer(router)
 		defer server.Close()
 		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-		Init(rh, proxy, appServices)
+		Init(rh, conf, proxy, appServices)
 
 		payload := []byte("some payload")
 		expectedPayload := payload
@@ -86,7 +86,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		server := httptest.NewServer(router)
 		defer server.Close()
 		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-		Init(rh, proxy, appServices)
+		Init(rh, conf, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

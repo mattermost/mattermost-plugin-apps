@@ -8,16 +8,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 type gateway struct {
+	conf  config.Service
 	proxy proxy.Service
 }
 
-func Init(rh *httpin.Handler, p proxy.Service, _ appservices.Service) {
+func Init(rh *httpin.Handler, config config.Service, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
+		conf:  config,
 		proxy: p,
 	}
 

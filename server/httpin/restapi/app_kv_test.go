@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -52,7 +51,7 @@ func TestKV(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-	Init(rh, proxy, appService)
+	Init(rh, conf, proxy, appService)
 
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
@@ -74,7 +73,7 @@ func TestKV(t *testing.T) {
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)
-			require.Equal(t, `{"test_string":"test","test_bool":true}`, fmt.Sprintf("%s", ref))
+			require.Equal(t, []byte(`{"test_string":"test","test_bool":true}`), ref)
 			return true, nil
 		})
 	resp, err = http.DefaultClient.Do(req)
@@ -115,7 +114,7 @@ func TestKVPut(t *testing.T) {
 		server := httptest.NewServer(router)
 		defer server.Close()
 		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-		Init(rh, proxy, appServices)
+		Init(rh, conf, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

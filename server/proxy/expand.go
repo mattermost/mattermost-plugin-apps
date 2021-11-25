@@ -15,7 +15,7 @@ import (
 )
 
 func (p *Proxy) contextForApp(r *incoming.Request, app apps.App, base apps.Context) (apps.Context, error) {
-	conf := r.Config().Get()
+	conf := p.conf.Get()
 
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
@@ -43,7 +43,7 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf := r.Config().Get()
+	conf := p.conf.Get()
 
 	cc, err := p.contextForApp(r, app, *base)
 	if err != nil {

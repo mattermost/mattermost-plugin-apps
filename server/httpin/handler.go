@@ -18,7 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
-type check func(req *incoming.Request, w http.ResponseWriter, r *http.Request) bool // check return true if the it was successful
+type check func(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool // check return true if the it was successful
 
 type handlerFunc func(req *incoming.Request, w http.ResponseWriter, r *http.Request)
 
@@ -99,7 +99,7 @@ func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			txt := "Paniced while handling the request. "
 
-			if req.Config().Get().DeveloperMode {
+			if rh.config.Get().DeveloperMode {
 				txt += fmt.Sprintf("Error: %v. Stack: %v", x, stack)
 			} else {
 				txt += "Please check the server logs for more details."
@@ -110,7 +110,7 @@ func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for _, check := range rh.checks {
-		succeeded := check(req, w, r)
+		succeeded := check(req, rh.mm, w, r)
 		if !succeeded {
 			return
 		}
@@ -123,7 +123,7 @@ func getUserID(r *http.Request) string {
 	return r.Header.Get(config.MattermostUserIDHeader)
 }
 
-func RequireUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) bool {
+func RequireUser(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
 	actingUserID := getUserID(r)
 	if actingUserID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("user ID is required"))
@@ -135,12 +135,12 @@ func RequireUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) 
 	return true
 }
 
-func RequireSysadmin(req *incoming.Request, w http.ResponseWriter, r *http.Request) bool {
-	if successful := RequireUser(req, w, r); !successful {
+func RequireSysadmin(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
+	if successful := RequireUser(req, mm, w, r); !successful {
 		return false
 	}
 
-	if !req.MattermostAPI().User.HasPermissionTo(req.ActingUserID(), model.PermissionManageSystem) {
+	if !mm.User.HasPermissionTo(req.ActingUserID(), model.PermissionManageSystem) {
 		httputils.WriteError(w, utils.NewUnauthorizedError("user is not a system admin"))
 		return false
 	}
@@ -148,23 +148,23 @@ func RequireSysadmin(req *incoming.Request, w http.ResponseWriter, r *http.Reque
 	return true
 }
 
-func RequireSysadminOrPlugin(req *incoming.Request, w http.ResponseWriter, r *http.Request) bool {
+func RequireSysadminOrPlugin(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
 	pluginID := r.Header.Get(config.MattermostPluginIDHeader)
 	if pluginID != "" {
 		return true
 	}
 
-	return RequireSysadmin(req, w, r)
+	return RequireSysadmin(req, mm, w, r)
 }
 
-func RequireApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) bool {
+func RequireApp(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
 	sessionID := r.Header.Get(config.MattermostSessionIDHeader)
 	if sessionID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("a session is required"))
 		return false
 	}
 
-	s, err := req.MattermostAPI().Session.Get(sessionID)
+	s, err := mm.Session.Get(sessionID)
 	if err != nil {
 		httputils.WriteError(w, errors.New("session check failed"))
 		return false

@@ -19,6 +19,6 @@ func (a *restapi) initPing(rh *httpin.Handler) {
 }
 
 func (a *restapi) Ping(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	info := req.Config().Get().GetPluginVersionInfo()
+	info := a.conf.Get().GetPluginVersionInfo()
 	_ = httputils.WriteJSON(w, info)
 }

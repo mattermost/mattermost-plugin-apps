@@ -32,7 +32,7 @@ func (s *appKVStore) Set(r *incoming.Request, botUserID, prefix, id string, data
 		return false, err
 	}
 
-	return r.MattermostAPI().KV.Set(key, data)
+	return s.conf.MattermostAPI().KV.Set(key, data)
 }
 
 func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string) ([]byte, error) {
@@ -42,7 +42,7 @@ func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string) ([]b
 	}
 
 	var data []byte
-	if err = r.MattermostAPI().KV.Get(key, &data); err != nil {
+	if err = s.conf.MattermostAPI().KV.Get(key, &data); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (s *appKVStore) Delete(r *incoming.Request, botUserID, prefix, id string) e
 		return err
 	}
 
-	return r.MattermostAPI().KV.Delete(key)
+	return s.conf.MattermostAPI().KV.Delete(key)
 }
 
 func (s *appKVStore) List(
@@ -63,7 +63,7 @@ func (s *appKVStore) List(
 	botUserID, namespace string,
 	processf func(key string) error,
 ) error {
-	mm := r.MattermostAPI()
+	mm := s.conf.MattermostAPI()
 	for i := 0; ; i++ {
 		keys, err := mm.KV.ListKeys(i, keysPerPage)
 		if err != nil {

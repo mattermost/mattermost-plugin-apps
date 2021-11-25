@@ -32,7 +32,7 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 
 	router := mux.NewRouter()
 	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-	Init(rh, proxy, appServices)
+	Init(rh, conf, proxy, appServices)
 
 	expected := apps.Context{
 		UserAgentContext: apps.UserAgentContext{

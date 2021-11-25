@@ -218,8 +218,8 @@ func (s *manifestStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.Manifest 
 }
 
 func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
-	conf := r.Config().Get()
-	mm := r.MattermostAPI()
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
 	m.SchemaVersion = conf.PluginManifest.Version
@@ -272,8 +272,8 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 }
 
 func (s *manifestStore) DeleteLocal(r *incoming.Request, appID apps.AppID) error {
-	conf := r.Config().Get()
-	mm := r.MattermostAPI()
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	sha := conf.LocalManifests[string(appID)]
 
 	err := mm.KV.Delete(config.KVLocalManifestPrefix + sha)

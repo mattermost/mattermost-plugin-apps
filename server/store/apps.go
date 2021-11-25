@@ -145,8 +145,8 @@ func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
 }
 
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {
-	conf := r.Config().Get()
-	mm := r.MattermostAPI()
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
@@ -212,8 +212,8 @@ func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
 		return utils.NewNotFoundError(appID)
 	}
 
-	conf := r.Config().Get()
-	mm := r.MattermostAPI()
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	sha, ok := conf.InstalledApps[string(appID)]
 	if !ok {
 		return utils.ErrNotFound

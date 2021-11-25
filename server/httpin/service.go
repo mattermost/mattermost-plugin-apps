@@ -26,11 +26,11 @@ type service struct {
 var _ Service = (*service)(nil)
 
 func NewService(mm *pluginapi.Client, config config.Service, log utils.Logger, session incoming.SessionService, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
-	initf ...func(*Handler, proxy.Service, appservices.Service)) Service {
+	initf ...func(*Handler, config.Service, proxy.Service, appservices.Service)) Service {
 	rh := NewHandler(mm, config, log, session, router)
 
 	for _, f := range initf {
-		f(rh, proxy, appServices)
+		f(rh, config, proxy, appServices)
 	}
 
 	router.Handle("{anything:.*}", http.NotFoundHandler())

@@ -55,14 +55,14 @@ func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Req
 
 	// Only track submit calls
 	if strings.HasSuffix(creq.Path, "submit") {
-		req.Config().Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
+		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
 	}
 
 	_ = httputils.WriteJSON(w, res)
 }
 
 func (a *restapi) cleanUserAgentContext(req *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
-	mm := req.MattermostAPI()
+	mm := a.conf.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{
 		UserAgentContext: orig.UserAgentContext,

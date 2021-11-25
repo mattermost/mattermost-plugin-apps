@@ -109,14 +109,6 @@ func (r *Request) Ctx() context.Context {
 	return r.ctx
 }
 
-func (r *Request) MattermostAPI() *pluginapi.Client {
-	return r.mm
-}
-
-func (r *Request) Config() config.Service {
-	return r.config
-}
-
 func (r *Request) PluginID() string {
 	return r.pluginID
 }

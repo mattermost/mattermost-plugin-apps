@@ -26,7 +26,7 @@ func (g *gateway) doHandleWebhook(req *incoming.Request, w http.ResponseWriter, 
 	}
 	req.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(r, req.Config().Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(r, g.conf.Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}

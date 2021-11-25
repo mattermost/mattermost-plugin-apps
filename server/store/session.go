@@ -68,7 +68,7 @@ func (s sessionStore) get(r *incoming.Request, key string) (*model.Session, erro
 }
 
 func (s sessionStore) Save(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error {
-	_, err := r.MattermostAPI().KV.Set(sessionKey(appID, userID), session)
+	_, err := s.conf.MattermostAPI().KV.Set(sessionKey(appID, userID), session)
 	if err != nil {
 		return err
 	}

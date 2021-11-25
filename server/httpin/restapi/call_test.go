@@ -342,7 +342,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 
 	router := mux.NewRouter()
 	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-	Init(rh, proxy, appServices)
+	Init(rh, conf, proxy, appServices)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -390,7 +390,7 @@ func TestHandleCallValidContext(t *testing.T) {
 
 	router := mux.NewRouter()
 	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-	Init(rh, p, appServices)
+	Init(rh, conf, p, appServices)
 
 	creq := apps.CallRequest{
 		Call: apps.Call{
