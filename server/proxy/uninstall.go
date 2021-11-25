@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
 	mm := p.conf.MattermostAPI()
 	app, err := p.store.App.Get(appID)
 	if err != nil {
@@ -21,9 +21,9 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 
 	var message string
 	if app.OnUninstall != nil {
-		resp := p.call(c, *app, *app.OnUninstall, &cc)
+		resp := p.call(r, *app, *app.OnUninstall, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			c.Log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
+			r.Log.WithError(resp).Warnf("OnUninstall failed, uninstalling the app anyway")
 		} else {
 			message = resp.Markdown
 		}
@@ -63,11 +63,11 @@ func (p *Proxy) UninstallApp(c *request.Context, cc apps.Context, appID apps.App
 		return "", errors.Wrapf(err, "can't delete app data - %s", app.AppID)
 	}
 
-	c.Log.Infof("Uninstalled app.")
+	r.Log.Infof("Uninstalled app.")
 
 	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(c.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	return message, nil
 }

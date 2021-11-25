@@ -12,7 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -45,7 +45,7 @@ func (r CallResponse) WithMetadata(metadata AppMetadataForClient) CallResponse {
 	return r
 }
 
-func (p *Proxy) Call(c *request.Context, creq apps.CallRequest) CallResponse {
+func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
 	if creq.Context.AppID == "" {
 		return NewProxyCallResponse(apps.NewErrorResponse(
 			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
@@ -56,14 +56,14 @@ func (p *Proxy) Call(c *request.Context, creq apps.CallRequest) CallResponse {
 		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
 
-	cresp, _ := p.callApp(c, *app, creq)
+	cresp, _ := p.callApp(r, *app, creq)
 	return NewProxyCallResponse(cresp).WithMetadata(AppMetadataForClient{
 		BotUserID:   app.BotUserID,
 		BotUsername: app.BotUsername,
 	})
 }
 
-func (p *Proxy) call(c *request.Context, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
 	values := map[string]interface{}{}
 	for len(valuePairs) > 0 {
 		if len(valuePairs) == 1 {
@@ -82,7 +82,7 @@ func (p *Proxy) call(c *request.Context, app apps.App, call apps.Call, cc *apps.
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cresp, _ := p.callApp(c, app, apps.CallRequest{
+	cresp, _ := p.callApp(r, app, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
 		Values:  values,
@@ -90,7 +90,7 @@ func (p *Proxy) call(c *request.Context, app apps.App, call apps.Call, cc *apps.
 	return cresp
 }
 
-func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
+func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
 	respondErr := func(err error) (apps.CallResponse, error) {
 		return apps.NewErrorResponse(err), err
 	}
@@ -116,13 +116,13 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 	}
 
 	cc := creq.Context
-	cc = c.UpdateAppContext(cc)
-	creq.Context, err = p.expandContext(c, app, &cc, creq.Expand)
+	cc = r.UpdateAppContext(cc)
+	creq.Context, err = p.expandContext(r, app, &cc, creq.Expand)
 	if err != nil {
 		return respondErr(err)
 	}
 
-	cresp, err := upstream.Call(c.Ctx(), up, app, creq)
+	cresp, err := upstream.Call(r.Ctx(), up, app, creq)
 	if err != nil {
 		return cresp, err
 	}
@@ -134,14 +134,14 @@ func (p *Proxy) callApp(c *request.Context, app apps.App, creq apps.CallRequest)
 		if cresp.Form.Icon != "" {
 			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
 			if err != nil {
-				c.Log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
+				r.Log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
 				cresp.Form.Icon = ""
 			} else {
 				cresp.Form.Icon = icon
 			}
 			clean, problems := cleanForm(*cresp.Form)
 			for _, prob := range problems {
-				c.Log.WithError(prob).Debugw("invalid form")
+				r.Log.WithError(prob).Debugw("invalid form")
 			}
 			cresp.Form = &clean
 		}
@@ -166,7 +166,7 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 	return icon, nil
 }
 
-func (p *Proxy) GetStatic(c *request.Context, appID apps.AppID, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) GetStatic(r *incoming.Request, appID apps.AppID, path string) (io.ReadCloser, int, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -176,13 +176,13 @@ func (p *Proxy) GetStatic(c *request.Context, appID apps.AppID, path string) (io
 		return nil, status, err
 	}
 
-	return p.getStatic(c, *app, path)
+	return p.getStatic(r, *app, path)
 }
 
-func (p *Proxy) getStatic(c *request.Context, app apps.App, path string) (io.ReadCloser, int, error) {
+func (p *Proxy) getStatic(r *incoming.Request, app apps.App, path string) (io.ReadCloser, int, error) {
 	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(c.Ctx(), app, path)
+	return up.GetStatic(r.Ctx(), app, path)
 }

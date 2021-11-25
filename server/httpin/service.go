@@ -11,8 +11,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 type Service interface {
@@ -25,8 +25,8 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(c *request.Context, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
-	initf ...func(*request.Context, *mux.Router, proxy.Service, appservices.Service)) Service {
+func NewService(c *incoming.Request, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
+	initf ...func(*incoming.Request, *mux.Router, proxy.Service, appservices.Service)) Service {
 	for _, f := range initf {
 		f(c, router, proxy, appServices)
 	}
@@ -37,7 +37,7 @@ func NewService(c *request.Context, router *mux.Router, proxy proxy.Service, app
 		router: router,
 	}
 }
-func recoveryHandler(c *request.Context) func(http.Handler) http.Handler {
+func recoveryHandler(c *incoming.Request) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {

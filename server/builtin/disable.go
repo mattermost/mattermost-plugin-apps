@@ -9,7 +9,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 var disableCall = apps.Call{
@@ -56,7 +56,7 @@ func (a *builtinApp) disable() handler {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 
 			out, err := a.proxy.DisableApp(
-				a.newContext(ctx, creq.Context, request.WithAppID(appID)),
+				a.newContext(ctx, creq.Context, incoming.WithAppID(appID)),
 				creq.Context,
 				appID,
 			)

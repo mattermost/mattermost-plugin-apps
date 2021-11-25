@@ -8,13 +8,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initGetBindings(api *mux.Router, c *request.Context) {
+func (a *restapi) initGetBindings(api *mux.Router, c *incoming.Request) {
 	api.Handle(path.Bindings,
-		request.AddContext(a.GetBindings, c).RequireUser()).Methods(http.MethodGet)
+		incoming.AddContext(a.GetBindings, c).RequireUser()).Methods(http.MethodGet)
 }
 
 // GetBindings returns combined bindings for all Apps.
@@ -22,7 +22,7 @@ func (a *restapi) initGetBindings(api *mux.Router, c *request.Context) {
 //   Method: GET
 //   Input: none
 //   Output: []Binding
-func (a *restapi) GetBindings(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) GetBindings(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	bindings, err := a.proxy.GetBindings(c, apps.Context{

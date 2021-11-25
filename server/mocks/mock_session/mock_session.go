@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	request "github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -67,7 +67,7 @@ func (mr *MockServiceMockRecorder) ListForUser(arg0 interface{}) *gomock.Call {
 }
 
 // RevokeSessionsForApp mocks base method.
-func (m *MockService) RevokeSessionsForApp(arg0 *request.Context, arg1 apps.AppID) error {
+func (m *MockService) RevokeSessionsForApp(arg0 *incoming.Request, arg1 apps.AppID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RevokeSessionsForApp", arg0, arg1)
 	ret0, _ := ret[0].(error)

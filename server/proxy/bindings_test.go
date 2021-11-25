@@ -18,9 +18,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -290,9 +290,9 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}}
 
 			proxy := newTestProxyForBindings(t, testData, ctrl)
-			c := request.NewContext(nil, proxy.conf, nil)
-			c.Log = utils.NewTestLogger()
-			out, err := proxy.GetBindings(c, apps.Context{})
+			r := incoming.NewRequest(nil, proxy.conf, nil)
+			r.Log = utils.NewTestLogger()
+			out, err := proxy.GetBindings(r, apps.Context{})
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -510,10 +510,10 @@ func TestGetBindingsCommands(t *testing.T) {
 		defer ctrl.Finish()
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		c := request.NewContext(nil, proxy.conf, nil)
-		c.Log = utils.NewTestLogger()
+		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r.Log = utils.NewTestLogger()
 
-		out, err := proxy.GetBindings(c, apps.Context{})
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -529,10 +529,10 @@ func TestGetBindingsCommands(t *testing.T) {
 		expected := expectedApp2Bindings
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		c := request.NewContext(nil, proxy.conf, nil)
-		c.Log = utils.NewTestLogger()
+		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r.Log = utils.NewTestLogger()
 
-		out, err := proxy.GetBindings(c, apps.Context{})
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -548,10 +548,10 @@ func TestGetBindingsCommands(t *testing.T) {
 		expected := expectedApp2Bindings
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		c := request.NewContext(nil, proxy.conf, nil)
-		c.Log = utils.NewTestLogger()
+		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r.Log = utils.NewTestLogger()
 
-		out, err := proxy.GetBindings(c, apps.Context{})
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expected, out)
 	})
@@ -644,9 +644,9 @@ func TestDuplicateCommand(t *testing.T) {
 	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-	c := request.NewContext(nil, proxy.conf, nil)
-	c.Log = utils.NewTestLogger()
-	out, err := proxy.GetBindings(c, apps.Context{})
+	r := incoming.NewRequest(nil, proxy.conf, nil)
+	r.Log = utils.NewTestLogger()
+	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -726,9 +726,9 @@ func TestInvalidCommand(t *testing.T) {
 	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-	c := request.NewContext(nil, proxy.conf, nil)
-	c.Log = utils.NewTestLogger()
-	out, err := proxy.GetBindings(c, apps.Context{})
+	r := incoming.NewRequest(nil, proxy.conf, nil)
+	r.Log = utils.NewTestLogger()
+	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }

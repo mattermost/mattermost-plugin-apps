@@ -10,22 +10,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initAdmin(api *mux.Router, c *request.Context) {
+func (a *restapi) initAdmin(api *mux.Router, c *incoming.Request) {
 	api.Handle(path.UpdateAppListing,
-		request.AddContext(a.UpdateAppListing, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+		incoming.AddContext(a.UpdateAppListing, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 	api.Handle(path.InstallApp,
-		request.AddContext(a.InstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+		incoming.AddContext(a.InstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 	api.Handle(path.EnableApp,
-		request.AddContext(a.EnableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+		incoming.AddContext(a.EnableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 	api.Handle(path.DisableApp,
-		request.AddContext(a.DisableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+		incoming.AddContext(a.DisableApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 	api.Handle(path.UninstallApp,
-		request.AddContext(a.UninstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
+		incoming.AddContext(a.UninstallApp, c).RequireSysadminOrPlugin()).Methods(http.MethodPost)
 }
 
 // UpdateAppListing adds (or updates) the specified Manifest to the local
@@ -43,7 +43,7 @@ func (a *restapi) initAdmin(api *mux.Router, c *request.Context) {
 //      "add_deploys": []string e.g. ["aws_lambda","http"]
 //      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
-func (a *restapi) UpdateAppListing(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) UpdateAppListing(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	req := appclient.UpdateAppListingRequest{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -65,7 +65,7 @@ func (a *restapi) UpdateAppListing(c *request.Context, w http.ResponseWriter, r 
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
 //   Output: None
-func (a *restapi) InstallApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) InstallApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -87,7 +87,7 @@ func (a *restapi) InstallApp(c *request.Context, w http.ResponseWriter, r *http.
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) EnableApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) EnableApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -109,7 +109,7 @@ func (a *restapi) EnableApp(c *request.Context, w http.ResponseWriter, r *http.R
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) DisableApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) DisableApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -131,7 +131,7 @@ func (a *restapi) DisableApp(c *request.Context, w http.ResponseWriter, r *http.
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) UninstallApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) UninstallApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var input apps.App
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -148,11 +148,11 @@ func (a *restapi) UninstallApp(c *request.Context, w http.ResponseWriter, r *htt
 	}
 }
 
-func (a *restapi) initGetApp(main *mux.Router, c *request.Context) {
+func (a *restapi) initGetApp(main *mux.Router, c *incoming.Request) {
 	appsRouters := main.PathPrefix(path.Apps).Subrouter()
 	appRouter := appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
 	appRouter.Handle("",
-		request.AddContext(a.GetApp, c)).Methods(http.MethodGet)
+		incoming.AddContext(a.GetApp, c)).Methods(http.MethodGet)
 }
 
 // GetApp returns the App's record.
@@ -160,7 +160,7 @@ func (a *restapi) initGetApp(main *mux.Router, c *request.Context) {
 //   Method: GET
 //   Input: none
 //   Output: App
-func (a *restapi) GetApp(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) GetApp(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))

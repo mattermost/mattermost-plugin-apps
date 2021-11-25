@@ -6,12 +6,12 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (g *gateway) handleWebhook(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	err := g.doHandleWebhook(c, w, r)
 	if err != nil {
 		c.Log.WithError(err).Warnw("failed to process remote webhook")
@@ -19,7 +19,7 @@ func (g *gateway) handleWebhook(c *request.Context, w http.ResponseWriter, r *ht
 	}
 }
 
-func (g *gateway) doHandleWebhook(c *request.Context, w http.ResponseWriter, r *http.Request) error {
+func (g *gateway) doHandleWebhook(c *incoming.Request, w http.ResponseWriter, r *http.Request) error {
 	appID := appIDVar(r)
 	if appID == "" {
 		return utils.NewInvalidError("app_id not specified")

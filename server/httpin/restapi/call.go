@@ -9,16 +9,16 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 var emptyCC = apps.Context{}
 
-func (a *restapi) initCall(api *mux.Router, c *request.Context) {
+func (a *restapi) initCall(api *mux.Router, c *incoming.Request) {
 	api.Handle(path.Call,
-		request.AddContext(a.Call, c).RequireUser()).Methods(http.MethodPost)
+		incoming.AddContext(a.Call, c).RequireUser()).Methods(http.MethodPost)
 }
 
 // Call handles a call request for an App.
@@ -26,7 +26,7 @@ func (a *restapi) initCall(api *mux.Router, c *request.Context) {
 //   Method: POST
 //   Input: CallRequest
 //   Output: CallResponse
-func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) Call(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	creq, err := apps.CallRequestFromJSONReader(r.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
@@ -61,7 +61,7 @@ func (a *restapi) Call(c *request.Context, w http.ResponseWriter, r *http.Reques
 	_ = httputils.WriteJSON(w, res)
 }
 
-func (a *restapi) cleanUserAgentContext(c *request.Context, userID string, orig apps.Context) (apps.Context, error) {
+func (a *restapi) cleanUserAgentContext(c *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
 	mm := c.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{

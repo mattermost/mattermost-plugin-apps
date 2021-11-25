@@ -9,8 +9,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -39,11 +39,11 @@ func (p *Proxy) contextForApp(app apps.App, base apps.Context) (apps.Context, er
 
 var emptyCC = apps.Context{}
 
-func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
+func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
 	if base == nil {
 		base = &apps.Context{}
 	}
-	conf := c.Config().Get()
+	conf := r.Config().Get()
 
 	cc, err := p.contextForApp(app, *base)
 	if err != nil {
@@ -55,7 +55,7 @@ func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Conte
 		return cc, nil
 	}
 
-	client, err := p.getExpandClient(c, app)
+	client, err := p.getExpandClient(r, app)
 	if err != nil {
 		return emptyCC, err
 	}
@@ -65,7 +65,7 @@ func (p *Proxy) expandContext(c *request.Context, app apps.App, base *apps.Conte
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
 
-		cc.ActingUserAccessToken, err = c.UserAccessToken()
+		cc.ActingUserAccessToken, err = r.UserAccessToken()
 		if err != nil {
 			return emptyCC, errors.New("failed to load user session")
 		}
@@ -304,7 +304,7 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	return nil
 }
 
-func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Client, error) {
+func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Client, error) {
 	if p.expandClientOverride != nil {
 		return p.expandClientOverride, nil
 	}
@@ -312,8 +312,8 @@ func (p *Proxy) getExpandClient(c *request.Context, app apps.App) (mmclient.Clie
 	conf := p.conf.Get()
 
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && c.ActingUserID() != "":
-		return c.GetMMClient()
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && r.ActingUserID() != "":
+		return r.GetMMClient()
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
 		accessToken, err := p.getBotAccessToken(app)

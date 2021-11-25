@@ -16,11 +16,11 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 func TestCleanUserAgentContext(t *testing.T) {
@@ -37,7 +37,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 			UserAgentContext: apps.UserAgentContext{},
 		}
 
-		_, err := a.cleanUserAgentContext(request.NewContext(nil, conf, sessionService), userID, cc)
+		_, err := a.cleanUserAgentContext(incoming.NewRequest(nil, conf, sessionService), userID, cc)
 		require.Error(t, err)
 	})
 
@@ -82,7 +82,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -127,7 +127,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -162,7 +162,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -195,7 +195,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -223,7 +223,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				UserId: userID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -255,7 +255,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified team",
 			})
 
-			_, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -315,7 +315,7 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 		TeamId: teamID,
 	}, nil)
 
-	cc, err := a.cleanUserAgentContext(request.NewContext(conf.MattermostAPI(), conf, sessionService), userID, cc)
+	cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), userID, cc)
 	require.NoError(t, err)
 	expected := apps.Context{
 		ActingUserID: "some_user_id",
@@ -339,7 +339,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(request.NewContext(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
+	Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -386,7 +386,7 @@ func TestHandleCallValidContext(t *testing.T) {
 	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(request.NewContext(conf.MattermostAPI(), conf, sessionService), router, p, appServices)
+	Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, p, appServices)
 
 	creq := apps.CallRequest{
 		Call: apps.Call{

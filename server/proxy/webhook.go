@@ -12,12 +12,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req apps.HTTPCallRequest) error {
+func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req apps.HTTPCallRequest) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req ap
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, req.Path)
 
-	cc, err := p.expandContext(c, *app, nil, call.Expand)
+	cc, err := p.expandContext(r, *app, nil, call.Expand)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (p *Proxy) NotifyRemoteWebhook(c *request.Context, appID apps.AppID, req ap
 	cc.ActingUserID = cc.BotUserID
 	cc.ActingUserAccessToken = cc.BotAccessToken
 
-	return upstream.Notify(c.Ctx(), up, *app, apps.CallRequest{
+	return upstream.Notify(r.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{

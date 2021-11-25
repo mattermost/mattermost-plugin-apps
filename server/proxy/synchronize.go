@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 const PrevVersion = "prev_version"
@@ -50,16 +50,16 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 			ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 			defer cancel()
 
-			c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(app.AppID), request.WithCtx(ctx))
+			r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithAppID(app.AppID), incoming.WithCtx(ctx))
 			err := p.callOnce(func() error {
-				resp := p.call(c, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
+				resp := p.call(r, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}
 				return nil
 			})
 			if err != nil {
-				c.Log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+				r.Log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
 					"app_id", app.AppID)
 			}
 		}

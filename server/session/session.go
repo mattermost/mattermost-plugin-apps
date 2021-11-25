@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
@@ -20,7 +20,7 @@ const (
 type Service interface {
 	GetOrCreate(appID apps.AppID, userID string) (*model.Session, error)
 	ListForUser(userID string) ([]*model.Session, error)
-	RevokeSessionsForApp(c *request.Context, appID apps.AppID) error
+	RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error
 }
 
 var _ Service = (*service)(nil)
@@ -134,7 +134,7 @@ func (s service) ListForUser(userID string) ([]*model.Session, error) {
 	return s.store.Session.ListForUser(userID)
 }
 
-func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) error {
+func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
 	sessions, err := s.store.Session.ListForApp(appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to list app sessions for revocation")
@@ -145,16 +145,16 @@ func (s service) RevokeSessionsForApp(c *request.Context, appID apps.AppID) erro
 		if !session.IsExpired() {
 			err = s.mm.Session.Revoke(session.Id)
 			if err != nil {
-				c.Log.WithError(err).Warnw("failed to revoke app session")
+				r.Log.WithError(err).Warnw("failed to revoke app session")
 			}
 		}
 
 		err = s.store.Session.Delete(sessionutils.GetAppID(session), session.UserId)
 		if err != nil {
-			c.Log.WithError(err).Warnw("failed to delete revoked session from store")
+			r.Log.WithError(err).Warnw("failed to delete revoked session from store")
 		}
 
-		c.Log.Warnf("revoked session: %#+v\n", session.Id)
+		r.Log.Warnf("revoked session: %#+v\n", session.Id)
 	}
 
 	return nil

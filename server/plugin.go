@@ -25,8 +25,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
@@ -132,7 +132,7 @@ func (p *Plugin) OnActivate() (err error) {
 	)
 	p.log.Debugf("Initialized the app proxy")
 
-	p.httpIn = httpin.NewService(request.NewContext(mm, p.conf, p.sessionService), mux.NewRouter(), p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(incoming.NewRequest(mm, p.conf, p.sessionService), mux.NewRouter(), p.proxy, p.appservices,
 		restapi.Init,
 		gateway.Init,
 	)

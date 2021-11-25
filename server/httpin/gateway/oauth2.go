@@ -3,12 +3,12 @@ package gateway
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (g *gateway) remoteOAuth2Connect(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
@@ -26,7 +26,7 @@ func (g *gateway) remoteOAuth2Connect(c *request.Context, w http.ResponseWriter,
 	http.Redirect(w, r, connectURL, http.StatusTemporaryRedirect)
 }
 
-func (g *gateway) remoteOAuth2Complete(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (g *gateway) remoteOAuth2Complete(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	appID := appIDVar(r)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))

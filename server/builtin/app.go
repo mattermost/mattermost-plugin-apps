@@ -21,8 +21,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -263,6 +263,6 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
 }
 
-func (a *builtinApp) newContext(ctx context.Context, cc apps.Context, opts ...request.ContextOption) *request.Context {
-	return request.NewContext(a.conf.MattermostAPI(), a.conf, a.sessionService, append(opts, request.WithCtx(ctx), request.WithAppContext(cc))...)
+func (a *builtinApp) newContext(ctx context.Context, cc apps.Context, opts ...incoming.RequestOption) *incoming.Request {
+	return incoming.NewRequest(a.conf.MattermostAPI(), a.conf, a.sessionService, append(opts, incoming.WithCtx(ctx), incoming.WithAppContext(cc))...)
 }

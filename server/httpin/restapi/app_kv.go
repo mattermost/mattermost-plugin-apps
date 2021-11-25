@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -15,20 +15,20 @@ const (
 	MaxKVStoreValueLength = 8192
 )
 
-func (a *restapi) initKV(api *mux.Router, c *request.Context) {
+func (a *restapi) initKV(api *mux.Router, c *incoming.Request) {
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
+		incoming.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
+		incoming.AddContext(a.KVGet, c).RequireUser()).Methods(http.MethodGet)
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
+		incoming.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
 
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
+		incoming.AddContext(a.KVPut, c).RequireUser()).Methods(http.MethodPut, http.MethodPost)
 	api.Handle(path.KV+"/{prefix}/{key}",
-		request.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
+		incoming.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
 	api.Handle(path.KV+"/{key}",
-		request.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
+		incoming.AddContext(a.KVDelete, c).RequireUser()).Methods(http.MethodDelete)
 }
 
 // KVGet returns a value stored by the App in the KV store.
@@ -36,7 +36,7 @@ func (a *restapi) initKV(api *mux.Router, c *request.Context) {
 //   Method: GET
 //   Input: none
 //   Output: a JSON object
-func (a *restapi) KVGet(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) KVGet(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 	var out interface{}
@@ -54,7 +54,7 @@ func (a *restapi) KVGet(c *request.Context, w http.ResponseWriter, r *http.Reque
 //   Input: a JSON object
 //   Output:
 //     changed: set to true if the key value was changed.
-func (a *restapi) KVPut(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) KVPut(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 
@@ -79,7 +79,7 @@ func (a *restapi) KVPut(c *request.Context, w http.ResponseWriter, r *http.Reque
 //   Methods: DELETE
 //   Input: none
 //   Output: none
-func (a *restapi) KVDelete(c *request.Context, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) KVDelete(c *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 

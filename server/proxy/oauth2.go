@@ -4,11 +4,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) GetRemoteOAuth2ConnectURL(c *request.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) GetRemoteOAuth2ConnectURL(r *incoming.Request, appID apps.AppID) (string, error) {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", err
@@ -17,13 +17,13 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(c *request.Context, appID apps.AppID) 
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
-	state, err := p.store.OAuth2.CreateState(c.ActingUserID())
+	state, err := p.store.OAuth2.CreateState(r.ActingUserID())
 	if err != nil {
 		return "", err
 	}
 
 	call := app.GetOAuth2ConnectURL.WithDefault(apps.DefaultGetOAuth2ConnectURL)
-	cresp := p.call(c, *app, call, nil, "state", state)
+	cresp := p.call(r, *app, call, nil, "state", state)
 	if cresp.Type == apps.CallResponseTypeError {
 		return "", &cresp
 	}
@@ -38,7 +38,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(c *request.Context, appID apps.AppID) 
 	return connectURL, nil
 }
 
-func (p *Proxy) CompleteRemoteOAuth2(c *request.Context, appID apps.AppID, urlValues map[string]interface{}) error {
+func (p *Proxy) CompleteRemoteOAuth2(r *incoming.Request, appID apps.AppID, urlValues map[string]interface{}) error {
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -51,12 +51,12 @@ func (p *Proxy) CompleteRemoteOAuth2(c *request.Context, appID apps.AppID, urlVa
 	if urlState == "" {
 		return utils.NewUnauthorizedError("no state arg in the URL")
 	}
-	err = p.store.OAuth2.ValidateStateOnce(urlState, c.ActingUserID())
+	err = p.store.OAuth2.ValidateStateOnce(urlState, r.ActingUserID())
 	if err != nil {
 		return err
 	}
 
-	cresp, _ := p.callApp(c, *app, apps.CallRequest{
+	cresp, _ := p.callApp(r, *app, apps.CallRequest{
 		Call:    app.OnOAuth2Complete.WithDefault(apps.DefaultOnOAuth2Complete),
 		Context: apps.Context{},
 		Values:  urlValues,
@@ -68,7 +68,7 @@ func (p *Proxy) CompleteRemoteOAuth2(c *request.Context, appID apps.AppID, urlVa
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
-	p.conf.Telemetry().TrackOAuthComplete(string(appID), c.ActingUserID())
+	p.conf.Telemetry().TrackOAuthComplete(string(appID), r.ActingUserID())
 
 	return nil
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 type restapi struct {
@@ -17,7 +17,7 @@ type restapi struct {
 	appServices appservices.Service
 }
 
-func Init(c *request.Context, router *mux.Router, p proxy.Service, appServices appservices.Service) {
+func Init(c *incoming.Request, router *mux.Router, p proxy.Service, appServices appservices.Service) {
 	a := &restapi{
 		proxy:       p,
 		appServices: appServices,

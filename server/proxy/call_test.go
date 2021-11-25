@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -39,9 +39,9 @@ func TestAppMetadataForClient(t *testing.T) {
 		},
 	}
 
-	c := request.NewContext(nil, p.conf, nil)
-	c.Log = utils.NewTestLogger()
-	resp := p.Call(c, creq)
+	r := incoming.NewRequest(nil, p.conf, nil)
+	r.Log = utils.NewTestLogger()
+	resp := p.Call(r, creq)
 	require.Equal(t, resp.AppMetadata, AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",

@@ -1,4 +1,4 @@
-package request
+package incoming
 
 import (
 	"context"
@@ -13,24 +13,24 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
-type check func(*Context, http.ResponseWriter, *http.Request) bool // check return true if the it was successful
+type check func(*Request, http.ResponseWriter, *http.Request) bool // check return true if the it was successful
 
-type contextHandlerFunc func(c *Context, w http.ResponseWriter, r *http.Request)
+type contextHandlerFunc func(c *Request, w http.ResponseWriter, r *http.Request)
 
-type ContextHandler struct {
+type RequestHandler struct {
 	handler contextHandlerFunc
-	context *Context
+	context *Request
 	checks  []check
 }
 
-func AddContext(handler contextHandlerFunc, c *Context) *ContextHandler {
-	return &ContextHandler{
+func AddContext(handler contextHandlerFunc, c *Request) *RequestHandler {
+	return &RequestHandler{
 		handler: handler,
 		context: c,
 	}
 }
 
-func (h *ContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := h.context.Clone()
 	c.requestID = model.NewId()
 	c.Log = c.Log.With(
@@ -55,13 +55,13 @@ func getUserID(r *http.Request) string {
 	return r.Header.Get(config.MattermostUserIDHeader)
 }
 
-func (h *ContextHandler) RequireUser() *ContextHandler {
+func (h *RequestHandler) RequireUser() *RequestHandler {
 	h.checks = append(h.checks, checkUser)
 
 	return h
 }
 
-func checkUser(c *Context, w http.ResponseWriter, r *http.Request) bool {
+func checkUser(c *Request, w http.ResponseWriter, r *http.Request) bool {
 	actingUserID := getUserID(r)
 	if actingUserID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("user ID is required"))
@@ -73,13 +73,13 @@ func checkUser(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (h *ContextHandler) RequireSysadmin() *ContextHandler {
+func (h *RequestHandler) RequireSysadmin() *RequestHandler {
 	h.checks = append(h.checks, checkSysadmin)
 
 	return h
 }
 
-func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
+func checkSysadmin(c *Request, w http.ResponseWriter, r *http.Request) bool {
 	if c.sysAdminChecked {
 		return true
 	}
@@ -98,13 +98,13 @@ func checkSysadmin(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func checkPlugin(c *Context, w http.ResponseWriter, r *http.Request) bool {
+func checkPlugin(c *Request, w http.ResponseWriter, r *http.Request) bool {
 	pluginID := r.Header.Get(config.MattermostPluginIDHeader)
 	return pluginID != ""
 }
 
-func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
-	check := func(c *Context, w http.ResponseWriter, r *http.Request) bool {
+func (h *RequestHandler) RequireSysadminOrPlugin() *RequestHandler {
+	check := func(c *Request, w http.ResponseWriter, r *http.Request) bool {
 		if checkPlugin(c, w, r) {
 			return true
 		}
@@ -117,7 +117,7 @@ func (h *ContextHandler) RequireSysadminOrPlugin() *ContextHandler {
 	return h
 }
 
-func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
+func checkApp(c *Request, w http.ResponseWriter, r *http.Request) bool {
 	sessionID := r.Header.Get(config.MattermostSessionIDHeader)
 	if sessionID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("a session is required"))
@@ -141,7 +141,7 @@ func checkApp(c *Context, w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (h *ContextHandler) RequireApp() *ContextHandler {
+func (h *RequestHandler) RequireApp() *RequestHandler {
 	h.checks = append(h.checks, checkApp)
 
 	return h

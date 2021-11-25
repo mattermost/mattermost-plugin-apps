@@ -20,11 +20,11 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -49,7 +49,7 @@ func TestKV(t *testing.T) {
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	Init(request.NewContext(conf.MattermostAPI(), conf, sessionService), router, proxy, appService)
+	Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, proxy, appService)
 
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
@@ -109,7 +109,7 @@ func TestKVPut(t *testing.T) {
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		Init(request.NewContext(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
+		Init(incoming.NewRequest(conf.MattermostAPI(), conf, sessionService), router, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

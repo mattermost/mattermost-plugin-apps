@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -40,19 +40,19 @@ func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
 		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 		defer cancel()
 
-		c := request.NewContext(p.conf.MattermostAPI(), p.conf, p.sessionService, request.WithAppID(sub.AppID), request.WithCtx(ctx))
-		c.Log = c.Log.With("subject", sub.Subject)
+		r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithAppID(sub.AppID), incoming.WithCtx(ctx))
+		r.Log = r.Log.With("subject", sub.Subject)
 
-		err = p.notifyForSubscription(c, &base, sub)
+		err = p.notifyForSubscription(r, &base, sub)
 		if err != nil {
-			c.Log.WithError(err).Debugw("Error sending subscription notification to app")
+			r.Log.WithError(err).Debugw("Error sending subscription notification to app")
 		}
 	}
 
 	return nil
 }
 
-func (p *Proxy) notifyForSubscription(c *request.Context, base *apps.Context, sub apps.Subscription) error {
+func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, sub apps.Subscription) error {
 	creq := apps.CallRequest{
 		Call: sub.Call,
 	}
@@ -64,7 +64,7 @@ func (p *Proxy) notifyForSubscription(c *request.Context, base *apps.Context, su
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	creq.Context, err = p.expandContext(c, *app, base, sub.Call.Expand)
+	creq.Context, err = p.expandContext(r, *app, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (p *Proxy) notifyForSubscription(c *request.Context, base *apps.Context, su
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(c.Ctx(), up, *app, creq)
+	return upstream.Notify(r.Ctx(), up, *app, creq)
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {

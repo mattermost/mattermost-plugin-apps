@@ -13,8 +13,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 )
 
 func TestExpand(t *testing.T) {
@@ -178,8 +178,8 @@ func TestExpand(t *testing.T) {
 							err := json.Unmarshal([]byte(expandData), &e)
 							require.NoError(t, err)
 
-							c := request.NewContext(nil, conf, nil)
-							cc, err := p.expandContext(c, app, &clone, &e)
+							r := incoming.NewRequest(nil, conf, nil)
+							cc, err := p.expandContext(r, app, &clone, &e)
 							if err != nil {
 								require.EqualValues(t, expected, err.Error())
 							} else {

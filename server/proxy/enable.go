@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -35,15 +35,15 @@ func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID)
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.call(c, *app, *app.OnEnable, &cc)
+		resp := p.call(r, *app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			c.Log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
+			r.Log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
 			message = resp.Markdown
 		}
 	}
 
-	c.Log.Infof("Enabled app")
+	r.Log.Infof("Enabled app")
 
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
@@ -53,7 +53,7 @@ func (p *Proxy) EnableApp(c *request.Context, cc apps.Context, appID apps.AppID)
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID) (string, error) {
+func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
 	app, err := p.GetInstalledApp(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -66,9 +66,9 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.call(c, *app, *app.OnDisable, &cc)
+		resp := p.call(r, *app, *app.OnDisable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			c.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
+			r.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
 			message = resp.Markdown
 		}
@@ -94,9 +94,9 @@ func (p *Proxy) DisableApp(c *request.Context, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
 
-	c.Log.Infof("Disabled app")
+	r.Log.Infof("Disabled app")
 
-	p.dispatchRefreshBindingsEvent(c.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	return message, nil
 }

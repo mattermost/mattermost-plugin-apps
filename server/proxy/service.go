@@ -16,8 +16,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy/request"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -45,27 +45,27 @@ type Proxy struct {
 
 // Admin defines the REST API methods to manipulate Apps.
 type Admin interface {
-	DisableApp(*request.Context, apps.Context, apps.AppID) (string, error)
-	EnableApp(*request.Context, apps.Context, apps.AppID) (string, error)
-	InstallApp(_ *request.Context, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
+	DisableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
+	EnableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
+	InstallApp(_ *incoming.Request, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
 	UpdateAppListing(appclient.UpdateAppListingRequest) (*apps.Manifest, error)
-	UninstallApp(*request.Context, apps.Context, apps.AppID) (string, error)
+	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 }
 
 // Invoker implements operations that invoke the Apps.
 type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(*request.Context, apps.CallRequest) CallResponse
-	CompleteRemoteOAuth2(_ *request.Context, _ apps.AppID, urlValues map[string]interface{}) error
-	GetBindings(*request.Context, apps.Context) ([]apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(*request.Context, apps.AppID) (string, error)
-	GetStatic(_ *request.Context, _ apps.AppID, path string) (io.ReadCloser, int, error)
+	Call(*incoming.Request, apps.CallRequest) CallResponse
+	CompleteRemoteOAuth2(_ *incoming.Request, _ apps.AppID, urlValues map[string]interface{}) error
+	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
+	GetRemoteOAuth2ConnectURL(*incoming.Request, apps.AppID) (string, error)
+	GetStatic(_ *incoming.Request, _ apps.AppID, path string) (io.ReadCloser, int, error)
 }
 
 // Notifier implements user-less notification sinks.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(*request.Context, apps.AppID, apps.HTTPCallRequest) error
+	NotifyRemoteWebhook(*incoming.Request, apps.AppID, apps.HTTPCallRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error
@@ -77,7 +77,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
-	GetAppBindings(c *request.Context, cc apps.Context, app apps.App) []apps.Binding
+	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) []apps.Binding
 	GetInstalledApp(appID apps.AppID) (*apps.App, error)
 	GetInstalledApps() []apps.App
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
