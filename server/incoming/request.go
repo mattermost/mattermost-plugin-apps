@@ -32,7 +32,6 @@ type Request struct {
 	appID                 apps.AppID
 	actingUserID          string
 	actingUserAccessToken string
-	sysAdminChecked       bool
 }
 
 type RequestOption func(*Request)
@@ -81,7 +80,6 @@ func NewRequest(mm *pluginapi.Client, config config.Service, session SessionServ
 	return r
 }
 
-// TODO(Ben): Check if this is really needed
 // Clone creates a shallow copy of request, allowing clones to apply per-request changes.
 func (r *Request) Clone() *Request {
 	return &Request{
@@ -95,7 +93,6 @@ func (r *Request) Clone() *Request {
 		appID:                 r.appID,
 		actingUserID:          r.actingUserID,
 		actingUserAccessToken: r.actingUserAccessToken,
-		sysAdminChecked:       r.sysAdminChecked,
 	}
 }
 

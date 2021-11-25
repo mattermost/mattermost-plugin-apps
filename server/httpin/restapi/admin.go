@@ -149,8 +149,8 @@ func (a *restapi) UninstallApp(req *incoming.Request, w http.ResponseWriter, r *
 }
 
 func (a *restapi) initGetApp(rh *httpin.Handler) {
-	appsRouters := rh.Router.PathPrefix(path.Apps).Subrouter()
-	rh.Router = appsRouters.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`).Subrouter()
+	rh = rh.PathPrefix(path.Apps)
+	rh = rh.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`)
 	rh.HandleFunc("",
 		a.GetApp).Methods(http.MethodGet)
 }

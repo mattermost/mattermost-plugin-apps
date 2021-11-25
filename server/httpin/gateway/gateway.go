@@ -16,12 +16,12 @@ type gateway struct {
 	proxy proxy.Service
 }
 
-func Init(rh httpin.Handler, p proxy.Service, _ appservices.Service) {
+func Init(rh *httpin.Handler, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
 		proxy: p,
 	}
 
-	rh.Router = rh.Router.PathPrefix(path.Apps).Subrouter()
+	rh.PathPrefix(path.Apps)
 
 	// Static
 	rh.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",

@@ -19,13 +19,13 @@ type Service interface {
 }
 
 type service struct {
-	rh Handler
+	rh *Handler
 }
 
 var _ Service = (*service)(nil)
 
 func NewService(mm *pluginapi.Client, config config.Service, session incoming.SessionService, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
-	initf ...func(Handler, proxy.Service, appservices.Service)) Service {
+	initf ...func(*Handler, proxy.Service, appservices.Service)) Service {
 	rh := NewHandler(mm, config, session, router)
 
 	for _, f := range initf {
@@ -42,5 +42,5 @@ func NewService(mm *pluginapi.Client, config config.Service, session incoming.Se
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
 func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	r.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
-	s.rh.Router.ServeHTTP(w, r)
+	s.rh.router.ServeHTTP(w, r)
 }

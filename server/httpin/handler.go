@@ -27,10 +27,22 @@ type Handler struct {
 	config         config.Service
 	log            utils.Logger
 	sessionService incoming.SessionService
-	Router         *mux.Router
+	router         *mux.Router
 
 	handlerFunc handlerFunc
 	checks      []check
+}
+
+func NewHandler(mm *pluginapi.Client, config config.Service, session incoming.SessionService, router *mux.Router) *Handler {
+	rh := &Handler{
+		mm:             mm,
+		config:         config,
+		log:            config.Logger(),
+		sessionService: session,
+		router:         router,
+	}
+
+	return rh
 }
 
 // clone creates a shallow copy of Handler, allowing clones to apply changes per handler func.
@@ -40,6 +52,7 @@ func (rh *Handler) clone() *Handler {
 		config:         rh.config,
 		log:            rh.log,
 		sessionService: rh.sessionService,
+		router:         rh.router,
 
 		// Don't copy the following fields as they are specific to the handler func
 		// - handler
@@ -47,16 +60,13 @@ func (rh *Handler) clone() *Handler {
 	}
 }
 
-func NewHandler(mm *pluginapi.Client, config config.Service, session incoming.SessionService, router *mux.Router) Handler {
-	rh := Handler{
-		mm:             mm,
-		config:         config,
-		log:            config.Logger(),
-		sessionService: session,
-		Router:         router,
-	}
+func (rh *Handler) PathPrefix(tpl string) *Handler {
+	clone := rh.clone()
 
-	return rh
+	clone.router = rh.router.PathPrefix(tpl).Subrouter()
+
+	return clone
+
 }
 
 func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...check) *mux.Route {
@@ -65,7 +75,7 @@ func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...ch
 	clone.checks = checks
 	clone.handlerFunc = handlerFunc
 
-	return rh.Router.Handle(path, clone)
+	return clone.router.Handle(path, clone)
 }
 
 func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
