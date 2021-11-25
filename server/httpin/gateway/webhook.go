@@ -19,7 +19,7 @@ func (g *gateway) handleWebhook(req *incoming.Request, w http.ResponseWriter, r 
 	}
 }
 
-func (g *gateway) doHandleWebhook(req *incoming.Request, w http.ResponseWriter, r *http.Request) error {
+func (g *gateway) doHandleWebhook(req *incoming.Request, _ http.ResponseWriter, r *http.Request) error {
 	appID := appIDVar(r)
 	if appID == "" {
 		return utils.NewInvalidError("app_id not specified")

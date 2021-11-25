@@ -53,7 +53,7 @@ func (s sessionStore) Get(r *incoming.Request, appID apps.AppID, userID string) 
 	return s.get(r, sessionKey(appID, userID))
 }
 
-func (s sessionStore) get(r *incoming.Request, key string) (*model.Session, error) {
+func (s sessionStore) get(_ *incoming.Request, key string) (*model.Session, error) {
 	var session model.Session
 	err := s.conf.MattermostAPI().KV.Get(key, &session)
 	if err != nil {

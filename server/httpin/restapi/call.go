@@ -61,7 +61,7 @@ func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Req
 	_ = httputils.WriteJSON(w, res)
 }
 
-func (a *restapi) cleanUserAgentContext(req *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
+func (a *restapi) cleanUserAgentContext(_ *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
 	mm := a.conf.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{
