@@ -42,7 +42,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 	}
 
 	var oauth2user []byte
-	err = a.store.OAuth2.GetUser(app.BotUserID, actingUserID, &oauth2user)
+	err = a.store.OAuth2.GetUser(r, app.BotUserID, actingUserID, &oauth2user)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 		a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	}
 
-	return a.store.OAuth2.SaveUser(app.BotUserID, actingUserID, ref)
+	return a.store.OAuth2.SaveUser(r, app.BotUserID, actingUserID, ref)
 }
 
 func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error {
@@ -66,5 +66,5 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actin
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
-	return a.store.OAuth2.GetUser(app.BotUserID, actingUserID, ref)
+	return a.store.OAuth2.GetUser(r, app.BotUserID, actingUserID, ref)
 }

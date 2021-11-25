@@ -158,7 +158,7 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 
 		if expand.OAuth2User != "" && base.OAuth2.User == nil && base.ActingUserID != "" {
 			var v interface{}
-			err := p.store.OAuth2.GetUser(app.BotUserID, base.ActingUserID, &v)
+			err := p.store.OAuth2.GetUser(r, app.BotUserID, base.ActingUserID, &v)
 			if err != nil && !errors.Is(err, utils.ErrNotFound) {
 				return emptyCC, errors.Wrapf(err, "failed to expand OAuth user %s", base.UserID)
 			}

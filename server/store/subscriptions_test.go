@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -19,6 +20,8 @@ func TestDeleteSub(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer api.AssertExpectations(t)
+
+	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
@@ -78,21 +81,21 @@ func TestDeleteSub(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
 
 	t.Run("no value for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, nil).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
@@ -100,14 +103,14 @@ func TestDeleteSub(t *testing.T) {
 	t.Run("error setting subscription", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsWithToDeleteBytes, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, storedSubsBytes, mock.Anything).Return(false, model.NewAppError("KVSet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.Error(t, err)
 		require.Equal(t, "failed to save subscriptions: KVSet: test, test error", err.Error())
 	})
 
 	t.Run("subscription not found", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
@@ -115,7 +118,7 @@ func TestDeleteSub(t *testing.T) {
 	t.Run("subscription deleted", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsWithToDeleteBytes, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, storedSubsBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Subscription.Delete(toDelete)
+		err := s.Subscription.Delete(req, toDelete)
 		require.NoError(t, err)
 	})
 }
@@ -125,6 +128,7 @@ func TestGetSubs(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer api.AssertExpectations(t)
+	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
@@ -155,28 +159,28 @@ func TestGetSubs(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get(req, "user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
 
 	t.Run("no value for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, nil).Times(1)
-		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get(req, "user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
-		_, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
+		_, err := s.Subscription.Get(req, "user_joined_channel", "team-id", "channel-id")
 		require.Error(t, err)
 		require.Equal(t, utils.ErrNotFound.Error(), err.Error())
 	})
 
 	t.Run("subscription list got", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
-		subs, err := s.Subscription.Get("user_joined_channel", "team-id", "channel-id")
+		subs, err := s.Subscription.Get(req, "user_joined_channel", "team-id", "channel-id")
 		require.NoError(t, err)
 		require.Equal(t, storedSubs, subs)
 	})
@@ -187,6 +191,7 @@ func TestStoreSub(t *testing.T) {
 		BotUserID: "bot-id",
 	})
 	defer api.AssertExpectations(t)
+	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
@@ -250,7 +255,7 @@ func TestStoreSub(t *testing.T) {
 
 	t.Run("error getting subscriptions", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, model.NewAppError("KVGet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Subscription.Save(toStore)
+		err := s.Subscription.Save(req, toStore)
 		require.Error(t, err)
 		require.Equal(t, "KVGet: test, test error", err.Error())
 	})
@@ -258,21 +263,21 @@ func TestStoreSub(t *testing.T) {
 	t.Run("no value for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(nil, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, emptySubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Subscription.Save(toStore)
+		err := s.Subscription.Save(req, toStore)
 		require.NoError(t, err)
 	})
 
 	t.Run("empty list for subs key", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(emptySubsBytes, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, emptySubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Subscription.Save(toStore)
+		err := s.Subscription.Save(req, toStore)
 		require.NoError(t, err)
 	})
 
 	t.Run("error setting subscription", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, storedSubsWithToStoreBytes, mock.Anything).Return(false, model.NewAppError("KVSet", "test", map[string]interface{}{}, "test error", 0)).Times(1)
-		err := s.Subscription.Save(toStore)
+		err := s.Subscription.Save(req, toStore)
 		require.Error(t, err)
 		require.Equal(t, "KVSet: test, test error", err.Error())
 	})
@@ -280,7 +285,7 @@ func TestStoreSub(t *testing.T) {
 	t.Run("subscription stored", func(t *testing.T) {
 		api.On("KVGet", subKey).Return(storedSubsBytes, nil).Times(1)
 		api.On("KVSetWithOptions", subKey, storedSubsWithToStoreBytes, mock.Anything).Return(true, nil).Times(1)
-		err := s.Subscription.Save(toStore)
+		err := s.Subscription.Save(req, toStore)
 		require.NoError(t, err)
 	})
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 type PermissionChecker interface {
@@ -64,18 +65,18 @@ func CheckSubscriptionPermission(checker PermissionChecker, sub apps.Subscriptio
 	return nil
 }
 
-func (a *AppServices) Subscribe(sub apps.Subscription) error {
+func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) error {
 	if err := CheckSubscriptionPermission(&a.conf.MattermostAPI().User, sub, "", ""); err != nil {
 		return err
 	}
 
-	return a.store.Subscription.Save(sub)
+	return a.store.Subscription.Save(r, sub)
 }
 
-func (a *AppServices) GetSubscriptions(appID apps.AppID, userID string) ([]apps.Subscription, error) {
-	return a.store.Subscription.ListByUserID(appID, userID)
+func (a *AppServices) GetSubscriptions(r *incoming.Request, appID apps.AppID, userID string) ([]apps.Subscription, error) {
+	return a.store.Subscription.ListByUserID(r, appID, userID)
 }
 
-func (a *AppServices) Unsubscribe(sub apps.Subscription) error {
-	return a.store.Subscription.Delete(sub)
+func (a *AppServices) Unsubscribe(r *incoming.Request, sub apps.Subscription) error {
+	return a.store.Subscription.Delete(r, sub)
 }

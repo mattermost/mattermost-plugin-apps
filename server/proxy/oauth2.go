@@ -17,7 +17,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(r *incoming.Request, appID apps.AppID)
 		return "", errors.Errorf("%s is not authorized to use OAuth2", appID)
 	}
 
-	state, err := p.store.OAuth2.CreateState(r.ActingUserID())
+	state, err := p.store.OAuth2.CreateState(r, r.ActingUserID())
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +51,7 @@ func (p *Proxy) CompleteRemoteOAuth2(r *incoming.Request, appID apps.AppID, urlV
 	if urlState == "" {
 		return utils.NewUnauthorizedError("no state arg in the URL")
 	}
-	err = p.store.OAuth2.ValidateStateOnce(urlState, r.ActingUserID())
+	err = p.store.OAuth2.ValidateStateOnce(r, urlState, r.ActingUserID())
 	if err != nil {
 		return err
 	}

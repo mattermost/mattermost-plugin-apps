@@ -21,16 +21,16 @@ import (
 )
 
 func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
-	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
 	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+
+	subs, err := p.store.Subscription.Get(r, subj, base.TeamID, base.ChannelID)
+	if err != nil {
+		return err
+	}
 
 	return p.notify(r, base, subs)
 }
@@ -89,7 +89,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 	mm := p.conf.MattermostAPI()
 	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
-	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	postSubs, err := p.store.Subscription.Get(r, apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
@@ -101,7 +101,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 
 	if len(mentions) > 0 {
 		appsMap := p.store.App.AsMap(r)
-		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+		mentionSubs, err := p.store.Subscription.Get(r, apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
 		if err != nil && err != utils.ErrNotFound {
 			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
 		}
@@ -149,12 +149,12 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	mm := p.conf.MattermostAPI()
 	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
-	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
+	userSubs, err := p.store.Subscription.Get(r, subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
 	}
 
-	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
+	botSubs, err := p.store.Subscription.Get(r, botSubject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
 	}

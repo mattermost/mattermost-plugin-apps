@@ -9,16 +9,17 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type SessionStore interface {
-	Get(appID apps.AppID, userID string) (*model.Session, error)
-	ListForApp(appID apps.AppID) ([]*model.Session, error)
-	ListForUser(userID string) ([]*model.Session, error)
-	Save(appID apps.AppID, userID string, session *model.Session) error
-	Delete(appID apps.AppID, userID string) error
-	DeleteAllForApp(appID apps.AppID) error
+	Get(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error)
+	ListForApp(r *incoming.Request, appID apps.AppID) ([]*model.Session, error)
+	ListForUser(r *incoming.Request, userID string) ([]*model.Session, error)
+	Save(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error
+	Delete(r *incoming.Request, appID apps.AppID, userID string) error
+	DeleteAllForApp(r *incoming.Request, appID apps.AppID) error
 }
 
 type sessionStore struct {
@@ -48,11 +49,11 @@ func parseKey(key string) (apps.AppID, string, error) {
 	return apps.AppID(s[1]), s[2], nil
 }
 
-func (s sessionStore) Get(appID apps.AppID, userID string) (*model.Session, error) {
-	return s.get(sessionKey(appID, userID))
+func (s sessionStore) Get(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error) {
+	return s.get(r, sessionKey(appID, userID))
 }
 
-func (s sessionStore) get(key string) (*model.Session, error) {
+func (s sessionStore) get(r *incoming.Request, key string) (*model.Session, error) {
 	var session model.Session
 	err := s.conf.MattermostAPI().KV.Get(key, &session)
 	if err != nil {
@@ -66,8 +67,8 @@ func (s sessionStore) get(key string) (*model.Session, error) {
 	return &session, nil
 }
 
-func (s sessionStore) Save(appID apps.AppID, userID string, session *model.Session) error {
-	_, err := s.conf.MattermostAPI().KV.Set(sessionKey(appID, userID), session)
+func (s sessionStore) Save(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error {
+	_, err := r.MattermostAPI().KV.Set(sessionKey(appID, userID), session)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (s sessionStore) listKeysForApp(appID apps.AppID) ([]string, error) {
 	return ret, nil
 }
 
-func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
+func (s sessionStore) ListForApp(r *incoming.Request, appID apps.AppID) ([]*model.Session, error) {
 	keys, err := s.listKeysForApp(appID)
 	if err != nil {
 		return nil, err
@@ -103,9 +104,9 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 	ret := make([]*model.Session, 0)
 
 	for _, key := range keys {
-		session, err := s.get(key)
+		session, err := s.get(r, key)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed get session for key, %s", key)
+			return nil, errors.Wrapf(err, "failed get key, %s", key)
 		}
 
 		ret = append(ret, session)
@@ -114,7 +115,7 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 	return ret, nil
 }
 
-func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
+func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.Session, error) {
 	ret := make([]*model.Session, 0)
 
 	for i := 0; ; i++ {
@@ -133,9 +134,10 @@ func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
 				continue
 			}
 
-			session, err := s.get(key)
+			session, err := s.get(r, key)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed get session for key, %s", key)
+				r.Log.WithError(err).Debugf("failed get session for key, %s", key)
+				continue
 			}
 
 			ret = append(ret, session)
@@ -149,7 +151,7 @@ func (s sessionStore) ListForUser(userID string) ([]*model.Session, error) {
 	return ret, nil
 }
 
-func (s sessionStore) DeleteAllForApp(appID apps.AppID) error {
+func (s sessionStore) DeleteAllForApp(r *incoming.Request, appID apps.AppID) error {
 	keys, err := s.listKeysForApp(appID)
 	if err != nil {
 		return err
@@ -158,13 +160,13 @@ func (s sessionStore) DeleteAllForApp(appID apps.AppID) error {
 	for _, key := range keys {
 		err := s.conf.MattermostAPI().KV.Delete(key)
 		if err != nil {
-			return errors.Wrapf(err, "failed delete session for key: %s, appID: %s", key, appID)
+			r.Log.WithError(err).Debugf("failed delete session for key: %s, appID: %s", key, appID)
 		}
 	}
 
 	return nil
 }
 
-func (s sessionStore) Delete(appID apps.AppID, userID string) error {
+func (s sessionStore) Delete(r *incoming.Request, appID apps.AppID, userID string) error {
 	return s.conf.MattermostAPI().KV.Delete(sessionKey(appID, userID))
 }

@@ -38,7 +38,7 @@ func (a *restapi) Subscribe(req *incoming.Request, w http.ResponseWriter, r *htt
 //   Input: None
 //   Output: []Subscription
 func (a *restapi) GetSubscriptions(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(req.AppID(), req.ActingUserID())
+	subs, err := a.appServices.GetSubscriptions(req, req.AppID(), req.ActingUserID())
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -77,9 +77,9 @@ func (a *restapi) handleSubscribeCore(req *incoming.Request, w http.ResponseWrit
 		// deduplicate, etc.
 		var err error
 		if isSubscribe {
-			err = a.appServices.Subscribe(sub)
+			err = a.appServices.Subscribe(req, sub)
 		} else {
-			err = a.appServices.Unsubscribe(sub)
+			err = a.appServices.Unsubscribe(req, sub)
 		}
 
 		if err != nil {

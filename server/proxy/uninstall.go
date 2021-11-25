@@ -40,7 +40,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		}
 
 		// Only clear the store. The Mattermost Server will take care of revoking the sessions.
-		if err = p.store.Session.DeleteAllForApp(app.AppID); err != nil {
+		if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
 			return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 		}
 	}
