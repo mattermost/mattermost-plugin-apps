@@ -37,7 +37,7 @@ func NewHandler(mm *pluginapi.Client, config config.Service, session incoming.Se
 	rh := &Handler{
 		mm:             mm,
 		config:         config,
-		log:            config.Logger(),
+		log:            utils.NewPluginLogger(mm),
 		sessionService: session,
 		router:         router,
 	}

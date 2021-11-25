@@ -7,6 +7,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/httpservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
@@ -33,7 +34,7 @@ func NewService(conf config.Service) Service {
 	}
 }
 
-func (s *service) Configure(_ config.Config) error {
+func (s *service) Configure(_ config.Config, _ utils.Logger) error {
 	s.HTTPService = httpservice.MakeHTTPService(s.conf.MattermostConfig())
 	return nil
 }

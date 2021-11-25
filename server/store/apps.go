@@ -44,9 +44,9 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
-func makeAppStore(s *Service, conf config.Config) (*appStore, error) {
+func makeAppStore(s *Service, conf config.Config, log utils.Logger) (*appStore, error) {
 	appStore := &appStore{Service: s}
-	err := appStore.Configure(conf)
+	err := appStore.Configure(conf, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize App store")
 	}
@@ -65,11 +65,11 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf config.Config) error {
+func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 	newInstalled := map[apps.AppID]apps.App{}
 
 	for id, key := range conf.InstalledApps {
-		log := s.conf.Logger().With("app_id", id)
+		log = log.With("app_id", id)
 
 		data, appErr := s.api.KVGet(config.KVInstalledAppPrefix + key)
 		if appErr != nil {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service struct {
@@ -32,7 +33,7 @@ type Service struct {
 	// s3AssetBucket string
 }
 
-func MakeService(confService config.Service, api plugin.API, httpOut httpout.Service) (*Service, error) {
+func MakeService(log utils.Logger, confService config.Service, api plugin.API, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
 		conf:    confService,
 		httpOut: httpOut,
@@ -45,12 +46,12 @@ func MakeService(confService config.Service, api plugin.API, httpOut httpout.Ser
 
 	conf := confService.Get()
 	var err error
-	s.App, err = makeAppStore(s, conf)
+	s.App, err = makeAppStore(s, conf, log)
 	if err != nil {
 		return nil, err
 	}
 
-	s.Manifest, err = makeManifestStore(s, conf)
+	s.Manifest, err = makeManifestStore(s, conf, log)
 	if err != nil {
 		return nil, err
 	}

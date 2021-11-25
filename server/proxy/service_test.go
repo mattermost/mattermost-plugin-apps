@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *Proxy {
@@ -26,7 +27,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		},
 	})
 
-	s, err := store.MakeService(conf, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), conf, nil, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

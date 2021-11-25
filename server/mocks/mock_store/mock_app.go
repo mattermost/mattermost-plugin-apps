@@ -11,6 +11,7 @@ import (
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // MockAppStore is a mock of AppStore interface.
@@ -51,17 +52,17 @@ func (mr *MockAppStoreMockRecorder) AsMap(arg0 interface{}) *gomock.Call {
 }
 
 // Configure mocks base method.
-func (m *MockAppStore) Configure(arg0 config.Config) error {
+func (m *MockAppStore) Configure(arg0 config.Config, arg1 utils.Logger) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Configure", arg0)
+	ret := m.ctrl.Call(m, "Configure", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Configure indicates an expected call of Configure.
-func (mr *MockAppStoreMockRecorder) Configure(arg0 interface{}) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Configure(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockAppStore)(nil).Configure), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockAppStore)(nil).Configure), arg0, arg1)
 }
 
 // Delete mocks base method.

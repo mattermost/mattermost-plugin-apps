@@ -64,7 +64,7 @@ func NewRequest(mm *pluginapi.Client, config config.Service, session SessionServ
 		ctx:            context.Background(),
 		mm:             mm,
 		config:         config,
-		Log:            config.Logger(),
+		Log:            utils.NewPluginLogger(mm),
 		sessionService: session,
 		requestID:      model.NewId(),
 	}

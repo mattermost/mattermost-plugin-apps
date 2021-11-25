@@ -15,6 +15,7 @@ import (
 	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
+	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -97,17 +98,17 @@ func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2 interfa
 }
 
 // Configure mocks base method.
-func (m *MockService) Configure(arg0 config.Config) error {
+func (m *MockService) Configure(arg0 config.Config, arg1 utils.Logger) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Configure", arg0)
+	ret := m.ctrl.Call(m, "Configure", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Configure indicates an expected call of Configure.
-func (mr *MockServiceMockRecorder) Configure(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Configure(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockService)(nil).Configure), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockService)(nil).Configure), arg0, arg1)
 }
 
 // DisableApp mocks base method.

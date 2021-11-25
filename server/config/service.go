@@ -17,13 +17,11 @@ import (
 )
 
 type Configurable interface {
-	Configure(Config) error
+	Configure(Config, utils.Logger) error
 }
 
 type Service interface {
-	Basic() (Config, *pluginapi.Client, utils.Logger)
 	Get() Config
-	Logger() utils.Logger
 	MattermostAPI() *pluginapi.Client
 	MattermostConfig() configservice.ConfigService
 	I18N() *i18n.Bundle
@@ -60,14 +58,6 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 	}
 }
 
-// Basic is a convenience method, included in the interface so one can write:
-//   conf, mm, log := x.conf.Basic()
-func (s *service) Basic() (Config, *pluginapi.Client, utils.Logger) {
-	return s.Get(),
-		s.MattermostAPI(),
-		s.Logger()
-}
-
 func (s *service) Get() Config {
 	s.lock.RLock()
 	conf := s.conf
@@ -87,10 +77,6 @@ func (s *service) Get() Config {
 
 func (s *service) MattermostAPI() *pluginapi.Client {
 	return s.mm
-}
-
-func (s *service) Logger() utils.Logger {
-	return s.log
 }
 
 func (s *service) I18N() *i18n.Bundle {
@@ -148,8 +134,9 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.conf = &newConfig
 	s.lock.Unlock()
 
+	log := s.log
 	for _, s := range services {
-		err = s.Configure(newConfig)
+		err = s.Configure(newConfig, log)
 		if err != nil {
 			return errors.Wrapf(err, "error configuring %T", s)
 		}

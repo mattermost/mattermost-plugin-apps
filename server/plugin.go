@@ -103,7 +103,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.httpOut = httpout.NewService(p.conf)
 
-	p.store, err = store.MakeService(p.conf, p.API, p.httpOut)
+	p.store, err = store.MakeService(p.log, p.conf, p.API, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
@@ -120,7 +120,7 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 
 	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService)
-	err = p.proxy.Configure(conf)
+	err = p.proxy.Configure(conf, p.log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}

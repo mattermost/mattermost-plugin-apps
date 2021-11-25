@@ -26,8 +26,6 @@ import (
 type ManifestStore interface {
 	config.Configurable
 
-	InitGlobal(httpout.Service) error
-
 	StoreLocal(r *incoming.Request, m apps.Manifest) error
 	Get(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
 	GetFromS3(r *incoming.Request, appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
@@ -55,9 +53,9 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
+func makeManifestStore(s *Service, conf config.Config, log utils.Logger) (*manifestStore, error) {
 	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion,
-		s.conf.Logger().With("purpose", "Manifest store"))
+		log.With("purpose", "Manifest store"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -67,12 +65,12 @@ func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}
-	err = mstore.Configure(conf)
+	err = mstore.Configure(conf, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure")
 	}
 	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(s.httpOut)
+		err = mstore.InitGlobal(s.httpOut, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 		}
@@ -82,8 +80,9 @@ func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
-	conf, mm, log := s.conf.Basic()
+func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) error {
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 
 	bundlePath, err := mm.System.GetBundlePath()
 	if err != nil {
@@ -151,11 +150,11 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	return nil
 }
 
-func (s *manifestStore) Configure(conf config.Config) error {
+func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
 	updatedLocal := map[apps.AppID]apps.Manifest{}
 
 	for id, key := range conf.LocalManifests {
-		log := s.conf.Logger().With("app_id", id)
+		log = log.With("app_id", id)
 
 		data, appErr := s.api.KVGet(config.KVLocalManifestPrefix + key)
 		if appErr != nil {

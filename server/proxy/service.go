@@ -108,8 +108,8 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 	}
 }
 
-func (p *Proxy) Configure(conf config.Config) error {
-	_, mm, log := p.conf.Basic()
+func (p *Proxy) Configure(conf config.Config, log utils.Logger) error {
+	mm := p.conf.MattermostAPI()
 
 	p.initUpstream(apps.DeployHTTP, conf, log, func() (upstream.Upstream, error) {
 		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode, uphttp.AppRootURL), nil
