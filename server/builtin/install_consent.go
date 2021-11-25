@@ -4,7 +4,6 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -18,29 +17,30 @@ func (a *builtinApp) installConsent() handler {
 	return handler{
 		requireSysadmin: true,
 
-		formf: func(creq apps.CallRequest) (*apps.Form, error) {
+		formf: func(r *incoming.Request, creq apps.CallRequest) (*apps.Form, error) {
 			loc := a.newLocalizer(creq)
-			m, err := a.stateAsManifest(creq)
+			m, err := a.stateAsManifest(r, creq)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to find a valid manifest in State")
 			}
 			return a.newInstallConsentForm(*m, creq, "", loc), nil
 		},
 
-		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 			secret := creq.GetValue(fSecret, "")
 			consent := creq.BoolValue(fConsent)
-			m, err := a.stateAsManifest(creq)
+			m, err := a.stateAsManifest(r, creq)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 			}
+			r.SetAppID(r.AppID())
 			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
 				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
 			}
 
 			_, out, err := a.proxy.InstallApp(
-				a.newContext(ctx, creq.Context, incoming.WithAppID(m.AppID)),
+				r,
 				creq.Context, m.AppID, deployType, true, secret)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
@@ -207,12 +207,12 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	}
 }
 
-func (a *builtinApp) stateAsManifest(creq apps.CallRequest) (*apps.Manifest, error) {
+func (a *builtinApp) stateAsManifest(r *incoming.Request, creq apps.CallRequest) (*apps.Manifest, error) {
 	id, ok := creq.State.(string)
 	if !ok {
 		return nil, errors.New("no app ID in State, don't know what to install")
 	}
 	appID := apps.AppID(id)
 
-	return a.proxy.GetManifest(appID)
+	return a.proxy.GetManifest(r, appID)
 }

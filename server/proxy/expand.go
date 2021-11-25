@@ -14,8 +14,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) contextForApp(app apps.App, base apps.Context) (apps.Context, error) {
-	conf := p.conf.Get()
+func (p *Proxy) contextForApp(r *incoming.Request, app apps.App, base apps.Context) (apps.Context, error) {
+	conf := r.Config().Get()
 
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
@@ -27,7 +27,7 @@ func (p *Proxy) contextForApp(app apps.App, base apps.Context) (apps.Context, er
 	out.BotUserID = app.BotUserID
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
-		botAccessToken, err := p.getBotAccessToken(app)
+		botAccessToken, err := p.getBotAccessToken(r, app)
 		if err != nil {
 			return emptyCC, err
 		}
@@ -45,7 +45,7 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 	}
 	conf := r.Config().Get()
 
-	cc, err := p.contextForApp(app, *base)
+	cc, err := p.contextForApp(r, app, *base)
 	if err != nil {
 		return emptyCC, err
 	}
@@ -316,7 +316,7 @@ func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Cli
 		return r.GetMMClient()
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		accessToken, err := p.getBotAccessToken(app)
+		accessToken, err := p.getBotAccessToken(r, app)
 		if err != nil {
 			return nil, err
 		}
@@ -327,8 +327,8 @@ func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Cli
 	}
 }
 
-func (p *Proxy) getBotAccessToken(app apps.App) (string, error) {
-	session, err := p.sessionService.GetOrCreate(app.AppID, app.BotUserID)
+func (p *Proxy) getBotAccessToken(r *incoming.Request, app apps.App) (string, error) {
+	session, err := p.sessionService.GetOrCreate(r, app.AppID, app.BotUserID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get bot session")
 	}

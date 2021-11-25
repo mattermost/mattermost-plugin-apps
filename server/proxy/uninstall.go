@@ -14,7 +14,7 @@ import (
 
 func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
 	mm := p.conf.MattermostAPI()
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -51,12 +51,12 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 	}
 
 	// delete app
-	if err = p.store.App.Delete(app.AppID); err != nil {
+	if err = p.store.App.Delete(r, app.AppID); err != nil {
 		return "", errors.Wrapf(err, "can't delete app - %s", app.AppID)
 	}
 
 	// remove data
-	err = p.store.AppKV.List(app.BotUserID, "", func(key string) error {
+	err = p.store.AppKV.List(r, app.BotUserID, "", func(key string) error {
 		return mm.KV.Delete(key)
 	})
 	if err != nil {

@@ -170,61 +170,61 @@ func (mr *MockServiceMockRecorder) GetBindings(arg0, arg1 interface{}) *gomock.C
 }
 
 // GetInstalledApp mocks base method.
-func (m *MockService) GetInstalledApp(arg0 apps.AppID) (*apps.App, error) {
+func (m *MockService) GetInstalledApp(arg0 *incoming.Request, arg1 apps.AppID) (*apps.App, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstalledApp", arg0)
+	ret := m.ctrl.Call(m, "GetInstalledApp", arg0, arg1)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetInstalledApp indicates an expected call of GetInstalledApp.
-func (mr *MockServiceMockRecorder) GetInstalledApp(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetInstalledApp(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApp", reflect.TypeOf((*MockService)(nil).GetInstalledApp), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApp", reflect.TypeOf((*MockService)(nil).GetInstalledApp), arg0, arg1)
 }
 
 // GetInstalledApps mocks base method.
-func (m *MockService) GetInstalledApps() []apps.App {
+func (m *MockService) GetInstalledApps(arg0 *incoming.Request) []apps.App {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstalledApps")
+	ret := m.ctrl.Call(m, "GetInstalledApps", arg0)
 	ret0, _ := ret[0].([]apps.App)
 	return ret0
 }
 
 // GetInstalledApps indicates an expected call of GetInstalledApps.
-func (mr *MockServiceMockRecorder) GetInstalledApps() *gomock.Call {
+func (mr *MockServiceMockRecorder) GetInstalledApps(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps), arg0)
 }
 
 // GetListedApps mocks base method.
-func (m *MockService) GetListedApps(arg0 string, arg1 bool) []apps.ListedApp {
+func (m *MockService) GetListedApps(arg0 *incoming.Request, arg1 string, arg2 bool) []apps.ListedApp {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]apps.ListedApp)
 	return ret0
 }
 
 // GetListedApps indicates an expected call of GetListedApps.
-func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1, arg2)
 }
 
 // GetManifest mocks base method.
-func (m *MockService) GetManifest(arg0 apps.AppID) (*apps.Manifest, error) {
+func (m *MockService) GetManifest(arg0 *incoming.Request, arg1 apps.AppID) (*apps.Manifest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManifest", arg0)
+	ret := m.ctrl.Call(m, "GetManifest", arg0, arg1)
 	ret0, _ := ret[0].(*apps.Manifest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetManifest indicates an expected call of GetManifest.
-func (mr *MockServiceMockRecorder) GetManifest(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetManifest(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0, arg1)
 }
 
 // GetRemoteOAuth2ConnectURL mocks base method.
@@ -402,16 +402,16 @@ func (mr *MockServiceMockRecorder) UninstallApp(arg0, arg1, arg2 interface{}) *g
 }
 
 // UpdateAppListing mocks base method.
-func (m *MockService) UpdateAppListing(arg0 appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
+func (m *MockService) UpdateAppListing(arg0 *incoming.Request, arg1 appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAppListing", arg0)
+	ret := m.ctrl.Call(m, "UpdateAppListing", arg0, arg1)
 	ret0, _ := ret[0].(*apps.Manifest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateAppListing indicates an expected call of UpdateAppListing.
-func (mr *MockServiceMockRecorder) UpdateAppListing(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) UpdateAppListing(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAppListing", reflect.TypeOf((*MockService)(nil).UpdateAppListing), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAppListing", reflect.TypeOf((*MockService)(nil).UpdateAppListing), arg0, arg1)
 }

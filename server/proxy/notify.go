@@ -26,21 +26,25 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 		return err
 	}
 
-	return p.notify(base, subs)
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+
+	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+
+	return p.notify(r, base, subs)
 }
 
-func (p *Proxy) notify(base apps.Context, subs []apps.Subscription) error {
+func (p *Proxy) notify(r *incoming.Request, base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
+		// TODO(Ben): Convert to use App session
 		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub, base.ChannelID, base.TeamID)
 		if err != nil {
 			// Don't log the error it can be to spammy
 			continue
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-		defer cancel()
-
-		r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithAppID(sub.AppID), incoming.WithCtx(ctx))
+		r = r.Clone()
+		r.SetAppID(sub.AppID)
 		r.Log = r.Log.With("subject", sub.Subject)
 
 		err = p.notifyForSubscription(r, &base, sub)
@@ -56,11 +60,11 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 	creq := apps.CallRequest{
 		Call: sub.Call,
 	}
-	app, err := p.store.App.Get(sub.AppID)
+	app, err := p.store.App.Get(r, sub.AppID)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(*app) {
+	if !p.appIsEnabled(r, *app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
@@ -78,6 +82,11 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+
+	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+
 	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrap(err, "failed to get post_created subscriptions")
@@ -89,7 +98,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 	mentions := possibleAtMentions(post.Message)
 
 	if len(mentions) > 0 {
-		appsMap := p.store.App.AsMap()
+		appsMap := p.store.App.AsMap(r)
 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
 		if err != nil && err != utils.ErrNotFound {
 			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
@@ -112,7 +121,7 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 		return nil
 	}
 
-	return p.notify(cc, subs)
+	return p.notify(r, cc, subs)
 }
 
 func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
@@ -132,6 +141,11 @@ func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
 }
 
 func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+
+	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+
 	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
@@ -145,7 +159,7 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	subs := []apps.Subscription{}
 	subs = append(subs, userSubs...)
 
-	appsMap := p.store.App.AsMap()
+	appsMap := p.store.App.AsMap(r)
 	for _, sub := range botSubs {
 		app, ok := appsMap[sub.AppID]
 		if !ok {
@@ -157,7 +171,7 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 		}
 	}
 
-	return p.notify(cc, subs)
+	return p.notify(r, cc, subs)
 }
 
 var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)

@@ -50,7 +50,7 @@ func (a *restapi) UpdateAppListing(req *incoming.Request, w http.ResponseWriter,
 		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
 		return
 	}
-	m, err := a.proxy.UpdateAppListing(listReq)
+	m, err := a.proxy.UpdateAppListing(req, listReq)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -168,7 +168,7 @@ func (a *restapi) GetApp(req *incoming.Request, w http.ResponseWriter, r *http.R
 	}
 	req.SetAppID(appID)
 
-	app, err := a.proxy.GetInstalledApp(appID)
+	app, err := a.proxy.GetInstalledApp(req, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

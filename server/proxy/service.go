@@ -48,7 +48,7 @@ type Admin interface {
 	DisableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	EnableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ *incoming.Request, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
-	UpdateAppListing(appclient.UpdateAppListingRequest) (*apps.Manifest, error)
+	UpdateAppListing(*incoming.Request, appclient.UpdateAppListingRequest) (*apps.Manifest, error)
 	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 }
 
@@ -78,10 +78,10 @@ type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) []apps.Binding
-	GetInstalledApp(appID apps.AppID) (*apps.App, error)
-	GetInstalledApps() []apps.App
-	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
-	GetManifest(appID apps.AppID) (*apps.Manifest, error)
+	GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error)
+	GetInstalledApps(r *incoming.Request) []apps.App
+	GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
 }
 

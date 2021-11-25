@@ -51,7 +51,7 @@ func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
 			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
 	}
 
-	app, err := p.store.App.Get(creq.Context.AppID)
+	app, err := p.store.App.Get(r, creq.Context.AppID)
 	if err != nil {
 		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
@@ -97,7 +97,7 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 
 	conf := p.conf.Get()
 
-	if !p.appIsEnabled(app) {
+	if !p.appIsEnabled(r, app) {
 		return respondErr(errors.Errorf("%s is disabled", app.AppID))
 	}
 
@@ -167,7 +167,7 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 }
 
 func (p *Proxy) GetStatic(r *incoming.Request, appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {

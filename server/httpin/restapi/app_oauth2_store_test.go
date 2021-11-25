@@ -46,7 +46,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 
 		payload := []byte("some payload")
 		expectedPayload := payload
-		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
+		appServices.EXPECT().StoreOAuth2User(gomock.Any(), apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
 		u := server.URL + path.API + path.OAuth2User
 		body := bytes.NewReader(payload)
@@ -90,7 +90,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)
 
-		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
+		appServices.EXPECT().StoreOAuth2User(gomock.Any(), apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
 		u := server.URL + path.API + path.OAuth2User
 		body := bytes.NewReader(payload)

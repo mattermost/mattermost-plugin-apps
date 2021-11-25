@@ -4,13 +4,13 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -18,7 +18,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 	return handler{
 		requireSysadmin: true,
 
-		formf: func(creq apps.CallRequest) (*apps.Form, error) {
+		formf: func(_ *incoming.Request, creq apps.CallRequest) (*apps.Form, error) {
 			key, _ := creq.State.(string)
 			if key == "" {
 				return nil, utils.NewInvalidError(`expected "key" in call State`)
@@ -99,7 +99,7 @@ func (a *builtinApp) debugKVEditModal() handler {
 			}, nil
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			action := creq.GetValue(fAction, "")
 			newValue := creq.GetValue(fNewValue, "")
 			key, _ := creq.State.(string)

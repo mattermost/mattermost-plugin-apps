@@ -66,7 +66,6 @@ func (rh *Handler) PathPrefix(tpl string) *Handler {
 	clone.router = rh.router.PathPrefix(tpl).Subrouter()
 
 	return clone
-
 }
 
 func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...check) *mux.Route {

@@ -4,13 +4,12 @@
 package builtin
 
 import (
-	"context"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -52,18 +51,19 @@ func (a *builtinApp) debugKVCreate() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			r.SetAppID(appID)
 			namespace := creq.GetValue(fNamespace, "")
 			id := creq.GetValue(fID, "")
 
-			app, err := a.proxy.GetInstalledApp(appID)
+			app, err := a.proxy.GetInstalledApp(r, appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
 			buf := []byte{}
-			err = a.appservices.KVGet(app.BotUserID, namespace, id, &buf)
+			err = a.appservices.KVGet(r, app.BotUserID, namespace, id, &buf)
 			if err != nil && errors.Cause(err) != utils.ErrNotFound {
 				return apps.NewErrorResponse(err)
 			}
@@ -71,7 +71,7 @@ func (a *builtinApp) debugKVCreate() handler {
 				return apps.NewErrorResponse(errors.New("key already exists, please use `/apps debug kv edit"))
 			}
 
-			_, err = a.appservices.KVSet(app.BotUserID, namespace, id, []byte("{}"))
+			_, err = a.appservices.KVSet(r, app.BotUserID, namespace, id, []byte("{}"))
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
@@ -83,7 +83,7 @@ func (a *builtinApp) debugKVCreate() handler {
 			}
 
 			creq.State = key
-			form, err := a.debugKVEditModal().formf(creq)
+			form, err := a.debugKVEditModal().formf(r, creq)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}

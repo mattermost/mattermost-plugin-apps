@@ -13,7 +13,7 @@ import (
 )
 
 func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	app, err := p.GetInstalledApp(appID)
+	app, err := p.GetInstalledApp(r, appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -28,7 +28,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	// Enable the app in the store first to allow calls to it
 	app.Disabled = false
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
@@ -54,7 +54,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 }
 
 func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	app, err := p.GetInstalledApp(appID)
+	app, err := p.GetInstalledApp(r, appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -89,7 +89,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 
 	app.Disabled = true
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -101,14 +101,14 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app apps.App) bool {
+func (p *Proxy) appIsEnabled(r *incoming.Request, app apps.App) bool {
 	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}
 	if app.Disabled {
 		return false
 	}
-	if m, _ := p.store.Manifest.Get(app.AppID); m == nil {
+	if m, _ := p.store.Manifest.Get(r, app.AppID); m == nil {
 		return false
 	}
 	return true

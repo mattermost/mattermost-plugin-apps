@@ -27,7 +27,7 @@ func (a *restapi) OAuth2StoreApp(req *incoming.Request, w http.ResponseWriter, r
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2App(req.AppID(), req.ActingUserID(), oapp)
+	err = a.appServices.StoreOAuth2App(req, req.AppID(), req.ActingUserID(), oapp)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -40,7 +40,7 @@ func (a *restapi) OAuth2StoreUser(req *incoming.Request, w http.ResponseWriter, 
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2User(req.AppID(), req.ActingUserID(), data)
+	err = a.appServices.StoreOAuth2User(req, req.AppID(), req.ActingUserID(), data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -49,7 +49,7 @@ func (a *restapi) OAuth2StoreUser(req *incoming.Request, w http.ResponseWriter, 
 
 func (a *restapi) OAuth2GetUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	var v interface{}
-	err := a.appServices.GetOAuth2User(req.AppID(), req.ActingUserID(), &v)
+	err := a.appServices.GetOAuth2User(req, req.AppID(), req.ActingUserID(), &v)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

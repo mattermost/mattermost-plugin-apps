@@ -4,7 +4,6 @@
 package builtin
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -48,17 +48,18 @@ func (a *builtinApp) debugKVList() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			r.SetAppID(appID)
 			namespace := creq.GetValue(fNamespace, "")
 			encode := creq.BoolValue(fBase64)
-			app, err := a.proxy.GetInstalledApp(appID)
+			app, err := a.proxy.GetInstalledApp(r, appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
 			keys := []string{}
-			err = a.appservices.KVList(app.BotUserID, namespace, func(key string) error {
+			err = a.appservices.KVList(r, app.BotUserID, namespace, func(key string) error {
 				keys = append(keys, key)
 				return nil
 			})
@@ -113,20 +114,20 @@ func (a *builtinApp) debugKVList() handler {
 	}
 }
 
-func (a *builtinApp) debugAppNamespaceLookup(creq apps.CallRequest) ([]apps.SelectOption, error) {
+func (a *builtinApp) debugAppNamespaceLookup(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
 	switch creq.SelectedField {
 	case fAppID:
-		return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		return a.lookupAppID(r, creq, func(app apps.ListedApp) bool {
 			return app.Installed
 		})
 
 	case fNamespace:
-		return a.lookupNamespace(creq)
+		return a.lookupNamespace(r, creq)
 	}
 	return nil, utils.ErrNotFound
 }
 
-func (a *builtinApp) lookupNamespace(creq apps.CallRequest) ([]apps.SelectOption, error) {
+func (a *builtinApp) lookupNamespace(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
 	if creq.SelectedField != fNamespace {
 		return nil, errors.Errorf("unknown field %q", creq.SelectedField)
 	}
@@ -134,9 +135,10 @@ func (a *builtinApp) lookupNamespace(creq apps.CallRequest) ([]apps.SelectOption
 	if appID == "" {
 		return nil, errors.Errorf("please select --" + fAppID + " first")
 	}
+	r.SetAppID(appID)
 
 	var options []apps.SelectOption
-	_, namespaces, err := a.debugListKeys(appID)
+	_, namespaces, err := a.debugListKeys(r, appID)
 	if err != nil {
 		return nil, err
 	}

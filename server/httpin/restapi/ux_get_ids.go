@@ -24,8 +24,8 @@ func (a *restapi) initGetOAuthAppIDs(rh *httpin.Handler) {
 //   Method: GET
 //   Input: none
 //   Output: []string - the list of Bot user IDs for all installed Apps.
-func (a *restapi) GetBotIDs(_ *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	apps := a.proxy.GetInstalledApps()
+func (a *restapi) GetBotIDs(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	apps := a.proxy.GetInstalledApps(req)
 	ids := []string{}
 	for _, app := range apps {
 		if app.BotUserID != "" {
@@ -41,8 +41,8 @@ func (a *restapi) GetBotIDs(_ *incoming.Request, w http.ResponseWriter, r *http.
 //   Method: GET
 //   Input: none
 //   Output: []string - the list of OAuth ClientIDs for all installed Apps.
-func (a *restapi) GetOAuthAppIDs(_ *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	apps := a.proxy.GetInstalledApps()
+func (a *restapi) GetOAuthAppIDs(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	apps := a.proxy.GetInstalledApps(req)
 	ids := []string{}
 	for _, app := range apps {
 		if app.MattermostOAuth2 != nil {

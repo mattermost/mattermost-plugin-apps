@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
@@ -66,8 +67,9 @@ func TestKV(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
-	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
+	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error) {
+			require.NotNil(t, r)
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)
@@ -83,8 +85,9 @@ func TestKV(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
-	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(botUserID, prefix, id string, ref interface{}) (bool, error) {
+	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error) {
+			require.NotNil(t, r)
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)
@@ -116,7 +119,7 @@ func TestKVPut(t *testing.T) {
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)
 
-		appServices.EXPECT().KVSet("some_user_id", "", "some_key", expectedPayload).Return(true, nil)
+		appServices.EXPECT().KVSet(gomock.Any(), "some_user_id", "", "some_key", expectedPayload).Return(true, nil)
 
 		u := server.URL + path.API + path.KV + "/some_key"
 		body := bytes.NewReader(payload)

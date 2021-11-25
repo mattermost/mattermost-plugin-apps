@@ -73,9 +73,9 @@ const (
 type handler struct {
 	requireSysadmin bool
 	commandBinding  func(*i18n.Localizer) apps.Binding
-	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(context.Context, apps.CallRequest) apps.CallResponse
-	formf           func(apps.CallRequest) (*apps.Form, error)
+	lookupf         func(*incoming.Request, apps.CallRequest) ([]apps.SelectOption, error)
+	submitf         func(*incoming.Request, apps.CallRequest) apps.CallResponse
+	formf           func(*incoming.Request, apps.CallRequest) (*apps.Form, error)
 }
 
 type builtinApp struct {
@@ -157,6 +157,8 @@ func App(conf config.Config) apps.App {
 }
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
+	r := incoming.NewRequest(a.conf.MattermostAPI(), a.conf, a.sessionService, incoming.WithCtx(ctx), incoming.WithAppContext(creq.Context))
+
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {
 			stack := string(debug.Stack())
@@ -190,7 +192,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 			err = nil
 			out = ioutil.NopCloser(bytes.NewReader(data))
 		}
-	}(a.conf.Logger())
+	}(r.Log)
 
 	readcloser := func(cresp apps.CallResponse) (io.ReadCloser, error) {
 		data, err := json.Marshal(cresp)
@@ -229,7 +231,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		if h.formf == nil {
 			return nil, utils.ErrNotFound
 		}
-		form, err := h.formf(creq)
+		form, err := h.formf(r, creq)
 		if err != nil {
 			return nil, err
 		}
@@ -239,7 +241,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		if h.lookupf == nil {
 			return nil, utils.ErrNotFound
 		}
-		opts, err := h.lookupf(creq)
+		opts, err := h.lookupf(r, creq)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +251,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		if h.submitf == nil {
 			return nil, utils.ErrNotFound
 		}
-		return readcloser(h.submitf(ctx, creq))
+		return readcloser(h.submitf(r, creq))
 	}
 
 	return nil, utils.NewNotFoundError("%s does not handle %s", callPath, callType)
@@ -261,8 +263,4 @@ func (a *builtinApp) GetStatic(_ context.Context, _ apps.App, path string) (io.R
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
-}
-
-func (a *builtinApp) newContext(ctx context.Context, cc apps.Context, opts ...incoming.RequestOption) *incoming.Request {
-	return incoming.NewRequest(a.conf.MattermostAPI(), a.conf, a.sessionService, append(opts, incoming.WithCtx(ctx), incoming.WithAppContext(cc))...)
 }

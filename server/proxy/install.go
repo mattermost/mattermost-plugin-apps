@@ -24,7 +24,7 @@ import (
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf := p.conf.Get()
-	m, err := p.store.Manifest.Get(appID)
+	m, err := p.store.Manifest.Get(r, appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
@@ -36,7 +36,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
@@ -92,7 +92,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return nil, "", err
 	}

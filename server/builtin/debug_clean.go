@@ -4,12 +4,11 @@
 package builtin
 
 import (
-	"context"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) debugClean() handler {
@@ -37,7 +36,7 @@ func (a *builtinApp) debugClean() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			_ = a.conf.MattermostAPI().KV.DeleteAll()
 			_ = a.conf.StoreConfig(config.StoredConfig{})

@@ -7,11 +7,12 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
-	app, err := a.store.App.Get(appID)
+func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
+	app, err := a.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}
@@ -20,7 +21,7 @@ func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp
 	}
 
 	app.RemoteOAuth2 = oapp
-	err = a.store.App.Save(*app)
+	err = a.store.App.Save(r, *app)
 	if err != nil {
 		return err
 	}
@@ -28,8 +29,8 @@ func (a *AppServices) StoreOAuth2App(appID apps.AppID, actingUserID string, oapp
 	return nil
 }
 
-func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref []byte) error {
-	app, err := a.store.App.Get(appID)
+func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref []byte) error {
+	app, err := a.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}
@@ -54,8 +55,8 @@ func (a *AppServices) StoreOAuth2User(appID apps.AppID, actingUserID string, ref
 	return a.store.OAuth2.SaveUser(app.BotUserID, actingUserID, ref)
 }
 
-func (a *AppServices) GetOAuth2User(appID apps.AppID, actingUserID string, ref interface{}) error {
-	app, err := a.store.App.Get(appID)
+func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error {
+	app, err := a.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}

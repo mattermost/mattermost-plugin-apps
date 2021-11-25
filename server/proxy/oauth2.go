@@ -9,7 +9,7 @@ import (
 )
 
 func (p *Proxy) GetRemoteOAuth2ConnectURL(r *incoming.Request, appID apps.AppID) (string, error) {
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +39,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(r *incoming.Request, appID apps.AppID)
 }
 
 func (p *Proxy) CompleteRemoteOAuth2(r *incoming.Request, appID apps.AppID, urlValues map[string]interface{}) error {
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 type SessionService interface {
-	GetOrCreate(appID apps.AppID, userID string) (*model.Session, error)
+	GetOrCreate(r *Request, appID apps.AppID, userID string) (*model.Session, error)
 }
 
 type Request struct {
@@ -151,7 +151,7 @@ func (r *Request) UserAccessToken() (string, error) {
 		return "", errors.New("missing appID in context")
 	}
 
-	session, err := r.sessionService.GetOrCreate(appID, r.ActingUserID())
+	session, err := r.sessionService.GetOrCreate(r, appID, r.ActingUserID())
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get session")
 	}

@@ -4,13 +4,13 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
@@ -40,9 +40,9 @@ func (a *builtinApp) debugSessionsList() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
-			sessions, err := a.sessionService.ListForUser(creq.Context.ActingUserID)
+			sessions, err := a.sessionService.ListForUser(r, creq.Context.ActingUserID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}

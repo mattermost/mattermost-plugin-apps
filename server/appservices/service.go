@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -27,17 +28,17 @@ type Service interface {
 	// KV
 
 	// ref can be either a []byte for raw data, or anything else will be JSON marshaled.
-	KVSet(botUserID, prefix, id string, ref interface{}) (bool, error)
-	KVGet(botUserID, prefix, id string, ref interface{}) error
-	KVDelete(botUserID, prefix, id string) error
-	KVList(botUserID, namespace string, processf func(key string) error) error
+	KVSet(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error)
+	KVGet(r *incoming.Request, botUserID, prefix, id string, ref interface{}) error
+	KVDelete(r *incoming.Request, botUserID, prefix, id string) error
+	KVList(r *incoming.Request, botUserID, namespace string, processf func(key string) error) error
 
 	// Remote (3rd party) OAuth2
 
-	StoreOAuth2App(_ apps.AppID, actingUserID string, oapp apps.OAuth2App) error
-	GetOAuth2User(_ apps.AppID, actingUserID string, ref interface{}) error
+	StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error
+	GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
 	// ref can be either a []byte, or anything else will be JSON marshaled.
-	StoreOAuth2User(_ apps.AppID, actingUserID string, ref []byte) error
+	StoreOAuth2User(r *incoming.Request, AppID apps.AppID, actingUserID string, ref []byte) error
 }
 
 type AppServices struct {

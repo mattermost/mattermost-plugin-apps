@@ -4,12 +4,11 @@
 package builtin
 
 import (
-	"context"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 var installHTTPCall = apps.Call{
@@ -128,15 +127,16 @@ func (a *builtinApp) installListed() handler {
 	return handler{
 		requireSysadmin: true,
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, nil)
+		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
+			res, err := a.lookupAppID(r, creq, nil)
 			return res, err
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			m, err := a.proxy.GetManifest(appID)
+			r.SetAppID(appID)
+			m, err := a.proxy.GetManifest(r, appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
@@ -150,7 +150,7 @@ func (a *builtinApp) installHTTP() handler {
 	return handler{
 		requireSysadmin: true,
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			manifestURL := creq.GetValue(fURL, "")
 			conf := a.conf.Get()
@@ -162,10 +162,11 @@ func (a *builtinApp) installHTTP() handler {
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
-			m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
-				Manifest:   *m,
-				AddDeploys: apps.DeployTypes{apps.DeployHTTP},
-			})
+			m, err = a.proxy.UpdateAppListing(r,
+				appclient.UpdateAppListingRequest{
+					Manifest:   *m,
+					AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+				})
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}

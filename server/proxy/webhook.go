@@ -18,11 +18,11 @@ import (
 )
 
 func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req apps.HTTPCallRequest) error {
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(*app) {
+	if !p.appIsEnabled(r, *app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {

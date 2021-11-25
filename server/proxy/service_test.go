@@ -43,7 +43,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 		upstreams[app.Manifest.AppID] = up
-		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
+		appStore.EXPECT().Get(gomock.Any(), app.AppID).Return(&app, nil)
 	}
 
 	p := &Proxy{

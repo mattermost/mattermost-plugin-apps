@@ -4,8 +4,6 @@
 package builtin
 
 import (
-	"context"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -45,18 +43,18 @@ func (a *builtinApp) disable() handler {
 		},
 
 		// Lookup returns the list of eligible Apps.
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(r, creq, func(app apps.ListedApp) bool {
 				return app.Installed && app.Enabled
 			})
 		},
 
 		// Submit disables an app.
-		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
-
+			r.SetAppID(appID)
 			out, err := a.proxy.DisableApp(
-				a.newContext(ctx, creq.Context, incoming.WithAppID(appID)),
+				r,
 				creq.Context,
 				appID,
 			)

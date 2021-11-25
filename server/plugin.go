@@ -89,9 +89,8 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
-	conf, _, log := p.conf.Basic()
-	p.log = log
-	log = log.With("callback", "onactivate")
+	conf := p.conf.Get()
+	log := p.log.With("callback", "onactivate")
 
 	mode := "Self-managed"
 	if conf.MattermostCloudMode {
@@ -152,7 +151,7 @@ func (p *Plugin) OnActivate() (err error) {
 }
 
 func (p *Plugin) OnDeactivate() error {
-	conf, _, _ := p.conf.Basic()
+	conf := p.conf.Get()
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
 	if p.telemetryClient != nil {

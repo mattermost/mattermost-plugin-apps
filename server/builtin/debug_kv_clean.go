@@ -4,12 +4,12 @@
 package builtin
 
 import (
-	"context"
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -44,19 +44,21 @@ func (a *builtinApp) debugKVClean() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			r.SetAppID(appID)
 			namespace := creq.GetValue(fNamespace, "")
-			app, err := a.proxy.GetInstalledApp(appID)
+			app, err := a.proxy.GetInstalledApp(r, appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
 
 			n := 0
-			err = a.appservices.KVList(app.BotUserID, namespace, func(key string) error {
-				n++
-				return a.conf.MattermostAPI().KV.Delete(key)
-			})
+			err = a.appservices.KVList(r, app.BotUserID, namespace,
+				func(key string) error {
+					n++
+					return a.conf.MattermostAPI().KV.Delete(key)
+				})
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
@@ -75,13 +77,13 @@ func (a *builtinApp) debugKVClean() handler {
 			}))
 		},
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
+		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
 			switch creq.SelectedField {
 			case fAppID:
-				return a.lookupAppID(creq, nil)
+				return a.lookupAppID(r, creq, nil)
 
 			case fNamespace:
-				return a.lookupNamespace(creq)
+				return a.lookupNamespace(r, creq)
 			}
 			return nil, utils.ErrNotFound
 		},

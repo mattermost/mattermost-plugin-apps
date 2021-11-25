@@ -614,14 +614,14 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	for i := range allApps {
 		app := allApps[i]
 		appMap[app.AppID] = app
-		appStore.EXPECT().Get(app.AppID).Return(&app, nil).AnyTimes()
+		appStore.EXPECT().Get(gomock.Any(), app.AppID).Return(&app, nil).AnyTimes()
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		upMap[app.AppID] = up
 		upMockMap[app.AppID] = up
 	}
 
-	appStore.EXPECT().AsMap().Return(appMap).AnyTimes()
+	appStore.EXPECT().AsMap(gomock.Any()).Return(appMap).AnyTimes()
 
 	p := &Proxy{
 		store:            s,

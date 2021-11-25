@@ -4,13 +4,13 @@
 package builtin
 
 import (
-	"context"
 	"encoding/base64"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -49,8 +49,9 @@ func (a *builtinApp) debugKVEdit() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			r.SetAppID(appID)
 			base64Key := creq.GetValue(fBase64Key, "")
 			namespace := creq.GetValue(fNamespace, "")
 			id := creq.GetValue(fID, "")
@@ -63,7 +64,7 @@ func (a *builtinApp) debugKVEdit() handler {
 				}
 				key = string(decoded)
 			} else {
-				app, err := a.proxy.GetInstalledApp(appID)
+				app, err := a.proxy.GetInstalledApp(r, appID)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
@@ -74,7 +75,7 @@ func (a *builtinApp) debugKVEdit() handler {
 			}
 
 			creq.State = key
-			form, err := a.debugKVEditModal().formf(creq)
+			form, err := a.debugKVEditModal().formf(r, creq)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}

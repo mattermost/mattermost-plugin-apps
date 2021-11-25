@@ -4,13 +4,13 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) info() handler {
@@ -38,7 +38,7 @@ func (a *builtinApp) info() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			conf := a.conf.Get()
 			out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{

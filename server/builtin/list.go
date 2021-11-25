@@ -4,12 +4,12 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) list() handler {
@@ -57,12 +57,12 @@ func (a *builtinApp) list() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			loc := a.newLocalizer(creq)
 			includePluginApps := creq.BoolValue(fIncludePlugins)
 
-			listed := a.proxy.GetListedApps("", includePluginApps)
-			installed := a.proxy.GetInstalledApps()
+			listed := a.proxy.GetListedApps(r, "", includePluginApps)
+			installed := a.proxy.GetInstalledApps(r)
 
 			// All of this information is non sensitive.
 			// Checks for the user's permissions might be needed in the future.
@@ -73,7 +73,9 @@ func (a *builtinApp) list() handler {
 			txt += "\n| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 			for _, app := range installed {
-				m, _ := a.proxy.GetManifest(app.AppID)
+				r = r.Clone()
+				r.SetAppID(app.AppID)
+				m, _ := a.proxy.GetManifest(r, app.AppID)
 				if m == nil {
 					continue
 				}
@@ -134,7 +136,9 @@ func (a *builtinApp) list() handler {
 				Other: "Listed",
 			})
 			for _, l := range listed {
-				app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
+				r = r.Clone()
+				r.SetAppID(l.Manifest.AppID)
+				app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
 				if app != nil {
 					continue
 				}

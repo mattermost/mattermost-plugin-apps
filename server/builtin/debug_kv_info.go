@@ -4,13 +4,13 @@
 package builtin
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -45,9 +45,10 @@ func (a *builtinApp) debugKVInfo() handler {
 			}
 		},
 
-		submitf: func(_ context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			n, namespaces, err := a.debugListKeys(appID)
+			r.SetAppID(appID)
+			n, namespaces, err := a.debugListKeys(r, appID)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}
@@ -82,29 +83,30 @@ func (a *builtinApp) debugKVInfo() handler {
 			return apps.NewTextResponse(message)
 		},
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, nil)
+		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(r, creq, nil)
 		},
 	}
 }
 
-func (a *builtinApp) debugListKeys(appID apps.AppID) (int, map[string]int, error) {
-	app, err := a.proxy.GetInstalledApp(appID)
+func (a *builtinApp) debugListKeys(r *incoming.Request, appID apps.AppID) (int, map[string]int, error) {
+	app, err := a.proxy.GetInstalledApp(r, appID)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	n := 0
 	namespaces := map[string]int{}
-	err = a.appservices.KVList(app.BotUserID, "", func(key string) error {
-		_, _, ns, _, e := store.ParseHashkey(key)
-		if e != nil {
-			return e
-		}
-		namespaces[ns]++
-		n++
-		return nil
-	})
+	err = a.appservices.KVList(r,
+		app.BotUserID, "", func(key string) error {
+			_, _, ns, _, e := store.ParseHashkey(key)
+			if e != nil {
+				return e
+			}
+			namespaces[ns]++
+			n++
+			return nil
+		})
 	if err != nil {
 		return 0, nil, err
 	}

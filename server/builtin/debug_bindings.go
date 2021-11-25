@@ -4,8 +4,6 @@
 package builtin
 
 import (
-	"context"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -46,27 +44,29 @@ func (a *builtinApp) debugBindings() handler {
 			}
 		},
 
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(creq, func(app apps.ListedApp) bool {
+		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
+			return a.lookupAppID(r, creq, func(app apps.ListedApp) bool {
 				return app.Installed && app.Enabled
 			})
 		},
 
-		submitf: func(ctx context.Context, creq apps.CallRequest) apps.CallResponse {
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			var bindings []apps.Binding
 			if appID == "" {
 				var err error
-				bindings, err = a.proxy.GetBindings(a.newContext(ctx, creq.Context), creq.Context)
+				bindings, err = a.proxy.GetBindings(r, creq.Context)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
 			} else {
-				app, err := a.proxy.GetInstalledApp(appID)
+				r.SetAppID(appID)
+
+				app, err := a.proxy.GetInstalledApp(r, appID)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
-				bindings = a.proxy.GetAppBindings(a.newContext(ctx, creq.Context, incoming.WithAppID(appID)), creq.Context, *app)
+				bindings = a.proxy.GetAppBindings(r, creq.Context, *app)
 			}
 			return apps.NewTextResponse(utils.JSONBlock(bindings))
 		},

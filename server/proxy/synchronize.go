@@ -19,8 +19,13 @@ const PrevVersion = "prev_version"
 // SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
 func (p *Proxy) SynchronizeInstalledApps() error {
-	installed := p.store.App.AsMap()
-	listed := p.store.Manifest.AsMap()
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+
+	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+
+	installed := p.store.App.AsMap(r)
+	listed := p.store.Manifest.AsMap(r)
 
 	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
@@ -35,22 +40,21 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	}
 
 	for id := range diff {
+		r = r.Clone()
+		r.SetAppID(id)
+
 		app := diff[id]
 		m := listed[app.AppID]
 
 		// Store the new manifest to update the current mappings of the App
 		app.Manifest = m
-		err := p.store.App.Save(app)
+		err := p.store.App.Save(r, app)
 		if err != nil {
 			return err
 		}
 
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
-			ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-			defer cancel()
-
-			r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithAppID(app.AppID), incoming.WithCtx(ctx))
 			err := p.callOnce(func() error {
 				resp := p.call(r, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
