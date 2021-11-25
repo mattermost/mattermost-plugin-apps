@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Service interface {
@@ -24,9 +25,9 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(mm *pluginapi.Client, config config.Service, session incoming.SessionService, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
+func NewService(mm *pluginapi.Client, config config.Service, log utils.Logger, session incoming.SessionService, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
 	initf ...func(*Handler, proxy.Service, appservices.Service)) Service {
-	rh := NewHandler(mm, config, session, router)
+	rh := NewHandler(mm, config, log, session, router)
 
 	for _, f := range initf {
 		f(rh, proxy, appServices)

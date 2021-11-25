@@ -67,17 +67,20 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 
 func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 	newInstalled := map[apps.AppID]apps.App{}
+	mm := s.conf.MattermostAPI()
 
 	for id, key := range conf.InstalledApps {
 		log = log.With("app_id", id)
 
-		data, appErr := s.api.KVGet(config.KVInstalledAppPrefix + key)
-		if appErr != nil {
-			log.WithError(appErr).Errorw("Failed to load app")
+		var data []byte
+		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to load app")
 			continue
 		}
+
 		if len(data) == 0 {
-			err := utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
+			err = utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
 			log.WithError(err).Errorw("Failed to load app")
 			continue
 		}

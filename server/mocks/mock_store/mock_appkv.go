@@ -49,17 +49,18 @@ func (mr *MockAppKVStoreMockRecorder) Delete(arg0, arg1, arg2, arg3 interface{})
 }
 
 // Get mocks base method.
-func (m *MockAppKVStore) Get(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 interface{}) error {
+func (m *MockAppKVStore) Get(arg0 *incoming.Request, arg1, arg2, arg3 string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAppKVStoreMockRecorder) Get(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockAppKVStoreMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppKVStore)(nil).Get), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppKVStore)(nil).Get), arg0, arg1, arg2, arg3)
 }
 
 // List mocks base method.
@@ -77,7 +78,7 @@ func (mr *MockAppKVStoreMockRecorder) List(arg0, arg1, arg2, arg3 interface{}) *
 }
 
 // Set mocks base method.
-func (m *MockAppKVStore) Set(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 interface{}) (bool, error) {
+func (m *MockAppKVStore) Set(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 []byte) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(bool)

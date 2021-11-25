@@ -12,7 +12,6 @@ import (
 	i18n "github.com/mattermost/mattermost-plugin-api/i18n"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	telemetry "github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
 )
 
@@ -37,22 +36,6 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
-}
-
-// Basic mocks base method.
-func (m *MockService) Basic() (config.Config, *pluginapi.Client, utils.Logger) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Basic")
-	ret0, _ := ret[0].(config.Config)
-	ret1, _ := ret[1].(*pluginapi.Client)
-	ret2, _ := ret[2].(utils.Logger)
-	return ret0, ret1, ret2
-}
-
-// Basic indicates an expected call of Basic.
-func (mr *MockServiceMockRecorder) Basic() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Basic", reflect.TypeOf((*MockService)(nil).Basic))
 }
 
 // Get mocks base method.
@@ -81,20 +64,6 @@ func (m *MockService) I18N() *i18n.Bundle {
 func (mr *MockServiceMockRecorder) I18N() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "I18N", reflect.TypeOf((*MockService)(nil).I18N))
-}
-
-// Logger mocks base method.
-func (m *MockService) Logger() utils.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Logger")
-	ret0, _ := ret[0].(utils.Logger)
-	return ret0
-}
-
-// Logger indicates an expected call of Logger.
-func (mr *MockServiceMockRecorder) Logger() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logger", reflect.TypeOf((*MockService)(nil).Logger))
 }
 
 // MattermostAPI mocks base method.

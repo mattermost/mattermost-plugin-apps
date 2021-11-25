@@ -152,17 +152,20 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) er
 
 func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
 	updatedLocal := map[apps.AppID]apps.Manifest{}
+	mm := s.conf.MattermostAPI()
 
 	for id, key := range conf.LocalManifests {
 		log = log.With("app_id", id)
 
-		data, appErr := s.api.KVGet(config.KVLocalManifestPrefix + key)
-		if appErr != nil {
-			log.WithError(appErr).Errorw("Failed to get local manifest from KV")
+		var data []byte
+		err := mm.KV.Get(config.KVLocalManifestPrefix+key, &data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to get local manifest from KV")
 			continue
 		}
+
 		if len(data) == 0 {
-			err := utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
+			err = utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
 			log.WithError(err).Errorw("Failed to load local manifest")
 			continue
 		}

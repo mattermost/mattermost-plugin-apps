@@ -29,7 +29,8 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+	mm := p.conf.MattermostAPI()
+	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
 	return p.notify(r, base, subs)
 }
@@ -85,7 +86,8 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+	mm := p.conf.MattermostAPI()
+	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
 	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
@@ -144,7 +146,8 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	r := incoming.NewRequest(p.conf.MattermostAPI(), p.conf, p.sessionService, incoming.WithCtx(ctx))
+	mm := p.conf.MattermostAPI()
+	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
 	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {

@@ -33,11 +33,11 @@ type Handler struct {
 	checks      []check
 }
 
-func NewHandler(mm *pluginapi.Client, config config.Service, session incoming.SessionService, router *mux.Router) *Handler {
+func NewHandler(mm *pluginapi.Client, config config.Service, log utils.Logger, session incoming.SessionService, router *mux.Router) *Handler {
 	rh := &Handler{
 		mm:             mm,
 		config:         config,
-		log:            utils.NewPluginLogger(mm),
+		log:            log,
 		sessionService: session,
 		router:         router,
 	}
@@ -80,7 +80,7 @@ func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...ch
 func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.RequestTimeout)
 	defer cancel()
-	req := incoming.NewRequest(rh.mm, rh.config, rh.sessionService, incoming.WithCtx(ctx))
+	req := incoming.NewRequest(rh.mm, rh.config, rh.log, rh.sessionService, incoming.WithCtx(ctx))
 
 	req.Log = req.Log.With(
 		"path", r.URL.Path,

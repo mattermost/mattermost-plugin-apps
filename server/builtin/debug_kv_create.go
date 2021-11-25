@@ -62,12 +62,11 @@ func (a *builtinApp) debugKVCreate() handler {
 				return apps.NewErrorResponse(err)
 			}
 
-			buf := []byte{}
-			err = a.appservices.KVGet(r, app.BotUserID, namespace, id, &buf)
+			data, err := a.appservices.KVGet(r, app.BotUserID, namespace, id)
 			if err != nil && errors.Cause(err) != utils.ErrNotFound {
 				return apps.NewErrorResponse(err)
 			}
-			if len(buf) > 0 {
+			if len(data) > 0 {
 				return apps.NewErrorResponse(errors.New("key already exists, please use `/apps debug kv edit"))
 			}
 

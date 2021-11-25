@@ -290,7 +290,7 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}}
 
 			proxy := newTestProxyForBindings(t, testData, ctrl)
-			r := incoming.NewRequest(nil, proxy.conf, nil)
+			r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 			r.Log = utils.NewTestLogger()
 			out, err := proxy.GetBindings(r, apps.Context{})
 			require.NoError(t, err)
@@ -510,7 +510,7 @@ func TestGetBindingsCommands(t *testing.T) {
 		defer ctrl.Finish()
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 		r.Log = utils.NewTestLogger()
 
 		out, err := proxy.GetBindings(r, apps.Context{})
@@ -529,7 +529,7 @@ func TestGetBindingsCommands(t *testing.T) {
 		expected := expectedApp2Bindings
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 		r.Log = utils.NewTestLogger()
 
 		out, err := proxy.GetBindings(r, apps.Context{})
@@ -548,7 +548,7 @@ func TestGetBindingsCommands(t *testing.T) {
 		expected := expectedApp2Bindings
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		r := incoming.NewRequest(nil, proxy.conf, nil)
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 		r.Log = utils.NewTestLogger()
 
 		out, err := proxy.GetBindings(r, apps.Context{})
@@ -644,7 +644,7 @@ func TestDuplicateCommand(t *testing.T) {
 	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-	r := incoming.NewRequest(nil, proxy.conf, nil)
+	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 	r.Log = utils.NewTestLogger()
 	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
@@ -726,7 +726,7 @@ func TestInvalidCommand(t *testing.T) {
 	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-	r := incoming.NewRequest(nil, proxy.conf, nil)
+	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 	r.Log = utils.NewTestLogger()
 	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
@@ -746,7 +746,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		},
 	}).WithMattermostAPI(mm)
 
-	s, err := store.MakeService(utils.NewTestLogger(), confService, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), confService, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore

@@ -79,17 +79,18 @@ func (mr *MockServiceMockRecorder) KVDelete(arg0, arg1, arg2, arg3 interface{}) 
 }
 
 // KVGet mocks base method.
-func (m *MockService) KVGet(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 interface{}) error {
+func (m *MockService) KVGet(arg0 *incoming.Request, arg1, arg2, arg3 string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // KVGet indicates an expected call of KVGet.
-func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3)
 }
 
 // KVList mocks base method.
@@ -107,7 +108,7 @@ func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2, arg3 interface{}) *g
 }
 
 // KVSet mocks base method.
-func (m *MockService) KVSet(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 interface{}) (bool, error) {
+func (m *MockService) KVSet(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 []byte) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(bool)

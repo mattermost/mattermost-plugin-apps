@@ -27,6 +27,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestKV(t *testing.T) {
@@ -50,7 +51,7 @@ func TestKV(t *testing.T) {
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	rh := httpin.NewHandler(conf.MattermostAPI(), conf, sessionService, router)
+	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
 	Init(rh, proxy, appService)
 
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
@@ -68,7 +69,7 @@ func TestKV(t *testing.T) {
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
 	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error) {
+		func(r *incoming.Request, botUserID, prefix, id string, ref []byte) (bool, error) {
 			require.NotNil(t, r)
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
@@ -85,13 +86,13 @@ func TestKV(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	require.NoError(t, err)
-	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error) {
+	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, botUserID, prefix, id string) ([]byte, error) {
 			require.NotNil(t, r)
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)
-			return true, nil
+			return item, nil
 		})
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -113,7 +114,7 @@ func TestKVPut(t *testing.T) {
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		defer server.Close()
-		rh := httpin.NewHandler(conf.MattermostAPI(), conf, sessionService, router)
+		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
 		Init(rh, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)

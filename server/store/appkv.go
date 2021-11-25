@@ -14,8 +14,8 @@ const (
 )
 
 type AppKVStore interface {
-	Set(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error)
-	Get(r *incoming.Request, botUserID, prefix, id string, ref interface{}) error
+	Set(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error)
+	Get(r *incoming.Request, botUserID, prefix, id string) ([]byte, error)
 	Delete(r *incoming.Request, botUserID, prefix, id string) error
 	List(r *incoming.Request, botUserID, namespace string, processf func(key string) error) error
 }
@@ -26,23 +26,27 @@ type appKVStore struct {
 
 var _ AppKVStore = (*appKVStore)(nil)
 
-// TODO use raw byte API: for now all JSON is re-encoded to use api.Mattermost API
-func (s *appKVStore) Set(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error) {
+func (s *appKVStore) Set(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error) {
 	key, err := Hashkey(config.KVAppPrefix, botUserID, prefix, id)
 	if err != nil {
 		return false, err
 	}
 
-	return r.MattermostAPI().KV.Set(key, ref)
+	return r.MattermostAPI().KV.Set(key, data)
 }
 
-func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string, ref interface{}) error {
+func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string) ([]byte, error) {
 	key, err := Hashkey(config.KVAppPrefix, botUserID, prefix, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.MattermostAPI().KV.Get(key, ref)
+	var data []byte
+	if err = r.MattermostAPI().KV.Get(key, &data); err != nil {
+		return nil, err
+	}
+
+	return data, err
 }
 
 func (s *appKVStore) Delete(r *incoming.Request, botUserID, prefix, id string) error {

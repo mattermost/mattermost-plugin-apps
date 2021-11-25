@@ -28,8 +28,8 @@ type Service interface {
 	// KV
 
 	// ref can be either a []byte for raw data, or anything else will be JSON marshaled.
-	KVSet(r *incoming.Request, botUserID, prefix, id string, ref interface{}) (bool, error)
-	KVGet(r *incoming.Request, botUserID, prefix, id string, ref interface{}) error
+	KVSet(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error)
+	KVGet(r *incoming.Request, botUserID, prefix, id string) ([]byte, error)
 	KVDelete(r *incoming.Request, botUserID, prefix, id string) error
 	KVList(r *incoming.Request, botUserID, namespace string, processf func(key string) error) error
 

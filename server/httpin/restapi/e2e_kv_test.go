@@ -21,7 +21,7 @@ func TestKVE2E(t *testing.T) {
 		DisplayName: "Some Display Name",
 	})
 
-	t.Run("test KV API", func(t *testing.T) {
+	t.Run("test KV API with marshable data", func(t *testing.T) {
 		id := "testId"
 		prefix := "PT"
 		in := map[string]interface{}{

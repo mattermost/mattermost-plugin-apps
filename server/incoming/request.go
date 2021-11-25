@@ -59,12 +59,12 @@ func WithAppID(appID apps.AppID) RequestOption {
 	}
 }
 
-func NewRequest(mm *pluginapi.Client, config config.Service, session SessionService, opts ...RequestOption) *Request {
+func NewRequest(mm *pluginapi.Client, config config.Service, log utils.Logger, session SessionService, opts ...RequestOption) *Request {
 	r := &Request{
 		ctx:            context.Background(),
 		mm:             mm,
 		config:         config,
-		Log:            utils.NewPluginLogger(mm),
+		Log:            log,
 		sessionService: session,
 		requestID:      model.NewId(),
 	}

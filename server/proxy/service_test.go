@@ -27,7 +27,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		},
 	})
 
-	s, err := store.MakeService(utils.NewTestLogger(), conf, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
