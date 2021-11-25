@@ -56,7 +56,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 	}
 
 	// remove data
-	err = p.store.AppKV.List(r, app.BotUserID, "", func(key string) error {
+	err = p.store.AppKV.List(r, app.AppID, r.ActingUserID(), "", func(key string) error {
 		return mm.KV.Delete(key)
 	})
 	if err != nil {

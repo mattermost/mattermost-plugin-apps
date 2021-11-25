@@ -8,8 +8,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/model"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestKVE2E(t *testing.T) {
@@ -21,30 +22,111 @@ func TestKVE2E(t *testing.T) {
 		DisplayName: "Some Display Name",
 	})
 
-	t.Run("test KV API with marshable data", func(t *testing.T) {
-		id := "testId"
+	t.Run("Unauthenticated requests are rejected", func(t *testing.T) {
+		id := model.NewId()
 		prefix := "PT"
 		in := map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
 		}
 
-		// set
-		changed, resp, err := app.AsBot.KVSet(id, prefix, in)
-		require.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
-		require.True(t, changed)
+		client := th.CreateClientPP()
 
-		// get
+		changed, resp, err := client.KVSet(prefix, id, in)
+		assert.Error(t, err)
+		api4.CheckUnauthorizedStatus(t, resp)
+		assert.False(t, changed)
+
 		var outGet map[string]interface{}
-		resp, err = app.AsBot.KVGet(id, prefix, &outGet)
-		require.NoError(t, err)
-		api4.CheckOKStatus(t, resp)
-		require.Equal(t, outGet["test_bool"], true)
-		require.Equal(t, outGet["test_string"], "test")
+		resp, err = client.KVGet(prefix, id, &outGet)
+		assert.Error(t, err)
+		api4.CheckUnauthorizedStatus(t, resp)
+		assert.False(t, changed)
 
-		// delete
-		_, err = app.AsBot.KVDelete(id, prefix)
-		require.NoError(t, err)
+		resp, err = client.KVDelete(prefix, id)
+		assert.Error(t, err)
+		api4.CheckUnauthorizedStatus(t, resp)
+	})
+
+	t.Run("Users create, get and delete KV entries", func(t *testing.T) {
+		id := model.NewId()
+		prefix := "PT"
+		in := map[string]interface{}{
+			"test_bool":   true,
+			"test_string": "test",
+		}
+
+		app.TestForTwoUsersAndBot(func(t *testing.T, client *TestClientPP) {
+			changed, resp, err := client.KVSet(prefix, id, in)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.True(t, changed)
+
+			var outGet map[string]interface{}
+			resp, err = client.KVGet(prefix, id, &outGet)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.Equal(t, outGet["test_bool"], true)
+			assert.Equal(t, outGet["test_string"], "test")
+
+			resp, err = client.KVDelete(prefix, id)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+
+			/*
+				resp, err = client.KVGet(prefix, id, &outGet)
+				assert.NoError(t, err)
+				api4.CheckOKStatus(t, resp)
+				assert.Len(t, outGet, 0)
+			*/
+		})
+	})
+
+	t.Run("Users can't delete other users KV entries", func(t *testing.T) {
+		id := model.NewId()
+		prefix := "PT"
+		in := map[string]interface{}{
+			"test_bool":   true,
+			"test_string": "test",
+		}
+
+		changed, resp, err := app.AsUser.KVSet(prefix, id, in)
+		assert.NoError(t, err)
+		api4.CheckOKStatus(t, resp)
+		assert.True(t, changed)
+
+		// Deleting something that isn't there still returns a 200
+		resp, err = app.AsUser2.KVDelete(prefix, id)
+		assert.NoError(t, err)
+		api4.CheckOKStatus(t, resp)
+
+		var outGet map[string]interface{}
+		resp, err = app.AsUser.KVGet(prefix, id, &outGet)
+		assert.NoError(t, err)
+		api4.CheckOKStatus(t, resp)
+		assert.Equal(t, outGet["test_bool"], true)
+		assert.Equal(t, outGet["test_string"], "test")
+	})
+
+	t.Run("Users can't see other users KV entires", func(t *testing.T) {
+		id := model.NewId()
+		prefix := "PT"
+		in := map[string]interface{}{
+			"test_bool":   true,
+			"test_string": "test",
+		}
+
+		changed, resp, err := app.AsUser.KVSet(prefix, id, in)
+		assert.NoError(t, err)
+		api4.CheckOKStatus(t, resp)
+		assert.True(t, changed)
+
+		/*
+			var outGet map[string]interface{}
+			resp, err = app.AsUser2.KVGet(prefix, id, &outGet)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.Len(t, outGet, 0)
+		*/
 	})
 }

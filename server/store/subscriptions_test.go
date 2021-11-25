@@ -16,9 +16,7 @@ import (
 )
 
 func TestDeleteSub(t *testing.T) {
-	conf, api := config.NewTestService(&config.Config{
-		BotUserID: "bot-id",
-	})
+	conf, api := config.NewTestService(nil)
 	defer api.AssertExpectations(t)
 
 	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
@@ -124,9 +122,7 @@ func TestDeleteSub(t *testing.T) {
 }
 
 func TestGetSubs(t *testing.T) {
-	conf, api := config.NewTestService(&config.Config{
-		BotUserID: "bot-id",
-	})
+	conf, api := config.NewTestService(nil)
 	defer api.AssertExpectations(t)
 	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
@@ -187,9 +183,7 @@ func TestGetSubs(t *testing.T) {
 }
 
 func TestStoreSub(t *testing.T) {
-	conf, api := config.NewTestService(&config.Config{
-		BotUserID: "bot-id",
-	})
+	conf, api := config.NewTestService(nil)
 	defer api.AssertExpectations(t)
 	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)

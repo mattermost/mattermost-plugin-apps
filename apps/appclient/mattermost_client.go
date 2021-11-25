@@ -39,8 +39,8 @@ func NewClient(userID, token, mattermostSiteURL string) *Client {
 	return &c
 }
 
-func (c *Client) KVSet(id string, prefix string, in interface{}) (bool, error) {
-	changed, res, err := c.ClientPP.KVSet(id, prefix, in)
+func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
+	changed, res, err := c.ClientPP.KVSet(prefix, id, in)
 
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
@@ -53,8 +53,8 @@ func (c *Client) KVSet(id string, prefix string, in interface{}) (bool, error) {
 	return changed, nil
 }
 
-func (c *Client) KVGet(id string, prefix string, ref interface{}) error {
-	res, err := c.ClientPP.KVGet(id, prefix, ref)
+func (c *Client) KVGet(prefix, id string, ref interface{}) error {
+	res, err := c.ClientPP.KVGet(prefix, id, ref)
 	if res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -66,8 +66,8 @@ func (c *Client) KVGet(id string, prefix string, ref interface{}) error {
 	return nil
 }
 
-func (c *Client) KVDelete(id string, prefix string) error {
-	res, err := c.ClientPP.KVDelete(id, prefix)
+func (c *Client) KVDelete(prefix, id string) error {
+	res, err := c.ClientPP.KVDelete(prefix, id)
 	if res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err

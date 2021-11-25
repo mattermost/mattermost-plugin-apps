@@ -61,7 +61,7 @@ func TestCreateOAuth2State(t *testing.T) {
 }
 
 func TestOAuth2User(t *testing.T) {
-	userID := `userid-test`
+	userID := "userIDis26bytes12345678910"
 	conf, api := config.NewTestService(nil)
 	s := oauth2Store{
 		Service: &Service{
@@ -73,21 +73,17 @@ func TestOAuth2User(t *testing.T) {
 		Test1, Test2 string
 	}
 	entity := Entity{"test-1", "test-2"}
-	key := ".ubotUserIDis26bytes90123456  <B0k.Len6V#gQ?bE*:UQ"
-	data := `{"Test1":"test-1","Test2":"test-2"}`
+	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
+	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
 	// CreateState
-	api.On("KVSetWithOptions", mock.Anything, mock.Anything, mock.Anything).Once().Run(func(args mock.Arguments) {
-		require.Equal(t, key, args.String(0))
-		setData, _ := args.Get(1).([]byte)
-		require.Equal(t, data, string(setData))
-	}).Return(true, nil)
+	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
 	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
-	err := s.SaveUser(req, "botUserIDis26bytes90123456", userID, &entity)
+	err := s.SaveUser(req, "some_app_id", userID, data)
 	require.NoError(t, err)
 
-	api.On("KVGet", key).Once().Return([]byte(data), nil)
+	api.On("KVGet", key).Once().Return(data, nil)
 	r := Entity{}
-	err = s.GetUser(req, "botUserIDis26bytes90123456", userID, &r)
+	err = s.GetUser(req, "some_app_id", userID, &r)
 	require.NoError(t, err)
 	require.Equal(t, entity, r)
 }

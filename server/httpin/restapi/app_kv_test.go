@@ -67,13 +67,14 @@ func TestKV(t *testing.T) {
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
-	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(r *incoming.Request, botUserID, prefix, id string, ref []byte) (bool, error) {
-			require.NotNil(t, r)
-			require.Equal(t, "01234567890123456789012345", botUserID)
-			require.Equal(t, "", prefix)
-			require.Equal(t, "test-id", id)
-			require.Equal(t, []byte(`{"test_string":"test","test_bool":true}`), ref)
+	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, ref []byte) (bool, error) {
+			assert.NotNil(t, r)
+			assert.Equal(t, apps.AppID("some_app_id"), appID)
+			assert.Equal(t, "01234567890123456789012345", actingUserID)
+			assert.Equal(t, "", prefix)
+			assert.Equal(t, "test-id", id)
+			assert.Equal(t, []byte(`{"test_string":"test","test_bool":true}`), ref)
 			return true, nil
 		})
 	resp, err = http.DefaultClient.Do(req)
@@ -86,9 +87,10 @@ func TestKV(t *testing.T) {
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
-	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(r *incoming.Request, botUserID, prefix, id string) ([]byte, error) {
+	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, appID apps.AppID, botUserID, prefix, id string) ([]byte, error) {
 			require.NotNil(t, r)
+			assert.Equal(t, apps.AppID("some_app_id"), appID)
 			require.Equal(t, "01234567890123456789012345", botUserID)
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)

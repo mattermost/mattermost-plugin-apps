@@ -57,11 +57,6 @@ func (a *builtinApp) debugKVCreate() handler {
 			namespace := creq.GetValue(fNamespace, "")
 			id := creq.GetValue(fID, "")
 
-			app, err := a.proxy.GetInstalledApp(r, appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
 			data, err := a.appservices.KVGet(r, appID, creq.Context.ActingUserID, namespace, id)
 			if err != nil && errors.Cause(err) != utils.ErrNotFound {
 				return apps.NewErrorResponse(err)
@@ -76,7 +71,7 @@ func (a *builtinApp) debugKVCreate() handler {
 			}
 
 			key := ""
-			key, err = store.Hashkey(config.KVAppPrefix, app.BotUserID, namespace, id)
+			key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUserID, namespace, id)
 			if err != nil {
 				return apps.NewErrorResponse(err)
 			}

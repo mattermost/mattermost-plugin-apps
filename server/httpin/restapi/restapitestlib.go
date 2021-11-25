@@ -64,8 +64,7 @@ func Setup(t *testing.T) *TestHelper {
 	require.NoError(t, err)
 
 	// Enable Apps Feature Flags via env variables as it can't be set via the config
-	os.Setenv("MM_FEATUREFLAGS_APPSENABLED", "true")
-	t.Cleanup(func() { _ = os.Unsetenv("MM_FEATUREFLAGS_APPSENABLED") })
+	t.Setenv("MM_FEATUREFLAGS_APPSENABLED", "true")
 
 	th := &TestHelper{
 		t: t,

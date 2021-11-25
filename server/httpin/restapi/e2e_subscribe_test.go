@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
 
@@ -50,7 +49,7 @@ func TestSubscribeE2E(t *testing.T) {
 		subs, resp, err := client.GetSubscriptions()
 		assert.Error(t, err)
 		api4.CheckUnauthorizedStatus(t, resp)
-		require.Nil(t, subs)
+		assert.Nil(t, subs)
 
 		resp, err = client.Unsubscribe(subscription)
 		assert.Error(t, err)

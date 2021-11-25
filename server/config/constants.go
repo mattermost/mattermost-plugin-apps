@@ -62,9 +62,13 @@ const (
 	// KVAppPrefix is the Apps global namespace.
 	KVAppPrefix = ".k"
 
-	// KVUserPrefix is the global namespase used to store OAuth2 user
+	// KVUserPrefix is the global namespase used to store user
 	// records.
 	KVUserPrefix = ".u"
+
+	// KVUserPrefix is the key to store OAuth2 user
+	// records.
+	KVUserKey = "oauth2_user"
 
 	// KVOAuth2StatePrefix is the global namespase used to store OAuth2
 	// ephemeral state data.

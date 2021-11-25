@@ -95,7 +95,7 @@ func (a *builtinApp) debugListKeys(r *incoming.Request, appID apps.AppID) (int, 
 	err := a.appservices.KVList(r,
 		appID, r.ActingUserID(),
 		"", func(key string) error {
-			_, _, ns, _, e := store.ParseHashkey(key)
+			_, _, _, ns, _, e := store.ParseHashkey(key)
 			if e != nil {
 				return e
 			}

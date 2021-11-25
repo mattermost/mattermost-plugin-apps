@@ -12,6 +12,7 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -20,8 +21,8 @@ import (
 type OAuth2Store interface {
 	CreateState(r *incoming.Request, actingUserID string) (string, error)
 	ValidateStateOnce(r *incoming.Request, urlState, actingUserID string) error
-	SaveUser(r *incoming.Request, botUserID, mattermostUserID string, ref interface{}) error
-	GetUser(r *incoming.Request, botUserID, mattermostUserID string, ref interface{}) error
+	SaveUser(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error
+	GetUser(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
 }
 
 type oauth2Store struct {
@@ -62,20 +63,25 @@ func (s *oauth2Store) ValidateStateOnce(r *incoming.Request, urlState, actingUse
 	return nil
 }
 
-func (s *oauth2Store) SaveUser(r *incoming.Request, botUserID, mattermostUserID string, ref interface{}) error {
-	if botUserID == "" || mattermostUserID == "" {
-		return utils.NewInvalidError("bot and user IDs must be provided")
+func (s *oauth2Store) SaveUser(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error {
+	if appID == "" || actingUserID == "" {
+		return utils.NewInvalidError("app and user IDs must be provided")
 	}
-	userkey, err := Hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+
+	userkey, err := Hashkey(config.KVUserPrefix, appID, actingUserID, "", config.KVUserKey)
 	if err != nil {
 		return err
 	}
-	_, err = s.conf.MattermostAPI().KV.Set(userkey, ref)
+	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
 	return err
 }
 
-func (s *oauth2Store) GetUser(r *incoming.Request, botUserID, mattermostUserID string, ref interface{}) error {
-	userkey, err := Hashkey(config.KVUserPrefix, botUserID, "", mattermostUserID)
+func (s *oauth2Store) GetUser(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error {
+	if appID == "" || actingUserID == "" {
+		return utils.NewInvalidError("app and user IDs must be provided")
+	}
+
+	userkey, err := Hashkey(config.KVUserPrefix, appID, actingUserID, "", config.KVUserKey)
 	if err != nil {
 		return err
 	}

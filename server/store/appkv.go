@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
@@ -14,10 +15,10 @@ const (
 )
 
 type AppKVStore interface {
-	Set(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error)
-	Get(r *incoming.Request, botUserID, prefix, id string) ([]byte, error)
-	Delete(r *incoming.Request, botUserID, prefix, id string) error
-	List(r *incoming.Request, botUserID, namespace string, processf func(key string) error) error
+	Set(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error)
+	Get(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error)
+	Delete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error
+	List(r *incoming.Request, appID apps.AppID, actingUserID, namespace string, processf func(key string) error) error
 }
 
 type appKVStore struct {
@@ -26,8 +27,8 @@ type appKVStore struct {
 
 var _ AppKVStore = (*appKVStore)(nil)
 
-func (s *appKVStore) Set(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error) {
-	key, err := Hashkey(config.KVAppPrefix, botUserID, prefix, id)
+func (s *appKVStore) Set(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error) {
+	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return false, err
 	}
@@ -35,8 +36,8 @@ func (s *appKVStore) Set(r *incoming.Request, botUserID, prefix, id string, data
 	return s.conf.MattermostAPI().KV.Set(key, data)
 }
 
-func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string) ([]byte, error) {
-	key, err := Hashkey(config.KVAppPrefix, botUserID, prefix, id)
+func (s *appKVStore) Get(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error) {
+	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +50,8 @@ func (s *appKVStore) Get(r *incoming.Request, botUserID, prefix, id string) ([]b
 	return data, err
 }
 
-func (s *appKVStore) Delete(r *incoming.Request, botUserID, prefix, id string) error {
-	key, err := Hashkey(config.KVAppPrefix, botUserID, prefix, id)
+func (s *appKVStore) Delete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error {
+	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return err
 	}
@@ -60,8 +61,8 @@ func (s *appKVStore) Delete(r *incoming.Request, botUserID, prefix, id string) e
 
 func (s *appKVStore) List(
 	r *incoming.Request,
-	botUserID, namespace string,
-	processf func(key string) error,
+	appID apps.AppID, actingUserID,
+	namespace string, processf func(key string) error,
 ) error {
 	mm := s.conf.MattermostAPI()
 	for i := 0; ; i++ {
@@ -76,7 +77,7 @@ func (s *appKVStore) List(
 				continue
 			}
 
-			_, _, ns, _, err := ParseHashkey(key)
+			_, _, _, ns, _, err := ParseHashkey(key)
 			if err != nil {
 				r.Log.WithError(err).Debugw("failed to parse key", "key", key)
 				continue

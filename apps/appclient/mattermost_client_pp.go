@@ -57,7 +57,7 @@ func (c *ClientPP) SetOAuthToken(token string) {
 	c.AuthType = model.HeaderBearer
 }
 
-func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model.Response, error) {
+func (c *ClientPP) KVSet(prefix, id string, in interface{}) (bool, *model.Response, error) {
 	r, err := c.DoAPIPOST(c.kvpath(prefix, id), utils.ToJSON(in)) // nolint:bodyclose
 	if err != nil {
 		return false, model.BuildResponse(r), err
@@ -74,7 +74,7 @@ func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model
 	return changed, model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) (*model.Response, error) {
+func (c *ClientPP) KVGet(prefix, id string, ref interface{}) (*model.Response, error) {
 	r, err := c.DoAPIGET(c.kvpath(prefix, id), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
@@ -89,7 +89,7 @@ func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) (*model.Resp
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) KVDelete(id string, prefix string) (*model.Response, error) {
+func (c *ClientPP) KVDelete(prefix, id string) (*model.Response, error) {
 	r, err := c.DoAPIDELETE(c.kvpath(prefix, id)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err

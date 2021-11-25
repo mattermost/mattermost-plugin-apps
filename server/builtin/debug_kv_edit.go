@@ -64,11 +64,8 @@ func (a *builtinApp) debugKVEdit() handler {
 				}
 				key = string(decoded)
 			} else {
-				app, err := a.proxy.GetInstalledApp(r, appID)
-				if err != nil {
-					return apps.NewErrorResponse(err)
-				}
-				key, err = store.Hashkey(config.KVAppPrefix, app.BotUserID, namespace, id)
+				var err error
+				key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUserID, namespace, id)
 				if err != nil {
 					return apps.NewErrorResponse(err)
 				}
