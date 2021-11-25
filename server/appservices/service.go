@@ -27,15 +27,15 @@ type Service interface {
 
 	// KV
 
-	// ref can be either a []byte for raw data, or anything else will be JSON marshaled.
-	KVSet(r *incoming.Request, botUserID, prefix, id string, data []byte) (bool, error)
-	KVGet(r *incoming.Request, botUserID, prefix, id string) ([]byte, error)
-	KVDelete(r *incoming.Request, botUserID, prefix, id string) error
-	KVList(r *incoming.Request, botUserID, namespace string, processf func(key string) error) error
+	KVSet(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error)
+	KVGet(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error)
+	KVDelete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error
+	KVList(r *incoming.Request, appID apps.AppID, actingUserID, namespace string, processf func(key string) error) error
 
 	// Remote (3rd party) OAuth2
 
 	StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error
+	// TODO(Ben): Check if this can be a []byte
 	GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
 	// ref can be either a []byte, or anything else will be JSON marshaled.
 	StoreOAuth2User(r *incoming.Request, AppID apps.AppID, actingUserID string, ref []byte) error

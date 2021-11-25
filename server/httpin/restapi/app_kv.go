@@ -18,19 +18,19 @@ const (
 
 func (a *restapi) initKV(rh *httpin.Handler) {
 	rh.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVGet, httpin.RequireUser).Methods(http.MethodGet)
+		a.KVGet, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 	rh.HandleFunc(path.KV+"/{key}",
-		a.KVGet, httpin.RequireUser).Methods(http.MethodGet)
+		a.KVGet, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 
 	rh.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVPut, httpin.RequireUser).Methods(http.MethodPut, http.MethodPost)
+		a.KVPut, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
 	rh.HandleFunc(path.KV+"/{key}",
-		a.KVPut, httpin.RequireUser).Methods(http.MethodPut, http.MethodPost)
+		a.KVPut, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
 
 	rh.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVDelete, httpin.RequireUser).Methods(http.MethodDelete)
+		a.KVDelete, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodDelete)
 	rh.HandleFunc(path.KV+"/{key}",
-		a.KVDelete, httpin.RequireUser).Methods(http.MethodDelete)
+		a.KVDelete, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodDelete)
 }
 
 // KVGet returns a value stored by the App in the KV store.
@@ -41,7 +41,7 @@ func (a *restapi) initKV(rh *httpin.Handler) {
 func (a *restapi) KVGet(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
-	data, err := a.appServices.KVGet(req, req.ActingUserID(), prefix, id)
+	data, err := a.appServices.KVGet(req, req.AppID(), req.ActingUserID(), prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -65,7 +65,7 @@ func (a *restapi) KVPut(req *incoming.Request, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	changed, err := a.appServices.KVSet(req, req.ActingUserID(), prefix, id, data)
+	changed, err := a.appServices.KVSet(req, req.AppID(), req.ActingUserID(), prefix, id, data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -84,7 +84,7 @@ func (a *restapi) KVDelete(req *incoming.Request, w http.ResponseWriter, r *http
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
 
-	err := a.appServices.KVDelete(req, req.ActingUserID(), prefix, id)
+	err := a.appServices.KVDelete(req, req.AppID(), req.ActingUserID(), prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

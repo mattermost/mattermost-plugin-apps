@@ -90,15 +90,11 @@ func (a *builtinApp) debugKVInfo() handler {
 }
 
 func (a *builtinApp) debugListKeys(r *incoming.Request, appID apps.AppID) (int, map[string]int, error) {
-	app, err := a.proxy.GetInstalledApp(r, appID)
-	if err != nil {
-		return 0, nil, err
-	}
-
 	n := 0
 	namespaces := map[string]int{}
-	err = a.appservices.KVList(r,
-		app.BotUserID, "", func(key string) error {
+	err := a.appservices.KVList(r,
+		appID, r.ActingUserID(),
+		"", func(key string) error {
 			_, _, ns, _, e := store.ParseHashkey(key)
 			if e != nil {
 				return e

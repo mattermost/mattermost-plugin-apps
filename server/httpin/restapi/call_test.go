@@ -32,7 +32,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 		conf := config.NewTestConfigService(nil)
 		sessionService := mock_session.NewMockService(ctrl)
 
-		a := &restapi{}
+		a := &restapi{
+			conf: conf,
+		}
 
 		userID := "some_user_id"
 		cc := apps.Context{
@@ -51,7 +53,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			postID := "some_post_id"
@@ -106,7 +110,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			postID := "some_post_id"
@@ -141,7 +147,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			channelID := "some_channel_id"
@@ -181,7 +189,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			channelID := "some_channel_id"
@@ -209,7 +219,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			teamID := "some_team_id"
@@ -242,7 +254,9 @@ func TestCleanUserAgentContext(t *testing.T) {
 			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
-			a := &restapi{}
+			a := &restapi{
+				conf: conf,
+			}
 
 			userID := "some_user_id"
 			teamID := "some_team_id"
@@ -268,7 +282,9 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	sessionService := mock_session.NewMockService(ctrl)
-	a := &restapi{}
+	a := &restapi{
+		conf: conf,
+	}
 
 	userID := "some_user_id"
 	postID := "some_post_id"

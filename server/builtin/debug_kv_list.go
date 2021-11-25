@@ -53,13 +53,9 @@ func (a *builtinApp) debugKVList() handler {
 			r.SetAppID(appID)
 			namespace := creq.GetValue(fNamespace, "")
 			encode := creq.BoolValue(fBase64)
-			app, err := a.proxy.GetInstalledApp(r, appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
 
 			keys := []string{}
-			err = a.appservices.KVList(r, app.BotUserID, namespace, func(key string) error {
+			err := a.appservices.KVList(r, appID, creq.Context.ActingUserID, namespace, func(key string) error {
 				keys = append(keys, key)
 				return nil
 			})

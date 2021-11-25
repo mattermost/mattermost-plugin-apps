@@ -48,13 +48,9 @@ func (a *builtinApp) debugKVClean() handler {
 			appID := apps.AppID(creq.GetValue(fAppID, ""))
 			r.SetAppID(appID)
 			namespace := creq.GetValue(fNamespace, "")
-			app, err := a.proxy.GetInstalledApp(r, appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
 
 			n := 0
-			err = a.appservices.KVList(r, app.BotUserID, namespace,
+			err := a.appservices.KVList(r, appID, creq.Context.ActingUserID, namespace,
 				func(key string) error {
 					n++
 					return a.conf.MattermostAPI().KV.Delete(key)

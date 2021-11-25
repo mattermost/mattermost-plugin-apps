@@ -65,61 +65,61 @@ func (mr *MockServiceMockRecorder) GetSubscriptions(arg0, arg1, arg2 interface{}
 }
 
 // KVDelete mocks base method.
-func (m *MockService) KVDelete(arg0 *incoming.Request, arg1, arg2, arg3 string) error {
+func (m *MockService) KVDelete(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVDelete", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "KVDelete", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // KVDelete indicates an expected call of KVDelete.
-func (mr *MockServiceMockRecorder) KVDelete(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVDelete(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVDelete", reflect.TypeOf((*MockService)(nil).KVDelete), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVDelete", reflect.TypeOf((*MockService)(nil).KVDelete), arg0, arg1, arg2, arg3, arg4)
 }
 
 // KVGet mocks base method.
-func (m *MockService) KVGet(arg0 *incoming.Request, arg1, arg2, arg3 string) ([]byte, error) {
+func (m *MockService) KVGet(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KVGet indicates an expected call of KVGet.
-func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3, arg4)
 }
 
 // KVList mocks base method.
-func (m *MockService) KVList(arg0 *incoming.Request, arg1, arg2 string, arg3 func(string) error) error {
+func (m *MockService) KVList(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3 string, arg4 func(string) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVList", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "KVList", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // KVList indicates an expected call of KVList.
-func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVList", reflect.TypeOf((*MockService)(nil).KVList), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVList", reflect.TypeOf((*MockService)(nil).KVList), arg0, arg1, arg2, arg3, arg4)
 }
 
 // KVSet mocks base method.
-func (m *MockService) KVSet(arg0 *incoming.Request, arg1, arg2, arg3 string, arg4 []byte) (bool, error) {
+func (m *MockService) KVSet(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string, arg5 []byte) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KVSet indicates an expected call of KVSet.
-func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVSet", reflect.TypeOf((*MockService)(nil).KVSet), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVSet", reflect.TypeOf((*MockService)(nil).KVSet), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // StoreOAuth2App mocks base method.
