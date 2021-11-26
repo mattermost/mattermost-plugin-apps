@@ -35,9 +35,7 @@ type Service interface {
 	// Remote (3rd party) OAuth2
 
 	StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error
-	// TODO(Ben): Check if this can be a []byte
 	GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
-	// ref can be either a []byte, or anything else will be JSON marshaled.
 	StoreOAuth2User(r *incoming.Request, AppID apps.AppID, actingUserID string, ref []byte) error
 }
 
