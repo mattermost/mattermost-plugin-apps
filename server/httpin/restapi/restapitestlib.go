@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -137,7 +138,16 @@ func (th *TestHelper) SetupApp(t *testing.T, m apps.Manifest) {
 }
 
 func (th *TestHelper) CreateClientPP() *appclient.ClientPP {
-	return appclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port))
+	port := th.ServerTestHelper.App.Srv().ListenAddr.Port
+
+	subpath := ""
+	siteURL := th.ServerTestHelper.App.Srv().Config().ServiceSettings.SiteURL
+	if siteURL != nil && *siteURL != "" {
+		u, _ := url.Parse(*siteURL)
+		subpath = u.Path
+	}
+
+	return appclient.NewAppsPluginAPIClient(fmt.Sprintf("http://localhost:%v%v", port, subpath))
 }
 
 func (th *TestHelper) CreateLocalClient(socketPath string) *appclient.ClientPP {

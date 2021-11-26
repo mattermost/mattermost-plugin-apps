@@ -38,7 +38,7 @@ func TestOnActivate(t *testing.T) {
 	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
 
 	listenAddress := "localhost:8065"
-	siteURL := "http://" + listenAddress
+	siteURL := "http://" + listenAddress + "/subpath"
 	testAPI.On("GetConfig").Return(&model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL:       &siteURL,
