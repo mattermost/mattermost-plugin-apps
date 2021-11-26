@@ -55,20 +55,6 @@ func NewService(conf config.Service, store *store.Service) *AppServices {
 	}
 }
 
-func (a *AppServices) ensureFromBot(mattermostUserID string) error {
-	if mattermostUserID == "" {
-		return utils.NewUnauthorizedError("not logged in")
-	}
-	mmuser, err := a.conf.MattermostAPI().User.Get(mattermostUserID)
-	if err != nil {
-		return err
-	}
-	if !mmuser.IsBot {
-		return errors.Wrap(ErrNotABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
-	}
-	return nil
-}
-
 func (a *AppServices) ensureFromUser(mattermostUserID string) error {
 	if mattermostUserID == "" {
 		return utils.NewUnauthorizedError("not logged in")
