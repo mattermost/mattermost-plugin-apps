@@ -37,8 +37,8 @@ func TestKVE2E(t *testing.T) {
 		api4.CheckUnauthorizedStatus(t, resp)
 		assert.False(t, changed)
 
-		var outGet map[string]interface{}
-		resp, err = client.KVGet(prefix, id, &outGet)
+		var out map[string]interface{}
+		resp, err = client.KVGet(prefix, id, &out)
 		assert.Error(t, err)
 		api4.CheckUnauthorizedStatus(t, resp)
 		assert.False(t, changed)
@@ -62,23 +62,22 @@ func TestKVE2E(t *testing.T) {
 			api4.CheckOKStatus(t, resp)
 			assert.True(t, changed)
 
-			var outGet map[string]interface{}
-			resp, err = client.KVGet(prefix, id, &outGet)
+			var out map[string]interface{}
+			resp, err = client.KVGet(prefix, id, &out)
 			assert.NoError(t, err)
 			api4.CheckOKStatus(t, resp)
-			assert.Equal(t, outGet["test_bool"], true)
-			assert.Equal(t, outGet["test_string"], "test")
+			assert.Equal(t, out["test_bool"], true)
+			assert.Equal(t, out["test_string"], "test")
 
 			resp, err = client.KVDelete(prefix, id)
 			assert.NoError(t, err)
 			api4.CheckOKStatus(t, resp)
 
-			/*
-				resp, err = client.KVGet(prefix, id, &outGet)
-				assert.NoError(t, err)
-				api4.CheckOKStatus(t, resp)
-				assert.Len(t, outGet, 0)
-			*/
+			out = nil
+			resp, err = client.KVGet(prefix, id, &out)
+			assert.NoError(t, err)
+			api4.CheckOKStatus(t, resp)
+			assert.Nil(t, out)
 		})
 	})
 
@@ -100,12 +99,12 @@ func TestKVE2E(t *testing.T) {
 		assert.NoError(t, err)
 		api4.CheckOKStatus(t, resp)
 
-		var outGet map[string]interface{}
-		resp, err = app.AsUser.KVGet(prefix, id, &outGet)
+		var out map[string]interface{}
+		resp, err = app.AsUser.KVGet(prefix, id, &out)
 		assert.NoError(t, err)
 		api4.CheckOKStatus(t, resp)
-		assert.Equal(t, outGet["test_bool"], true)
-		assert.Equal(t, outGet["test_string"], "test")
+		assert.Equal(t, out["test_bool"], true)
+		assert.Equal(t, out["test_string"], "test")
 	})
 
 	t.Run("Users can't see other users KV entires", func(t *testing.T) {
@@ -121,12 +120,10 @@ func TestKVE2E(t *testing.T) {
 		api4.CheckOKStatus(t, resp)
 		assert.True(t, changed)
 
-		/*
-			var outGet map[string]interface{}
-			resp, err = app.AsUser2.KVGet(prefix, id, &outGet)
-			assert.NoError(t, err)
-			api4.CheckOKStatus(t, resp)
-			assert.Len(t, outGet, 0)
-		*/
+		var out map[string]interface{}
+		resp, err = app.AsUser2.KVGet(prefix, id, &out)
+		assert.NoError(t, err)
+		api4.CheckOKStatus(t, resp)
+		assert.Nil(t, out)
 	})
 }

@@ -66,7 +66,7 @@ func (c *ClientPP) KVSet(prefix, id string, in interface{}) (bool, *model.Respon
 
 	var out map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&out); err != nil {
-		return false, model.BuildResponse(r), err
+		return false, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	changed := out["changed"].(bool)
@@ -81,9 +81,17 @@ func (c *ClientPP) KVGet(prefix, id string, ref interface{}) (*model.Response, e
 	}
 	defer c.closeBody(r)
 
-	err = json.NewDecoder(r.Body).Decode(ref)
+	buf, err := io.ReadAll(r.Body)
 	if err != nil {
-		return model.BuildResponse(r), err
+		return nil, errors.Wrap(err, "failed to read body")
+	}
+
+	// If there the key was found try to unmarshal it
+	if len(buf) > 0 {
+		err = json.Unmarshal(buf, ref)
+		if err != nil {
+			return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
+		}
 	}
 
 	return model.BuildResponse(r), nil
@@ -119,7 +127,7 @@ func (c *ClientPP) GetSubscriptions() ([]apps.Subscription, *model.Response, err
 	var subs []apps.Subscription
 	err = json.NewDecoder(r.Body).Decode(&subs)
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return subs, model.BuildResponse(r), nil
@@ -164,7 +172,7 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 
 	err = json.NewDecoder(r.Body).Decode(ref)
 	if err != nil {
-		return model.BuildResponse(r), err
+		return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return model.BuildResponse(r), nil
@@ -303,7 +311,7 @@ func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.Lis
 	listed := []apps.ListedApp{}
 	err = json.NewDecoder(r.Body).Decode(&listed)
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 	return listed, model.BuildResponse(r), nil
 }
@@ -323,7 +331,7 @@ func (c *ClientPP) Call(creq apps.CallRequest) (*apps.CallResponse, *model.Respo
 	var cresp apps.CallResponse
 	err = json.NewDecoder(r.Body).Decode(&cresp)
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return &cresp, model.BuildResponse(r), nil
