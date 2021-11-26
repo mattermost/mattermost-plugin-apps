@@ -136,10 +136,10 @@ func (th *TestHelper) SetupPP() {
 func (th *TestHelper) CreateClientPP() *appclient.ClientPP {
 	cfg := th.ServerTestHelper.App.Config()
 
-	mattermostURL, err := url.Parse(*cfg.ServiceSettings.SiteURL)
+	siteURL, err := url.Parse(*cfg.ServiceSettings.SiteURL)
 	require.NoError(th.t, err)
 
-	url := fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port) + mattermostURL.Path
+	url := fmt.Sprintf("http://localhost:%v", th.ServerTestHelper.App.Srv().ListenAddr.Port) + siteURL.Path
 
 	return appclient.NewAppsPluginAPIClient(url)
 }

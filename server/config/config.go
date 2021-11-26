@@ -112,7 +112,7 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 			host = "127.0.0.1"
 		}
 
-		localURL = "http://" + host + ":" + port
+		localURL = "http://" + host + ":" + port + mattermostURL.Path
 	}
 
 	conf.StoredConfig = stored
