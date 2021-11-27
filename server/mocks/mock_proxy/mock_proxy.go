@@ -140,11 +140,12 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2 interface{}) *gomo
 }
 
 // GetAppBindings mocks base method.
-func (m *MockService) GetAppBindings(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.App) []apps.Binding {
+func (m *MockService) GetAppBindings(arg0 proxy.Incoming, arg1 apps.Context, arg2 apps.App) ([]apps.Binding, []error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAppBindings", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]apps.Binding)
-	return ret0
+	ret1, _ := ret[1].([]error)
+	return ret0, ret1
 }
 
 // GetAppBindings indicates an expected call of GetAppBindings.

@@ -44,15 +44,6 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 
 	res := a.proxy.Call(in, *creq)
 
-	a.conf.Logger().Debugw(
-		"Received call response",
-		"app_id", creq.Context.AppID,
-		"acting_user_id", in.ActingUserID,
-		"text", res.Text,
-		"type", res.Type,
-		"path", creq.Path,
-	)
-
 	// Only track submit calls
 	if strings.HasSuffix(creq.Path, "submit") {
 		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")

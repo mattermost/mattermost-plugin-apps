@@ -48,7 +48,10 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 		app := allApps[i]
 
 		go func(app apps.App) {
-			bb := p.GetAppBindings(in, cc, app)
+			bb, problems := p.GetAppBindings(in, cc, app)
+			for _, problem := range problems {
+				p.conf.Logger().WithError(problem).Debugw("Binding error")
+			}
 			all <- bb
 		}(app)
 	}
@@ -63,13 +66,14 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 
 // GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
-func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding {
+func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]apps.Binding, []error) {
+	var problems []error
 	if !p.appIsEnabled(app) {
-		return nil
+		return nil, problems
 	}
 
 	if len(app.GrantedLocations) == 0 {
-		return nil
+		return nil, problems
 	}
 
 	conf, _, log := p.conf.Basic()
@@ -88,57 +92,56 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []app
 		b, _ := json.Marshal(resp.Data)
 		err := json.Unmarshal(b, &bindings)
 		if err != nil {
-			log.WithError(err).Debugf("Bindings are not of the right type.")
-			return nil
+			problems = append(problems, errors.Wrap(err, "failed to decode bindings"))
+			return nil, problems
 		}
-
-		bindings = cleanAppBindings(app, bindings, "", cc.UserAgent, conf, log)
-		return bindings
+		bindings, cleanupProblems := cleanAppBindings(app, bindings, "", cc.UserAgent, conf, log)
+		return bindings, append(problems, cleanupProblems...)
 
 	case apps.CallResponseTypeError:
-		log.WithError(resp).Debugf("Error getting bindings")
-		return nil
+		problems = append(problems, errors.Wrap(resp, "received app error"))
+		return nil, problems
 
 	default:
-		log.Debugf("Bindings response is nil or unexpected type.")
-		return nil
+		problems = append(problems, errors.Errorf("unexpected response type %q", string(resp.Type)))
+		return nil, problems
 	}
 }
 
 // cleanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config, baseLog utils.Logger) []apps.Binding {
+func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config, baseLog utils.Logger) ([]apps.Binding, []error) {
 	out := []apps.Binding{}
 	usedLocations := map[apps.Location]bool{}
 	usedCommandLabels := map[string]bool{}
 
+	var problems []error
 	for _, b := range bindings {
 		fql := locPrefix.Sub(b.Location)
 		log := baseLog.With("location", fql)
 
-		clean, problems := cleanAppBinding(app, b, locPrefix, userAgent, conf, log)
-		for _, problem := range problems {
-			log.WithError(problem).Debugf("error in binding")
-		}
+		clean, appProblems := cleanAppBinding(app, b, locPrefix, userAgent, conf, log)
+		problems = append(problems, appProblems...)
 		if clean == nil {
-			log.Infof("ignored invalid binding, see debug log for details")
 			continue
 		}
 
 		fql = locPrefix.Sub(clean.Location)
 		if usedLocations[clean.Location] {
-			log.Infof("ignored diplicate command binding for location %q", clean.Location)
+			problems = append(problems,
+				errors.Errorf("ignored diplicate command binding for location %q", clean.Location))
 			continue
 		}
 		if fql.In(apps.LocationCommand) && usedCommandLabels[clean.Label] {
-			log.Infof("ignored diplicate command binding for label %q", clean.Label)
+			problems = append(problems,
+				errors.Errorf("ignored diplicate command binding for label %q (location %q)", clean.Label, clean.Location))
 			continue
 		}
 
 		out = append(out, *clean)
 	}
 
-	return out
+	return out, problems
 }
 
 func cleanAppBinding(
@@ -221,7 +224,9 @@ func cleanAppBinding(
 	switch {
 	// valid cases
 	case hasBindings && !hasForm && !hasSubmit:
-		b.Bindings = cleanAppBindings(app, b.Bindings, fql, userAgent, conf, baseLog)
+		var newProblems []error
+		b.Bindings, newProblems = cleanAppBindings(app, b.Bindings, fql, userAgent, conf, baseLog)
+		problems = append(problems, newProblems...)
 		if len(b.Bindings) == 0 {
 			// We do not add bindings without any valid sub-bindings
 			return nil, problems

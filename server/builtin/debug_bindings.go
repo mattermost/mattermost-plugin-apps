@@ -4,6 +4,8 @@
 package builtin
 
 import (
+	"fmt"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -34,6 +36,7 @@ func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Bindi
 func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	var bindings []apps.Binding
+	out := ""
 	if appID == "" {
 		var err error
 		bindings, err = a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
@@ -45,7 +48,17 @@ func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
-		bindings = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
+		var problems []error
+		bindings, problems = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
+		if len(problems) > 0 {
+			out += "\n\n### PROBLEMS:\n"
+		}
+		for _, prob := range problems {
+			out += fmt.Sprintf("- %s\n", prob.Error())
+		}
+		out += "\n\n"
 	}
-	return apps.NewTextResponse(utils.JSONBlock(bindings))
+
+	out += utils.JSONBlock(bindings)
+	return apps.NewTextResponse(out)
 }
