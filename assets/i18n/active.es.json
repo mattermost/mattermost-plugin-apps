@@ -67,10 +67,6 @@
     "hash": "sha1-cab9433e0fe5688a30aa94a039769b7370ac5d74",
     "other": "[ listada | url ]"
   },
-  "command.install.http.hint": {
-    "hash": "sha1-11d3703646d3941c1eaee9ebb7951584f9b04276",
-    "other": "[ manifest.json URL ]"
-  },
   "command.install.http.label": {
     "hash": "sha1-77b5f8e343a90f6f597751021fb8b7a08fe83083",
     "other": "http"
@@ -78,10 +74,6 @@
   "command.install.label": {
     "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
     "other": "instalar"
-  },
-  "command.install.listed.hint": {
-    "hash": "sha1-ec1376075b3e4121b07aa757e54b9d828c18dd03",
-    "other": "[ ID de la app ]"
   },
   "command.install.listed.label": {
     "hash": "sha1-adcc7aee87e914f9b782de197376a29c2e4245de",
