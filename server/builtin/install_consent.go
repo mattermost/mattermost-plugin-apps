@@ -192,7 +192,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		Header: h,
 		Fields: fields,
 		Submit: newUserCall(pInstallConsent).WithState(m.AppID),
-		Source: newUserCall(pInstallConsentForm).WithState(m.AppID),
+		Source: newUserCall(pInstallConsentSource).WithState(m.AppID),
 	}
 }
 

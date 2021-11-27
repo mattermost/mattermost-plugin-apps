@@ -23,7 +23,7 @@ func (a *builtinApp) disableCommandBinding(loc *i18n.Localizer) apps.Binding {
 		}),
 		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.disable.description",
-			Other: "Disables an App",
+			Other: "Disable an App",
 		}),
 		Form: &apps.Form{
 			Submit: newUserCall(pDisable),

@@ -37,7 +37,7 @@ func (a *builtinApp) info(creq apps.CallRequest) apps.CallResponse {
 	conf := a.conf.Get()
 	out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
-			ID:    "apps.command.info.submit.ok",
+			ID:    "command.info.submit",
 			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
 		},
 		TemplateData: map[string]string{

@@ -23,7 +23,7 @@ func (a *builtinApp) enableCommandBinding(loc *i18n.Localizer) apps.Binding {
 		}),
 		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.enable.description",
-			Other: "Enables an App",
+			Other: "Enable an App",
 		}),
 		Form: &apps.Form{
 			Submit: newUserCall(pEnable),
