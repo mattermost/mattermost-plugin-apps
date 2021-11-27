@@ -89,7 +89,7 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 			Other: "Deployment method",
 		}),
 		SelectRefresh:       true,
-		SelectOptions: opts,
+		StaticSelectOptions: opts,
 		Value:               selectedValue,
 	}, selectedType
 }

@@ -10,6 +10,8 @@ import (
 // Form defines what inputs a Call accepts, and how they can be gathered from
 // the user, in Modal and Autocomplete modes.
 //
+// IMPORTANT: update UnmarshalJSON if this struct changes.
+//
 // For a Modal, the form defines the modal entirely, and displays it when
 // returned in response to a submit Call. Modals are dynamic in the sense that
 // they may be refreshed entirely when values of certain fields change, and may
