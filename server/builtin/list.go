@@ -33,12 +33,16 @@ func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
 			}),
 			Fields: []apps.Field{
 				{
+					Name: fIncludePlugins,
+					Type: apps.FieldTypeBool,
 					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.include_plugins.label",
 						Other: "include-plugins",
 					}),
-					Name: fIncludePlugins,
-					Type: apps.FieldTypeBool,
+					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "field.include_plugins.description",
+						Other: "include compatible Mattermost plugins in the output.",
+					}),
 				},
 			},
 			Submit: newUserCall(pList).WithLocale(),

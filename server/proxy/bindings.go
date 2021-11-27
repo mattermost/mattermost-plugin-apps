@@ -76,8 +76,7 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]ap
 		return nil, problems
 	}
 
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", app.AppID)
+	conf := p.conf.Get()
 	appID := app.AppID
 	cc.AppID = appID
 
@@ -95,7 +94,7 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]ap
 			problems = append(problems, errors.Wrap(err, "failed to decode bindings"))
 			return nil, problems
 		}
-		bindings, cleanupProblems := cleanAppBindings(app, bindings, "", cc.UserAgent, conf, log)
+		bindings, cleanupProblems := cleanAppBindings(app, bindings, "", cc.UserAgent, conf)
 		return bindings, append(problems, cleanupProblems...)
 
 	case apps.CallResponseTypeError:
@@ -110,23 +109,20 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]ap
 
 // cleanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config, baseLog utils.Logger) ([]apps.Binding, []error) {
+func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config) ([]apps.Binding, []error) {
 	out := []apps.Binding{}
 	usedLocations := map[apps.Location]bool{}
 	usedCommandLabels := map[string]bool{}
 
 	var problems []error
 	for _, b := range bindings {
-		fql := locPrefix.Sub(b.Location)
-		log := baseLog.With("location", fql)
-
-		clean, appProblems := cleanAppBinding(app, b, locPrefix, userAgent, conf, log)
+		clean, appProblems := cleanAppBinding(app, b, locPrefix, userAgent, conf)
 		problems = append(problems, appProblems...)
 		if clean == nil {
 			continue
 		}
 
-		fql = locPrefix.Sub(clean.Location)
+		fql := locPrefix.Sub(clean.Location)
 		if usedLocations[clean.Location] {
 			problems = append(problems,
 				errors.Errorf("ignored diplicate command binding for location %q", clean.Location))
@@ -150,7 +146,6 @@ func cleanAppBinding(
 	locPrefix apps.Location,
 	userAgent string,
 	conf config.Config,
-	baseLog utils.Logger,
 ) (*apps.Binding, []error) {
 	var problems []error
 
@@ -225,7 +220,7 @@ func cleanAppBinding(
 	// valid cases
 	case hasBindings && !hasForm && !hasSubmit:
 		var newProblems []error
-		b.Bindings, newProblems = cleanAppBindings(app, b.Bindings, fql, userAgent, conf, baseLog)
+		b.Bindings, newProblems = cleanAppBindings(app, b.Bindings, fql, userAgent, conf)
 		problems = append(problems, newProblems...)
 		if len(b.Bindings) == 0 {
 			// We do not add bindings without any valid sub-bindings

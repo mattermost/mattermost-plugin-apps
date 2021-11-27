@@ -22,7 +22,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -728,9 +727,6 @@ func TestCleanAppBinding(t *testing.T) {
 		},
 	}
 
-	conf := config.Config{}
-	log := utils.NewTestLogger()
-
 	type TC struct {
 		in               apps.Binding
 		locPrefix        apps.Location
@@ -959,7 +955,7 @@ func TestCleanAppBinding(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			b, problems := cleanAppBinding(app, tc.in, tc.locPrefix, tc.userAgent, conf, log)
+			b, problems := cleanAppBinding(app, tc.in, tc.locPrefix, tc.userAgent, config.Config{})
 			var allProblems []string
 			for _, p := range problems {
 				allProblems = append(allProblems, p.Error())
