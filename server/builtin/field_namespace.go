@@ -30,7 +30,7 @@ func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localize
 			ID:    "field.kv.namespace.hint",
 			Other: "namespace (up to 2 letters)",
 		}),
-		DynamicSelectLookup: newUserCall(pLookupNamespace),
+		SelectDynamicLookup: newUserCall(pLookupNamespace),
 	}
 }
 

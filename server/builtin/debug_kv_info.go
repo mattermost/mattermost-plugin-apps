@@ -72,19 +72,21 @@ func (a *builtinApp) debugKVInfo(creq apps.CallRequest) apps.CallResponse {
 	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.debug.kv.info.submit.message",
-			Other: "{{.Count}} total keys for `{{.AppID}}`.\n",
+			Other: "{{.Count}} total keys for `{{.AppID}}`.",
 		},
 		TemplateData: map[string]string{
 			"Count": strconv.Itoa(n),
 			"AppID": string(appID),
 		},
-	})
+	}) + "\n"
 
 	if len(namespaces) > 0 {
-		message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		message += "\n" +
+		a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.info.submit.namespaces",
-			Other: "\nNamespaces:\n",
-		})
+			Other: "Namespaces:",
+		}) + 
+		"\n"
 	}
 	for ns, c := range namespaces {
 		if ns == "" {

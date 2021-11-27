@@ -54,13 +54,13 @@ func cleanForm(in apps.Form) (apps.Form, []error) {
 		case apps.FieldTypeStaticSelect:
 			clean, ee := cleanStaticSelect(f)
 			problems = append(problems, ee...)
-			if len(clean.StaticSelectOptions) == 0 {
+			if len(clean.SelectStaticOptions) == 0 {
 				problems = append(problems, errors.Errorf("no options for static select: %s", f.Name))
 				continue
 			}
 			f = clean
 		case apps.FieldTypeDynamicSelect:
-			if f.DynamicSelectLookup == nil {
+			if f.SelectDynamicLookup == nil {
 				problems = append(problems, errors.Errorf("no lookup call for dynamic select: %s", f.Name))
 				continue
 			}
@@ -82,7 +82,7 @@ func cleanStaticSelect(f apps.Field) (apps.Field, []error) {
 	usedLabels := map[string]bool{}
 	usedValues := map[string]bool{}
 	clean := []apps.SelectOption{}
-	for _, option := range f.StaticSelectOptions {
+	for _, option := range f.SelectStaticOptions {
 		label := option.Label
 		if label == "" {
 			label = option.Value
@@ -107,6 +107,6 @@ func cleanStaticSelect(f apps.Field) (apps.Field, []error) {
 		clean = append(clean, option)
 	}
 
-	f.StaticSelectOptions = clean
+	f.SelectStaticOptions = clean
 	return f, problems
 }

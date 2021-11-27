@@ -47,7 +47,7 @@ func (a *builtinApp) debugKVEditModal(creq apps.CallRequest) apps.CallResponse {
 			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "modal.kv.edit.submit.deleted",
-					Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
+					Other: "Deleted:\\n```\\nKey: {{.Key}}\\n```\\n",
 				},
 				TemplateData: map[string]string{
 					"Key": key,
@@ -126,7 +126,7 @@ func (a *builtinApp) debugKVEditModalForm(creq apps.CallRequest) apps.CallRespon
 					ID:    "field.kv.action.modal_label",
 					Other: "Action to take",
 				}),
-				StaticSelectOptions: buttons,
+				SelectStaticOptions: buttons,
 			},
 		},
 		SubmitButtons: fAction,

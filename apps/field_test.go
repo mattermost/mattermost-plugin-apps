@@ -96,7 +96,7 @@ func TestDecodeField(t *testing.T) {
 				ModalLabel:           "fieldModalLabel",
 				SelectIsMulti:        true,
 				SelectRefresh:        true,
-				StaticSelectOptions: []apps.SelectOption{
+				SelectStaticOptions: []apps.SelectOption{
 					{
 						Label: "l1",
 						Value: "v1",
@@ -106,7 +106,7 @@ func TestDecodeField(t *testing.T) {
 						Value: "v2",
 					},
 				},
-				DynamicSelectLookup: &apps.Call{
+				SelectDynamicLookup: &apps.Call{
 					Path: "/fieldLookupPath",
 					Expand: &apps.Expand{
 						ActingUser: apps.ExpandAll,
@@ -129,7 +129,7 @@ func TestDecodeField(t *testing.T) {
 				ModalLabel:           "fieldModalLabel",
 				SelectIsMulti:        true,
 				SelectRefresh:        true,
-				StaticSelectOptions: []apps.SelectOption{
+				SelectStaticOptions: []apps.SelectOption{
 					{
 						Label: "l1",
 						Value: "v1",
@@ -139,7 +139,7 @@ func TestDecodeField(t *testing.T) {
 						Value: "v2",
 					},
 				},
-				DynamicSelectLookup: apps.NewCall("/fieldLookupPath"),
+				SelectDynamicLookup: apps.NewCall("/fieldLookupPath"),
 			},
 		},
 	} {

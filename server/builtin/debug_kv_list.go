@@ -72,20 +72,20 @@ func (a *builtinApp) debugKVList(creq apps.CallRequest) apps.CallResponse {
 		message += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "command.debug.kv.list.submit.namespace",
-				Other: ", namespace `{{.Namespace}}`\n",
+				Other: ", namespace `{{.Namespace}}`",
 			},
 			TemplateData: map[string]string{
 				"Namespace": namespace,
 			},
 		})
-	} else {
-		message += "\n"
 	}
+	message += "\n"
+
 	if encode {
 		message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.list.submit.note",
-			Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\n",
-		})
+			Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.",
+		}) + "\n"
 		for _, key := range keys {
 			message += fmt.Sprintf("- `%s`\n", base64.URLEncoding.EncodeToString([]byte(key)))
 		}

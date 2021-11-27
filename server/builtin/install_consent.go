@@ -89,7 +89,7 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 			Other: "Deployment method",
 		}),
 		SelectRefresh:       true,
-		StaticSelectOptions: opts,
+		SelectStaticOptions: opts,
 		Value:               selectedValue,
 	}, selectedType
 }
@@ -100,10 +100,12 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	// Consent
 	h := ""
 	if len(m.RequestedLocations) > 0 {
-		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "modal.install_consent.header.locations",
-			Other: "\n- Add the following elements to the **Mattermost User Interface**:\n",
-		})
+		h += "\n" +
+			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "modal.install_consent.header.locations",
+				Other: "- Add the following elements to the **Mattermost User Interface**:",
+			}) +
+			"\n"
 		// (Mattermost) locations themselves are not localized
 		for _, l := range m.RequestedLocations {
 			h += fmt.Sprintf("  - %s\n", l.Markdown())
@@ -112,8 +114,8 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	if len(m.RequestedPermissions) > 0 {
 		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.install_consent.header.permissions",
-			Other: "- Access **Mattermost API** with the following permissions:\n",
-		})
+			Other: "- Access **Mattermost API** with the following permissions:",
+		}) + "\n"
 		// Permissions are not localized
 		for _, permission := range m.RequestedPermissions {
 			h += fmt.Sprintf("  - %s\n", permission.String())
@@ -123,13 +125,13 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		header := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.install_consent.header.header",
-				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:\n\n",
+				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:",
 			},
 			TemplateData: map[string]string{
 				"DisplayName": m.DisplayName,
 			},
 		})
-		h = header + h + "---\n"
+		h = header + "\n\n" + h + "---\n"
 
 		value := creq.BoolValue(fConsent)
 		fields = append(fields, apps.Field{
