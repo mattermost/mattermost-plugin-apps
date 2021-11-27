@@ -34,7 +34,8 @@ func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Bindi
 			Submit: newUserCall(pDebugKVCreate),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
-				a.namespaceField(2, false, loc),
+				a.debugIDField(loc),
+				a.namespaceField(0, false, loc),
 			},
 		},
 	}

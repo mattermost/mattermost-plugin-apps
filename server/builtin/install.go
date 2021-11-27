@@ -90,7 +90,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 							Name: fURL,
 							Type: apps.FieldTypeText,
 							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url..description",
+								ID:    "field.url.description",
 								Other: "enter the HTTP URL for the app's manifest.json",
 							}),
 							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -98,7 +98,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 								Other: "url",
 							}),
 							AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url.autocompleteHint",
+								ID:    "field.url.hint",
 								Other: "URL",
 							}),
 							AutocompletePosition: 1,

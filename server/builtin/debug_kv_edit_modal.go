@@ -47,7 +47,7 @@ func (a *builtinApp) debugKVEditModal(creq apps.CallRequest) apps.CallResponse {
 			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "modal.kv.edit.submit.deleted",
-					Other: "Deleted:\\n```\\nKey: {{.Key}}\\n```\\n",
+					Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
 				},
 				TemplateData: map[string]string{
 					"Key": key,

@@ -10,6 +10,8 @@ import (
 // Call defines a way to invoke an App's function. Calls are used to fetch App's
 // bindings, to process notifications, and to respond to user input from forms,
 // bindings and command line.
+//
+// IMPORTANT: update UnmarshalJSON if this struct changes.
 type Call struct {
 	// The path of the Call. For HTTP apps, the path is appended to the app's
 	// RootURL. For AWS Lambda apps, it is mapped to the appropriate Lambda name
