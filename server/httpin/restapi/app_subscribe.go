@@ -69,12 +69,7 @@ func (a *restapi) handleSubscribeCore(req *incoming.Request, w http.ResponseWrit
 		sub.AppID = req.AppID()
 		sub.UserID = req.ActingUserID()
 
-		if err := sub.Validate(); err != nil {
-			return http.StatusBadRequest, "Invalid Subscription", err
-		}
-
-		// TODO replace with an appropriate API-level call that would validate,
-		// deduplicate, etc.
+		// TODO replace with an appropriate API-level call that would deduplicate, etc.
 		var err error
 		if isSubscribe {
 			err = a.appServices.Subscribe(req, sub)
