@@ -8,6 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const (
@@ -28,6 +29,10 @@ type appKVStore struct {
 var _ AppKVStore = (*appKVStore)(nil)
 
 func (s *appKVStore) Set(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error) {
+	if appID == "" || actingUserID == "" {
+		return false, utils.NewInvalidError("app and user IDs must be provided")
+	}
+
 	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return false, err

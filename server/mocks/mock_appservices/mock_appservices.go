@@ -36,17 +36,18 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // GetOAuth2User mocks base method.
-func (m *MockService) GetOAuth2User(arg0 *incoming.Request, arg1 apps.AppID, arg2 string, arg3 interface{}) error {
+func (m *MockService) GetOAuth2User(arg0 *incoming.Request, arg1 apps.AppID, arg2 string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOAuth2User", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GetOAuth2User", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetOAuth2User indicates an expected call of GetOAuth2User.
-func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0, arg1, arg2)
 }
 
 // GetSubscriptions mocks base method.

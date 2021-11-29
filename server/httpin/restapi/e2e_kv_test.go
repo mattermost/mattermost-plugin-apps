@@ -20,6 +20,10 @@ func TestKVE2E(t *testing.T) {
 	app := th.SetupApp(apps.Manifest{
 		AppID:       apps.AppID("some_app_id"),
 		DisplayName: "Some Display Name",
+		RequestedPermissions: apps.Permissions{
+			apps.PermissionActAsBot,
+			apps.PermissionActAsUser,
+		},
 	})
 
 	t.Run("Unauthenticated requests are rejected", func(t *testing.T) {
@@ -51,12 +55,12 @@ func TestKVE2E(t *testing.T) {
 	t.Run("Users create, get and delete KV entries", func(t *testing.T) {
 		id := model.NewId()
 		prefix := "PT"
-		in := map[string]interface{}{
-			"test_bool":   true,
-			"test_string": "test",
-		}
 
 		app.TestForTwoUsersAndBot(func(t *testing.T, client *TestClientPP) {
+			in := map[string]interface{}{
+				"test_bool":   true,
+				"test_string": "test",
+			}
 			changed, resp, err := client.KVSet(prefix, id, in)
 			assert.NoError(t, err)
 			api4.CheckOKStatus(t, resp)

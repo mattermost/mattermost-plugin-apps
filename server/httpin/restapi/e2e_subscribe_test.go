@@ -20,6 +20,10 @@ func TestAppInstallE2E(t *testing.T) {
 	th.SetupApp(apps.Manifest{
 		AppID:       apps.AppID("some_app_id"),
 		DisplayName: "Some Display Name",
+		RequestedPermissions: apps.Permissions{
+			apps.PermissionActAsBot,
+			apps.PermissionActAsUser,
+		},
 	})
 }
 
@@ -30,6 +34,10 @@ func TestSubscribeE2E(t *testing.T) {
 	app := th.SetupApp(apps.Manifest{
 		AppID:       apps.AppID("some_app_id"),
 		DisplayName: "Some Display Name",
+		RequestedPermissions: apps.Permissions{
+			apps.PermissionActAsBot,
+			apps.PermissionActAsUser,
+		},
 	})
 
 	t.Run("Unauthenticated requests are rejected", func(t *testing.T) {

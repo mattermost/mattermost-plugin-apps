@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"path"
 
 	"github.com/pkg/errors"
@@ -157,11 +158,16 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 		}
 
 		if expand.OAuth2User != "" && base.OAuth2.User == nil && base.ActingUserID != "" {
-			var v interface{}
-			err := p.store.OAuth2.GetUser(r, app.AppID, base.ActingUserID, &v)
+			data, err := p.store.OAuth2.GetUser(r, app.AppID, base.ActingUserID)
 			if err != nil && !errors.Is(err, utils.ErrNotFound) {
 				return emptyCC, errors.Wrapf(err, "failed to expand OAuth user %s", base.UserID)
 			}
+
+			var v interface{}
+			if err = json.Unmarshal(data, v); err != nil {
+				return emptyCC, errors.Wrapf(err, "failed unmarshal OAuth2 User %s", base.UserID)
+			}
+
 			cc.ExpandedContext.OAuth2.User = v
 		}
 	}

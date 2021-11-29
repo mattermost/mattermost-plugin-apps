@@ -1,9 +1,11 @@
 package store
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -81,9 +83,13 @@ func TestOAuth2User(t *testing.T) {
 	err := s.SaveUser(req, "some_app_id", userID, data)
 	require.NoError(t, err)
 
-	api.On("KVGet", key).Once().Return(data, nil)
-	r := Entity{}
-	err = s.GetUser(req, "some_app_id", userID, &r)
-	require.NoError(t, err)
+	api.On("KVGet", key).Return(data, nil).Once()
+
+	rData, err := s.GetUser(req, "some_app_id", userID)
+	assert.NoError(t, err)
+	assert.NotNil(t, rData)
+	var r Entity
+	err = json.Unmarshal(rData, &r)
+	assert.NoError(t, err)
 	require.Equal(t, entity, r)
 }

@@ -118,8 +118,8 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	return nil
 }
 
-func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) error {
-	res, err := c.ClientPP.StoreOAuth2App(appID, oauth2App)
+func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
+	res, err := c.ClientPP.StoreOAuth2App(oauth2App)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -131,8 +131,8 @@ func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) erro
 	return nil
 }
 
-func (c *Client) StoreOAuth2User(appID apps.AppID, ref interface{}) error {
-	res, err := c.ClientPP.StoreOAuth2User(appID, ref)
+func (c *Client) StoreOAuth2User(ref interface{}) error {
+	res, err := c.ClientPP.StoreOAuth2User(ref)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -143,8 +143,8 @@ func (c *Client) StoreOAuth2User(appID apps.AppID, ref interface{}) error {
 	return nil
 }
 
-func (c *Client) GetOAuth2User(appID apps.AppID, ref interface{}) error {
-	res, err := c.ClientPP.GetOAuth2User(appID, ref)
+func (c *Client) GetOAuth2User(ref interface{}) error {
+	res, err := c.ClientPP.GetOAuth2User(ref)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err

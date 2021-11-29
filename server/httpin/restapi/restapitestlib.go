@@ -247,10 +247,6 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 		UseJWT:  false,
 	}
 	m.HomepageURL = appServer.URL
-	m.RequestedPermissions = apps.Permissions{
-		apps.PermissionActAsBot,
-		apps.PermissionActAsUser,
-	}
 
 	err := m.Validate()
 	require.NoError(err)

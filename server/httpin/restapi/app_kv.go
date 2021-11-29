@@ -37,7 +37,7 @@ func (a *restapi) initKV(rh *httpin.Handler) {
 //   Path: /api/v1/kv/[{prefix}/]{key}
 //   Method: GET
 //   Input: none
-//   Output: The stored Data
+//   Output: a JSON object
 func (a *restapi) KVGet(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["key"]
 	prefix := mux.Vars(r)["prefix"]
@@ -46,13 +46,14 @@ func (a *restapi) KVGet(req *incoming.Request, w http.ResponseWriter, r *http.Re
 		httputils.WriteError(w, err)
 		return
 	}
+
 	_, _ = w.Write(data)
 }
 
 // KVPut stores an App-provided JSON document in the KV store.
 //   Path: /api/v1/kv/[{prefix}/]{key}
 //   Methods: POST, PUT
-//   Input: Data
+//   Output: a JSON object
 //   Output:
 //     changed: set to true if the key value was changed.
 func (a *restapi) KVPut(req *incoming.Request, w http.ResponseWriter, r *http.Request) {

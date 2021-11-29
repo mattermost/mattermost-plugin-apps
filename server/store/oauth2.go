@@ -22,7 +22,7 @@ type OAuth2Store interface {
 	CreateState(r *incoming.Request, actingUserID string) (string, error)
 	ValidateStateOnce(r *incoming.Request, urlState, actingUserID string) error
 	SaveUser(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error
-	GetUser(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
+	GetUser(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error)
 }
 
 type oauth2Store struct {
@@ -72,18 +72,25 @@ func (s *oauth2Store) SaveUser(r *incoming.Request, appID apps.AppID, actingUser
 	if err != nil {
 		return err
 	}
+
 	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
 	return err
 }
 
-func (s *oauth2Store) GetUser(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error {
+func (s *oauth2Store) GetUser(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
 	if appID == "" || actingUserID == "" {
-		return utils.NewInvalidError("app and user IDs must be provided")
+		return nil, utils.NewInvalidError("app and user IDs must be provided")
 	}
 
 	userkey, err := Hashkey(config.KVUserPrefix, appID, actingUserID, "", config.KVUserKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return s.conf.MattermostAPI().KV.Get(userkey, ref)
+
+	var data []byte
+	if err = s.conf.MattermostAPI().KV.Get(userkey, &data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

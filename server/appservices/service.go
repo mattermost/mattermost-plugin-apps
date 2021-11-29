@@ -35,8 +35,8 @@ type Service interface {
 	// Remote (3rd party) OAuth2
 
 	StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error
-	GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, ref interface{}) error
-	StoreOAuth2User(r *incoming.Request, AppID apps.AppID, actingUserID string, ref []byte) error
+	StoreOAuth2User(r *incoming.Request, AppID apps.AppID, actingUserID string, data []byte) error
+	GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error)
 }
 
 type AppServices struct {
