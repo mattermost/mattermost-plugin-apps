@@ -11,7 +11,10 @@
 			}
 		],
 		"call": {
-			"path": "/send"
+			"path": "/send",
+            "expand": {
+				"acting_user_access_token": "all"
+			}
 		}
 	}
 }
