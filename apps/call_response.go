@@ -103,7 +103,7 @@ func NewLookupResponse(opts []SelectOption) CallResponse {
 	}{opts})
 }
 
-// Error() makes CallResponse a valid error, for convenience
+// Error makes CallResponse a valid error, for convenience
 func (cr CallResponse) Error() string {
 	if cr.Type == CallResponseTypeError {
 		return cr.Text
