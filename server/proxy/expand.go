@@ -318,6 +318,9 @@ func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Cli
 	conf := p.conf.Get()
 
 	switch {
+	case app.DeployType == apps.DeployBuiltin:
+		return mmclient.NewRPCClient(p.conf.MattermostAPI()), nil
+
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && r.ActingUserID() != "":
 		return r.GetMMClient()
 

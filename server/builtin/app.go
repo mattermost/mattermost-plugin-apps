@@ -150,9 +150,7 @@ func App(conf config.Config) apps.App {
 		GrantedLocations: apps.Locations{
 			apps.LocationCommand,
 		},
-		GrantedPermissions: apps.Permissions{
-			apps.PermissionActAsUser,
-		},
+		GrantedPermissions: apps.Permissions{},
 	}
 }
 

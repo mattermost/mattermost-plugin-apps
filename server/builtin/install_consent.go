@@ -34,7 +34,8 @@ func (a *builtinApp) installConsent() handler {
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 			}
-			r.SetAppID(r.AppID())
+			r.SetAppID(m.AppID)
+
 			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
 				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
 			}
@@ -198,8 +199,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		Call: &apps.Call{
 			Path: pInstallConsent,
 			Expand: &apps.Expand{
-				ActingUser:            apps.ExpandSummary,
-				ActingUserAccessToken: apps.ExpandAll,
+				ActingUser: apps.ExpandSummary,
 			},
 			State: m.AppID,
 		},

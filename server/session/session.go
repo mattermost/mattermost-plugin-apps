@@ -69,6 +69,10 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to fetch app for new session")
 	}
 
+	if app.DeployType == apps.DeployBuiltin {
+		return nil, errors.New("builtin apps can't have app specific session")
+	}
+
 	session := &model.Session{
 		UserId:    userID,
 		Roles:     user.Roles,
@@ -77,16 +81,13 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 	}
 	session.GenerateCSRF()
 
-	// TODO: The buit-in app also needs some (?) of this props. Does it also need an OAuth app?
-	if app.DeployType != apps.DeployBuiltin {
-		oAuthApp := app.MattermostOAuth2
-		session.AddProp(model.SessionPropPlatform, oAuthApp.Name)
-		session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
-		session.AddProp(model.SessionPropAppsFrameworkAppID, oAuthApp.AppsFrameworkAppID)
-	}
+	oAuthApp := app.MattermostOAuth2
 
 	session.AddProp(model.SessionPropOs, "OAuth2")
 	session.AddProp(model.SessionPropBrowser, "OAuth2")
+	session.AddProp(model.SessionPropPlatform, oAuthApp.Name)
+	session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
+	session.AddProp(model.SessionPropAppsFrameworkAppID, oAuthApp.AppsFrameworkAppID)
 
 	session, err = s.mm.Session.Create(session)
 	if err != nil {

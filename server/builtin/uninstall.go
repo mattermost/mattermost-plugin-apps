@@ -13,8 +13,7 @@ import (
 var uninstallCall = apps.Call{
 	Path: pUninstall,
 	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 

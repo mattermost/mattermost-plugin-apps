@@ -13,8 +13,7 @@ import (
 var disableCall = apps.Call{
 	Path: pDisable,
 	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 

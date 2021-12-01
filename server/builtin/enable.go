@@ -13,8 +13,7 @@ import (
 var enableCall = apps.Call{
 	Path: pEnable,
 	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 

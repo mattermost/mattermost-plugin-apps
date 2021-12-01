@@ -14,16 +14,14 @@ import (
 var installHTTPCall = apps.Call{
 	Path: pInstallHTTP,
 	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
 var installListedCall = apps.Call{
 	Path: pInstallListed,
 	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
+		ActingUser: apps.ExpandSummary,
 	},
 }
 
