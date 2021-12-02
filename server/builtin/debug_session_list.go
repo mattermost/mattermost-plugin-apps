@@ -56,10 +56,6 @@ func (a *builtinApp) debugSessionsList() handler {
 			for _, s := range sessions {
 				sessionID := s.Id
 				appID := sessionutils.GetAppID(s)
-				if appID == "" {
-					// Assume it's the builtin app
-					appID = AppID
-				}
 
 				expiresAt := time.UnixMilli(s.ExpiresAt).String()
 				expiresIn := time.Until(time.UnixMilli(s.ExpiresAt)).String()
