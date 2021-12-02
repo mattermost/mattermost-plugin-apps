@@ -20,6 +20,7 @@ type SessionStore interface {
 	Save(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error
 	Delete(r *incoming.Request, appID apps.AppID, userID string) error
 	DeleteAllForApp(r *incoming.Request, appID apps.AppID) error
+	DeleteAllForUser(r *incoming.Request, userID string) error
 }
 
 type sessionStore struct {
@@ -95,6 +96,36 @@ func (s sessionStore) listKeysForApp(appID apps.AppID) ([]string, error) {
 	return ret, nil
 }
 
+func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
+	ret := make([]string, 0)
+
+	for i := 0; ; i++ {
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
+		}
+
+		for _, key := range keys {
+			_, keyUserID, err := parseKey(key)
+			if err != nil {
+				continue
+			}
+
+			if keyUserID != userID {
+				continue
+			}
+
+			ret = append(ret, key)
+		}
+
+		if len(keys) < keysPerPage {
+			break
+		}
+	}
+
+	return ret, nil
+}
+
 func (s sessionStore) ListForApp(r *incoming.Request, appID apps.AppID) ([]*model.Session, error) {
 	keys, err := s.listKeysForApp(appID)
 	if err != nil {
@@ -151,6 +182,10 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 	return ret, nil
 }
 
+func (s sessionStore) Delete(r *incoming.Request, appID apps.AppID, userID string) error {
+	return s.conf.MattermostAPI().KV.Delete(sessionKey(appID, userID))
+}
+
 func (s sessionStore) DeleteAllForApp(r *incoming.Request, appID apps.AppID) error {
 	keys, err := s.listKeysForApp(appID)
 	if err != nil {
@@ -167,6 +202,18 @@ func (s sessionStore) DeleteAllForApp(r *incoming.Request, appID apps.AppID) err
 	return nil
 }
 
-func (s sessionStore) Delete(r *incoming.Request, appID apps.AppID, userID string) error {
-	return s.conf.MattermostAPI().KV.Delete(sessionKey(appID, userID))
+func (s sessionStore) DeleteAllForUser(r *incoming.Request, userID string) error {
+	keys, err := s.listKeysForUser(userID)
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		err := s.conf.MattermostAPI().KV.Delete(key)
+		if err != nil {
+			r.Log.WithError(err).Debugf("failed delete session for key: %s, userID: %s", key, userID)
+		}
+	}
+
+	return nil
 }

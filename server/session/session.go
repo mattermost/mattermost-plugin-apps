@@ -21,6 +21,7 @@ type Service interface {
 	GetOrCreate(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error)
 	ListForUser(r *incoming.Request, userID string) ([]*model.Session, error)
 	RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error
+	DeleteAllForUser(r *incoming.Request, userID string) error
 }
 
 var _ Service = (*service)(nil)
@@ -133,6 +134,10 @@ func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.Ap
 
 func (s service) ListForUser(r *incoming.Request, userID string) ([]*model.Session, error) {
 	return s.store.Session.ListForUser(r, userID)
+}
+
+func (s service) DeleteAllForUser(r *incoming.Request, userID string) error {
+	return s.store.Session.DeleteAllForUser(r, userID)
 }
 
 func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
