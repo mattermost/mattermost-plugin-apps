@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 )
 
@@ -45,7 +47,7 @@ var kubelessDeployCmd = &cobra.Command{
 			return err
 		}
 		if !m.Contains(apps.DeployKubeless) {
-			return errors.New("manifest.json unexpectedly contains no Kubless data")
+			return errors.New("manifest.json unexpectedly contains no Kubeless data")
 		}
 		if len(m.Kubeless.Functions) == 0 {
 			return errors.New("no Kubeless functions to deploy in manifest.json")
@@ -111,7 +113,11 @@ The App needs to be built with 'make dist' in its own directory, then use
 			"version", app.Version,
 			"path", creq.Call.Path,
 			"handler", app.Manifest.Kubeless.Functions[0].Handler)
-		resp, err := upTest.Roundtrip(app, creq, false)
+
+		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+		defer cancel()
+
+		resp, err := upTest.Roundtrip(ctx, app, creq, false)
 		if err != nil {
 			return err
 		}

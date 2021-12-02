@@ -1,6 +1,8 @@
 // Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
 // See License for license information.
 
+// Kubeless is not longer supported: https://mattermost.atlassian.net/browse/MM-40011
+
 package apps
 
 import (
