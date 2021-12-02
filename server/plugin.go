@@ -130,7 +130,7 @@ func (p *Plugin) OnActivate() (err error) {
 	)
 	p.log.Debugf("Initialized the app proxy")
 
-	p.httpIn = httpin.NewService(mm, p.conf, p.log, p.sessionService, mux.NewRouter(), p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mm, mux.NewRouter(), p.conf, p.log, p.sessionService, p.proxy, p.appservices,
 		restapi.Init,
 		gateway.Init,
 	)
