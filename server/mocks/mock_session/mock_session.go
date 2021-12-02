@@ -79,3 +79,17 @@ func (mr *MockServiceMockRecorder) RevokeSessionsForApp(arg0, arg1 interface{}) 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeSessionsForApp", reflect.TypeOf((*MockService)(nil).RevokeSessionsForApp), arg0, arg1)
 }
+
+// RevokeSessionsForUser mocks base method.
+func (m *MockService) RevokeSessionsForUser(arg0 *incoming.Request, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeSessionsForUser", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeSessionsForUser indicates an expected call of RevokeSessionsForUser.
+func (mr *MockServiceMockRecorder) RevokeSessionsForUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeSessionsForUser", reflect.TypeOf((*MockService)(nil).RevokeSessionsForUser), arg0, arg1)
+}
