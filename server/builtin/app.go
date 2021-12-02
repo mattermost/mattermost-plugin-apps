@@ -60,7 +60,7 @@ const (
 	pDebugKVClean        = "/debug/kv/clean"
 	pDebugKVList         = "/debug/kv/list"
 	pDebugSessionsList   = "/debug/session/list"
-	pDebugSessionsDelete = "/debug/session/delete"
+	pDebugSessionsRevoke = "/debug/session/delete"
 	pDisable             = "/disable"
 	pEnable              = "/enable"
 	pInfo                = "/info"
@@ -113,7 +113,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVInfo:         a.debugKVInfo(),
 		pDebugKVList:         a.debugKVList(),
 		pDebugSessionsList:   a.debugSessionsList(),
-		pDebugSessionsDelete: a.debugSessionsDelete(),
+		pDebugSessionsRevoke: a.debugSessionsRevoke(),
 		pDisable:             a.disable(),
 		pEnable:              a.enable(),
 		pInstallConsent:      a.installConsent(),

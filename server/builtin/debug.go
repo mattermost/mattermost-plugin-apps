@@ -49,7 +49,7 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 				}),
 				Bindings: []apps.Binding{
 					a.debugSessionsList().commandBinding(loc),
-					a.debugSessionsDelete().commandBinding(loc),
+					a.debugSessionsRevoke().commandBinding(loc),
 				},
 			},
 		},

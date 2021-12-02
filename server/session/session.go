@@ -21,7 +21,7 @@ type Service interface {
 	GetOrCreate(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error)
 	ListForUser(r *incoming.Request, userID string) ([]*model.Session, error)
 	RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error
-	DeleteAllForUser(r *incoming.Request, userID string) error
+	RevokeSessionsForUser(r *incoming.Request, userID string) error
 }
 
 var _ Service = (*service)(nil)
@@ -136,8 +136,34 @@ func (s service) ListForUser(r *incoming.Request, userID string) ([]*model.Sessi
 	return s.store.Session.ListForUser(r, userID)
 }
 
-func (s service) DeleteAllForUser(r *incoming.Request, userID string) error {
-	return s.store.Session.DeleteAllForUser(r, userID)
+func (s service) revokeSessions(r *incoming.Request, sessions []*model.Session) {
+	for _, session := range sessions {
+		// Revoke active sessions
+		if !session.IsExpired() {
+			err := s.mm.Session.Revoke(session.Id)
+			if err != nil {
+				r.Log.WithError(err).Warnw("failed to revoke app session")
+			}
+		}
+
+		err := s.store.Session.Delete(r, sessionutils.GetAppID(session), session.UserId)
+		if err != nil {
+			r.Log.WithError(err).Warnw("failed to delete revoked session from store")
+		}
+
+		r.Log.Warnf("revoked session: %#+v\n", session.Id)
+	}
+}
+
+func (s service) RevokeSessionsForUser(r *incoming.Request, userID string) error {
+	sessions, err := s.store.Session.ListForUser(r, userID)
+	if err != nil {
+		return errors.Wrap(err, "failed to list app sessions for revocation")
+	}
+
+	s.revokeSessions(r, sessions)
+
+	return nil
 }
 
 func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
@@ -146,22 +172,7 @@ func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) err
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}
 
-	for _, session := range sessions {
-		// Revoke active sessions
-		if !session.IsExpired() {
-			err = s.mm.Session.Revoke(session.Id)
-			if err != nil {
-				r.Log.WithError(err).Warnw("failed to revoke app session")
-			}
-		}
-
-		err = s.store.Session.Delete(r, sessionutils.GetAppID(session), session.UserId)
-		if err != nil {
-			r.Log.WithError(err).Warnw("failed to delete revoked session from store")
-		}
-
-		r.Log.Warnf("revoked session: %#+v\n", session.Id)
-	}
+	s.revokeSessions(r, sessions)
 
 	return nil
 }
