@@ -24,7 +24,7 @@ func Init(h *httpin.Handler, config config.Service, p proxy.Service, _ appservic
 		proxy: p,
 	}
 
-	h.PathPrefix(path.Apps)
+	h = h.PathPrefix(path.Apps)
 
 	// Static
 	h.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",

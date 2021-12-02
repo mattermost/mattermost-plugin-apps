@@ -63,7 +63,7 @@ func (h *Handler) clone() *Handler {
 func (h *Handler) PathPrefix(tpl string) *Handler {
 	clone := h.clone()
 
-	clone.router = h.router.PathPrefix(tpl).Subrouter()
+	clone.router = clone.router.PathPrefix(tpl).Subrouter()
 
 	return clone
 }
