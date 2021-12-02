@@ -15,16 +15,16 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initAdmin(rh *httpin.Handler) {
-	rh.HandleFunc(path.UpdateAppListing,
+func (a *restapi) initAdmin(h *httpin.Handler) {
+	h.HandleFunc(path.UpdateAppListing,
 		a.UpdateAppListing, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	rh.HandleFunc(path.InstallApp,
+	h.HandleFunc(path.InstallApp,
 		a.InstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	rh.HandleFunc(path.EnableApp,
+	h.HandleFunc(path.EnableApp,
 		a.EnableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	rh.HandleFunc(path.DisableApp,
+	h.HandleFunc(path.DisableApp,
 		a.DisableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	rh.HandleFunc(path.UninstallApp,
+	h.HandleFunc(path.UninstallApp,
 		a.UninstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
 }
 
@@ -148,10 +148,10 @@ func (a *restapi) UninstallApp(req *incoming.Request, w http.ResponseWriter, r *
 	}
 }
 
-func (a *restapi) initGetApp(rh *httpin.Handler) {
-	rh = rh.PathPrefix(path.Apps)
-	rh = rh.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`)
-	rh.HandleFunc("",
+func (a *restapi) initGetApp(h *httpin.Handler) {
+	h = h.PathPrefix(path.Apps)
+	h = h.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`)
+	h.HandleFunc("",
 		a.GetApp).Methods(http.MethodGet)
 }
 

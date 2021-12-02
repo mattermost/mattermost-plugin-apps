@@ -9,13 +9,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *restapi) initGetBotIDs(rh *httpin.Handler) {
-	rh.HandleFunc(path.BotIDs,
+func (a *restapi) initGetBotIDs(h *httpin.Handler) {
+	h.HandleFunc(path.BotIDs,
 		a.GetBotIDs, httpin.RequireUser).Methods(http.MethodGet)
 }
 
-func (a *restapi) initGetOAuthAppIDs(rh *httpin.Handler) {
-	rh.HandleFunc(path.OAuthAppIDs,
+func (a *restapi) initGetOAuthAppIDs(h *httpin.Handler) {
+	h.HandleFunc(path.OAuthAppIDs,
 		a.GetOAuthAppIDs, httpin.RequireUser).Methods(http.MethodGet)
 }
 

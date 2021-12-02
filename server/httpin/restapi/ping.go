@@ -13,8 +13,8 @@ type VersionInfo struct {
 	Version string `json:"version"`
 }
 
-func (a *restapi) initPing(rh *httpin.Handler) {
-	rh.HandleFunc(path.Ping,
+func (a *restapi) initPing(h *httpin.Handler) {
+	h.HandleFunc(path.Ping,
 		a.Ping, httpin.RequireUser).Methods(http.MethodPost)
 }
 

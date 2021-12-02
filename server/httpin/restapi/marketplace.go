@@ -9,8 +9,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initMarketplace(rh *httpin.Handler) {
-	rh.HandleFunc(path.Marketplace, a.GetMarketplace, httpin.RequireUser).Methods(http.MethodGet)
+func (a *restapi) initMarketplace(h *httpin.Handler) {
+	h.HandleFunc(path.Marketplace, a.GetMarketplace, httpin.RequireUser).Methods(http.MethodGet)
 }
 
 func (a *restapi) GetMarketplace(req *incoming.Request, w http.ResponseWriter, r *http.Request) {

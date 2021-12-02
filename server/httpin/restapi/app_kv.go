@@ -16,20 +16,20 @@ const (
 	MaxKVStoreValueLength = 8192
 )
 
-func (a *restapi) initKV(rh *httpin.Handler) {
-	rh.HandleFunc(path.KV+"/{prefix}/{key}",
+func (a *restapi) initKV(h *httpin.Handler) {
+	h.HandleFunc(path.KV+"/{prefix}/{key}",
 		a.KVGet, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
-	rh.HandleFunc(path.KV+"/{key}",
+	h.HandleFunc(path.KV+"/{key}",
 		a.KVGet, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 
-	rh.HandleFunc(path.KV+"/{prefix}/{key}",
+	h.HandleFunc(path.KV+"/{prefix}/{key}",
 		a.KVPut, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
-	rh.HandleFunc(path.KV+"/{key}",
+	h.HandleFunc(path.KV+"/{key}",
 		a.KVPut, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
 
-	rh.HandleFunc(path.KV+"/{prefix}/{key}",
+	h.HandleFunc(path.KV+"/{prefix}/{key}",
 		a.KVDelete, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodDelete)
-	rh.HandleFunc(path.KV+"/{key}",
+	h.HandleFunc(path.KV+"/{key}",
 		a.KVDelete, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodDelete)
 }
 

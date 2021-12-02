@@ -18,28 +18,28 @@ type gateway struct {
 	proxy proxy.Service
 }
 
-func Init(rh *httpin.Handler, config config.Service, p proxy.Service, _ appservices.Service) {
+func Init(h *httpin.Handler, config config.Service, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
 		conf:  config,
 		proxy: p,
 	}
 
-	rh.PathPrefix(path.Apps)
+	h.PathPrefix(path.Apps)
 
 	// Static
-	rh.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
+	h.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
 		g.static, httpin.RequireUser).Methods(http.MethodGet)
 
 	// Incoming remote webhooks
-	rh.HandleFunc("/{appid}"+path.Webhook,
+	h.HandleFunc("/{appid}"+path.Webhook,
 		g.handleWebhook).Methods(http.MethodPost)
-	rh.HandleFunc("/{appid}"+path.Webhook+"/{path}",
+	h.HandleFunc("/{appid}"+path.Webhook+"/{path}",
 		g.handleWebhook).Methods(http.MethodPost)
 
 	// Remote OAuth2
-	rh.HandleFunc("/{appid}"+path.RemoteOAuth2Connect,
+	h.HandleFunc("/{appid}"+path.RemoteOAuth2Connect,
 		g.remoteOAuth2Connect, httpin.RequireUser).Methods(http.MethodGet)
-	rh.HandleFunc("/{appid}"+path.RemoteOAuth2Complete,
+	h.HandleFunc("/{appid}"+path.RemoteOAuth2Complete,
 		g.remoteOAuth2Complete, httpin.RequireUser).Methods(http.MethodGet)
 }
 

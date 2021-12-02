@@ -11,12 +11,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initOAuth2Store(rh *httpin.Handler) {
-	rh.HandleFunc(path.OAuth2App,
+func (a *restapi) initOAuth2Store(h *httpin.Handler) {
+	h.HandleFunc(path.OAuth2App,
 		a.OAuth2StoreApp, httpin.RequireSysadmin, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
-	rh.HandleFunc(path.OAuth2User,
+	h.HandleFunc(path.OAuth2User,
 		a.OAuth2StoreUser, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
-	rh.HandleFunc(path.OAuth2User,
+	h.HandleFunc(path.OAuth2User,
 		a.OAuth2GetUser, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 }
 

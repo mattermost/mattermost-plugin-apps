@@ -16,8 +16,8 @@ import (
 
 var emptyCC = apps.Context{}
 
-func (a *restapi) initCall(rh *httpin.Handler) {
-	rh.HandleFunc(path.Call,
+func (a *restapi) initCall(h *httpin.Handler) {
+	h.HandleFunc(path.Call,
 		a.Call, httpin.RequireUser).Methods(http.MethodPost)
 }
 

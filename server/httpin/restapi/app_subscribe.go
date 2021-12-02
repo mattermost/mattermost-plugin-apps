@@ -11,15 +11,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initSubscriptions(rh *httpin.Handler) {
+func (a *restapi) initSubscriptions(h *httpin.Handler) {
 	// Subscribe
-	rh.HandleFunc(path.Subscribe,
+	h.HandleFunc(path.Subscribe,
 		a.Subscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
 	// GetSubscriptions
-	rh.HandleFunc(path.Subscribe,
+	h.HandleFunc(path.Subscribe,
 		a.GetSubscriptions, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 	// Unsubscribe
-	rh.HandleFunc(path.Unsubscribe,
+	h.HandleFunc(path.Unsubscribe,
 		a.Unsubscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
 }
 

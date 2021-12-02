@@ -46,13 +46,13 @@ func NewHandler(mm *pluginapi.Client, config config.Service, log utils.Logger, s
 }
 
 // clone creates a shallow copy of Handler, allowing clones to apply changes per handler func.
-func (rh *Handler) clone() *Handler {
+func (h *Handler) clone() *Handler {
 	return &Handler{
-		mm:             rh.mm,
-		config:         rh.config,
-		log:            rh.log,
-		sessionService: rh.sessionService,
-		router:         rh.router,
+		mm:             h.mm,
+		config:         h.config,
+		log:            h.log,
+		sessionService: h.sessionService,
+		router:         h.router,
 
 		// Don't copy the following fields as they are specific to the handler func
 		// - handler
@@ -60,16 +60,16 @@ func (rh *Handler) clone() *Handler {
 	}
 }
 
-func (rh *Handler) PathPrefix(tpl string) *Handler {
-	clone := rh.clone()
+func (h *Handler) PathPrefix(tpl string) *Handler {
+	clone := h.clone()
 
-	clone.router = rh.router.PathPrefix(tpl).Subrouter()
+	clone.router = h.router.PathPrefix(tpl).Subrouter()
 
 	return clone
 }
 
-func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...check) *mux.Route {
-	clone := rh.clone()
+func (h *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...check) *mux.Route {
+	clone := h.clone()
 
 	clone.checks = checks
 	clone.handlerFunc = handlerFunc
@@ -77,10 +77,10 @@ func (rh *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...ch
 	return clone.router.Handle(path, clone)
 }
 
-func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), config.RequestTimeout)
 	defer cancel()
-	req := incoming.NewRequest(rh.mm, rh.config, rh.log, rh.sessionService, incoming.WithCtx(ctx))
+	req := incoming.NewRequest(h.mm, h.config, h.log, h.sessionService, incoming.WithCtx(ctx))
 
 	req.Log = req.Log.With(
 		"path", r.URL.Path,
@@ -99,7 +99,7 @@ func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			txt := "Paniced while handling the request. "
 
-			if rh.config.Get().DeveloperMode {
+			if h.config.Get().DeveloperMode {
 				txt += fmt.Sprintf("Error: %v. Stack: %v", x, stack)
 			} else {
 				txt += "Please check the server logs for more details."
@@ -109,14 +109,14 @@ func (rh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	for _, check := range rh.checks {
-		succeeded := check(req, rh.mm, w, r)
+	for _, check := range h.checks {
+		succeeded := check(req, h.mm, w, r)
 		if !succeeded {
 			return
 		}
 	}
 
-	rh.handlerFunc(req, w, r)
+	h.handlerFunc(req, w, r)
 }
 
 func getUserID(r *http.Request) string {

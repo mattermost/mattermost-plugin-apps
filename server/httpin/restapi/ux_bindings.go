@@ -11,8 +11,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initGetBindings(rh *httpin.Handler) {
-	rh.HandleFunc(path.Bindings,
+func (a *restapi) initGetBindings(h *httpin.Handler) {
+	h.HandleFunc(path.Bindings,
 		a.GetBindings, httpin.RequireUser).Methods(http.MethodGet)
 }
 
