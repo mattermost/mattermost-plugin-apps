@@ -25,7 +25,7 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
-func NewService(mm *pluginapi.Client, config config.Service, log utils.Logger, session incoming.SessionService, router *mux.Router, proxy proxy.Service, appServices appservices.Service,
+func NewService(mm *pluginapi.Client, router *mux.Router, config config.Service, log utils.Logger, session incoming.SessionService, proxy proxy.Service, appServices appservices.Service,
 	initf ...func(*Handler, config.Service, proxy.Service, appservices.Service)) Service {
 	rh := NewHandler(mm, config, log, session, router)
 
