@@ -164,7 +164,7 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 			}
 
 			var v interface{}
-			if err = json.Unmarshal(data, v); err != nil {
+			if err = json.Unmarshal(data, &v); err != nil {
 				return emptyCC, errors.Wrapf(err, "failed unmarshal OAuth2 User %s", base.UserID)
 			}
 

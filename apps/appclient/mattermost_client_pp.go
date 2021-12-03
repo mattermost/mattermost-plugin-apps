@@ -86,12 +86,9 @@ func (c *ClientPP) KVGet(prefix, id string, ref interface{}) (*model.Response, e
 		return nil, errors.Wrap(err, "failed to read body")
 	}
 
-	// If there the key was found try to unmarshal it
-	if len(buf) > 0 {
-		err = json.Unmarshal(buf, ref)
-		if err != nil {
-			return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
-		}
+	err = json.Unmarshal(buf, ref)
+	if err != nil {
+		return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return model.BuildResponse(r), nil
