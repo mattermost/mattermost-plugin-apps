@@ -3,6 +3,8 @@ package appservices
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -16,8 +18,20 @@ func (a *AppServices) KVSet(r *incoming.Request, appID apps.AppID, actingUserID,
 	return a.store.AppKV.Set(r, appID, actingUserID, prefix, id, data)
 }
 
+// KVGet returns the stored KV data for a given user and app.
+// If err != nil, the returned data is always valid JSON.
 func (a *AppServices) KVGet(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error) {
-	return a.store.AppKV.Get(r, appID, actingUserID, prefix, id)
+	data, err := a.store.AppKV.Get(r, appID, actingUserID, prefix, id)
+	if err != nil && !errors.Is(err, utils.ErrNotFound) {
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		// Ensure valid json is returned even if no data is set yet
+		data = []byte(string("{}"))
+	}
+
+	return data, nil
 }
 
 func (a *AppServices) KVDelete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error {

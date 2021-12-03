@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -60,6 +62,8 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 	return a.store.OAuth2.SaveUser(r, appID, actingUserID, data)
 }
 
+// GetOAuth2User returns the stored OAuth2 user data for a given user and app.
+// If err != nil, the returned data is always valid JSON.
 func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
 	app, err := a.store.App.Get(r, appID)
 	if err != nil {
@@ -73,5 +77,15 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actin
 		return nil, err
 	}
 
-	return a.store.OAuth2.GetUser(r, appID, actingUserID)
+	data, err := a.store.OAuth2.GetUser(r, appID, actingUserID)
+	if err != nil && !errors.Is(err, utils.ErrNotFound) {
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		// Ensure valid json is returned even if no data is set yet
+		data = []byte(string("{}"))
+	}
+
+	return data, nil
 }

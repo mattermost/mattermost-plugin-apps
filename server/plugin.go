@@ -119,7 +119,7 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService)
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
 	err = p.proxy.Configure(conf, p.log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")

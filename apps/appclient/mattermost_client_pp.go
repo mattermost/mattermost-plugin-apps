@@ -401,10 +401,6 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 			return rp, err
 		}
 
-		if len(data) == 0 {
-			return rp, nil
-		}
-
 		return rp, errors.New((string(data)))
 	}
 

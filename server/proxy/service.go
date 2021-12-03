@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -38,6 +39,7 @@ type Proxy struct {
 	httpOut        httpout.Service
 	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
 	sessionService session.Service
+	appservices    appservices.Service
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
@@ -97,7 +99,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
@@ -105,6 +107,7 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		callOnceMutex:    mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
+		appservices:      appservices,
 	}
 }
 

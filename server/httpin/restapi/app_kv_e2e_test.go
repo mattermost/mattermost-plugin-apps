@@ -80,7 +80,7 @@ func TestKVE2E(t *testing.T) {
 			resp, err = client.KVGet(prefix, id, &out)
 			assert.NoError(t, err)
 			api4.CheckOKStatus(t, resp)
-			assert.Nil(t, out)
+			assert.Equal(t, map[string]interface{}{}, out)
 		})
 	})
 
@@ -127,6 +127,6 @@ func TestKVE2E(t *testing.T) {
 		resp, err = app.AsUser2.KVGet(prefix, id, &out)
 		assert.NoError(t, err)
 		api4.CheckOKStatus(t, resp)
-		assert.Nil(t, out)
+		assert.Equal(t, map[string]interface{}{}, out)
 	})
 }
