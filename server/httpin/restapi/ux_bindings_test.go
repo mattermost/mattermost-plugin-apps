@@ -25,7 +25,6 @@ func TestHandleGetBindingsValidContext(t *testing.T) {
 	conf := config.NewTestConfigService(nil)
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	proxy := mock_proxy.NewMockService(ctrl)
 	appServices := mock_appservices.NewMockService(ctrl)
 	sessionService := mock_session.NewMockService(ctrl)

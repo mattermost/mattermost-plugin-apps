@@ -1,6 +1,8 @@
 package session
 
 import (
+	"time"
+
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
@@ -13,8 +15,8 @@ import (
 )
 
 const (
-	sessionLengthInMinutes    = 10
-	minSessionLengthInMinutes = 5
+	SessionLength    = 10 * time.Minute
+	MinSessionLength = 5 * time.Minute
 )
 
 type Service interface {
@@ -27,14 +29,12 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	log   utils.Logger
 	mm    *pluginapi.Client
 	store *store.Service
 }
 
 func NewService(mm *pluginapi.Client, store *store.Service) Service {
 	return &service{
-		log:   utils.NewPluginLogger(mm),
 		mm:    mm,
 		store: store,
 	}
@@ -78,7 +78,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		UserId:    userID,
 		Roles:     user.Roles,
 		IsOAuth:   true,
-		ExpiresAt: model.GetMillis() + (1000 * 60 * sessionLengthInMinutes),
+		ExpiresAt: time.Now().Add(SessionLength).UnixMilli(),
 	}
 	session.GenerateCSRF()
 
@@ -100,29 +100,26 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to save new session in store")
 	}
 
-	s.log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "token", utils.LastN(session.Token, 3))
+	r.Log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "token", utils.LastN(session.Token, 3))
 
 	return session, nil
 }
 
 func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error {
-	minSessionLength := int64(1000 * 60 * minSessionLengthInMinutes)
-
-	now := model.GetMillis()
-	remaining := session.ExpiresAt - now
-	if remaining > minSessionLength {
+	remaining := time.Until(time.UnixMilli(session.ExpiresAt))
+	if remaining > MinSessionLength {
 		return nil
 	}
 
-	newExpiryTime := now + (1000 * 60 * sessionLengthInMinutes)
+	newExpiryTime := time.Now().Add(SessionLength)
 
-	err := s.mm.Session.ExtendExpiry(session.Id, newExpiryTime)
+	err := s.mm.Session.ExtendExpiry(session.Id, newExpiryTime.UnixMilli())
 	if err != nil {
 		return err
 	}
 
 	// Update store
-	session.ExpiresAt = newExpiryTime
+	session.ExpiresAt = newExpiryTime.UnixMilli()
 
 	err = s.store.Session.Save(r, appID, userID, session)
 	if err != nil {
@@ -155,8 +152,8 @@ func (s service) revokeSessions(r *incoming.Request, sessions []*model.Session) 
 	}
 }
 
-func (s service) RevokeSessionsForUser(r *incoming.Request, userID string) error {
-	sessions, err := s.store.Session.ListForUser(r, userID)
+func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
+	sessions, err := s.store.Session.ListForApp(r, appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}
@@ -166,8 +163,8 @@ func (s service) RevokeSessionsForUser(r *incoming.Request, userID string) error
 	return nil
 }
 
-func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
-	sessions, err := s.store.Session.ListForApp(r, appID)
+func (s service) RevokeSessionsForUser(r *incoming.Request, userID string) error {
+	sessions, err := s.store.Session.ListForUser(r, userID)
 	if err != nil {
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}

@@ -592,7 +592,6 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	conf, api := config.NewTestService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",

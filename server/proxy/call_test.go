@@ -25,7 +25,6 @@ func TestAppMetadataForClient(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := newTestProxy(t, testApps, ctrl)
 	creq := apps.CallRequest{

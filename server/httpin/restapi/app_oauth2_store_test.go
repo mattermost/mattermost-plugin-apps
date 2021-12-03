@@ -34,14 +34,13 @@ func TestOAuth2StoreUser(t *testing.T) {
 		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
 		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
-		defer server.Close()
+		t.Cleanup(server.Close)
 		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
 		Init(rh, conf, proxy, appServices)
 
@@ -77,14 +76,13 @@ func TestOAuth2StoreUser(t *testing.T) {
 		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
 		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
-		defer server.Close()
+		t.Cleanup(server.Close)
 		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
 		Init(rh, conf, proxy, appServices)
 

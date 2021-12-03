@@ -282,7 +282,6 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			testData := []bindingTestData{{
 				app:      app1,
@@ -507,7 +506,6 @@ func TestGetBindingsCommands(t *testing.T) {
 		}
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
 		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
@@ -524,7 +522,6 @@ func TestGetBindingsCommands(t *testing.T) {
 		testData := []bindingTestData{app1TestData, app2TestData}
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		expected := expectedApp2Bindings
 
@@ -543,7 +540,6 @@ func TestGetBindingsCommands(t *testing.T) {
 		testData := []bindingTestData{app1TestData, app2TestData}
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		expected := expectedApp2Bindings
 
@@ -641,7 +637,6 @@ func TestDuplicateCommand(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
@@ -723,7 +718,6 @@ func TestInvalidCommand(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
 	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)

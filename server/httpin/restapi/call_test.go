@@ -28,7 +28,6 @@ import (
 func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		conf := config.NewTestConfigService(nil)
 		sessionService := mock_session.NewMockService(ctrl)
 
@@ -50,7 +49,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
 			a := &restapi{
@@ -107,7 +105,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
 			a := &restapi{
@@ -144,7 +141,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is a member of the channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
 			a := &restapi{
@@ -187,7 +183,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 			a := &restapi{
 				conf: conf,
@@ -216,7 +211,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is a member of the team", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
 			a := &restapi{
@@ -251,7 +245,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 		t.Run("user is not a member of the team", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			sessionService := mock_session.NewMockService(ctrl)
 
 			a := &restapi{
@@ -280,7 +273,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	conf, api := config.NewTestService(nil)
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	sessionService := mock_session.NewMockService(ctrl)
 	a := &restapi{
 		conf: conf,
@@ -350,7 +342,6 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	conf, api := config.NewTestService(nil)
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := mock_proxy.NewMockService(ctrl)
 	appServices := mock_appservices.NewMockService(ctrl)
@@ -399,7 +390,6 @@ func TestHandleCallValidContext(t *testing.T) {
 	conf, api := config.NewTestService(nil)
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	p := mock_proxy.NewMockService(ctrl)
 	appServices := mock_appservices.NewMockService(ctrl)
 	sessionService := mock_session.NewMockService(ctrl)
