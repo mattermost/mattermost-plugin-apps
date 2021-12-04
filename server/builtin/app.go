@@ -48,6 +48,7 @@ const (
 	fNewValue       = "new_value"
 	fSecret         = "secret"
 	fURL            = "url"
+	fSessionID      = "session_id"
 )
 
 const (
@@ -60,6 +61,7 @@ const (
 	pDebugKVClean        = "/debug/kv/clean"
 	pDebugKVList         = "/debug/kv/list"
 	pDebugSessionsList   = "/debug/session/list"
+	pDebugSessionsView   = "/debug/session/view"
 	pDebugSessionsRevoke = "/debug/session/delete"
 	pDisable             = "/disable"
 	pEnable              = "/enable"
@@ -114,6 +116,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVList:         a.debugKVList(),
 		pDebugSessionsList:   a.debugSessionsList(),
 		pDebugSessionsRevoke: a.debugSessionsRevoke(),
+		pDebugSessionsView:   a.debugSessionsView(),
 		pDisable:             a.disable(),
 		pEnable:              a.enable(),
 		pInstallConsent:      a.installConsent(),

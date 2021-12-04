@@ -94,6 +94,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 				}),
 				Call: &installHTTPCall,
 				Form: &apps.Form{
+					Call: &installHTTPCall,
 					Fields: []apps.Field{
 						{
 							Name: fURL,
@@ -114,7 +115,6 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 							IsRequired:           true,
 						},
 					},
-					Call: &installHTTPCall,
 				},
 			},
 		},
