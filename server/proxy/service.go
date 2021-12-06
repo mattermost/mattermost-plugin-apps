@@ -21,7 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/uphttp"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upkubeless"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upopenfaas"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upplugin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -117,9 +116,6 @@ func (p *Proxy) Configure(conf config.Config) error {
 	p.initUpstream(apps.DeployPlugin, conf, log, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
-	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
-		return upkubeless.MakeUpstream()
-	})
 	p.initUpstream(apps.DeployOpenFAAS, conf, log, func() (upstream.Upstream, error) {
 		return upopenfaas.MakeUpstream(p.httpOut, conf.DeveloperMode)
 	})
@@ -157,7 +153,6 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 		// Add more deploy types in self-managed mode.
 		supportedTypes = append(supportedTypes,
 			apps.DeployHTTP,
-			apps.DeployKubeless,
 			apps.DeployOpenFAAS,
 		)
 	}

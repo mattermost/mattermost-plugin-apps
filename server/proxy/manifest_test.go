@@ -21,18 +21,6 @@ func TestMergeDeployData(t *testing.T) {
 		},
 	}
 
-	kubeless := apps.Kubeless{
-		Functions: []apps.KubelessFunction{
-			{},
-		},
-	}
-	newKubeless := apps.Kubeless{
-		Functions: []apps.KubelessFunction{
-			{},
-			{},
-		},
-	}
-
 	openFAAS := apps.OpenFAAS{
 		Functions: []apps.OpenFAASFunction{
 			{},
@@ -73,21 +61,18 @@ func TestMergeDeployData(t *testing.T) {
 			prevd: apps.Deploy{
 				AWSLambda: &aws,
 				HTTP:      &http,
-				Kubeless:  &kubeless,
 				OpenFAAS:  &openFAAS,
 				Plugin:    &plugin,
 			},
 			newd: apps.Deploy{
 				AWSLambda: &newAWS,
 				HTTP:      &newHTTP,
-				Kubeless:  &newKubeless,
 				OpenFAAS:  &newOpenFAAS,
 				Plugin:    &newPlugin,
 			},
 			expected: apps.Deploy{
 				AWSLambda: &newAWS,
 				HTTP:      &newHTTP,
-				Kubeless:  &newKubeless,
 				OpenFAAS:  &newOpenFAAS,
 				Plugin:    &newPlugin,
 			},
@@ -95,91 +80,77 @@ func TestMergeDeployData(t *testing.T) {
 		{
 			name: "new is subset of old, no add-remove",
 			prevd: apps.Deploy{
-				HTTP:     &http,
-				Plugin:   &plugin,
-				Kubeless: &kubeless,
+				HTTP:   &http,
+				Plugin: &plugin,
 			},
 			newd: apps.Deploy{
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				Plugin: &newPlugin,
 			},
 			expected: apps.Deploy{
-				HTTP:     &http,
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				HTTP:   &http,
+				Plugin: &newPlugin,
 			},
 		},
 		{
 			name: "old is subset of new, no add-remove",
 			prevd: apps.Deploy{
-				Plugin:   &plugin,
-				Kubeless: &kubeless,
+				Plugin: &plugin,
 			},
 			newd: apps.Deploy{
-				HTTP:     &newHTTP,
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				HTTP:   &newHTTP,
+				Plugin: &newPlugin,
 			},
 			expected: apps.Deploy{
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				Plugin: &newPlugin,
 			},
 		},
 		{
 			name: "old is subset of new, no add-remove",
 			prevd: apps.Deploy{
-				Plugin:   &plugin,
-				Kubeless: &kubeless,
+				Plugin: &plugin,
 			},
 			newd: apps.Deploy{
-				HTTP:     &newHTTP,
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				HTTP:   &newHTTP,
+				Plugin: &newPlugin,
 			},
 			expected: apps.Deploy{
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				Plugin: &newPlugin,
 			},
 		},
 		{
 			name:  "old is empty, no add-remove",
 			prevd: apps.Deploy{},
 			newd: apps.Deploy{
-				HTTP:     &newHTTP,
-				Plugin:   &newPlugin,
-				Kubeless: &newKubeless,
+				HTTP:   &newHTTP,
+				Plugin: &newPlugin,
 			},
 			expected: apps.Deploy{},
 		},
 		{
 			name: "new is empty, no add-remove",
 			prevd: apps.Deploy{
-				HTTP:     &http,
-				Plugin:   &plugin,
-				Kubeless: &kubeless,
+				HTTP:   &http,
+				Plugin: &plugin,
 			},
 			newd: apps.Deploy{},
 			expected: apps.Deploy{
-				HTTP:     &http,
-				Plugin:   &plugin,
-				Kubeless: &kubeless,
+				HTTP:   &http,
+				Plugin: &plugin,
 			},
 		},
 		{
 			name: "everything",
 			prevd: apps.Deploy{
-				Kubeless: &kubeless,
 				OpenFAAS: &openFAAS,
 				Plugin:   &plugin,
 			},
 			newd: apps.Deploy{
 				AWSLambda: &newAWS,
 				HTTP:      &newHTTP,
-				Kubeless:  &newKubeless,
 				OpenFAAS:  &newOpenFAAS,
 			},
 			add:    []apps.DeployType{apps.DeployAWSLambda},
-			remove: []apps.DeployType{apps.DeployKubeless, apps.DeployOpenFAAS},
+			remove: []apps.DeployType{apps.DeployOpenFAAS},
 			expected: apps.Deploy{
 				AWSLambda: &newAWS,
 				Plugin:    &plugin,
