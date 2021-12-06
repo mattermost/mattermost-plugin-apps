@@ -85,24 +85,24 @@ func WriteJSON(w http.ResponseWriter, v interface{}) error {
 	return WriteJSONStatus(w, http.StatusOK, v)
 }
 
-// HandleStaticJSONData returns an http.HandleFunc that serves a JSON-encoded data
+// DoHandleJSONData returns an http.HandleFunc that serves a JSON-encoded data
 // chunk.
-func HandleStaticJSONData(data []byte) http.HandlerFunc {
-	return HandleStaticData("application/json", data)
+func DoHandleJSONData(data []byte) http.HandlerFunc {
+	return DoHandleData("application/json", data)
 }
 
-// HandleStaticData returns an http.HandleFunc that serves a data chunk with a
+// DoHandleData returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
-func HandleStaticData(ct string, data []byte) http.HandlerFunc {
+func DoHandleData(ct string, data []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", ct)
 		_, _ = w.Write(data)
 	}
 }
 
-// HandleStaticJSON returns an http.HandleFunc that serves a data chunk with a
+// DoHandleJSON returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
-func HandleStaticJSON(v interface{}) http.HandlerFunc {
+func DoHandleJSON(v interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		_ = WriteJSON(w, v)
 	}

@@ -66,13 +66,13 @@ var bindings = []apps.Binding{
 func main() {
 	// Serve static assets: the manifest and the icon.
 	http.HandleFunc("/manifest.json",
-		httputils.HandleStaticJSONData(manifestData))
+		httputils.DoHandleJSONData(manifestData))
 	http.HandleFunc("/static/icon.png",
-		httputils.HandleStaticData("image/png", iconData))
+		httputils.DoHandleData("image/png", iconData))
 
 	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings",
-		httputils.HandleStaticJSON(bindings))
+		httputils.DoHandleJSON(bindings))
 
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send", send)

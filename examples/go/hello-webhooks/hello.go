@@ -38,14 +38,14 @@ func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleStaticJSONData(manifestData))
+	http.HandleFunc("/manifest.json", httputils.DoHandleJSONData(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", httputils.HandleStaticJSONData(bindingsData))
+	http.HandleFunc("/bindings", httputils.DoHandleJSONData(bindingsData))
 
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png",
-		httputils.HandleStaticData("image/png", iconData))
+		httputils.DoHandleData("image/png", iconData))
 
 	// install handler
 	http.HandleFunc("/install", install)
@@ -54,11 +54,11 @@ func main() {
 	http.HandleFunc("/webhook/", webhookReceived)
 
 	// `info` command - displays the webhook URL.
-	http.HandleFunc("/info/form", httputils.HandleStaticJSONData(infoFormData))
+	http.HandleFunc("/info/form", httputils.DoHandleJSONData(infoFormData))
 	http.HandleFunc("/info/submit", info)
 
 	// `send` command - send a Hello webhook message.
-	http.HandleFunc("/send/form", httputils.HandleStaticJSONData(sendFormData))
+	http.HandleFunc("/send/form", httputils.DoHandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
 	addr := fmt.Sprintf(":%v", port)
