@@ -55,7 +55,7 @@ func (a *builtinApp) debugKVEditModal(creq apps.CallRequest) apps.CallResponse {
 			}))
 
 	default:
-		return apps.NewErrorResponse(errors.New("don't know what to do: %q"))
+		return apps.NewErrorResponse(errors.Errorf("don't know what to do: %q", action))
 	}
 }
 
