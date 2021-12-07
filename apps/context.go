@@ -47,7 +47,7 @@ type Context struct {
 }
 
 // UserAgentContext is a subset of fields from Context that are accepted from
-// the user agent The values are vetted, and all fields present in the provided
+// the user agent. The values are vetted, and all fields present in the provided
 // Context that are not in UserAgentContext are discarded when the Call comes
 // from an acting user.
 type UserAgentContext struct {
