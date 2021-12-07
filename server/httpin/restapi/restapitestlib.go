@@ -110,8 +110,8 @@ func (th *TestHelper) SetupPP(t testing.TB) {
 }
 
 // Sets up the PP for test
-func (th *TestHelper) SetupApp(t *testing.T, m apps.Manifest) {
-	http.HandleFunc(apps.DefaultPing.Path, httputils.HandleStaticJSON(apps.NewDataResponse(nil)))
+func (th *TestHelper) SetupApp(t *testing.T, m apps.Manifest)   {
+	http.HandleFunc(apps.DefaultPing.Path, httputils.DoHandleJSON(apps.NewDataResponse(nil)))
 	appServer := httptest.NewServer(http.DefaultServeMux)
 	t.Cleanup(appServer.Close)
 

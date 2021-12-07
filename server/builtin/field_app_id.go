@@ -35,7 +35,7 @@ func (a *builtinApp) appIDField(lookupType string, autocompletePos int, isRequir
 		}),
 		AutocompletePosition: autocompletePos,
 		IsRequired:           isRequired,
-		SelectDynamicLookup:         lookupCall,
+		SelectDynamicLookup:  lookupCall,
 	}
 }
 
