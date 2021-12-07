@@ -732,7 +732,7 @@ func TestCleanAppBinding(t *testing.T) {
 		locPrefix        apps.Location
 		userAgent        string
 		expected         *apps.Binding
-		expectedProblems []string
+		expectedProblems string
 	}
 
 	for name, tc := range map[string]TC{
@@ -760,20 +760,16 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test-1",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: []string{
-				"trimmed whitespace from location test-1",
-			},
+			expectedProblems: "1 error occurred:\n\t* trimmed whitespace from location test-1\n\n",
 		},
 		"ERROR location PostMenu not granted": {
 			in: apps.Binding{
 				Location: "test",
 				Submit:   apps.NewCall("/hello"),
 			},
-			locPrefix: apps.LocationPostMenu,
-			expected:  nil,
-			expectedProblems: []string{
-				"location \"/post_menu/test\" is not granted: forbidden",
-			},
+			locPrefix:        apps.LocationPostMenu,
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* location \"/post_menu/test\" is not granted: forbidden\n\n",
 		},
 		"trim command label": {
 			in: apps.Binding{
@@ -788,9 +784,7 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test-label",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: []string{
-				"trimmed whitespace from label test-label",
-			},
+			expectedProblems: "1 error occurred:\n\t* trimmed whitespace from label test-label\n\n",
 		},
 		"ERROR whitsepace in command label": {
 			in: apps.Binding{
@@ -798,11 +792,9 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test label",
 				Submit:   apps.NewCall("/hello"),
 			},
-			locPrefix: apps.LocationCommand.Sub("main-command"),
-			expected:  nil,
-			expectedProblems: []string{
-				"command label \"test label\" has multiple words",
-			},
+			locPrefix:        apps.LocationCommand.Sub("main-command"),
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* command label \"test label\" has multiple words\n\n",
 		},
 		"normalize icon path": {
 			in: apps.Binding{
@@ -830,20 +822,16 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "appid",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: []string{
-				"invalid icon path \"../a/...//static.icon\" in binding",
-			},
+			expectedProblems: "1 error occurred:\n\t* invalid icon path \"../a/...//static.icon\" in binding\n\n",
 		},
 		"ERROR: icon required for ChannelHeader in webapp": {
 			in: apps.Binding{
 				Submit: apps.NewCall("/hello"),
 			},
-			locPrefix: apps.LocationChannelHeader,
-			userAgent: "webapp",
-			expected:  nil,
-			expectedProblems: []string{
-				"no icon in channel header binding /channel_header/appid",
-			},
+			locPrefix:        apps.LocationChannelHeader,
+			userAgent:        "webapp",
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* no icon in channel header binding /channel_header/appid\n\n",
 		},
 		"icon not required for ChannelHeader in mobile": {
 			in: apps.Binding{
@@ -861,11 +849,9 @@ func TestCleanAppBinding(t *testing.T) {
 			in: apps.Binding{
 				Location: "test",
 			},
-			locPrefix: apps.LocationChannelHeader,
-			expected:  nil,
-			expectedProblems: []string{
-				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
-			},
+			locPrefix:        apps.LocationChannelHeader,
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"ERROR: submit and form": {
 			in: apps.Binding{
@@ -873,11 +859,9 @@ func TestCleanAppBinding(t *testing.T) {
 				Submit:   apps.NewCall("/hello"),
 				Form:     apps.NewBlankForm(apps.NewCall("/hello")),
 			},
-			locPrefix: apps.LocationChannelHeader,
-			expected:  nil,
-			expectedProblems: []string{
-				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
-			},
+			locPrefix:        apps.LocationChannelHeader,
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"ERROR: submit and bindings": {
 			in: apps.Binding{
@@ -892,11 +876,9 @@ func TestCleanAppBinding(t *testing.T) {
 					},
 				},
 			},
-			locPrefix: apps.LocationChannelHeader,
-			expected:  nil,
-			expectedProblems: []string{
-				"(only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding",
-			},
+			locPrefix:        apps.LocationChannelHeader,
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"clean sub-bindings": {
 			in: apps.Binding{
@@ -949,19 +931,18 @@ func TestCleanAppBinding(t *testing.T) {
 					Fields: []apps.Field{},
 				},
 			},
-			expectedProblems: []string{
-				`field name must be a single word: "in valid"`,
-			},
+			expectedProblems: "1 error occurred:\n\t* field name must be a single word: \"in valid\"\n\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			b, problems := cleanAppBinding(app, tc.in, tc.locPrefix, tc.userAgent, config.Config{})
-			var allProblems []string
-			for _, p := range problems {
-				allProblems = append(allProblems, p.Error())
+			b, err := cleanAppBinding(app, tc.in, tc.locPrefix, tc.userAgent, config.Config{})
+			if tc.expectedProblems != "" {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedProblems, err.Error())
+			} else {
+				require.NoError(t, err)
+				require.EqualValues(t, tc.expected, b)
 			}
-			require.Equal(t, tc.expectedProblems, allProblems)
-			require.EqualValues(t, tc.expected, b)
 		})
 	}
 }

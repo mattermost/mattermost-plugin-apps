@@ -4,8 +4,6 @@
 package builtin
 
 import (
-	"fmt"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -48,13 +46,9 @@ func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
-		var problems []error
-		bindings, problems = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
-		if len(problems) > 0 {
-			out += "\n\n### PROBLEMS:\n"
-		}
-		for _, prob := range problems {
-			out += fmt.Sprintf("- %s\n", prob.Error())
+		bindings, err = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
+		if err != nil {
+			out += "\n\n### PROBLEMS:\n" + err.Error()
 		}
 		out += "\n\n"
 	}

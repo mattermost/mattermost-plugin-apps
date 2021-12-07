@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
@@ -48,9 +49,9 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 		app := allApps[i]
 
 		go func(app apps.App) {
-			bb, problems := p.GetAppBindings(in, cc, app)
-			for _, problem := range problems {
-				p.conf.Logger().WithError(problem).Debugw("Binding error")
+			bb, err := p.GetAppBindings(in, cc, app)
+			if err != nil {
+				p.conf.Logger().WithError(err).Debugw("Binding errors")
 			}
 			all <- bb
 		}(app)
@@ -66,12 +67,11 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 
 // GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
-func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]apps.Binding, []error) {
-	var problems []error
+func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]apps.Binding, error) {
+	var problems error
 	if !p.appIsEnabled(app) {
 		return nil, problems
 	}
-
 	if len(app.GrantedLocations) == 0 {
 		return nil, problems
 	}
@@ -91,45 +91,50 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]ap
 		b, _ := json.Marshal(resp.Data)
 		err := json.Unmarshal(b, &bindings)
 		if err != nil {
-			problems = append(problems, errors.Wrap(err, "failed to decode bindings"))
+			problems = multierror.Append(problems, errors.Wrap(err, "failed to decode bindings"))
 			return nil, problems
 		}
-		bindings, cleanupProblems := cleanAppBindings(app, bindings, "", cc.UserAgent, conf)
-		return bindings, append(problems, cleanupProblems...)
+		bindings, err = cleanAppBindings(app, bindings, "", cc.UserAgent, conf)
+		if err != nil {
+			problems = multierror.Append(problems, err)
+		}
+		return bindings, problems
 
 	case apps.CallResponseTypeError:
-		problems = append(problems, errors.Wrap(resp, "received app error"))
+		problems = multierror.Append(problems, errors.Wrap(resp, "received app error"))
 		return nil, problems
 
 	default:
-		problems = append(problems, errors.Errorf("unexpected response type %q", string(resp.Type)))
+		problems = multierror.Append(problems, errors.Errorf("unexpected response type %q", string(resp.Type)))
 		return nil, problems
 	}
 }
 
 // cleanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config) ([]apps.Binding, []error) {
+func cleanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string, conf config.Config) ([]apps.Binding, error) {
 	out := []apps.Binding{}
 	usedLocations := map[apps.Location]bool{}
 	usedCommandLabels := map[string]bool{}
 
-	var problems []error
+	var problems error
 	for _, b := range bindings {
-		clean, appProblems := cleanAppBinding(app, b, locPrefix, userAgent, conf)
-		problems = append(problems, appProblems...)
+		clean, err := cleanAppBinding(app, b, locPrefix, userAgent, conf)
+		if err != nil {
+			problems = multierror.Append(problems, err)
+		}
 		if clean == nil {
 			continue
 		}
 
 		fql := locPrefix.Sub(clean.Location)
 		if usedLocations[clean.Location] {
-			problems = append(problems,
+			problems = multierror.Append(problems,
 				errors.Errorf("ignored diplicate command binding for location %q", clean.Location))
 			continue
 		}
 		if fql.In(apps.LocationCommand) && usedCommandLabels[clean.Label] {
-			problems = append(problems,
+			problems = multierror.Append(problems,
 				errors.Errorf("ignored diplicate command binding for label %q (location %q)", clean.Label, clean.Location))
 			continue
 		}
@@ -146,15 +151,15 @@ func cleanAppBinding(
 	locPrefix apps.Location,
 	userAgent string,
 	conf config.Config,
-) (*apps.Binding, []error) {
-	var problems []error
+) (*apps.Binding, error) {
+	var problems error
 
 	// Cleanup Location.
 	if b.Location == "" {
 		b.Location = apps.Location(app.Manifest.AppID)
 	}
 	if trimmed := apps.Location(strings.TrimSpace(string(b.Location))); trimmed != b.Location {
-		problems = append(problems, errors.Errorf("trimmed whitespace from location %s", trimmed))
+		problems = multierror.Append(problems, errors.Errorf("trimmed whitespace from location %s", trimmed))
 		b.Location = trimmed
 	}
 
@@ -168,7 +173,7 @@ func cleanAppBinding(
 		}
 	}
 	if !allowed {
-		problems = append(problems, utils.NewForbiddenError("location %q is not granted", fql))
+		problems = multierror.Append(problems, utils.NewForbiddenError("location %q is not granted", fql))
 		return nil, problems
 	}
 
@@ -184,11 +189,12 @@ func cleanAppBinding(
 			b.Label = string(b.Location)
 		}
 		if trimmed := strings.TrimSpace(b.Label); trimmed != b.Label {
-			problems = append(problems, errors.Errorf("trimmed whitespace from label %s", trimmed))
+			problems = multierror.Append(problems, errors.Errorf("trimmed whitespace from label %s", trimmed))
 			b.Label = trimmed
 		}
 		if strings.ContainsAny(b.Label, " \t") {
-			problems = append(problems, errors.Errorf("command label %q has multiple words", b.Label))
+			problems = multierror.Append(problems, errors.Errorf("command label %q has multiple words", b.Label))
+			// A command binding with a white space in it will not parse, so bail.
 			return nil, problems
 		}
 	}
@@ -199,7 +205,7 @@ func cleanAppBinding(
 		if err == nil {
 			b.Icon = icon
 		} else {
-			problems = append(problems, errors.Errorf("invalid icon path %q in binding", b.Icon))
+			problems = multierror.Append(problems, errors.Errorf("invalid icon path %q in binding", b.Icon))
 			b.Icon = ""
 		}
 	}
@@ -207,7 +213,7 @@ func cleanAppBinding(
 	if fql == apps.LocationChannelHeader.Sub(b.Location) {
 		// A channel header binding must have an icon, for webapp anyway.
 		if b.Icon == "" && userAgent == "webapp" {
-			problems = append(problems, errors.Errorf("no icon in channel header binding %s", fql))
+			problems = multierror.Append(problems, errors.Errorf("no icon in channel header binding %s", fql))
 			return nil, problems
 		}
 	}
@@ -219,24 +225,28 @@ func cleanAppBinding(
 	switch {
 	// valid cases
 	case hasBindings && !hasForm && !hasSubmit:
-		var newProblems []error
+		var newProblems error
 		b.Bindings, newProblems = cleanAppBindings(app, b.Bindings, fql, userAgent, conf)
-		problems = append(problems, newProblems...)
+		if newProblems != nil {
+			problems = multierror.Append(problems, newProblems)
+		}
 		if len(b.Bindings) == 0 {
 			// We do not add bindings without any valid sub-bindings
 			return nil, problems
 		}
 
 	case hasForm && !hasSubmit && !hasBindings:
-		clean, formProblems := cleanForm(*b.Form)
-		problems = append(problems, formProblems...)
+		clean, err := cleanForm(*b.Form)
+		if err != nil {
+			problems = multierror.Append(problems, err)
+		}
 		b.Form = &clean
 
 	case hasSubmit && !hasBindings && !hasForm:
 		// nothing to clean for submit
 
 	default:
-		problems = append(problems, errors.New(`(only) one of  "submit", "form", or "bindings" must be set in a binding`))
+		problems = multierror.Append(problems, errors.New(`(only) one of  "submit", "form", or "bindings" must be set in a binding`))
 		return nil, problems
 	}
 

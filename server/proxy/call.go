@@ -139,9 +139,9 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.
 			} else {
 				cresp.Form.Icon = icon
 			}
-			clean, problems := cleanForm(*cresp.Form)
-			for _, prob := range problems {
-				log.WithError(prob).Debugw("invalid form")
+			clean, err := cleanForm(*cresp.Form)
+			if err != nil {
+				log.WithError(err).Debugw("invalid form")
 			}
 			cresp.Form = &clean
 		}
