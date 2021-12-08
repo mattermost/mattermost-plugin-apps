@@ -1,17 +1,5 @@
 {
 	"type": "form",
 	"form": {
-		"title": "Hello, serverless!",
-		"icon": "/static/icon.png",
-		"fields": [
-			{
-				"type": "text",
-				"name": "message",
-				"label": "message"
-			}
-		],
-		"submit": {
-			"path": "/send/submit"
-		}
 	}
 }
