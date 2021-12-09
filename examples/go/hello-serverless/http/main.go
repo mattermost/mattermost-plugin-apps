@@ -21,14 +21,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		http.HandleFunc("/manifest.json", httputils.HandleJSONData(mdata))
+		http.HandleFunc("/manifest.json", httputils.DoHandleJSONData(mdata))
 	}
 
 	if spath != nil && *spath != "" {
 		http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(*spath))))
 	}
 
-	function.InitApp(apps.DeployHTTP)
+	function.DeployType = apps.DeployHTTP
 	fmt.Println("Listening on :8080")
 	panic(http.ListenAndServe(":8080", nil))
 }

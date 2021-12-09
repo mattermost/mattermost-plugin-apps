@@ -18,6 +18,9 @@ var DeployType apps.DeployType
 // Handler is used exclusively for OpenFaaS and faasd, as the main entry-point.
 // The name `Handler` appears hardcoded in the OpenFaas template used to build
 // the image.
+//
+// `golang-middleware` template makes use of `http.DefaultServeMux`, so we just
+// need to add our handlers and serve, like we do in AWS or HTTP deployments.
 func Handle(w http.ResponseWriter, r *http.Request) {
 	DeployType = apps.DeployOpenFAAS
 	http.DefaultServeMux.ServeHTTP(w, r)
@@ -29,23 +32,19 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 //
 // The app itself is very simple, registers a single /-command to send a DM back
 // to the user. The DM includes the current DeployType of the app.
-func Init() {
-	// Serve app's Calls. "/ping" is used in `appsctl test aws`
-	// Returns "PONG". Used for `appsctl test aws`.
-	http.HandleFunc("/ping", httputils.DoHandleJSONData(PongData))
+func init() {
+	// Serve app's Calls. "/ping" is used to confirm successful deployment of an
+	// App, specifically on AWS but we always make it available. Returns "PONG".
+	http.HandleFunc("/ping", httputils.DoHandleJSON(
+		apps.NewTextResponse("PONG")))
 
 	// Returns the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", httputils.DoHandleJSON(apps.NewDataResponse(Bindings)))
+	http.HandleFunc("/bindings", httputils.DoHandleJSON(
+		apps.NewDataResponse(Bindings)))
 
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send", send)
 }
-
-// PongData is used to answer the "/ping" response from the app, to confirm its
-// successful installation.
-//
-//go:embed pong.json
-var PongData []byte
 
 var Bindings = []apps.Binding{
 	{
