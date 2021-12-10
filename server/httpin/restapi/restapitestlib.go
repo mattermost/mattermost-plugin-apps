@@ -222,7 +222,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 		require.NotNil(creq)
 
 		asUser = appclient.AsActingUser(creq.Context)
-		userID = creq.Context.ActingUserID
+		userID = creq.Context.ActingUser.Id
 
 		asBot = appclient.AsBot(creq.Context)
 		botUserID = creq.Context.BotUserID
@@ -275,6 +275,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 			Path: "/setup/user",
 			Expand: &apps.Expand{
 				ActingUserAccessToken: apps.ExpandAll,
+				User:                  apps.ExpandID,
 			},
 		},
 	}
