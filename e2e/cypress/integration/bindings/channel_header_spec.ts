@@ -10,11 +10,10 @@
 
 import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/integrations/builtin_commands/helper';
 
-const baseURL = Cypress.config('baseUrl');
-const pluginID = Cypress.config('pluginID');
-const helloManifestRoute = 'example/hello/mattermost-app.json';
+const helloAppHost = Cypress.config('helloAppHost');
+const helloManifestRoute = `${helloAppHost}/manifest.json`;
 
-const installAppCommand = `/apps install http ${baseURL}/plugins/${pluginID}/${helloManifestRoute} --app-secret 1234`;
+const installAppCommand = `/apps install http ${helloManifestRoute}`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;
@@ -45,35 +44,35 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        cy.get('#channel-header #send').first().click();
+        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/hello-world/static/icon.png"]').first().click();
 
         // # Type into message field of modal form
-        cy.findByTestId('message').type('The message');
+        cy.findByTestId('message').type('the test message');
 
         // # Submit modal form
         cy.get('#appsModalSubmit').click();
 
         // * Verify ephemeral message
-        verifyEphemeralMessage('Successfully sent survey');
+        verifyEphemeralMessage('Created a post in your DM channel.');
 
         // # Visit http-hello DM channel
-        cy.get('a.SidebarLink[aria-label*="http-hello"]').click();
+        cy.get('a.SidebarLink[aria-label*="hello-world"]').click();
 
         // * Verify survey content
         cy.getLastPostId().then((postID) => {
             const postIDSelector = '#post_' + postID;
-            cy.get(`${postIDSelector} .attachment .attachment__title`).should('have.text', 'Survey');
-            cy.get(`${postIDSelector} .attachment .post-message__text-container`).should('have.text', 'The message');
+            cy.get(`${postIDSelector} .post__body`).should('have.text', 'Hello, world! ...and the test message!');
         });
     });
 });
 
 const runCommand = (command: string) => {
-    cy.get('#post_textbox').clear().type(command);
+    cy.get('#post_textbox').clear().type(command + ' ');
     cy.get('#post_textbox').type('{enter}');
 };
 
 const installHTTPHello = () => {
     runCommand(installAppCommand);
-    cy.get('#interactiveDialogSubmit').click();
+    cy.get('#consent').click();
+    cy.get('#appsModalSubmit').click();
 };

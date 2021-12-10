@@ -6,25 +6,26 @@ package upaws
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// ProvisionData contains all the necessary data for provisioning an app
-type ProvisionData struct {
+// DeployData contains all the necessary data for deploying an app.
+type DeployData struct {
 	// StaticFiles key is the name of the static file in the /static folder
-	// Staticfiles value is the S3 Key where file should be provisioned
+	// Staticfiles value is the S3 Key where file should be deployed
 	StaticFiles map[string]AssetData `json:"static_files"`
 
 	// LambdaFunctions key is the name of the lambda function zip bundle
-	// LambdaFunctions value contains info for provisioning a function in the AWS.
+	// LambdaFunctions value contains info for deploying a function in the AWS.
 	// LambdaFunctions value's Name field contains functions name in the AWS.
 	LambdaFunctions map[string]FunctionData `json:"lambda_functions"`
 	Manifest        *apps.Manifest          `json:"-"`
@@ -43,7 +44,7 @@ type AssetData struct {
 	Key  string        `json:"key"`
 }
 
-func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, error) {
+func GetDeployDataFromFile(path string, log utils.Logger) (*DeployData, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't read file from  path %s", path)
@@ -54,17 +55,17 @@ func GetProvisionDataFromFile(path string, log utils.Logger) (*ProvisionData, er
 		return nil, errors.Wrap(err, "can't read file")
 	}
 
-	return getProvisionData(b, log)
+	return getDeployData(b, log)
 }
 
-// getProvisionData takes app bundle zip as a byte slice and returns ProvisionData
-func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
+// getDeployData takes app bundle zip as a byte slice and returns DeployData
+func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 	bundleReader, bundleErr := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if bundleErr != nil {
 		return nil, errors.Wrap(bundleErr, "can't get zip reader")
 	}
 	bundleFunctions := []FunctionData{}
-	var mani *apps.Manifest
+	var m *apps.Manifest
 	assets := []AssetData{}
 
 	// Read all the files from zip archive
@@ -81,28 +82,26 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "can't read manifest.json file")
 			}
-			if err := json.Unmarshal(data, &mani); err != nil {
+			m, err = apps.DecodeCompatibleManifest(data)
+			if err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
-			if log != nil {
-				log.Infow("Found manifest", "file", file.Name)
-			}
+			log.Infow("Found manifest", "file", file.Name)
 
 		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
+			defer lambdaFunctionFile.Close()
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
 			})
-			if log != nil {
-				log.Infow("Found lambda function bundle", "file", file.Name)
-			}
+			log.Infow("Found lambda function bundle", "file", file.Name)
 
-		case strings.HasPrefix(file.Name, apps.StaticFolder+"/"):
-			assetName := strings.TrimPrefix(file.Name, apps.StaticFolder+"/")
+		case strings.HasPrefix(file.Name, path.StaticFolder+"/"):
+			assetName := strings.TrimPrefix(file.Name, path.StaticFolder+"/")
 			if assetName == "" {
 				continue
 			}
@@ -114,19 +113,18 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			if log != nil {
-				log.Infow("Found static asset", "file", file.Name)
-			}
+			log.Infow("Found static asset", "file", file.Name)
 
 		default:
-			if log != nil {
-				log.Infow("Ignored unknown file", "file", file.Name)
-			}
+			log.Infow("Ignored unknown file", "file", file.Name)
 		}
 	}
 
-	if mani == nil {
+	if m == nil {
 		return nil, errors.New("no manifest found")
+	}
+	if !m.Contains(apps.DeployAWSLambda) {
+		return nil, errors.New(`"aws_lambda" is not present n the manifest`)
 	}
 
 	resFunctions := []FunctionData{}
@@ -134,7 +132,7 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 	// Matching bundle functions to the functions listed in manifest
 	// O(n^2) code for simplicity
 	for _, bundleFunction := range bundleFunctions {
-		for _, manifestFunction := range mani.AWSLambda {
+		for _, manifestFunction := range m.AWSLambda.Functions {
 			if strings.HasSuffix(bundleFunction.Name, manifestFunction.Name) {
 				resFunctions = append(resFunctions, FunctionData{
 					Bundle:  bundleFunction.Bundle,
@@ -147,17 +145,17 @@ func getProvisionData(b []byte, log utils.Logger) (*ProvisionData, error) {
 		}
 	}
 
-	generatedAssets := generateAssetNames(mani, assets)
-	generatedFunctions := generateFunctionNames(mani, resFunctions)
+	generatedAssets := generateAssetNames(m, assets)
+	generatedFunctions := generateFunctionNames(m, resFunctions)
 
-	pd := &ProvisionData{
+	pd := &DeployData{
 		StaticFiles:     generatedAssets,
 		LambdaFunctions: generatedFunctions,
-		Manifest:        mani,
-		ManifestKey:     S3ManifestName(mani.AppID, mani.Version),
+		Manifest:        m,
+		ManifestKey:     S3ManifestName(m.AppID, m.Version),
 	}
-	if err := pd.IsValid(); err != nil {
-		return nil, errors.Wrap(err, "provision data is not valid")
+	if err := pd.Validate(); err != nil {
+		return nil, errors.Wrap(err, "deploy data is not valid")
 	}
 	return pd, nil
 }
@@ -187,30 +185,37 @@ func generateFunctionNames(manifest *apps.Manifest, functions []FunctionData) ma
 	return generatedFunctions
 }
 
-func (pd *ProvisionData) IsValid() error {
-	if pd.Manifest == nil {
-		return errors.New("no manifest")
+func (pd *DeployData) Validate() error {
+	var result error
+
+	if pd.Manifest == nil || !pd.Manifest.Contains(apps.DeployAWSLambda) {
+		result = multierror.Append(result,
+			errors.New("no manifest or AWS Lamda metadata"))
 	}
-	if err := pd.Manifest.IsValid(); err != nil {
+	if err := pd.Manifest.Validate(); err != nil {
 		return err
 	}
 
-	if len(pd.Manifest.AWSLambda) != len(pd.LambdaFunctions) {
-		return errors.New("different amount of functions in manifest and in the bundle")
+	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {
+		result = multierror.Append(result,
+			errors.New("different number of functions in the manifest and in the bundle"))
 	}
 
-	for _, function := range pd.Manifest.AWSLambda {
+	for _, function := range pd.Manifest.AWSLambda.Functions {
 		data, ok := pd.LambdaFunctions[function.Name]
 		if !ok {
-			return errors.Errorf("function %s was not found in the bundle", function)
+			result = multierror.Append(result,
+				errors.Errorf("function %s was not found in the bundle", function))
 		}
 		if data.Handler != function.Handler {
-			return errors.New("mismatched handler")
+			result = multierror.Append(result,
+				errors.New("mismatched handler"))
 		}
 		if data.Runtime != function.Runtime {
-			return errors.New("mismatched runtime")
+			result = multierror.Append(result,
+				errors.New("mismatched runtime"))
 		}
 	}
 
-	return nil
+	return result
 }

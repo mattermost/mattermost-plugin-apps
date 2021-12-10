@@ -5,6 +5,7 @@
     "taskTimeout": 20000,
     "pluginID": "com.mattermost.apps",
     "pluginFile": "com.mattermost.apps-0.1.0.tar.gz",
+    "helloAppHost": "http://localhost:4000",
     "video": false,
     "ignoreTestFiles": "**/node_modules/**/*",
     "integrationFolder": "..",

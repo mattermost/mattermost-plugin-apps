@@ -1,10 +1,15 @@
 {
 	"app_id": "awsHello",
 	"name": "awsHello",
-	"aws_lambda": [{
-		"path": "/",
-		"name": "on_activate",
-		"handler": "index.handler",
-		"runtime": "nodejs12.x"
-	}]
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/js/aws_hello",
+	"aws_lambda": {
+		"functions": [
+			{
+				"path": "/",
+				"name": "on_activate",
+				"handler": "index.handler",
+				"runtime": "nodejs12.x"
+			}
+		]
+	}
 }

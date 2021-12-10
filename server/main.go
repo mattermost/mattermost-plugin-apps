@@ -1,22 +1,13 @@
 package main
 
 import (
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	root "github.com/mattermost/mattermost-plugin-apps"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
-var BuildHash string
-var BuildHashShort string
-var BuildDate string
+var manifest = root.Manifest
 
 func main() {
-	plugin.ClientMain(
-		NewPlugin(
-			config.BuildConfig{
-				Manifest:       *manifest,
-				BuildHash:      BuildHash,
-				BuildHashShort: BuildHashShort,
-				BuildDate:      BuildDate,
-			}))
+	plugin.ClientMain(NewPlugin(manifest))
 }

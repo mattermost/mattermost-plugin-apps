@@ -23,17 +23,17 @@ type Upstream struct {
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(app *apps.App, api PluginHTTPAPI) *Upstream {
-	staticUp := NewStaticUpstream(app, api)
+func NewUpstream(api PluginHTTPAPI) *Upstream {
+	staticUp := NewStaticUpstream(api)
 	return &Upstream{
 		StaticUpstream: *staticUp,
 	}
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, call)
+			resp, _ := u.invoke(app, creq.Context.BotUserID, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -41,19 +41,19 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(app, creq.Context.ActingUserID, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
-	if call == nil {
-		return nil, utils.NewInvalidError("empty call")
+func (u *Upstream) invoke(app apps.App, fromMattermostUserID string, creq apps.CallRequest) (*http.Response, error) {
+	if !app.Contains(apps.DeployPlugin) {
+		return nil, errors.New("app is not available as type plugin")
 	}
 
-	return u.post(call.Context.ActingUserID, path.Join("/"+u.pluginID, apps.PluginAppPath, call.Path), call)
+	return u.post(creq.Context.ActingUserID, path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, creq.Path), creq)
 }
 
 // post does not close resp.Body, it's the caller's responsibility
@@ -74,10 +74,14 @@ func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := u.httpClient.Do(req)
-	if err != nil {
+	switch {
+	case err != nil:
 		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
+
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
+
+	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)
 		return nil, errors.New(string(bb))
 	}

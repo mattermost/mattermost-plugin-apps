@@ -5,9 +5,9 @@ package upaws
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -21,113 +21,80 @@ import (
 // Upstream wraps an awsClient to make requests to the App. It should not be
 // reused between requests, nor cached.
 type Upstream struct {
-	StaticUpstream
-	app *apps.App
+	awsClient      Client
+	staticS3Bucket string
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-// invocationPayload is a scoped down version of
-// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyRequest
-type invocationPayload struct {
-	Path       string            `json:"path"`
-	HTTPMethod string            `json:"httpMethod"`
-	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
-}
-
-// invocationResponse is a scoped down version of
-// https://pkg.go.dev/github.com/aws/aws-lambda-go@v1.13.3/events#APIGatewayProxyResponse
-type invocationResponse struct {
-	StatusCode int    `json:"statusCode"`
-	Body       string `json:"body"`
-}
-
-func NewUpstream(app *apps.App, awsClient Client, bucket string) *Upstream {
-	staticUp := NewStaticUpstream(&app.Manifest, awsClient, bucket)
-	return &Upstream{
-		StaticUpstream: *staticUp,
+func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Logger) (*Upstream, error) {
+	if accessKey == "" && secret == "" {
+		return nil, utils.NewNotFoundError("AWS credentials are not set")
 	}
+	awsClient, err := MakeClient(accessKey, secret, region,
+		log.With("purpose", "App Proxy"))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize AWS access")
+	}
+	return &Upstream{
+		awsClient:      awsClient,
+		staticS3Bucket: staticS3bucket,
+	}, nil
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
-	name := match(call.Path, u.manifest)
+func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+	key := S3StaticName(app.Manifest.AppID, app.Manifest.Version, path)
+	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
+	}
+	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
+}
+
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	if !app.Manifest.Contains(apps.DeployAWSLambda) {
+		return nil, errors.New("no 'aws_lambda' section in manifest.json")
+	}
+	name := match(creq.Path, &app.Manifest)
 	if name == "" {
 		return nil, utils.ErrNotFound
 	}
 
-	crString, err := u.InvokeFunction(name, async, call)
+	data, err := u.invokeFunction(name, async, creq)
 	if err != nil {
 		return nil, err
 	}
-	return io.NopCloser(strings.NewReader(crString)), nil
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) InvokeFunction(name string, async bool, call *apps.CallRequest) (string, error) {
+func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent
 	}
 
-	payload, err := callToInvocationPayload(call)
+	payload, err := creq.ToHTTPCallRequestJSON()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to convert call into invocation payload")
+		return nil, err
 	}
-
 	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
 	if async || err != nil {
-		return "", err
+		return nil, err
 	}
-
-	var resp invocationResponse
-	err = json.Unmarshal(bb, &resp)
+	resp, err := apps.HTTPCallResponseFromJSON(bb)
 	if err != nil {
-		return "", errors.Wrap(err, "Error marshaling request payload")
+		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("lambda invocation failed with status code %v and body %v", resp.StatusCode, resp.Body)
-	}
-
-	return resp.Body, nil
-}
-
-func (u *Upstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	key := S3StaticName(u.app.AppID, u.app.Version, path)
-	data, err := u.awsClient.GetS3(u.bucket, key)
-	if err != nil {
-		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.bucket, path)
-	}
-	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
-}
-
-func callToInvocationPayload(call *apps.CallRequest) ([]byte, error) {
-	body, err := json.Marshal(call)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal call for lambda payload")
-	}
-
-	request := invocationPayload{
-		Path:       call.Path,
-		HTTPMethod: http.MethodPost,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       string(body),
-	}
-
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal lambda payload")
-	}
-
-	return payload, nil
+	return []byte(resp.Body), nil
 }
 
 func match(callPath string, m *apps.Manifest) string {
 	matchedName := ""
 	matchedPath := ""
-	for _, f := range m.AWSLambda {
+	for _, f := range m.AWSLambda.Functions {
 		if strings.HasPrefix(callPath, f.Path) {
 			if len(f.Path) > len(matchedPath) {
 				matchedName = LambdaName(m.AppID, m.Version, f.Name)
@@ -137,4 +104,62 @@ func match(callPath string, m *apps.Manifest) string {
 	}
 
 	return matchedName
+}
+
+// Lists all apps with manifests in S3.
+func (u *Upstream) ListS3Apps(appPrefix string) ([]apps.AppID, error) {
+	result, err := u.awsClient.ListS3(u.staticS3Bucket, "manifests/"+appPrefix)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list bucket")
+	}
+	keys := map[string]struct{}{}
+	for _, k := range result {
+		k = strings.TrimPrefix(k, "manifests/")
+		id, _, err := ParseS3ManifestName(k)
+		if err != nil {
+			continue
+		}
+		keys[string(id)] = struct{}{}
+	}
+	if len(keys) == 0 {
+		return nil, utils.NewNotFoundError(appPrefix)
+	}
+	sorted := []string{}
+	for k := range keys {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	out := []apps.AppID{}
+	for _, k := range sorted {
+		out = append(out, apps.AppID(k))
+	}
+	return out, nil
+}
+
+// Lists all apps with manifests in S3.
+func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]string, error) {
+	result, err := u.awsClient.ListS3(u.staticS3Bucket, "manifests/"+string(appID))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list bucket")
+	}
+	keys := map[string]struct{}{}
+	for _, k := range result {
+		k = strings.TrimPrefix(k, "manifests/")
+		id, v, err := ParseS3ManifestName(k)
+		if err != nil || id != appID {
+			continue
+		}
+		if strings.HasPrefix(string(v), versionPrefix) {
+			keys[string(v)] = struct{}{}
+		}
+	}
+	if len(keys) == 0 {
+		return nil, utils.NewNotFoundError(versionPrefix)
+	}
+	sorted := []string{}
+	for k := range keys {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	return sorted, nil
 }

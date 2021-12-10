@@ -1,12 +1,15 @@
-// +build !e2e
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
 
-package apps
+package apps_test
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func TestUnmarshalCallRequest(t *testing.T) {
@@ -15,7 +18,7 @@ func TestUnmarshalCallRequest(t *testing.T) {
 		"context": {
 			"acting_user_id": "q45j6a851fgr98iqr3mdxx3cye",
 			"team_id": "9pu8hstcpigm5x4dboe6hz9ddw",
-			"mattermost_site_url": "https://levb.ngrok.io"
+			"mattermost_site_url": "https://some.test"
 		},
 		"values": {
 			"secret": "cywc3e8nebyujrpuip98t69a3h",
@@ -27,12 +30,12 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	}
 	`
 
-	data, err := CallRequestFromJSON([]byte(payload))
+	data, err := apps.CallRequestFromJSON([]byte(payload))
 
 	require.NoError(t, err)
 	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)
 	require.Equal(t, "9pu8hstcpigm5x4dboe6hz9ddw", data.Context.TeamID)
-	require.Equal(t, "https://levb.ngrok.io", data.Context.MattermostSiteURL)
+	require.Equal(t, "https://some.test", data.Context.MattermostSiteURL)
 	require.Equal(t, "cywc3e8nebyujrpuip98t69a3h", data.Values["secret"])
 	require.Equal(t, "The Value", data.GetValue("selected_option", ""))
 	require.Equal(t, "The Default Value", data.GetValue("nonexistent", "The Default Value"))
@@ -50,7 +53,7 @@ func TestMarshalCallResponse(t *testing.T) {
 			]
 		}
 	}`
-	res := &CallResponse{}
+	res := &apps.CallResponse{}
 
 	err := json.Unmarshal([]byte(resStr), res)
 	require.NoError(t, err)

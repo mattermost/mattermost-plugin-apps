@@ -4,21 +4,32 @@ import (
 	"encoding/json"
 	"sync"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/services/configservice"
+	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/configservice"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Configurable interface {
-	Configure(Config)
+	Configure(Config) error
 }
 
 // Configurator should be abbreviated as `cfg`
 type Service interface {
-	GetConfig() Config
-	GetMattermostConfig() configservice.ConfigService
+	Basic() (Config, *pluginapi.Client, utils.Logger)
+	Get() Config
+	Logger() utils.Logger
+	MattermostAPI() *pluginapi.Client
+	MattermostConfig() configservice.ConfigService
+	I18N() *i18n.Bundle
+	Telemetry() *telemetry.Telemetry
+
 	Reconfigure(StoredConfig, ...Configurable) error
 	StoreConfig(sc StoredConfig) error
 }
@@ -26,42 +37,72 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	BuildConfig
-	botUserID string
-
-	conf *Config
+	pluginManifest model.Manifest
+	botUserID      string
+	log            utils.Logger
+	mm             *pluginapi.Client
+	i18n           *i18n.Bundle
+	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
-	mm               *pluginapi.Client
-	log              utils.Logger
+	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, log utils.Logger, buildConfig BuildConfig, botUserID string) Service {
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
 	return &service{
-		lock:        &sync.RWMutex{},
-		mm:          mm,
-		log:         log,
-		BuildConfig: buildConfig,
-		botUserID:   botUserID,
+		pluginManifest: pliginManifest,
+		botUserID:      botUserID,
+		log:            utils.NewPluginLogger(mm),
+		mm:             mm,
+		lock:           &sync.RWMutex{},
+		i18n:           i18nBundle,
+		telemetry:      telemetry,
 	}
 }
 
-func (s *service) GetConfig() Config {
+// Basic is a convenience method, included in the interface so one can write:
+//   conf, mm, log := x.conf.Basic()
+func (s *service) Basic() (Config, *pluginapi.Client, utils.Logger) {
+	return s.Get(),
+		s.MattermostAPI(),
+		s.Logger()
+}
+
+func (s *service) Get() Config {
 	s.lock.RLock()
 	conf := s.conf
 	s.lock.RUnlock()
 
 	if conf == nil {
 		return Config{
-			BuildConfig: s.BuildConfig,
-			BotUserID:   s.botUserID,
+			PluginManifest: s.pluginManifest,
+			BuildDate:      BuildDate,
+			BuildHash:      BuildHash,
+			BuildHashShort: BuildHashShort,
+			BotUserID:      s.botUserID,
 		}
 	}
 	return *conf
 }
 
-func (s *service) GetMattermostConfig() configservice.ConfigService {
+func (s *service) MattermostAPI() *pluginapi.Client {
+	return s.mm
+}
+
+func (s *service) Logger() utils.Logger {
+	return s.log
+}
+
+func (s *service) I18N() *i18n.Bundle {
+	return s.i18n
+}
+
+func (s *service) Telemetry() *telemetry.Telemetry {
+	return s.telemetry
+}
+
+func (s *service) MattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
@@ -86,8 +127,7 @@ func (s *service) reloadMattermostConfig() *model.Config {
 
 func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
-
-	newConfig := s.GetConfig()
+	newConfig := s.Get()
 
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
@@ -96,10 +136,11 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Warnf("Failed to fetch license two times. Falling back to on-prem mode.")
+			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
 		}
 	}
-	err := newConfig.Reconfigure(stored, mmconf, license)
+
+	err := newConfig.Update(stored, mmconf, license, s.log)
 	if err != nil {
 		return err
 	}
@@ -109,7 +150,10 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.lock.Unlock()
 
 	for _, s := range services {
-		s.Configure(newConfig)
+		err = s.Configure(newConfig)
+		if err != nil {
+			return errors.Wrapf(err, "error configuring %T", s)
+		}
 	}
 
 	return nil

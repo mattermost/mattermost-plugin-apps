@@ -7,9 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
@@ -17,11 +15,10 @@ import (
 func TestCreateOAuth2State(t *testing.T) {
 	stateRE := `[A-Za-z0-9-_]+\.[A-Za-z0-9]`
 	userID := `userid-test`
-	testAPI := &plugintest.API{}
-	testDriver := &plugintest.Driver{}
+	testConfig, testAPI := config.NewTestService(nil)
 	s := oauth2Store{
 		Service: &Service{
-			mm: pluginapi.NewClient(testAPI, testDriver),
+			conf: testConfig,
 		},
 	}
 
@@ -34,7 +31,7 @@ func TestCreateOAuth2State(t *testing.T) {
 	urlState, err := s.CreateState(userID)
 	require.NoError(t, err)
 	key := config.KVOAuth2StatePrefix + urlState
-	require.LessOrEqual(t, len(key), model.KEY_VALUE_KEY_MAX_RUNES)
+	require.LessOrEqual(t, len(key), model.KeyValueKeyMaxRunes)
 	require.Regexp(t, stateRE, urlState)
 
 	// Validate errors
@@ -62,11 +59,10 @@ func TestCreateOAuth2State(t *testing.T) {
 
 func TestOAuth2User(t *testing.T) {
 	userID := `userid-test`
-	testAPI := &plugintest.API{}
-	testDriver := &plugintest.Driver{}
+	testConfig, testAPI := config.NewTestService(nil)
 	s := oauth2Store{
 		Service: &Service{
-			mm: pluginapi.NewClient(testAPI, testDriver),
+			conf: testConfig,
 		},
 	}
 

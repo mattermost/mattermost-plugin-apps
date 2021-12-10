@@ -44,16 +44,13 @@ type Expand struct {
 	// https://mattermost.atlassian.net/browse/MM-31117
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 
-	// AdminAccessToken: all. Include admin-level access token in the request.
-	// Requires act_as_admin permission to have been granted to the app. This
-	// should be a special Mattermost OAuth2 token, but until it's implemented
-	// the MM session token is used.
-	// https://mattermost.atlassian.net/browse/MM-28542
-	AdminAccessToken ExpandLevel `json:"admin_access_token,omitempty"`
-
 	// Channel: all for model.Channel, summary for Id, DeleteAt, TeamId, Type,
 	// DisplayName, Name
 	Channel ExpandLevel `json:"channel,omitempty"`
+
+	// ChannelMember: expand model.ChannelMember if ChannelID and
+	// ActingUserID are set.
+	ChannelMember ExpandLevel `json:"channel_member,omitempty"`
 
 	// Not currently implemented
 	Mentioned ExpandLevel `json:"mentioned,omitempty"`
@@ -63,9 +60,12 @@ type Expand struct {
 	Post     ExpandLevel `json:"post,omitempty"`
 	RootPost ExpandLevel `json:"root_post,omitempty"`
 
-	// Team: all for model.team, summary for Id, DisplayName, Name, Description,
+	// Team: all for model.Team, summary for Id, DisplayName, Name, Description,
 	// Email, Type.
 	Team ExpandLevel `json:"team,omitempty"`
+
+	// TeamMember: expand model.TeamMember if TeamID and ActingUserID are set.
+	TeamMember ExpandLevel `json:"team_member,omitempty"`
 
 	// User: all for model.User, summary for BotDescription, DeleteAt, Email,
 	// FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,
@@ -76,6 +76,10 @@ type Expand struct {
 	OAuth2App ExpandLevel `json:"oauth2_app,omitempty"`
 
 	// OAuth2User expands the remote (3rd party) OAuth2 user (custom object,
-	// previously stored with mmclient.StoreOAuthUser).
+	// previously stored with appclient.StoreOAuthUser).
 	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
+
+	// Locale expands the locale to use for this call. There is no difference
+	// between all or summary.
+	Locale ExpandLevel `json:"locale,omitempty"`
 }

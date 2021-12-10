@@ -4,18 +4,17 @@
 package httpout
 
 import (
-	"io"
-
-	"github.com/mattermost/mattermost-server/v5/services/httpservice"
+	"github.com/mattermost/mattermost-server/v6/services/httpservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type Service interface {
 	config.Configurable
 	httpservice.HTTPService
 
-	GetFromURL(url string, trusted bool) ([]byte, error)
+	GetFromURL(url string, trusted bool, limit int64) ([]byte, error)
 }
 
 type service struct {
@@ -29,21 +28,23 @@ var _ httpservice.HTTPService = (*service)(nil)
 
 func NewService(conf config.Service) Service {
 	return &service{
-		HTTPService: httpservice.MakeHTTPService(conf.GetMattermostConfig()),
+		HTTPService: httpservice.MakeHTTPService(conf.MattermostConfig()),
 		conf:        conf,
 	}
 }
 
-func (s *service) Configure(_ config.Config) {
-	s.HTTPService = httpservice.MakeHTTPService(s.conf.GetMattermostConfig())
+func (s *service) Configure(_ config.Config) error {
+	s.HTTPService = httpservice.MakeHTTPService(s.conf.MattermostConfig())
+	return nil
 }
 
-func (s *service) GetFromURL(url string, trusted bool) ([]byte, error) {
+func (s *service) GetFromURL(url string, trusted bool, limit int64) ([]byte, error) {
 	client := s.MakeClient(trusted)
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
+
+	return httputils.LimitReadAll(resp.Body, limit)
 }

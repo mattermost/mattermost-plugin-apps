@@ -14,16 +14,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var shouldCreate bool
-var shouldCreateAccessKey bool
-var userName string
-var policyName string
-var groupName string
-
 func init() {
-	rootCmd.AddCommand(
-		awsCmd,
-	)
+	rootCmd.AddCommand(awsCmd)
 
 	// init
 	awsCmd.AddCommand(awsInitCmd)
@@ -33,14 +25,22 @@ func init() {
 	awsInitCmd.Flags().StringVar(&policyName, "policy", upaws.DefaultPolicyName, "Name of the policy to control access of AWS services directly by Mattermost Server (user).")
 	awsInitCmd.Flags().StringVar(&groupName, "group", upaws.DefaultGroupName, "Name of the user group connecting the invoking user to the invoke policy.")
 
+	// deploy
+	awsCmd.AddCommand(awsDeployCmd)
+	awsDeployCmd.Flags().BoolVar(&install, "install", false, "Install the deployed App to Mattermost")
+	awsDeployCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
+	awsDeployCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
+	awsDeployCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
+
 	// clean
 	awsCmd.AddCommand(awsCleanCmd)
 
 	// test
 	awsCmd.AddCommand(awsTestCmd)
 	awsTestCmd.AddCommand(awsTestLambdaCmd)
-	awsTestCmd.AddCommand(awsTestProvisionCmd)
+	awsTestCmd.AddCommand(awsTestDeployCmd)
 	awsTestCmd.AddCommand(awsTestS3Cmd)
+	awsTestCmd.AddCommand(awsTestS3ListCmd)
 }
 
 var awsCmd = &cobra.Command{
@@ -52,12 +52,12 @@ var awsInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize AWS to deploy Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asDeploy, err := makeDeployAWSClient()
 		if err != nil {
 			return err
 		}
 
-		out, err := upaws.InitializeAWS(asProvisioner, log, upaws.InitParams{
+		out, err := upaws.InitializeAWS(asDeploy, log, upaws.InitParams{
 			Bucket:                upaws.S3BucketName(),
 			User:                  upaws.Name(userName),
 			Group:                 upaws.Name(groupName),
@@ -91,7 +91,7 @@ var awsCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Delete group, user and policy used for Mattermost Apps",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asProvisioner, err := AsProvisioner()
+		asDeploy, err := makeDeployAWSClient()
 		if err != nil {
 			return err
 		}
@@ -101,20 +101,78 @@ var awsCleanCmd = &cobra.Command{
 			return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
 		}
 
-		return upaws.CleanAWS(asProvisioner, accessKeyID, log)
+		return upaws.CleanAWS(asDeploy, accessKeyID, log)
+	},
+}
+
+var awsDeployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "Deploy a Mattermost app to AWS (Lambda, S3)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		asDeploy, err := makeDeployAWSClient()
+		if err != nil {
+			return err
+		}
+
+		bucket := upaws.S3BucketName()
+		out, err := upaws.DeployAppFromFile(asDeploy, args[0], log, upaws.DeployAppParams{
+			Bucket:           bucket,
+			InvokePolicyName: upaws.Name(invokePolicyName),
+			ExecuteRoleName:  upaws.Name(executeRoleName),
+			ShouldUpdate:     shouldUpdate,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err = updateMattermost(out.Manifest, apps.DeployAWSLambda, install); err != nil {
+			return err
+		}
+
+		fmt.Printf("\n'%s' is now deployed to AWS.\n", out.Manifest.DisplayName)
+		fmt.Printf("Created/updated %v functions in AWS Lambda, %v static assets in S3\n\n",
+			len(out.LambdaARNs), len(out.StaticARNs))
+
+		fmt.Printf("Execute role:\t%s\n", out.ExecuteRoleARN)
+		fmt.Printf("Execute policy:\t%s\n", out.ExecutePolicyARN)
+		fmt.Printf("Invoke policy:\t%s\n\n", out.InvokePolicyARN)
+		fmt.Printf("Invoke policy document:\n%s\n", out.InvokePolicyDoc)
+		fmt.Printf("\n")
+
+		if !install {
+			fmt.Printf("You can now install it in Mattermost using:\n")
+			fmt.Printf("  /apps install listed %s\n\n", out.Manifest.AppID)
+		}
+		return nil
 	},
 }
 
 var awsTestCmd = &cobra.Command{
 	Use:   "test",
-	Short: "test accessing a provisioned resource",
+	Short: "test accessing a deployed resource",
 }
 
-var helloApp = &apps.App{
-	Manifest: apps.Manifest{
-		AppID:   "hello-lambda",
-		Version: "demo",
-	},
+func helloLambda() apps.App {
+	return apps.App{
+		DeployType: apps.DeployAWSLambda,
+		Manifest: apps.Manifest{
+			AppID:   "hello-lambda",
+			Version: "0.8.0",
+			Deploy: apps.Deploy{
+				AWSLambda: &apps.AWSLambda{
+					Functions: []apps.AWSLambdaFunction{
+						{
+							Path:    "/",
+							Name:    "hello-lambda",
+							Handler: "hello-lambda",
+							Runtime: "go1.x",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 var awsTestS3Cmd = &cobra.Command{
@@ -122,13 +180,12 @@ var awsTestS3Cmd = &cobra.Command{
 	Short: "test accessing a static S3 resource",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		up := upaws.NewUpstream(helloApp, asTest, upaws.S3BucketName())
-		resp, _, err := up.GetStatic("test.txt")
+		resp, _, err := upTest.GetStatic(helloLambda(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -148,37 +205,57 @@ var awsTestS3Cmd = &cobra.Command{
 	},
 }
 
+var awsTestS3ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "test listing S3 manifests",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		upTest, err := makeTestAWSUpstream()
+		if err != nil {
+			return err
+		}
+
+		resp, err := upTest.ListS3Apps("hello")
+		if err != nil {
+			return err
+		}
+		fmt.Println(resp)
+		return nil
+	},
+}
+
 var awsTestLambdaCmd = &cobra.Command{
 	Use:   "lambda",
 	Short: "test accessing hello-lambda /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		asTest, err := AsTest()
+		upTest, err := makeTestAWSUpstream()
 		if err != nil {
 			return err
 		}
 
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID: "hello-lambda",
-			},
-		}
-		up := upaws.NewUpstream(app, asTest, "")
-		crString, err := up.InvokeFunction("hello-lambda_demo_go-function", false, &apps.CallRequest{
+		creq := apps.CallRequest{
 			Call: apps.Call{
 				Path: "/ping",
 			},
-		})
+		}
+		resp, err := upTest.Roundtrip(helloLambda(), creq, false)
 		if err != nil {
 			return err
 		}
-		log.Debugf("Received: %s", crString)
+		defer resp.Close()
 
-		cr := apps.CallResponse{}
-		_ = json.Unmarshal([]byte(crString), &cr)
-		expected := apps.CallResponse{Markdown: "PONG", Type: apps.CallResponseTypeOK}
-		if cr != expected {
-			return errors.Errorf("invalid value received: %s", crString)
+		data, err := io.ReadAll(resp)
+		if err != nil {
+			return err
+		}
+		log.Debugf("Received: %s", string(data))
+
+		cresp := apps.CallResponse{}
+		_ = json.Unmarshal(data, &cresp)
+		expected := apps.NewTextResponse("PONG")
+		if cresp != expected {
+			return errors.Errorf("invalid value received: %s", string(data))
 		}
 
 		fmt.Println("OK")
@@ -186,31 +263,31 @@ var awsTestLambdaCmd = &cobra.Command{
 	},
 }
 
-var awsTestProvisionCmd = &cobra.Command{
-	Use:   "provision",
-	Short: "provisions 'hello-lambda' app for testing",
+var awsTestDeployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "deploys 'hello-lambda' app for testing",
 	Long: `Test commands us the 'hello-lambda' example app for testing, see
 https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-lambda/README.md
 
 The App needs to be built with 'make dist' in its own directory, then use
 
-	appsctl aws test provision <dist-bundle-path>
+	appsctl aws test deploy <dist-bundle-path>
 
-command to provision it to AWS. This command is equivalent to
+command to deploy it to AWS. This command is equivalent to
 
-	appsctl provision app <dist-bundle-path> --update
+	appsctl aws deploy app <dist-bundle-path> --update
 
 with the default initial IAM configuration`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		asProvisioner, err := AsProvisioner()
+		asDeploy, err := makeDeployAWSClient()
 		if err != nil {
 			return err
 		}
 
-		out, err := upaws.ProvisionAppFromFile(asProvisioner, bundlePath, log, upaws.ProvisionAppParams{
+		out, err := upaws.DeployAppFromFile(asDeploy, bundlePath, log, upaws.DeployAppParams{
 			Bucket:           upaws.S3BucketName(),
 			InvokePolicyName: upaws.Name(upaws.DefaultPolicyName),
 			ExecuteRoleName:  upaws.Name(upaws.DefaultExecuteRoleName),
@@ -223,4 +300,39 @@ with the default initial IAM configuration`,
 		fmt.Printf("Success!\n\n%s\n", utils.Pretty(out))
 		return nil
 	},
+}
+
+func makeTestAWSUpstream() (*upaws.Upstream, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.AccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.SecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
+	}
+
+	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), log)
+}
+
+func makeDeployAWSClient() (upaws.Client, error) {
+	region := os.Getenv(upaws.RegionEnvVar)
+	if region == "" {
+		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+	}
+	accessKey := os.Getenv(upaws.DeployAccessEnvVar)
+	if accessKey == "" {
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.DeployAccessEnvVar)
+	}
+	secretKey := os.Getenv(upaws.DeploySecretEnvVar)
+	if secretKey == "" {
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.DeploySecretEnvVar)
+	}
+
+	return upaws.MakeClient(accessKey, secretKey, region,
+		log.With("purpose", "appsctl deploy"))
 }

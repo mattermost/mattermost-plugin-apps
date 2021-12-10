@@ -48,6 +48,21 @@ func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0, arg1, arg2)
 }
 
+// GetSubscriptions mocks base method.
+func (m *MockService) GetSubscriptions(arg0 string) ([]apps.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
+	ret0, _ := ret[0].([]apps.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscriptions indicates an expected call of GetSubscriptions.
+func (mr *MockServiceMockRecorder) GetSubscriptions(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockService)(nil).GetSubscriptions), arg0)
+}
+
 // KVDelete mocks base method.
 func (m *MockService) KVDelete(arg0, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -74,6 +89,20 @@ func (m *MockService) KVGet(arg0, arg1, arg2 string, arg3 interface{}) error {
 func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3)
+}
+
+// KVList mocks base method.
+func (m *MockService) KVList(arg0, arg1 string, arg2 func(string) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KVList", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// KVList indicates an expected call of KVList.
+func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVList", reflect.TypeOf((*MockService)(nil).KVList), arg0, arg1, arg2)
 }
 
 // KVSet mocks base method.
@@ -106,7 +135,7 @@ func (mr *MockServiceMockRecorder) StoreOAuth2App(arg0, arg1, arg2 interface{}) 
 }
 
 // StoreOAuth2User mocks base method.
-func (m *MockService) StoreOAuth2User(arg0 apps.AppID, arg1 string, arg2 interface{}) error {
+func (m *MockService) StoreOAuth2User(arg0 apps.AppID, arg1 string, arg2 []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreOAuth2User", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -120,29 +149,29 @@ func (mr *MockServiceMockRecorder) StoreOAuth2User(arg0, arg1, arg2 interface{})
 }
 
 // Subscribe mocks base method.
-func (m *MockService) Subscribe(arg0 string, arg1 *apps.Subscription) error {
+func (m *MockService) Subscribe(arg0 apps.Subscription) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Subscribe", arg0, arg1)
+	ret := m.ctrl.Call(m, "Subscribe", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Subscribe indicates an expected call of Subscribe.
-func (mr *MockServiceMockRecorder) Subscribe(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Subscribe(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockService)(nil).Subscribe), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockService)(nil).Subscribe), arg0)
 }
 
 // Unsubscribe mocks base method.
-func (m *MockService) Unsubscribe(arg0 string, arg1 *apps.Subscription) error {
+func (m *MockService) Unsubscribe(arg0 apps.Subscription) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Unsubscribe", arg0, arg1)
+	ret := m.ctrl.Call(m, "Unsubscribe", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Unsubscribe indicates an expected call of Unsubscribe.
-func (mr *MockServiceMockRecorder) Unsubscribe(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Unsubscribe(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockService)(nil).Unsubscribe), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockService)(nil).Unsubscribe), arg0)
 }

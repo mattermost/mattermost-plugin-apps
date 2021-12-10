@@ -4,6 +4,7 @@
 package uphttp
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -20,24 +21,35 @@ import (
 )
 
 type Upstream struct {
-	StaticUpstream
-	appSecret string
+	httpOut    httpout.Service
+	appRootURL func(_ apps.App, path string) (string, error)
+	devMode    bool
 }
 
 var _ upstream.Upstream = (*Upstream)(nil)
 
-func NewUpstream(app *apps.App, httpOut httpout.Service) *Upstream {
-	staticUp := NewStaticUpstream(&app.Manifest, httpOut)
+func NewUpstream(httpOut httpout.Service, devMode bool, appRootURL func(apps.App, string) (string, error)) *Upstream {
+	if appRootURL == nil {
+		appRootURL = AppRootURL
+	}
 	return &Upstream{
-		StaticUpstream: *staticUp,
-		appSecret:      app.Secret,
+		httpOut:    httpOut,
+		appRootURL: appRootURL,
+		devMode:    devMode,
 	}
 }
 
-func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser, error) {
+func AppRootURL(app apps.App, _ string) (string, error) {
+	if !app.Manifest.Contains(apps.DeployHTTP) {
+		return "", errors.New("failed to get root URL: no http section in manifest.json")
+	}
+	return app.Manifest.HTTP.RootURL, nil
+}
+
+func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(call.Context.BotUserID, call)
+			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -45,50 +57,57 @@ func (u *Upstream) Roundtrip(call *apps.CallRequest, async bool) (io.ReadCloser,
 		return nil, nil
 	}
 
-	resp, err := u.invoke(call.Context.ActingUserID, call) // nolint:bodyclose
+	resp, err := u.invoke(creq.Context.ActingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, call *apps.CallRequest) (*http.Response, error) {
-	if call == nil {
-		return nil, utils.NewInvalidError("empty call")
+func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
+	rootURL, err := u.appRootURL(app, creq.Path)
+	if err != nil {
+		return nil, err
 	}
-
-	return u.post(call.Context.ActingUserID, u.rootURL+call.Path, call)
-}
-
-// post does not close resp.Body, it's the caller's responsibility
-func (u *Upstream) post(fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
-	client := u.httpOut.MakeClient(true)
-	jwtoken, err := createJWT(fromMattermostUserID, u.appSecret)
+	callURL, err := utils.CleanURL(rootURL + "/" + creq.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	piper, pipew := io.Pipe()
-	go func() {
-		encodeErr := json.NewEncoder(pipew).Encode(msg)
-		if encodeErr != nil {
-			_ = pipew.CloseWithError(encodeErr)
-		}
-		pipew.Close()
-	}()
-
-	req, err := http.NewRequest(http.MethodPost, url, piper)
+	data, err := json.Marshal(creq)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
+
+	req, err := http.NewRequest(http.MethodPost, callURL, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	// TODO: find a better way to control the use of JWT that both OpenFaaS and
+	// HTTP can share. For now, hard-limit the use of JWT to the HTTP gateway
+	// itself.
+	if app.Manifest.Contains(apps.DeployHTTP) && app.Manifest.HTTP.UseJWT {
+		jwtoken := ""
+		jwtoken, err = createJWT(fromMattermostUserID, app.Secret)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set(apps.OutgoingAuthHeader, "Bearer "+jwtoken)
 	}
-	if resp.StatusCode != http.StatusOK {
+
+	// Execute the request.
+	resp, err := u.httpOut.MakeClient(u.devMode).Do(req)
+	switch {
+	case err != nil:
+		return nil, err
+
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, utils.NewNotFoundError(err)
+
+	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)
 		return nil, errors.New(string(bb))
 	}

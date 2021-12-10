@@ -6,15 +6,19 @@ package store
 import (
 	"github.com/pkg/errors"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type SubscriptionStore interface {
-	Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error)
-	Save(sub *apps.Subscription) error
-	Delete(*apps.Subscription) error
+	Delete(apps.Subscription) error
+	Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
+	List() ([]apps.Subscription, error)
+	ListByUserID(userID string) ([]apps.Subscription, error)
+	Save(sub apps.Subscription) error
 }
 
 type subscriptionStore struct {
@@ -23,9 +27,16 @@ type subscriptionStore struct {
 
 var _ SubscriptionStore = (*subscriptionStore)(nil)
 
-func subsKey(subject apps.Subject, teamID, channelID string) string {
+func subsKey(subject apps.Subject, teamID, channelID string) (string, error) {
 	idSuffix := ""
 	switch subject {
+	case apps.SubjectUserCreated,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
+		apps.SubjectBotJoinedTeam,
+		apps.SubjectBotLeftTeam,
+		apps.SubjectBotMentioned:
+		// Global, no suffix
 	case apps.SubjectUserJoinedChannel,
 		apps.SubjectUserLeftChannel,
 		apps.SubjectPostCreated:
@@ -34,15 +45,21 @@ func subsKey(subject apps.Subject, teamID, channelID string) string {
 		apps.SubjectUserLeftTeam,
 		apps.SubjectChannelCreated:
 		idSuffix = "." + teamID
+	default:
+		return "", errors.Errorf("Unknown subject %s", subject)
 	}
-	return config.KVSubPrefix + string(subject) + idSuffix
+	return config.KVSubPrefix + string(subject) + idSuffix, nil
 }
 
-func (s subscriptionStore) Delete(sub *apps.Subscription) error {
-	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+func (s subscriptionStore) Delete(sub apps.Subscription) error {
+	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	if err != nil {
+		return err
+	}
+
 	// get all subscriptions for the subject
-	var subs []*apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+	var subs []apps.Subscription
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}
@@ -58,7 +75,7 @@ func (s subscriptionStore) Delete(sub *apps.Subscription) error {
 			updated = append(updated, subs[i+1:]...)
 		}
 
-		_, err = s.mm.KV.Set(key, updated)
+		_, err = s.conf.MattermostAPI().KV.Set(key, updated)
 		if err != nil {
 			return errors.Wrap(err, "failed to save subscriptions")
 		}
@@ -68,10 +85,14 @@ func (s subscriptionStore) Delete(sub *apps.Subscription) error {
 	return utils.ErrNotFound
 }
 
-func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]*apps.Subscription, error) {
-	key := subsKey(subject, teamID, channelID)
-	var subs []*apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
+	key, err := subsKey(subject, teamID, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	var subs []apps.Subscription
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +102,49 @@ func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) (
 	return subs, nil
 }
 
-func (s subscriptionStore) Save(sub *apps.Subscription) error {
-	key := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+func (s subscriptionStore) List() ([]apps.Subscription, error) {
+	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, 100, pluginapi.WithPrefix(config.KVSubPrefix))
+	if err != nil {
+		return nil, err
+	}
+
+	subs := []apps.Subscription{}
+	for _, key := range keys {
+		sub := []apps.Subscription{}
+		err := s.conf.MattermostAPI().KV.Get(key, &sub)
+		if err != nil {
+			return nil, err
+		}
+
+		subs = append(subs, sub...)
+	}
+	return subs, nil
+}
+
+func (s subscriptionStore) ListByUserID(userID string) ([]apps.Subscription, error) {
+	subs, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var rSubs []apps.Subscription
+	for _, s := range subs {
+		if s.UserID == userID {
+			rSubs = append(rSubs, s)
+		}
+	}
+
+	return rSubs, nil
+}
+
+func (s subscriptionStore) Save(sub apps.Subscription) error {
+	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
+	if err != nil {
+		return err
+	}
 	// get all subscriptions for the subject
-	var subs []*apps.Subscription
-	err := s.mm.KV.Get(key, &subs)
+	var subs []apps.Subscription
+	err = s.conf.MattermostAPI().KV.Get(key, &subs)
 	if err != nil {
 		return err
 	}
@@ -102,7 +161,7 @@ func (s subscriptionStore) Save(sub *apps.Subscription) error {
 		subs = append(subs, sub)
 	}
 
-	_, err = s.mm.KV.Set(key, subs)
+	_, err = s.conf.MattermostAPI().KV.Set(key, subs)
 	if err != nil {
 		return err
 	}

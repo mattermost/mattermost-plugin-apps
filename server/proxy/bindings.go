@@ -2,17 +2,17 @@ package proxy
 
 import (
 	"encoding/json"
-	"sync"
+	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
-	out := append([]*apps.Binding(nil), bb1...)
+func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
+	out := append([]apps.Binding(nil), bb1...)
 
 	for _, b2 := range bb2 {
 		found := false
@@ -37,85 +37,82 @@ func mergeBindings(bb1, bb2 []*apps.Binding) []*apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(sessionID, actingUserID string, cc *apps.Context) ([]*apps.Binding, error) {
+func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error) {
+	all := make(chan []apps.Binding)
+	defer close(all)
+
 	allApps := store.SortApps(p.store.App.AsMap())
-	all := make([][]*apps.Binding, len(allApps))
+	for i := range allApps {
+		app := allApps[i]
 
-	var wg sync.WaitGroup
-	for i, app := range allApps {
-		wg.Add(1)
-		go func(app *apps.App, i int) {
-			defer wg.Done()
-			all[i] = p.GetBindingsForApp(sessionID, actingUserID, cc, app)
-		}(app, i)
-	}
-	wg.Wait()
-
-	ret := []*apps.Binding{}
-	for _, b := range all {
-		ret = mergeBindings(ret, b)
+		go func(app apps.App) {
+			bb := p.GetAppBindings(in, cc, app)
+			all <- bb
+		}(app)
 	}
 
+	ret := []apps.Binding{}
+	for i := 0; i < len(allApps); i++ {
+		bb := <-all
+		ret = mergeBindings(ret, bb)
+	}
 	return ret, nil
 }
 
-// GetBindingsForApp fetches bindings for a specific apps.
-// We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindingsForApp(sessionID, actingUserID string, cc *apps.Context, app *apps.App) []*apps.Binding {
-	if !p.AppIsEnabled(app) {
+// GetAppBindings fetches bindings for a specific apps. We should avoid
+// unnecessary logging here as this route is called very often.
+func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) []apps.Binding {
+	if !p.appIsEnabled(app) {
 		return nil
 	}
 
-	log := p.log.With("app_id", app.AppID)
-
-	appID := app.AppID
-	appCC := *cc
-	appCC.AppID = appID
-	appCC.BotAccessToken = app.BotAccessToken
-
-	// TODO PERF: Add caching
-	bindingsCall := apps.DefaultBindings.WithOverrides(app.Bindings)
-	bindingsRequest := &apps.CallRequest{
-		Call:    *bindingsCall,
-		Context: &appCC,
+	if len(app.GrantedLocations) == 0 {
+		return nil
 	}
 
-	resp := p.Call(sessionID, actingUserID, bindingsRequest)
-	if resp == nil || (resp.Type != apps.CallResponseTypeError && resp.Type != apps.CallResponseTypeOK) {
+	log := p.conf.Logger().With("app_id", app.AppID)
+
+	appID := app.AppID
+	cc.AppID = appID
+
+	// TODO PERF: Add caching
+	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
+
+	// no need to clean the context, Call will do.
+	resp := p.call(in, app, bindingsCall, &cc)
+	switch resp.Type {
+	case apps.CallResponseTypeOK:
+		var bindings = []apps.Binding{}
+		b, _ := json.Marshal(resp.Data)
+		err := json.Unmarshal(b, &bindings)
+		if err != nil {
+			log.WithError(err).Debugf("Bindings are not of the right type.")
+			return nil
+		}
+
+		bindings = p.scanAppBindings(app, bindings, "", cc.UserAgent)
+		return bindings
+
+	case apps.CallResponseTypeError:
+		log.WithError(resp).Debugf("Error getting bindings")
+		return nil
+
+	default:
 		log.Debugf("Bindings response is nil or unexpected type.")
 		return nil
 	}
-
-	// TODO: ignore a 404, no bindings
-	if resp.Type == apps.CallResponseTypeError {
-		log.WithError(resp).Debugf("Error getting bindings.")
-		return nil
-	}
-
-	var bindings = []*apps.Binding{}
-	b, _ := json.Marshal(resp.Data)
-	err := json.Unmarshal(b, &bindings)
-	if err != nil {
-		log.Debugf("Bindings are not of the right type.")
-		return nil
-	}
-
-	bindings = p.scanAppBindings(app, bindings, "")
-
-	return bindings
 }
 
 // scanAppBindings removes bindings to locations that have not been granted to
 // the App, and sets the AppID on the relevant elements.
-func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPrefix apps.Location) []*apps.Binding {
-	out := []*apps.Binding{}
+func (p *Proxy) scanAppBindings(app apps.App, bindings []apps.Binding, locPrefix apps.Location, userAgent string) []apps.Binding {
+	out := []apps.Binding{}
 	locationsUsed := map[apps.Location]bool{}
 	labelsUsed := map[string]bool{}
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
+	log = log.With("app_id", app.AppID)
 
-	for _, appB := range bindings {
-		// clone just in case
-		b := *appB
+	for _, b := range bindings {
 		if b.Location == "" {
 			b.Location = apps.Location(app.Manifest.AppID)
 		}
@@ -129,31 +126,44 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 		if !allowed {
+			log.Debugw("location is not granted to app", "location", fql)
 			continue
 		}
 
-		if fql.IsTop() {
-			if locationsUsed[appB.Location] {
+		if fql.In(apps.LocationCommand) {
+			label := b.Label
+			if label == "" {
+				label = string(b.Location)
+			}
+
+			if strings.ContainsAny(label, " \t") {
+				log.Debugw("Binding validation error: Command label has multiple words", "location", b.Location)
 				continue
 			}
-			locationsUsed[appB.Location] = true
+		}
+
+		if fql.IsTop() {
+			if locationsUsed[b.Location] {
+				continue
+			}
+			locationsUsed[b.Location] = true
 		} else {
 			if b.Location == "" || b.Label == "" {
 				continue
 			}
-			if locationsUsed[appB.Location] || labelsUsed[appB.Label] {
+			if locationsUsed[b.Location] || labelsUsed[b.Label] {
 				continue
 			}
 
-			locationsUsed[appB.Location] = true
-			labelsUsed[appB.Label] = true
+			locationsUsed[b.Location] = true
+			labelsUsed[b.Label] = true
 			b.AppID = app.Manifest.AppID
 		}
 
 		if b.Icon != "" {
 			icon, err := normalizeStaticPath(conf, app.AppID, b.Icon)
 			if err != nil {
-				p.log.WithError(err).Debugw("Invalid icon path in binding",
+				log.WithError(err).Debugw("Invalid icon path in binding",
 					"app_id", app.AppID,
 					"icon", b.Icon)
 				b.Icon = ""
@@ -162,8 +172,17 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			}
 		}
 
+		// First level of Channel Header
+		if fql == apps.LocationChannelHeader.Make(b.Location) {
+			// Must have an icon on webapp to show the icon
+			if b.Icon == "" && userAgent == "webapp" {
+				log.Debugw("Channel header button for webapp without icon", "label", b.Label)
+				continue
+			}
+		}
+
 		if len(b.Bindings) != 0 {
-			scanned := p.scanAppBindings(app, b.Bindings, fql)
+			scanned := p.scanAppBindings(app, b.Bindings, fql, userAgent)
 			if len(scanned) == 0 {
 				// We do not add bindings without any valid sub-bindings
 				continue
@@ -171,7 +190,15 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 			b.Bindings = scanned
 		}
 
-		out = append(out, &b)
+		if b.Form != nil {
+			clean, problems := cleanForm(*b.Form)
+			for _, prob := range problems {
+				log.WithError(prob).Debugf("invalid form field in binding")
+			}
+			b.Form = &clean
+		}
+
+		out = append(out, b)
 	}
 
 	return out
@@ -179,6 +206,7 @@ func (p *Proxy) scanAppBindings(app *apps.App, bindings []*apps.Binding, locPref
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
 	if userID != "" {
-		p.mm.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
+			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -16,17 +16,13 @@ func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
 }
 
-func (p *Proxy) GetManifestFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
-	return p.store.Manifest.GetFromS3(appID, version)
-}
-
 func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
 	return p.store.App.Get(appID)
 }
 
-func (p *Proxy) GetInstalledApps() []*apps.App {
+func (p *Proxy) GetInstalledApps() []apps.App {
 	installed := p.store.App.AsMap()
-	out := []*apps.App{}
+	out := []apps.App{}
 	for _, app := range installed {
 		out = append(out, app)
 	}
@@ -39,20 +35,20 @@ func (p *Proxy) GetInstalledApps() []*apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.ListedApp {
-	conf := p.conf.GetConfig()
-	out := []*apps.ListedApp{}
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
+	conf := p.conf.Get()
+	out := []apps.ListedApp{}
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
 
-		if !includePluginApps && m.AppType == apps.AppTypePlugin {
+		if !includePluginApps && m.Contains(apps.DeployPlugin) {
 			continue
 		}
 
-		marketApp := &apps.ListedApp{
+		marketApp := apps.ListedApp{
 			Manifest: m,
 		}
 
@@ -90,7 +86,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []*apps.Lis
 }
 
 // Copied from Mattermost Server
-func appMatchesFilter(manifest *apps.Manifest, filter string) bool {
+func appMatchesFilter(manifest apps.Manifest, filter string) bool {
 	filter = strings.TrimSpace(strings.ToLower(filter))
 
 	if filter == "" {

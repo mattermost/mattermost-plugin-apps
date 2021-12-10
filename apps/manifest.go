@@ -1,36 +1,73 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
 	"encoding/json"
+	"unicode"
 
-	"github.com/pkg/errors"
+	"github.com/hashicorp/go-multierror"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-// Where static assets are.
-const StaticFolder = "static"
+const MaxManifestSize = 1024 * 1024 // MaxManifestSize is the maximum size of a Manifest in bytes
 
-// Root Call path for incoming webhooks from remote (3rd party) systems. Each
-// webhook URL should be in the form:
-// "{PluginURL}/apps/{AppID}/webhook/{PATH}/.../?secret=XYZ", and it will invoke a
-// Call with "/webhook/{PATH}"."
-const PathWebhook = "/webhook"
+var DefaultPing = Call{
+	Path: "/ping",
+}
+
+var DefaultBindings = Call{
+	Path: path.Bindings,
+}
+
+var DefaultGetOAuth2ConnectURL = Call{
+	Path: "/oauth2/connect",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+	},
+}
+
+var DefaultOnOAuth2Complete = Call{
+	Path: "/oauth2/complete",
+	Expand: &Expand{
+		ActingUser:            ExpandSummary,
+		ActingUserAccessToken: ExpandAll,
+		OAuth2App:             ExpandAll,
+		OAuth2User:            ExpandAll,
+	},
+}
+
+var DefaultOnRemoteWebhook = Call{
+	Path: path.Webhook,
+}
 
 type Manifest struct {
-	// The AppID is a globally unique identifier that represents your app. IDs must be at least
-	// 3 characters, at most 32 characters and must contain only alphanumeric characters, dashes, underscores and periods.
-	AppID   AppID      `json:"app_id"`
-	AppType AppType    `json:"app_type"`
+	// Set to the version of the Apps plugin that stores it, e.g. "v0.8.0"
+	SchemaVersion string
+
+	// The AppID is a globally unique identifier that represents your app. IDs
+	// must be at least 3 characters, at most 32 characters and must contain
+	// only alphanumeric characters, dashes, underscores and periods.
+	AppID AppID `json:"app_id"`
+
+	// Version of the app, formatted as v00.00.000
 	Version AppVersion `json:"version"`
 
 	// HomepageURL is required.
 	HomepageURL string `json:"homepage_url"`
 
+	// DisplayName and Description provide optional information about the App.
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
 
-	// Icon is a relative path in the static assets folder of an png image, which is used to represent the App.
+	// Icon is a relative path in the static assets folder of an png image,
+	// which is used to represent the App.
 	Icon string `json:"icon,omitempty"`
 
 	// Callbacks
@@ -42,8 +79,7 @@ type Manifest struct {
 
 	// OnInstall gets invoked when a sysadmin installs the App with a `/apps
 	// install` command. It may return another call to the app, or a form to
-	// display. It is not called unless explicitly provided in
-	// the manifest.
+	// display. It is not called unless explicitly provided in the manifest.
 	OnInstall *Call `json:"on_install,omitempty"`
 
 	// OnVersionChanged gets invoked when the Mattermost-recommended version of
@@ -73,156 +109,193 @@ type Manifest struct {
 	// (3rd party) OAuth2 flow, and after the "state" has already been
 	// validated. It gets passed the URL query as Values. The App should obtain
 	// the OAuth2 user token, and store it persistently for future use using
-	// mmclient.StoreOAuth2User.
+	// appclient.StoreOAuth2User.
 	OnOAuth2Complete *Call `json:"on_oauth2_complete,omitempty"`
 
-	// Requested Access
+	// OnRemoteWebhook gets invoked when an HTTP webhook is received from a
+	// remote system, and is optionally authenticated by Mattermost. The request
+	// is passed to the call serialized as HTTPCallRequest (JSON).
+	OnRemoteWebhook *Call `json:"on_remote_webhook,omitempty"`
 
+	// Requested Access
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
+
+	// RemoteWebhookAuthType specifies how incoming webhook messages from remote
+	// systems should be authenticated by Mattermost.
+	RemoteWebhookAuthType RemoteWebhookAuthType `json:"remote_webhook_auth_type,omitempty"`
 
 	// RequestedLocations is the list of top-level locations that the
 	// application intends to bind to, e.g. `{"/post_menu", "/channel_header",
 	// "/command/apptrigger"}``.
 	RequestedLocations Locations `json:"requested_locations,omitempty"`
 
-	// App type-specific fields
+	// Deployment information
+	Deploy
 
-	// For HTTP Apps all paths are relative to the RootURL.
-	HTTPRootURL string `json:"root_url,omitempty"`
+	// unexported data
 
-	// AWSLambda must be included by the developer in the published manifest for
-	// AWS apps. These declarations are used to:
-	// - create AWS Lambda functions that will service requests in Mattermost
-	// Cloud;
-	// - define path->function mappings, aka "routes". The function with the
-	// path matching as the longest prefix is used to handle a Call request.
-	AWSLambda []AWSLambda `json:"aws_lambda,omitempty"`
+	// v7AppType is the AppType field value if the Manifest was decoded from a
+	// v0.7.x version. It is used in App.DecodeCompatibleManifest to set
+	// DeployType.
+	v7AppType string
 }
 
-// AWSLambda describes a distinct AWS Lambda function defined by the app, and
-// what path should be mapped to it. See
-// https://developers.mattermost.com/integrate/apps/deployment/#making-your-app-runnable-as-an-aws-lambda-function
-// for more information.
-//
-// cmd/appsctl will create or update the manifest's aws_lambda functions in the
-// AWS Lambda service.
-//
-// upawslambda will use the manifest's aws_lambda functions to find the closest
-// match for the call's path, and then to invoke the AWS Lambda function.
-type AWSLambda struct {
-	// The lambda function with its Path the longest-matching prefix of the
-	// call's Path will be invoked for a call.
-	Path string `json:"path"`
+// DecodeCompatibleManifest decodes any known version of manifest.json into the
+// current format. Since App embeds Manifest anonymously, it appears impossible
+// to implement json.Unmarshaler without introducing all kinds of complexities.
+// Thus, custom functions to encode/decode JSON, with backwards compatibility
+// support for App and Manifest.
+func DecodeCompatibleManifest(data []byte) (m *Manifest, err error) {
+	defer func() {
+		if m != nil {
+			err = m.Validate()
+			if err != nil {
+				m = nil
+			}
+		}
+	}()
 
-	// TODO @iomodo
-	Name    string `json:"name"`
-	Handler string `json:"handler"`
-	Runtime string `json:"runtime"`
-}
-
-func (f AWSLambda) IsValid() error {
-	if f.Path == "" {
-		return utils.NewInvalidError("aws_lambda path must not be empty")
-	}
-	if f.Name == "" {
-		return utils.NewInvalidError("aws_lambda name must not be empty")
-	}
-	if f.Handler == "" {
-		return utils.NewInvalidError("aws_lambda handler must not be empty")
-	}
-	if f.Runtime == "" {
-		return utils.NewInvalidError("aws_lambda runtime must not be empty")
-	}
-	return nil
-}
-
-var DefaultBindings = &Call{
-	Path: "/bindings",
-}
-
-var DefaultGetOAuth2ConnectURL = &Call{
-	Path: "/oauth2/connect",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-	},
-}
-
-var DefaultOnOAuth2Complete = &Call{
-	Path: "/oauth2/complete",
-	Expand: &Expand{
-		ActingUser:            ExpandSummary,
-		ActingUserAccessToken: ExpandAll,
-		OAuth2App:             ExpandAll,
-		OAuth2User:            ExpandAll,
-	},
-}
-
-func (m Manifest) IsValid() error {
-	for _, f := range []func() error{
-		m.AppID.IsValid,
-		m.Version.IsValid,
-		m.AppType.IsValid,
-		m.RequestedPermissions.IsValid,
-	} {
-		if err := f(); err != nil {
-			return err
+	err = json.Unmarshal(data, &m)
+	// If failed to decode as current version, opportunistically try as a
+	// v0.7.x. There was no schema version before, this condition may need to be
+	// updated in the future.
+	if err != nil || m.SchemaVersion == "" {
+		m7 := ManifestV0_7{}
+		_ = json.Unmarshal(data, &m7)
+		if from7 := m7.Manifest(); from7 != nil {
+			return from7, nil
 		}
 	}
-
-	if m.HomepageURL == "" {
-		return utils.NewInvalidError(errors.New("homepage_url is empty"))
+	if err != nil {
+		return nil, err
 	}
+	return m, nil
+}
 
-	if err := utils.IsValidHTTPURL(m.HomepageURL); err != nil {
-		return utils.NewInvalidError(errors.Wrapf(err, "homepage_url invalid: %q", m.HomepageURL))
+type validator interface {
+	Validate() error
+}
+
+func (m Manifest) Validate() error {
+	var result error
+	if m.HomepageURL == "" {
+		result = multierror.Append(result,
+			utils.NewInvalidError("homepage_url is empty"))
+	}
+	if err := httputils.IsValidURL(m.HomepageURL); err != nil {
+		result = multierror.Append(result,
+			utils.NewInvalidError("homepage_url %q invalid: %v", m.HomepageURL, err))
 	}
 
 	if m.Icon != "" {
 		_, err := utils.CleanStaticPath(m.Icon)
 		if err != nil {
-			return err
+			result = multierror.Append(result, err)
 		}
 	}
 
-	switch m.AppType {
-	case AppTypeHTTP:
-		if m.HTTPRootURL == "" {
-			return utils.NewInvalidError(errors.New("root_url must be set for HTTP apps"))
-		}
-
-		err := utils.IsValidHTTPURL(m.HTTPRootURL)
-		if err != nil {
-			return utils.NewInvalidError(errors.Wrapf(err, "invalid root_url: %q", m.HTTPRootURL))
-		}
-
-	case AppTypeAWSLambda:
-		if len(m.AWSLambda) == 0 {
-			return utils.NewInvalidError("must provide at least 1 function in aws_lambda")
-		}
-		for _, l := range m.AWSLambda {
-			err := l.IsValid()
-			if err != nil {
-				return errors.Wrapf(err, "%q is not valid", l.Name)
+	for _, v := range []validator{
+		m.AppID,
+		m.Version,
+		m.RequestedPermissions,
+		m.Deploy,
+	} {
+		if v != nil {
+			if err := v.Validate(); err != nil {
+				result = multierror.Append(result, err)
 			}
 		}
 	}
 
-	return nil
+	return result
 }
 
-func ManifestFromJSON(data []byte) (*Manifest, error) {
-	var m Manifest
-	err := json.Unmarshal(data, &m)
-	if err != nil {
-		return nil, err
+// AppID is a globally unique identifier that represents a Mattermost App.
+// An AppID is restricted to no more than 32 ASCII letters, numbers, '-', or '_'.
+type AppID string
+
+const (
+	MinAppIDLength = 3
+	MaxAppIDLength = 32
+)
+
+func (id AppID) Validate() error {
+	var result error
+	if len(id) < MinAppIDLength {
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too short, should be %d bytes", id, MinAppIDLength))
 	}
 
-	err = m.IsValid()
-	if err != nil {
-		return nil, err
+	if len(id) > MaxAppIDLength {
+		result = multierror.Append(result,
+			utils.NewInvalidError("appID %s too long, should be %d bytes", id, MaxAppIDLength))
 	}
 
-	return &m, nil
+	for _, c := range id {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' || c == '.' {
+			continue
+		}
+
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appID %q", c, id))
+	}
+
+	return result
 }
+
+// AppVersion is the version of a Mattermost App. AppVersion is expected to look
+// like "v00_00_000".
+type AppVersion string
+
+const VersionFormat = "v00_00_000"
+
+func (v AppVersion) Validate() error {
+	var result error
+	if len(v) > len(VersionFormat) {
+		result = multierror.Append(result,
+			utils.NewInvalidError("version %s too long, should be in %s format", v, VersionFormat))
+	}
+
+	for _, c := range v {
+		if unicode.IsLetter(c) {
+			continue
+		}
+
+		if unicode.IsNumber(c) {
+			continue
+		}
+
+		if c == '-' || c == '_' || c == '.' {
+			continue
+		}
+
+		result = multierror.Append(result,
+			utils.NewInvalidError("invalid character '%c' in appVersion", c))
+	}
+
+	return result
+}
+
+type RemoteWebhookAuthType string
+
+const (
+	// No authentication means that the message will be accepted, and passed to
+	// tha app. The app can perform its own authentication then. This is also
+	// the default type.
+	NoAuth = RemoteWebhookAuthType("none")
+
+	// Secret authentication expects the App secret to be passed in the incoming
+	// request's query as ?secret=appsecret.
+	SecretAuth = RemoteWebhookAuthType("secret")
+
+	// JWT authentication: not implemented yet
+	JWTAuth = RemoteWebhookAuthType("jwt")
+)

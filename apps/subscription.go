@@ -5,7 +5,10 @@ package apps
 
 import (
 	"encoding/json"
-	"io"
+
+	"github.com/hashicorp/go-multierror"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Subject string
@@ -24,12 +27,24 @@ const (
 	SubjectUserJoinedChannel Subject = "user_joined_channel"
 	SubjectUserLeftChannel   Subject = "user_left_channel"
 
+	// SubjectBotJoinedChannel and SubjectBotLeftChannel subscribes to
+	// SubjectUserJoinedChannel and SubjectUserLeftChannel plugin events,
+	// specifically when the App's bot is added or removed from the channel
+	SubjectBotJoinedChannel Subject = "bot_joined_channel"
+	SubjectBotLeftChannel   Subject = "bot_left_channel"
+
 	// SubjectUserJoinedTeam and SubjectUserLeftTeam subscribes to respective
 	// plugin events, for the specified team. By default notifications include
 	// ActingUserID, UserID, and TeamID, but only ActingUser is fully expanded.
 	// Expand can be used to expand other entities.
 	SubjectUserJoinedTeam Subject = "user_joined_team"
 	SubjectUserLeftTeam   Subject = "user_left_team"
+
+	// SubjectBotJoinedTeam and SubjectBotLeftTeam subscribes to
+	// SubjectUserJoinedTeam and SubjectUserLeftTeam plugin events,
+	// specifically when the App's bot is added or removed from the team
+	SubjectBotJoinedTeam Subject = "bot_joined_team"
+	SubjectBotLeftTeam   Subject = "bot_left_team"
 
 	// SubjectChannelCreated subscribes to ChannelHasBeenCreated plugin events,
 	// for the specified team. By default notifications include UserID (creator),
@@ -42,6 +57,10 @@ const (
 	// RootPostID, ChannelID, but only Post is fully expanded. Expand can be
 	// used to expand other entities.
 	SubjectPostCreated Subject = "post_created"
+
+	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
+	// when the App's bot is mentioned in the post.
+	SubjectBotMentioned Subject = "bot_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
@@ -50,7 +69,11 @@ const (
 type Subscription struct {
 	// AppID is used internally by Mattermost. It does not need to be set by app
 	// developers.
-	AppID AppID `json:"app_id,omitempty"`
+	AppID AppID `json:"app_id"`
+
+	// UserID is used internally by Mattermost. It does not need to be set by app
+	// developers.
+	UserID string `json:"user_id"`
 
 	// Subscription subject. See type Subject godoc (linked) for details.
 	Subject Subject `json:"subject"`
@@ -60,35 +83,68 @@ type Subscription struct {
 	TeamID    string `json:"team_id,omitempty"`
 
 	// Call is the (one-way) call to make upon the event.
-	Call *Call
+	Call Call
 }
 
-func (sub *Subscription) EqualScope(other *Subscription) bool {
-	s1, s2 := *sub, *other
-	s1.Call, s2.Call = nil, nil
-	return s1 == s2
+func (sub Subscription) Validate() error {
+	var result error
+	if sub.Subject == "" {
+		result = multierror.Append(result, utils.NewInvalidError("subject most not be empty"))
+	}
+
+	emptyCall := Call{}
+	if sub.Call == emptyCall {
+		result = multierror.Append(result, utils.NewInvalidError("call most not be empty"))
+	}
+
+	switch sub.Subject {
+	case SubjectUserCreated,
+		SubjectBotJoinedChannel,
+		SubjectBotLeftChannel,
+		SubjectBotJoinedTeam,
+		SubjectBotLeftTeam,
+		SubjectBotMentioned:
+		if sub.TeamID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
+		}
+		if sub.ChannelID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		}
+
+	case SubjectUserJoinedChannel,
+		SubjectUserLeftChannel,
+		SubjectPostCreated:
+		if sub.TeamID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
+		}
+
+		if sub.ChannelID == "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must not be empty"))
+		}
+
+	case SubjectUserJoinedTeam,
+		SubjectUserLeftTeam,
+		SubjectChannelCreated:
+		if sub.TeamID == "" {
+			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
+		}
+
+		if sub.ChannelID != "" {
+			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		}
+	default:
+		result = multierror.Append(result, utils.NewInvalidError("Unknown subject %s", sub.Subject))
+	}
+
+	return result
+}
+
+func (sub Subscription) EqualScope(s2 Subscription) bool {
+	sub.Call, s2.Call = Call{}, Call{}
+	return sub == s2
 }
 
 func (sub *Subscription) ToJSON() string {
 	b, _ := json.Marshal(sub)
 	return string(b)
-}
-
-type SubscriptionResponse struct {
-	Error  string            `json:"error,omitempty"`
-	Errors map[string]string `json:"errors,omitempty"`
-}
-
-func SubscriptionResponseFromJSON(data io.Reader) *SubscriptionResponse {
-	var o *SubscriptionResponse
-	err := json.NewDecoder(data).Decode(&o)
-	if err != nil {
-		return nil
-	}
-	return o
-}
-
-func (r *SubscriptionResponse) ToJSON() []byte {
-	b, _ := json.Marshal(r)
-	return b
 }

@@ -1,7 +1,10 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -38,6 +41,9 @@ type Context struct {
 
 	// More data as requested by call.Expand
 	ExpandedContext
+
+	// DeveloperMode is set if the apps plugin itself is running in Developer mode.
+	DeveloperMode bool `json:"developer_mode,omitempty"`
 }
 
 // UserAgentContext is a subset of fields from Context that are accepted from the user agent
@@ -68,16 +74,18 @@ type ExpandedContext struct {
 	//  BotAccessToken is always provided in expanded context
 	BotAccessToken string `json:"bot_access_token,omitempty"`
 
-	ActingUser            *model.User    `json:"acting_user,omitempty"`
-	ActingUserAccessToken string         `json:"acting_user_access_token,omitempty"`
-	AdminAccessToken      string         `json:"admin_access_token,omitempty"`
-	OAuth2                OAuth2Context  `json:"oauth2,omitempty"`
-	App                   *App           `json:"app,omitempty"`
-	Channel               *model.Channel `json:"channel,omitempty"`
-	Mentioned             []*model.User  `json:"mentioned,omitempty"`
-	Post                  *model.Post    `json:"post,omitempty"`
-	RootPost              *model.Post    `json:"root_post,omitempty"`
-	Team                  *model.Team    `json:"team,omitempty"`
+	ActingUser            *model.User          `json:"acting_user,omitempty"`
+	ActingUserAccessToken string               `json:"acting_user_access_token,omitempty"`
+	App                   *App                 `json:"app,omitempty"`
+	Channel               *model.Channel       `json:"channel,omitempty"`
+	ChannelMember         *model.ChannelMember `json:"channel_member,omitempty"`
+	Locale                string               `json:"locale,omitempty"`
+	Mentioned             []*model.User        `json:"mentioned,omitempty"`
+	OAuth2                OAuth2Context        `json:"oauth2,omitempty"`
+	Post                  *model.Post          `json:"post,omitempty"`
+	RootPost              *model.Post          `json:"root_post,omitempty"`
+	Team                  *model.Team          `json:"team,omitempty"`
+	TeamMember            *model.TeamMember    `json:"team_member,omitempty"`
 
 	// TODO replace User with mentions
 	User *model.User `json:"user,omitempty"`
@@ -85,7 +93,7 @@ type ExpandedContext struct {
 
 type OAuth2Context struct {
 	// Expanded with "oauth2_app". Config must be previously stored with
-	// mmclient.StoreOAuth2App
+	// appclient.StoreOAuth2App
 	OAuth2App
 	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`

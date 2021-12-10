@@ -5,46 +5,41 @@ import (
 
 	"github.com/gorilla/mux"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 type gateway struct {
-	mm    *pluginapi.Client
-	log   utils.Logger
 	conf  config.Service
 	proxy proxy.Service
 }
 
-func Init(router *mux.Router, mm *pluginapi.Client, log utils.Logger, conf config.Service, proxy proxy.Service, _ appservices.Service) {
+func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
-		mm:    mm,
-		log:   log,
 		conf:  conf,
-		proxy: proxy,
+		proxy: p,
 	}
 
-	subrouter := router.PathPrefix(config.PathApps).Subrouter()
+	subrouter := router.PathPrefix(path.Apps).Subrouter()
 
 	// Static
-	subrouter.HandleFunc("/{appid}/"+apps.StaticFolder+"/{name}",
-		httputils.CheckAuthorized(mm, g.static)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
+		proxy.RequireUser(g.static)).Methods(http.MethodGet)
 
 	// Incoming remote webhooks
-	subrouter.HandleFunc("/{appid}"+apps.PathWebhook+"/{path}",
+	subrouter.HandleFunc("/{appid}"+path.Webhook,
+		g.handleWebhook).Methods(http.MethodPost)
+	subrouter.HandleFunc("/{appid}"+path.Webhook+"/{path}",
 		g.handleWebhook).Methods(http.MethodPost)
 
 	// Remote OAuth2
-	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Connect,
-		httputils.CheckAuthorized(mm, g.remoteOAuth2Connect)).Methods(http.MethodGet)
-	subrouter.HandleFunc("/{appid}"+config.PathRemoteOAuth2Complete,
-		httputils.CheckAuthorized(mm, g.remoteOAuth2Complete)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{appid}"+path.RemoteOAuth2Connect,
+		proxy.RequireUser(g.remoteOAuth2Connect)).Methods(http.MethodGet)
+	subrouter.HandleFunc("/{appid}"+path.RemoteOAuth2Complete,
+		proxy.RequireUser(g.remoteOAuth2Complete)).Methods(http.MethodGet)
 }
 
 func appIDVar(r *http.Request) apps.AppID {

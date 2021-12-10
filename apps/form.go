@@ -1,3 +1,6 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 // Form defines what inputs a Call accepts, and how they can be gathered from
@@ -48,5 +51,18 @@ type Form struct {
 	SubmitButtons string `json:"submit_buttons,omitempty"`
 
 	// Fields is the list of fields in the form.
-	Fields []*Field `json:"fields,omitempty"`
+	Fields []Field `json:"fields,omitempty"`
+}
+
+func (f *Form) PartialCopy() *Form {
+	if f == nil {
+		return &Form{}
+	}
+	clone := *f
+	clone.Call = f.Call.PartialCopy()
+	clone.Fields = nil
+	for _, field := range f.Fields {
+		clone.Fields = append(clone.Fields, *field.PartialCopy())
+	}
+	return &clone
 }

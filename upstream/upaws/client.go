@@ -67,6 +67,7 @@ type Client interface {
 	FindPolicy(policyName Name) (*iam.Policy, error)
 	FindRole(name Name) (ARN, error)
 	FindUser(name Name) (ARN, error)
+	ListS3(bucket, prefix string) ([]string, error)
 	RemoveUserFromGroup(u, g Name) error
 	UploadS3(bucket, key string, body io.Reader, publicRead bool) (string, error)
 }
@@ -113,6 +114,11 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Log
 		log:        log,
 		region:     region,
 	}
+
+	log.Debugw("New AWS client",
+		"region", region,
+		"access", utils.LastN(awsAccessKeyID, 7),
+		"secret", utils.LastN(awsSecretAccessKey, 4))
 
 	return c, nil
 }

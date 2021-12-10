@@ -12,9 +12,11 @@ app.get('/manifest.json', (req, res) => {
     res.json({
         app_id: 'hello-world',
         display_name: 'Hello, world!',
-        app_type: 'http',
         icon: 'icon.png',
-        root_url: 'http://localhost:8080',
+        http: {
+            root_url: 'http://localhost:8080',
+        },
+        homepage_url: 'https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/js/hello-world',
         requested_permissions: [
             'act_as_bot',
         ],

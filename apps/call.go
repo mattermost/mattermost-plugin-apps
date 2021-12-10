@@ -1,7 +1,11 @@
+// Copyright (c) 2020-present Mattermost, Inc. All Rights Reserved.
+// See License for license information.
+
 package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -53,8 +57,7 @@ type CallRequest struct {
 	Values map[string]interface{} `json:"values,omitempty"`
 
 	// Context of execution, see the Context type for more information.
-	// <>/<> TODO: remove pointer
-	Context *Context `json:"context,omitempty"`
+	Context Context `json:"context,omitempty"`
 
 	// In case the request came from the command line, the raw text of the
 	// command, as submitted by the user.
@@ -128,35 +131,43 @@ type CallResponse struct {
 	Form *Form `json:"form,omitempty"`
 }
 
-// ProxyCallResponse contains everything the CallResponse struct contains, plus some additional
-// data for the client, such as information about the App's bot account.
-//
-// Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
-// decorate the response using the ProxyCallResponse to provide additional information.
-type ProxyCallResponse struct {
-	*CallResponse
-
-	// Used to provide info about the App to client, e.g. the bot user id
-	AppMetadata *AppMetadataForClient `json:"app_metadata"`
-}
-
-func NewProxyCallResponse(response *CallResponse, metadata *AppMetadataForClient) *ProxyCallResponse {
-	return &ProxyCallResponse{
-		response,
-		metadata,
-	}
-}
-
-func NewErrorCallResponse(err error) *CallResponse {
-	return &CallResponse{
+func NewErrorResponse(err error) CallResponse {
+	return CallResponse{
 		Type: CallResponseTypeError,
 		// TODO <>/<> ticket use MD instead of ErrorText
 		ErrorText: err.Error(),
 	}
 }
 
+func NewDataResponse(data interface{}) CallResponse {
+	return CallResponse{
+		Type: CallResponseTypeOK,
+		Data: data,
+	}
+}
+
+func NewTextResponse(format string, args ...interface{}) CallResponse {
+	return CallResponse{
+		Type:     CallResponseTypeOK,
+		Markdown: fmt.Sprintf(format, args...),
+	}
+}
+
+func NewFormResponse(form Form) CallResponse {
+	return CallResponse{
+		Type: CallResponseTypeForm,
+		Form: &form,
+	}
+}
+
+func NewLookupResponse(opts []SelectOption) CallResponse {
+	return NewDataResponse(struct {
+		Items []SelectOption `json:"items"`
+	}{opts})
+}
+
 // Error() makes CallResponse a valid error, for convenience
-func (cr *CallResponse) Error() string {
+func (cr CallResponse) Error() string {
 	if cr.Type == CallResponseTypeError {
 		return cr.ErrorText
 	}
@@ -181,41 +192,64 @@ func CallRequestFromJSONReader(in io.Reader) (*CallRequest, error) {
 	return &c, nil
 }
 
-func NewCall(url string) *Call {
-	c := &Call{
-		Path: url,
+func NewCall(path string) Call {
+	c := Call{
+		Path: path,
 	}
 	return c
 }
 
-func (c *Call) WithOverrides(override *Call) *Call {
-	out := Call{}
-	if c != nil {
-		out = *c
+func (c *Call) WithDefault(def Call) Call {
+	if c == nil {
+		return def
 	}
-	if override == nil {
-		return &out
+	clone := *c
+
+	if clone.Path == "" {
+		clone.Path = def.Path
 	}
-	if override.Path != "" {
-		out.Path = override.Path
+	if clone.Expand == nil {
+		clone.Expand = def.Expand
 	}
-	if override.Expand != nil {
-		out.Expand = override.Expand
+	if clone.State == nil {
+		clone.State = def.State
 	}
-	return &out
+	return clone
 }
 
-func (c *CallRequest) GetValue(name, defaultValue string) string {
-	if len(c.Values) == 0 {
+func (c *Call) PartialCopy() *Call {
+	if c == nil {
+		return nil
+	}
+
+	clone := *c
+	if clone.Expand != nil {
+		cloneExpand := *clone.Expand
+		clone.Expand = &cloneExpand
+	}
+
+	// Only know how to clone map values for State.
+	if state, ok := clone.State.(map[string]interface{}); ok {
+		cloneState := map[string]interface{}{}
+		for k, v := range state {
+			cloneState[k] = v
+		}
+		clone.State = cloneState
+	}
+	return &clone
+}
+
+func (creq *CallRequest) GetValue(name, defaultValue string) string {
+	if len(creq.Values) == 0 {
 		return defaultValue
 	}
 
-	s, ok := c.Values[name].(string)
+	s, ok := creq.Values[name].(string)
 	if ok && s != "" {
 		return s
 	}
 
-	opt, ok := c.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]interface{})
 	if ok {
 		if v, ok2 := opt["value"].(string); ok2 {
 			return v
@@ -223,4 +257,37 @@ func (c *CallRequest) GetValue(name, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+func (creq *CallRequest) BoolValue(name string) bool {
+	if len(creq.Values) == 0 {
+		return false
+	}
+
+	isBool := func(v interface{}) (bool, bool) {
+		if b, ok := v.(bool); ok {
+			return b, true
+		}
+		if b, ok := creq.Values[name].(string); ok {
+			switch b {
+			case "true":
+				return true, true
+			case "false":
+				return false, true
+			}
+		}
+		return false, false
+	}
+
+	if b, ok := isBool(creq.Values[name]); ok {
+		return b
+	}
+	opt, ok := creq.Values[name].(map[string]interface{})
+	if ok {
+		if v, ok2 := isBool(opt["value"]); ok2 {
+			return v
+		}
+	}
+
+	return false
 }

@@ -11,25 +11,24 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 )
 
 type StaticUpstream struct {
-	pluginID   string
 	httpClient http.Client
 }
 
-var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
-
-func NewStaticUpstream(a *apps.App, api PluginHTTPAPI) *StaticUpstream {
+func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	return &StaticUpstream{
-		pluginID:   a.PluginID,
 		httpClient: MakePluginHTTPClient(api),
 	}
 }
 
-func (u *StaticUpstream) GetStatic(p string) (io.ReadCloser, int, error) {
-	url := path.Join("/"+u.pluginID, apps.PluginAppPath, apps.StaticFolder, p)
+func (u *StaticUpstream) GetStatic(app apps.App, assetPath string) (io.ReadCloser, int, error) {
+	if !app.Contains(apps.DeployPlugin) {
+		return nil, http.StatusInternalServerError, errors.New("app is not available as type plugin")
+	}
+	url := path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, appspath.StaticFolder, assetPath)
 
 	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {

@@ -11,28 +11,25 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-type StaticUpstream struct {
-	rootURL string
-	httpOut httpout.Service
-}
-
-var _ upstream.StaticUpstream = (*StaticUpstream)(nil)
-
-func NewStaticUpstream(m *apps.Manifest, httpOut httpout.Service) *StaticUpstream {
-	return &StaticUpstream{
-		rootURL: m.HTTPRootURL,
-		httpOut: httpOut,
+func (u *Upstream) GetStatic(app apps.App, urlPath string) (io.ReadCloser, int, error) {
+	if !app.Manifest.Contains(apps.DeployHTTP) {
+		return nil, http.StatusInternalServerError, errors.New("app is not available as type http")
 	}
-}
+	rootURL, err := u.appRootURL(app, "/")
+	if err != nil {
+		return nil, http.StatusNotFound, err
+	}
+	url, err := utils.CleanURL(fmt.Sprintf("%s/%s/%s", rootURL, path.StaticFolder, urlPath))
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
 
-func (u *StaticUpstream) GetStatic(path string) (io.ReadCloser, int, error) {
-	url := fmt.Sprintf("%s/%s/%s", u.rootURL, apps.StaticFolder, path)
-
-	resp, err := http.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
+	client := u.httpOut.MakeClient(u.devMode)
+	resp, err := client.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}

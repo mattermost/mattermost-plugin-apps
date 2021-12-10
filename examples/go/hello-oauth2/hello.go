@@ -14,7 +14,13 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+)
+
+const (
+	host = "localhost"
+	port = 8082
 )
 
 //go:embed icon.png
@@ -23,14 +29,14 @@ var iconData []byte
 //go:embed manifest.json
 var manifestData []byte
 
-//go:embed bindings.json
-var bindingsData []byte
-
 //go:embed send_form.json
 var sendFormData []byte
 
 //go:embed connect_form.json
 var connectFormData []byte
+
+//go:embed disconnect_form.json
+var disconnectFormData []byte
 
 //go:embed configure_form.json
 var configureFormData []byte
@@ -39,13 +45,14 @@ func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", writeJSON(manifestData))
+	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
 
 	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", writeJSON(bindingsData))
+	http.HandleFunc("/bindings", bindings)
 
 	// Serve the icon for the App.
-	http.HandleFunc("/static/icon.png", writeData("image/png", iconData))
+	http.HandleFunc("/static/icon.png",
+		httputils.HandleData("image/png", iconData))
 
 	// Google OAuth2 handlers
 
@@ -58,20 +65,94 @@ func main() {
 	// Submit handlers
 
 	// `configure` command - sets up Google OAuth client credentials.
-	http.HandleFunc("/configure/form", writeJSON(configureFormData))
+	http.HandleFunc("/configure/form", httputils.HandleJSONData(configureFormData))
 	http.HandleFunc("/configure/submit", configure)
 
 	// `connect` command - display the OAuth2 connect link.
 	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
 	// cached by the user agent as a {}
-	http.HandleFunc("/connect/form", writeJSON(connectFormData))
+	http.HandleFunc("/connect/form", httputils.HandleJSONData(connectFormData))
 	http.HandleFunc("/connect/submit", connect)
 
+	// `disconnect` command - disconnect your account.
+	http.HandleFunc("/disconnect/form", httputils.HandleJSONData(disconnectFormData))
+	http.HandleFunc("/disconnect/submit", disconnect)
+
 	// `send` command - send a Hello message.
-	http.HandleFunc("/send/form", writeJSON(sendFormData))
+	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
 	http.HandleFunc("/send/submit", send)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%v", port)
+	rootURL := fmt.Sprintf("http://%v:%v", host, port)
+	fmt.Printf("hello-oauth2 app listening on %q \n", addr)
+	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
+	panic(http.ListenAndServe(addr, nil))
+}
+
+func bindings(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	commandBinding := apps.Binding{
+		Icon:        "icon.png",
+		Label:       "hello-oauth2",
+		Description: "Hello remote (3rd party) OAuth2 App",
+		Hint:        "",
+		Bindings:    []apps.Binding{},
+	}
+
+	token := oauth2.Token{}
+	remarshal(&token, creq.Context.OAuth2.User)
+
+	if token.AccessToken == "" {
+		connect := apps.Binding{
+			Location: "connect",
+			Label:    "connect",
+			Call: &apps.Call{
+				Path: "/connect",
+			},
+		}
+
+		commandBinding.Bindings = append(commandBinding.Bindings, connect)
+	} else {
+		send := apps.Binding{
+			Location: "send",
+			Label:    "send",
+			Call: &apps.Call{
+				Path: "/send",
+			},
+		}
+
+		disconnect := apps.Binding{
+			Location: "disconnect",
+			Label:    "disconnect",
+			Call: &apps.Call{
+				Path: "/disconnect",
+			},
+		}
+		commandBinding.Bindings = append(commandBinding.Bindings, send, disconnect)
+	}
+
+	if creq.Context.ActingUser.IsSystemAdmin() {
+		configure := apps.Binding{
+			Location: "configure",
+			Label:    "configure",
+			Call: &apps.Call{
+				Path: "/configure",
+			},
+		}
+		commandBinding.Bindings = append(commandBinding.Bindings, configure)
+	}
+
+	json.NewEncoder(w).Encode(apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: []apps.Binding{{
+			Location: apps.LocationCommand,
+			Bindings: []apps.Binding{
+				commandBinding,
+			},
+		}},
+	})
 }
 
 func configure(w http.ResponseWriter, req *http.Request) {
@@ -80,20 +161,36 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientID, _ := creq.Values["client_id"].(string)
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
-	asAdmin := mmclient.AsAdmin(creq.Context)
-	asAdmin.StoreOAuth2App(creq.Context.AppID, clientID, clientSecret)
-
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "updated OAuth client credentials",
+	asUser := appclient.AsActingUser(creq.Context)
+	asUser.StoreOAuth2App(creq.Context.AppID, apps.OAuth2App{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 	})
+
+	json.NewEncoder(w).Encode(
+		apps.NewTextResponse("updated OAuth client credentials"))
 }
 
 func connect(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
+	json.NewEncoder(w).Encode(
+		apps.NewTextResponse("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL))
+}
+
+func disconnect(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+
+	asActingUser := appclient.AsActingUser(creq.Context)
+	err := asActingUser.StoreOAuth2User(creq.Context.AppID, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: fmt.Sprintf("[Connect](%s) to Google.", creq.Context.OAuth2.ConnectURL),
+		Markdown: "Disconnected your Google account",
 	})
 }
 
@@ -118,10 +215,7 @@ func oauth2Connect(w http.ResponseWriter, req *http.Request) {
 
 	url := oauth2Config(&creq).AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Type: apps.CallResponseTypeOK,
-		Data: url,
-	})
+	httputils.WriteJSON(w, apps.NewDataResponse(url))
 }
 
 func oauth2Complete(w http.ResponseWriter, req *http.Request) {
@@ -131,10 +225,10 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 
 	token, _ := oauth2Config(&creq).Exchange(context.Background(), code)
 
-	asActingUser := mmclient.AsActingUser(creq.Context)
+	asActingUser := appclient.AsActingUser(creq.Context)
 	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
 
-	json.NewEncoder(w).Encode(apps.CallResponse{})
+	httputils.WriteJSON(w, apps.NewDataResponse(nil))
 }
 
 func send(w http.ResponseWriter, req *http.Request) {
@@ -162,26 +256,13 @@ func send(w http.ResponseWriter, req *http.Request) {
 		message += " You have no calendars.\n"
 	}
 
-	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: message,
-	})
+	httputils.WriteJSON(w, apps.NewTextResponse(message))
 
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()
 	if err != nil && newToken.AccessToken != token.AccessToken {
-		mmclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
+		appclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
 	}
-}
-
-func writeData(ct string, data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", ct)
-		w.Write(data)
-	}
-}
-
-func writeJSON(data []byte) func(w http.ResponseWriter, r *http.Request) {
-	return writeData("application/json", data)
 }
 
 func remarshal(dst, src interface{}) {

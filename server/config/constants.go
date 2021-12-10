@@ -3,7 +3,11 @@
 
 package config
 
-import "github.com/mattermost/mattermost-plugin-apps/apps"
+const (
+	MattermostSessionIDHeader = "Mattermost-Session-Id"
+	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
+	MattermostUserIDHeader    = "Mattermost-User-Id"
+)
 
 // Internal configuration apps.of mattermost-plugin-apps
 const (
@@ -17,33 +21,12 @@ const (
 )
 
 const (
-	// TODO replace Interactive Dialogs with Modal, eliminate the need for
-	// /dialog endpoints.
-	InteractiveDialogPath = "/dialog"
-
 	// Top-level path(s) for HTTP example apps.
 	HelloHTTPPath = "/example/hello"
 
-	// Path to the Call API
-	// <>/<> TODO: ticket migrate to gateway
-	PathCall = "/call"
-
-	// Top-level path for the Apps namespaces, followed by /{AppID}/...
-	PathApps = "/apps"
-
-	// OAuth2 App's HTTP endpoints in the {PluginURL}/apps/{AppID} space.
-	PathMattermostOAuth2Connect  = "/oauth2/mattermost/connect"
-	PathMattermostOAuth2Complete = "/oauth2/mattermost/complete"
-	PathRemoteOAuth2Connect      = "/oauth2/remote/connect"
-	PathRemoteOAuth2Complete     = "/oauth2/remote/complete"
-
-	// Static assets are served from {PluginURL}/static/...
-	PathStatic = "/" + apps.StaticFolder
-
-	// Marketplace sub-paths.
-	PathMarketplace = "/marketplace"
-
 	WebSocketEventRefreshBindings = "refresh_bindings"
+	WebSocketEventPluginEnabled   = "plugin_enabled"
+	WebSocketEventPluginDisabled  = "plugin_disabled"
 )
 
 const (

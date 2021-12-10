@@ -5,61 +5,61 @@ package main
 
 import (
 	gohttp "net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
+	"github.com/mattermost/mattermost-plugin-api/i18n"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello/http_hello"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
-	"github.com/mattermost/mattermost-plugin-apps/server/command"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/dialog"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
+	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	config.BuildConfig
+	manifest model.Manifest
 
-	mm   *pluginapi.Client
 	conf config.Service
 	log  utils.Logger
-	aws  upaws.Client
 
 	store       *store.Service
 	appservices appservices.Service
 	proxy       proxy.Service
 
-	command command.Service
-
 	httpIn  httpin.Service
 	httpOut httpout.Service
+
+	telemetryClient mmtelemetry.Client
+	tracker         *telemetry.Telemetry
 }
 
-func NewPlugin(buildConfig config.BuildConfig) *Plugin {
+func NewPlugin(pluginManifest model.Manifest) *Plugin {
 	return &Plugin{
-		BuildConfig: buildConfig,
+		manifest: pluginManifest,
 	}
 }
 
-func (p *Plugin) OnActivate() error {
-	p.mm = pluginapi.NewClient(p.API, p.Driver)
-	p.log = utils.NewPluginLogger(p.mm)
+func (p *Plugin) OnActivate() (err error) {
+	mm := pluginapi.NewClient(p.API, p.Driver)
+	p.log = utils.NewPluginLogger(mm)
 
-	botUserID, err := p.mm.Bot.EnsureBot(&model.Bot{
+	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
 		DisplayName: config.BotDisplayName,
 		Description: config.BotDescription,
@@ -68,14 +68,29 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 
-	p.conf = config.NewService(p.mm, p.log, p.BuildConfig, botUserID)
+	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
+	if err != nil {
+		return err
+	}
+
+	p.telemetryClient, err = mmtelemetry.NewRudderClient()
+	if err != nil {
+		p.API.LogWarn("telemetry client not started", "error", err.Error())
+	}
+
+	p.tracker = telemetry.NewTelemetry(nil)
+
+	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	stored := config.StoredConfig{}
-	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored)
 	if err != nil {
-		return errors.Wrap(err, "failed to reconfigure configurator on startup")
+		return errors.Wrap(err, "failed to load initial configuration")
 	}
-	conf := p.conf.GetConfig()
+	conf, _, log := p.conf.Basic()
+	p.log = log
+	log = log.With("callback", "onactivate")
+
 	mode := "Self-managed"
 	if conf.MattermostCloudMode {
 		mode = "Mattermost Cloud"
@@ -83,87 +98,94 @@ func (p *Plugin) OnActivate() error {
 	if conf.DeveloperMode {
 		mode += ", Developer Mode"
 	}
-	p.log.Debugf("Initialized config service: %s", mode)
-
-	p.aws, err = upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, p.log)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize AWS access")
-	}
-	p.log.Debugw("Initialized AWS Client",
-		"region", conf.AWSRegion,
-		"bucket", conf.AWSS3Bucket,
-		"access", utils.LastN(conf.AWSAccessKey, 7),
-		"secret", utils.LastN(conf.AWSSecretKey, 4))
+	log = log.With("mode", mode)
 
 	p.httpOut = httpout.NewService(p.conf)
-	p.log.Debugf("Initialized outgoing HTTP")
 
-	p.store = store.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket)
-	// manifest store
-	mstore := p.store.Manifest
-	mstore.Configure(conf)
-	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(p.httpOut)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
-		}
+	p.store, err = store.MakeService(p.conf, p.API, p.httpOut)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize persistent store")
 	}
-	// app store
-	appstore := p.store.App
-	appstore.Configure(conf)
-	p.log.Debugf("Initialized the persistent store")
+	p.store.App.InitBuiltin(builtin.App(conf))
+	p.log.Debugf("Initialized persistent store")
+
+	p.appservices = appservices.NewService(p.conf, p.store)
 
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.mm, p.log, p.conf, p.aws, conf.AWSS3Bucket, p.store, mutex, p.httpOut)
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut)
+	err = p.proxy.Configure(conf)
+	if err != nil {
+		return errors.Wrapf(err, "failed to initialize app proxy service")
+	}
+	p.proxy.AddBuiltinUpstream(
+		builtin.AppID,
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut),
+	)
 	p.log.Debugf("Initialized the app proxy")
 
-	p.appservices = appservices.NewService(p.mm, p.conf, p.store)
-	p.log.Debugf("Initialized the app REST APIs")
-
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.mm, p.log, p.conf, p.proxy, p.appservices,
-		dialog.Init,
+	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
 		restapi.Init,
 		gateway.Init,
-		http_hello.Init,
 	)
-	p.log.Debugf("Initialized incoming HTTP")
-
-	p.command, err = command.MakeService(p.mm, p.log, p.conf, p.proxy, p.httpOut)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize own command handling")
-	}
-	p.log.Debugf("Initialized slash commands")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.log.WithError(err).Errorf("Failed to synchronize apps metadata")
+			log.WithError(err).Errorf("Failed to synchronize apps metadata")
 		} else {
-			p.log.Debugf("Synchronized the installed apps metadata")
+			log.Debugf("Synchronized the installed apps metadata")
+		}
+	}
+	log.Infof("Plugin activated")
+
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	conf, _, _ := p.conf.Basic()
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
+
+	if p.telemetryClient != nil {
+		err := p.telemetryClient.Close()
+		if err != nil {
+			p.API.LogWarn("OnDeactivate: failed to close telemetryClient", "error", err.Error())
 		}
 	}
 
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() error {
+func (p *Plugin) OnConfigurationChange() (err error) {
+	defer func() {
+		if err != nil {
+			p.log.WithError(err).Errorf("Failed to reconfigure")
+		}
+	}()
+
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
 	}
 
+	enableDiagnostics := false
+	if config := p.API.GetConfig(); config != nil {
+		if configValue := config.LogSettings.EnableDiagnostics; configValue != nil {
+			enableDiagnostics = *configValue
+		}
+	}
+	updatedTracker := mmtelemetry.NewTracker(p.telemetryClient, p.API.GetDiagnosticId(), p.API.GetServerVersion(), manifest.Id, manifest.Version, "appsFramework", enableDiagnostics)
+	p.tracker.UpdateTracker(updatedTracker)
+
+	mm := pluginapi.NewClient(p.API, p.Driver)
 	stored := config.StoredConfig{}
-	_ = p.mm.Configuration.LoadPluginConfiguration(&stored)
+	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.command)
-}
-
-func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	resp, _ := p.command.ExecuteCommand(c, args)
-	return resp, nil
+	return p.conf.Reconfigure(stored, p.store.App, p.store.Manifest, p.proxy)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
@@ -171,33 +193,49 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 }
 
 func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		UserID: user.Id,
-		ExpandedContext: apps.ExpandedContext{
-			User: user,
+	err := p.proxy.Notify(
+		apps.Context{
+			UserID: user.Id,
+			ExpandedContext: apps.ExpandedContext{
+				User: user,
+			},
 		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectUserCreated)
+		apps.SubjectUserCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasBeenCreated")
+	}
 }
 
 func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserJoinedChannel)
+	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
+	}
 }
 
 func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newChannelMemberContext(cm, actingUser), apps.SubjectUserLeftChannel)
+	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
+	}
 }
 
 func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserJoinedTeam)
+	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
+	}
 }
 
 func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
-	_ = p.proxy.Notify(p.newTeamMemberContext(tm, actingUser), apps.SubjectUserLeftTeam)
+	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
+	}
 }
 
 func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
-	shouldProcessMessage, err := p.Helpers.ShouldProcessMessage(post, plugin.BotID(p.conf.GetConfig().BotUserID))
+	shouldProcessMessage, err := p.conf.MattermostAPI().Post.ShouldProcessMessage(post, pluginapi.BotID(p.conf.Get().BotUserID))
 	if err != nil {
 		p.log.WithError(err).Errorf("Error while checking if the message should be processed")
 		return
@@ -207,26 +245,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 		return
 	}
 
-	_ = p.proxy.Notify(
-		p.newPostCreatedContext(post), apps.SubjectPostCreated)
-}
-
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
-	cc := p.conf.GetConfig().SetContextDefaults(&apps.Context{
-		UserAgentContext: apps.UserAgentContext{
-			TeamID:    ch.TeamId,
-			ChannelID: ch.Id,
-		},
-		UserID: ch.CreatorId,
-		ExpandedContext: apps.ExpandedContext{
-			Channel: ch,
-		},
-	})
-	_ = p.proxy.Notify(cc, apps.SubjectChannelCreated)
-}
-
-func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+	err = p.proxy.NotifyMessageHasBeenPosted(post, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			PostID:     post.Id,
 			RootPostID: post.RootId,
@@ -237,38 +256,43 @@ func (p *Plugin) newPostCreatedContext(post *model.Post) *apps.Context {
 			Post: post,
 		},
 	})
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling MessageHasBeenPosted")
+	}
 }
 
-func (p *Plugin) newTeamMemberContext(tm *model.TeamMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	err := p.proxy.Notify(
+		apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    ch.TeamId,
+				ChannelID: ch.Id,
+			},
+			UserID: ch.CreatorId,
+			ExpandedContext: apps.ExpandedContext{
+				Channel: ch,
+			},
+		},
+		apps.SubjectChannelCreated)
+	if err != nil {
+		p.log.WithError(err).Debugf("Error handling ChannelHasBeenCreated")
 	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+}
+
+func (p *Plugin) newTeamMemberContext(tm *model.TeamMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID: tm.TeamId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       tm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: tm.UserId,
+	}
 }
 
-func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember, actingUser *model.User) *apps.Context {
-	actingUserID := ""
-	if actingUser != nil {
-		actingUserID = actingUser.Id
-	}
-	return p.conf.GetConfig().SetContextDefaults(&apps.Context{
+func (p *Plugin) newChannelMemberContext(cm *model.ChannelMember) apps.Context {
+	return apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			ChannelID: cm.ChannelId,
 		},
-		ActingUserID: actingUserID,
-		UserID:       cm.UserId,
-		ExpandedContext: apps.ExpandedContext{
-			ActingUser: actingUser,
-		},
-	})
+		UserID: cm.UserId,
+	}
 }
