@@ -12,9 +12,7 @@ Join the [Mattermost Apps channel](https://community.mattermost.com/core/channel
 
 ## Getting Started
 
-Use the Apps Framework [development environment](dev) to get up and running quickly. This development environment is used to spin up several Docker containers, so that a Mattermost server can communicate with those containers. When you are making changes to Mattermost projects (e.g. server, webapp), you have to manually run the Mattermost server, which communicates to these Docker containers.
-
-Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
+Use the Apps Framework [development environment](dev) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
 
 Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps/).
 
