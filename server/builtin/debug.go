@@ -53,6 +53,20 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					a.debugSessionsRevoke().commandBinding(loc),
 				},
 			},
+			{
+				Location: "oauth",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.oauth.label",
+					Other: "oauth",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.oauth.description",
+					Other: "View information about the remote OAuth app.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugOAuthConfigView().commandBinding(loc),
+				},
+			},
 		},
 	}
 }

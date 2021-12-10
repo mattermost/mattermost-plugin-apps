@@ -52,25 +52,26 @@ const (
 )
 
 const (
-	pDebugBindings       = "/debug/bindings"
-	pDebugClean          = "/debug/clean"
-	pDebugKVInfo         = "/debug/kv/info"
-	pDebugKVCreate       = "/debug/kv/create"
-	pDebugKVEdit         = "/debug/kv/edit"
-	pDebugKVEditModal    = "/debug/kv/edit-modal"
-	pDebugKVClean        = "/debug/kv/clean"
-	pDebugKVList         = "/debug/kv/list"
-	pDebugSessionsList   = "/debug/session/list"
-	pDebugSessionsView   = "/debug/session/view"
-	pDebugSessionsRevoke = "/debug/session/delete"
-	pDisable             = "/disable"
-	pEnable              = "/enable"
-	pInfo                = "/info"
-	pInstallConsent      = "/install-consent"
-	pInstallHTTP         = "/install/http"
-	pInstallListed       = "/install/listed"
-	pList                = "/list"
-	pUninstall           = "/uninstall"
+	pDebugBindings        = "/debug/bindings"
+	pDebugClean           = "/debug/clean"
+	pDebugKVInfo          = "/debug/kv/info"
+	pDebugKVCreate        = "/debug/kv/create"
+	pDebugKVEdit          = "/debug/kv/edit"
+	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugKVClean         = "/debug/kv/clean"
+	pDebugKVList          = "/debug/kv/list"
+	pDebugSessionsList    = "/debug/session/list"
+	pDebugSessionsView    = "/debug/session/view"
+	pDebugSessionsRevoke  = "/debug/session/delete"
+	pDebugOAuthConfigView = "/debug/oauth/config/view"
+	pDisable              = "/disable"
+	pEnable               = "/enable"
+	pInfo                 = "/info"
+	pInstallConsent       = "/install-consent"
+	pInstallHTTP          = "/install/http"
+	pInstallListed        = "/install/listed"
+	pList                 = "/list"
+	pUninstall            = "/uninstall"
 )
 
 type handler struct {
@@ -106,24 +107,25 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInfo: a.info(),
 
 		// Actions that require sysadmin
-		pDebugBindings:       a.debugBindings(),
-		pDebugClean:          a.debugClean(),
-		pDebugKVClean:        a.debugKVClean(),
-		pDebugKVCreate:       a.debugKVCreate(),
-		pDebugKVEdit:         a.debugKVEdit(),
-		pDebugKVEditModal:    a.debugKVEditModal(),
-		pDebugKVInfo:         a.debugKVInfo(),
-		pDebugKVList:         a.debugKVList(),
-		pDebugSessionsList:   a.debugSessionsList(),
-		pDebugSessionsRevoke: a.debugSessionsRevoke(),
-		pDebugSessionsView:   a.debugSessionsView(),
-		pDisable:             a.disable(),
-		pEnable:              a.enable(),
-		pInstallConsent:      a.installConsent(),
-		pInstallHTTP:         a.installHTTP(),
-		pInstallListed:       a.installListed(),
-		pList:                a.list(),
-		pUninstall:           a.uninstall(),
+		pDebugBindings:        a.debugBindings(),
+		pDebugClean:           a.debugClean(),
+		pDebugKVClean:         a.debugKVClean(),
+		pDebugKVCreate:        a.debugKVCreate(),
+		pDebugKVEdit:          a.debugKVEdit(),
+		pDebugKVEditModal:     a.debugKVEditModal(),
+		pDebugKVInfo:          a.debugKVInfo(),
+		pDebugKVList:          a.debugKVList(),
+		pDebugSessionsList:    a.debugSessionsList(),
+		pDebugSessionsRevoke:  a.debugSessionsRevoke(),
+		pDebugSessionsView:    a.debugSessionsView(),
+		pDebugOAuthConfigView: a.debugOAuthConfigView(),
+		pDisable:              a.disable(),
+		pEnable:               a.enable(),
+		pInstallConsent:       a.installConsent(),
+		pInstallHTTP:          a.installHTTP(),
+		pInstallListed:        a.installListed(),
+		pList:                 a.list(),
+		pUninstall:            a.uninstall(),
 	}
 
 	return a
