@@ -738,13 +738,14 @@ func TestCleanAppBinding(t *testing.T) {
 	for name, tc := range map[string]TC{
 		"happy simplest": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
-				Location: "appid",
-				Label:    "appid",
+				Location: "test",
+				Label:    "test",
 				Submit:   apps.NewCall("/hello"),
 			},
 		},
@@ -786,6 +787,39 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			expectedProblems: "1 error occurred:\n\t* trimmed whitespace from label test-label\n\n",
 		},
+		"label defaults to location for command": {
+			in: apps.Binding{
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationCommand.Sub("main-command"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test",
+				Label:    "test",
+				Submit:   apps.NewCall("/hello"),
+			},
+		},
+		"label does not default for non-commands": {
+			in: apps.Binding{
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+			},
+			locPrefix: apps.LocationChannelHeader.Sub("some"),
+			expected: &apps.Binding{
+				AppID:    "appid",
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+			},
+		},
+		"ERROR neither location nor label": {
+			in: apps.Binding{
+				Submit: apps.NewCall("/hello"),
+			},
+			locPrefix:        apps.LocationCommand.Sub("main-command"),
+			expected:         nil,
+			expectedProblems: "1 error occurred:\n\t* either location or label must be provided in a binding\n\n",
+		},
 		"ERROR whitsepace in command label": {
 			in: apps.Binding{
 				Location: "test",
@@ -798,50 +832,54 @@ func TestCleanAppBinding(t *testing.T) {
 		},
 		"normalize icon path": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
-				Icon:   "a///static.icon",
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
+				Icon:     "a///static.icon",
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
-				Location: "appid",
-				Label:    "appid",
+				Location: "test",
+				Label:    "test",
 				Icon:     "/apps/appid/static/a/static.icon",
 				Submit:   apps.NewCall("/hello"),
 			},
 		},
 		"invalid icon path": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
-				Icon:   "../a/...//static.icon",
+				Submit:   apps.NewCall("/hello"),
+				Location: "test",
+				Icon:     "../a/...//static.icon",
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
-				Location: "appid",
-				Label:    "appid",
+				Location: "test",
+				Label:    "test",
 				Submit:   apps.NewCall("/hello"),
 			},
 			expectedProblems: "1 error occurred:\n\t* invalid icon path \"../a/...//static.icon\" in binding\n\n",
 		},
 		"ERROR: icon required for ChannelHeader in webapp": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			userAgent:        "webapp",
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* no icon in channel header binding /channel_header/appid\n\n",
+			expectedProblems: "1 error occurred:\n\t* no icon in channel header binding /channel_header/test\n\n",
 		},
 		"icon not required for ChannelHeader in mobile": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
+				Location: "test",
+				Submit:   apps.NewCall("/hello"),
 			},
 			locPrefix: apps.LocationChannelHeader,
 			userAgent: "something-else",
 			expected: &apps.Binding{
 				AppID:    "appid",
-				Location: "appid",
+				Location: "test",
 				Submit:   apps.NewCall("/hello"),
 			},
 		},

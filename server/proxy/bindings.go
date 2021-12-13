@@ -153,10 +153,13 @@ func cleanAppBinding(
 	conf config.Config,
 ) (*apps.Binding, error) {
 	var problems error
+	if b.Location == "" && b.Label == "" {
+		return nil, multierror.Append(problems, errors.Errorf("either location or label must be provided in a binding"))
+	}
 
 	// Cleanup Location.
 	if b.Location == "" {
-		b.Location = apps.Location(app.Manifest.AppID)
+		b.Location = apps.Location(b.Label)
 	}
 	if trimmed := apps.Location(strings.TrimSpace(string(b.Location))); trimmed != b.Location {
 		problems = multierror.Append(problems, errors.Errorf("trimmed whitespace from location %s", trimmed))
