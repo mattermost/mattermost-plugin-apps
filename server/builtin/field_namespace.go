@@ -35,9 +35,6 @@ func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localize
 }
 
 func (a *builtinApp) lookupNamespace(creq apps.CallRequest) apps.CallResponse {
-	if creq.SelectedField != fNamespace {
-		return apps.NewErrorResponse(errors.Errorf("unknown field %q", creq.SelectedField))
-	}
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	if appID == "" {
 		return apps.NewErrorResponse(errors.Errorf("please select --" + fAppID + " first"))

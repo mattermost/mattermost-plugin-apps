@@ -23,12 +23,6 @@ type CallRequest struct {
 	// In case the request came from the command line, the raw text of the
 	// command, as submitted by the user.
 	RawCommand string `json:"raw_command,omitempty"`
-
-	// SelectedField and Query are used in calls of type lookup, and calls type
-	// form used to refresh the form upon user entry, to communicate what field
-	// is selected, and what query string is already entered by the user for it.
-	SelectedField string `json:"selected_field,omitempty"`
-	Query         string `json:"query,omitempty"`
 }
 
 // UnmarshalJSON has to be defined since Call is embedded anonymously, and
@@ -44,11 +38,9 @@ func (creq *CallRequest) UnmarshalJSON(data []byte) error {
 	// Need a type that is just like CallRequest, but without Call to avoid
 	// recursion.
 	structValue := struct {
-		Values        map[string]interface{} `json:"values,omitempty"`
-		Context       Context                `json:"context,omitempty"`
-		RawCommand    string                 `json:"raw_command,omitempty"`
-		SelectedField string                 `json:"selected_field,omitempty"`
-		Query         string                 `json:"query,omitempty"`
+		Values     map[string]interface{} `json:"values,omitempty"`
+		Context    Context                `json:"context,omitempty"`
+		RawCommand string                 `json:"raw_command,omitempty"`
 	}{}
 	err = json.Unmarshal(data, &structValue)
 	if err != nil {
@@ -56,12 +48,10 @@ func (creq *CallRequest) UnmarshalJSON(data []byte) error {
 	}
 
 	*creq = CallRequest{
-		Call:          call,
-		Values:        structValue.Values,
-		Context:       structValue.Context,
-		RawCommand:    structValue.RawCommand,
-		SelectedField: structValue.SelectedField,
-		Query:         structValue.Query,
+		Call:       call,
+		Values:     structValue.Values,
+		Context:    structValue.Context,
+		RawCommand: structValue.RawCommand,
 	}
 	return nil
 }

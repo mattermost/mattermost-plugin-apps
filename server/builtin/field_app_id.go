@@ -5,7 +5,6 @@ package builtin
 
 import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -40,13 +39,9 @@ func (a *builtinApp) appIDField(lookupType string, autocompletePos int, isRequir
 }
 
 func (a *builtinApp) lookupAppID(creq apps.CallRequest) apps.CallResponse {
-	if creq.SelectedField != fAppID {
-		return apps.NewErrorResponse(errors.Errorf("unknown field %q", creq.SelectedField))
-	}
-
 	filter, _ := creq.State.(string)
 	var options []apps.SelectOption
-	marketplaceApps := a.proxy.GetListedApps(creq.Query, true)
+	marketplaceApps := a.proxy.GetListedApps(creq.GetValue(fAppID, ""), true)
 	for _, app := range marketplaceApps {
 		includef := func() bool {
 			switch filter {
