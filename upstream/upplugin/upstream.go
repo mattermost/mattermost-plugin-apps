@@ -34,7 +34,7 @@ func NewUpstream(api PluginHTTPAPI) *Upstream {
 func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(context.Background(), app, creq.Context.BotUserID, creq)
+			resp, _ := u.invoke(context.Background(), app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -42,23 +42,23 @@ func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRe
 		return nil, nil
 	}
 
-	resp, err := u.invoke(ctx, app, creq.Context.ActingUserID, creq) // nolint:bodyclose
+	resp, err := u.invoke(ctx, app, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(ctx context.Context, app apps.App, fromMattermostUserID string, creq apps.CallRequest) (*http.Response, error) {
+func (u *Upstream) invoke(ctx context.Context, app apps.App, creq apps.CallRequest) (*http.Response, error) {
 	if !app.Contains(apps.DeployPlugin) {
 		return nil, errors.New("app is not available as type plugin")
 	}
 
-	return u.post(ctx, creq.Context.ActingUserID, path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, creq.Path), creq)
+	return u.post(ctx, path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, creq.Path), creq)
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (u *Upstream) post(ctx context.Context, fromMattermostUserID string, url string, msg interface{}) (*http.Response, error) {
+func (u *Upstream) post(ctx context.Context, url string, msg interface{}) (*http.Response, error) {
 	piper, pipew := io.Pipe()
 	go func() {
 		encodeErr := json.NewEncoder(pipew).Encode(msg)

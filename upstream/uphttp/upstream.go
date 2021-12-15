@@ -50,7 +50,7 @@ func AppRootURL(app apps.App, _ string) (string, error) {
 func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(context.Background(), creq.Context.BotUserID, app, creq)
+			resp, _ := u.invoke(context.Background(), creq.Context.ExpandedContext.BotUserID, app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -58,7 +58,7 @@ func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRe
 		return nil, nil
 	}
 
-	resp, err := u.invoke(ctx, creq.Context.ActingUserID, app, creq) // nolint:bodyclose
+	resp, err := u.invoke(ctx, creq.Context.ExpandedContext.ActingUser.Id, app, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}

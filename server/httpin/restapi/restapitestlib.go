@@ -235,7 +235,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 		require.NotNil(creq)
 
 		asUser2 = appclient.AsActingUser(creq.Context)
-		user2ID = creq.Context.ActingUserID
+		user2ID = creq.Context.ActingUser.Id
 
 		httputils.WriteJSON(w, apps.NewDataResponse(nil))
 	})

@@ -38,6 +38,41 @@ func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding
 				a.debugIDField(loc),
 			},
 		},
+<<<<<<< HEAD
+=======
+
+		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+			appID := apps.AppID(creq.GetValue(fAppID, ""))
+			r.SetAppID(appID)
+			base64Key := creq.GetValue(fBase64Key, "")
+			namespace := creq.GetValue(fNamespace, "")
+			id := creq.GetValue(fID, "")
+
+			key := ""
+			if base64Key != "" {
+				decoded, err := base64.URLEncoding.DecodeString(base64Key)
+				if err != nil {
+					return apps.NewErrorResponse(err)
+				}
+				key = string(decoded)
+			} else {
+				var err error
+				key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
+				if err != nil {
+					return apps.NewErrorResponse(err)
+				}
+			}
+
+			creq.State = key
+			form, err := a.debugKVEditModal().formf(r, creq)
+			if err != nil {
+				return apps.NewErrorResponse(err)
+			}
+			return apps.NewFormResponse(*form)
+		},
+
+		lookupf: a.debugAppNamespaceLookup,
+>>>>>>> 43d697f (Fix examples and builtin app)
 	}
 }
 
@@ -57,7 +92,7 @@ func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) app
 		key = string(decoded)
 	} else {
 		var err error
-		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUserID, namespace, id)
+		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
