@@ -58,7 +58,12 @@ func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRe
 		return nil, nil
 	}
 
-	resp, err := u.invoke(ctx, creq.Context.ExpandedContext.ActingUser.Id, app, creq) // nolint:bodyclose
+	var actingUserID string
+	if creq.Context.ExpandedContext.ActingUser != nil {
+		actingUserID = creq.Context.ExpandedContext.ActingUser.Id
+	}
+
+	resp, err := u.invoke(ctx, actingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}
