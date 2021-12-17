@@ -30,7 +30,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		defer api.AssertExpectations(t)
 
 		session := &model.Session{}
-		session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
+		session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
 		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)
@@ -72,7 +72,7 @@ func TestOAuth2StoreUser(t *testing.T) {
 		defer api.AssertExpectations(t)
 
 		session := &model.Session{}
-		session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
+		session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
 		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)

@@ -7,5 +7,5 @@ import (
 )
 
 func GetAppID(session *model.Session) apps.AppID {
-	return apps.AppID(session.Props[model.SessionPropAppsFrameworkAppID])
+	return apps.AppID(session.Props[model.SessionPropMattermostAppID])
 }

@@ -33,7 +33,7 @@ func TestKV(t *testing.T) {
 	conf, api := config.NewTestService(nil)
 	defer api.AssertExpectations(t)
 	session := &model.Session{}
-	session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
+	session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
 	api.On("GetSession", "some_session_id").Return(session, nil)
 
 	ctrl := gomock.NewController(t)
@@ -107,7 +107,7 @@ func TestKVPut(t *testing.T) {
 		conf, api := config.NewTestService(nil)
 		defer api.AssertExpectations(t)
 		session := &model.Session{}
-		session.AddProp(model.SessionPropAppsFrameworkAppID, "some_app_id")
+		session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
 		api.On("GetSession", "some_session_id").Return(session, nil)
 
 		ctrl := gomock.NewController(t)

@@ -61,7 +61,7 @@ func TestGetOrCreate(t *testing.T) {
 			IsOAuth:   true,
 		}
 
-		session.AddProp(model.SessionPropAppsFrameworkAppID, string(appID))
+		session.AddProp(model.SessionPropMattermostAppID, string(appID))
 		sessionStore.EXPECT().Get(r, appID, userID).Times(1).Return(session, nil)
 
 		rSession, err := sessionService.GetOrCreate(r, appID, userID)
@@ -87,7 +87,7 @@ func TestGetOrCreate(t *testing.T) {
 
 		api.On("ExtendSessionExpiry", s.Id, mock.Anything).Once().Return(nil)
 
-		s.AddProp(model.SessionPropAppsFrameworkAppID, string(appID))
+		s.AddProp(model.SessionPropMattermostAppID, string(appID))
 		sessionStore.EXPECT().Get(r, appID, userID).Times(1).Return(&s, nil)
 
 		sessionStore.EXPECT().Save(r, appID, userID, gomock.Any()).Times(1).Return(nil)
@@ -129,7 +129,7 @@ func TestGetOrCreate(t *testing.T) {
 		newSession.AddProp(model.SessionPropBrowser, "OAuth2")
 		newSession.AddProp(model.SessionPropPlatform, oAuthApp.Name)
 		newSession.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
-		newSession.AddProp(model.SessionPropAppsFrameworkAppID, string(appID))
+		newSession.AddProp(model.SessionPropMattermostAppID, string(appID))
 
 		api.On("CreateSession", mock.AnythingOfType("*model.Session")).Run(func(args mock.Arguments) {
 			rSession, ok := args[0].(*model.Session)
@@ -188,13 +188,13 @@ func TestRevokeSessionsForApp(t *testing.T) {
 		UserId:  userID1,
 		IsOAuth: true,
 	}
-	session1.AddProp(model.SessionPropAppsFrameworkAppID, string(appID))
+	session1.AddProp(model.SessionPropMattermostAppID, string(appID))
 	session2 := &model.Session{
 		Id:      model.NewId(),
 		UserId:  userID2,
 		IsOAuth: true,
 	}
-	session2.AddProp(model.SessionPropAppsFrameworkAppID, string(appID))
+	session2.AddProp(model.SessionPropMattermostAppID, string(appID))
 	sessions := []*model.Session{session1, session2}
 
 	sessionStore.EXPECT().ListForApp(r, appID).Return(sessions, nil).Times(1)

@@ -137,14 +137,14 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
 	oAuthApp := &model.OAuthApp{
-		CreatorId:          actingUserID,
-		Name:               app.DisplayName,
-		Description:        app.Description,
-		CallbackUrls:       []string{oauth2CallbackURL},
-		Homepage:           app.HomepageURL,
-		IsTrusted:          noUserConsent,
-		Scopes:             nil,
-		AppsFrameworkAppID: string(app.AppID),
+		CreatorId:       actingUserID,
+		Name:            app.DisplayName,
+		Description:     app.Description,
+		CallbackUrls:    []string{oauth2CallbackURL},
+		Homepage:        app.HomepageURL,
+		IsTrusted:       noUserConsent,
+		Scopes:          nil,
+		MattermostAppID: string(app.AppID),
 	}
 	err := mm.OAuth.Create(oAuthApp)
 	if err != nil {
