@@ -37,7 +37,7 @@ Then run `make deploy` to compile the Apps plugin from source and automatically 
 
 ## Mattermost development environment
 
-Alternativly, you can setup a fully-fledged Mattermost development environment by following the steps [here](https://developers.mattermost.com/contribute/server/developer-setup/).
+Alternatively, you can setup a fully-fledged Mattermost development environment by following the steps [here](https://developers.mattermost.com/contribute/server/developer-setup/).
 
 Some differences between the environments:
 
