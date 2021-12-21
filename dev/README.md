@@ -1,3 +1,8 @@
+# Mattermost Apps Framework development environment
+
+When you're developing your own App, you need an actual Mattermost server to be running. The Apps Framework development environment helps accomplish this by setting up a minimalistic environment with just two containers. One is for the database Mattermost communicates with, and the other container runs the actual Mattermost server. The other containers present in the Mattermost development environment are unnecessary for the purposes of building Apps. So the advantage here is that there is just one dependency to start developing Apps.
+
+
 Start the example App by running `docker-compose up`. This will spin up 3 docker containers:
 
 - Mattermost Server
@@ -29,3 +34,15 @@ export MM_ADMIN_PASSWORD=(your Mattermost admin password)
 ```
 
 Then run `make deploy` to compile the Apps plugin from source and automatically redeploy the plugin to your server.
+
+## Mattermost development environment
+
+Alternativly, you can setup a fully-fledged Mattermost development environment by following the steps [here](https://developers.mattermost.com/contribute/server/developer-setup/).
+
+Some differences between the environments:
+
+* The Apps Framework development environment has its own Mattermost server, and it's fully configured to start developing Apps. The config values are set correctly so no modifications need to be done there.
+
+* The Apps Framework development environment also has a starter App built-in as a third container, but this can be ignored if the developer wishes to run their App outside of the dev environment, while still using it by communicating with it from outside of the containers.
+
+* The Apps Framework e2e tests can't be run with the Apps Framework development environment.

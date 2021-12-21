@@ -12,7 +12,7 @@ Join the [Mattermost Apps channel](https://community.mattermost.com/core/channel
 
 ## Getting Started
 
-Use the [Apps Framework development environment](dev) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
+Use the [Apps Framework development environment](dev/README.md) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
 
 Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps/).
 
@@ -30,19 +30,7 @@ make test
 
 ### End to end tests
 
-The Apps Framework e2e tests written in go require the same Docker containers, used in the development environment step, to be running. However these tests don't need a Mattermost server to be running. The tests instead mimic the behavior of a running server using shared code of the `mattermost-server` repository. You can think of it as a "fake server" running, completely separate from the running containers, but communicating with the containers.
-
-When you're developing your own App, you need an actual Mattermost server to be running. The Mattermost Apps Framework development environment helps accomplish this by setting up a minimalistic environment with just two containers. One is for the database Mattermost communicates with, and the other container runs the actual Mattermost server. The other containers present in the Mattermost development environment are unnecessary for the purposes of building Apps. So the advantage here is that there is just one dependency to start developing Apps.
-
-Some differences between the environments:
-
-* The Apps Framework development environment has its own Mattermost server, and it's fully configured to start developing Apps. The config values are set correctly so no modifications need to be done there.
-
-* The Apps Framework development environment also has a starter App built-in as a third container, but this can be ignored if the developer wishes to run their App outside of the dev environment, while still using it by communicating with it from outside of the containers.
-
-* The Apps Framework e2e tests can't be run with the Apps Framework development environment.
-
-More specific information about the Apps Framework development environment is explained in [dev/README.md](dev/README.md).
+The Apps Framework e2e tests written in go require the same Docker containers used in the [Mattermost development environment](https://developers.mattermost.com/contribute/server/developer-setup/) to be running. However these tests don't need a Mattermost server to be running. The tests instead mimic the behavior of a running server using shared code of the `mattermost-server` repository. You can think of it as a "fake server" running, completely separate from the running containers, but communicating with the containers.
 
 To run the end to end test suite, you need to have the Mattermost server project downloaded and configured in your system. Check the [Developer Setup](https://developers.mattermost.com/contribute/server/developer-setup/) guide on how to configure a local server instance. The tests will search for a `mattermost-server` folder in the same directory where the `mattermost-plugin-apps` is.
 
