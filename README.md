@@ -6,15 +6,15 @@
 
 # Mattermost Apps
 
-This plugin serves as the core of the Mattermost Apps Framework. It extends the Mattermost server's API to allow for the creation of feature-rich integrations, with functionality supported on the Mattermost web client and mobile client. Take a look at the [App developer documentation](https://developers.mattermost.com/integrate/apps) for more information.
+This plugin serves as the core of the Mattermost Apps Framework. It extends the Mattermost server's API to allow for the creation of feature-rich integrations, with functionality supported on the Mattermost web client and mobile client. Take a look at the [app developer documentation](https://developers.mattermost.com/integrate/apps) for more information.
 
-Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the App you're creating.
+Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the app you're creating.
 
 ## Getting Started
 
-Use the [Apps Framework development environment](dev/README.md) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop Apps.
+Use the [Apps Framework development environment](dev/README.md) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop apps.
 
-Learn more about developing Apps by reading the [App developer documentation](https://developers.mattermost.com/integrate/apps/).
+Learn more about developing apps by reading the [app developer documentation](https://developers.mattermost.com/integrate/apps/).
 
 ## Running the tests
 
