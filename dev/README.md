@@ -42,7 +42,5 @@ Alternatively, you can setup a fully-fledged Mattermost development environment 
 Some differences between the environments:
 
 * The Apps Framework development environment has its own Mattermost server, and it's fully configured to start developing apps. The config values are set correctly so no modifications need to be done there.
-
 * The Apps Framework development environment also has a starter app built-in as a third container, but this can be ignored if the developer wishes to run their app outside of the dev environment, while still using it by communicating with it from outside of the containers.
-
 * The Apps Framework e2e tests can't be run with the Apps Framework development environment.
