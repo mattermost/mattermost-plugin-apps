@@ -29,7 +29,7 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 			Other: "[ AppID Namespace ]",
 		}),
 		Form: &apps.Form{
-			Submit: newUserCall(pDebugKVInfo),
+			Submit: newUserCall(pDebugKVList),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
 				a.namespaceField(0, false, loc),

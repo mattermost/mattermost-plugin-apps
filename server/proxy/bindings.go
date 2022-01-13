@@ -169,8 +169,7 @@ func cleanAppBinding(
 	fql := locPrefix.Sub(b.Location)
 	allowed := false
 	for _, grantedLoc := range app.GrantedLocations {
-		// TODO Why `grantedLoc.In(fql)`?
-		if fql.In(grantedLoc) || grantedLoc.In(fql) {
+		if fql.In(grantedLoc) {
 			allowed = true
 			break
 		}
