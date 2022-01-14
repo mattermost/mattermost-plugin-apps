@@ -32,7 +32,7 @@ func main() {
 
 	http.HandleFunc("/enable", respondWithMessage("I'm back up again"))
 
-	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
+	http.HandleFunc("/disable", respondWithMessage("Taking a little nap"))
 
 	addr := fmt.Sprintf(":%v", port)
 	rootURL := fmt.Sprintf("http://%v:%v", host, port)
