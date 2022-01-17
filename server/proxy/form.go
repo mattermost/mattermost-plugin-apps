@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 // cleanForm removes:
@@ -17,11 +18,21 @@ import (
 // - Fields with labels (either natural or defaulted from names) with more than one word
 // - Fields that have the same label as previous fields
 // - Invalid select static fields and their invalid options
-func cleanForm(in apps.Form) (apps.Form, error) {
+func cleanForm(in apps.Form, conf config.Config, appID apps.AppID) (apps.Form, error) {
 	out := in
 	out.Fields = []apps.Field{}
 	var problems error
 	usedLabels := map[string]bool{}
+
+	if in.Icon != "" {
+		icon, err := normalizeStaticPath(conf, appID, in.Icon)
+		if err != nil {
+			problems = multierror.Append(problems, errors.Wrap(err, "invalid icon path in form."))
+			out.Icon = ""
+		} else {
+			out.Icon = icon
+		}
+	}
 
 	if in.Submit == nil && in.Source == nil {
 		problems = multierror.Append(problems, errors.New("form must define either a submit or a source"))
@@ -37,17 +48,16 @@ func cleanForm(in apps.Form) (apps.Form, error) {
 			continue
 		}
 
-		label := f.Label
-		if label == "" {
-			label = f.Name
+		if f.Label == "" {
+			f.Label = strings.ReplaceAll(f.Name, "_", "-")
 		}
-		if strings.ContainsAny(label, " \t") {
-			problems = multierror.Append(problems, errors.Errorf("label must be a single word: %q (field: %s)", label, f.Name))
+		if strings.ContainsAny(f.Label, " \t") {
+			problems = multierror.Append(problems, errors.Errorf("label must be a single word: %q (field: %s)", f.Label, f.Name))
 			continue
 		}
 
-		if usedLabels[label] {
-			problems = multierror.Append(problems, errors.Errorf("repeated label: %q (field: %s)", label, f.Name))
+		if usedLabels[f.Label] {
+			problems = multierror.Append(problems, errors.Errorf("repeated label: %q (field: %s)", f.Label, f.Name))
 			continue
 		}
 
@@ -70,7 +80,7 @@ func cleanForm(in apps.Form) (apps.Form, error) {
 		}
 
 		out.Fields = append(out.Fields, f)
-		usedLabels[label] = true
+		usedLabels[f.Label] = true
 	}
 
 	return out, problems

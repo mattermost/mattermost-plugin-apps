@@ -238,7 +238,7 @@ func cleanAppBinding(
 		}
 
 	case hasForm && !hasSubmit && !hasBindings:
-		clean, err := cleanForm(*b.Form)
+		clean, err := cleanForm(*b.Form, conf, app.AppID)
 		if err != nil {
 			problems = multierror.Append(problems, err)
 		}

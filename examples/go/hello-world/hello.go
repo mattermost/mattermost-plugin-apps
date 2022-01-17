@@ -99,9 +99,8 @@ var SendForm = apps.Form{
 	Icon:  "icon.png",
 	Fields: []apps.Field{
 		{
-			Type:  "text",
-			Name:  "message",
-			Label: "message",
+			Type: "text",
+			Name: "message",
 		},
 	},
 	Submit: apps.NewCall("/send"),

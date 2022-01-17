@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestCleanForm(t *testing.T) {
@@ -35,10 +36,12 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Name: "field1",
+						Name:  "field1",
+						Label: "field1",
 					},
 					{
-						Name: "field2",
+						Name:  "field2",
+						Label: "field2",
 					},
 				},
 			},
@@ -122,8 +125,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeBool,
-						Name: "same",
+						Type:  apps.FieldTypeBool,
+						Name:  "same",
+						Label: "same",
 					},
 				},
 			},
@@ -294,7 +298,7 @@ func TestCleanForm(t *testing.T) {
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Name: "field_1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
@@ -309,8 +313,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Label: "field-1",
+						Name:  "field_1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
@@ -319,7 +324,7 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: "1 error occurred:\n\t* option with neither label nor value (field field1)\n\n",
+			expectedProblems: "1 error occurred:\n\t* option with neither label nor value (field field_1)\n\n",
 		},
 		{
 			name: "field filter static options with same label inferred from value",
@@ -348,8 +353,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value:    "same",
@@ -388,8 +394,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Label: "field1",
+						Name:  "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "same",
@@ -428,8 +435,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "opt1",
@@ -476,8 +484,9 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "same1",
@@ -538,7 +547,8 @@ func TestCleanForm(t *testing.T) {
 				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Name: "field1",
+						Name:  "field1",
+						Label: "field1",
 					},
 				},
 			},
@@ -548,7 +558,7 @@ func TestCleanForm(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := cleanForm(tc.in)
+			out, err := cleanForm(tc.in, config.Config{}, "")
 
 			require.Equal(t, tc.expectedOut, out)
 			if tc.expectedProblems != "" {

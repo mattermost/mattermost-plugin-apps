@@ -76,7 +76,7 @@ type Field struct {
 	AutocompletePosition int `json:"position,omitempty"`
 
 	// TODO: ModalLabel should default to Label, Name
-	ModalLabel string `json:"modal_label"`
+	ModalLabel string `json:"modal_label,omitempty"`
 
 	// SelectIsMulti designates whether a select field is a multiselect
 	SelectIsMulti bool `json:"multiselect,omitempty"`
