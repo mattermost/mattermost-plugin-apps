@@ -14,7 +14,7 @@ If you want to run your app outside of Docker, you will need to provide a way fo
 
 ## Run the example app in Docker
 
-Start the example app by instead running `docker-compose up`. This will spin up 3 docker containers:
+Start the example app by instead running `docker-compose up`. This will spin up three Docker containers:
 
 - Mattermost Server
 - Postgres
@@ -24,11 +24,11 @@ Visit http://localhost:8066 to connect to the Mattermost instance. Once your acc
 
 `/apps install http http://node_app:4000/manifest.json`
 
-Your app can be written in any language, and can be in a different directory. You'll just need to edit [docker-compose.override.yml](docker-compose.override.yml), and change the `volumes` to match the relative path to your app, and change the `command` to match your app's start command. Note how the environment variables are used in `src/app.ts`
+Your app can be written in any language, and can be in a different directory. You'll just need to edit [docker-compose.override.yml](docker-compose.override.yml), and change the `volumes` to match the relative path to your app, and change the `command` to match your app's start command. Note how the environment variables are used in `src/app.ts`:
 
-## Updating versions of the Apps plugin or Mattermost server
+## Updating versions of the Apps plugin or Mattermost Server
 
-To upgrade the Apps plugin or Mattermost server, you can edit [docker-compose.yml](docker-compose.yml) to configure your target versions.
+To upgrade the Apps plugin or Mattermost Server, you can edit [docker-compose.yml](docker-compose.yml) to configure your target versions.
 
 If you need to make changes to the Apps plugin locally (e.g. build from a specific branch), you can redeploy the plugin after making changes by setting these environment variables:
 
