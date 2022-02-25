@@ -86,9 +86,13 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 
 	session.AddProp(model.SessionPropOs, "OAuth2")
 	session.AddProp(model.SessionPropBrowser, "OAuth2")
-	session.AddProp(model.SessionPropPlatform, oAuthApp.Name)
-	session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
 	session.AddProp(model.SessionPropMattermostAppID, string(appID))
+	// For apps installed before https://github.com/mattermost/mattermost-plugin-apps/pull/291
+	// oAuthApp is nil.
+	if oAuthApp != nil {
+		session.AddProp(model.SessionPropPlatform, oAuthApp.Name)
+		session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
+	}
 
 	session, err = s.mm.Session.Create(session)
 	if err != nil {
