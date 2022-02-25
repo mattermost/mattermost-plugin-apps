@@ -2,8 +2,19 @@
 
 When you're developing your own app, you need an actual Mattermost server to be running. The Apps Framework development environment helps accomplish this by setting up a minimalistic environment with just two containers. One is for the database Mattermost communicates with, and the other container runs the actual Mattermost server. The other containers present in the Mattermost development environment are unnecessary for the purposes of building apps. So the advantage here is that there is just one dependency to start developing apps.
 
+Run the following commands in two different terminals to have your app run in its own terminal:
 
-Start the example app by running `docker-compose up`. This will spin up 3 docker containers:
+## Start development containers
+
+```sh
+docker-compose up mattermost db
+```
+
+If you want to run your app outside of Docker, you will need to provide a way for the containers to access your server, such as using an [ngrok](https://ngrok.io) tunnel.
+
+## Run the example app in Docker
+
+Start the example app by instead running `docker-compose up`. This will spin up three Docker containers:
 
 - Mattermost Server
 - Postgres
@@ -13,19 +24,13 @@ Visit http://localhost:8066 to connect to the Mattermost instance. Once your acc
 
 `/apps install http http://node_app:4000/manifest.json`
 
-Your app can be written in another language than JavaScript, and can be in a different directory. You'll just need to edit [docker-compose.override.yml](docker-compose.override.yml), and change the `volumes` to match the relative path to your app, and change the `command` to match your app's start command. Note how the environment variables are used in `src/app.ts`
+Your app can be written in any language, and can be in a different directory. You'll just need to edit [docker-compose.override.yml](docker-compose.override.yml), and change the `volumes` to match the relative path to your app, and change the `command` to match your app's start command. Note how the environment variables are used in `src/app.ts`:
 
-Run the following commands in two different terminals to have your app run in its own terminal:
+## Updating versions of the Apps plugin or Mattermost Server
 
-```sh
-docker-compose up mattermost db
+To upgrade the Apps plugin or Mattermost Server, you can edit [docker-compose.yml](docker-compose.yml) to configure your target versions.
 
-docker-compose up node_app
-```
-
-If you want to run your app outside of Docker, you will need to provide a way for the containers to access your server, such as using an [ngrok](https://ngrok.io) tunnel.
-
-To upgrade the Mattermost server or apps plugin, you can edit [docker-compose.yml](docker-compose.yml) to configure your target versions. If you need to make changes to the apps plugin, you can redeploy the plugin after making changes by setting these environment variables:
+If you need to make changes to the Apps plugin locally (e.g. build from a specific branch), you can redeploy the plugin after making changes by setting these environment variables:
 
 ```
 export MM_SERVICESETTINGS_SITEURL=http://localhost:8066
