@@ -63,7 +63,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 
 	icon, err := p.getAppIcon(*app)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed get bot icon")
+		return nil, "", errors.Wrap(err, "failed to get bot icon")
 	}
 	if icon != nil {
 		defer icon.Close()
@@ -243,12 +243,11 @@ func (p *Proxy) getAppIcon(app apps.App) (io.ReadCloser, error) {
 
 	icon, status, err := p.getStatic(app, iconPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get app icon")
+		return nil, errors.Wrapf(err, "failed to download icon: %s", iconPath)
 	}
 
 	if status != http.StatusOK {
-		return nil, errors.Errorf("received %d status code while downloading bot icon for %v",
-			status, app.Manifest.AppID)
+		return nil, errors.Errorf("failed to download icon: %s: received status code %v", iconPath, status)
 	}
 
 	return icon, nil
