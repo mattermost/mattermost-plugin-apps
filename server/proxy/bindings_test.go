@@ -761,7 +761,7 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test-1",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: "1 error occurred:\n\t* trimmed whitespace from location test-1\n\n",
+			expectedProblems: "1 error occurred:\n\t* /command/main-command/test-1: trimmed whitespace from location\n\n",
 		},
 		"ERROR location PostMenu not granted": {
 			in: apps.Binding{
@@ -770,7 +770,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationPostMenu,
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* location \"/post_menu/test\" is not granted: forbidden\n\n",
+			expectedProblems: "1 error occurred:\n\t* /post_menu/test: location is not granted: forbidden\n\n",
 		},
 		"trim command label": {
 			in: apps.Binding{
@@ -785,7 +785,7 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test-label",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: "1 error occurred:\n\t* trimmed whitespace from label test-label\n\n",
+			expectedProblems: "1 error occurred:\n\t* /command/main-command/test: trimmed whitespace from label test-label\n\n",
 		},
 		"label defaults to location for command": {
 			in: apps.Binding{
@@ -818,7 +818,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationCommand.Sub("main-command"),
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* either location or label must be provided in a binding\n\n",
+			expectedProblems: "1 error occurred:\n\t* /command/main-command: sub-binding with no location nor label\n\n",
 		},
 		"ERROR whitsepace in command label": {
 			in: apps.Binding{
@@ -828,7 +828,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationCommand.Sub("main-command"),
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* command label \"test label\" has multiple words\n\n",
+			expectedProblems: "1 error occurred:\n\t* /command/main-command/test: command label \"test label\" has multiple words\n\n",
 		},
 		"normalize icon path": {
 			in: apps.Binding{
@@ -858,7 +858,7 @@ func TestCleanAppBinding(t *testing.T) {
 				Label:    "test",
 				Submit:   apps.NewCall("/hello"),
 			},
-			expectedProblems: "1 error occurred:\n\t* invalid icon path \"../a/...//static.icon\" in binding\n\n",
+			expectedProblems: "1 error occurred:\n\t* /command/main-command/test: invalid icon path \"../a/...//static.icon\" in binding\n\n",
 		},
 		"ERROR: icon required for ChannelHeader in webapp": {
 			in: apps.Binding{
@@ -868,7 +868,7 @@ func TestCleanAppBinding(t *testing.T) {
 			locPrefix:        apps.LocationChannelHeader,
 			userAgent:        "webapp",
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* no icon in channel header binding /channel_header/test\n\n",
+			expectedProblems: "1 error occurred:\n\t* /channel_header/test: no icon in channel header binding\n\n",
 		},
 		"icon not required for ChannelHeader in mobile": {
 			in: apps.Binding{
@@ -889,7 +889,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
+			expectedProblems: "1 error occurred:\n\t* /channel_header/test: (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"ERROR: submit and form": {
 			in: apps.Binding{
@@ -899,7 +899,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
+			expectedProblems: "1 error occurred:\n\t* /channel_header/test: (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"ERROR: submit and bindings": {
 			in: apps.Binding{
@@ -916,7 +916,7 @@ func TestCleanAppBinding(t *testing.T) {
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			expected:         nil,
-			expectedProblems: "1 error occurred:\n\t* (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
+			expectedProblems: "1 error occurred:\n\t* /channel_header/test: (only) one of  \"submit\", \"form\", or \"bindings\" must be set in a binding\n\n",
 		},
 		"clean sub-bindings": {
 			in: apps.Binding{

@@ -154,7 +154,7 @@ func cleanAppBinding(
 ) (*apps.Binding, error) {
 	var problems error
 	if b.Location == "" && b.Label == "" {
-		return nil, multierror.Append(problems, errors.Errorf("either location or label must be provided in a binding"))
+		return nil, multierror.Append(problems, errors.Errorf("%s: sub-binding with no location nor label", locPrefix))
 	}
 
 	// Cleanup Location.
@@ -162,7 +162,7 @@ func cleanAppBinding(
 		b.Location = apps.Location(b.Label)
 	}
 	if trimmed := apps.Location(strings.TrimSpace(string(b.Location))); trimmed != b.Location {
-		problems = multierror.Append(problems, errors.Errorf("trimmed whitespace from location %s", trimmed))
+		problems = multierror.Append(problems, errors.Errorf("%s: trimmed whitespace from location", locPrefix.Sub(trimmed)))
 		b.Location = trimmed
 	}
 
@@ -175,7 +175,7 @@ func cleanAppBinding(
 		}
 	}
 	if !allowed {
-		problems = multierror.Append(problems, utils.NewForbiddenError("location %q is not granted", fql))
+		problems = multierror.Append(problems, utils.NewForbiddenError("%s: location is not granted", fql))
 		return nil, problems
 	}
 
@@ -191,11 +191,11 @@ func cleanAppBinding(
 			b.Label = string(b.Location)
 		}
 		if trimmed := strings.TrimSpace(b.Label); trimmed != b.Label {
-			problems = multierror.Append(problems, errors.Errorf("trimmed whitespace from label %s", trimmed))
+			problems = multierror.Append(problems, errors.Errorf("%s: trimmed whitespace from label %s", fql, trimmed))
 			b.Label = trimmed
 		}
 		if strings.ContainsAny(b.Label, " \t") {
-			problems = multierror.Append(problems, errors.Errorf("command label %q has multiple words", b.Label))
+			problems = multierror.Append(problems, errors.Errorf("%s: command label %q has multiple words", fql, b.Label))
 			// A command binding with a white space in it will not parse, so bail.
 			return nil, problems
 		}
@@ -207,7 +207,7 @@ func cleanAppBinding(
 		if err == nil {
 			b.Icon = icon
 		} else {
-			problems = multierror.Append(problems, errors.Errorf("invalid icon path %q in binding", b.Icon))
+			problems = multierror.Append(problems, errors.Errorf("%s: invalid icon path %q in binding", fql, b.Icon))
 			b.Icon = ""
 		}
 	}
@@ -215,7 +215,7 @@ func cleanAppBinding(
 	if fql == apps.LocationChannelHeader.Sub(b.Location) {
 		// A channel header binding must have an icon, for webapp anyway.
 		if b.Icon == "" && userAgent == "webapp" {
-			problems = multierror.Append(problems, errors.Errorf("no icon in channel header binding %s", fql))
+			problems = multierror.Append(problems, errors.Errorf("%s: no icon in channel header binding", fql))
 			return nil, problems
 		}
 	}
@@ -248,7 +248,7 @@ func cleanAppBinding(
 		// nothing to clean for submit
 
 	default:
-		problems = multierror.Append(problems, errors.New(`(only) one of  "submit", "form", or "bindings" must be set in a binding`))
+		problems = multierror.Append(problems, errors.Errorf(`%s: (only) one of  "submit", "form", or "bindings" must be set in a binding`, fql))
 		return nil, problems
 	}
 
