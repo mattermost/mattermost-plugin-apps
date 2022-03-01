@@ -75,7 +75,8 @@ type Field struct {
 	// indicates that this field is the last argument.
 	AutocompletePosition int `json:"position,omitempty"`
 
-	// TODO: ModalLabel should default to Label, Name
+	// ModalLabel is used in the modal dialog context, has no format
+	// limitations. It defaults to Label.
 	ModalLabel string `json:"modal_label,omitempty"`
 
 	// SelectIsMulti designates whether a select field is a multiselect
