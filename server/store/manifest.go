@@ -193,7 +193,7 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	if ok {
 		return &m, nil
 	}
-	return nil, utils.ErrNotFound
+	return nil, errors.Wrap(utils.ErrNotFound, string(appID))
 }
 
 func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {

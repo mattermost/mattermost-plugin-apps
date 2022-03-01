@@ -10,22 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
-var installHTTPCall = apps.Call{
-	Path: pInstallHTTP,
-	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
-	},
-}
-
-var installListedCall = apps.Call{
-	Path: pInstallListed,
-	Expand: &apps.Expand{
-		ActingUser:            apps.ExpandSummary,
-		ActingUserAccessToken: apps.ExpandAll,
-	},
-}
-
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 	if a.conf.Get().MattermostCloudMode {
 		return apps.Binding{
@@ -42,17 +26,20 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 				ID:    "command.install.cloud.description",
 				Other: "Install an App from the Marketplace",
 			}),
-			Call: &installListedCall,
-			Form: a.appIDForm(installListedCall, loc),
+			Form: &apps.Form{
+				Submit: newUserCall(pInstallListed),
+				Fields: []apps.Field{
+					a.appIDField(LookupNotInstalledApps, 1, true, loc),
+				},
+			},
 		}
 	}
-
 	return apps.Binding{
-		Location: "install",
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.label",
 			Other: "install",
 		}),
+		Location: "install",
 		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.hint",
 			Other: "[ listed | url ]",
@@ -63,112 +50,98 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 		}),
 		Bindings: []apps.Binding{
 			{
-				Location: "listed",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.label",
 					Other: "listed",
 				}),
+				Location: "listed",
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.hint",
-					Other: "[ app ID ]",
+					Other: "[app ID]",
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.description",
 					Other: "Install a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
 				}),
-				Call: &installListedCall,
-				Form: a.appIDForm(installListedCall, loc),
+				Form: &apps.Form{
+					Submit: newUserCall(pInstallListed),
+					Fields: []apps.Field{
+						a.appIDField(LookupNotInstalledApps, 1, true, loc),
+					},
+				},
 			},
 			{
-				Location: "http",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.http.label",
 					Other: "http",
 				}),
+				Location: "http",
 				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.http.hint",
-					Other: "[ manifest.json URL ]",
+					Other: "[URL to manifest.json]",
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.http.description",
-					Other: "Install an App from an HTTP URL",
+					Other: "Install an HTTP App from a URL",
 				}),
-				Call: &installHTTPCall,
 				Form: &apps.Form{
 					Fields: []apps.Field{
 						{
 							Name: fURL,
 							Type: apps.FieldTypeText,
+							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+								ID:    "field.url.description",
+								Other: "enter the HTTP URL for the app's manifest.json",
+							}),
 							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 								ID:    "field.url.label",
 								Other: "url",
 							}),
-							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url.description",
-								Other: "enter the URL for the app's manifest.json",
-							}),
 							AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 								ID:    "field.url.hint",
-								Other: "HTTP(s) URL",
+								Other: "URL",
 							}),
 							AutocompletePosition: 1,
 							IsRequired:           true,
 						},
 					},
-					Call: &installHTTPCall,
+					Submit: newUserCall(pInstallHTTP).WithLocale(),
 				},
 			},
 		},
 	}
 }
 
-func (a *builtinApp) installListed() handler {
-	return handler{
-		requireSysadmin: true,
-
-		lookupf: func(creq apps.CallRequest) ([]apps.SelectOption, error) {
-			res, err := a.lookupAppID(creq, nil)
-			return res, err
-		},
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			loc := a.newLocalizer(creq)
-			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			m, err := a.proxy.GetManifest(appID)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, "", loc))
-		},
+func (a *builtinApp) installListed(creq apps.CallRequest) apps.CallResponse {
+	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	m, err := a.proxy.GetManifest(appID)
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq, "", loc))
 }
 
-func (a *builtinApp) installHTTP() handler {
-	return handler{
-		requireSysadmin: true,
-
-		submitf: func(creq apps.CallRequest) apps.CallResponse {
-			loc := a.newLocalizer(creq)
-			manifestURL := creq.GetValue(fURL, "")
-			conf := a.conf.Get()
-			data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			m, err := apps.DecodeCompatibleManifest(data)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
-				Manifest:   *m,
-				AddDeploys: apps.DeployTypes{apps.DeployHTTP},
-			})
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			return apps.NewFormResponse(*a.newInstallConsentForm(*m, creq, apps.DeployHTTP, loc))
-		},
+func (a *builtinApp) installHTTP(creq apps.CallRequest) apps.CallResponse {
+	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+	manifestURL := creq.GetValue(fURL, "")
+	conf := a.conf.Get()
+	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
+	if err != nil {
+		return apps.NewErrorResponse(err)
 	}
+	m, err := apps.DecodeCompatibleManifest(data)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
+		Manifest:   *m,
+		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
+	})
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq, apps.DeployHTTP, loc))
 }

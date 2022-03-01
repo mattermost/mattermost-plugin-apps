@@ -6,11 +6,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-var noParameters = apps.Form{
-	// TODO translate this?
-	Title: "command with no parameters",
-}
-
 func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
 	return apps.NewDataResponse(a.getBindings(creq, loc))
@@ -18,17 +13,17 @@ func (a *builtinApp) bindings(creq apps.CallRequest) apps.CallResponse {
 
 func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []apps.Binding {
 	commands := []apps.Binding{
-		a.info().commandBinding(loc),
+		a.infoCommandBinding(loc),
 	}
 
 	if creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin() {
 		commands = append(commands,
 			a.debugCommandBinding(loc),
-			a.disable().commandBinding(loc),
-			a.enable().commandBinding(loc),
+			a.disableCommandBinding(loc),
+			a.enableCommandBinding(loc),
 			a.installCommandBinding(loc),
-			a.list().commandBinding(loc),
-			a.uninstall().commandBinding(loc),
+			a.listCommandBinding(loc),
+			a.uninstallCommandBinding(loc),
 		)
 	}
 

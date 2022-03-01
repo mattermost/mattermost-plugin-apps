@@ -4,7 +4,6 @@
 - dev Mattermost Server + Apps plugin
 - AWS: personal account
 - Faasd installed on a Multipass Ubuntu VM
-- Kubeless installed on Docker desktop Kubernetes
 
 #### AWS Lambda
 - Clean out functions and S3 bucket
@@ -40,19 +39,4 @@ go run ./cmd/appsctl openfaas deploy -v ./examples/go/hello-serverless/dist/bund
 - Install the app
 ```
 /apps install listed hello-serverless
-```
-
-#### Kubeless
-- Clean out functions
-```
-kubeless function list --namespace mattermost-kubeless-apps
-```
-- Build and deploy an app to kubeless
-```sh
-cd ./examples/ts/hello && make dist-kubeless
-go run ./cmd/appsctl kubeless deploy -v ./examples/ts/hello/dist/kubeless-bundle.zip
-```
-- Install the app
-```
-/apps install listed hello-typescript
 ```

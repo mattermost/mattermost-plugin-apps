@@ -131,20 +131,11 @@ func (p *Proxy) callApp(in Incoming, app apps.App, creq apps.CallRequest) (apps.
 	}
 
 	if cresp.Form != nil {
-		if cresp.Form.Icon != "" {
-			icon, err := normalizeStaticPath(conf, cc.AppID, cresp.Form.Icon)
-			if err != nil {
-				log.WithError(err).Debugw("Invalid icon path in form. Ignoring it.", "icon", cresp.Form.Icon)
-				cresp.Form.Icon = ""
-			} else {
-				cresp.Form.Icon = icon
-			}
-			clean, problems := cleanForm(*cresp.Form)
-			for _, prob := range problems {
-				log.WithError(prob).Debugw("invalid form")
-			}
-			cresp.Form = &clean
+		clean, err := cleanForm(*cresp.Form, conf, app.AppID)
+		if err != nil {
+			log.WithError(err).Debugw("invalid form")
 		}
+		cresp.Form = &clean
 	}
 
 	return cresp, nil

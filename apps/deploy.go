@@ -32,9 +32,6 @@ const (
 	// JWT.
 	DeployHTTP DeployType = "http"
 
-	// Kubeless-deployable app.
-	DeployKubeless DeployType = "kubeless"
-
 	// OpenFaaS-deployable app.
 	DeployOpenFAAS DeployType = "open_faas"
 
@@ -47,7 +44,6 @@ var KnownDeployTypes = DeployTypes{
 	DeployAWSLambda,
 	DeployBuiltin,
 	DeployHTTP,
-	DeployKubeless,
 	DeployOpenFAAS,
 	DeployPlugin,
 }
@@ -64,11 +60,6 @@ type Deploy struct {
 	// and us accessed over HTTP. The JSON name `http` must match the type.
 	HTTP *HTTP `json:"http,omitempty"`
 
-	// Kubeless contains metadata for an app that can be deployed to Kubeless
-	// running on a Kubernetes cluster, and is accessed using the Kubernetes
-	// APIs and HTTP. The JSON name `kubeless` must match the type.
-	Kubeless *Kubeless `json:"kubeless,omitempty"`
-
 	OpenFAAS *OpenFAAS `json:"open_faas,omitempty"`
 
 	// Plugin contains metadata for an app that is implemented and is deployed
@@ -82,7 +73,6 @@ func (t DeployType) Validate() error {
 	case DeployAWSLambda,
 		DeployBuiltin,
 		DeployHTTP,
-		DeployKubeless,
 		DeployOpenFAAS,
 		DeployPlugin:
 		return nil
@@ -99,8 +89,6 @@ func (t DeployType) String() string {
 		return "Built-in"
 	case DeployHTTP:
 		return "HTTP"
-	case DeployKubeless:
-		return "Kubeless"
 	case DeployOpenFAAS:
 		return "OpenFaaS"
 	case DeployPlugin:
@@ -124,7 +112,6 @@ func (d Deploy) Validate() error {
 
 	if d.AWSLambda == nil &&
 		d.HTTP == nil &&
-		d.Kubeless == nil &&
 		d.OpenFAAS == nil &&
 		d.Plugin == nil {
 		result = multierror.Append(result,
@@ -134,7 +121,6 @@ func (d Deploy) Validate() error {
 	for _, v := range []validator{
 		d.AWSLambda,
 		d.HTTP,
-		d.Kubeless,
 		d.OpenFAAS,
 		d.Plugin,
 	} {
@@ -162,9 +148,6 @@ func (d Deploy) DeployTypes() (out []DeployType) {
 	if d.HTTP != nil {
 		out = append(out, DeployHTTP)
 	}
-	if d.Kubeless != nil {
-		out = append(out, DeployKubeless)
-	}
 	if d.OpenFAAS != nil {
 		out = append(out, DeployOpenFAAS)
 	}
@@ -180,8 +163,6 @@ func (d Deploy) Contains(dtype DeployType) bool {
 		return d.AWSLambda != nil
 	case DeployHTTP:
 		return d.HTTP != nil
-	case DeployKubeless:
-		return d.Kubeless != nil
 	case DeployOpenFAAS:
 		return d.OpenFAAS != nil
 	case DeployPlugin:
@@ -196,8 +177,6 @@ func (d *Deploy) CopyType(src Deploy, typ DeployType) {
 		d.AWSLambda = src.AWSLambda
 	case DeployHTTP:
 		d.HTTP = src.HTTP
-	case DeployKubeless:
-		d.Kubeless = src.Kubeless
 	case DeployOpenFAAS:
 		d.OpenFAAS = src.OpenFAAS
 	case DeployPlugin:

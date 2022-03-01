@@ -11,6 +11,6 @@ import (
 )
 
 func main() {
-	function.InitApp(apps.DeployAWSLambda)
+	function.DeployType = apps.DeployAWSLambda
 	lambda.Start(httpadapter.New(http.DefaultServeMux).Proxy)
 }

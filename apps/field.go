@@ -75,8 +75,9 @@ type Field struct {
 	// indicates that this field is the last argument.
 	AutocompletePosition int `json:"position,omitempty"`
 
-	// TODO: ModalLabel should default to Label, Name
-	ModalLabel string `json:"modal_label"`
+	// ModalLabel is used in the modal dialog context, has no format
+	// limitations. It defaults to Label.
+	ModalLabel string `json:"modal_label,omitempty"`
 
 	// SelectIsMulti designates whether a select field is a multiselect
 	SelectIsMulti bool `json:"multiselect,omitempty"`
@@ -90,6 +91,12 @@ type Field struct {
 	// SelectStaticOptions is the list of options to display in a static select
 	// field.
 	SelectStaticOptions []SelectOption `json:"options,omitempty"`
+
+	// SelectDynamicLookup is the call that will return the options to populate
+	// the select.
+	//
+	// TODO document the Lookup format.
+	SelectDynamicLookup *Call `json:"lookup,omitempty"`
 
 	// Text props
 	TextSubtype   TextFieldSubtype `json:"subtype,omitempty"`

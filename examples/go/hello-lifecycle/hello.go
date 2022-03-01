@@ -21,10 +21,10 @@ const (
 
 func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
+	http.HandleFunc("/manifest.json", httputils.DoHandleJSONData(manifestData))
 
 	// Returns the Channel Header and Command bindings for the app.
-	http.HandleFunc("/bindings", httputils.HandleJSONData([]byte("{}")))
+	http.HandleFunc("/bindings", httputils.DoHandleJSONData([]byte("{}")))
 
 	http.HandleFunc("/install", respondWithMessage("Thanks for installing me!"))
 
@@ -32,7 +32,7 @@ func main() {
 
 	http.HandleFunc("/enable", respondWithMessage("I'm back up again"))
 
-	http.HandleFunc("/disable", respondWithMessage("Takeing a little nap"))
+	http.HandleFunc("/disable", respondWithMessage("Taking a little nap"))
 
 	addr := fmt.Sprintf(":%v", port)
 	rootURL := fmt.Sprintf("http://%v:%v", host, port)

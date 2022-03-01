@@ -53,11 +53,8 @@ var bindings = []apps.Binding{
 					{
 						Location: "send",
 						Label:    "send",
-						Call: &apps.Call{
+						Submit: &apps.Call{
 							Path: "/send",
-						},
-						Form: &apps.Form{
-							Title: "send",
 						},
 					},
 				},
@@ -68,23 +65,23 @@ var bindings = []apps.Binding{
 
 func main() {
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSON(manifest))
+	http.HandleFunc("/manifest.json", httputils.DoHandleJSON(manifest))
 
 	// Ping to test the JWT connectivity upon install.
 	http.HandleFunc("/ping", withJWT(
-		httputils.HandleJSON(apps.NewDataResponse(nil))))
+		httputils.DoHandleJSON(apps.NewDataResponse(nil))))
 
 	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings", withJWT(
-		httputils.HandleJSON(apps.NewDataResponse(bindings))))
+		httputils.DoHandleJSON(apps.NewDataResponse(bindings))))
 
 	// The main handler for sending a Hello message.
-	http.HandleFunc("/send/submit", withJWT(
+	http.HandleFunc("/send", withJWT(
 		send))
 
 	// Serves the icon for the app.
 	http.HandleFunc("/static/icon.png",
-		httputils.HandleData("image/png", iconData))
+		httputils.DoHandleData("image/png", iconData))
 
 	addr := ":8084" // matches manifest.json
 	fmt.Println("Listening on", addr)

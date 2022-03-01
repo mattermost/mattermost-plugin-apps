@@ -17,8 +17,8 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 			Other: "debug",
 		}),
 		Bindings: []apps.Binding{
-			a.debugBindings().commandBinding(loc),
-			a.debugClean().commandBinding(loc),
+			a.debugBindingsCommandBinding(loc),
+			a.debugCleanCommandBinding(loc),
 			{
 				Location: "kv",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -30,11 +30,11 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Other: "View and update apps' KV stores.",
 				}),
 				Bindings: []apps.Binding{
-					a.debugKVClean().commandBinding(loc),
-					a.debugKVCreate().commandBinding(loc),
-					a.debugKVEdit().commandBinding(loc),
-					a.debugKVInfo().commandBinding(loc),
-					a.debugKVList().commandBinding(loc),
+					a.debugKVCleanCommandBinding(loc),
+					a.debugKVCreateCommandBinding(loc),
+					a.debugKVEditCommandBinding(loc),
+					a.debugKVInfoCommandBinding(loc),
+					a.debugKVListCommandBinding(loc),
 				},
 			},
 		},
@@ -56,25 +56,6 @@ func (a *builtinApp) debugIDField(loc *i18n.Localizer) apps.Field {
 		AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.id.hint",
 			Other: "[ id ]",
-		}),
-	}
-}
-
-func (a *builtinApp) debugNamespaceField(loc *i18n.Localizer) apps.Field {
-	return apps.Field{
-		Name: fNamespace,
-		Type: apps.FieldTypeDynamicSelect,
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.label",
-			Other: "namespace",
-		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.description",
-			Other: "App-specific namespace (up to 2 letters). See `debug kv info` for the list of app's namespaces.",
-		}),
-		AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.hint",
-			Other: "namespace (up to 2 letters)",
 		}),
 	}
 }

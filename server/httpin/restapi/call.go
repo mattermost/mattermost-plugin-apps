@@ -44,11 +44,15 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 
 	res := a.proxy.Call(in, *creq)
 
+	errorText := ""
+	if res.Type == apps.CallResponseTypeError {
+		errorText = res.Text
+	}
 	a.conf.Logger().Debugw(
 		"Received call response",
 		"app_id", creq.Context.AppID,
 		"acting_user_id", in.ActingUserID,
-		"error", res.ErrorText,
+		"error", errorText,
 		"type", res.Type,
 		"path", creq.Path,
 	)

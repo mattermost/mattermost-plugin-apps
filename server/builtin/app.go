@@ -7,9 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"runtime/debug"
-	"strings"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
@@ -48,31 +46,31 @@ const (
 )
 
 const (
-	pDebugBindings    = "/debug/bindings"
-	pDebugClean       = "/debug/clean"
-	pDebugKVInfo      = "/debug/kv/info"
-	pDebugKVCreate    = "/debug/kv/create"
-	pDebugKVEdit      = "/debug/kv/edit"
-	pDebugKVEditModal = "/debug/kv/edit-modal"
-	pDebugKVClean     = "/debug/kv/clean"
-	pDebugKVList      = "/debug/kv/list"
-	pDisable          = "/disable"
-	pEnable           = "/enable"
-	pInfo             = "/info"
-	pInstallConsent   = "/install-consent"
-	pInstallHTTP      = "/install/http"
-	pInstallListed    = "/install/listed"
-	pList             = "/list"
-	pUninstall        = "/uninstall"
+	pDebugBindings        = "/debug-bindings"
+	pDebugClean           = "/debug-clean"
+	pDebugKVClean         = "/debug/kv/clean"
+	pDebugKVCreate        = "/debug/kv/create"
+	pDebugKVEdit          = "/debug/kv/edit"
+	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugKVInfo          = "/debug/kv/info"
+	pDebugKVList          = "/debug/kv/list"
+	pDisable              = "/disable"
+	pEnable               = "/enable"
+	pInfo                 = "/info"
+	pInstallConsent       = "/install-consent"
+	pInstallConsentSource = "/install-consent/form"
+	pInstallHTTP          = "/install-http"
+	pInstallListed        = "/install-listed"
+	pList                 = "/list"
+	pUninstall            = "/uninstall"
 )
 
-type handler struct {
-	requireSysadmin bool
-	commandBinding  func(*i18n.Localizer) apps.Binding
-	lookupf         func(apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(apps.CallRequest) apps.CallResponse
-	formf           func(apps.CallRequest) (*apps.Form, error)
-}
+const (
+	pLookupAppID     = "/q/app_id"
+	pLookupNamespace = "/q/namespace"
+)
+
+type handler func(apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
 	conf        config.Service
@@ -93,25 +91,35 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 	}
 
 	a.router = map[string]handler{
-		// Actions available to all users
-		pInfo: a.info(),
+		// App's own bindings.
+		appspath.Bindings: a.bindings,
 
-		// Actions that require sysadmin
-		pDebugBindings:    a.debugBindings(),
-		pDebugClean:       a.debugClean(),
-		pDebugKVClean:     a.debugKVClean(),
-		pDebugKVCreate:    a.debugKVCreate(),
-		pDebugKVEdit:      a.debugKVEdit(),
-		pDebugKVEditModal: a.debugKVEditModal(),
-		pDebugKVInfo:      a.debugKVInfo(),
-		pDebugKVList:      a.debugKVList(),
-		pDisable:          a.disable(),
-		pEnable:           a.enable(),
-		pInstallConsent:   a.installConsent(),
-		pInstallHTTP:      a.installHTTP(),
-		pInstallListed:    a.installListed(),
-		pList:             a.list(),
-		pUninstall:        a.uninstall(),
+		// Commands available to all users.
+		pInfo: a.info,
+
+		// Commands that require sysadmin.
+		pDebugBindings: requireAdmin(a.debugBindings),
+		pDebugClean:    requireAdmin(a.debugClean),
+		pDebugKVClean:  requireAdmin(a.debugKVClean),
+		pDebugKVCreate: requireAdmin(a.debugKVCreate),
+		pDebugKVEdit:   requireAdmin(a.debugKVEdit),
+		pDebugKVInfo:   requireAdmin(a.debugKVInfo),
+		pDebugKVList:   requireAdmin(a.debugKVList),
+		pDisable:       requireAdmin(a.disable),
+		pEnable:        requireAdmin(a.enable),
+		pInstallListed: requireAdmin(a.installListed),
+		pInstallHTTP:   requireAdmin(a.installHTTP),
+		pList:          requireAdmin(a.list),
+		pUninstall:     requireAdmin(a.uninstall),
+
+		// Modals.
+		pDebugKVEditModal:     requireAdmin(a.debugKVEditModal),
+		pInstallConsent:       requireAdmin(a.installConsent),
+		pInstallConsentSource: requireAdmin(a.installConsentForm),
+
+		// Lookups.
+		pLookupAppID:     requireAdmin(a.lookupAppID),
+		pLookupNamespace: requireAdmin(a.lookupNamespace),
 	}
 
 	return a
@@ -193,63 +201,29 @@ func (a *builtinApp) Roundtrip(_ apps.App, creq apps.CallRequest, async bool) (o
 		return ioutil.NopCloser(bytes.NewReader(data)), nil
 	}
 
-	// The bindings call does not have a call type, so make it into a submit so
-	// that the router can handle it.
-	if creq.Path == appspath.Bindings {
-		return readcloser(a.bindings(creq))
-	}
-
-	callPath, callType := path.Split(creq.Path)
-	callPath = strings.TrimRight(callPath, "/")
-	h, ok := a.router[callPath]
+	h, ok := a.router[creq.Path]
 	if !ok {
-		return nil, utils.NewNotFoundError(callPath)
+		return nil, utils.NewNotFoundError(creq.Path)
 	}
-
-	if h.requireSysadmin {
-		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
-			return nil, apps.NewErrorResponse(utils.NewInvalidError(
-				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
-		}
-		if !creq.Context.ActingUser.IsSystemAdmin() {
-			return nil, apps.NewErrorResponse(utils.NewUnauthorizedError(
-				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
-		}
-	}
-
-	switch apps.CallType(callType) {
-	case apps.CallTypeForm:
-		if h.formf == nil {
-			return nil, utils.ErrNotFound
-		}
-		form, err := h.formf(creq)
-		if err != nil {
-			return nil, err
-		}
-		return readcloser(apps.NewFormResponse(*form))
-
-	case apps.CallTypeLookup:
-		if h.lookupf == nil {
-			return nil, utils.ErrNotFound
-		}
-		opts, err := h.lookupf(creq)
-		if err != nil {
-			return nil, err
-		}
-		return readcloser(apps.NewLookupResponse(opts))
-
-	case apps.CallTypeSubmit:
-		if h.submitf == nil {
-			return nil, utils.ErrNotFound
-		}
-		return readcloser(h.submitf(creq))
-	}
-
-	return nil, utils.NewNotFoundError("%s does not handle %s", callPath, callType)
+	return readcloser(h(creq))
 }
 
 func (a *builtinApp) GetStatic(_ apps.App, path string) (io.ReadCloser, int, error) {
 	return nil, http.StatusNotFound, utils.NewNotFoundError("static support is not implemented")
+}
+
+func requireAdmin(h handler) handler {
+	return func(creq apps.CallRequest) apps.CallResponse {
+		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
+			return apps.NewErrorResponse(utils.NewInvalidError(
+				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+		}
+		if !creq.Context.ActingUser.IsSystemAdmin() {
+			return apps.NewErrorResponse(utils.NewUnauthorizedError(
+				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
+		}
+		return h(creq)
+	}
 }
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
