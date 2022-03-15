@@ -4,12 +4,15 @@
 package proxy
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const PrevVersion = "prev_version"
@@ -17,8 +20,14 @@ const PrevVersion = "prev_version"
 // SynchronizeInstalledApps synchronizes installed apps with known manifests,
 // performing OnVersionChanged call on the App as needed.
 func (p *Proxy) SynchronizeInstalledApps() error {
-	installed := p.store.App.AsMap()
-	listed := p.store.Manifest.AsMap()
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+
+	mm := p.conf.MattermostAPI()
+	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+
+	installed := p.store.App.AsMap(r)
+	listed := p.store.Manifest.AsMap(r)
 
 	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
@@ -33,12 +42,15 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	}
 
 	for id := range diff {
+		r = r.Clone()
+		r.SetAppID(id)
+
 		app := diff[id]
 		m := listed[app.AppID]
 
 		// Store the new manifest to update the current mappings of the App
 		app.Manifest = m
-		err := p.store.App.Save(app)
+		err := p.store.App.Save(r, app)
 		if err != nil {
 			return err
 		}
@@ -46,14 +58,14 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				resp := p.call(Incoming{}, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
+				resp := p.call(r, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}
 				return nil
 			})
 			if err != nil {
-				p.conf.Logger().WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+				r.Log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
 					"app_id", app.AppID)
 			}
 		}

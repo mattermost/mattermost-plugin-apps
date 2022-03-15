@@ -8,16 +8,17 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) UpdateAppListing(req appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
+func (p *Proxy) UpdateAppListing(r *incoming.Request, req appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
 	if err := req.Manifest.Validate(); err != nil {
 		return nil, utils.NewInvalidError(err, "invalid app manifest in the request")
 	}
 
 	if !req.Replace {
-		prev, err := p.GetManifest(req.AppID)
+		prev, err := p.GetManifest(r, req.AppID)
 		if err != nil && errors.Cause(err) != utils.ErrNotFound {
 			return nil, errors.Wrap(err, "failed to load previous listing")
 		}
@@ -28,7 +29,7 @@ func (p *Proxy) UpdateAppListing(req appclient.UpdateAppListingRequest) (*apps.M
 		req.Manifest.Deploy = mergeDeployData(prevDeploy, req.Manifest.Deploy, req.AddDeploys, req.RemoveDeploys)
 	}
 
-	err := p.store.Manifest.StoreLocal(req.Manifest)
+	err := p.store.Manifest.StoreLocal(r, req.Manifest)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update listed manifest")
 	}

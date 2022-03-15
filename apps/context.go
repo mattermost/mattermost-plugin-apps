@@ -33,6 +33,9 @@ type Context struct {
 	// Top-level Mattermost site URL to use for REST API calls.
 	MattermostSiteURL string `json:"mattermost_site_url"`
 
+	// DeveloperMode is set if the apps plugin itself is running in Developer mode.
+	DeveloperMode bool `json:"developer_mode,omitempty"`
+
 	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
 	AppPath string `json:"app_path"`
 
@@ -41,9 +44,6 @@ type Context struct {
 
 	// More data as requested by call.Expand
 	ExpandedContext
-
-	// DeveloperMode is set if the apps plugin itself is running in Developer mode.
-	DeveloperMode bool `json:"developer_mode,omitempty"`
 }
 
 // UserAgentContext is a subset of fields from Context that are accepted from

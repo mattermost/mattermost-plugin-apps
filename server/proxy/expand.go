@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"path"
 
 	"github.com/pkg/errors"
@@ -9,37 +10,53 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func contextForApp(app apps.App, base apps.Context, conf config.Config) apps.Context {
+func (p *Proxy) contextForApp(r *incoming.Request, app apps.App, base apps.Context) (apps.Context, error) {
+	conf := p.conf.Get()
+
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
 	out.MattermostSiteURL = conf.MattermostSiteURL
+	out.DeveloperMode = conf.DeveloperMode
 	out.AppID = app.AppID
 	out.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
+
 	out.BotUserID = app.BotUserID
-	out.BotAccessToken = app.BotAccessToken
-	out.DeveloperMode = conf.DeveloperMode
-	return out
+
+	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
+		botAccessToken, err := p.getBotAccessToken(r, app)
+		if err != nil {
+			return emptyCC, err
+		}
+		out.BotAccessToken = botAccessToken
+	}
+
+	return out, nil
 }
 
 var emptyCC = apps.Context{}
 
-func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
+func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Context, expand *apps.Expand) (apps.Context, error) {
 	if base == nil {
 		base = &apps.Context{}
 	}
 	conf := p.conf.Get()
-	cc := contextForApp(app, *base, conf)
+
+	cc, err := p.contextForApp(r, app, *base)
+	if err != nil {
+		return emptyCC, err
+	}
+
 	if expand == nil {
 		// nothing more to do
 		return cc, nil
 	}
 
-	client, err := p.getExpandClient(app, in)
+	client, err := p.getExpandClient(r, app)
 	if err != nil {
 		return emptyCC, err
 	}
@@ -48,14 +65,10 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
-		cc.ActingUserAccessToken = in.ActingUserAccessToken
-		if cc.ActingUserAccessToken == "" {
-			userSession, err := utils.LoadSession(p.conf.MattermostAPI(), in.SessionID, in.ActingUserID)
-			if err != nil {
-				return emptyCC, utils.NewForbiddenError("failed to load user session")
-			}
 
-			cc.ActingUserAccessToken = userSession.Token
+		cc.ActingUserAccessToken, err = r.UserAccessToken()
+		if err != nil {
+			return emptyCC, errors.New("failed to load user session")
 		}
 	}
 
@@ -145,11 +158,16 @@ func (p *Proxy) expandContext(in Incoming, app apps.App, base *apps.Context, exp
 		}
 
 		if expand.OAuth2User != "" && base.OAuth2.User == nil && base.ActingUserID != "" {
-			var v interface{}
-			err := p.store.OAuth2.GetUser(app.BotUserID, base.ActingUserID, &v)
-			if err != nil && !errors.Is(err, utils.ErrNotFound) {
+			data, err := p.appservices.GetOAuth2User(r, app.AppID, base.ActingUserID)
+			if err != nil {
 				return emptyCC, errors.Wrapf(err, "failed to expand OAuth user %s", base.UserID)
 			}
+
+			var v interface{}
+			if err = json.Unmarshal(data, &v); err != nil {
+				return emptyCC, errors.Wrapf(err, "failed unmarshal OAuth2 User %s", base.UserID)
+			}
+
 			cc.ExpandedContext.OAuth2.User = v
 		}
 	}
@@ -292,25 +310,37 @@ func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
 	return nil
 }
 
-func (p *Proxy) getExpandClient(app apps.App, in Incoming) (mmclient.Client, error) {
+func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Client, error) {
 	if p.expandClientOverride != nil {
 		return p.expandClientOverride, nil
 	}
 
-	conf, mm, _ := p.conf.Basic()
+	conf := p.conf.Get()
+
 	switch {
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && in.ActingUserID != "":
-		// The OAuth2 token should be used here once it's implemented
-		err := in.ensureUserToken(mm)
+	case app.DeployType == apps.DeployBuiltin:
+		return mmclient.NewRPCClient(p.conf.MattermostAPI()), nil
+
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && r.ActingUserID() != "":
+		return r.GetMMClient()
+
+	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
+		accessToken, err := p.getBotAccessToken(r, app)
 		if err != nil {
 			return nil, err
 		}
-		return mmclient.NewHTTPClient(conf, in.ActingUserAccessToken), nil
-
-	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		return mmclient.NewHTTPClient(conf, app.BotAccessToken), nil
+		return mmclient.NewHTTPClient(conf, accessToken), nil
 
 	default:
 		return nil, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
 	}
+}
+
+func (p *Proxy) getBotAccessToken(r *incoming.Request, app apps.App) (string, error) {
+	session, err := p.sessionService.GetOrCreate(r, app.AppID, app.BotUserID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get bot session")
+	}
+
+	return session.Token, nil
 }

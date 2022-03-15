@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *Proxy {
@@ -26,7 +27,7 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		},
 	})
 
-	s, err := store.MakeService(conf, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
@@ -40,10 +41,10 @@ func newTestProxy(tb testing.TB, testApps []apps.App, ctrl *gomock.Controller) *
 		// set up an empty OK call response
 		b, _ := json.Marshal(apps.NewDataResponse(nil))
 		reader := ioutil.NopCloser(bytes.NewReader(b))
-		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 		upstreams[app.Manifest.AppID] = up
-		appStore.EXPECT().Get(app.AppID).Return(&app, nil)
+		appStore.EXPECT().Get(gomock.Any(), app.AppID).Return(&app, nil)
 	}
 
 	p := &Proxy{

@@ -2,8 +2,8 @@ package path
 
 // Paths for the REST APIs exposed by the Apps Plugin itself
 
-// API paths: {PluginURL}/api/v1/...
 const (
+	// API paths: {PluginURL}/api/v1/...
 	API = "/api/v1"
 
 	// User-agent ping

@@ -3,6 +3,10 @@
 
 package config
 
+import (
+	"time"
+)
+
 const (
 	MattermostSessionIDHeader = "Mattermost-Session-Id"
 	MattermostPluginIDHeader  = "Mattermost-Plugin-Id"
@@ -30,6 +34,10 @@ const (
 )
 
 const (
+	RequestTimeout = time.Second * 30
+)
+
+const (
 	PropTeamID    = "team_id"
 	PropChannelID = "channel_id"
 	PropPostID    = "post_id"
@@ -54,9 +62,13 @@ const (
 	// KVAppPrefix is the Apps global namespace.
 	KVAppPrefix = ".k"
 
-	// KVUserPrefix is the global namespase used to store OAuth2 user
+	// KVUserPrefix is the global namespase used to store user
 	// records.
 	KVUserPrefix = ".u"
+
+	// KVUserPrefix is the key to store OAuth2 user
+	// records.
+	KVUserKey = "oauth2_user"
 
 	// KVOAuth2StatePrefix is the global namespase used to store OAuth2
 	// ephemeral state data.
@@ -70,6 +82,8 @@ const (
 
 	// KVLocalManifestPrefix is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man."
+
+	KVTokenPrefix = ".t"
 
 	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
 	// usually upon a Mattermost instance startup.

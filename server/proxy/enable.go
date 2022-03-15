@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
-	app, err := p.GetInstalledApp(appID)
+func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
+	app, err := p.GetInstalledApp(r, appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -21,32 +21,30 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	asAdmin, err := p.getClient(in)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	_, err = asAdmin.EnableBot(app.BotUserID)
+	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
 
 	// Enable the app in the store first to allow calls to it
 	app.Disabled = false
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.call(in, *app, *app.OnEnable, &cc)
+		resp := p.call(r, *app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
+			r.Log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
 			message = resp.Text
 		}
 	}
-	log.Infof("Enabled app")
+
+	r.Log.Infof("Enabled app")
+
 	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
 
 	if message == "" {
@@ -55,9 +53,8 @@ func (p *Proxy) EnableApp(in Incoming, cc apps.Context, appID apps.AppID) (strin
 	return message, nil
 }
 
-func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (string, error) {
-	log := p.conf.Logger().With("app_id", appID)
-	app, err := p.GetInstalledApp(appID)
+func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
+	app, err := p.GetInstalledApp(r, appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -69,9 +66,9 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.call(in, *app, *app.OnDisable, &cc)
+		resp := p.call(r, *app, *app.OnDisable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
-			log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
+			r.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
 			message = resp.Text
 		}
@@ -81,34 +78,37 @@ func (p *Proxy) DisableApp(in Incoming, cc apps.Context, appID apps.AppID) (stri
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	asAdmin, err := p.getClient(in)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	_, err = asAdmin.DisableBot(app.BotUserID)
+	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
+	//  Only clear the store. Existing session will still work until they expire. https://mattermost.atlassian.net/browse/MM-40012
+	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
+	}
+
 	app.Disabled = true
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-	log.Infof("Disabled app")
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+
+	r.Log.Infof("Disabled app")
+
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app apps.App) bool {
+func (p *Proxy) appIsEnabled(r *incoming.Request, app apps.App) bool {
 	if app.DeployType == apps.DeployBuiltin {
 		return true
 	}
 	if app.Disabled {
 		return false
 	}
-	if m, _ := p.store.Manifest.Get(app.AppID); m == nil {
+	if m, _ := p.store.Manifest.Get(r, app.AppID); m == nil {
 		return false
 	}
 	return true

@@ -39,8 +39,8 @@ func NewClient(userID, token, mattermostSiteURL string) *Client {
 	return &c
 }
 
-func (c *Client) KVSet(id string, prefix string, in interface{}) (bool, error) {
-	changed, res, err := c.ClientPP.KVSet(id, prefix, in)
+func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
+	changed, res, err := c.ClientPP.KVSet(prefix, id, in)
 
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
@@ -53,8 +53,8 @@ func (c *Client) KVSet(id string, prefix string, in interface{}) (bool, error) {
 	return changed, nil
 }
 
-func (c *Client) KVGet(id string, prefix string, ref interface{}) error {
-	res, err := c.ClientPP.KVGet(id, prefix, ref)
+func (c *Client) KVGet(prefix, id string, ref interface{}) error {
+	res, err := c.ClientPP.KVGet(prefix, id, ref)
 	if res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -66,8 +66,8 @@ func (c *Client) KVGet(id string, prefix string, ref interface{}) error {
 	return nil
 }
 
-func (c *Client) KVDelete(id string, prefix string) error {
-	res, err := c.ClientPP.KVDelete(id, prefix)
+func (c *Client) KVDelete(prefix, id string) error {
+	res, err := c.ClientPP.KVDelete(prefix, id)
 	if res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -92,6 +92,19 @@ func (c *Client) Subscribe(sub *apps.Subscription) error {
 	return nil
 }
 
+func (c *Client) GetSubscriptions() ([]apps.Subscription, error) {
+	subs, res, err := c.ClientPP.GetSubscriptions()
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return subs, nil
+}
+
 func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	res, err := c.ClientPP.Unsubscribe(sub)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
@@ -105,8 +118,8 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	return nil
 }
 
-func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) error {
-	res, err := c.ClientPP.StoreOAuth2App(appID, oauth2App)
+func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
+	res, err := c.ClientPP.StoreOAuth2App(oauth2App)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -118,8 +131,8 @@ func (c *Client) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) erro
 	return nil
 }
 
-func (c *Client) StoreOAuth2User(appID apps.AppID, ref interface{}) error {
-	res, err := c.ClientPP.StoreOAuth2User(appID, ref)
+func (c *Client) StoreOAuth2User(ref interface{}) error {
+	res, err := c.ClientPP.StoreOAuth2User(ref)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -130,8 +143,8 @@ func (c *Client) StoreOAuth2User(appID apps.AppID, ref interface{}) error {
 	return nil
 }
 
-func (c *Client) GetOAuth2User(appID apps.AppID, ref interface{}) error {
-	res, err := c.ClientPP.GetOAuth2User(appID, ref)
+func (c *Client) GetOAuth2User(ref interface{}) error {
+	res, err := c.ClientPP.GetOAuth2User(ref)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		if err != nil {
 			return err
@@ -141,6 +154,19 @@ func (c *Client) GetOAuth2User(appID apps.AppID, ref interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
+	cresp, res, err := c.ClientPP.Call(creq)
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return cresp, nil
 }
 
 func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {

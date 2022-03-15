@@ -16,16 +16,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
-	conf, _, log := p.conf.Basic()
-	log = log.With("app_id", appID)
-	m, err := p.store.Manifest.Get(appID)
+func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
+	conf := p.conf.Get()
+	m, err := p.store.Manifest.Get(r, appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
@@ -37,7 +36,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", err
 	}
 
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
@@ -61,7 +60,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		app.WebhookSecret = model.NewId()
 	}
 
-	icon, err := p.getAppIcon(*app)
+	icon, err := p.getAppIcon(r, *app)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get bot icon")
 	}
@@ -75,7 +74,7 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 	//
 	// Note that this check is often ineffective, but "the best we can do"
 	// before we start the diffcult-to-revert install process.
-	_, err = p.callApp(in, *app, apps.CallRequest{
+	_, err = p.callApp(r, *app, apps.CallRequest{
 		Call:    apps.DefaultPing,
 		Context: cc,
 	})
@@ -83,104 +82,97 @@ func (p *Proxy) InstallApp(in Incoming, cc apps.Context, appID apps.AppID, deplo
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
-	asAdmin, err := p.getClient(in)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to get an admin HTTP client")
-	}
-	err = p.ensureBot(asAdmin, log, app, icon)
+	err = p.ensureBot(r, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-		var oAuthApp *model.OAuthApp
-		oAuthApp, err = p.ensureOAuthApp(asAdmin, log, conf, *app, trusted, in.ActingUserID)
-		if err != nil {
-			return nil, "", err
-		}
-		app.MattermostOAuth2.ClientID = oAuthApp.Id
-		app.MattermostOAuth2.ClientSecret = oAuthApp.ClientSecret
-		app.Trusted = trusted
+	err = p.ensureOAuthApp(r, conf, app, trusted, r.ActingUserID())
+	if err != nil {
+		return nil, "", err
 	}
 
-	err = p.store.App.Save(*app)
+	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return nil, "", err
 	}
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		cresp := p.call(in, *app, *app.OnInstall, &cc)
+		cresp := p.call(r, *app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
+			r.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
 		} else if cresp.Text != "" {
 			message += "\n\n" + cresp.Text
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(in, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(r, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
+			r.Log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, cresp.Error())
 		}
 	}
 
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(in.ActingUserID)
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
-	log.Infof(message)
+	r.Log.Infof(message)
+
 	return app, message, nil
 }
 
-func (p *Proxy) ensureOAuthApp(client mmclient.Client, log utils.Logger, conf config.Config, app apps.App, noUserConsent bool, actingUserID string) (*model.OAuthApp, error) {
-	if app.MattermostOAuth2.ClientID != "" {
-		oauthApp, err := client.GetOAuthApp(app.MattermostOAuth2.ClientID)
-		if err == nil {
-			log.Debugw("App install flow: Using existing OAuth2 App",
-				"id", oauthApp.Id)
-			return oauthApp, nil
-		}
+func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) error {
+	mm := p.conf.MattermostAPI()
+	if app.MattermostOAuth2 != nil {
+		r.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
+
+		return nil
 	}
 
 	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
 
-	oauthApp := &model.OAuthApp{
-		CreatorId:    actingUserID,
-		Name:         app.DisplayName,
-		Description:  app.Description,
-		CallbackUrls: []string{oauth2CallbackURL},
-		Homepage:     app.HomepageURL,
-		IsTrusted:    noUserConsent,
+	oAuthApp := &model.OAuthApp{
+		CreatorId:       actingUserID,
+		Name:            app.DisplayName,
+		Description:     app.Description,
+		CallbackUrls:    []string{oauth2CallbackURL},
+		Homepage:        app.HomepageURL,
+		IsTrusted:       noUserConsent,
+		MattermostAppID: string(app.AppID),
 	}
-	err := client.CreateOAuthApp(oauthApp)
+	err := mm.OAuth.Create(oAuthApp)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create OAuth2 App")
+		return errors.Wrap(err, "failed to create OAuth2 App")
 	}
 
-	log.Debugw("App install flow: Created OAuth2 App", "id", oauthApp.Id)
+	app.MattermostOAuth2 = oAuthApp
 
-	return oauthApp, nil
+	r.Log.Debugw("App install flow: Created OAuth2 App", "id", app.MattermostOAuth2.Id)
+
+	return nil
 }
 
-func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, icon io.Reader) error {
+func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) error {
+	mm := p.conf.MattermostAPI()
 	bot := &model.Bot{
 		Username:    strings.ToLower(string(app.AppID)),
 		DisplayName: app.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
-	user, _ := mm.GetUserByUsername(bot.Username)
+	user, _ := mm.User.GetByUsername(bot.Username)
 	if user == nil {
-		err := mm.CreateBot(bot)
+		err := mm.Bot.Create(bot)
 		if err != nil {
 			return err
 		}
 
-		log.Debugw("App install flow: Created Bot Account ",
+		r.Log.Debugw("App install flow: Created Bot Account ",
 			"username", bot.Username)
 	} else {
 		if !user.IsBot {
@@ -190,15 +182,15 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 		// Check if disabled
 		if user.DeleteAt != 0 {
 			var err error
-			bot, err = mm.EnableBot(user.Id)
+			bot, err = mm.Bot.UpdateActive(user.Id, true)
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err := mm.GetBot(user.Id)
+		_, err := mm.Bot.Get(user.Id, false)
 		if err != nil {
-			err = mm.CreateBot(bot)
+			err = mm.Bot.Create(bot)
 			if err != nil {
 				return err
 			}
@@ -211,22 +203,10 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 	app.BotUsername = bot.Username
 
 	if icon != nil {
-		err := mm.SetProfileImage(app.BotUserID, icon)
+		err := mm.User.SetProfileImage(app.BotUserID, icon)
 		if err != nil {
 			return errors.Wrap(err, "failed to update bot profile icon")
 		}
-	}
-
-	// Create an access token on a fresh app install
-	if app.RequestedPermissions.Contains(apps.PermissionActAsBot) &&
-		app.BotAccessTokenID == "" {
-		token, err := mm.CreateUserAccessToken(bot.UserId, "Mattermost App Token")
-		if err != nil {
-			return errors.Wrap(err, "failed to create bot user's access token")
-		}
-
-		app.BotAccessToken = token.Token
-		app.BotAccessTokenID = token.Id
 	}
 
 	return nil
@@ -235,13 +215,13 @@ func (p *Proxy) ensureBot(mm mmclient.Client, log utils.Logger, app *apps.App, i
 // getAppIcon gets the icon of a given app.
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
-func (p *Proxy) getAppIcon(app apps.App) (io.ReadCloser, error) {
+func (p *Proxy) getAppIcon(r *incoming.Request, app apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
 	if iconPath == "" {
 		return nil, nil
 	}
 
-	icon, status, err := p.getStatic(app, iconPath)
+	icon, status, err := p.getStatic(r, app, iconPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download icon: %s", iconPath)
 	}

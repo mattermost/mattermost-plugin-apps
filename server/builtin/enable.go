@@ -7,7 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) enableCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -34,9 +34,9 @@ func (a *builtinApp) enableCommandBinding(loc *i18n.Localizer) apps.Binding {
 	}
 }
 
-func (a *builtinApp) enable(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) enable(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	out, err := a.proxy.EnableApp(
-		proxy.NewIncomingFromContext(creq.Context),
+		r,
 		creq.Context,
 		apps.AppID(creq.GetValue(fAppID, "")))
 	if err != nil {
