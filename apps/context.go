@@ -20,7 +20,7 @@ type Context struct {
 	// ActingUserID is primarily (or exclusively?) for calls originating from
 	// user submissions.
 	//
-	// UserID is not send down to Apps.
+	// ActingUserID is not send down to Apps.
 	ActingUserID string `json:"acting_user_id,omitempty"`
 
 	// UserID indicates the subject of the command. Once Mentions is
