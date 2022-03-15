@@ -9,6 +9,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -50,12 +51,12 @@ func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
 	}
 }
 
-func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
 	includePluginApps := creq.BoolValue("plugin-apps")
 
-	listed := a.proxy.GetListedApps("", includePluginApps)
-	installed := a.proxy.GetInstalledApps()
+	listed := a.proxy.GetListedApps(r, "", includePluginApps)
+	installed := a.proxy.GetInstalledApps(r)
 
 	// All of this information is non sensitive.
 	// Checks for the user's permissions might be needed in the future.
@@ -66,7 +67,9 @@ func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
-		m, _ := a.proxy.GetManifest(app.AppID)
+		r = r.Clone()
+		r.SetAppID(app.AppID)
+		m, _ := a.proxy.GetManifest(r, app.AppID)
 		if m == nil {
 			continue
 		}
@@ -105,11 +108,11 @@ func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
 		if app.BotUserID != "" {
 			account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
 		}
-		if app.MattermostOAuth2.ClientID != "" {
+		if app.MattermostOAuth2 != nil {
 			if account != "" {
 				account += ", "
 			}
-			account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.ClientID)
+			account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.Id)
 			if app.RemoteOAuth2.ClientID != "" {
 				account += fmt.Sprintf("/`%s`", app.RemoteOAuth2.ClientID)
 			}
@@ -128,7 +131,9 @@ func (a *builtinApp) list(creq apps.CallRequest) apps.CallResponse {
 	})
 
 	for _, l := range listed {
-		app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID)
+		r = r.Clone()
+		r.SetAppID(l.Manifest.AppID)
+		app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
 		if app != nil {
 			continue
 		}

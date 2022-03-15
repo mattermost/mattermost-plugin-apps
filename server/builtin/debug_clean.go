@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) debugCleanCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -25,7 +26,7 @@ func (a *builtinApp) debugCleanCommandBinding(loc *i18n.Localizer) apps.Binding 
 	}
 }
 
-func (a *builtinApp) debugClean(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugClean(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
 	_ = a.conf.MattermostAPI().KV.DeleteAll()
 	_ = a.conf.StoreConfig(config.StoredConfig{})

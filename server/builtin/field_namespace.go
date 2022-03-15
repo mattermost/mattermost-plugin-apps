@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localizer) apps.Field {
@@ -34,14 +35,15 @@ func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localize
 	}
 }
 
-func (a *builtinApp) lookupNamespace(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) lookupNamespace(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	if appID == "" {
 		return apps.NewErrorResponse(errors.Errorf("please select --" + fAppID + " first"))
 	}
+	r.SetAppID(appID)
 
 	var options []apps.SelectOption
-	_, namespaces, err := a.debugListKeys(appID)
+	_, namespaces, err := a.debugListKeys(r, appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

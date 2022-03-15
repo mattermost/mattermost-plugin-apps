@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type notifyTestcase struct {
@@ -29,7 +31,7 @@ type notifyTestcase struct {
 func sendCallResponse(t *testing.T, path string, cresp apps.CallResponse, up *mock_upstream.MockUpstream) {
 	b, _ := json.Marshal(cresp)
 	reader := ioutil.NopCloser(bytes.NewReader(b))
-	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+	up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _ apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 		require.Equal(t, path, creq.Path)
 		return reader, nil
 	})
@@ -591,7 +593,7 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 
 	ctrl := gomock.NewController(t)
 
-	conf, testAPI := config.NewTestService(&config.Config{
+	conf, api := config.NewTestService(&config.Config{
 		PluginURL: "https://test.mattermost.com/plugins/com.mattermost.apps",
 	})
 
@@ -601,7 +603,7 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 		},
 	})
 
-	s, err := store.MakeService(conf, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
@@ -612,14 +614,14 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 	for i := range allApps {
 		app := allApps[i]
 		appMap[app.AppID] = app
-		appStore.EXPECT().Get(app.AppID).Return(&app, nil).AnyTimes()
+		appStore.EXPECT().Get(gomock.Any(), app.AppID).Return(&app, nil).AnyTimes()
 
 		up := mock_upstream.NewMockUpstream(ctrl)
 		upMap[app.AppID] = up
 		upMockMap[app.AppID] = up
 	}
 
-	appStore.EXPECT().AsMap().Return(appMap).AnyTimes()
+	appStore.EXPECT().AsMap(gomock.Any()).Return(appMap).AnyTimes()
 
 	p := &Proxy{
 		store:            s,
@@ -635,8 +637,8 @@ func runNotifyTest(t *testing.T, allApps []apps.App, tc notifyTestcase) {
 
 		b, err := json.Marshal(subs)
 		require.NoError(t, err)
-		testAPI.On("KVGet", name).Return(b, nil)
+		api.On("KVGet", name).Return(b, nil)
 	}
 
-	tc.run(p, upMockMap, testAPI)
+	tc.run(p, upMockMap, api)
 }

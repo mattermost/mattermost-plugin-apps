@@ -94,7 +94,7 @@ func DoHandleJSONData(data []byte) http.HandlerFunc {
 // DoHandleData returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
 func DoHandleData(ct string, data []byte) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", ct)
 		_, _ = w.Write(data)
 	}
@@ -103,7 +103,7 @@ func DoHandleData(ct string, data []byte) http.HandlerFunc {
 // DoHandleJSON returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
 func DoHandleJSON(v interface{}) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		_ = WriteJSON(w, v)
 	}
 }

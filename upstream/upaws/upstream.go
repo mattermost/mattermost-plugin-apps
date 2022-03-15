@@ -5,6 +5,7 @@ package upaws
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"sort"
@@ -42,16 +43,16 @@ func MakeUpstream(accessKey, secret, region, staticS3bucket string, log utils.Lo
 	}, nil
 }
 
-func (u *Upstream) GetStatic(app apps.App, path string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(ctx context.Context, app apps.App, path string) (io.ReadCloser, int, error) {
 	key := S3StaticName(app.Manifest.AppID, app.Manifest.Version, path)
-	data, err := u.awsClient.GetS3(u.staticS3Bucket, key)
+	data, err := u.awsClient.GetS3(ctx, u.staticS3Bucket, key)
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrapf(err, "can't download from S3:bucket:%s, path:%s", u.staticS3Bucket, path)
 	}
 	return io.NopCloser(bytes.NewReader(data)), http.StatusOK, nil
 }
 
-func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if !app.Manifest.Contains(apps.DeployAWSLambda) {
 		return nil, errors.New("no 'aws_lambda' section in manifest.json")
 	}
@@ -60,7 +61,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 		return nil, utils.ErrNotFound
 	}
 
-	data, err := u.invokeFunction(name, async, creq)
+	data, err := u.invokeFunction(ctx, name, async, creq)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 // InvokeFunction is a public method used in appsctl, but is not a part of the
 // upstream.Upstream interface. It invokes a function with a specified name,
 // with no conversion.
-func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest) ([]byte, error) {
+func (u *Upstream) invokeFunction(ctx context.Context, name string, async bool, creq apps.CallRequest) ([]byte, error) {
 	typ := lambda.InvocationTypeRequestResponse
 	if async {
 		typ = lambda.InvocationTypeEvent
@@ -80,7 +81,7 @@ func (u *Upstream) invokeFunction(name string, async bool, creq apps.CallRequest
 	if err != nil {
 		return nil, err
 	}
-	bb, err := u.awsClient.InvokeLambda(name, typ, payload)
+	bb, err := u.awsClient.InvokeLambda(ctx, name, typ, payload)
 	if async || err != nil {
 		return nil, err
 	}
@@ -125,13 +126,13 @@ func (u *Upstream) ListS3Apps(appPrefix string) ([]apps.AppID, error) {
 		return nil, utils.NewNotFoundError(appPrefix)
 	}
 	sorted := []string{}
-	for k := range keys {
-		sorted = append(sorted, k)
+	for keys := range keys {
+		sorted = append(sorted, keys)
 	}
 	sort.Strings(sorted)
 	out := []apps.AppID{}
-	for _, k := range sorted {
-		out = append(out, apps.AppID(k))
+	for _, keys := range sorted {
+		out = append(out, apps.AppID(keys))
 	}
 	return out, nil
 }
@@ -157,8 +158,8 @@ func (u *Upstream) ListS3Versions(appID apps.AppID, versionPrefix string) ([]str
 		return nil, utils.NewNotFoundError(versionPrefix)
 	}
 	sorted := []string{}
-	for k := range keys {
-		sorted = append(sorted, k)
+	for keys := range keys {
+		sorted = append(sorted, keys)
 	}
 	sort.Strings(sorted)
 	return sorted, nil

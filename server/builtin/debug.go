@@ -37,6 +37,36 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					a.debugKVListCommandBinding(loc),
 				},
 			},
+			{
+				Location: "sessions",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.session.label",
+					Other: "sessions",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.session.description",
+					Other: "View App specific sessions.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugSessionsListBinding(loc),
+					a.debugSessionsViewBinding(loc),
+					a.debugSessionsRevokeBinding(loc),
+				},
+			},
+			{
+				Location: "oauth",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.oauth.label",
+					Other: "oauth",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.oauth.description",
+					Other: "View information about the remote OAuth app.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugOAuthConfigViewBinding(loc),
+				},
+			},
 		},
 	}
 }
@@ -57,22 +87,6 @@ func (a *builtinApp) debugIDField(loc *i18n.Localizer) apps.Field {
 			ID:    "field.kv.id.hint",
 			Other: "[ id ]",
 		}),
-	}
-}
-
-func (a *builtinApp) debugBase64Field(loc *i18n.Localizer) apps.Field {
-	return apps.Field{
-		Name: fBase64,
-		Type: apps.FieldTypeBool,
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.base64.label",
-			Other: "base64",
-		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.base64.description",
-			Other: "base64-encode keys, so they can be cut-and-pasted.",
-		}),
-		Value: true,
 	}
 }
 

@@ -5,6 +5,7 @@ package uphttp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -46,10 +47,10 @@ func AppRootURL(app apps.App, _ string) (string, error) {
 	return app.Manifest.HTTP.RootURL, nil
 }
 
-func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
+func (u *Upstream) Roundtrip(ctx context.Context, app apps.App, creq apps.CallRequest, async bool) (io.ReadCloser, error) {
 	if async {
 		go func() {
-			resp, _ := u.invoke(creq.Context.BotUserID, app, creq)
+			resp, _ := u.invoke(context.Background(), creq.Context.BotUserID, app, creq)
 			if resp != nil {
 				resp.Body.Close()
 			}
@@ -57,14 +58,14 @@ func (u *Upstream) Roundtrip(app apps.App, creq apps.CallRequest, async bool) (i
 		return nil, nil
 	}
 
-	resp, err := u.invoke(creq.Context.ActingUserID, app, creq) // nolint:bodyclose
+	resp, err := u.invoke(ctx, creq.Context.ActingUserID, app, creq) // nolint:bodyclose
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to invoke via HTTP")
 	}
 	return resp.Body, nil
 }
 
-func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
+func (u *Upstream) invoke(ctx context.Context, fromMattermostUserID string, app apps.App, creq apps.CallRequest) (*http.Response, error) {
 	rootURL, err := u.appRootURL(app, creq.Path)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (u *Upstream) invoke(fromMattermostUserID string, app apps.App, creq apps.C
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, callURL, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, callURL, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}

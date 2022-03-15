@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
@@ -17,29 +18,29 @@ type gateway struct {
 	proxy proxy.Service
 }
 
-func Init(router *mux.Router, conf config.Service, p proxy.Service, _ appservices.Service) {
+func Init(h *httpin.Handler, config config.Service, p proxy.Service, _ appservices.Service) {
 	g := &gateway{
-		conf:  conf,
+		conf:  config,
 		proxy: p,
 	}
 
-	subrouter := router.PathPrefix(path.Apps).Subrouter()
+	h = h.PathPrefix(path.Apps)
 
 	// Static
-	subrouter.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
-		proxy.RequireUser(g.static)).Methods(http.MethodGet)
+	h.HandleFunc("/{appid}/"+path.StaticFolder+"/{name}",
+		g.static, httpin.RequireUser).Methods(http.MethodGet)
 
 	// Incoming remote webhooks
-	subrouter.HandleFunc("/{appid}"+path.Webhook,
+	h.HandleFunc("/{appid}"+path.Webhook,
 		g.handleWebhook).Methods(http.MethodPost)
-	subrouter.HandleFunc("/{appid}"+path.Webhook+"/{path}",
+	h.HandleFunc("/{appid}"+path.Webhook+"/{path}",
 		g.handleWebhook).Methods(http.MethodPost)
 
 	// Remote OAuth2
-	subrouter.HandleFunc("/{appid}"+path.RemoteOAuth2Connect,
-		proxy.RequireUser(g.remoteOAuth2Connect)).Methods(http.MethodGet)
-	subrouter.HandleFunc("/{appid}"+path.RemoteOAuth2Complete,
-		proxy.RequireUser(g.remoteOAuth2Complete)).Methods(http.MethodGet)
+	h.HandleFunc("/{appid}"+path.RemoteOAuth2Connect,
+		g.remoteOAuth2Connect, httpin.RequireUser).Methods(http.MethodGet)
+	h.HandleFunc("/{appid}"+path.RemoteOAuth2Complete,
+		g.remoteOAuth2Complete, httpin.RequireUser).Methods(http.MethodGet)
 }
 
 func appIDVar(r *http.Request) apps.AppID {

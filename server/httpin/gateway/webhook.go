@@ -6,56 +6,57 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(w http.ResponseWriter, req *http.Request) {
-	log, err := g.doHandleWebhook(w, req, g.conf.Logger())
+func (g *gateway) handleWebhook(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	err := g.doHandleWebhook(req, w, r)
 	if err != nil {
-		log.WithError(err).Warnw("failed to process remote webhook")
+		req.Log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
 }
 
-func (g *gateway) doHandleWebhook(w http.ResponseWriter, req *http.Request, log utils.Logger) (utils.Logger, error) {
-	appID := appIDVar(req)
+func (g *gateway) doHandleWebhook(req *incoming.Request, _ http.ResponseWriter, r *http.Request) error {
+	appID := appIDVar(r)
 	if appID == "" {
-		return log, utils.NewInvalidError("app_id not specified")
+		return utils.NewInvalidError("app_id not specified")
 	}
-	log = log.With("app_id", appID)
+	req.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(req, g.conf.Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(r, g.conf.Get().MaxWebhookSize)
 	if err != nil {
-		return log, err
+		return err
 	}
-	sreq.Path = mux.Vars(req)["path"]
-	log = log.With("path", sreq.Path)
+	sreq.Path = mux.Vars(r)["path"]
+	req.Log = req.Log.With("call_path", sreq.Path)
 
-	err = g.proxy.NotifyRemoteWebhook(appID, *sreq)
+	err = g.proxy.NotifyRemoteWebhook(req, appID, *sreq)
 	if err != nil {
-		return log, err
+		return err
 	}
 
-	log.Debugf("processed remote webhook")
-	return log, nil
+	req.Log.Debugf("processed remote webhook")
+	return nil
 }
 
-func newHTTPCallRequest(req *http.Request, limit int64) (*apps.HTTPCallRequest, error) {
-	data, err := httputils.LimitReadAll(req.Body, limit)
+func newHTTPCallRequest(r *http.Request, limit int64) (*apps.HTTPCallRequest, error) {
+	data, err := httputils.LimitReadAll(r.Body, limit)
 	if err != nil {
 		return nil, err
 	}
 
 	sreq := apps.HTTPCallRequest{
-		HTTPMethod: req.Method,
-		Path:       req.URL.Path,
-		RawQuery:   req.URL.RawQuery,
+		HTTPMethod: r.Method,
+		Path:       r.URL.Path,
+		RawQuery:   r.URL.RawQuery,
 		Body:       string(data),
 		Headers:    map[string]string{},
 	}
-	for key := range req.Header {
-		sreq.Headers[key] = req.Header.Get(key)
+	for key := range r.Header {
+		sreq.Headers[key] = r.Header.Get(key)
 	}
 
 	return &sreq, nil
