@@ -26,10 +26,10 @@ type CallRequest struct {
 
 	// In the case of a form refresh call, the field of the select value chosen.
 	// In the case of a lookup call, the field that the user is using for autocomplete.
-	SelectedField string `json:"selected_field"`
+	SelectedField string `json:"selected_field,omitempty"`
 
 	// In the case of a lookup call, the query the user has typed in for autocomplete.
-	Query string `json:"query"`
+	Query string `json:"query,omitempty"`
 }
 
 // UnmarshalJSON has to be defined since Call is embedded anonymously, and
