@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -114,10 +115,11 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 	}
 }
 
-func (a *builtinApp) installListed(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+func (a *builtinApp) installListed(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	m, err := a.proxy.GetManifest(appID)
+	r.SetAppID(appID)
+	m, err := a.proxy.GetManifest(r, appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
@@ -125,8 +127,8 @@ func (a *builtinApp) installListed(creq apps.CallRequest) apps.CallResponse {
 	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq, "", loc))
 }
 
-func (a *builtinApp) installHTTP(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+func (a *builtinApp) installHTTP(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
 	manifestURL := creq.GetValue(fURL, "")
 	conf := a.conf.Get()
 	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
@@ -137,7 +139,7 @@ func (a *builtinApp) installHTTP(creq apps.CallRequest) apps.CallResponse {
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
-	m, err = a.proxy.UpdateAppListing(appclient.UpdateAppListingRequest{
+	m, err = a.proxy.UpdateAppListing(r, appclient.UpdateAppListingRequest{
 		Manifest:   *m,
 		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
 	})

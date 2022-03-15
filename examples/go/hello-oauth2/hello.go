@@ -175,7 +175,7 @@ func configure(w http.ResponseWriter, req *http.Request) {
 	clientSecret, _ := creq.Values["client_secret"].(string)
 
 	asUser := appclient.AsActingUser(creq.Context)
-	asUser.StoreOAuth2App(creq.Context.AppID, apps.OAuth2App{
+	asUser.StoreOAuth2App(apps.OAuth2App{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	})
@@ -197,7 +197,7 @@ func disconnect(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	asActingUser := appclient.AsActingUser(creq.Context)
-	err := asActingUser.StoreOAuth2User(creq.Context.AppID, nil)
+	err := asActingUser.StoreOAuth2User(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -239,7 +239,7 @@ func oauth2Complete(w http.ResponseWriter, req *http.Request) {
 	token, _ := oauth2Config(&creq).Exchange(context.Background(), code)
 
 	asActingUser := appclient.AsActingUser(creq.Context)
-	asActingUser.StoreOAuth2User(creq.Context.AppID, token)
+	asActingUser.StoreOAuth2User(token)
 
 	httputils.WriteJSON(w, apps.NewDataResponse(nil))
 }
@@ -274,7 +274,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	// Store new token if refreshed
 	newToken, err := tokenSource.Token()
 	if err != nil && newToken.AccessToken != token.AccessToken {
-		appclient.AsActingUser(creq.Context).StoreOAuth2User(creq.Context.AppID, newToken)
+		appclient.AsActingUser(creq.Context).StoreOAuth2User(newToken)
 	}
 }
 

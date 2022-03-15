@@ -1,8 +1,4 @@
 {
-  "apps.utils.error.clienFromSession.failedSession": {
-    "hash": "sha1-f11f2beaec2e62e5fded8febcdb5036b2f4ed3d8",
-    "other": "error al cargar la sesión"
-  },
   "command.base.description": {
     "hash": "sha1-23304a15b9cdbd4d6aee9e9b70d58fc291f3f553",
     "other": "Mattermost Apps"

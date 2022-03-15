@@ -57,7 +57,7 @@ func (c *ClientPP) SetOAuthToken(token string) {
 	c.AuthType = model.HeaderBearer
 }
 
-func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model.Response, error) {
+func (c *ClientPP) KVSet(prefix, id string, in interface{}) (bool, *model.Response, error) {
 	r, err := c.DoAPIPOST(c.kvpath(prefix, id), utils.ToJSON(in)) // nolint:bodyclose
 	if err != nil {
 		return false, model.BuildResponse(r), err
@@ -66,7 +66,7 @@ func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model
 
 	var out map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&out); err != nil {
-		return false, model.BuildResponse(r), err
+		return false, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	changed := out["changed"].(bool)
@@ -74,22 +74,27 @@ func (c *ClientPP) KVSet(id string, prefix string, in interface{}) (bool, *model
 	return changed, model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) KVGet(id string, prefix string, ref interface{}) (*model.Response, error) {
+func (c *ClientPP) KVGet(prefix, id string, ref interface{}) (*model.Response, error) {
 	r, err := c.DoAPIGET(c.kvpath(prefix, id), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	err = json.NewDecoder(r.Body).Decode(ref)
+	buf, err := io.ReadAll(r.Body)
 	if err != nil {
-		return model.BuildResponse(r), err
+		return nil, errors.Wrap(err, "failed to read body")
+	}
+
+	err = json.Unmarshal(buf, ref)
+	if err != nil {
+		return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) KVDelete(id string, prefix string) (*model.Response, error) {
+func (c *ClientPP) KVDelete(prefix, id string) (*model.Response, error) {
 	r, err := c.DoAPIDELETE(c.kvpath(prefix, id)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
@@ -119,7 +124,7 @@ func (c *ClientPP) GetSubscriptions() ([]apps.Subscription, *model.Response, err
 	var subs []apps.Subscription
 	err = json.NewDecoder(r.Body).Decode(&subs)
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return subs, model.BuildResponse(r), nil
@@ -135,8 +140,8 @@ func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*model.Response, err
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App)+"/"+string(appID), utils.ToJSON(oauth2App)) // nolint:bodyclose
+func (c *ClientPP) StoreOAuth2App(oauth2App apps.OAuth2App) (*model.Response, error) {
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App), utils.ToJSON(oauth2App)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -145,8 +150,8 @@ func (c *ClientPP) StoreOAuth2App(appID apps.AppID, oauth2App apps.OAuth2App) (*
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User)+"/"+string(appID), utils.ToJSON(ref)) // nolint:bodyclose
+func (c *ClientPP) StoreOAuth2User(ref interface{}) (*model.Response, error) {
+	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User), utils.ToJSON(ref)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -155,8 +160,8 @@ func (c *ClientPP) StoreOAuth2User(appID apps.AppID, ref interface{}) (*model.Re
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Response, error) {
-	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User)+"/"+string(appID), "") // nolint:bodyclose
+func (c *ClientPP) GetOAuth2User(ref interface{}) (*model.Response, error) {
+	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -164,7 +169,7 @@ func (c *ClientPP) GetOAuth2User(appID apps.AppID, ref interface{}) (*model.Resp
 
 	err = json.NewDecoder(r.Body).Decode(ref)
 	if err != nil {
-		return model.BuildResponse(r), err
+		return model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 
 	return model.BuildResponse(r), nil
@@ -303,9 +308,30 @@ func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.Lis
 	listed := []apps.ListedApp{}
 	err = json.NewDecoder(r.Body).Decode(&listed)
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
 	return listed, model.BuildResponse(r), nil
+}
+
+func (c *ClientPP) Call(creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
+	b, err := json.Marshal(&creq)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r, err := c.DoAPIPOST(c.apipath(appspath.Call), string(b)) // nolint:bodyclose
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	var cresp apps.CallResponse
+	err = json.NewDecoder(r.Body).Decode(&cresp)
+	if err != nil {
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
+	}
+
+	return &cresp, model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) getPluginsRoute() string {

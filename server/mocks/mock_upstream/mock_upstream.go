@@ -5,6 +5,7 @@
 package mock_upstream
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -36,9 +37,9 @@ func (m *MockUpstream) EXPECT() *MockUpstreamMockRecorder {
 }
 
 // GetStatic mocks base method.
-func (m *MockUpstream) GetStatic(arg0 apps.App, arg1 string) (io.ReadCloser, int, error) {
+func (m *MockUpstream) GetStatic(arg0 context.Context, arg1 apps.App, arg2 string) (io.ReadCloser, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1, arg2)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
@@ -46,22 +47,22 @@ func (m *MockUpstream) GetStatic(arg0 apps.App, arg1 string) (io.ReadCloser, int
 }
 
 // GetStatic indicates an expected call of GetStatic.
-func (mr *MockUpstreamMockRecorder) GetStatic(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockUpstreamMockRecorder) GetStatic(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockUpstream)(nil).GetStatic), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockUpstream)(nil).GetStatic), arg0, arg1, arg2)
 }
 
 // Roundtrip mocks base method.
-func (m *MockUpstream) Roundtrip(arg0 apps.App, arg1 apps.CallRequest, arg2 bool) (io.ReadCloser, error) {
+func (m *MockUpstream) Roundtrip(arg0 context.Context, arg1 apps.App, arg2 apps.CallRequest, arg3 bool) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Roundtrip", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Roundtrip", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Roundtrip indicates an expected call of Roundtrip.
-func (mr *MockUpstreamMockRecorder) Roundtrip(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockUpstreamMockRecorder) Roundtrip(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Roundtrip", reflect.TypeOf((*MockUpstream)(nil).Roundtrip), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Roundtrip", reflect.TypeOf((*MockUpstream)(nil).Roundtrip), arg0, arg1, arg2, arg3)
 }

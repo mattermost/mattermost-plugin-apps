@@ -4,6 +4,7 @@
 package uphttp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (u *Upstream) GetStatic(app apps.App, urlPath string) (io.ReadCloser, int, error) {
+func (u *Upstream) GetStatic(ctx context.Context, app apps.App, urlPath string) (io.ReadCloser, int, error) {
 	if !app.Manifest.Contains(apps.DeployHTTP) {
 		return nil, http.StatusInternalServerError, errors.New("app is not available as type http")
 	}
@@ -28,8 +29,13 @@ func (u *Upstream) GetStatic(app apps.App, urlPath string) (io.ReadCloser, int, 
 		return nil, http.StatusBadRequest, err
 	}
 
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
 	client := u.httpOut.MakeClient(u.devMode)
-	resp, err := client.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
+	resp, err := client.Do(req) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}

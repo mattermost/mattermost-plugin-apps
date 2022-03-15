@@ -4,6 +4,7 @@
 package upaws
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -36,9 +37,9 @@ func (c *client) ListS3(bucket, prefix string) ([]string, error) {
 }
 
 // GetS3 downloads files from S3.
-func (c *client) GetS3(bucket, item string) ([]byte, error) {
+func (c *client) GetS3(ctx context.Context, bucket, item string) ([]byte, error) {
 	var buffer aws.WriteAtBuffer
-	_, err := c.s3Down.Download(&buffer, &s3.GetObjectInput{
+	_, err := c.s3Down.DownloadWithContext(ctx, &buffer, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(item),
 	})

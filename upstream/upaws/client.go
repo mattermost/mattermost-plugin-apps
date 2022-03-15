@@ -4,6 +4,7 @@
 package upaws
 
 import (
+	"context"
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -39,8 +40,8 @@ func (n Name) AWSString() *string {
 // dependencies.
 type Client interface {
 	// Proxy methods
-	GetS3(bucket, item string) ([]byte, error)
-	InvokeLambda(name string, invocationType string, payload []byte) ([]byte, error)
+	GetS3(ctx context.Context, bucket, item string) ([]byte, error)
+	InvokeLambda(ctx context.Context, name string, invocationType string, payload []byte) ([]byte, error)
 
 	// Admin methods
 	AddResourcesToPolicyDocument(*iam.Policy, []ARN) (string, error)

@@ -4,21 +4,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 var emptyCC = apps.Context{}
 
-func (a *restapi) initCall(api *mux.Router) {
-	api.HandleFunc(path.Call,
-		proxy.RequireUser(a.Call)).Methods("POST")
+func (a *restapi) initCall(h *httpin.Handler) {
+	h.HandleFunc(path.Call,
+		a.Call, httpin.RequireUser).Methods(http.MethodPost)
 }
 
 // Call handles a call request for an App.
@@ -26,35 +26,35 @@ func (a *restapi) initCall(api *mux.Router) {
 //   Method: POST
 //   Input: CallRequest
 //   Output: CallResponse
-func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incoming) {
-	creq, err := apps.CallRequestFromJSONReader(req.Body)
+func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	creq, err := apps.CallRequestFromJSONReader(r.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
 		return
 	}
 
+	req.SetAppID(creq.Context.AppID)
+
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(in.ActingUserID, creq.Context)
+	creq.Context, err = a.cleanUserAgentContext(req, req.ActingUserID(), creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
 	}
 
-	res := a.proxy.Call(in, *creq)
+	res := a.proxy.Call(req, *creq)
 
 	errorText := ""
 	if res.Type == apps.CallResponseTypeError {
 		errorText = res.Text
 	}
-	a.conf.Logger().Debugw(
+	req.Log.Debugw(
 		"Received call response",
-		"app_id", creq.Context.AppID,
-		"acting_user_id", in.ActingUserID,
 		"error", errorText,
 		"type", res.Type,
-		"path", creq.Path,
+		"call_path", creq.Path,
 	)
 
 	// Only track submit calls
@@ -65,7 +65,7 @@ func (a *restapi) Call(w http.ResponseWriter, req *http.Request, in proxy.Incomi
 	_ = httputils.WriteJSON(w, res)
 }
 
-func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
+func (a *restapi) cleanUserAgentContext(_ *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
 	mm := a.conf.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{
