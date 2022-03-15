@@ -14,13 +14,19 @@ import (
 // To help reduce the need to go back to Mattermost REST API, ExpandedContext
 // can be included by adding a corresponding Expand attribute to the originating
 // Call.
+//
+// TODO: Refactor to an incoming Context and an outgoing Context.
 type Context struct {
 	// ActingUserID is primarily (or exclusively?) for calls originating from
 	// user submissions.
+	//
+	// UserID is not send down to Apps.
 	ActingUserID string `json:"acting_user_id,omitempty"`
 
 	// UserID indicates the subject of the command. Once Mentions is
 	// implemented, it may be replaced by Mentions.
+	//
+	// UserID is not send down to Apps.
 	UserID string `json:"user_id,omitempty"`
 
 	// Subject is a subject of notification, if the call originated from a
@@ -42,9 +48,13 @@ type UserAgentContext struct {
 	// The optional IDs of Mattermost entities associated with the call: Team,
 	// Channel, Post, RootPost.
 
-	ChannelID  string `json:"channel_id,omitempty"`
-	TeamID     string `json:"team_id,omitempty"`
-	PostID     string `json:"post_id,omitempty"`
+	// ChannelID is not send down to Apps.
+	ChannelID string `json:"channel_id,omitempty"`
+	// TeamID is not send down to Apps.
+	TeamID string `json:"team_id,omitempty"`
+	// PostID is not send down to Apps.
+	PostID string `json:"post_id,omitempty"`
+	// RootPostID is not send down to Apps.
 	RootPostID string `json:"root_post_id,omitempty"`
 
 	// AppID is used for handling CallRequest internally.
