@@ -57,7 +57,7 @@ func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) app
 		key = string(decoded)
 	} else {
 		var err error
-		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUserID, namespace, id)
+		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}

@@ -237,13 +237,13 @@ func (a *builtinApp) GetStatic(_ context.Context, _ apps.App, path string) (io.R
 
 func requireAdmin(h handler) handler {
 	return func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-		if creq.Context.ActingUser == nil || creq.Context.ActingUser.Id != creq.Context.ActingUserID {
+		if creq.Context.ActingUser == nil {
 			return apps.NewErrorResponse(utils.NewInvalidError(
 				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
 		}
 		if !creq.Context.ActingUser.IsSystemAdmin() {
 			return apps.NewErrorResponse(utils.NewUnauthorizedError(
-				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUserID))
+				"user %s (%s) is not a sysadmin", creq.Context.ActingUser.GetDisplayName(model.ShowUsername), creq.Context.ActingUser.Id))
 		}
 		return h(r, creq)
 	}
@@ -254,5 +254,5 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 		return i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
 	}
 
-	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUserID)
+	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
 }

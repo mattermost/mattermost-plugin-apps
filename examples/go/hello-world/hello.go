@@ -139,7 +139,7 @@ func Send(w http.ResponseWriter, req *http.Request) {
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
-	appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
 
 	appclient.AsActingUser(c.Context).DM(c.Context.BotUserID, "Hello, bot!")
 

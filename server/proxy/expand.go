@@ -20,19 +20,19 @@ func (p *Proxy) contextForApp(r *incoming.Request, app apps.App, base apps.Conte
 
 	out := base
 	out.ExpandedContext = apps.ExpandedContext{}
-	out.MattermostSiteURL = conf.MattermostSiteURL
-	out.DeveloperMode = conf.DeveloperMode
-	out.AppID = app.AppID
-	out.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
+	out.ExpandedContext.MattermostSiteURL = conf.MattermostSiteURL
+	out.ExpandedContext.DeveloperMode = conf.DeveloperMode
+	out.UserAgentContext.AppID = app.AppID
+	out.ExpandedContext.AppPath = path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID))
 
-	out.BotUserID = app.BotUserID
+	out.ExpandedContext.BotUserID = app.BotUserID
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
 		botAccessToken, err := p.getBotAccessToken(r, app)
 		if err != nil {
 			return emptyCC, err
 		}
-		out.BotAccessToken = botAccessToken
+		out.ExpandedContext.BotAccessToken = botAccessToken
 	}
 
 	return out, nil
@@ -61,7 +61,17 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 		return emptyCC, err
 	}
 
-	if expand.ActingUserAccessToken != "" {
+	cc.App, err = expandApp(app, expand.App)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand app")
+	}
+
+	cc.ActingUser, err = expandUser(client, expand.ActingUser, base.ActingUserID, apps.ExpandID)
+	if err != nil {
+		return emptyCC, errors.Wrapf(err, "failed to expand acting user")
+	}
+
+	if expand.ActingUserAccessToken == apps.ExpandAll {
 		if !app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 			return emptyCC, utils.NewForbiddenError("%s does not have permission to %s", app.AppID, apps.PermissionActAsUser)
 		}
@@ -72,95 +82,64 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 		}
 	}
 
-	cc.App = stripApp(app, expand.App)
-
-	if expand.ActingUser != "" && base.ActingUserID != "" && base.ActingUser == nil {
-		actingUser, err := client.GetUser(base.ActingUserID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand acting user %s", base.ActingUserID)
+	if expand.Locale == apps.ExpandSummary || expand.Locale == apps.ExpandAll {
+		if cc.ActingUser != nil {
+			cc.Locale = utils.GetLocaleWithUser(p.conf.MattermostConfig().Config(), cc.ActingUser)
+		} else {
+			cc.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), cc.ActingUserID)
 		}
-		base.ActingUser = actingUser
 	}
-	cc.ActingUser = stripUser(base.ActingUser, expand.ActingUser)
 
-	if expand.Channel != "" && base.ChannelID != "" && base.Channel == nil {
-		ch, err := client.GetChannel(base.ChannelID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand channel %s", base.ChannelID)
-		}
-		base.Channel = ch
+	cc.Channel, err = expandChannel(client, expand.Channel, base.ChannelID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand channel")
 	}
-	cc.Channel = stripChannel(base.Channel, expand.Channel)
 
-	if expand.ChannelMember != "" && base.ChannelID != "" && base.ActingUserID != "" && base.ChannelMember == nil {
-		cm, err := client.GetChannelMember(base.ChannelID, base.ActingUserID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand channel membership %s", base.ChannelID)
-		}
-		base.ChannelMember = cm
+	cc.ChannelMember, err = expandChannelMember(client, expand.ChannelMember, base.ChannelID, base.ActingUserID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand channel membership")
 	}
-	cc.ChannelMember = stripChannelMember(base.ChannelMember, expand.ChannelMember)
 
-	if expand.Post != "" && base.PostID != "" && base.Post == nil {
-		post, err := client.GetPost(base.PostID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand post %s", base.PostID)
-		}
-		base.Post = post
+	cc.Team, err = expandTeam(client, expand.Team, base.TeamID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand team")
 	}
-	cc.Post = stripPost(base.Post, expand.Post)
 
-	if expand.RootPost != "" && base.RootPostID != "" && base.RootPost == nil {
-		post, err := client.GetPost(base.RootPostID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand root post %s", base.RootPostID)
-		}
-		base.RootPost = post
+	cc.TeamMember, err = expandTeamMember(client, expand.TeamMember, base.TeamID, base.ActingUserID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand team membership")
 	}
-	cc.RootPost = stripPost(base.RootPost, expand.RootPost)
 
-	if expand.Team != "" && base.TeamID != "" && base.Team == nil {
-		team, err := client.GetTeam(base.TeamID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand team %s", base.TeamID)
-		}
-		base.Team = team
+	cc.Post, err = expandPost(client, expand.Post, base.PostID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand post")
 	}
-	cc.Team = stripTeam(base.Team, expand.Team)
 
-	if expand.TeamMember != "" && base.TeamID != "" && base.ActingUserID != "" && base.TeamMember == nil {
-		tm, err := client.GetTeamMember(base.TeamID, base.ActingUserID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand team membership %s", base.TeamID)
-		}
-		base.TeamMember = tm
+	cc.RootPost, err = expandPost(client, expand.RootPost, base.RootPostID)
+	if err != nil {
+		return emptyCC, errors.Wrap(err, "failed to expand root post ")
 	}
-	cc.TeamMember = stripTeamMember(base.TeamMember, expand.TeamMember)
 
 	// TODO: expand Mentions, maybe replacing User?
 	// https://mattermost.atlassian.net/browse/MM-30403
-
-	if expand.User != "" && base.UserID != "" && base.User == nil {
-		user, err := client.GetUser(base.UserID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to expand user %s", base.UserID)
-		}
-		base.User = user
+	cc.User, err = expandUser(client, expand.User, base.UserID, apps.ExpandNone)
+	if err != nil {
+		return emptyCC, errors.Wrapf(err, "failed to expand user")
 	}
-	cc.User = stripUser(base.User, expand.User)
 
 	cc.OAuth2 = apps.OAuth2Context{}
 	if app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
-		if expand.OAuth2App != "" {
+		if expand.OAuth2App == apps.ExpandSummary || expand.OAuth2App == apps.ExpandAll {
 			cc.OAuth2.OAuth2App = app.RemoteOAuth2
 			cc.OAuth2.ConnectURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Connect
 			cc.OAuth2.CompleteURL = conf.AppURL(app.AppID) + appspath.RemoteOAuth2Complete
 		}
 
-		if expand.OAuth2User != "" && base.OAuth2.User == nil && base.ActingUserID != "" {
-			data, err := p.appservices.GetOAuth2User(r, app.AppID, base.ActingUserID)
+		if (expand.OAuth2User == apps.ExpandSummary || expand.OAuth2User == apps.ExpandAll) && base.OAuth2.User == nil && base.ActingUserID != "" {
+			var data []byte
+			data, err = p.appservices.GetOAuth2User(r, app.AppID, base.ActingUserID)
 			if err != nil {
-				return emptyCC, errors.Wrapf(err, "failed to expand OAuth user %s", base.UserID)
+				return emptyCC, errors.Wrap(err, "failed to expand OAuth user")
 			}
 
 			var v interface{}
@@ -172,142 +151,247 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 		}
 	}
 
-	if expand.Locale != "" {
-		if cc.ActingUser != nil {
-			cc.Locale = utils.GetLocaleWithUser(p.conf.MattermostConfig().Config(), cc.ActingUser)
-		} else {
-			cc.Locale = utils.GetLocale(p.conf.MattermostAPI(), p.conf.MattermostConfig().Config(), cc.ActingUserID)
-		}
-	}
+	// Cleanup fields for app
+	cc.UserAgentContext.ChannelID = ""
+	cc.UserAgentContext.TeamID = ""
+	cc.UserAgentContext.RootPostID = ""
+	cc.UserAgentContext.PostID = ""
+	cc.UserID = ""
+	cc.ActingUserID = ""
 
 	return cc, nil
 }
 
-func stripUser(user *model.User, level apps.ExpandLevel) *model.User {
-	if user == nil {
-		return user
+func expandUser(client mmclient.Client, level apps.ExpandLevel, userID string, defaultLevel apps.ExpandLevel) (*model.User, error) {
+	if userID == "" {
+		return nil, nil
 	}
-	if level == apps.ExpandAll {
-		sanitized := *user
-		sanitized.Sanitize(map[string]bool{
-			"passwordupdate": true,
-			"authservice":    true,
-		})
-		return &sanitized
-	}
-	if level != apps.ExpandSummary {
-		return nil
-	}
-	return &model.User{
-		BotDescription: user.BotDescription,
-		DeleteAt:       user.DeleteAt,
-		Email:          user.Email,
-		FirstName:      user.FirstName,
-		Id:             user.Id,
-		IsBot:          user.IsBot,
-		LastName:       user.LastName,
-		Locale:         user.Locale,
-		Nickname:       user.Nickname,
-		Roles:          user.Roles,
-		Timezone:       user.Timezone,
-		Username:       user.Username,
-	}
-}
 
-func stripChannel(channel *model.Channel, level apps.ExpandLevel) *model.Channel {
-	if channel == nil {
-		return channel
-	}
-	if level == apps.ExpandAll {
-		return channel
-	}
-	if level != apps.ExpandSummary {
-		return nil
-	}
-	return &model.Channel{
-		Id:          channel.Id,
-		DeleteAt:    channel.DeleteAt,
-		TeamId:      channel.TeamId,
-		Type:        channel.Type,
-		DisplayName: channel.DisplayName,
-		Name:        channel.Name,
-	}
-}
-
-func stripChannelMember(cm *model.ChannelMember, level apps.ExpandLevel) *model.ChannelMember {
-	if cm == nil || (level != apps.ExpandAll && level != apps.ExpandSummary) {
-		return nil
-	}
-	return cm
-}
-
-func stripTeam(team *model.Team, level apps.ExpandLevel) *model.Team {
-	if team == nil {
-		return team
-	}
-	if level == apps.ExpandAll {
-		sanitized := *team
-		sanitized.Sanitize()
-		return &sanitized
-	}
-	if level != apps.ExpandSummary {
-		return nil
-	}
-	return &model.Team{
-		Id:          team.Id,
-		DisplayName: team.DisplayName,
-		Name:        team.Name,
-		Description: team.Description,
-		Email:       team.Email,
-		Type:        team.Type,
-	}
-}
-
-func stripTeamMember(tm *model.TeamMember, level apps.ExpandLevel) *model.TeamMember {
-	if tm == nil || (level != apps.ExpandAll && level != apps.ExpandSummary) {
-		return nil
-	}
-	return tm
-}
-
-func stripPost(post *model.Post, level apps.ExpandLevel) *model.Post {
-	if post == nil {
-		return post
-	}
-	if level == apps.ExpandAll {
-		sanitized := *post.Clone()
-		sanitized.SanitizeProps()
-		return &sanitized
-	}
-	if level != apps.ExpandSummary {
-		return nil
-	}
-	return &model.Post{
-		Id:        post.Id,
-		Type:      post.Type,
-		UserId:    post.UserId,
-		ChannelId: post.ChannelId,
-		RootId:    post.RootId,
-		Message:   post.Message,
-	}
-}
-
-func stripApp(app apps.App, level apps.ExpandLevel) *apps.App {
-	clone := apps.App{
-		Manifest: apps.Manifest{
-			AppID:   app.AppID,
-			Version: app.Version,
-		},
-		WebhookSecret: app.WebhookSecret,
-		BotUserID:     app.BotUserID,
-		BotUsername:   app.BotUsername,
+	if level == apps.ExpandDefault {
+		level = defaultLevel
 	}
 
 	switch level {
-	case apps.ExpandAll, apps.ExpandSummary:
-		return &clone
+	case apps.ExpandNone:
+		return nil, nil
+	case apps.ExpandID:
+		return &model.User{
+			Id: userID,
+		}, nil
+	case apps.ExpandSummary:
+		user, err := client.GetUser(userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to expand user %s", userID)
+		}
+
+		return &model.User{
+			BotDescription: user.BotDescription,
+			DeleteAt:       user.DeleteAt,
+			Email:          user.Email,
+			FirstName:      user.FirstName,
+			Id:             user.Id,
+			IsBot:          user.IsBot,
+			LastName:       user.LastName,
+			Locale:         user.Locale,
+			Nickname:       user.Nickname,
+			Roles:          user.Roles,
+			Timezone:       user.Timezone,
+			Username:       user.Username,
+		}, nil
+	case apps.ExpandAll:
+		user, err := client.GetUser(userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to expand user %s", userID)
+		}
+
+		user.Sanitize(map[string]bool{
+			"passwordupdate": true,
+			"authservice":    true,
+		})
+		return user, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
 	}
-	return nil
+}
+
+func expandChannel(client mmclient.Client, level apps.ExpandLevel, channelID string) (*model.Channel, error) {
+	if channelID == "" {
+		return nil, nil
+	}
+
+	switch level {
+	case apps.ExpandNone,
+		apps.ExpandDefault:
+		return nil, nil
+	case apps.ExpandID:
+		return &model.Channel{
+			Id: channelID,
+		}, nil
+	case apps.ExpandSummary:
+		channel, err := client.GetChannel(channelID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel %s", channelID)
+		}
+
+		return &model.Channel{
+			Id:          channel.Id,
+			DeleteAt:    channel.DeleteAt,
+			TeamId:      channel.TeamId,
+			Type:        channel.Type,
+			DisplayName: channel.DisplayName,
+			Name:        channel.Name,
+		}, nil
+	case apps.ExpandAll:
+		channel, err := client.GetChannel(channelID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get channel %s", channelID)
+		}
+
+		return channel, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
+}
+
+func expandChannelMember(client mmclient.Client, level apps.ExpandLevel, channelID, userID string) (*model.ChannelMember, error) {
+	if channelID == "" || userID == "" {
+		return nil, nil
+	}
+
+	switch level {
+	case apps.ExpandNone, apps.ExpandDefault, apps.ExpandID:
+		return nil, nil
+	case apps.ExpandSummary, apps.ExpandAll:
+		cm, err := client.GetChannelMember(channelID, userID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get channel membership")
+		}
+
+		return cm, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
+}
+
+func expandTeam(client mmclient.Client, level apps.ExpandLevel, teamID string) (*model.Team, error) {
+	if teamID == "" {
+		return nil, nil
+	}
+
+	switch level {
+	case apps.ExpandNone,
+		apps.ExpandDefault:
+		return nil, nil
+	case apps.ExpandID:
+		return &model.Team{
+			Id: teamID,
+		}, nil
+	case apps.ExpandSummary:
+		team, err := client.GetTeam(teamID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get team %s", teamID)
+		}
+
+		return &model.Team{
+			Id:          team.Id,
+			DisplayName: team.DisplayName,
+			Name:        team.Name,
+			Description: team.Description,
+			Email:       team.Email,
+			Type:        team.Type,
+		}, nil
+	case apps.ExpandAll:
+		team, err := client.GetTeam(teamID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get team %s", teamID)
+		}
+
+		sanitized := *team
+		sanitized.Sanitize()
+		return &sanitized, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
+}
+
+func expandTeamMember(client mmclient.Client, level apps.ExpandLevel, teamID, userID string) (*model.TeamMember, error) {
+	if teamID == "" || userID == "" {
+		return nil, nil
+	}
+
+	switch level {
+	case apps.ExpandNone, apps.ExpandDefault, apps.ExpandID:
+		return nil, nil
+	case apps.ExpandSummary, apps.ExpandAll:
+		cm, err := client.GetTeamMember(teamID, userID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get team membership %s", teamID)
+		}
+
+		return cm, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
+}
+
+func expandPost(client mmclient.Client, level apps.ExpandLevel, postID string) (*model.Post, error) {
+	if postID == "" {
+		return nil, nil
+	}
+
+	switch level {
+	case apps.ExpandNone,
+		apps.ExpandDefault:
+		return nil, nil
+	case apps.ExpandID:
+		return &model.Post{
+			Id: postID,
+		}, nil
+	case apps.ExpandSummary:
+		post, err := client.GetPost(postID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get post %s", postID)
+		}
+
+		return &model.Post{
+			Id:        post.Id,
+			Type:      post.Type,
+			UserId:    post.UserId,
+			ChannelId: post.ChannelId,
+			RootId:    post.RootId,
+			Message:   post.Message,
+		}, nil
+	case apps.ExpandAll:
+		post, err := client.GetPost(postID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get post %s", postID)
+		}
+
+		post.SanitizeProps()
+		return post, nil
+
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
+}
+
+func expandApp(app apps.App, level apps.ExpandLevel) (*apps.App, error) {
+	switch level {
+	case apps.ExpandNone, apps.ExpandDefault, apps.ExpandID:
+		return nil, nil
+	case apps.ExpandAll, apps.ExpandSummary:
+		return &apps.App{
+			Manifest: apps.Manifest{
+				AppID:   app.AppID,
+				Version: app.Version,
+			},
+			WebhookSecret: app.WebhookSecret,
+			BotUserID:     app.BotUserID,
+			BotUsername:   app.BotUsername,
+		}, nil
+	default:
+		return nil, errors.Errorf("unknown expand type %q", level)
+	}
 }
 
 func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Client, error) {
