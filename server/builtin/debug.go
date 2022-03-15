@@ -17,8 +17,8 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 			Other: "debug",
 		}),
 		Bindings: []apps.Binding{
-			a.debugBindings().commandBinding(loc),
-			a.debugClean().commandBinding(loc),
+			a.debugBindingsCommandBinding(loc),
+			a.debugCleanCommandBinding(loc),
 			{
 				Location: "kv",
 				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -30,11 +30,11 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Other: "View and update apps' KV stores.",
 				}),
 				Bindings: []apps.Binding{
-					a.debugKVClean().commandBinding(loc),
-					a.debugKVCreate().commandBinding(loc),
-					a.debugKVEdit().commandBinding(loc),
-					a.debugKVInfo().commandBinding(loc),
-					a.debugKVList().commandBinding(loc),
+					a.debugKVCleanCommandBinding(loc),
+					a.debugKVCreateCommandBinding(loc),
+					a.debugKVEditCommandBinding(loc),
+					a.debugKVInfoCommandBinding(loc),
+					a.debugKVListCommandBinding(loc),
 				},
 			},
 			{
@@ -48,9 +48,9 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Other: "View App specific sessions.",
 				}),
 				Bindings: []apps.Binding{
-					a.debugSessionsList().commandBinding(loc),
-					a.debugSessionsView().commandBinding(loc),
-					a.debugSessionsRevoke().commandBinding(loc),
+					a.debugSessionsListBinding(loc),
+					a.debugSessionsViewBinding(loc),
+					a.debugSessionsRevokeBinding(loc),
 				},
 			},
 			{
@@ -64,7 +64,7 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Other: "View information about the remote OAuth app.",
 				}),
 				Bindings: []apps.Binding{
-					a.debugOAuthConfigView().commandBinding(loc),
+					a.debugOAuthConfigViewBinding(loc),
 				},
 			},
 		},
@@ -87,41 +87,6 @@ func (a *builtinApp) debugIDField(loc *i18n.Localizer) apps.Field {
 			ID:    "field.kv.id.hint",
 			Other: "[ id ]",
 		}),
-	}
-}
-
-func (a *builtinApp) debugNamespaceField(loc *i18n.Localizer) apps.Field {
-	return apps.Field{
-		Name: fNamespace,
-		Type: apps.FieldTypeDynamicSelect,
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.label",
-			Other: "namespace",
-		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.description",
-			Other: "App-specific namespace (up to 2 letters). See `debug kv info` for the list of app's namespaces.",
-		}),
-		AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.namespace.hint",
-			Other: "namespace (up to 2 letters)",
-		}),
-	}
-}
-
-func (a *builtinApp) debugBase64Field(loc *i18n.Localizer) apps.Field {
-	return apps.Field{
-		Name: fBase64,
-		Type: apps.FieldTypeBool,
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.base64.label",
-			Other: "base64",
-		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "field.kv.base64.description",
-			Other: "base64-encode keys, so they can be cut-and-pasted.",
-		}),
-		Value: true,
 	}
 }
 

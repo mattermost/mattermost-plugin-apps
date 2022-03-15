@@ -12,6 +12,39 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
+func TestUnmarshalCall(t *testing.T) {
+	const full = `
+	{
+		"path": "/test",
+		"state": {
+			"key": "value"
+		},
+		"expand": {
+			"acting_user": "all"
+		}
+	}
+	`
+
+	c := apps.NewCall("")
+	err := json.Unmarshal([]byte(full), c)
+	require.NoError(t, err)
+	require.Equal(t, &apps.Call{
+		Path: "/test",
+		State: map[string]interface{}{
+			"key": "value",
+		},
+		Expand: &apps.Expand{
+			ActingUser: apps.ExpandAll,
+		},
+	}, c)
+
+	const short = `"/test"`
+	c = apps.NewCall("")
+	err = json.Unmarshal([]byte(short), c)
+	require.NoError(t, err)
+	require.Equal(t, apps.NewCall("/test"), c)
+}
+
 func TestUnmarshalCallRequest(t *testing.T) {
 	const payload = `
 	{
@@ -61,7 +94,7 @@ func TestMarshalCallResponse(t *testing.T) {
 	data, err := json.Marshal(res.Form.Fields[0])
 	require.NoError(t, err)
 
-	m := map[string]string{}
+	m := map[string]interface{}{}
 	err = json.Unmarshal(data, &m)
 
 	require.NoError(t, err)

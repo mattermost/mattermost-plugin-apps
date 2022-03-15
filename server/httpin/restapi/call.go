@@ -46,9 +46,13 @@ func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Req
 
 	res := a.proxy.Call(req, *creq)
 
+	errorText := ""
+	if res.Type == apps.CallResponseTypeError {
+		errorText = res.Text
+	}
 	req.Log.Debugw(
 		"Received call response",
-		"error", res.ErrorText,
+		"error", errorText,
 		"type", res.Type,
 		"call_path", creq.Path,
 	)

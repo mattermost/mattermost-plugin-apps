@@ -13,43 +13,36 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *builtinApp) installConsent() handler {
-	return handler{
-		requireSysadmin: true,
-
-		formf: func(r *incoming.Request, creq apps.CallRequest) (*apps.Form, error) {
-			loc := a.newLocalizer(creq)
-			m, err := a.stateAsManifest(r, creq)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to find a valid manifest in State")
-			}
-			return a.newInstallConsentForm(*m, creq, "", loc), nil
-		},
-
-		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-			deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
-			secret := creq.GetValue(fSecret, "")
-			consent := creq.BoolValue(fConsent)
-			m, err := a.stateAsManifest(r, creq)
-			if err != nil {
-				return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
-			}
-			r.SetAppID(m.AppID)
-
-			if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
-				return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
-			}
-
-			_, out, err := a.proxy.InstallApp(
-				r,
-				creq.Context, m.AppID, deployType, true, secret)
-			if err != nil {
-				return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
-			}
-
-			return apps.NewTextResponse(out)
-		},
+func (a *builtinApp) installConsentForm(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
+	m, err := a.stateAsManifest(r, creq)
+	if err != nil {
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 	}
+
+	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq, "", loc))
+}
+
+func (a *builtinApp) installConsent(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
+	secret := creq.GetValue(fSecret, "")
+	consent := creq.BoolValue(fConsent)
+	m, err := a.stateAsManifest(r, creq)
+	if err != nil {
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
+	}
+	if !consent && len(m.RequestedLocations)+len(m.RequestedPermissions) > 0 {
+		return apps.NewErrorResponse(errors.New("consent to use APIs and locations is required to install"))
+	}
+
+	_, out, err := a.proxy.InstallApp(
+		r,
+		creq.Context, m.AppID, deployType, true, secret)
+	if err != nil {
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
+	}
+
+	return apps.NewTextResponse(out)
 }
 
 func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRequest, requestedType apps.DeployType, loc *i18n.Localizer) (
@@ -101,16 +94,18 @@ func (a *builtinApp) newConsentDeployTypeField(m apps.Manifest, creq apps.CallRe
 	}, selectedType
 }
 
-func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest, deployType apps.DeployType, loc *i18n.Localizer) *apps.Form {
+func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallRequest, deployType apps.DeployType, loc *i18n.Localizer) apps.Form {
 	fields := []apps.Field{}
 
 	// Consent
 	h := ""
 	if len(m.RequestedLocations) > 0 {
-		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "modal.install_consent.header.locations",
-			Other: "\n- Add the following elements to the **Mattermost User Interface**:\n",
-		})
+		h += "\n" +
+			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "modal.install_consent.header.locations",
+				Other: "- Add the following elements to the **Mattermost User Interface**:",
+			}) +
+			"\n"
 		// (Mattermost) locations themselves are not localized
 		for _, l := range m.RequestedLocations {
 			h += fmt.Sprintf("  - %s\n", l.Markdown())
@@ -119,8 +114,8 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	if len(m.RequestedPermissions) > 0 {
 		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.install_consent.header.permissions",
-			Other: "- Access **Mattermost API** with the following permissions:\n",
-		})
+			Other: "- Access **Mattermost API** with the following permissions:",
+		}) + "\n"
 		// Permissions are not localized
 		for _, permission := range m.RequestedPermissions {
 			h += fmt.Sprintf("  - %s\n", permission.String())
@@ -130,13 +125,13 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		header := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.install_consent.header.header",
-				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:\n\n",
+				Other: "Application **{{.DisplayName}}** requires system administrator's consent to:",
 			},
 			TemplateData: map[string]string{
 				"DisplayName": m.DisplayName,
 			},
 		})
-		h = header + h + "---\n"
+		h = header + "\n\n" + h + "---\n"
 
 		value := creq.BoolValue(fConsent)
 		fields = append(fields, apps.Field{
@@ -184,7 +179,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	// 	iconURL = a.conf.Get().StaticURL(m.AppID, m.Icon)
 	// }
 
-	return &apps.Form{
+	return apps.Form{
 		Title: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.install_consent.title",
@@ -196,14 +191,8 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 		}),
 		Header: h,
 		Fields: fields,
-		Call: &apps.Call{
-			Path: pInstallConsent,
-			Expand: &apps.Expand{
-				ActingUser: apps.ExpandSummary,
-			},
-			State: m.AppID,
-		},
-		// Icon: iconURL, see above TODO
+		Submit: newUserCall(pInstallConsent).WithState(m.AppID),
+		Source: newUserCall(pInstallConsentSource).WithState(m.AppID),
 	}
 }
 

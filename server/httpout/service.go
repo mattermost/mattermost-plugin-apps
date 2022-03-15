@@ -4,6 +4,8 @@
 package httpout
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-server/v6/services/httpservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -46,6 +48,11 @@ func (s *service) GetFromURL(url string, trusted bool, limit int64) ([]byte, err
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		errData, _ := httputils.LimitReadAll(resp.Body, limit)
+		return nil, errors.Errorf("received status %v: %v", resp.Status, string(errData))
+	}
 
 	return httputils.LimitReadAll(resp.Body, limit)
 }

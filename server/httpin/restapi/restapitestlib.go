@@ -215,7 +215,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 	)
 
 	router := mux.NewRouter()
-	router.HandleFunc(apps.DefaultPing.Path, httputils.HandleJSON(apps.NewDataResponse(nil)))
+	router.HandleFunc(apps.DefaultPing.Path, httputils.DoHandleJSON(apps.NewDataResponse(nil)))
 	router.HandleFunc("/setup/user", func(w http.ResponseWriter, r *http.Request) {
 		creq, err := apps.CallRequestFromJSONReader(r.Body)
 		require.NoError(err)
@@ -284,7 +284,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 	api4.CheckOKStatus(th.t, resp)
 	assert.NotNil(cres)
 	assert.Equal(apps.CallResponseTypeOK, cres.Type)
-	assert.Empty(cres.ErrorText)
+	assert.Empty(cres.Text)
 
 	creq.Call.Path = "/setup/user2"
 
@@ -293,7 +293,7 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 	api4.CheckOKStatus(th.t, resp)
 	assert.NotNil(cres)
 	assert.Equal(apps.CallResponseTypeOK, cres.Type)
-	assert.Empty(cres.ErrorText)
+	assert.Empty(cres.Text)
 
 	require.NotNil(asBot)
 	require.NotNil(asUser)

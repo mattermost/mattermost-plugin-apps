@@ -198,7 +198,7 @@ func (s *manifestStore) Get(_ *incoming.Request, appID apps.AppID) (*apps.Manife
 	if ok {
 		return &m, nil
 	}
-	return nil, utils.ErrNotFound
+	return nil, errors.Wrap(utils.ErrNotFound, string(appID))
 }
 
 func (s *manifestStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.Manifest {

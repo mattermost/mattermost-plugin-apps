@@ -79,7 +79,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
-	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) []apps.Binding
+	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error)
 	GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error)
 	GetInstalledApps(r *incoming.Request) []apps.App
 	GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
@@ -123,11 +123,6 @@ func (p *Proxy) Configure(conf config.Config, log utils.Logger) error {
 	p.initUpstream(apps.DeployPlugin, conf, log, func() (upstream.Upstream, error) {
 		return upplugin.NewUpstream(&mm.Plugin), nil
 	})
-	p.initUpstream(apps.DeployKubeless, conf, log, func() (upstream.Upstream, error) {
-		// Kubeless is not longer supported: https://mattermost.atlassian.net/browse/MM-40011
-		// return upkubeless.MakeUpstream()
-		return nil, nil
-	})
 	p.initUpstream(apps.DeployOpenFAAS, conf, log, func() (upstream.Upstream, error) {
 		return upopenfaas.MakeUpstream(p.httpOut, conf.DeveloperMode)
 	})
@@ -165,7 +160,6 @@ func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allow
 		// Add more deploy types in self-managed mode.
 		supportedTypes = append(supportedTypes,
 			apps.DeployHTTP,
-			apps.DeployKubeless,
 			apps.DeployOpenFAAS,
 		)
 	}

@@ -19,74 +19,71 @@ import (
 )
 
 const (
-	host = "localhost"
-	port = 8082
+	rootURL    = "http://localhost:8082"
+	listenAddr = ":8082"
 )
 
 //go:embed icon.png
 var iconData []byte
 
-//go:embed manifest.json
-var manifestData []byte
-
-//go:embed send_form.json
-var sendFormData []byte
-
-//go:embed connect_form.json
-var connectFormData []byte
-
-//go:embed disconnect_form.json
-var disconnectFormData []byte
-
-//go:embed configure_form.json
-var configureFormData []byte
+var manifest = apps.Manifest{
+	AppID:       "hello-oauth2",
+	Version:     "0.8.0",
+	DisplayName: "Hello, OAuth2!",
+	Icon:        "icon.png",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
+	RequestedPermissions: []apps.Permission{
+		apps.PermissionActAsUser,
+		apps.PermissionRemoteOAuth2,
+	},
+	RequestedLocations: []apps.Location{
+		apps.LocationCommand,
+	},
+	Bindings: apps.NewCall("/bindings").WithExpand(apps.Expand{
+		ActingUser: apps.ExpandAll,
+		OAuth2User: apps.ExpandAll,
+	}),
+	Deploy: apps.Deploy{
+		HTTP: &apps.HTTP{
+			RootURL: rootURL,
+		},
+	},
+}
 
 func main() {
 	// Static handlers
 
 	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
+	http.HandleFunc("/manifest.json", httputils.DoHandleJSON(manifest))
 
 	// Serve the Channel Header and Command bindings for the App.
 	http.HandleFunc("/bindings", bindings)
 
 	// Serve the icon for the App.
 	http.HandleFunc("/static/icon.png",
-		httputils.HandleData("image/png", iconData))
+		httputils.DoHandleData("image/png", iconData))
 
 	// Google OAuth2 handlers
 
 	// Handle an OAuth2 connect URL request.
 	http.HandleFunc("/oauth2/connect", oauth2Connect)
-
 	// Handle a successful OAuth2 connection.
 	http.HandleFunc("/oauth2/complete", oauth2Complete)
 
-	// Submit handlers
+	// Command submit handlers
 
 	// `configure` command - sets up Google OAuth client credentials.
-	http.HandleFunc("/configure/form", httputils.HandleJSONData(configureFormData))
-	http.HandleFunc("/configure/submit", configure)
-
+	http.HandleFunc("/configure", configure)
 	// `connect` command - display the OAuth2 connect link.
-	// <>/<> TODO: returning an empty form should be unnecessary, 404 should be
-	// cached by the user agent as a {}
-	http.HandleFunc("/connect/form", httputils.HandleJSONData(connectFormData))
-	http.HandleFunc("/connect/submit", connect)
-
+	http.HandleFunc("/connect", connect)
 	// `disconnect` command - disconnect your account.
-	http.HandleFunc("/disconnect/form", httputils.HandleJSONData(disconnectFormData))
-	http.HandleFunc("/disconnect/submit", disconnect)
-
+	http.HandleFunc("/disconnect", disconnect)
 	// `send` command - send a Hello message.
-	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
-	http.HandleFunc("/send/submit", send)
+	http.HandleFunc("/send", send)
 
-	addr := fmt.Sprintf(":%v", port)
-	rootURL := fmt.Sprintf("http://%v:%v", host, port)
-	fmt.Printf("hello-oauth2 app listening on %q \n", addr)
+	fmt.Printf("hello-oauth2 app listening on %q \n", listenAddr)
 	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
-	panic(http.ListenAndServe(addr, nil))
+	panic(http.ListenAndServe(listenAddr, nil))
 }
 
 func bindings(w http.ResponseWriter, req *http.Request) {
@@ -97,7 +94,6 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 		Icon:        "icon.png",
 		Label:       "hello-oauth2",
 		Description: "Hello remote (3rd party) OAuth2 App",
-		Hint:        "",
 		Bindings:    []apps.Binding{},
 	}
 
@@ -105,40 +101,57 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 	remarshal(&token, creq.Context.OAuth2.User)
 
 	if token.AccessToken == "" {
-		connect := apps.Binding{
+		commandBinding.Bindings = append(commandBinding.Bindings, apps.Binding{
 			Location: "connect",
 			Label:    "connect",
-			Call: &apps.Call{
-				Path: "/connect",
-			},
-		}
-
-		commandBinding.Bindings = append(commandBinding.Bindings, connect)
+			Submit: apps.NewCall("/connect").WithExpand(apps.Expand{
+				OAuth2App: apps.ExpandAll,
+			}),
+		})
 	} else {
-		send := apps.Binding{
-			Location: "send",
-			Label:    "send",
-			Call: &apps.Call{
-				Path: "/send",
+		commandBinding.Bindings = append(commandBinding.Bindings,
+			apps.Binding{
+				Location: "send",
+				Label:    "send",
+				Submit: apps.NewCall("/send").WithExpand(apps.Expand{
+					OAuth2App:  apps.ExpandAll,
+					OAuth2User: apps.ExpandAll,
+				}),
 			},
-		}
-
-		disconnect := apps.Binding{
-			Location: "disconnect",
-			Label:    "disconnect",
-			Call: &apps.Call{
-				Path: "/disconnect",
+			apps.Binding{
+				Location: "disconnect",
+				Label:    "disconnect",
+				Submit: apps.NewCall("/disconnect").WithExpand(apps.Expand{
+					ActingUserAccessToken: apps.ExpandAll,
+				}),
 			},
-		}
-		commandBinding.Bindings = append(commandBinding.Bindings, send, disconnect)
+		)
 	}
 
 	if creq.Context.ActingUser.IsSystemAdmin() {
 		configure := apps.Binding{
 			Location: "configure",
 			Label:    "configure",
-			Call: &apps.Call{
-				Path: "/configure",
+			Form: &apps.Form{
+				Title: "Configures Google OAuth2 App credentials",
+				Icon:  "icon.png",
+				Fields: []apps.Field{
+					{
+						Type:       "text",
+						Name:       "client_id",
+						Label:      "client-id",
+						IsRequired: true,
+					},
+					{
+						Type:       "text",
+						Name:       "client_secret",
+						Label:      "client-secret",
+						IsRequired: true,
+					},
+				},
+				Submit: apps.NewCall("/configure").WithExpand(apps.Expand{
+					ActingUserAccessToken: apps.ExpandAll,
+				}),
 			},
 		}
 		commandBinding.Bindings = append(commandBinding.Bindings, configure)
@@ -190,7 +203,7 @@ func disconnect(w http.ResponseWriter, req *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(apps.CallResponse{
-		Markdown: "Disconnected your Google account",
+		Text: "Disconnected your Google account",
 	})
 }
 

@@ -106,7 +106,7 @@ func (u *Upstream) invoke(ctx context.Context, fromMattermostUserID string, app 
 		return nil, err
 
 	case resp.StatusCode == http.StatusNotFound:
-		return nil, utils.NewNotFoundError(err)
+		return nil, utils.NewNotFoundError(callURL)
 
 	case resp.StatusCode != http.StatusOK:
 		bb, _ := httputils.ReadAndClose(resp.Body)

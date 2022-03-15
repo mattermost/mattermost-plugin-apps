@@ -87,8 +87,9 @@ func DecodeCompatibleApp(data []byte) (app *App, err error) {
 // It is used to describe the OAuth2 connections both to Mattermost, and
 // optionally to a 3rd party remote system.
 type OAuth2App struct {
-	ClientID     string `json:"client_id,omitempty"`
-	ClientSecret string `json:"client_secret,omitempty"`
+	RemoteRootURL string `json:"remote_root_url,omitempty"`
+	ClientID      string `json:"client_id,omitempty"`
+	ClientSecret  string `json:"client_secret,omitempty"`
 
 	// Data allows apps to store custom data in their OAuth configuration. A
 	// frequent use case is storing app-level service account credentials.

@@ -12,145 +12,140 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *builtinApp) list() handler {
-	return handler{
-		requireSysadmin: true,
-
-		commandBinding: func(loc *i18n.Localizer) apps.Binding {
-			return apps.Binding{
-				Location: "list",
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.list.label",
-					Other: "list",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.list.description",
-					Other: "Display available and installed Apps",
-				}),
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.list.hint",
-					Other: "[ flags ]",
-				}),
-				Call: &apps.Call{
-					Path: pList,
-					Expand: &apps.Expand{
-						ActingUser: apps.ExpandSummary,
-						Locale:     apps.ExpandAll,
-					},
+func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
+	return apps.Binding{
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.list.label",
+			Other: "list",
+		}),
+		Location: "list",
+		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.list.hint",
+			Other: "[ flags ]",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.list.description",
+			Other: "Display available and installed Apps",
+		}),
+		Form: &apps.Form{
+			Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.list.form.title",
+				Other: "list Apps",
+			}),
+			Fields: []apps.Field{
+				{
+					Name: fIncludePlugins,
+					Type: apps.FieldTypeBool,
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "field.include_plugins.label",
+						Other: "include-plugins",
+					}),
+					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "field.include_plugins.description",
+						Other: "include compatible Mattermost plugins in the output.",
+					}),
 				},
-				Form: &apps.Form{
-					Fields: []apps.Field{
-						{
-							Name: fIncludePlugins,
-							Type: apps.FieldTypeBool,
-							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.include_plugins.label",
-								Other: "include-plugins",
-							}),
-							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.include_plugins.description",
-								Other: "include compatible Mattermost plugins in the output.",
-							}),
-						},
-					},
-				},
-			}
-		},
-
-		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-			loc := a.newLocalizer(creq)
-			includePluginApps := creq.BoolValue(fIncludePlugins)
-
-			listed := a.proxy.GetListedApps(r, "", includePluginApps)
-			installed := a.proxy.GetInstalledApps(r)
-
-			// All of this information is non sensitive.
-			// Checks for the user's permissions might be needed in the future.
-			txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.list.submit.header",
-				Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
-			})
-			txt += "\n| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
-
-			for _, app := range installed {
-				r = r.Clone()
-				r.SetAppID(app.AppID)
-				m, _ := a.proxy.GetManifest(r, app.AppID)
-				if m == nil {
-					continue
-				}
-
-				if !includePluginApps && app.DeployType == apps.DeployPlugin {
-					continue
-				}
-
-				status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.list.submit.status.installed",
-					Other: "**Installed**",
-				})
-				if app.Disabled {
-					status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "command.list.submit.status.disabled",
-						Other: "Installed, Disabled",
-					})
-				}
-
-				version := string(app.Version)
-				if string(m.Version) != version {
-					version = a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-						DefaultMessage: &i18n.Message{
-							ID:    "command.list.submit.version",
-							Other: "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
-						},
-						TemplateData: map[string]string{
-							"CurrentVersion":     string(app.Version),
-							"MarketplaceVersion": string(m.Version),
-						},
-					})
-				}
-
-				// TODO Translate the account part
-				account := ""
-				if app.BotUserID != "" {
-					account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
-				}
-				if app.MattermostOAuth2 != nil {
-					if account != "" {
-						account += ", "
-					}
-					account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.Id)
-					if app.RemoteOAuth2.ClientID != "" {
-						account += fmt.Sprintf("/`%s`", app.RemoteOAuth2.ClientID)
-					}
-				}
-
-				name := fmt.Sprintf("**[%s](%s)** (`%s`)",
-					app.DisplayName, app.HomepageURL, app.AppID)
-
-				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-					name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
-			}
-
-			listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.list.submit.listed",
-				Other: "Listed",
-			})
-			for _, l := range listed {
-				r = r.Clone()
-				r.SetAppID(l.Manifest.AppID)
-				app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
-				if app != nil {
-					continue
-				}
-				status := listedString
-				version := string(l.Manifest.Version)
-				name := fmt.Sprintf("[%s](%s) (`%s`)",
-					l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
-
-				txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-					name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
-			}
-			return apps.NewTextResponse(txt)
+			},
+			Submit: newUserCall(pList).WithLocale(),
 		},
 	}
+}
+
+func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
+	includePluginApps := creq.BoolValue("plugin-apps")
+
+	listed := a.proxy.GetListedApps(r, "", includePluginApps)
+	installed := a.proxy.GetInstalledApps(r)
+
+	// All of this information is non sensitive.
+	// Checks for the user's permissions might be needed in the future.
+	txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "command.list.submit.header",
+		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
+	}) + "\n"
+	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
+
+	for _, app := range installed {
+		r = r.Clone()
+		r.SetAppID(app.AppID)
+		m, _ := a.proxy.GetManifest(r, app.AppID)
+		if m == nil {
+			continue
+		}
+
+		if !includePluginApps && app.DeployType == apps.DeployPlugin {
+			continue
+		}
+
+		status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.list.submit.status.installed",
+			Other: "**Installed**",
+		})
+		if app.Disabled {
+			status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.list.submit.status.disabled",
+				Other: "Installed, Disabled",
+			})
+		}
+
+		version := string(app.Version)
+		if string(m.Version) != version {
+			version = a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "command.list.submit.version",
+					Other: "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
+				},
+				TemplateData: map[string]string{
+					"CurrentVersion":     string(app.Version),
+					"MarketplaceVersion": string(m.Version),
+				},
+			})
+		}
+
+		// TODO Translate the account part
+		account := ""
+		if app.BotUserID != "" {
+			account += fmt.Sprintf("Bot: `%s`", app.BotUserID)
+		}
+		if app.MattermostOAuth2 != nil {
+			if account != "" {
+				account += ", "
+			}
+			account += fmt.Sprintf("OAuth: `%s`", app.MattermostOAuth2.Id)
+			if app.RemoteOAuth2.ClientID != "" {
+				account += fmt.Sprintf("/`%s`", app.RemoteOAuth2.ClientID)
+			}
+		}
+
+		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
+			app.DisplayName, app.HomepageURL, app.AppID)
+
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
+	}
+
+	listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "command.list.submit.listed",
+		Other: "Listed",
+	})
+
+	for _, l := range listed {
+		r = r.Clone()
+		r.SetAppID(l.Manifest.AppID)
+		app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
+		if app != nil {
+			continue
+		}
+
+		status := listedString
+
+		version := string(l.Manifest.Version)
+
+		name := fmt.Sprintf("[%s](%s) (`%s`)",
+			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
+	}
+	return apps.NewTextResponse(txt)
 }

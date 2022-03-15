@@ -15,57 +15,97 @@ import (
 )
 
 const (
-	host = "localhost"
-	port = 8081
+	rootURL    = "http://localhost:8081"
+	listenAddr = ":8081"
 )
 
 //go:embed icon.png
 var iconData []byte
 
-//go:embed manifest.json
-var manifestData []byte
+var manifest = apps.Manifest{
+	AppID:       "hello-webhooks",
+	Version:     "0.8.0",
+	DisplayName: "Hello, Webhooks!",
+	Icon:        "icon.png",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-webhooks",
+	RequestedPermissions: apps.Permissions{
+		apps.PermissionActAsUser,
+		apps.PermissionActAsBot,
+		apps.PermissionRemoteWebhooks,
+	},
+	RequestedLocations: apps.Locations{
+		apps.LocationCommand,
+	},
+	Deploy: apps.Deploy{
+		HTTP: &apps.HTTP{
+			RootURL: rootURL,
+		},
+	},
+	RemoteWebhookAuthType: apps.SecretAuth,
+	OnInstall: apps.NewCall("/install").WithExpand(apps.Expand{
+		ActingUserAccessToken: apps.ExpandAll,
+	}),
+}
 
-//go:embed bindings.json
-var bindingsData []byte
-
-//go:embed info_form.json
-var infoFormData []byte
-
-//go:embed send_form.json
-var sendFormData []byte
+var bindings = []apps.Binding{
+	{
+		Location: apps.LocationCommand,
+		Bindings: []apps.Binding{
+			{
+				Icon:        "icon.png",
+				Label:       "hello-webhooks",
+				Description: "Hello Webhooks App",
+				Hint:        "[ send ]",
+				Bindings: []apps.Binding{
+					{
+						Label: "send",
+						Form: &apps.Form{
+							Title:  "Send a test webhook message",
+							Icon:   "icon.png",
+							Submit: apps.NewCall("/send"),
+							Fields: []apps.Field{
+								{
+									Name:                 "url",
+									Type:                 "text",
+									IsRequired:           true,
+									AutocompletePosition: 1,
+								},
+							},
+						},
+					},
+					{
+						Label: "info",
+						Submit: apps.NewCall("/info").WithExpand(apps.Expand{
+							App: apps.ExpandAll,
+						}),
+					},
+				},
+			},
+		},
+	},
+}
 
 func main() {
-	// Static handlers
+	http.HandleFunc("/manifest.json", httputils.DoHandleJSON(manifest))
+	http.HandleFunc("/bindings", httputils.DoHandleJSON(apps.NewDataResponse(bindings)))
+	http.HandleFunc("/static/icon.png", httputils.DoHandleData("image/png", iconData))
 
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
-
-	// Serve the Channel Header and Command bindings for the App.
-	http.HandleFunc("/bindings", httputils.HandleJSONData(bindingsData))
-
-	// Serve the icon for the App.
-	http.HandleFunc("/static/icon.png",
-		httputils.HandleData("image/png", iconData))
-
-	// install handler
+	// install handler - uses the admin token to allow the bot to post to
+	// current channel.
 	http.HandleFunc("/install", install)
 
 	// Webhook handler
 	http.HandleFunc("/webhook/", webhookReceived)
 
 	// `info` command - displays the webhook URL.
-	http.HandleFunc("/info/form", httputils.HandleJSONData(infoFormData))
-	http.HandleFunc("/info/submit", info)
+	http.HandleFunc("/info", info)
 
 	// `send` command - send a Hello webhook message.
-	http.HandleFunc("/send/form", httputils.HandleJSONData(sendFormData))
-	http.HandleFunc("/send/submit", send)
+	http.HandleFunc("/send", send)
 
-	addr := fmt.Sprintf(":%v", port)
-	rootURL := fmt.Sprintf("http://%v:%v", host, port)
-	fmt.Printf("hello-webhooks app listening on %q \n", addr)
+	fmt.Printf("hello-webhooks app listening on %q \n", listenAddr)
 	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
-	panic(http.ListenAndServe(addr, nil))
+	panic(http.ListenAndServe(listenAddr, nil))
 }
 
 func install(w http.ResponseWriter, req *http.Request) {

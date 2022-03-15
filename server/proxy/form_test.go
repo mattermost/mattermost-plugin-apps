@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestCleanForm(t *testing.T) {
@@ -13,16 +14,14 @@ func TestCleanForm(t *testing.T) {
 		name             string
 		in               apps.Form
 		expectedOut      apps.Form
-		expectedProblems []string
+		expectedProblems string
 	}
 	testCases := []TC{
 		{
 			name: "no field filter on names",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Name: "field1",
@@ -33,16 +32,16 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Name: "field1",
+						Name:  "field1",
+						Label: "field1",
 					},
 					{
-						Name: "field2",
+						Name:  "field2",
+						Label: "field2",
 					},
 				},
 			},
@@ -50,10 +49,8 @@ func TestCleanForm(t *testing.T) {
 		{
 			name: "no field filter on labels",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Label: "field1",
@@ -66,10 +63,8 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Label: "field1",
@@ -85,10 +80,8 @@ func TestCleanForm(t *testing.T) {
 		{
 			name: "field filter with no name",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Label: "field1",
@@ -100,10 +93,8 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Label: "field2",
@@ -111,17 +102,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				"field with no name, label field1",
-			},
+			expectedProblems: "1 error occurred:\n\t* field with no name, label field1\n\n",
 		},
 		{
 			name: "field filter with same label inferred from name",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeBool,
@@ -134,28 +121,23 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeBool,
-						Name: "same",
+						Type:  apps.FieldTypeBool,
+						Name:  "same",
+						Label: "same",
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label: "same" (field: same)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated label: \"same\" (field: same)\n\n",
 		},
 		{
 			name: "field filter with same label",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -170,10 +152,8 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -182,17 +162,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label: "same" (field: field2)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated label: \"same\" (field: field2)\n\n",
 		},
 		{
 			name: "field filter with same label",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -207,10 +183,8 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -219,17 +193,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label: "same" (field: field2)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated label: \"same\" (field: field2)\n\n",
 		},
 		{
 			name: "field filter with multiword name",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -239,23 +209,17 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{},
 			},
-			expectedProblems: []string{
-				`field name must be a single word: "multiple word"`,
-			},
+			expectedProblems: "1 error occurred:\n\t* field name must be a single word: \"multiple word\"\n\n",
 		},
 		{
 			name: "field filter with multiword label",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -265,23 +229,17 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{},
 			},
-			expectedProblems: []string{
-				`label must be a single word: "multiple word" (field: singleword)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* label must be a single word: \"multiple word\" (field: singleword)\n\n",
 		},
 		{
 			name: "field filter more than one field",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -301,10 +259,8 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type:  apps.FieldTypeBool,
@@ -313,18 +269,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label: "same" (field: field2)`,
-				`repeated label: "same" (field: field3)`,
-			},
+			expectedProblems: "2 errors occurred:\n\t* repeated label: \"same\" (field: field2)\n\t* repeated label: \"same\" (field: field3)\n\n",
 		},
 		{
 			name: "field filter static with no options",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -333,27 +284,21 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{},
 			},
-			expectedProblems: []string{
-				"no options for static select: field1",
-			},
+			expectedProblems: "1 error occurred:\n\t* no options for static select: field1\n\n",
 		},
 		{
 			name: "field filter static options with no label",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Name: "field_1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
@@ -364,14 +309,13 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Label: "field-1",
+						Name:  "field_1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value: "opt1",
@@ -380,17 +324,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				"option with neither label nor value (field field1)",
-			},
+			expectedProblems: "1 error occurred:\n\t* option with neither label nor value (field field_1)\n\n",
 		},
 		{
 			name: "field filter static options with same label inferred from value",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -409,14 +349,13 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Value:    "same",
@@ -426,17 +365,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label "same" on select option (field field1)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated label \"same\" on select option (field field1)\n\n",
 		},
 		{
 			name: "field filter static options with same label",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -455,14 +390,13 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Label: "field1",
+						Name:  "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "same",
@@ -472,17 +406,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label "same" on select option (field field1)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated label \"same\" on select option (field field1)\n\n",
 		},
 		{
 			name: "field filter static options with same value",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -501,14 +431,13 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "opt1",
@@ -518,17 +447,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated value "same" on select option (field field1)`,
-			},
+			expectedProblems: "1 error occurred:\n\t* repeated value \"same\" on select option (field field1)\n\n",
 		},
 		{
 			name: "invalid static options don't consume namespace",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -555,14 +480,13 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Type: apps.FieldTypeStaticSelect,
-						Name: "field1",
+						Type:  apps.FieldTypeStaticSelect,
+						Name:  "field1",
+						Label: "field1",
 						SelectStaticOptions: []apps.SelectOption{
 							{
 								Label: "same1",
@@ -576,18 +500,13 @@ func TestCleanForm(t *testing.T) {
 					},
 				},
 			},
-			expectedProblems: []string{
-				`repeated label "same1" on select option (field field1)`,
-				`repeated value "same1" on select option (field field1)`,
-			},
+			expectedProblems: "2 errors occurred:\n\t* repeated label \"same1\" on select option (field field1)\n\t* repeated value \"same1\" on select option (field field1)\n\n",
 		},
 		{
 			name: "field filter static with no valid options",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -599,24 +518,17 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{},
 			},
-			expectedProblems: []string{
-				"option with neither label nor value (field field1)",
-				"no options for static select: field1",
-			},
+			expectedProblems: "2 errors occurred:\n\t* option with neither label nor value (field field1)\n\t* no options for static select: field1\n\n",
 		},
 		{
 			name: "invalid static field does not consume namespace",
 			in: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
 						Type: apps.FieldTypeStaticSelect,
@@ -631,31 +543,27 @@ func TestCleanForm(t *testing.T) {
 				},
 			},
 			expectedOut: apps.Form{
-				Title: "Test",
-				Call: &apps.Call{
-					Path: "/url",
-				},
+				Title:  "Test",
+				Submit: apps.NewCall("/url"),
 				Fields: []apps.Field{
 					{
-						Name: "field1",
+						Name:  "field1",
+						Label: "field1",
 					},
 				},
 			},
-			expectedProblems: []string{
-				"option with neither label nor value (field field1)",
-				"no options for static select: field1",
-			},
+			expectedProblems: "2 errors occurred:\n\t* option with neither label nor value (field field1)\n\t* no options for static select: field1\n\n",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out, problems := cleanForm(tc.in)
+			out, err := cleanForm(tc.in, config.Config{}, "")
 
 			require.Equal(t, tc.expectedOut, out)
-			require.Equal(t, len(tc.expectedProblems), len(problems))
-			for i := range problems {
-				require.Equal(t, tc.expectedProblems[i], problems[i].Error())
+			if tc.expectedProblems != "" {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedProblems, err.Error())
 			}
 		})
 	}

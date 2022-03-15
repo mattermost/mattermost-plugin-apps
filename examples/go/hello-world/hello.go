@@ -13,36 +13,114 @@ import (
 )
 
 //go:embed icon.png
-var iconData []byte
+var IconData []byte
 
-//go:embed manifest.json
-var manifestData []byte
+// Manifest declares the app's metadata. It must be provided for the app to be
+// installable. In this example, the following permissions are requested:
+//   - Create posts as a bot.
+//   - Add icons to the channel header that will call back into your app when
+//     clicked.
+//   - Add a /-command with a callback.
+var Manifest = apps.Manifest{
+	// App ID must be unique across all Mattermost Apps.
+	AppID: "hello-world",
 
-//go:embed bindings.json
-var bindingsData []byte
+	// App's release/version.
+	Version: "v0.8.0",
 
-//go:embed send_form.json
-var formData []byte
+	// A (long) display name for the app.
+	DisplayName: "Hello, world!",
 
+	// The icon for the app's bot account, same icon is also used for bindings
+	// and forms.
+	Icon: "icon.png",
+
+	// HomepageURL is required for an app to be installable.
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-world",
+
+	// Need ActAsBot to post back to the user.
+	RequestedPermissions: []apps.Permission{
+		apps.PermissionActAsBot,
+	},
+
+	// Add UI elements: a /-command, and a channel header button.
+	RequestedLocations: []apps.Location{
+		apps.LocationChannelHeader,
+		apps.LocationCommand,
+	},
+
+	// Running the app as an HTTP service is the only deployment option
+	// supported.
+	Deploy: apps.Deploy{
+		HTTP: &apps.HTTP{
+			RootURL: "http://localhost:4000",
+		},
+	},
+}
+
+// The details for the App UI bindings
+var Bindings = []apps.Binding{
+	{
+		Location: apps.LocationChannelHeader,
+		Bindings: []apps.Binding{
+			{
+				Location: "send-button",        // an app-chosen string.
+				Icon:     "icon.png",           // reuse the App icon for the channel header.
+				Label:    "send hello message", // appearance in the "more..." menu.
+				Form:     &SendForm,            // the form to display.
+			},
+		},
+	},
+	{
+		Location: "/command",
+		Bindings: []apps.Binding{
+			{
+				// For commands, Location is not necessary, it will be defaulted to the label.
+				Icon:        "icon.png",
+				Label:       "helloworld",
+				Description: "Hello World app", // appears in autocomplete.
+				Hint:        "[send]",          // appears in autocomplete, usually indicates as to what comes after choosing the option.
+				Bindings: []apps.Binding{
+					{
+						Label: "send", // "/helloworld send" sub-command.
+						Form:  &SendForm,
+					},
+				},
+			},
+		},
+	},
+}
+
+// SendForm is used to display the modal after clicking on the channel header
+// button. It is also used for `/helloworld send` sub-command's autocomplete. It
+// contains just one field, "message" for the user to customize the message.
+var SendForm = apps.Form{
+	Title: "Hello, world!",
+	Icon:  "icon.png",
+	Fields: []apps.Field{
+		{
+			Type: "text",
+			Name: "message",
+		},
+	},
+	Submit: apps.NewCall("/send"),
+}
+
+// main sets up the http server, with paths mapped for the static assets, the
+// bindings callback, and the send function.
 func main() {
-	// Serve its own manifest as HTTP for convenience in dev. mode.
-	http.HandleFunc("/manifest.json", httputils.HandleJSONData(manifestData))
+	// Serve static assets: the manifest and the icon.
+	http.HandleFunc("/manifest.json",
+		httputils.DoHandleJSON(Manifest))
+	http.HandleFunc("/static/icon.png",
+		httputils.DoHandleData("image/png", IconData))
 
-	// Returns the Channel Header and Command bindings for the app.
-	http.HandleFunc("/bindings", httputils.HandleJSONData(bindingsData))
-
-	// The form for sending a Hello message.
-	http.HandleFunc("/send/form", httputils.HandleJSONData(formData))
+	// Bindinings callback.
+	http.HandleFunc("/bindings",
+		httputils.DoHandleJSON(apps.NewDataResponse(Bindings)))
 
 	// The main handler for sending a Hello message.
-	http.HandleFunc("/send/submit", send)
-
-	// Forces the send form to be displayed as a modal.
-	http.HandleFunc("/send-modal/submit", httputils.HandleJSONData(formData))
-
-	// Serves the icon for the app.
-	http.HandleFunc("/static/icon.png",
-		httputils.HandleData("image/png", iconData))
+	http.HandleFunc("/send", Send)
 
 	addr := ":4000" // matches manifest.json
 	fmt.Println("Listening on", addr)
@@ -50,7 +128,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func send(w http.ResponseWriter, req *http.Request) {
+// Send sends a DM back to the user.
+func Send(w http.ResponseWriter, req *http.Request) {
 	c := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&c)
 

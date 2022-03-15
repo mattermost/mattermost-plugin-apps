@@ -39,7 +39,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		if resp.Type == apps.CallResponseTypeError {
 			r.Log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
-			message = resp.Markdown
+			message = resp.Text
 		}
 	}
 
@@ -70,7 +70,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		if resp.Type == apps.CallResponseTypeError {
 			r.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
-			message = resp.Markdown
+			message = resp.Text
 		}
 	}
 

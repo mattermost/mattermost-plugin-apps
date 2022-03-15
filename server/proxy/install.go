@@ -62,7 +62,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	icon, err := p.getAppIcon(r, *app)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed get bot icon")
+		return nil, "", errors.Wrap(err, "failed to get bot icon")
 	}
 	if icon != nil {
 		defer icon.Close()
@@ -104,8 +104,8 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 			// TODO: should fail and roll back.
 			r.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
 			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
-		} else if cresp.Markdown != "" {
-			message += "\n\n" + cresp.Markdown
+		} else if cresp.Text != "" {
+			message += "\n\n" + cresp.Text
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
@@ -143,7 +143,6 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 		CallbackUrls:    []string{oauth2CallbackURL},
 		Homepage:        app.HomepageURL,
 		IsTrusted:       noUserConsent,
-		Scopes:          nil,
 		MattermostAppID: string(app.AppID),
 	}
 	err := mm.OAuth.Create(oAuthApp)
@@ -224,12 +223,11 @@ func (p *Proxy) getAppIcon(r *incoming.Request, app apps.App) (io.ReadCloser, er
 
 	icon, status, err := p.getStatic(r, app, iconPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get app icon")
+		return nil, errors.Wrapf(err, "failed to download icon: %s", iconPath)
 	}
 
 	if status != http.StatusOK {
-		return nil, errors.Errorf("received %d status code while downloading bot icon for %v",
-			status, app.Manifest.AppID)
+		return nil, errors.Errorf("failed to download icon: %s: received status code %v", iconPath, status)
 	}
 
 	return icon, nil

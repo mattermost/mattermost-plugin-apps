@@ -10,53 +10,38 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-var uninstallCall = apps.Call{
-	Path: pUninstall,
-	Expand: &apps.Expand{
-		ActingUser: apps.ExpandSummary,
-	},
-}
+func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
+	return apps.Binding{
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.uninstall.label",
+			Other: "uninstall",
+		}),
+		Location: "uninstall",
+		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.uninstall.hint",
+			Other: "[ App ID ]",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.uninstall.description",
+			Other: "Uninstall an App",
+		}),
 
-func (a *builtinApp) uninstall() handler {
-	return handler{
-		commandBinding: func(loc *i18n.Localizer) apps.Binding {
-			return apps.Binding{
-				Location: "uninstall",
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.uninstall.label",
-					Other: "uninstall",
-				}),
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.uninstall.hint",
-					Other: "[ App ID ]",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.uninstall.description",
-					Other: "Uninstall an App",
-				}),
-				Call: &uninstallCall,
-				Form: a.appIDForm(uninstallCall, loc),
-			}
-		},
-
-		lookupf: func(r *incoming.Request, creq apps.CallRequest) ([]apps.SelectOption, error) {
-			return a.lookupAppID(r, creq, func(app apps.ListedApp) bool {
-				return app.Installed
-			})
-		},
-
-		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			r.SetAppID(appID)
-			out, err := a.proxy.UninstallApp(
-				r,
-				creq.Context,
-				appID,
-			)
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-			return apps.NewTextResponse(out)
+		Form: &apps.Form{
+			Submit: newUserCall(pUninstall),
+			Fields: []apps.Field{
+				a.appIDField(LookupInstalledApps, 1, true, loc),
+			},
 		},
 	}
+}
+
+func (a *builtinApp) uninstall(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	out, err := a.proxy.UninstallApp(
+		r,
+		creq.Context,
+		apps.AppID(creq.GetValue(fAppID, "")))
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	return apps.NewTextResponse(out)
 }

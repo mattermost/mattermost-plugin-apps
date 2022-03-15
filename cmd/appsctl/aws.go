@@ -155,19 +155,19 @@ var awsTestCmd = &cobra.Command{
 	Short: "test accessing a deployed resource",
 }
 
-func helloLambda() apps.App {
+func helloServerless() apps.App {
 	return apps.App{
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
-			AppID:   "hello-lambda",
+			AppID:   "hello-serverless",
 			Version: "0.8.0",
 			Deploy: apps.Deploy{
 				AWSLambda: &apps.AWSLambda{
 					Functions: []apps.AWSLambdaFunction{
 						{
 							Path:    "/",
-							Name:    "hello-lambda",
-							Handler: "hello-lambda",
+							Name:    "hello-serverless",
+							Handler: "hello-serverless",
 							Runtime: "go1.x",
 						},
 					},
@@ -190,7 +190,7 @@ var awsTestS3Cmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 		defer cancel()
 
-		resp, _, err := upTest.GetStatic(ctx, helloLambda(), "test.txt")
+		resp, _, err := upTest.GetStatic(ctx, helloServerless(), "test.txt")
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ var awsTestS3ListCmd = &cobra.Command{
 
 var awsTestLambdaCmd = &cobra.Command{
 	Use:   "lambda",
-	Short: "test accessing hello-lambda /ping function",
+	Short: "test accessing hello-serverless /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		upTest, err := makeTestAWSUpstream()
@@ -240,15 +240,13 @@ var awsTestLambdaCmd = &cobra.Command{
 		}
 
 		creq := apps.CallRequest{
-			Call: apps.Call{
-				Path: "/ping",
-			},
+			Call: *apps.NewCall("/ping"),
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 		defer cancel()
 
-		resp, err := upTest.Roundtrip(ctx, helloLambda(), creq, false)
+		resp, err := upTest.Roundtrip(ctx, helloServerless(), creq, false)
 		if err != nil {
 			return err
 		}
@@ -274,9 +272,9 @@ var awsTestLambdaCmd = &cobra.Command{
 
 var awsTestDeployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "deploys 'hello-lambda' app for testing",
-	Long: `Test commands us the 'hello-lambda' example app for testing, see
-https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-lambda/README.md
+	Short: "deploys 'hello-serverless' app for testing",
+	Long: `Test commands us the 'hello-serverless' example app for testing, see
+https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-serverless/README.md
 
 The App needs to be built with 'make dist' in its own directory, then use
 
