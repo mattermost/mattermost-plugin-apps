@@ -48,7 +48,9 @@ func WithCtx(ctx context.Context) RequestOption {
 
 func WithAppContext(cc apps.Context) RequestOption {
 	return func(r *Request) {
-		r.SetActingUserID(cc.ActingUserID)
+		if cc.ActingUser != nil {
+			r.SetActingUserID(cc.ActingUser.Id)
+		}
 		r.actingUserAccessToken = cc.ActingUserAccessToken
 	}
 }

@@ -87,7 +87,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	}
 
 	asBot := appclient.AsBot(creq.Context)
-	asBot.DM(creq.Context.ActingUserID, message)
+	asBot.DM(creq.Context.ActingUser.Id, message)
 
 	httputils.WriteJSON(w,
 		apps.NewTextResponse("Created a post in your DM channel."))

@@ -37,7 +37,7 @@ func (a *builtinApp) debugSessionsListBinding(loc *i18n.Localizer) apps.Binding 
 
 func (a *builtinApp) debugSessionsList(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	sessions, err := a.sessionService.ListForUser(r, creq.Context.ActingUserID)
+	sessions, err := a.sessionService.ListForUser(r, creq.Context.ActingUser.Id)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

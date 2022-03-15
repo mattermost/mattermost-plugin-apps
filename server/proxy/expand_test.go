@@ -63,14 +63,24 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
-						client.EXPECT().GetChannelMember(channelID, userID).Times(4).Return(channelMember, nil)
+						client.EXPECT().GetChannelMember(channelID, userID).Times(2).Return(channelMember, nil)
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll:                apps.ExpandedContext{ChannelMember: channelMember},
-						apps.ExpandSummary:            apps.ExpandedContext{ChannelMember: channelMember},
-						apps.ExpandNone:               apps.ExpandedContext{},
-						apps.ExpandLevel("jibberish"): apps.ExpandedContext{},
-						apps.ExpandLevel(""):          apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{
+							AppPath:       "/apps/app1",
+							BotUserID:     "botid",
+							ActingUser:    &model.User{Id: userID},
+							ChannelMember: channelMember,
+						},
+						apps.ExpandSummary: apps.ExpandedContext{
+							AppPath:       "/apps/app1",
+							BotUserID:     "botid",
+							ActingUser:    &model.User{Id: userID},
+							ChannelMember: channelMember,
+						},
+						apps.ExpandDefault:            apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+						apps.ExpandNone:               apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+						apps.ExpandLevel("jibberish"): "failed to expand channel membership: unknown expand type \"jibberish\"",
 					},
 				},
 				"no user ID": {
@@ -78,7 +88,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid"},
 					},
 				},
 				"no channel ID": {
@@ -86,7 +96,7 @@ func TestExpand(t *testing.T) {
 						ActingUserID: userID,
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
 					},
 				},
 				"API error": {
@@ -98,7 +108,7 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: "failed to expand channel membership channel7890123456789012345: ERROR",
+						apps.ExpandAll: "failed to expand channel membership: failed to get channel membership: ERROR",
 					},
 				},
 			},
@@ -112,14 +122,23 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
-						client.EXPECT().GetTeamMember(teamID, userID).Times(4).Return(teamMember, nil)
+						client.EXPECT().GetTeamMember(teamID, userID).Times(2).Return(teamMember, nil)
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll:                apps.ExpandedContext{TeamMember: teamMember},
-						apps.ExpandSummary:            apps.ExpandedContext{TeamMember: teamMember},
-						apps.ExpandNone:               apps.ExpandedContext{},
-						apps.ExpandLevel("jibberish"): apps.ExpandedContext{},
-						apps.ExpandLevel(""):          apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{
+							AppPath:    "/apps/app1",
+							BotUserID:  "botid",
+							ActingUser: &model.User{Id: userID},
+							TeamMember: teamMember,
+						},
+						apps.ExpandSummary: apps.ExpandedContext{AppPath: "/apps/app1",
+							BotUserID:  "botid",
+							ActingUser: &model.User{Id: userID},
+							TeamMember: teamMember,
+						},
+						apps.ExpandDefault:            apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+						apps.ExpandNone:               apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+						apps.ExpandLevel("jibberish"): "failed to expand team membership: unknown expand type \"jibberish\"",
 					},
 				},
 				"no user ID": {
@@ -127,7 +146,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid"},
 					},
 				},
 				"no team ID": {
@@ -135,7 +154,7 @@ func TestExpand(t *testing.T) {
 						ActingUserID: userID,
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{},
+						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
 					},
 				},
 				"API error": {
@@ -147,7 +166,7 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: "failed to expand team membership team4567890123456789012345: ERROR",
+						apps.ExpandAll: "failed to expand team membership: failed to get team membership team4567890123456789012345: ERROR",
 					},
 				},
 			},
