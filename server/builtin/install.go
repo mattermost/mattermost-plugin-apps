@@ -11,7 +11,8 @@ import (
 )
 
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
-	if a.conf.Get().MattermostCloudMode {
+	conf := a.conf.Get()
+	if conf.MattermostCloudMode && !conf.DeveloperMode {
 		return apps.Binding{
 			Location: "install",
 			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -34,6 +35,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 			},
 		}
 	}
+
 	return apps.Binding{
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.label",
