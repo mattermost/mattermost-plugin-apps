@@ -139,7 +139,7 @@ app.post('/send/submit', async (req, res) => {
 
     const users = [
         call.context.bot_user_id,
-        call.context.acting_user_id,
+        call.context.acting_user.id,
     ] as string[];
 
     let channel: Channel;

@@ -103,7 +103,7 @@ app.post('/send/submit', async (req, res) => {
 
     const users = [
         call.context.bot_user_id,
-        call.context.acting_user_id,
+        call.context.acting_user.id,
     ];
 
     // Use the app bot to do API calls

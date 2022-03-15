@@ -25,7 +25,7 @@ func AsBot(cc apps.Context) *Client {
 }
 
 func AsActingUser(cc apps.Context) *Client {
-	return as(cc.ActingUserID, cc.ActingUserAccessToken, cc)
+	return as(cc.ActingUser.Id, cc.ActingUserAccessToken, cc)
 }
 
 func NewClient(userID, token, mattermostSiteURL string) *Client {

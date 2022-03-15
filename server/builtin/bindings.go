@@ -33,7 +33,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 			Location: apps.LocationCommand,
 			Bindings: []apps.Binding{
 				{
-					Label:    "apps", //  "/apps" in all locales
+					Label:    "apps", // "/apps" in all locales
 					Location: "apps",
 					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "command.base.description",

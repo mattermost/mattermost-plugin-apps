@@ -94,7 +94,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	c := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&c)
 
-	appclient.AsBot(c.Context).DM(c.Context.ActingUserID, "JWT check ok")
+	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, "JWT check ok")
 
 	httputils.WriteJSON(w,
 		apps.NewTextResponse("Created a post in your DM channel."))
