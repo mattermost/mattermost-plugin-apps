@@ -36,69 +36,6 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 				a.namespaceField(0, false, loc),
 			},
 		},
-<<<<<<< HEAD
-=======
-
-		submitf: func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-			appID := apps.AppID(creq.GetValue(fAppID, ""))
-			r.SetAppID(appID)
-			namespace := creq.GetValue(fNamespace, "")
-			encode := creq.BoolValue(fBase64)
-
-			keys := []string{}
-			err := a.appservices.KVList(r, appID, creq.Context.ActingUser.Id, namespace, func(key string) error {
-				keys = append(keys, key)
-				return nil
-			})
-			if err != nil {
-				return apps.NewErrorResponse(err)
-			}
-
-			loc := a.newLocalizer(creq)
-			message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-				DefaultMessage: &i18n.Message{
-					ID:    "command.debug.kv.list.submit.message",
-					Other: "{{.Count}} total keys for `{{.AppID}}`",
-				},
-				TemplateData: map[string]string{
-					"Count": strconv.Itoa(len(keys)),
-					"AppID": string(appID),
-				},
-			})
-
-			if namespace != "" {
-				message += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-					DefaultMessage: &i18n.Message{
-						ID:    "command.debug.kv.list.submit.namespace",
-						Other: ", namespace `{{.Namespace}}`\n",
-					},
-					TemplateData: map[string]string{
-						"Namespace": namespace,
-					},
-				})
-			} else {
-				message += "\n"
-			}
-			if encode {
-				message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.debug.kv.list.submit.note",
-					Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.\n",
-				})
-				for _, key := range keys {
-					message += fmt.Sprintf("- `%s`\n", base64.URLEncoding.EncodeToString([]byte(key)))
-				}
-			} else {
-				message += "```\n"
-				for _, key := range keys {
-					message += fmt.Sprintln(key)
-				}
-				message += "```\n"
-			}
-			return apps.NewTextResponse(message)
-		},
-
-		lookupf: a.debugAppNamespaceLookup,
->>>>>>> 43d697f (Fix examples and builtin app)
 	}
 }
 
