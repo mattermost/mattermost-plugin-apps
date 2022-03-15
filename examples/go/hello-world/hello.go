@@ -41,6 +41,7 @@ var Manifest = apps.Manifest{
 	// Need ActAsBot to post back to the user.
 	RequestedPermissions: []apps.Permission{
 		apps.PermissionActAsBot,
+		apps.PermissionActAsUser,
 	},
 
 	// Add UI elements: a /-command, and a channel header button.
@@ -103,7 +104,7 @@ var SendForm = apps.Form{
 			Name: "message",
 		},
 	},
-	Submit: apps.NewCall("/send"),
+	Submit: apps.NewCall("/send").WithExpand(apps.Expand{ActingUserAccessToken: apps.ExpandAll}),
 }
 
 // main sets up the http server, with paths mapped for the static assets, the

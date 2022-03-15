@@ -104,7 +104,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to save new session in store")
 	}
 
-	r.Log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "token", utils.LastN(session.Token, 3))
+	r.Log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "session_id", session.Id, "token", utils.LastN(session.Token, 3))
 
 	return session, nil
 }
