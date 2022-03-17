@@ -131,30 +131,21 @@ func (p *Proxy) CanDeploy(deployType apps.DeployType) (allowed, usable bool) {
 
 func (p *Proxy) canDeploy(conf config.Config, deployType apps.DeployType) (allowed, usable bool) {
 	_, usable = p.upstreams.Load(deployType)
+	if conf.DeveloperMode {
+		// In dev mode support any deploy type.
+		return true, usable
+	}
 
-	supportedTypes := apps.DeployTypes{}
-
-	// Initialize with the set supported in all configurations.
-	supportedTypes = append(supportedTypes,
+	supportedTypes := apps.DeployTypes{
 		apps.DeployAWSLambda,
 		apps.DeployBuiltin,
 		apps.DeployPlugin,
-	)
-
-	switch {
-	case conf.DeveloperMode:
-		// In dev mode support any deploy type.
-		return true, usable
-
-	case conf.MattermostCloudMode:
-		// Nothing else in Mattermost Cloud mode.
-
-	case !conf.MattermostCloudMode:
-		// Add more deploy types in self-managed mode.
-		supportedTypes = append(supportedTypes,
-			apps.DeployHTTP,
-			apps.DeployOpenFAAS,
-		)
+	}
+	if conf.AllowHTTPApps {
+		supportedTypes = append(supportedTypes, apps.DeployHTTP)
+	}
+	if !conf.MattermostCloudMode {
+		supportedTypes = append(supportedTypes, apps.DeployOpenFAAS)
 	}
 
 	for _, t := range supportedTypes {

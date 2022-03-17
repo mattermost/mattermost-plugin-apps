@@ -4,8 +4,10 @@
 package main
 
 import (
+	"bytes"
 	gohttp "net/http"
 	"path/filepath"
+	"text/template"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -55,6 +57,9 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 	}
 }
 
+var infoTemplate = template.Must(template.New("info").Parse(
+	"Version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}, Allow install over HTTP: {{.AllowHTTPApps}}"))
+
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	p.log = utils.NewPluginLogger(mm)
@@ -89,16 +94,9 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	conf, _, log := p.conf.Basic()
 	p.log = log
-	log = log.With("callback", "onactivate")
-
-	mode := "Self-managed"
-	if conf.MattermostCloudMode {
-		mode = "Mattermost Cloud"
-	}
-	if conf.DeveloperMode {
-		mode += ", Developer Mode"
-	}
-	log = log.With("mode", mode)
+	infoBuf := &bytes.Buffer{}
+	infoTemplate.Execute(infoBuf, conf.InfoTemplateData())
+	log.Debugf("OnActivate: %s", infoBuf.String())
 
 	p.httpOut = httpout.NewService(p.conf)
 

@@ -12,7 +12,8 @@ import (
 
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 	conf := a.conf.Get()
-	if conf.MattermostCloudMode && !conf.DeveloperMode {
+	if !conf.AllowHTTPApps {
+		// No need for subcommands, only listed apps are installable.
 		return apps.Binding{
 			Location: "install",
 			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -36,6 +37,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 		}
 	}
 
+	// install http|listed
 	return apps.Binding{
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.label",

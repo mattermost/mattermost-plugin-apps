@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -57,6 +58,7 @@ type Config struct {
 	BuildHashShort string
 
 	DeveloperMode       bool
+	AllowHTTPApps       bool
 	MattermostCloudMode bool
 
 	BotUserID          string
@@ -83,13 +85,17 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
-var devHostDomains = []string{
+// developerModeDomains is the list of domains for which DevelopmentMode will be
+// forced on. Empty for the time being.
+var developerModeDomains = regexp.MustCompile("^" + strings.Join([]string{}, "|") + "$")
+
+// allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
+// forced on. 
+var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
 	`.*\.test\.mattermost\.cloud`,
 	`community\.mattermost\.com`,
 	`community-[a-z]+\.mattermost\.com`,
-}
-
-var devHostRegexp = regexp.MustCompile("^" + strings.Join(devHostDomains, "|") + "$")
+}, "|") + "$")
 
 func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
@@ -136,8 +142,13 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 	}
 
 	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-	if devHostRegexp.MatchString(u.Hostname()) {
+	if developerModeDomains.MatchString(u.Hostname()) {
 		conf.DeveloperMode = true
+	}
+
+	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
+	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
+		conf.AllowHTTPApps = true
 	}
 
 	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
@@ -178,5 +189,16 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"version": conf.PluginManifest.Version,
+	}
+}
+
+func (c *Config) InfoTemplateData() map[string]string {
+	return map[string]string{
+		"Version":       c.PluginManifest.Version,
+		"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", c.BuildHashShort, Repository, c.BuildHash),
+		"BuildDate":     c.BuildDate,
+		"CloudMode":     fmt.Sprintf("%t", c.MattermostCloudMode),
+		"DeveloperMode": fmt.Sprintf("%t", c.DeveloperMode),
+		"AllowHTTPApps": fmt.Sprintf("%t", c.AllowHTTPApps),
 	}
 }
