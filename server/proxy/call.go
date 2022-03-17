@@ -106,25 +106,25 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 	}
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return respondErr(err)
+		return respondErr(errors.Wrap(err, "failed to clean call path"))
 	}
 	creq.Path = cleanPath
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return respondErr(err)
+		return respondErr(errors.Wrap(err, "failed to get upstream"))
 	}
 
 	cc := creq.Context
 	cc = r.UpdateAppContext(cc)
 	creq.Context, err = p.expandContext(r, app, &cc, creq.Expand)
 	if err != nil {
-		return respondErr(err)
+		return respondErr(errors.Wrap(err, "failed to expand context"))
 	}
 
 	cresp, err := upstream.Call(r.Ctx(), up, app, creq)
 	if err != nil {
-		return cresp, err
+		return cresp, errors.Wrap(err, "upstream call failed")
 	}
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
