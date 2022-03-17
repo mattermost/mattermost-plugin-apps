@@ -11,6 +11,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -38,17 +39,14 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 	}
 }
 
-func (a *builtinApp) debugKVList(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	r.SetAppID(appID)
 	namespace := creq.GetValue(fNamespace, "")
 	encode := creq.BoolValue(fBase64)
-	app, err := a.proxy.GetInstalledApp(appID)
-	if err != nil {
-		return apps.NewErrorResponse(err)
-	}
 
 	keys := []string{}
-	err = a.appservices.KVList(app.BotUserID, namespace, func(key string) error {
+	err := a.appservices.KVList(r, appID, r.ActingUserID(), namespace, func(key string) error {
 		keys = append(keys, key)
 		return nil
 	})

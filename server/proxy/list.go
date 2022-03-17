@@ -10,18 +10,19 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
-	return p.store.Manifest.Get(appID)
+func (p *Proxy) GetManifest(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
+	return p.store.Manifest.Get(r, appID)
 }
 
-func (p *Proxy) GetInstalledApp(appID apps.AppID) (*apps.App, error) {
-	return p.store.App.Get(appID)
+func (p *Proxy) GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error) {
+	return p.store.App.Get(r, appID)
 }
 
-func (p *Proxy) GetInstalledApps() []apps.App {
-	installed := p.store.App.AsMap()
+func (p *Proxy) GetInstalledApps(r *incoming.Request) []apps.App {
+	installed := p.store.App.AsMap(r)
 	out := []apps.App{}
 	for _, app := range installed {
 		out = append(out, app)
@@ -35,11 +36,11 @@ func (p *Proxy) GetInstalledApps() []apps.App {
 	return out
 }
 
-func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
+func (p *Proxy) GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp {
 	conf := p.conf.Get()
 	out := []apps.ListedApp{}
 
-	for _, m := range p.store.Manifest.AsMap() {
+	for _, m := range p.store.Manifest.AsMap(r) {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
@@ -56,7 +57,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 			marketApp.IconURL = conf.StaticURL(m.AppID, m.Icon)
 		}
 
-		app, _ := p.store.App.Get(m.AppID)
+		app, _ := p.store.App.Get(r, m.AppID)
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled

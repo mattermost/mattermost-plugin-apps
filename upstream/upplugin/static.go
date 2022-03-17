@@ -4,6 +4,7 @@
 package upplugin
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"path"
@@ -24,13 +25,18 @@ func NewStaticUpstream(api PluginHTTPAPI) *StaticUpstream {
 	}
 }
 
-func (u *StaticUpstream) GetStatic(app apps.App, assetPath string) (io.ReadCloser, int, error) {
+func (u *StaticUpstream) GetStatic(ctx context.Context, app apps.App, assetPath string) (io.ReadCloser, int, error) {
 	if !app.Contains(apps.DeployPlugin) {
 		return nil, http.StatusInternalServerError, errors.New("app is not available as type plugin")
 	}
 	url := path.Join("/"+app.Manifest.Plugin.PluginID, apps.PluginAppPath, appspath.StaticFolder, assetPath)
 
-	resp, err := u.httpClient.Get(url) // nolint:bodyclose,gosec // Ignore gosec G107
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	resp, err := u.httpClient.Do(req) // nolint:bodyclose,gosec // Ignore gosec G107
 	if err != nil {
 		return nil, http.StatusBadGateway, errors.Wrapf(err, "failed to fetch: %s, error: %v", url, err)
 	}

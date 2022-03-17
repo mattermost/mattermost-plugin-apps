@@ -7,6 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 const (
@@ -38,10 +39,10 @@ func (a *builtinApp) appIDField(lookupType string, autocompletePos int, isRequir
 	}
 }
 
-func (a *builtinApp) lookupAppID(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) lookupAppID(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	filter, _ := creq.State.(string)
 	var options []apps.SelectOption
-	marketplaceApps := a.proxy.GetListedApps(creq.GetValue(fAppID, ""), true)
+	marketplaceApps := a.proxy.GetListedApps(r, creq.GetValue(fAppID, ""), true)
 	for _, app := range marketplaceApps {
 		includef := func() bool {
 			switch filter {

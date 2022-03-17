@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -40,21 +41,23 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error) {
+func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Binding, error) {
 	all := make(chan []apps.Binding)
 	defer close(all)
 
-	allApps := store.SortApps(p.store.App.AsMap())
+	allApps := store.SortApps(p.store.App.AsMap(r))
 	for i := range allApps {
 		app := allApps[i]
+		copy := r.Clone()
+		copy.SetAppID(app.AppID)
 
-		go func(app apps.App) {
-			bb, err := p.GetAppBindings(in, cc, app)
+		go func(r *incoming.Request, app apps.App) {
+			bb, err := p.GetAppBindings(r, cc, app)
 			if err != nil {
-				p.conf.Logger().WithError(err).Debugw("Binding errors")
+				r.Log.WithError(err).Debugw("Binding errors")
 			}
 			all <- bb
-		}(app)
+		}(copy, app)
 	}
 
 	ret := []apps.Binding{}
@@ -67,14 +70,15 @@ func (p *Proxy) GetBindings(in Incoming, cc apps.Context) ([]apps.Binding, error
 
 // GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
-func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]apps.Binding, error) {
-	var problems error
-	if !p.appIsEnabled(app) {
-		return nil, problems
+func (p *Proxy) GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error) {
+	if !p.appIsEnabled(r, app) {
+		return nil, nil
 	}
 	if len(app.GrantedLocations) == 0 {
-		return nil, problems
+		return nil, nil
 	}
+
+	var problems error
 
 	conf := p.conf.Get()
 	appID := app.AppID
@@ -84,7 +88,7 @@ func (p *Proxy) GetAppBindings(in Incoming, cc apps.Context, app apps.App) ([]ap
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
 
 	// no need to clean the context, Call will do.
-	resp := p.call(in, app, bindingsCall, &cc)
+	resp := p.call(r, app, bindingsCall, &cc)
 	switch resp.Type {
 	case apps.CallResponseTypeOK:
 		var bindings = []apps.Binding{}

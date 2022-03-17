@@ -4,21 +4,22 @@
 package upstream
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-func Notify(u Upstream, app apps.App, creq apps.CallRequest) error {
-	r, err := u.Roundtrip(app, creq, true)
+func Notify(ctx context.Context, u Upstream, app apps.App, creq apps.CallRequest) error {
+	r, err := u.Roundtrip(ctx, app, creq, true)
 	if r != nil {
 		r.Close()
 	}
 	return err
 }
 
-func Call(u Upstream, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
-	r, err := u.Roundtrip(app, creq, false)
+func Call(ctx context.Context, u Upstream, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
+	r, err := u.Roundtrip(ctx, app, creq, false)
 	if err != nil {
 		return apps.NewErrorResponse(err), err
 	}

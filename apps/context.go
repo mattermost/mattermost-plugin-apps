@@ -14,36 +14,30 @@ import (
 // To help reduce the need to go back to Mattermost REST API, ExpandedContext
 // can be included by adding a corresponding Expand attribute to the originating
 // Call.
+//
+// TODO: Refactor to an incoming Context and an outgoing Context.
 type Context struct {
-	// Subject is a subject of notification, if the call originated from a
-	// subscription.
-	Subject Subject `json:"subject,omitempty"`
-
-	// BotUserID of the App.
-	BotUserID string `json:"bot_user_id"`
-
 	// ActingUserID is primarily (or exclusively?) for calls originating from
 	// user submissions.
+	//
+	// ActingUserID is not send down to Apps.
 	ActingUserID string `json:"acting_user_id,omitempty"`
 
 	// UserID indicates the subject of the command. Once Mentions is
 	// implemented, it may be replaced by Mentions.
+	//
+	// UserID is not send down to Apps.
 	UserID string `json:"user_id,omitempty"`
 
-	// Top-level Mattermost site URL to use for REST API calls.
-	MattermostSiteURL string `json:"mattermost_site_url"`
-
-	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
-	AppPath string `json:"app_path"`
+	// Subject is a subject of notification, if the call originated from a
+	// subscription.
+	Subject Subject `json:"subject,omitempty"`
 
 	// Data accepted from the user agent
 	UserAgentContext
 
 	// More data as requested by call.Expand
 	ExpandedContext
-
-	// DeveloperMode is set if the apps plugin itself is running in Developer mode.
-	DeveloperMode bool `json:"developer_mode,omitempty"`
 }
 
 // UserAgentContext is a subset of fields from Context that are accepted from
@@ -53,9 +47,14 @@ type Context struct {
 type UserAgentContext struct {
 	// The optional IDs of Mattermost entities associated with the call: Team,
 	// Channel, Post, RootPost.
-	TeamID     string `json:"team_id"`
-	ChannelID  string `json:"channel_id,omitempty"`
-	PostID     string `json:"post_id,omitempty"`
+
+	// ChannelID is not send down to Apps.
+	ChannelID string `json:"channel_id,omitempty"`
+	// TeamID is not send down to Apps.
+	TeamID string `json:"team_id,omitempty"`
+	// PostID is not send down to Apps.
+	PostID string `json:"post_id,omitempty"`
+	// RootPostID is not send down to Apps.
 	RootPostID string `json:"root_post_id,omitempty"`
 
 	// AppID is used for handling CallRequest internally.
@@ -77,24 +76,37 @@ type UserAgentContext struct {
 // ExpandedContext contains authentication, and Mattermost entity data, as
 // indicated by the Expand attribute of the originating Call.
 type ExpandedContext struct {
-	//  BotAccessToken is always provided in expanded context
+	// Top-level Mattermost site URL to use for REST API calls.
+	MattermostSiteURL string `json:"mattermost_site_url"`
+
+	// DeveloperMode is set if the apps plugin itself is running in Developer mode.
+	DeveloperMode bool `json:"developer_mode,omitempty"`
+
+	// App's path on the Mattermost instance (appendable to MattermostSiteURL).
+	AppPath string `json:"app_path"`
+
+	// BotUserID of the App.
+	BotUserID string `json:"bot_user_id"`
+
+	// BotAccessToken is always provided in expanded context.
 	BotAccessToken string `json:"bot_access_token,omitempty"`
+	App            *App   `json:"app,omitempty"`
 
 	ActingUser            *model.User          `json:"acting_user,omitempty"`
 	ActingUserAccessToken string               `json:"acting_user_access_token,omitempty"`
-	App                   *App                 `json:"app,omitempty"`
+	Locale                string               `json:"locale,omitempty"`
 	Channel               *model.Channel       `json:"channel,omitempty"`
 	ChannelMember         *model.ChannelMember `json:"channel_member,omitempty"`
-	Locale                string               `json:"locale,omitempty"`
-	Mentioned             []*model.User        `json:"mentioned,omitempty"`
-	OAuth2                OAuth2Context        `json:"oauth2,omitempty"`
-	Post                  *model.Post          `json:"post,omitempty"`
-	RootPost              *model.Post          `json:"root_post,omitempty"`
 	Team                  *model.Team          `json:"team,omitempty"`
 	TeamMember            *model.TeamMember    `json:"team_member,omitempty"`
+	Post                  *model.Post          `json:"post,omitempty"`
+	RootPost              *model.Post          `json:"root_post,omitempty"`
 
 	// TODO replace User with mentions
-	User *model.User `json:"user,omitempty"`
+	User      *model.User   `json:"user,omitempty"`
+	Mentioned []*model.User `json:"mentioned,omitempty"`
+
+	OAuth2 OAuth2Context `json:"oauth2,omitempty"`
 }
 
 type OAuth2Context struct {

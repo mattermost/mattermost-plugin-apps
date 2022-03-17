@@ -12,31 +12,43 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestOAuth2StoreUser(t *testing.T) {
 	t.Run("small payload", func(t *testing.T) {
+		conf, api := config.NewTestService(nil)
+		defer api.AssertExpectations(t)
+
+		session := &model.Session{}
+		session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
+		api.On("GetSession", "some_session_id").Return(session, nil)
+
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		conf := config.NewTestConfigService(nil)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
+		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
-		defer server.Close()
-		Init(router, conf, proxy, appServices)
+		t.Cleanup(server.Close)
+		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
+		Init(rh, conf, proxy, appServices)
 
 		payload := []byte("some payload")
 		expectedPayload := payload
-		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
+		appServices.EXPECT().StoreOAuth2User(gomock.Any(), apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
-		u := server.URL + path.API + path.OAuth2User + "/some_app_id"
+		u := server.URL + path.API + path.OAuth2User
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)
@@ -56,23 +68,30 @@ func TestOAuth2StoreUser(t *testing.T) {
 	})
 
 	t.Run("payload too big", func(t *testing.T) {
+		conf, api := config.NewTestService(nil)
+		defer api.AssertExpectations(t)
+
+		session := &model.Session{}
+		session.AddProp(model.SessionPropMattermostAppID, "some_app_id")
+		api.On("GetSession", "some_session_id").Return(session, nil)
+
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		conf := config.NewTestConfigService(nil)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
+		sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
-		defer server.Close()
-		Init(router, conf, proxy, appServices)
+		t.Cleanup(server.Close)
+		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
+		Init(rh, conf, proxy, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)
 
-		appServices.EXPECT().StoreOAuth2User(apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
+		appServices.EXPECT().StoreOAuth2User(gomock.Any(), apps.AppID("some_app_id"), "some_user_id", expectedPayload).Return(nil)
 
-		u := server.URL + path.API + path.OAuth2User + "/some_app_id"
+		u := server.URL + path.API + path.OAuth2User
 		body := bytes.NewReader(payload)
 		req, err := http.NewRequest(http.MethodPut, u, body)
 		require.NoError(t, err)

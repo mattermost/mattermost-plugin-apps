@@ -4,58 +4,56 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initOAuth2Store(api *mux.Router) {
-	// TODO appid should come from OAuth2 user session, see
-	// https://mattermost.atlassian.net/browse/MM-34377
-	api.HandleFunc(path.OAuth2App+"/{appid}",
-		proxy.RequireUser(a.OAuth2StoreApp)).Methods("PUT", "POST")
-	api.HandleFunc(path.OAuth2User+"/{appid}",
-		proxy.RequireUser(a.OAuth2StoreUser)).Methods("PUT", "POST")
-	api.HandleFunc(path.OAuth2User+"/{appid}",
-		proxy.RequireUser(a.OAuth2GetUser)).Methods("GET")
+func (a *restapi) initOAuth2Store(h *httpin.Handler) {
+	h.HandleFunc(path.OAuth2App,
+		a.OAuth2StoreApp, httpin.RequireSysadmin, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
+	h.HandleFunc(path.OAuth2User,
+		a.OAuth2StoreUser, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPut, http.MethodPost)
+	h.HandleFunc(path.OAuth2User,
+		a.OAuth2GetUser, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 }
 
-func (a *restapi) OAuth2StoreApp(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) OAuth2StoreApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	oapp := apps.OAuth2App{}
 	err := json.NewDecoder(r.Body).Decode(&oapp)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2App(appIDVar(r), in.ActingUserID, oapp)
+	err = a.appServices.StoreOAuth2App(req, req.AppID(), req.ActingUserID(), oapp)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 }
 
-func (a *restapi) OAuth2StoreUser(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
+func (a *restapi) OAuth2StoreUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
 	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
-	err = a.appServices.StoreOAuth2User(appIDVar(r), in.ActingUserID, data)
+
+	err = a.appServices.StoreOAuth2User(req, req.AppID(), req.ActingUserID(), data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 }
 
-func (a *restapi) OAuth2GetUser(w http.ResponseWriter, r *http.Request, in proxy.Incoming) {
-	var v interface{}
-	err := a.appServices.GetOAuth2User(appIDVar(r), in.ActingUserID, &v)
+func (a *restapi) OAuth2GetUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+	data, err := a.appServices.GetOAuth2User(req, req.AppID(), req.ActingUserID())
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
-	_ = httputils.WriteJSON(w, v)
+
+	_, _ = w.Write(data)
 }

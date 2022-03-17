@@ -58,12 +58,6 @@ func (s TestService) WithMattermostAPI(mm *pluginapi.Client) *TestService {
 	return &s
 }
 
-func (s *TestService) Basic() (Config, *pluginapi.Client, utils.Logger) {
-	return s.Get(),
-		s.MattermostAPI(),
-		s.Logger()
-}
-
 func (s *TestService) Get() Config {
 	return s.config
 }

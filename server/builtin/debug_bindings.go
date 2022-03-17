@@ -7,7 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -31,22 +31,24 @@ func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Bindi
 	}
 }
 
-func (a *builtinApp) debugBindings(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugBindings(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	var bindings []apps.Binding
 	out := ""
 	if appID == "" {
 		var err error
-		bindings, err = a.proxy.GetBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context)
+		bindings, err = a.proxy.GetBindings(r, creq.Context)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
 	} else {
-		app, err := a.proxy.GetInstalledApp(appID)
+		r.SetAppID(appID)
+
+		app, err := a.proxy.GetInstalledApp(r, appID)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
-		bindings, err = a.proxy.GetAppBindings(proxy.NewIncomingFromContext(creq.Context), creq.Context, *app)
+		bindings, err = a.proxy.GetAppBindings(r, creq.Context, *app)
 		if err != nil {
 			out += "\n\n### PROBLEMS:\n" + err.Error()
 		}

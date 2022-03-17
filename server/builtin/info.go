@@ -7,6 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -29,8 +30,8 @@ func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
 	}
 }
 
-func (a *builtinApp) info(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
 	conf := a.conf.Get()
 	out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
