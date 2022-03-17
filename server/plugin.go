@@ -96,7 +96,7 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	conf := p.conf.Get()
 	infoBuf := &bytes.Buffer{}
-	infoTemplate.Execute(infoBuf, conf.InfoTemplateData())
+	_ = infoTemplate.Execute(infoBuf, conf.InfoTemplateData())
 	p.log.Debugf("OnActivate: %s", infoBuf.String())
 
 	p.httpOut = httpout.NewService(p.conf)

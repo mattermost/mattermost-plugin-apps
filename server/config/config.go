@@ -90,7 +90,7 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 var developerModeDomains = regexp.MustCompile("^" + strings.Join([]string{}, "|") + "$")
 
 // allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
-// forced on. 
+// forced on.
 var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
 	`.*\.test\.mattermost\.cloud`,
 	`community\.mattermost\.com`,
@@ -192,13 +192,13 @@ func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	}
 }
 
-func (c *Config) InfoTemplateData() map[string]string {
+func (conf *Config) InfoTemplateData() map[string]string {
 	return map[string]string{
-		"Version":       c.PluginManifest.Version,
-		"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", c.BuildHashShort, Repository, c.BuildHash),
-		"BuildDate":     c.BuildDate,
-		"CloudMode":     fmt.Sprintf("%t", c.MattermostCloudMode),
-		"DeveloperMode": fmt.Sprintf("%t", c.DeveloperMode),
-		"AllowHTTPApps": fmt.Sprintf("%t", c.AllowHTTPApps),
+		"Version":       conf.PluginManifest.Version,
+		"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, Repository, conf.BuildHash),
+		"BuildDate":     conf.BuildDate,
+		"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
+		"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
+		"AllowHTTPApps": fmt.Sprintf("%t", conf.AllowHTTPApps),
 	}
 }
