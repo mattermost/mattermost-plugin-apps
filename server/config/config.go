@@ -85,10 +85,6 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
-// developerModeDomains is the list of domains for which DevelopmentMode will be
-// forced on. Empty for the time being.
-var developerModeDomains = regexp.MustCompile("^" + strings.Join([]string{}, "|") + "$")
-
 // allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
 // forced on.
 var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
@@ -142,9 +138,6 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 	}
 
 	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-	if developerModeDomains.MatchString(u.Hostname()) {
-		conf.DeveloperMode = true
-	}
 
 	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
