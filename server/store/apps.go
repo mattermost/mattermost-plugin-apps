@@ -147,21 +147,14 @@ func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 	conf := s.conf.Get()
 	mm := s.conf.MattermostAPI()
-
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	app.Manifest.SchemaVersion = conf.PluginManifest.Version
-
 	data, err := json.Marshal(app)
 	if err != nil {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	if sha == prevSHA {
-		// no change in the data
-		return nil
-	}
-
 	_, err = mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err
@@ -196,10 +189,13 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 		return err
 	}
 
-	err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
-	if err != nil {
-		r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
+	if sha != prevSHA {
+		err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
+		if err != nil {
+			r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
+		}
 	}
+
 	return nil
 }
 
