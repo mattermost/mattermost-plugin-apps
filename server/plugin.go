@@ -26,6 +26,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -38,9 +39,10 @@ type Plugin struct {
 	conf config.Service
 	log  utils.Logger
 
-	store       *store.Service
-	appservices appservices.Service
-	proxy       proxy.Service
+	store          *store.Service
+	appservices    appservices.Service
+	proxy          proxy.Service
+	sessionService session.Service
 
 	httpIn  httpin.Service
 	httpOut httpout.Service
@@ -87,9 +89,8 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
-	conf, _, log := p.conf.Basic()
-	p.log = log
-	log = log.With("callback", "onactivate")
+	conf := p.conf.Get()
+	log := p.log.With("callback", "onactivate")
 
 	mode := "Self-managed"
 	if conf.MattermostCloudMode {
@@ -102,7 +103,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.httpOut = httpout.NewService(p.conf)
 
-	p.store, err = store.MakeService(p.conf, p.API, p.httpOut)
+	p.store, err = store.MakeService(p.log, p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
@@ -111,22 +112,25 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.appservices = appservices.NewService(p.conf, p.store)
 
+	p.sessionService = session.NewService(mm, p.store)
+
 	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut)
-	err = p.proxy.Configure(conf)
+
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
+	err = p.proxy.Configure(conf, p.log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy service")
 	}
 	p.proxy.AddBuiltinUpstream(
 		builtin.AppID,
-		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut),
+		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut, p.sessionService),
 	)
 	p.log.Debugf("Initialized the app proxy")
 
-	p.httpIn = httpin.NewService(mux.NewRouter(), p.conf, p.proxy, p.appservices,
+	p.httpIn = httpin.NewService(mm, mux.NewRouter(), p.conf, p.log, p.sessionService, p.proxy, p.appservices,
 		restapi.Init,
 		gateway.Init,
 	)
@@ -147,7 +151,7 @@ func (p *Plugin) OnActivate() (err error) {
 }
 
 func (p *Plugin) OnDeactivate() error {
-	conf, _, _ := p.conf.Basic()
+	conf := p.conf.Get()
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
 	if p.telemetryClient != nil {
@@ -192,7 +196,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *goht
 	p.httpIn.ServeHTTP(c, w, req)
 }
 
-func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
+func (p *Plugin) UserHasBeenCreated(_ *plugin.Context, user *model.User) {
 	err := p.proxy.Notify(
 		apps.Context{
 			UserID: user.Id,
@@ -206,35 +210,35 @@ func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.U
 	}
 }
 
-func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
 	}
 }
 
-func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
 }
 
-func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
 	}
 }
 
-func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
 	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")
 	}
 }
 
-func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model.Post) {
+func (p *Plugin) MessageHasBeenPosted(_ *plugin.Context, post *model.Post) {
 	shouldProcessMessage, err := p.conf.MattermostAPI().Post.ShouldProcessMessage(post, pluginapi.BotID(p.conf.Get().BotUserID))
 	if err != nil {
 		p.log.WithError(err).Errorf("Error while checking if the message should be processed")
@@ -261,7 +265,7 @@ func (p *Plugin) MessageHasBeenPosted(pluginContext *plugin.Context, post *model
 	}
 }
 
-func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+func (p *Plugin) ChannelHasBeenCreated(_ *plugin.Context, ch *model.Channel) {
 	err := p.proxy.Notify(
 		apps.Context{
 			UserAgentContext: apps.UserAgentContext{

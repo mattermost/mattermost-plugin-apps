@@ -41,6 +41,7 @@ var Manifest = apps.Manifest{
 	// Need ActAsBot to post back to the user.
 	RequestedPermissions: []apps.Permission{
 		apps.PermissionActAsBot,
+		apps.PermissionActAsUser,
 	},
 
 	// Add UI elements: a /-command, and a channel header button.
@@ -103,7 +104,7 @@ var SendForm = apps.Form{
 			Name: "message",
 		},
 	},
-	Submit: apps.NewCall("/send"),
+	Submit: apps.NewCall("/send").WithExpand(apps.Expand{ActingUserAccessToken: apps.ExpandAll}),
 }
 
 // main sets up the http server, with paths mapped for the static assets, the
@@ -138,7 +139,9 @@ func Send(w http.ResponseWriter, req *http.Request) {
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
-	appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
+
+	appclient.AsActingUser(c.Context).DM(c.Context.BotUserID, "Hello, bot!")
 
 	httputils.WriteJSON(w,
 		apps.NewTextResponse("Created a post in your DM channel."))

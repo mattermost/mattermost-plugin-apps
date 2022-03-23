@@ -46,7 +46,7 @@ func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Requ
 		c := apps.CallRequest{}
 		json.NewDecoder(req.Body).Decode(&c)
 
-		_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUserID, message)
+		_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
 		if err != nil {
 			json.NewEncoder(w).Encode(apps.NewErrorResponse(err))
 			return

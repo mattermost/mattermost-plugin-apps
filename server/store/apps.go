@@ -14,17 +14,19 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type AppStore interface {
 	config.Configurable
 
-	AsMap() map[apps.AppID]apps.App
-	Delete(apps.AppID) error
-	Get(appID apps.AppID) (*apps.App, error)
 	InitBuiltin(...apps.App)
-	Save(app apps.App) error
+
+	Get(r *incoming.Request, appID apps.AppID) (*apps.App, error)
+	AsMap(r *incoming.Request) map[apps.AppID]apps.App
+	Save(r *incoming.Request, app apps.App) error
+	Delete(r *incoming.Request, appID apps.AppID) error
 }
 
 // appStore combines installed and builtin Apps.  The installed Apps are stored
@@ -42,9 +44,9 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
-func makeAppStore(s *Service, conf config.Config) (*appStore, error) {
+func makeAppStore(s *Service, conf config.Config, log utils.Logger) (*appStore, error) {
 	appStore := &appStore{Service: s}
-	err := appStore.Configure(conf)
+	err := appStore.Configure(conf, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize App store")
 	}
@@ -63,19 +65,22 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf config.Config) error {
+func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 	newInstalled := map[apps.AppID]apps.App{}
+	mm := s.conf.MattermostAPI()
 
 	for id, key := range conf.InstalledApps {
-		log := s.conf.Logger().With("app_id", id)
+		log = log.With("app_id", id)
 
-		data, appErr := s.api.KVGet(config.KVInstalledAppPrefix + key)
-		if appErr != nil {
-			log.WithError(appErr).Errorw("Failed to load app")
+		var data []byte
+		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to load app")
 			continue
 		}
+
 		if len(data) == 0 {
-			err := utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
+			err = utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
 			log.WithError(err).Errorw("Failed to load app")
 			continue
 		}
@@ -94,7 +99,7 @@ func (s *appStore) Configure(conf config.Config) error {
 	return nil
 }
 
-func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
+func (s *appStore) Get(r *incoming.Request, appID apps.AppID) (*apps.App, error) {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -111,7 +116,7 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) AsMap() map[apps.AppID]apps.App {
+func (s *appStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.App {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -139,22 +144,17 @@ func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
 	return out
 }
 
-func (s *appStore) Save(app apps.App) error {
-	conf, mm, log := s.conf.Basic()
+func (s *appStore) Save(r *incoming.Request, app apps.App) error {
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	app.Manifest.SchemaVersion = conf.PluginManifest.Version
-
 	data, err := json.Marshal(app)
 	if err != nil {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	if sha == prevSHA {
-		// no change in the data
-		return nil
-	}
-
 	_, err = mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err
@@ -189,14 +189,17 @@ func (s *appStore) Save(app apps.App) error {
 		return err
 	}
 
-	err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
-	if err != nil {
-		log.WithError(err).Warnf("Failed to delete previous App KV value")
+	if sha != prevSHA {
+		err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
+		if err != nil {
+			r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
+		}
 	}
+
 	return nil
 }
 
-func (s *appStore) Delete(appID apps.AppID) error {
+func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
 	s.mutex.RLock()
 	installed := s.installed
 	s.mutex.RUnlock()
@@ -205,7 +208,8 @@ func (s *appStore) Delete(appID apps.AppID) error {
 		return utils.NewNotFoundError(appID)
 	}
 
-	conf, mm, _ := s.conf.Basic()
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	sha, ok := conf.InstalledApps[string(appID)]
 	if !ok {
 		return utils.ErrNotFound

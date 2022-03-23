@@ -12,16 +12,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) error {
-	app, err := p.store.App.Get(appID)
+func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req apps.HTTPCallRequest) error {
+	app, err := p.store.App.Get(r, appID)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(*app) {
+	if !p.appIsEnabled(r, *app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
@@ -64,17 +65,16 @@ func (p *Proxy) NotifyRemoteWebhook(appID apps.AppID, req apps.HTTPCallRequest) 
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, req.Path)
 
-	conf := p.conf.Get()
-	cc := contextForApp(*app, apps.Context{}, conf)
-	// Set acting user to bot.
-	cc.ActingUserID = app.BotUserID
-	cc.ActingUserAccessToken = app.BotAccessToken
-	cc, err = p.expandContext(Incoming{}, *app, &cc, call.Expand)
+	cc, err := p.expandContext(r, *app, nil, call.Expand)
 	if err != nil {
 		return err
 	}
 
-	return upstream.Notify(up, *app, apps.CallRequest{
+	// Set acting user to bot.
+	cc.ActingUserID = cc.BotUserID
+	cc.ActingUserAccessToken = cc.BotAccessToken
+
+	return upstream.Notify(r.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{

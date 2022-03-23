@@ -8,6 +8,7 @@ type ExpandLevel string
 const (
 	ExpandDefault ExpandLevel = ""
 	ExpandNone    ExpandLevel = "none"
+	ExpandID      ExpandLevel = "id"
 	ExpandAll     ExpandLevel = "all"
 	ExpandSummary ExpandLevel = "summary"
 )
@@ -39,10 +40,11 @@ type Expand struct {
 
 	// ActingUserAccessToken: all. Include user-level access token in the
 	// request. Requires act_as_user permission to have been granted to the app.
-	// This should be user's Mattermost OAuth2 token, but until it's implemented
-	// the MM session token is used.
-	// https://mattermost.atlassian.net/browse/MM-31117
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
+
+	// Locale expands the locale to use for this call. There is no difference
+	// between all or summary.
+	Locale ExpandLevel `json:"locale,omitempty"`
 
 	// Channel: all for model.Channel, summary for Id, DeleteAt, TeamId, Type,
 	// DisplayName, Name
@@ -52,14 +54,6 @@ type Expand struct {
 	// ActingUserID are set.
 	ChannelMember ExpandLevel `json:"channel_member,omitempty"`
 
-	// Not currently implemented
-	Mentioned ExpandLevel `json:"mentioned,omitempty"`
-
-	// Post, RootPost: all for model.Post, summary for Id, Type, UserId,
-	// ChannelId, RootId, Message.
-	Post     ExpandLevel `json:"post,omitempty"`
-	RootPost ExpandLevel `json:"root_post,omitempty"`
-
 	// Team: all for model.Team, summary for Id, DisplayName, Name, Description,
 	// Email, Type.
 	Team ExpandLevel `json:"team,omitempty"`
@@ -67,10 +61,18 @@ type Expand struct {
 	// TeamMember: expand model.TeamMember if TeamID and ActingUserID are set.
 	TeamMember ExpandLevel `json:"team_member,omitempty"`
 
+	// Post, RootPost: all for model.Post, summary for Id, Type, UserId,
+	// ChannelId, RootId, Message.
+	Post     ExpandLevel `json:"post,omitempty"`
+	RootPost ExpandLevel `json:"root_post,omitempty"`
+
 	// User: all for model.User, summary for BotDescription, DeleteAt, Email,
 	// FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,
-	// Username.
+	// Username. Default is summary.
 	User ExpandLevel `json:"user,omitempty"`
+
+	// Not currently implemented
+	Mentioned ExpandLevel `json:"mentioned,omitempty"`
 
 	// OAuth2App expands the remote (3rd party) OAuth2 app configuration data.
 	OAuth2App ExpandLevel `json:"oauth2_app,omitempty"`
@@ -78,8 +80,4 @@ type Expand struct {
 	// OAuth2User expands the remote (3rd party) OAuth2 user (custom object,
 	// previously stored with appclient.StoreOAuthUser).
 	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
-
-	// Locale expands the locale to use for this call. There is no difference
-	// between all or summary.
-	Locale ExpandLevel `json:"locale,omitempty"`
 }

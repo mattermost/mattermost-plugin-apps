@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
@@ -40,8 +41,9 @@ func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding
 	}
 }
 
-func (a *builtinApp) debugKVEdit(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	r.SetAppID(appID)
 	base64Key := creq.GetValue(fBase64Key, "")
 	namespace := creq.GetValue(fNamespace, "")
 	id := creq.GetValue(fID, "")
@@ -54,16 +56,13 @@ func (a *builtinApp) debugKVEdit(creq apps.CallRequest) apps.CallResponse {
 		}
 		key = string(decoded)
 	} else {
-		app, err := a.proxy.GetInstalledApp(appID)
-		if err != nil {
-			return apps.NewErrorResponse(err)
-		}
-		key, err = store.Hashkey(config.KVAppPrefix, app.BotUserID, namespace, id)
+		var err error
+		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
 	}
 
 	creq.State = key
-	return a.debugKVEditModalForm(creq)
+	return a.debugKVEditModalForm(r, creq)
 }

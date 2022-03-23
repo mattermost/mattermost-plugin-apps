@@ -4,6 +4,7 @@
 package upaws
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -22,8 +23,8 @@ import (
 const MaxLambdaName = 64
 
 // InvokeLambda runs a lambda function with specified name and returns a payload
-func (c *client) InvokeLambda(name, invocationType string, payload []byte) ([]byte, error) {
-	result, err := c.lambda.Invoke(&lambda.InvokeInput{
+func (c *client) InvokeLambda(ctx context.Context, name, invocationType string, payload []byte) ([]byte, error) {
+	result, err := c.lambda.InvokeWithContext(ctx, &lambda.InvokeInput{
 		FunctionName:   aws.String(name),
 		InvocationType: aws.String(invocationType),
 		Payload:        payload,

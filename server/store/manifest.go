@@ -4,6 +4,7 @@
 package store
 
 import (
+	"context"
 	"crypto/sha1" // nolint:gosec
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -24,12 +26,11 @@ import (
 type ManifestStore interface {
 	config.Configurable
 
-	AsMap() map[apps.AppID]apps.Manifest
-	DeleteLocal(apps.AppID) error
-	Get(apps.AppID) (*apps.Manifest, error)
-	GetFromS3(apps.AppID, apps.AppVersion) (*apps.Manifest, error)
-	InitGlobal(httpout.Service) error
-	StoreLocal(apps.Manifest) error
+	StoreLocal(r *incoming.Request, m apps.Manifest) error
+	Get(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
+	GetFromS3(r *incoming.Request, appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
+	AsMap(r *incoming.Request) map[apps.AppID]apps.Manifest
+	DeleteLocal(r *incoming.Request, appID apps.AppID) error
 }
 
 // manifestStore combines global (aka marketplace) manifests, and locally
@@ -52,9 +53,9 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
+func makeManifestStore(s *Service, conf config.Config, log utils.Logger) (*manifestStore, error) {
 	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion,
-		s.conf.Logger().With("purpose", "Manifest store"))
+		log.With("purpose", "Manifest store"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -64,12 +65,12 @@ func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}
-	err = mstore.Configure(conf)
+	err = mstore.Configure(conf, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure")
 	}
 	if conf.MattermostCloudMode {
-		err = mstore.InitGlobal(s.httpOut)
+		err = mstore.InitGlobal(s.httpOut, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to initialize the global manifest list from marketplace")
 		}
@@ -79,8 +80,9 @@ func makeManifestStore(s *Service, conf config.Config) (*manifestStore, error) {
 
 // InitGlobal reads in the list of known (i.e. marketplace listed) app
 // manifests.
-func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
-	conf, mm, log := s.conf.Basic()
+func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) error {
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 
 	bundlePath, err := mm.System.GetBundlePath()
 	if err != nil {
@@ -148,19 +150,22 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service) error {
 	return nil
 }
 
-func (s *manifestStore) Configure(conf config.Config) error {
+func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
 	updatedLocal := map[apps.AppID]apps.Manifest{}
+	mm := s.conf.MattermostAPI()
 
 	for id, key := range conf.LocalManifests {
-		log := s.conf.Logger().With("app_id", id)
+		log = log.With("app_id", id)
 
-		data, appErr := s.api.KVGet(config.KVLocalManifestPrefix + key)
-		if appErr != nil {
-			log.WithError(appErr).Errorw("Failed to get local manifest from KV")
+		var data []byte
+		err := mm.KV.Get(config.KVLocalManifestPrefix+key, &data)
+		if err != nil {
+			log.WithError(err).Errorw("Failed to get local manifest from KV")
 			continue
 		}
+
 		if len(data) == 0 {
-			err := utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
+			err = utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
 			log.WithError(err).Errorw("Failed to load local manifest")
 			continue
 		}
@@ -179,7 +184,7 @@ func (s *manifestStore) Configure(conf config.Config) error {
 	return nil
 }
 
-func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
+func (s *manifestStore) Get(_ *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
@@ -196,7 +201,7 @@ func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	return nil, errors.Wrap(utils.ErrNotFound, string(appID))
 }
 
-func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
+func (s *manifestStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.Manifest {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
@@ -212,21 +217,17 @@ func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 	return out
 }
 
-func (s *manifestStore) StoreLocal(m apps.Manifest) error {
-	conf, mm, log := s.conf.Basic()
+func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
 	m.SchemaVersion = conf.PluginManifest.Version
-
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	if sha == prevSHA {
-		return nil
-	}
-
 	_, err = mm.KV.Set(config.KVLocalManifestPrefix+sha, m)
 	if err != nil {
 		return err
@@ -258,15 +259,18 @@ func (s *manifestStore) StoreLocal(m apps.Manifest) error {
 		return err
 	}
 
-	err = mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
-	if err != nil {
-		log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
+	if sha != prevSHA {
+		err = mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
+		if err != nil {
+			r.Log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
+		}
 	}
 	return nil
 }
 
-func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
-	conf, mm, _ := s.conf.Basic()
+func (s *manifestStore) DeleteLocal(r *incoming.Request, appID apps.AppID) error {
+	conf := s.conf.Get()
+	mm := s.conf.MattermostAPI()
 	sha := conf.LocalManifests[string(appID)]
 
 	err := mm.KV.Delete(config.KVLocalManifestPrefix + sha)
@@ -301,7 +305,7 @@ func (s *manifestStore) DeleteLocal(appID apps.AppID) error {
 // getFromS3 returns manifest data for an app from the S3
 func (s *manifestStore) getDataFromS3(appID apps.AppID, version apps.AppVersion) ([]byte, error) {
 	name := upaws.S3ManifestName(appID, version)
-	data, err := s.aws.GetS3(s.s3AssetBucket, name)
+	data, err := s.aws.GetS3(context.Background(), s.s3AssetBucket, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download manifest %s", name)
 	}
@@ -310,7 +314,7 @@ func (s *manifestStore) getDataFromS3(appID apps.AppID, version apps.AppVersion)
 }
 
 // GetFromS3 returns the manifest for an app from the S3
-func (s *manifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
+func (s *manifestStore) GetFromS3(_ *incoming.Request, appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
 	data, err := s.getDataFromS3(appID, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get manifest data")

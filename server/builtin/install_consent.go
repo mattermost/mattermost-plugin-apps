@@ -10,12 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse {
-	loc := i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
-	m, err := a.stateAsManifest(creq)
+func (a *builtinApp) installConsentForm(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	loc := a.newLocalizer(creq)
+	m, err := a.stateAsManifest(r, creq)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 	}
@@ -23,11 +23,11 @@ func (a *builtinApp) installConsentForm(creq apps.CallRequest) apps.CallResponse
 	return apps.NewFormResponse(a.newInstallConsentForm(*m, creq, "", loc))
 }
 
-func (a *builtinApp) installConsent(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) installConsent(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	deployType := apps.DeployType(creq.GetValue(fDeployType, ""))
 	secret := creq.GetValue(fSecret, "")
 	consent := creq.BoolValue(fConsent)
-	m, err := a.stateAsManifest(creq)
+	m, err := a.stateAsManifest(r, creq)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to find a valid manifest in State"))
 	}
@@ -36,7 +36,7 @@ func (a *builtinApp) installConsent(creq apps.CallRequest) apps.CallResponse {
 	}
 
 	_, out, err := a.proxy.InstallApp(
-		proxy.NewIncomingFromContext(creq.Context),
+		r,
 		creq.Context, m.AppID, deployType, true, secret)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to install App"))
@@ -196,12 +196,13 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	}
 }
 
-func (a *builtinApp) stateAsManifest(creq apps.CallRequest) (*apps.Manifest, error) {
+func (a *builtinApp) stateAsManifest(r *incoming.Request, creq apps.CallRequest) (*apps.Manifest, error) {
 	id, ok := creq.State.(string)
 	if !ok {
 		return nil, errors.New("no app ID in State, don't know what to install")
 	}
 	appID := apps.AppID(id)
+	r.SetAppID(appID)
 
-	return a.proxy.GetManifest(appID)
+	return a.proxy.GetManifest(r, appID)
 }

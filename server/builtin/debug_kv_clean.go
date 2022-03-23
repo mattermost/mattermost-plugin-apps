@@ -9,6 +9,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -36,19 +37,17 @@ func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Bindin
 	}
 }
 
-func (a *builtinApp) debugKVClean(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVClean(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	r.SetAppID(appID)
 	namespace := creq.GetValue(fNamespace, "")
-	app, err := a.proxy.GetInstalledApp(appID)
-	if err != nil {
-		return apps.NewErrorResponse(err)
-	}
 
 	n := 0
-	err = a.appservices.KVList(app.BotUserID, namespace, func(key string) error {
-		n++
-		return a.conf.MattermostAPI().KV.Delete(key)
-	})
+	err := a.appservices.KVList(r, appID, creq.Context.ActingUser.Id, namespace,
+		func(key string) error {
+			n++
+			return a.conf.MattermostAPI().KV.Delete(key)
+		})
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

@@ -10,10 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *builtinApp) debugKVEditModal(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVEditModal(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	action := creq.GetValue(fAction, "")
 	newValue := creq.GetValue(fNewValue, "")
 	key, _ := creq.State.(string)
@@ -59,7 +60,7 @@ func (a *builtinApp) debugKVEditModal(creq apps.CallRequest) apps.CallResponse {
 	}
 }
 
-func (a *builtinApp) debugKVEditModalForm(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	key, _ := creq.State.(string)
 	if key == "" {
 		return apps.NewErrorResponse(utils.NewInvalidError(`expected "key" in call State`))

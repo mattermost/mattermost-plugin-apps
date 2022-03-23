@@ -18,10 +18,12 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingTestData struct {
@@ -283,7 +285,6 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			testData := []bindingTestData{{
 				app:      app1,
@@ -291,7 +292,9 @@ func TestGetBindingsGrantedLocations(t *testing.T) {
 			}}
 
 			proxy := newTestProxyForBindings(t, testData, ctrl)
-			out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+			r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+			r.Log = utils.NewTestLogger()
+			out, err := proxy.GetBindings(r, apps.Context{})
 			require.NoError(t, err)
 			require.Len(t, out, tc.numBindings)
 		})
@@ -440,10 +443,11 @@ func TestGetBindingsCommands(t *testing.T) {
 	t.Run("Bindings from two enabled apps", func(t *testing.T) {
 		testData := []bindingTestData{app1TestData, app2TestData}
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		proxy := newTestProxyForBindings(t, testData, ctrl)
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+		r.Log = utils.NewTestLogger()
 
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 
 		EqualBindings(t, expectedCombined, out)
@@ -455,10 +459,12 @@ func TestGetBindingsCommands(t *testing.T) {
 		testData := []bindingTestData{app1TestData, app2TestData}
 
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		proxy := newTestProxyForBindings(t, testData, ctrl)
 
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		proxy := newTestProxyForBindings(t, testData, ctrl)
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+		r.Log = utils.NewTestLogger()
+
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expectedApp2Bindings, out)
 	})
@@ -468,10 +474,12 @@ func TestGetBindingsCommands(t *testing.T) {
 		d.app.Disabled = true
 		testData := []bindingTestData{app1TestData, d}
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		proxy := newTestProxyForBindings(t, testData, ctrl)
-		out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+		r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+		r.Log = utils.NewTestLogger()
+
+		out, err := proxy.GetBindings(r, apps.Context{})
 		require.NoError(t, err)
 		EqualBindings(t, expectedApp1Bindings, out)
 	})
@@ -563,11 +571,11 @@ func TestDuplicateCommand(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-
-	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+	r.Log = utils.NewTestLogger()
+	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -646,11 +654,11 @@ func TestInvalidCommand(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	proxy := newTestProxyForBindings(t, testData, ctrl)
-
-	out, err := proxy.GetBindings(Incoming{}, apps.Context{})
+	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
+	r.Log = utils.NewTestLogger()
+	out, err := proxy.GetBindings(r, apps.Context{})
 	require.NoError(t, err)
 	EqualBindings(t, expected, out)
 }
@@ -668,7 +676,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		},
 	}).WithMattermostAPI(mm)
 
-	s, err := store.MakeService(confService, nil, nil)
+	s, err := store.MakeService(utils.NewTestLogger(), confService, nil)
 	require.NoError(tb, err)
 	appStore := mock_store.NewMockAppStore(ctrl)
 	s.App = appStore
@@ -687,11 +695,11 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		reader := io.NopCloser(bytes.NewReader(bb))
 
 		up := mock_upstream.NewMockUpstream(ctrl)
-		up.EXPECT().Roundtrip(test.app, gomock.Any(), gomock.Any()).Return(reader, nil)
+		up.EXPECT().Roundtrip(gomock.Any(), test.app, gomock.Any(), gomock.Any()).Return(reader, nil)
 		upstreams[test.app.Manifest.AppID] = up
 	}
 
-	appStore.EXPECT().AsMap().Return(appList)
+	appStore.EXPECT().AsMap(gomock.Any()).Return(appList)
 
 	p := &Proxy{
 		store:            s,

@@ -4,18 +4,17 @@
 package builtin
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Binding {
-	idF := a.debugIDField(loc)
-	idF.IsRequired = true
-
 	return apps.Binding{
 		Location: "create",
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -41,36 +40,31 @@ func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Bindi
 	}
 }
 
-func (a *builtinApp) debugKVCreate(creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	r.SetAppID(appID)
 	namespace := creq.GetValue(fNamespace, "")
 	id := creq.GetValue(fID, "")
 
-	app, err := a.proxy.GetInstalledApp(appID)
-	if err != nil {
-		return apps.NewErrorResponse(err)
-	}
-
-	buf := []byte{}
-	err = a.appservices.KVGet(app.BotUserID, namespace, id, &buf)
+	data, err := a.appservices.KVGet(r, appID, creq.Context.ActingUser.Id, namespace, id)
 	if err != nil && errors.Cause(err) != utils.ErrNotFound {
 		return apps.NewErrorResponse(err)
 	}
-	if len(buf) > 0 {
-		return apps.NewErrorResponse(errors.New("Key already exists, please use `/apps debug kv edit"))
+	if len(data) > 0 {
+		return apps.NewErrorResponse(errors.New("key already exists, please use `/apps debug kv edit"))
 	}
 
-	_, err = a.appservices.KVSet(app.BotUserID, namespace, id, []byte("{}"))
+	_, err = a.appservices.KVSet(r, appID, creq.Context.ActingUser.Id, namespace, id, []byte("{}"))
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
 
 	key := ""
-	key, err = store.Hashkey(config.KVAppPrefix, app.BotUserID, namespace, id)
+	key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
 
 	creq.State = key
-	return a.debugKVEditModalForm(creq)
+	return a.debugKVEditModalForm(r, creq)
 }

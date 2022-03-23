@@ -16,14 +16,23 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		conf := config.NewTestConfigService(nil)
+		sessionService := mock_session.NewMockService(ctrl)
+
 		a := &restapi{
-			conf: config.NewTestConfigService(nil),
+			conf: conf,
 		}
 
 		userID := "some_user_id"
@@ -31,15 +40,19 @@ func TestCleanUserAgentContext(t *testing.T) {
 			UserAgentContext: apps.UserAgentContext{},
 		}
 
-		_, err := a.cleanUserAgentContext(userID, cc)
+		_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 		require.Error(t, err)
 	})
 
 	t.Run("post id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the post's channel", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
+
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -58,22 +71,22 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+			api.On("GetPost", "some_post_id").Return(&model.Post{
 				Id:        postID,
 				ChannelId: channelID,
 			}, nil)
 
-			testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+			api.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
 				ChannelId: channelID,
 				UserId:    userID,
 			}, nil)
 
-			testAPI.On("GetChannel", channelID).Return(&model.Channel{
+			api.On("GetChannel", channelID).Return(&model.Channel{
 				Id:     channelID,
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -90,9 +103,12 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
+
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -107,25 +123,28 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+			api.On("GetPost", "some_post_id").Return(&model.Post{
 				Id:        postID,
 				ChannelId: channelID,
 			}, nil)
 
-			testAPI.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
+			api.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
 
 	t.Run("channel id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the channel", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
+
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -139,17 +158,17 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+			api.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
 				ChannelId: channelID,
 				UserId:    userID,
 			}, nil)
 
-			testAPI.On("GetChannel", channelID).Return(&model.Channel{
+			api.On("GetChannel", channelID).Return(&model.Channel{
 				Id:     channelID,
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -162,9 +181,11 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the channel", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -177,20 +198,23 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
+			api.On("GetChannelMember", channelID, userID).Return(nil, &model.AppError{
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
 
 	t.Run("team id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the team", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
+
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -202,12 +226,12 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetTeamMember", teamID, userID).Return(&model.TeamMember{
+			api.On("GetTeamMember", teamID, userID).Return(&model.TeamMember{
 				TeamId: teamID,
 				UserId: userID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(userID, cc)
+			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -219,9 +243,12 @@ func TestCleanUserAgentContext(t *testing.T) {
 		})
 
 		t.Run("user is not a member of the team", func(t *testing.T) {
-			testConfig, testAPI := config.NewTestService(nil)
+			conf, api := config.NewTestService(nil)
+			ctrl := gomock.NewController(t)
+			sessionService := mock_session.NewMockService(ctrl)
+
 			a := &restapi{
-				conf: testConfig,
+				conf: conf,
 			}
 
 			userID := "some_user_id"
@@ -233,20 +260,22 @@ func TestCleanUserAgentContext(t *testing.T) {
 				},
 			}
 
-			testAPI.On("GetTeamMember", teamID, userID).Return(nil, &model.AppError{
+			api.On("GetTeamMember", teamID, userID).Return(nil, &model.AppError{
 				Message: "user is not a member of the specified team",
 			})
 
-			_, err := a.cleanUserAgentContext(userID, cc)
+			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 			require.Error(t, err)
 		})
 	})
 }
 
 func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
-	testConfig, testAPI := config.NewTestService(nil)
+	conf, api := config.NewTestService(nil)
+	ctrl := gomock.NewController(t)
+	sessionService := mock_session.NewMockService(ctrl)
 	a := &restapi{
-		conf: testConfig,
+		conf: conf,
 	}
 
 	userID := "some_user_id"
@@ -260,13 +289,13 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 			ChannelID: "ignored_channel_id",
 			TeamID:    "ignored_team_id",
 		},
-		Subject:           "ignored_subject",
-		BotUserID:         "ignored_bot_id",
-		ActingUserID:      "ignored_acting_user_id",
-		UserID:            "ignored_user_id",
-		MattermostSiteURL: "ignored_site_url",
-		AppPath:           "ignored_app_path",
+		Subject:      "ignored_subject",
+		ActingUserID: "ignored_acting_user_id",
+		UserID:       "ignored_user_id",
 		ExpandedContext: apps.ExpandedContext{
+			MattermostSiteURL:     "ignored_site_url",
+			AppPath:               "ignored_app_path",
+			BotUserID:             "ignored_bot_id",
 			BotAccessToken:        "ignored_bot_access_token",
 			ActingUser:            &model.User{},
 			ActingUserAccessToken: "ignored_user_access_token",
@@ -281,22 +310,22 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 		},
 	}
 
-	testAPI.On("GetPost", "some_post_id").Return(&model.Post{
+	api.On("GetPost", "some_post_id").Return(&model.Post{
 		Id:        postID,
 		ChannelId: channelID,
 	}, nil)
 
-	testAPI.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
+	api.On("GetChannelMember", channelID, userID).Return(&model.ChannelMember{
 		ChannelId: channelID,
 		UserId:    userID,
 	}, nil)
 
-	testAPI.On("GetChannel", channelID).Return(&model.Channel{
+	api.On("GetChannel", channelID).Return(&model.Channel{
 		Id:     channelID,
 		TeamId: teamID,
 	}, nil)
 
-	cc, err := a.cleanUserAgentContext(userID, cc)
+	cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
 	require.NoError(t, err)
 	expected := apps.Context{
 		ActingUserID: "some_user_id",
@@ -310,12 +339,17 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 }
 
 func TestHandleCallInvalidContext(t *testing.T) {
+	conf, api := config.NewTestService(nil)
+
 	ctrl := gomock.NewController(t)
-	p := mock_proxy.NewMockService(ctrl)
-	testConfig, testAPI := config.NewTestService(nil)
+
+	proxy := mock_proxy.NewMockService(ctrl)
+	appServices := mock_appservices.NewMockService(ctrl)
+	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(router, testConfig, p, nil)
+	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
+	Init(rh, conf, proxy, appServices)
 
 	call := apps.CallRequest{
 		Context: apps.Context{
@@ -325,7 +359,7 @@ func TestHandleCallInvalidContext(t *testing.T) {
 		},
 	}
 
-	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(nil, &model.AppError{
+	api.On("GetTeamMember", "some_team_id", "some_user_id").Return(nil, &model.AppError{
 		Message: "user is not a member of the specified team",
 	})
 
@@ -334,13 +368,12 @@ func TestHandleCallInvalidContext(t *testing.T) {
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
-	req, err := http.NewRequest("POST", u, b)
+	req, err := http.NewRequest(http.MethodPost, u, b)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()
@@ -354,12 +387,16 @@ func TestHandleCallInvalidContext(t *testing.T) {
 }
 
 func TestHandleCallValidContext(t *testing.T) {
+	conf, api := config.NewTestService(nil)
+
 	ctrl := gomock.NewController(t)
 	p := mock_proxy.NewMockService(ctrl)
-	testConfig, testAPI := config.NewTestService(nil)
+	appServices := mock_appservices.NewMockService(ctrl)
+	sessionService := mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
-	Init(router, testConfig, p, nil)
+	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
+	Init(rh, conf, p, appServices)
 
 	creq := apps.CallRequest{
 		Call: *apps.NewCall("/path/submit"),
@@ -371,7 +408,7 @@ func TestHandleCallValidContext(t *testing.T) {
 		},
 	}
 
-	testAPI.On("GetTeamMember", "some_team_id", "some_user_id").Return(&model.TeamMember{
+	api.On("GetTeamMember", "some_team_id", "some_user_id").Return(&model.TeamMember{
 		TeamId: "some_team_id",
 		UserId: "some_user_id",
 	}, nil)
@@ -396,13 +433,12 @@ func TestHandleCallValidContext(t *testing.T) {
 	require.NoError(t, err)
 
 	u := "/api/v1/call"
-	req, err := http.NewRequest("POST", u, b)
+	req, err := http.NewRequest(http.MethodPost, u, b)
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
 
 	req.Header.Add(config.MattermostUserIDHeader, "some_user_id")
-	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	router.ServeHTTP(recorder, req)
 
 	resp := recorder.Result()
