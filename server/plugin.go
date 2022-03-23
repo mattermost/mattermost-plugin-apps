@@ -4,8 +4,10 @@
 package main
 
 import (
+	"bytes"
 	gohttp "net/http"
 	"path/filepath"
+	"text/template"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -57,6 +59,9 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 	}
 }
 
+var infoTemplate = template.Must(template.New("info").Parse(
+	"Version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}, Allow install over HTTP: {{.AllowHTTPApps}}"))
+
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	p.log = utils.NewPluginLogger(mm)
@@ -90,16 +95,9 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	conf := p.conf.Get()
-	log := p.log.With("callback", "onactivate")
-
-	mode := "Self-managed"
-	if conf.MattermostCloudMode {
-		mode = "Mattermost Cloud"
-	}
-	if conf.DeveloperMode {
-		mode += ", Developer Mode"
-	}
-	log = log.With("mode", mode)
+	infoBuf := &bytes.Buffer{}
+	_ = infoTemplate.Execute(infoBuf, conf.InfoTemplateData())
+	p.log.Debugf("OnActivate: %s", infoBuf.String())
 
 	p.httpOut = httpout.NewService(p.conf)
 
@@ -138,12 +136,12 @@ func (p *Plugin) OnActivate() (err error) {
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			log.WithError(err).Errorf("Failed to synchronize apps metadata")
+			p.log.WithError(err).Errorf("Failed to synchronize apps metadata")
 		} else {
-			log.Debugf("Synchronized the installed apps metadata")
+			p.log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
-	log.Infof("Plugin activated")
+	p.log.Infof("Plugin activated")
 
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 

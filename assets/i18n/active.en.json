@@ -52,7 +52,7 @@
   "command.enable.label": "enable",
   "command.info.description": "Display Apps plugin info",
   "command.info.label": "info",
-  "command.info.submit": "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
+  "command.info.submit": "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}, Allow HTTP Apps: {{.AllowHTTPApps}}",
   "command.install.cloud.description": "Install an App from the Marketplace",
   "command.install.cloud.hint": "[ app ID ]",
   "command.install.cloud.label": "install",

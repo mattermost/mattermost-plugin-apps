@@ -1,10 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -56,14 +58,14 @@ type Config struct {
 	BuildHashShort string
 
 	DeveloperMode       bool
+	AllowHTTPApps       bool
 	MattermostCloudMode bool
 
-	BotUserID              string
-	MattermostSiteHostname string
-	MattermostSiteURL      string
-	MattermostLocalURL     string
-	PluginURL              string
-	PluginURLPath          string
+	BotUserID          string
+	MattermostSiteURL  string
+	MattermostLocalURL string
+	PluginURL          string
+	PluginURLPath      string
 
 	// Maximum size of incoming remote webhook messages
 	MaxWebhookSize int64
@@ -83,12 +85,20 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
+// allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
+// forced on.
+var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
+	`.*\.test\.mattermost\.cloud`,
+	`community\.mattermost\.com`,
+	`community-[a-z]+\.mattermost\.com`,
+}, "|") + "$")
+
 func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
 	}
-	mattermostURL, err := url.Parse(*mattermostSiteURL)
+	u, err := url.Parse(*mattermostSiteURL)
 	if err != nil {
 		return err
 	}
@@ -96,7 +106,7 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 	var localURL string
 	if mmconf.ServiceSettings.ConnectionSecurity != nil && *mmconf.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
 		// If there is no reverse proxy use the server URL
-		localURL = *mattermostSiteURL
+		localURL = u.String()
 	} else {
 		// Avoid the reverse proxy by using the local port
 		listenAddress := mmconf.ServiceSettings.ListenAddress
@@ -112,16 +122,15 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 			host = "127.0.0.1"
 		}
 
-		localURL = "http://" + host + ":" + port + mattermostURL.Path
+		localURL = "http://" + host + ":" + port + u.Path
 	}
 
 	conf.StoredConfig = stored
 
-	conf.MattermostSiteURL = *mattermostSiteURL
-	conf.MattermostSiteHostname = mattermostURL.Hostname()
+	conf.MattermostSiteURL = u.String()
 	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
-	conf.PluginURL = strings.TrimRight(*mattermostSiteURL, "/") + conf.PluginURLPath
+	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
 
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {
@@ -129,6 +138,11 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 	}
 
 	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
+
+	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
+	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
+		conf.AllowHTTPApps = true
+	}
 
 	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
 	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
@@ -168,5 +182,16 @@ func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *m
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"version": conf.PluginManifest.Version,
+	}
+}
+
+func (conf *Config) InfoTemplateData() map[string]string {
+	return map[string]string{
+		"Version":       conf.PluginManifest.Version,
+		"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, Repository, conf.BuildHash),
+		"BuildDate":     conf.BuildDate,
+		"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
+		"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
+		"AllowHTTPApps": fmt.Sprintf("%t", conf.AllowHTTPApps),
 	}
 }
