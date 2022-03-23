@@ -4,12 +4,9 @@
 package builtin
 
 import (
-	"fmt"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
@@ -39,15 +36,9 @@ func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallR
 	out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.info.submit",
-			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}",
+			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}, Allow HTTP Apps: {{.AllowHTTPApps}}",
 		},
-		TemplateData: map[string]string{
-			"Version":       conf.PluginManifest.Version,
-			"URL":           fmt.Sprintf("[%s](https://github.com/mattermost/%s/commit/%s)", conf.BuildHashShort, config.Repository, conf.BuildHash),
-			"BuildDate":     conf.BuildDate,
-			"CloudMode":     fmt.Sprintf("%t", conf.MattermostCloudMode),
-			"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
-		},
+		TemplateData: conf.InfoTemplateData(),
 	}) + "\n"
 	return apps.NewTextResponse(out)
 }
