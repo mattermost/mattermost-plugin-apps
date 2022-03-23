@@ -223,16 +223,11 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
 	m.SchemaVersion = conf.PluginManifest.Version
-
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	if sha == prevSHA {
-		return nil
-	}
-
 	_, err = mm.KV.Set(config.KVLocalManifestPrefix+sha, m)
 	if err != nil {
 		return err
@@ -264,9 +259,11 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 		return err
 	}
 
-	err = mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
-	if err != nil {
-		r.Log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
+	if sha != prevSHA {
+		err = mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
+		if err != nil {
+			r.Log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
+		}
 	}
 	return nil
 }
