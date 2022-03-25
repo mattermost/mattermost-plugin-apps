@@ -4,10 +4,13 @@
 package builtin
 
 import (
+	"fmt"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -40,5 +43,10 @@ func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallR
 		},
 		TemplateData: conf.InfoTemplateData(),
 	}) + "\n"
+
+	if conf.DeveloperMode && conf.AWSAccessKey != "" {
+		out += fmt.Sprintf("AWS config: region: `%s`, bucket: `%s`, access: `%s`, secret: `%s`",
+			conf.AWSRegion, conf.AWSS3Bucket, utils.LastN(conf.AWSAccessKey, 4), utils.LastN(conf.AWSSecretKey, 4))
+	}
 	return apps.NewTextResponse(out)
 }
