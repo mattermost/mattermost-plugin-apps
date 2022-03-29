@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattermost/mattermost-plugin-api v0.0.22-0.20211210183909-beb4761e4bd3
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20220315170027-7710a2fe3741
-	github.com/nicksnyder/go-i18n/v2 v2.1.2
+	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/openfaas/faas-cli v0.0.0-20210705110531-a230119be00f
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.3.0
@@ -28,7 +28,6 @@ require (
 	cloud.google.com/go v0.99.0 // indirect
 	cloud.google.com/go/storage v1.18.2 // indirect
 	code.sajari.com/docconv v1.2.0 // indirect
-	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/JalfResi/justext v0.0.0-20170829062021-c0282dea7198 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/squirrel v1.5.2 // indirect

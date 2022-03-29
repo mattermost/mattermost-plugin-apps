@@ -92,7 +92,7 @@ jobs:
       - run:
           name: Checking if extracted i18n files are up to date
           command: |
-            go install github.com/nicksnyder/go-i18n/v2/goi18n@v2.1.2
+            go install github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.0
             make i18n-extract-server
             git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
 
