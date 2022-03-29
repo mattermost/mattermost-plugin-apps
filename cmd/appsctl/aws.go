@@ -160,7 +160,7 @@ func helloServerless() apps.App {
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-serverless",
-			Version: "0.8.0",
+			Version: "1.0.0",
 			Deploy: apps.Deploy{
 				AWSLambda: &apps.AWSLambda{
 					Functions: []apps.AWSLambdaFunction{
