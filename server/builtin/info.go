@@ -4,8 +4,6 @@
 package builtin
 
 import (
-	"fmt"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -39,14 +37,24 @@ func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallR
 	out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.info.submit",
-			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}, Cloud Mode: {{.CloudMode}}, Developer Mode: {{.DeveloperMode}}, Allow HTTP Apps: {{.AllowHTTPApps}}",
+			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}\n\n- Mattermost Cloud Mode: {{.CloudMode}}\n- Developer Mode: {{.DeveloperMode}}\n- Allow HTTP Apps: {{.AllowHTTPApps}}",
 		},
 		TemplateData: conf.InfoTemplateData(),
-	}) + "\n"
+	}) + "\n\n"
 
 	if conf.DeveloperMode && conf.AWSAccessKey != "" {
-		out += fmt.Sprintf("AWS config: region: `%s`, bucket: `%s`, access: `%s`, secret: `%s`",
-			conf.AWSRegion, conf.AWSS3Bucket, utils.LastN(conf.AWSAccessKey, 4), utils.LastN(conf.AWSSecretKey, 4))
+		out += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "command.info.aws",
+				Other: "AWS config:\n- Region: `{{.Region}}`\n- S3 Bucket: `{{.Bucket}}`\n- Access Key: `{{.Access}}`\n- Secret Key: `{{.Secret}}`",
+			},
+			TemplateData: map[string]string{
+				"Region": conf.AWSRegion,
+				"Bucket": conf.AWSS3Bucket,
+				"Access": utils.LastN(conf.AWSAccessKey, 4),
+				"Secret": utils.LastN(conf.AWSSecretKey, 4),
+			},
+		}) + "\n"
 	}
 	return apps.NewTextResponse(out)
 }
