@@ -26,7 +26,7 @@ var Manifest = apps.Manifest{
 	AppID: "hello-world",
 
 	// App's release/version.
-	Version: "v0.8.0",
+	Version: "v1.0.0",
 
 	// A (long) display name for the app.
 	DisplayName: "Hello, world!",
