@@ -47,7 +47,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 		Location: "install",
 		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.hint",
-			Other: "[ listed | url ]",
+			Other: "[ listed | http ]",
 		}),
 		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.description",
