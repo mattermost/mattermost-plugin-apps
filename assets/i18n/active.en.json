@@ -58,7 +58,7 @@
   "command.install.cloud.hint": "[ app ID ]",
   "command.install.cloud.label": "install",
   "command.install.description": "Install an App, locally deployed or from a remote URL",
-  "command.install.hint": "[ listed | url ]",
+  "command.install.hint": "[ listed | http ]",
   "command.install.http.description": "Install an HTTP App from a URL",
   "command.install.http.hint": "[URL to manifest.json]",
   "command.install.http.label": "http",
