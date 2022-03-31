@@ -124,7 +124,7 @@ func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3, arg4, arg5 inte
 }
 
 // StoreOAuth2App mocks base method.
-func (m *MockService) StoreOAuth2App(arg0 *incoming.Request, arg1 apps.AppID, arg2 string, arg3 apps.OAuth2App) error {
+func (m *MockService) StoreOAuth2App(arg0 *incoming.Request, arg1 apps.AppID, arg2 string, arg3 []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreOAuth2App", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)

@@ -141,13 +141,13 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 			if err != nil {
 				return emptyCC, errors.Wrap(err, "failed to expand OAuth user")
 			}
-
-			var v interface{}
-			if err = json.Unmarshal(data, &v); err != nil {
-				return emptyCC, errors.Wrapf(err, "failed unmarshal OAuth2 User %s", base.UserID)
+			if len(data) > 0 {
+				var v interface{}
+				if err = json.Unmarshal(data, &v); err != nil {
+					return emptyCC, errors.Wrapf(err, "failed unmarshal OAuth2 User %s", base.UserID)
+				}
+				cc.ExpandedContext.OAuth2.User = v
 			}
-
-			cc.ExpandedContext.OAuth2.User = v
 		}
 	}
 
