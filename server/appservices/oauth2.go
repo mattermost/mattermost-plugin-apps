@@ -14,7 +14,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, oapp apps.OAuth2App) error {
+func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error {
+	var oapp apps.OAuth2App
+	err := json.Unmarshal(data, &oapp)
+	if err != nil {
+		return err
+	}
+
 	app, err := a.store.App.Get(r, appID)
 	if err != nil {
 		return err
@@ -23,11 +29,18 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, acti
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
 
+	oldData, _ := json.Marshal(app.RemoteOAuth2)
+	if bytes.Equal(oldData, data) {
+		return nil
+	}
+
 	app.RemoteOAuth2 = oapp
 	err = a.store.App.Save(r, *app)
 	if err != nil {
 		return err
 	}
+
+	a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
 
 	return nil
 }
@@ -53,13 +66,17 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 	if err != nil {
 		return err
 	}
-
-	// Trigger a bindings refresh if the OAuth2 user was updated
-	if !bytes.Equal(data, oldData) {
-		a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	if bytes.Equal(data, oldData) {
+		return nil
 	}
 
-	return a.store.OAuth2.SaveUser(r, appID, actingUserID, data)
+	err = a.store.OAuth2.SaveUser(r, appID, actingUserID, data)
+	if err != nil {
+		return err
+	}
+
+	a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	return nil
 }
 
 // GetOAuth2User returns the stored OAuth2 user data for a given user and app.
@@ -80,11 +97,6 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actin
 	data, err := a.store.OAuth2.GetUser(r, appID, actingUserID)
 	if err != nil && !errors.Is(err, utils.ErrNotFound) {
 		return nil, err
-	}
-
-	if len(data) == 0 {
-		// Ensure valid json is returned even if no data is set yet
-		data = []byte(string("{}"))
 	}
 
 	return data, nil
