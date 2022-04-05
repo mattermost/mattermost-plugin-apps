@@ -233,9 +233,11 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 	app.BotUserID = bot.UserId
 	app.BotUsername = bot.Username
 
-	err := mm.User.SetProfileImage(app.BotUserID, icon)
-	if err != nil {
-		r.Log.WithError(err).Errorw("App install flow: failed to update Bot Account profile icon, try re-installing")
+	if icon != nil {
+		err := mm.User.SetProfileImage(app.BotUserID, icon)
+		if err != nil {
+			r.Log.WithError(err).Errorw("App install flow: failed to update Bot Account profile icon, try re-installing")
+		}
 	}
 
 	return nil
