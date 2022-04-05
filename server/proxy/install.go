@@ -181,7 +181,7 @@ func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error 
 
 		i++
 		if i >= tryCount {
-			r.Log.Debugw("App install flow: failed to validate Bot Account", "try", i+1, "error", ee)
+			r.Log.Debugw("App install flow: failed to validate Bot Account, try re-installing the App", "try", i+1, "error", ee)
 			return ee
 		}
 		r.Log.Debugw("App install flow: retrying Bot Account after delay", "try", i+1, "error", ee, "delay", delay)
