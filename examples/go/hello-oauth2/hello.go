@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -16,11 +18,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
-)
-
-const (
-	rootURL    = "http://localhost:8082"
-	listenAddr = ":8082"
 )
 
 //go:embed icon.png
@@ -45,7 +42,7 @@ var manifest = apps.Manifest{
 	}),
 	Deploy: apps.Deploy{
 		HTTP: &apps.HTTP{
-			RootURL: rootURL,
+			RootURL: "http://localhost:8082",
 		},
 	},
 }
@@ -81,9 +78,26 @@ func main() {
 	// `send` command - send a Hello message.
 	http.HandleFunc("/send", send)
 
-	fmt.Printf("hello-oauth2 app listening on %q \n", listenAddr)
-	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
-	panic(http.ListenAndServe(listenAddr, nil))
+	rootURL := os.Getenv("ROOT_URL")
+	if rootURL != "" {
+		manifest.Deploy.HTTP.RootURL = rootURL
+	}
+
+	portStr := os.Getenv("PORT")
+	if portStr == "" {
+		u, err := url.Parse(manifest.Deploy.HTTP.RootURL)
+		if err != nil {
+			panic(err)
+		}
+		portStr = u.Port()
+		if portStr == "" {
+			portStr = "8080"
+		}
+	}
+
+	fmt.Printf("hello-oauth2 app listening on %q \n", ":"+portStr)
+	fmt.Printf("Install via /apps install http %s/manifest.json \n", manifest.Deploy.HTTP.RootURL)
+	panic(http.ListenAndServe(":"+portStr, nil))
 }
 
 func bindings(w http.ResponseWriter, req *http.Request) {

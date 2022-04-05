@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -157,6 +158,38 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 	return nil
 }
 
+func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error {
+	mm := p.conf.MattermostAPI()
+
+	err := mm.Bot.Create(bot)
+	if err != nil {
+		return err
+	}
+
+	r.Log.Debugw("App install flow: created Bot Account ",
+		"username", bot.Username, "bot_user_id", bot.UserId)
+
+	const tryCount = 5
+	delay := 50 * time.Millisecond
+	i := 0
+	for {
+		bb, ee := mm.Bot.Get(bot.UserId, false)
+		if bb != nil {
+			r.Log.Debugw("App install flow: validated Bot Account", "bot_user_id", bb.UserId)
+			return nil
+		}
+
+		i++
+		if i >= tryCount {
+			r.Log.Debugw("App install flow: failed to validate Bot Account, try re-installing the App", "try", i+1, "error", ee)
+			return ee
+		}
+		r.Log.Debugw("App install flow: retrying Bot Account after delay", "try", i+1, "error", ee, "delay", delay)
+		time.Sleep(delay)
+		delay *= 2
+	}
+}
+
 func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) error {
 	mm := p.conf.MattermostAPI()
 	bot := &model.Bot{
@@ -167,13 +200,10 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 
 	user, _ := mm.User.GetByUsername(bot.Username)
 	if user == nil {
-		err := mm.Bot.Create(bot)
+		err := p.createAndValidateBot(r, bot)
 		if err != nil {
 			return err
 		}
-
-		r.Log.Debugw("App install flow: Created Bot Account ",
-			"username", bot.Username)
 	} else {
 		if !user.IsBot {
 			return errors.New("a user already owns the bot username")
@@ -190,13 +220,14 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 
 		_, err := mm.Bot.Get(user.Id, false)
 		if err != nil {
-			err = mm.Bot.Create(bot)
+			err = p.createAndValidateBot(r, bot)
 			if err != nil {
 				return err
 			}
 		} else {
 			bot.UserId = user.Id
 			bot.Username = user.Username
+			r.Log.Debugw("App install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
 		}
 	}
 	app.BotUserID = bot.UserId
@@ -205,7 +236,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 	if icon != nil {
 		err := mm.User.SetProfileImage(app.BotUserID, icon)
 		if err != nil {
-			return errors.Wrap(err, "failed to update bot profile icon")
+			r.Log.WithError(err).Errorw("App install flow: failed to update Bot Account profile icon, try re-installing")
 		}
 	}
 
