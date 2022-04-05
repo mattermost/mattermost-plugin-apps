@@ -11,6 +11,7 @@ import (
 	"runtime/debug"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
@@ -30,6 +31,8 @@ const (
 	AppID          = "apps"
 	AppDisplayName = "Mattermost Apps plugin"
 	AppDescription = "Install and manage Mattermost Apps"
+
+	oauthConfigErrorMessage = "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it."
 )
 
 const (
@@ -224,6 +227,11 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		return ioutil.NopCloser(bytes.NewReader(data)), nil
 	}
 
+	confErr := a.checkConfigValid()
+	if confErr != nil {
+		return readcloser(apps.NewErrorResponse(confErr))
+	}
+
 	h, ok := a.router[creq.Path]
 	if !ok {
 		return nil, utils.NewNotFoundError(creq.Path)
@@ -255,4 +263,13 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	}
 
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
+}
+
+func (a *builtinApp) checkConfigValid() error {
+	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+	if oauthEnabled == nil || !*oauthEnabled {
+		return errors.Errorf(oauthConfigErrorMessage, a.conf.Get().MattermostSiteURL)
+	}
+
+	return nil
 }
