@@ -25,7 +25,7 @@ var iconData []byte
 
 var manifest = apps.Manifest{
 	AppID:       "hello-oauth2",
-	Version:     "0.8.0",
+	Version:     "1.0.0",
 	DisplayName: "Hello, OAuth2!",
 	Icon:        "icon.png",
 	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
