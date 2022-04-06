@@ -114,6 +114,9 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
 
+	s.log.Debugf("Reconfigure apps: %v installed, %v listed",
+		len(stored.InstalledApps), len(stored.LocalManifests))
+
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
 	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
@@ -121,12 +124,13 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
+			s.log.Debugf("Failed to fetch license twice. May incorrectly default to on-prem mode")
 		}
 	}
 
-	err := newConfig.Update(stored, mmconf, license, s.log)
+	err := newConfig.update(stored, mmconf, license, s.log)
 	if err != nil {
+		s.log.WithError(err).Infof("failed to update config")
 		return err
 	}
 
@@ -134,25 +138,29 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.conf = &newConfig
 	s.lock.Unlock()
 
-	log := s.log
-	for _, s := range services {
-		err = s.Configure(newConfig, log)
+	for _, service := range services {
+		s.log.Debugf("configuring service: %T", service)
+		err = service.Configure(newConfig, s.log)
 		if err != nil {
-			return errors.Wrapf(err, "error configuring %T", s)
+			s.log.WithError(err).Debugf("failed to configure service %T", service)
+			return errors.Wrapf(err, "failed to configure %T", service)
 		}
 	}
 
 	return nil
 }
 
-func (s *service) StoreConfig(sc StoredConfig) error {
+func (s *service) StoreConfig(stored StoredConfig) error {
+	s.log.Debugf("Storing configuration, %v installed , %v listed apps",
+		len(stored.InstalledApps), len(stored.LocalManifests))
+
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(sc)
+	err := s.Reconfigure(stored)
 	if err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(sc)
+	data, err := json.Marshal(stored)
 	if err != nil {
 		return err
 	}

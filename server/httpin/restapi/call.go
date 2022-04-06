@@ -46,17 +46,18 @@ func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Req
 
 	res := a.proxy.Call(req, *creq)
 
-	errorText := ""
 	if res.Type == apps.CallResponseTypeError {
-		errorText = res.Text
+		req.Log.Infow("Received error app response",
+			"error", res.Text,
+			"type", res.Type,
+			"call_path", creq.Path,
+		)
+	} else {
+		req.Log.Debugw("Received app response",
+			"type", res.Type,
+			"call_path", creq.Path,
+		)
 	}
-	req.Log.Debugw(
-		"Received call response",
-		"error", errorText,
-		"type", res.Type,
-		"call_path", creq.Path,
-	)
-
 	// Only track submit calls
 	if strings.HasSuffix(creq.Path, "submit") {
 		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")

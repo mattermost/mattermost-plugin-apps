@@ -93,7 +93,7 @@ var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
 	`community-[a-z]+\.mattermost\.com`,
 }, "|") + "$")
 
-func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
+func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")

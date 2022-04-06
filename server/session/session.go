@@ -122,7 +122,7 @@ func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.Ap
 		return err
 	}
 
-	// Update store
+	// Update the store.
 	session.ExpiresAt = newExpiryTime.UnixMilli()
 
 	err = s.store.Session.Save(r, appID, userID, session)

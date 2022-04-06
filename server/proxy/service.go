@@ -212,15 +212,15 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		up, err := makef()
 		switch {
 		case errors.Cause(err) == utils.ErrNotFound:
-			log.WithError(err).Debugf("Skipped %q upstream: not configured.", typ)
+			log.WithError(err).Debugf("Skipped upstream: %s: not configured.", typ)
 		case err != nil:
-			log.WithError(err).Errorf("Failed to initialize %q upstream.", typ)
+			log.WithError(err).Errorf("Failed to initialize upstream %s.", typ)
 		default:
 			p.upstreams.Store(typ, up)
-			log.Debugf("Initialized %q upstream.", typ)
+			log.Debugf("Initialized upstream: %s.", typ)
 		}
 	} else {
 		p.upstreams.Delete(typ)
-		log.Debugf("Deploy type %q is not configured on this Mattermost server", typ)
+		log.Debugf("Deploy type %s is not configured on this Mattermost server", typ)
 	}
 }

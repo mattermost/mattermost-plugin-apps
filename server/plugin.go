@@ -163,16 +163,17 @@ func (p *Plugin) OnDeactivate() error {
 }
 
 func (p *Plugin) OnConfigurationChange() (err error) {
+	if p.conf == nil {
+		// pre-activate, nothing to do.
+		return nil
+	}
+	p.log.Debugf("OnConfigurationChange")
+
 	defer func() {
 		if err != nil {
 			p.log.WithError(err).Errorf("Failed to reconfigure")
 		}
 	}()
-
-	if p.conf == nil {
-		// pre-activate, nothing to do.
-		return nil
-	}
 
 	enableDiagnostics := false
 	if config := p.API.GetConfig(); config != nil {
