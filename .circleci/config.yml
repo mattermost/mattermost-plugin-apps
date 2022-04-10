@@ -25,7 +25,7 @@ aliases:
   save_cache:
     key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
     paths:
-      - ./tests-e2e/node_modules
+      - ./test/e2e/node_modules
       - /home/circleci/.cache/Cypress
 
 commands:
