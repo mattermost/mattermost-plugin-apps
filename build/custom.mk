@@ -42,11 +42,11 @@ ifneq ($(HAS_SERVER),)
 	rm -rf ./server/mocks
 endif
 
-## Run Go E2E tests
-.PHONY: test-e2e
-test-e2e: dist
-	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
+## Run Go REST API system tests
+.PHONY: test-rest-api
+test-rest-api: dist
+	@echo Running REST API tests
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=rest_api_test ./...
 
 ## Extract new translation messages
 .PHONY: i18n-extract-server

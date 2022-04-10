@@ -1,7 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-//go:build e2e
+//go:build rest_api_test
 
 package restapi
 
@@ -116,7 +116,7 @@ func (th *TestHelper) SetupPP() {
 	require := require.New(th.t)
 
 	bundle := os.Getenv("PLUGIN_BUNDLE")
-	require.NotEmpty(bundle, "PLUGIN_BUNDLE is not set, please run `make test-e2e`")
+	require.NotEmpty(bundle, "PLUGIN_BUNDLE is not set, please run `make test-rest-api`")
 
 	require.NotEmpty(os.Getenv("MM_SERVER_PATH"), "MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
