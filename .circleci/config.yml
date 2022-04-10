@@ -463,7 +463,7 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-      - test-e2e-postgres11:
+      - test-rest-postgres11:
           filters:
             tags:
               only: /^v.*/
