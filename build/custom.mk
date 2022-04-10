@@ -70,7 +70,7 @@ i18n-merge-server:
 dev_server:
 	cd dev && docker-compose up mattermost db
 
-## Run hello-world example
-.PHONY: hello_world
-hello_world:
-	cd examples/go/hello-world && go run hello.go
+## Run the test app
+.PHONY: run-test-app
+run-test-app:
+	cd test/app && go run .

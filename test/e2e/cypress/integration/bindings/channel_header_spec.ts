@@ -10,10 +10,10 @@
 
 import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/integrations/builtin_commands/helper';
 
-const helloAppHost = Cypress.config('helloAppHost');
-const helloManifestRoute = `${helloAppHost}/manifest.json`;
+const testAppHost = Cypress.config('testAppHost');
+const testAppManifestPath = `${testAppHost}/manifest.json`;
 
-const installAppCommand = `/apps install http ${helloManifestRoute}`;
+const installAppCommand = `/apps install http ${testAppManifestPath}`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;
@@ -44,7 +44,9 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/hello-world/static/icon.png"]').first().click();
+        const tt = cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/test/static/icon.png"]').first();
+        console.log('<>/<> ', tt);
+        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/test/static/icon.png"]').first().click();
 
         // # Type into message field of modal form
         cy.findByTestId('message').type('the test message');

@@ -281,8 +281,8 @@ jobs:
           name: Install Apps plugin
           command: make deploy
       - run:
-          name: Start hello-world App
-          command: make hello_world
+          name: Start Test App
+          command: make run-test-app
           background: true
       - *save_go_cache
       - *restore_cypress_cache
@@ -386,8 +386,8 @@ jobs:
           name: Install Apps plugin
           command: make deploy
       - run:
-          name: Start hello-world App
-          command: make hello_world
+          name: Start Test App
+          command: make run-test-app
           background: true
       - *save_go_cache
       - *restore_cypress_cache
