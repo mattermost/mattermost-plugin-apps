@@ -44,21 +44,19 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        const tt = cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/test/static/icon.png"]').first();
-        console.log('<>/<> ', tt);
-        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/test/static/icon.png"]').first().click();
+        cy.findByTestId('test_/channel_header/form"]').click();
 
         // # Type into message field of modal form
-        cy.findByTestId('message').type('the test message');
+        cy.findByTestId('test_field').type('the test message');
 
         // # Submit modal form
-        cy.get('#appsModalSubmit').click();
+        cy.findByTestId('appsModalSubmit').click();
 
         // * Verify ephemeral message
-        verifyEphemeralMessage('Created a post in your DM channel.');
+        verifyEphemeralMessage('TODO.');
 
         // # Visit http-hello DM channel
-        cy.get('a.SidebarLink[aria-label*="hello-world"]').click();
+        cy.get('a.SidebarLink[aria-label*="test"]').click();
 
         // * Verify survey content
         cy.getLastPostId().then((postID) => {
