@@ -227,7 +227,8 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		return ioutil.NopCloser(bytes.NewReader(data)), nil
 	}
 
-	confErr := a.checkConfigValid()
+	loc := a.newLocalizer(creq)
+	confErr := a.checkConfigValid(loc)
 	if confErr != nil {
 		return readcloser(apps.NewErrorResponse(confErr))
 	}
@@ -265,10 +266,23 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
 }
 
-func (a *builtinApp) checkConfigValid() error {
+func (a *builtinApp) checkConfigValid(loc *i18n.Localizer) error {
 	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+
 	if oauthEnabled == nil || !*oauthEnabled {
-		return errors.Errorf(oauthConfigErrorMessage, a.conf.Get().MattermostSiteURL)
+		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)
+
+		message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "command.error.oauth2.disabled",
+				Other: "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",
+			},
+			TemplateData: map[string]string{
+				"IntegrationManagementPage": integrationManagementPage,
+			},
+		})
+
+		return errors.New(message)
 	}
 
 	return nil

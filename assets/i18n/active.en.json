@@ -50,6 +50,7 @@
   "command.enable.description": "Enable an App",
   "command.enable.hint": "[ App ID ]",
   "command.enable.label": "enable",
+  "command.error.oauth2.disabled": "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",
   "command.info.aws": "AWS config:\n- Region: `{{.Region}}`\n- S3 Bucket: `{{.Bucket}}`\n- Access Key: `{{.Access}}`\n- Secret Key: `{{.Secret}}`",
   "command.info.description": "Display Apps plugin info",
   "command.info.label": "info",
