@@ -151,13 +151,15 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, base *apps.Cont
 		}
 	}
 
-	// Cleanup fields for app
-	cc.UserAgentContext.ChannelID = ""
-	cc.UserAgentContext.TeamID = ""
-	cc.UserAgentContext.RootPostID = ""
-	cc.UserAgentContext.PostID = ""
-	cc.UserID = ""
-	cc.ActingUserID = ""
+	if app.DeployType != apps.DeployBuiltin {
+		// Cleanup fields for app
+		cc.UserAgentContext.ChannelID = ""
+		cc.UserAgentContext.TeamID = ""
+		cc.UserAgentContext.RootPostID = ""
+		cc.UserAgentContext.PostID = ""
+		cc.UserID = ""
+		cc.ActingUserID = ""
+	}
 
 	return cc, nil
 }
