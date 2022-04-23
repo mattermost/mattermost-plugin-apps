@@ -10,10 +10,10 @@
 
 import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/integrations/builtin_commands/helper';
 
-const testAppHost = Cypress.config('testAppHost');
-const testAppManifestPath = `${testAppHost}/manifest.json`;
+const helloAppHost = Cypress.config('helloAppHost');
+const helloManifestRoute = `${helloAppHost}/manifest.json`;
 
-const installAppCommand = `/apps install http ${testAppManifestPath}`;
+const installAppCommand = `/apps install http ${helloManifestRoute}`;
 
 describe('Apps bindings - Channel header', () => {
     let testTeam;
@@ -44,19 +44,19 @@ describe('Apps bindings - Channel header', () => {
         installHTTPHello();
 
         // # Open the apps modal by clicking on a channel header binding
-        cy.findByTestId('test_/channel_header/form"]').click();
+        cy.get('#channel-header img[src="http://localhost:8065/plugins/com.mattermost.apps/apps/hello-world/static/icon.png"]').first().click();
 
         // # Type into message field of modal form
-        cy.findByTestId('test_field').type('the test message');
+        cy.findByTestId('message').type('the test message');
 
         // # Submit modal form
-        cy.findByTestId('appsModalSubmit').click();
+        cy.get('#appsModalSubmit').click();
 
         // * Verify ephemeral message
-        verifyEphemeralMessage('TODO.');
+        verifyEphemeralMessage('Created a post in your DM channel.');
 
         // # Visit http-hello DM channel
-        cy.get('a.SidebarLink[aria-label*="test"]').click();
+        cy.get('a.SidebarLink[aria-label*="hello-world"]').click();
 
         // * Verify survey content
         cy.getLastPostId().then((postID) => {
