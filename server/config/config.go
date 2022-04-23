@@ -195,3 +195,14 @@ func (conf *Config) InfoTemplateData() map[string]string {
 		"AllowHTTPApps": fmt.Sprintf("%t", conf.AllowHTTPApps),
 	}
 }
+
+func (conf Config) Loggable() []interface{} {
+	return append([]interface{}{},
+		"version", conf.PluginManifest.Version,
+		"commit", conf.BuildHashShort,
+		"build_date", conf.BuildDate,
+		"cloud_mode", fmt.Sprintf("%t", conf.MattermostCloudMode),
+		"developer_mode", fmt.Sprintf("%t", conf.DeveloperMode),
+		"allow_http_apps", fmt.Sprintf("%t", conf.AllowHTTPApps),
+	)
+}

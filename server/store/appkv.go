@@ -16,10 +16,10 @@ const (
 )
 
 type AppKVStore interface {
-	Set(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error)
-	Get(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error)
-	Delete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error
-	List(r *incoming.Request, appID apps.AppID, actingUserID, namespace string, processf func(key string) error) error
+	Set(_ apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error)
+	Get(_ apps.AppID, actingUserID, prefix, id string) ([]byte, error)
+	Delete(_ apps.AppID, actingUserID, prefix, id string) error
+	List(_ *incoming.Request, _ apps.AppID, actingUserID, namespace string, processf func(key string) error) error
 }
 
 type appKVStore struct {
@@ -28,7 +28,7 @@ type appKVStore struct {
 
 var _ AppKVStore = (*appKVStore)(nil)
 
-func (s *appKVStore) Set(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error) {
+func (s *appKVStore) Set(appID apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error) {
 	if appID == "" || actingUserID == "" {
 		return false, utils.NewInvalidError("app and user IDs must be provided")
 	}
@@ -41,7 +41,7 @@ func (s *appKVStore) Set(r *incoming.Request, appID apps.AppID, actingUserID, pr
 	return s.conf.MattermostAPI().KV.Set(key, data)
 }
 
-func (s *appKVStore) Get(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) ([]byte, error) {
+func (s *appKVStore) Get(appID apps.AppID, actingUserID, prefix, id string) ([]byte, error) {
 	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (s *appKVStore) Get(r *incoming.Request, appID apps.AppID, actingUserID, pr
 	return data, err
 }
 
-func (s *appKVStore) Delete(r *incoming.Request, appID apps.AppID, actingUserID, prefix, id string) error {
+func (s *appKVStore) Delete(appID apps.AppID, actingUserID, prefix, id string) error {
 	key, err := Hashkey(config.KVAppPrefix, appID, actingUserID, prefix, id)
 	if err != nil {
 		return err

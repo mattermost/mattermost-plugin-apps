@@ -27,8 +27,8 @@ type Service interface {
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 
-	Reconfigure(StoredConfig, ...Configurable) error
-	StoreConfig(sc StoredConfig) error
+	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
+	StoreConfig(StoredConfig, utils.Logger) error
 }
 
 var _ Service = (*service)(nil)
@@ -36,7 +36,6 @@ var _ Service = (*service)(nil)
 type service struct {
 	pluginManifest model.Manifest
 	botUserID      string
-	log            utils.Logger
 	mm             *pluginapi.Client
 	i18n           *i18n.Bundle
 	telemetry      *telemetry.Telemetry
@@ -50,7 +49,6 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 	return &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
-		log:            utils.NewPluginLogger(mm),
 		mm:             mm,
 		lock:           &sync.RWMutex{},
 		i18n:           i18nBundle,
@@ -110,12 +108,9 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
+func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
-
-	s.log.Debugf("Reconfigure apps: %v installed, %v listed",
-		len(stored.InstalledApps), len(stored.LocalManifests))
 
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
@@ -124,13 +119,12 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Debugf("Failed to fetch license twice. May incorrectly default to on-prem mode")
+			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
 		}
 	}
 
-	err := newConfig.update(stored, mmconf, license, s.log)
+	err := newConfig.update(stored, mmconf, license, log)
 	if err != nil {
-		s.log.WithError(err).Infof("failed to update config")
 		return err
 	}
 
@@ -139,24 +133,23 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.lock.Unlock()
 
 	for _, service := range services {
-		s.log.Debugf("configuring service: %T", service)
-		err = service.Configure(newConfig, s.log)
+		err = service.Configure(newConfig, log)
 		if err != nil {
-			s.log.WithError(err).Debugf("failed to configure service %T", service)
-			return errors.Wrapf(err, "failed to configure %T", service)
+			return errors.Wrapf(err, "failed to configure service %T", service)
 		}
 	}
 
 	return nil
 }
 
-func (s *service) StoreConfig(stored StoredConfig) error {
-	s.log.Debugf("Storing configuration, %v installed , %v listed apps",
+func (s *service) StoreConfig(stored StoredConfig, log utils.Logger) error {
+	log.Debugf("Storing configuration, %v installed , %v listed apps",
 		len(stored.InstalledApps), len(stored.LocalManifests))
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(stored)
+	err := s.Reconfigure(stored, log)
 	if err != nil {
+		log.WithError(err).Infof("failed to store configuration.")
 		return err
 	}
 

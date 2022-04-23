@@ -10,16 +10,15 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type SubscriptionStore interface {
-	Get(r *incoming.Request, subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
-	List(r *incoming.Request) ([]apps.Subscription, error)
-	ListByUserID(r *incoming.Request, appID apps.AppID, userID string) ([]apps.Subscription, error)
-	Save(r *incoming.Request, sub apps.Subscription) error
-	Delete(r *incoming.Request, sub apps.Subscription) error
+	Get(_ apps.Subject, teamID, channelID string) ([]apps.Subscription, error)
+	List() ([]apps.Subscription, error)
+	ListByUserID(_ apps.AppID, userID string) ([]apps.Subscription, error)
+	Save(apps.Subscription) error
+	Delete(apps.Subscription) error
 }
 
 type subscriptionStore struct {
@@ -52,7 +51,7 @@ func subsKey(subject apps.Subject, teamID, channelID string) (string, error) {
 	return config.KVSubPrefix + string(subject) + idSuffix, nil
 }
 
-func (s subscriptionStore) Get(r *incoming.Request, subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
+func (s subscriptionStore) Get(subject apps.Subject, teamID, channelID string) ([]apps.Subscription, error) {
 	key, err := subsKey(subject, teamID, channelID)
 	if err != nil {
 		return nil, err
@@ -69,7 +68,7 @@ func (s subscriptionStore) Get(r *incoming.Request, subject apps.Subject, teamID
 	return subs, nil
 }
 
-func (s subscriptionStore) List(r *incoming.Request) ([]apps.Subscription, error) {
+func (s subscriptionStore) List() ([]apps.Subscription, error) {
 	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, keysPerPage, pluginapi.WithPrefix(config.KVSubPrefix))
 	if err != nil {
 		return nil, err
@@ -88,8 +87,8 @@ func (s subscriptionStore) List(r *incoming.Request) ([]apps.Subscription, error
 	return subs, nil
 }
 
-func (s subscriptionStore) ListByUserID(r *incoming.Request, appID apps.AppID, userID string) ([]apps.Subscription, error) {
-	subs, err := s.List(r)
+func (s subscriptionStore) ListByUserID(appID apps.AppID, userID string) ([]apps.Subscription, error) {
+	subs, err := s.List()
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +103,7 @@ func (s subscriptionStore) ListByUserID(r *incoming.Request, appID apps.AppID, u
 	return rSubs, nil
 }
 
-func (s subscriptionStore) Save(r *incoming.Request, sub apps.Subscription) error {
+func (s subscriptionStore) Save(sub apps.Subscription) error {
 	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	if err != nil {
 		return err
@@ -135,7 +134,7 @@ func (s subscriptionStore) Save(r *incoming.Request, sub apps.Subscription) erro
 	return nil
 }
 
-func (s subscriptionStore) Delete(r *incoming.Request, sub apps.Subscription) error {
+func (s subscriptionStore) Delete(sub apps.Subscription) error {
 	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
 	if err != nil {
 		return err

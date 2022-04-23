@@ -4,7 +4,13 @@
 package apps
 
 import (
+	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/mattermost/mattermost-server/v6/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // Context is included in CallRequest and provides App with information about
@@ -117,4 +123,114 @@ type OAuth2Context struct {
 	CompleteURL string `json:"complete_url,omitempty"`
 
 	User interface{} `json:"user,omitempty"`
+}
+
+func (c Context) String() string {
+	display, _ := c.loggable()
+
+	keys := []string{}
+	for k := range display {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	ss := []string{}
+	for _, k := range keys {
+		ss = append(ss, fmt.Sprintf("%s: %s", k, display[k]))
+	}
+	return strings.Join(ss, ", ")
+}
+
+func (c Context) Loggable() []interface{} {
+	_, props := c.loggable()
+	return props
+}
+
+func (c Context) loggable() (map[string]string, []interface{}) {
+	display := map[string]string{}
+	props := []interface{}{}
+	add := func(f, v string) {
+		if v != "" {
+			display[f] = v
+			props = append(props, f, v)
+		}
+	}
+
+	add("locale", c.Locale)
+	add("subject", string(c.Subject))
+	add("ua", c.UserAgentContext.UserAgent)
+	add("ua_loc", string(c.UserAgentContext.Location))
+	if !c.UserAgentContext.TrackAsSubmit {
+		add("is_not_submit", "true")
+	}
+
+	if c.ExpandedContext.ActingUser != nil {
+		display["acting_user"] = c.ExpandedContext.ActingUser.GetDisplayName(model.ShowNicknameFullName)
+		props = append(props, "acting_user_id", c.ExpandedContext.ActingUser.Id)
+	}
+	if c.ExpandedContext.ActingUserAccessToken != "" {
+		display["acting_user_access_token"] = utils.LastN(c.ExpandedContext.ActingUserAccessToken, 4)
+		props = append(props, "acting_user_access_token", utils.LastN(c.ExpandedContext.ActingUserAccessToken, 4))
+	}
+
+	if c.ExpandedContext.Channel != nil {
+		display["channel"] = c.ExpandedContext.Channel.Name
+		props = append(props, "channel_id", c.ExpandedContext.Channel.Id)
+	}
+	if c.ExpandedContext.Team != nil {
+		display["team"] = c.ExpandedContext.Team.Name
+		props = append(props, "team_id", c.ExpandedContext.Channel.Id)
+	}
+	if c.ExpandedContext.Post != nil {
+		display["post"] = utils.LastN(c.ExpandedContext.Post.Message, 32)
+		props = append(props, "post_id", c.ExpandedContext.Post.Id)
+	}
+	if c.ExpandedContext.RootPost != nil {
+		display["root_post"] = utils.LastN(c.ExpandedContext.RootPost.Message, 32)
+		props = append(props, "root_post_id", c.ExpandedContext.RootPost.Id)
+	}
+
+	if c.ExpandedContext.BotUserID != "" {
+		display["bot_user_id"] = c.ExpandedContext.BotUserID
+		props = append(props, "bot_user_id", c.ExpandedContext.BotUserID)
+	}
+	if c.ExpandedContext.BotAccessToken != "" {
+		display["bot_access_token"] = utils.LastN(c.ExpandedContext.BotAccessToken, 4)
+		props = append(props, "bot_access_token", utils.LastN(c.ExpandedContext.BotAccessToken, 4))
+	}
+	if c.ExpandedContext.ChannelMember != nil {
+		display["channel_member_channel_id"] = c.ExpandedContext.ChannelMember.ChannelId
+		display["channel_member_user_id"] = c.ExpandedContext.ChannelMember.UserId
+		props = append(props, "channel_member_channel_id", c.ExpandedContext.ChannelMember.ChannelId)
+		props = append(props, "channel_member_user_id", c.ExpandedContext.ChannelMember.UserId)
+	}
+	if c.ExpandedContext.TeamMember != nil {
+		display["team_member_team_id"] = c.ExpandedContext.TeamMember.TeamId
+		display["team_member_user_id"] = c.ExpandedContext.TeamMember.UserId
+		props = append(props, "team_member_team_id", c.ExpandedContext.TeamMember.TeamId)
+		props = append(props, "team_member_user_id", c.ExpandedContext.TeamMember.UserId)
+	}
+
+	if c.ExpandedContext.OAuth2.OAuth2App.RemoteRootURL != "" {
+		display["remote_url"] = c.ExpandedContext.OAuth2.OAuth2App.RemoteRootURL
+		props = append(props, "remote_url", c.ExpandedContext.OAuth2.OAuth2App.RemoteRootURL)
+	}
+	if c.ExpandedContext.OAuth2.OAuth2App.ClientID != "" {
+		display["remote_client_id"] = utils.LastN(c.ExpandedContext.OAuth2.OAuth2App.ClientID, 4)
+		props = append(props, "remote_client_id", utils.LastN(c.ExpandedContext.OAuth2.OAuth2App.ClientID, 4))
+	}
+	if c.ExpandedContext.OAuth2.OAuth2App.ClientSecret != "" {
+		display["remote_client_secret"] = utils.LastN(c.ExpandedContext.OAuth2.OAuth2App.ClientSecret, 4)
+		props = append(props, "remote_client_secret", utils.LastN(c.ExpandedContext.OAuth2.OAuth2App.ClientSecret, 4))
+	}
+	if c.ExpandedContext.OAuth2.OAuth2App.Data != nil {
+		display["app_data"] = "(private)"
+		props = append(props, "app_data", "(private)")
+	}
+	if c.ExpandedContext.OAuth2.User != nil {
+		display["user_data"] = "(private)"
+		props = append(props, "user_data", "(private)")
+	}
+
+	return display, props
 }

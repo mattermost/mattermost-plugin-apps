@@ -5,7 +5,10 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // CallRequest envelops all requests sent to Apps.
@@ -137,4 +140,26 @@ func (creq *CallRequest) BoolValue(name string) bool {
 	}
 
 	return false
+}
+
+func (creq CallRequest) String() string {
+	s := fmt.Sprintf("call: %s, context: %s", creq.Call.String(), creq.Context.String())
+	if len(creq.Values) > 0 {
+		s += ", values: " + utils.LogDigest(creq.Values)
+	}
+	if creq.Query != "" {
+		s += ", query: " + creq.Query
+	}
+	return s
+}
+
+func (creq CallRequest) Loggable() []interface{} {
+	props := append([]interface{}{}, creq.Call, creq.Context)
+	if len(creq.Values) > 0 {
+		props = append(props, "values", utils.LogDigest(creq.Values))
+	}
+	if creq.Query != "" {
+		props = append(props, "query", creq.Query)
+	}
+	return props
 }

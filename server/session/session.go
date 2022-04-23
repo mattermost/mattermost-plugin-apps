@@ -20,10 +20,10 @@ const (
 )
 
 type Service interface {
-	GetOrCreate(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error)
-	ListForUser(r *incoming.Request, userID string) ([]*model.Session, error)
-	RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error
-	RevokeSessionsForUser(r *incoming.Request, userID string) error
+	GetOrCreate(_ *incoming.Request, _ apps.AppID, userID string) (*model.Session, error)
+	ListForUser(_ *incoming.Request, userID string) ([]*model.Session, error)
+	RevokeSessionsForApp(*incoming.Request, apps.AppID) error
+	RevokeSessionsForUser(_ *incoming.Request, userID string) error
 }
 
 var _ Service = (*service)(nil)
@@ -41,10 +41,10 @@ func NewService(mm *pluginapi.Client, store *store.Service) Service {
 }
 
 func (s *service) GetOrCreate(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error) {
-	session, err := s.store.Session.Get(r, appID, userID)
+	session, err := s.store.Session.Get(appID, userID)
 
 	if err == nil && !session.IsExpired() {
-		err = s.extendSessionExpiryIfNeeded(r, appID, userID, session)
+		err = s.extendSessionExpiryIfNeeded(appID, userID, session)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extend session length")
 		}
@@ -65,7 +65,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to fetch user for new session")
 	}
 
-	app, err := s.store.App.Get(r, appID)
+	app, err := s.store.App.Get(appID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch app for new session")
 	}
@@ -99,17 +99,17 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to create new app session")
 	}
 
-	err = s.store.Session.Save(r, appID, userID, session)
+	err = s.store.Session.Save(appID, userID, session)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to save new session in store")
 	}
 
-	r.Log.Debugw("Created new access token", "app_id", appID, "user_id", userID, "session_id", session.Id, "token", utils.LastN(session.Token, 3))
+	r.Log.Debugw("created new access token", "app_id", appID, "user_id", userID, "session_id", session.Id, "token", utils.LastN(session.Token, 3))
 
 	return session, nil
 }
 
-func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error {
+func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, session *model.Session) error {
 	remaining := time.Until(time.UnixMilli(session.ExpiresAt))
 	if remaining > MinSessionLength {
 		return nil
@@ -125,7 +125,7 @@ func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.Ap
 	// Update the store.
 	session.ExpiresAt = newExpiryTime.UnixMilli()
 
-	err = s.store.Session.Save(r, appID, userID, session)
+	err = s.store.Session.Save(appID, userID, session)
 	if err != nil {
 		return errors.Wrap(err, "failed to save new session in store")
 	}
@@ -147,7 +147,7 @@ func (s service) revokeSessions(r *incoming.Request, sessions []*model.Session) 
 			}
 		}
 
-		err := s.store.Session.Delete(r, sessionutils.GetAppID(session), session.UserId)
+		err := s.store.Session.Delete(sessionutils.GetAppID(session), session.UserId)
 		if err != nil {
 			r.Log.WithError(err).Warnw("failed to delete revoked session from store")
 		}
@@ -157,7 +157,7 @@ func (s service) revokeSessions(r *incoming.Request, sessions []*model.Session) 
 }
 
 func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) error {
-	sessions, err := s.store.Session.ListForApp(r, appID)
+	sessions, err := s.store.Session.ListForApp(appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to list app sessions for revocation")
 	}

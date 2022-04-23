@@ -18,14 +18,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
 
-type check func(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool // check return true if the it was successful
+type check func(*incoming.Request, *pluginapi.Client, http.ResponseWriter, *http.Request) bool // check return true if the it was successful
 
-type handlerFunc func(req *incoming.Request, w http.ResponseWriter, r *http.Request)
+type handlerFunc func(*incoming.Request, http.ResponseWriter, *http.Request)
 
 type Handler struct {
 	mm             *pluginapi.Client
 	config         config.Service
-	log            utils.Logger
+	baseLog        utils.Logger
 	sessionService incoming.SessionService
 	router         *mux.Router
 
@@ -33,11 +33,11 @@ type Handler struct {
 	checks      []check
 }
 
-func NewHandler(mm *pluginapi.Client, config config.Service, log utils.Logger, session incoming.SessionService, router *mux.Router) *Handler {
+func NewHandler(mm *pluginapi.Client, config config.Service, baseLog utils.Logger, session incoming.SessionService, router *mux.Router) *Handler {
 	rh := &Handler{
 		mm:             mm,
 		config:         config,
-		log:            log,
+		baseLog:        baseLog,
 		sessionService: session,
 		router:         router,
 	}
@@ -50,7 +50,7 @@ func (h *Handler) clone() *Handler {
 	return &Handler{
 		mm:             h.mm,
 		config:         h.config,
-		log:            h.log,
+		baseLog:        h.baseLog,
 		sessionService: h.sessionService,
 		router:         h.router,
 
@@ -77,22 +77,23 @@ func (h *Handler) HandleFunc(path string, handlerFunc handlerFunc, checks ...che
 	return clone.router.Handle(path, clone)
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), config.RequestTimeout)
+func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ctx, cancel := context.WithTimeout(req.Context(), config.RequestTimeout)
 	defer cancel()
-	req := incoming.NewRequest(h.mm, h.config, h.log, h.sessionService, incoming.WithCtx(ctx))
+	r := incoming.NewRequest(h.mm, h.config, h.baseLog, h.sessionService, incoming.WithCtx(ctx))
 
-	req.Log = req.Log.With(
-		"path", r.URL.Path,
+	// TODO: what else to add? 1/5 add clones of CallResponse to Request and log it.
+	r.Log = r.Log.With(
+		"path", req.URL.Path,
 	)
 
 	defer func() {
 		if x := recover(); x != nil {
 			stack := string(debug.Stack())
 
-			req.Log.Errorw(
+			r.Log.Errorw(
 				"Recovered from a panic in an HTTP handler",
-				"url", r.URL.String(),
+				"url", req.URL.String(),
 				"error", x,
 				"stack", string(debug.Stack()),
 			)
@@ -110,37 +111,41 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for _, check := range h.checks {
-		succeeded := check(req, h.mm, w, r)
+		succeeded := check(r, h.mm, w, req)
 		if !succeeded {
 			return
 		}
 	}
 
-	h.handlerFunc(req, w, r)
+	h.handlerFunc(r, w, req)
+
+	if h.config.Get().DeveloperMode {
+		r.Log.Debugf("HTTP")
+	}
 }
 
-func getUserID(r *http.Request) string {
-	return r.Header.Get(config.MattermostUserIDHeader)
+func getUserID(req *http.Request) string {
+	return req.Header.Get(config.MattermostUserIDHeader)
 }
 
-func RequireUser(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
-	actingUserID := getUserID(r)
+func RequireUser(r *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, req *http.Request) bool {
+	actingUserID := getUserID(req)
 	if actingUserID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("user ID is required"))
 		return false
 	}
 
-	req.SetActingUserID(actingUserID)
+	r.SetActingUserID(actingUserID)
 
 	return true
 }
 
-func RequireSysadmin(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
-	if successful := RequireUser(req, mm, w, r); !successful {
+func RequireSysadmin(r *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, req *http.Request) bool {
+	if successful := RequireUser(r, mm, w, req); !successful {
 		return false
 	}
 
-	if !mm.User.HasPermissionTo(req.ActingUserID(), model.PermissionManageSystem) {
+	if !mm.User.HasPermissionTo(r.ActingUserID(), model.PermissionManageSystem) {
 		httputils.WriteError(w, utils.NewUnauthorizedError("user is not a system admin"))
 		return false
 	}
@@ -148,17 +153,17 @@ func RequireSysadmin(req *incoming.Request, mm *pluginapi.Client, w http.Respons
 	return true
 }
 
-func RequireSysadminOrPlugin(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
-	pluginID := r.Header.Get(config.MattermostPluginIDHeader)
+func RequireSysadminOrPlugin(r *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, req *http.Request) bool {
+	pluginID := req.Header.Get(config.MattermostPluginIDHeader)
 	if pluginID != "" {
 		return true
 	}
 
-	return RequireSysadmin(req, mm, w, r)
+	return RequireSysadmin(r, mm, w, req)
 }
 
-func RequireApp(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, r *http.Request) bool {
-	sessionID := r.Header.Get(config.MattermostSessionIDHeader)
+func RequireApp(r *incoming.Request, mm *pluginapi.Client, w http.ResponseWriter, req *http.Request) bool {
+	sessionID := req.Header.Get(config.MattermostSessionIDHeader)
 	if sessionID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("a session is required"))
 		return false
@@ -176,7 +181,7 @@ func RequireApp(req *incoming.Request, mm *pluginapi.Client, w http.ResponseWrit
 		return false
 	}
 
-	req.SetAppID(appID)
+	r.SetAppID(appID)
 
 	return true
 }

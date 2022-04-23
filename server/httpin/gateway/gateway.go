@@ -43,8 +43,8 @@ func Init(h *httpin.Handler, config config.Service, p proxy.Service, _ appservic
 		g.remoteOAuth2Complete, httpin.RequireUser).Methods(http.MethodGet)
 }
 
-func appIDVar(r *http.Request) apps.AppID {
-	s, ok := mux.Vars(r)["appid"]
+func appIDVar(req *http.Request) apps.AppID {
+	s, ok := mux.Vars(req)["appid"]
 	if ok {
 		return apps.AppID(s)
 	}
