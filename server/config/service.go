@@ -149,7 +149,6 @@ func (s *service) StoreConfig(stored StoredConfig, log utils.Logger) error {
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
 	err := s.Reconfigure(stored, log)
 	if err != nil {
-		log.WithError(err).Infof("failed to store configuration.")
 		return err
 	}
 
