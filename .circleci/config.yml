@@ -290,9 +290,12 @@ jobs:
           name: Run Cypress Tests
           no_output_timeout: 30m
           command: |
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+            nvm install 14 && nvm use 14
             export FAILURE_MESSAGE="At least one test has failed."
             export RESULTS_OUTPUT="results-output.txt"
-            cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
+            cd e2e && npm install
+            cd e2e && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
       - *save_cypress_cache
       - store_artifacts:
           path: e2e/cypress/screenshots
