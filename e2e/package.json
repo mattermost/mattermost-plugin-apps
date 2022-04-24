@@ -50,5 +50,8 @@
     "fix": "eslint --ext .ts --ignore-pattern *d.ts . --quiet --fix --cache",
     "cypress:open": "cypress open",
     "test": "cypress run"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
   }
 }

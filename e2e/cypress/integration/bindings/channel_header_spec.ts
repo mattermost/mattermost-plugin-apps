@@ -8,7 +8,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/integration/integrations/builtin_commands/helper';
+import {verifyEphemeralMessage} from 'mattermost-webapp/e2e/cypress/tests/integration/integrations/builtin_commands/helper';
 
 const helloAppHost = Cypress.config('helloAppHost');
 const helloManifestRoute = `${helloAppHost}/manifest.json`;
