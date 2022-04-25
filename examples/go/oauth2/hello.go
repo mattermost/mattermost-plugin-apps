@@ -24,11 +24,11 @@ import (
 var iconData []byte
 
 var manifest = apps.Manifest{
-	AppID:       "hello-oauth2",
+	AppID:       "example-oauth2",
 	Version:     "1.0.0",
-	DisplayName: "Hello, OAuth2!",
+	DisplayName: "Example app with OAuth2",
 	Icon:        "icon.png",
-	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-oauth2",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/oauth2",
 	RequestedPermissions: []apps.Permission{
 		apps.PermissionActAsUser,
 		apps.PermissionRemoteOAuth2,
@@ -95,7 +95,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("hello-oauth2 app listening on %q \n", ":"+portStr)
+	fmt.Printf("%s app listening on %q \n", manifest.AppID, ":"+portStr)
 	fmt.Printf("Install via /apps install http %s/manifest.json \n", manifest.Deploy.HTTP.RootURL)
 	panic(http.ListenAndServe(":"+portStr, nil))
 }
@@ -106,7 +106,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 
 	commandBinding := apps.Binding{
 		Icon:        "icon.png",
-		Label:       "hello-oauth2",
+		Label:       "example-oauth2",
 		Description: "Hello remote (3rd party) OAuth2 App",
 		Bindings:    []apps.Binding{},
 	}
