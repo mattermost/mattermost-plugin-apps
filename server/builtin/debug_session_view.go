@@ -48,7 +48,7 @@ func (a *builtinApp) debugSessionsViewBinding(loc *i18n.Localizer) apps.Binding 
 	}
 }
 
-func (a *builtinApp) debugSessionsView(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugSessionsView(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	sessionID := creq.GetValue(fSessionID, "")
 	session, err := a.conf.MattermostAPI().Session.Get(sessionID)
 	if err != nil {

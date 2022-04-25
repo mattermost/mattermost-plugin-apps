@@ -28,8 +28,8 @@ func (a *restapi) initSubscriptions(h *httpin.Handler) {
 //   Method: POST
 //   Input: Subscription
 //   Output: None
-func (a *restapi) Subscribe(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(req, w, r, true)
+func (a *restapi) Subscribe(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	a.handleSubscribeCore(r, w, req, true)
 }
 
 // GetSubscriptions returns a users current list of subscriptions.
@@ -37,8 +37,8 @@ func (a *restapi) Subscribe(req *incoming.Request, w http.ResponseWriter, r *htt
 //   Method: GET
 //   Input: None
 //   Output: []Subscription
-func (a *restapi) GetSubscriptions(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(req, req.AppID(), req.ActingUserID())
+func (a *restapi) GetSubscriptions(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	subs, err := a.appServices.GetSubscriptions(r, r.AppID(), r.ActingUserID())
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -46,7 +46,7 @@ func (a *restapi) GetSubscriptions(req *incoming.Request, w http.ResponseWriter,
 
 	err = httputils.WriteJSON(w, subs)
 	if err != nil {
-		req.Log.WithError(err).Errorf("Error marshaling subscriptions")
+		r.Log.WithError(err).Errorf("Error marshaling subscriptions")
 	}
 }
 
@@ -55,26 +55,26 @@ func (a *restapi) GetSubscriptions(req *incoming.Request, w http.ResponseWriter,
 //   Method: POST
 //   Input: Subscription
 //   Output: None
-func (a *restapi) Unsubscribe(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	a.handleSubscribeCore(req, w, r, false)
+func (a *restapi) Unsubscribe(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	a.handleSubscribeCore(r, w, req, false)
 }
 
-func (a *restapi) handleSubscribeCore(req *incoming.Request, w http.ResponseWriter, r *http.Request, isSubscribe bool) {
+func (a *restapi) handleSubscribeCore(r *incoming.Request, w http.ResponseWriter, req *http.Request, isSubscribe bool) {
 	status, logMessage, err := func() (int, string, error) {
 		var sub apps.Subscription
-		if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
+		if err := json.NewDecoder(req.Body).Decode(&sub); err != nil {
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
 
-		sub.AppID = req.AppID()
-		sub.UserID = req.ActingUserID()
+		sub.AppID = r.AppID()
+		sub.UserID = r.ActingUserID()
 
 		// TODO replace with an appropriate API-level call that would deduplicate, etc.
 		var err error
 		if isSubscribe {
-			err = a.appServices.Subscribe(req, sub)
+			err = a.appServices.Subscribe(r, sub)
 		} else {
-			err = a.appServices.Unsubscribe(req, sub)
+			err = a.appServices.Unsubscribe(r, sub)
 		}
 
 		if err != nil {
@@ -85,7 +85,7 @@ func (a *restapi) handleSubscribeCore(req *incoming.Request, w http.ResponseWrit
 	}()
 
 	if err != nil {
-		req.Log.WithError(err).Warnw(logMessage)
+		r.Log.WithError(err).Warnw(logMessage)
 		http.Error(w, err.Error(), status)
 	}
 }

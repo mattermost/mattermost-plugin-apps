@@ -699,7 +699,7 @@ func newTestProxyForBindings(tb testing.TB, testData []bindingTestData, ctrl *go
 		upstreams[test.app.Manifest.AppID] = up
 	}
 
-	appStore.EXPECT().AsMap(gomock.Any()).Return(appList)
+	appStore.EXPECT().AsMap().Return(appList)
 
 	p := &Proxy{
 		store:            s,

@@ -89,7 +89,7 @@ func deployS3StaticAssets(c Client, log utils.Logger, pd *DeployData, params Dep
 		asset.File.Close()
 		arn := ARN(fmt.Sprintf("arn:aws:s3:::%s/%s", params.Bucket, asset.Key))
 		arns = append(arns, arn)
-		log.Infow("Uploaded static asset to S3", "bucket", params.Bucket, "key", asset.Key)
+		log.Infow("uploaded static asset to S3", "bucket", params.Bucket, "key", asset.Key)
 	}
 
 	out.StaticARNs = arns
@@ -101,7 +101,7 @@ func deployLambdaFunctions(c Client, log utils.Logger, pd *DeployData, params De
 	if err != nil {
 		return err
 	}
-	log.Infow("Found execute role, deploying functions", "ARN", executeRoleARN)
+	log.Infow("found execute role, deploying functions", "ARN", executeRoleARN)
 
 	createdARNs := []ARN{}
 	for _, function := range pd.LambdaFunctions {
@@ -126,7 +126,7 @@ func deployLambdaFunctions(c Client, log utils.Logger, pd *DeployData, params De
 		return err
 	}
 	invokePolicyARN := ARN(*invokePolicy.Arn)
-	log.Infow("Found invoke policy, updating", "ARN", invokePolicyARN)
+	log.Infow("found invoke policy, updating", "ARN", invokePolicyARN)
 
 	newDoc, err := c.AddResourcesToPolicyDocument(invokePolicy, createdARNs)
 	if err != nil {
@@ -157,6 +157,6 @@ func deployS3Manifest(c Client, log utils.Logger, pd *DeployData, params DeployA
 
 	out.Manifest = *pd.Manifest
 	out.ManifestURL = url
-	log.Infow("Uploaded manifest to S3 (public-read)", "bucket", params.Bucket, "key", pd.ManifestKey)
+	log.Infow("uploaded manifest to S3 (public-read)", "bucket", params.Bucket, "key", pd.ManifestKey)
 	return nil
 }

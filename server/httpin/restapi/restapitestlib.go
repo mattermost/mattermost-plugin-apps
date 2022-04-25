@@ -216,8 +216,8 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 
 	router := mux.NewRouter()
 	router.HandleFunc(apps.DefaultPing.Path, httputils.DoHandleJSON(apps.NewDataResponse(nil)))
-	router.HandleFunc("/setup/user", func(w http.ResponseWriter, r *http.Request) {
-		creq, err := apps.CallRequestFromJSONReader(r.Body)
+	router.HandleFunc("/setup/user", func(w http.ResponseWriter, req *http.Request) {
+		creq, err := apps.CallRequestFromJSONReader(req.Body)
 		require.NoError(err)
 		require.NotNil(creq)
 
@@ -229,8 +229,8 @@ func (th *TestHelper) SetupApp(m apps.Manifest) TestApp {
 
 		httputils.WriteJSON(w, apps.NewDataResponse(nil))
 	})
-	router.HandleFunc("/setup/user2", func(w http.ResponseWriter, r *http.Request) {
-		creq, err := apps.CallRequestFromJSONReader(r.Body)
+	router.HandleFunc("/setup/user2", func(w http.ResponseWriter, req *http.Request) {
+		creq, err := apps.CallRequestFromJSONReader(req.Body)
 		require.NoError(err)
 		require.NotNil(creq)
 

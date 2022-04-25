@@ -97,7 +97,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Log
 
 	awsSession.Handlers.Complete.PushFront(func(r *request.Request) {
 		if r.HTTPResponse != nil && r.HTTPRequest != nil {
-			log.Debugw("AWS request",
+			log.Debugw("completed an AWS request",
 				"method", r.HTTPRequest.Method,
 				"url", r.HTTPRequest.URL.String(),
 				"status", r.HTTPResponse.Status,
@@ -116,7 +116,7 @@ func MakeClient(awsAccessKeyID, awsSecretAccessKey, region string, log utils.Log
 		region:     region,
 	}
 
-	log.Debugw("New AWS client",
+	log.Debugw("created an AWS client",
 		"region", region,
 		"access", utils.LastN(awsAccessKeyID, 7),
 		"secret", utils.LastN(awsSecretAccessKey, 4))

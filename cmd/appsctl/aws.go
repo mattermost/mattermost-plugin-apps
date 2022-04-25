@@ -200,7 +200,7 @@ var awsTestS3Cmd = &cobra.Command{
 			return err
 		}
 		r := string(data)
-		log.Debugf("Received: %s", string(data))
+		log.Debugw("received data", "data", string(data))
 
 		if r != "static pong" {
 			return errors.Errorf("expected 'static pong', got '%s'", r)

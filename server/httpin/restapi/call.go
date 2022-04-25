@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -26,46 +25,39 @@ func (a *restapi) initCall(h *httpin.Handler) {
 //   Method: POST
 //   Input: CallRequest
 //   Output: CallResponse
-func (a *restapi) Call(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	creq, err := apps.CallRequestFromJSONReader(r.Body)
+func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
 		return
 	}
-
-	req.SetAppID(creq.Context.AppID)
+	r.SetAppID(creq.Context.AppID)
 
 	// Clear out anythging in the incoming expanded context for security
 	// reasons, it will be set by Expand before passing to the app.
 	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(req, req.ActingUserID(), creq.Context)
+	creq.Context, err = a.cleanUserAgentContext(r.ActingUserID(), creq.Context)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
 		return
 	}
 
-	res := a.proxy.Call(req, *creq)
+	cresp := a.proxy.Call(r, *creq)
 
-	errorText := ""
-	if res.Type == apps.CallResponseTypeError {
-		errorText = res.Text
-	}
-	req.Log.Debugw(
-		"Received call response",
-		"error", errorText,
-		"type", res.Type,
-		"call_path", creq.Path,
-	)
+	// Add the request and response digests to the logger.
+	r.Log = r.Log.With(creq, cresp)
 
-	// Only track submit calls
-	if strings.HasSuffix(creq.Path, "submit") {
+	// Only track submit calls.
+	// TODO: <>/<>  1/5 should we be tracking submit _attempts_? I.e. move this
+	// above the Call?
+	if creq.Context.UserAgentContext.TrackAsSubmit {
 		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
 	}
 
-	_ = httputils.WriteJSON(w, res)
+	_ = httputils.WriteJSON(w, cresp)
 }
 
-func (a *restapi) cleanUserAgentContext(_ *incoming.Request, userID string, orig apps.Context) (apps.Context, error) {
+func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
 	mm := a.conf.MattermostAPI()
 	var postID, channelID, teamID string
 	cc := apps.Context{

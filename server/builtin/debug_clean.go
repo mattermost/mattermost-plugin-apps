@@ -26,12 +26,25 @@ func (a *builtinApp) debugCleanCommandBinding(loc *i18n.Localizer) apps.Binding 
 	}
 }
 
-func (a *builtinApp) debugClean(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) debugClean(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	_ = a.conf.MattermostAPI().KV.DeleteAll()
-	_ = a.conf.StoreConfig(config.StoredConfig{})
-	return apps.NewTextResponse(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-		ID:    "command.debug.clean.submit",
-		Other: "Deleted all KV records and emptied the config.",
-	}))
+	err := a.conf.MattermostAPI().KV.DeleteAll()
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	done := "- " + a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "command.debug.clean.submit.kv",
+		Other: "Deleted all KV records.",
+	}) + "\n"
+
+	err = a.conf.StoreConfig(config.StoredConfig{}, r.Log)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	done += "- " + a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ID:    "command.debug.clean.submit.config",
+		Other: "Emptied the config.",
+	}) + "\n"
+
+	return apps.NewTextResponse(done)
 }

@@ -21,9 +21,9 @@ var DeployType apps.DeployType
 //
 // `golang-middleware` template makes use of `http.DefaultServeMux`, so we just
 // need to add our handlers and serve, like we do in AWS or HTTP deployments.
-func Handle(w http.ResponseWriter, r *http.Request) {
+func Handle(w http.ResponseWriter, req *http.Request) {
 	DeployType = apps.DeployOpenFAAS
-	http.DefaultServeMux.ServeHTTP(w, r)
+	http.DefaultServeMux.ServeHTTP(w, req)
 }
 
 // Init sets up the app's HTTp server, which is exactly the same for all of the
