@@ -121,8 +121,13 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
+		deployType := string(app.DeployType)
+		if app.DeployType == apps.DeployHTTP && app.HTTP != nil {
+			deployType = app.HTTP.RootURL
+		}
+
 		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-			name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
+			name, status, deployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
 	listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
