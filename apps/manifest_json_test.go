@@ -11,8 +11,8 @@ import (
 
 func TestManifestUnmarshalJSON(t *testing.T) {
 	m := Manifest{
-		AppID:                "hello-world",
-		DisplayName:          "Hello, world!",
+		AppID:                "test-app",
+		DisplayName:          "test app",
 		Icon:                 "icon.png",
 		HomepageURL:          "http://localhost:1111",
 		RequestedPermissions: Permissions{PermissionActAsBot},
@@ -28,7 +28,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 
 	mPlugin := m
 	mPlugin.Plugin = &Plugin{
-		PluginID: "com.mattermost.test",
+		PluginID: "com.mattermost.test-app",
 	}
 	mPlugin7 := mPlugin
 	mPlugin7.v7AppType = string(DeployPlugin)
@@ -39,7 +39,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 			{
 				Path:    "/",
 				Name:    "go-function",
-				Handler: "test-lambda",
+				Handler: "blah",
 				Runtime: "go1.x",
 			},
 		},
@@ -55,7 +55,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		"v0.7 http": {
 			In: `{
 					"app_id": "test-app",
-					"display_name": "Hello, world!",
+					"display_name": "test app",
 					"app_type": "http",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
@@ -73,7 +73,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		"v0.8 http": {
 			In: `{
 					"app_id": "test-app",
-					"display_name": "Hello, world!",
+					"display_name": "test app",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
 					"http":{
@@ -91,8 +91,8 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		},
 		"v0.7 aws": {
 			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
+					"app_id": "test-app",
+					"display_name": "test app",
 					"app_type": "aws_lambda",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
@@ -100,7 +100,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						{
 							"path": "/",
 							"name": "go-function",
-							"handler": "hello-lambda",
+							"handler": "blah",
 							"runtime": "go1.x"
 						}
 					],
@@ -116,8 +116,8 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		},
 		"v0.8 aws": {
 			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
+					"app_id": "test-app",
+					"display_name": "test app",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
 					"aws_lambda": {
@@ -125,7 +125,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 							{
 								"path": "/",
 								"name": "go-function",
-								"handler": "hello-lambda",
+								"handler": "blah",
 								"runtime": "go1.x"
 							}
 						]
@@ -142,12 +142,12 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		},
 		"v0.7 plugin": {
 			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
+					"app_id": "test-app",
+					"display_name": "test app",
 					"app_type": "plugin",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
-					"plugin_id": "com.mattermost.hello-world",
+					"plugin_id": "com.mattermost.test-app",
 					"requested_permissions": [
 						"act_as_bot"
 					],
@@ -160,12 +160,12 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		},
 		"v0.8 plugin": {
 			In: `{
-					"app_id": "hello-world",
-					"display_name": "Hello, world!",
+					"app_id": "test-app",
+					"display_name": "test app",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
 					"plugin": {
-						"plugin_id": "com.mattermost.hello-world"
+						"plugin_id": "com.mattermost.test-app"
 					},
 					"requested_permissions": [
 						"act_as_bot"

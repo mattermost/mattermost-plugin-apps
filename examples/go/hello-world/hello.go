@@ -129,20 +129,24 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-// Send sends a DM back to the user.
+// Send sends a direct message (DM) back to the user.
 func Send(w http.ResponseWriter, req *http.Request) {
-	c := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&c)
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
 
+	// Customize the message, as provided in creq.Values, or use the default.
 	message := "Hello, world!"
-	v, ok := c.Values["message"]
-	if ok && v != nil {
-		message += fmt.Sprintf(" ...and %s!", v)
+	v := creq.GetValue("message", "")
+	if v != "" {
+		message += fmt.Sprintf(" ...and **%s**!", v)
 	}
-	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
 
-	appclient.AsActingUser(c.Context).DM(c.Context.BotUserID, "Hello, bot!")
+	// Send it as a direct message to the user, from the app's bot.
+	appclient.AsBot(creq.Context).DM(creq.Context.ActingUser.Id, message)
 
-	httputils.WriteJSON(w,
-		apps.NewTextResponse("Created a post in your DM channel."))
+	// Respond from the user back to the bot. 
+	appclient.AsActingUser(creq.Context).DM(creq.Context.BotUserID, "Hello back at you, bot!")
+
+	// Respond with an ephemeral message, in the current channel.
+	httputils.WriteJSON(w, apps.NewTextResponse("Created a post in your DM channel."))
 }

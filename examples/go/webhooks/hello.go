@@ -23,11 +23,11 @@ const (
 var iconData []byte
 
 var manifest = apps.Manifest{
-	AppID:       "hello-webhooks",
+	AppID:       "example-webhooks",
 	Version:     "1.0.0",
-	DisplayName: "Hello, Webhooks!",
+	DisplayName: "Example of an app receiving webhooks.",
 	Icon:        "icon.png",
-	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-webhooks",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/webhooks",
 	RequestedPermissions: apps.Permissions{
 		apps.PermissionActAsUser,
 		apps.PermissionActAsBot,
@@ -53,8 +53,8 @@ var bindings = []apps.Binding{
 		Bindings: []apps.Binding{
 			{
 				Icon:        "icon.png",
-				Label:       "hello-webhooks",
-				Description: "Hello Webhooks App",
+				Label:       "example-webhooks",
+				Description: "Example Webhooks App",
 				Hint:        "[ send ]",
 				Bindings: []apps.Binding{
 					{
@@ -100,10 +100,10 @@ func main() {
 	// `info` command - displays the webhook URL.
 	http.HandleFunc("/info", info)
 
-	// `send` command - send a Hello webhook message.
+	// `send` command - send a test webhook message.
 	http.HandleFunc("/send", send)
 
-	fmt.Printf("hello-webhooks app listening on %q \n", listenAddr)
+	fmt.Printf("%s app listening on %q \n", manifest.AppID, listenAddr)
 	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
 	panic(http.ListenAndServe(listenAddr, nil))
 }
@@ -126,7 +126,7 @@ func install(w http.ResponseWriter, req *http.Request) {
 
 	asBot.CreatePost(&model.Post{
 		ChannelId: channelID,
-		Message:   "@hello-webhooks is installed into this channel, try /hello-webhooks send",
+		Message:   fmt.Sprintf("@%s is installed into this channel, try /%s-webhooks send", manifest.AppID, manifest.AppID),
 	})
 
 	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
@@ -153,7 +153,8 @@ func info(w http.ResponseWriter, req *http.Request) {
 	json.NewDecoder(req.Body).Decode(&creq)
 
 	httputils.WriteJSON(w,
-		apps.NewTextResponse("Try `/hello-webhooks send %s/hello?secret=%s`",
+		apps.NewTextResponse("Try `/%s send %s/anything?secret=%s`",
+			manifest.AppID,
 			creq.Context.MattermostSiteURL+creq.Context.AppPath+path.Webhook,
 			creq.Context.App.WebhookSecret))
 }
@@ -166,8 +167,8 @@ func send(w http.ResponseWriter, req *http.Request) {
 	http.Post(
 		url,
 		"application/json",
-		bytes.NewReader([]byte(`"Hello from a webhook!"`)))
+		bytes.NewReader([]byte(`"A text webhook message"`)))
 
 	httputils.WriteJSON(w,
-		apps.NewTextResponse("posted a Hello webhook message"))
+		apps.NewTextResponse("posted a test webhook message"))
 }
