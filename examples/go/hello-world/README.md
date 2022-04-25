@@ -72,16 +72,12 @@ Confirm the installation in the modal that pops up.
 
 ## Using the app
 
-Select the "Hello World" channel header button in Mattermost, which brings up a modal:
+- Select the "Hello World" channel header button in Mattermost, which brings up a modal:
+  ![image](https://user-images.githubusercontent.com/1187448/165161731-b486561c-792e-48aa-a421-de2bd9d7b506.png)
 
-**TODO** need image
+- Type `testing` and select **Submit**, you should see:
+  ![image](https://user-images.githubusercontent.com/1187448/165161935-9bce3fe7-e692-463f-ad60-ba22bf03b27d.png)
 
-Type `testing` and select **Submit**, you should see:
-
-**TODO need image**
-
-You can also use the `/helloworld send` command by typing `/helloworld send
---message Hi!`. This posts the message to the Mattermost channel that you're
-currently in.
-
-**TODO** need image
+- You can also use the `/helloworld send` command by typing `/helloworld send --message Hi!`.
+  This posts the message to the Mattermost channel that you're currently in.
+  ![image](https://user-images.githubusercontent.com/1187448/165161986-855f1030-3780-4c64-a348-645d7b8d7dfd.png)
