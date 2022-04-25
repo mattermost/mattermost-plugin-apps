@@ -74,6 +74,7 @@
   "command.list.submit.listed": "Listed",
   "command.list.submit.status.disabled": "Installed, Disabled",
   "command.list.submit.status.installed": "**Installed**",
+  "command.list.submit.status.unreachable": "Installed, **Unreachable**",
   "command.list.submit.version": "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
   "command.uninstall.description": "Uninstall an App",
   "command.uninstall.hint": "[ App ID ]",
