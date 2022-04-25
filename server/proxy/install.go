@@ -21,6 +21,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+const pingAppTimeout = 1 * time.Second
+
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
@@ -69,17 +71,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	// See if the app is inaaccessible. Call its ping path with nothing
-	// expanded, ignore 404 errors coming back and consider everything else a
-	// "success".
-	//
-	// Note that this check is often ineffective, but "the best we can do"
-	// before we start the diffcult-to-revert install process.
-	_, err = p.callApp(r, *app, apps.CallRequest{
-		Call:    apps.DefaultPing,
-		Context: cc,
-	})
-	if err != nil && errors.Cause(err) != utils.ErrNotFound {
+	if !p.pingApp(r, *app) {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 

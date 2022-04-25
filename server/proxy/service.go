@@ -81,7 +81,7 @@ type Internal interface {
 	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
 	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error)
 	GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error)
-	GetInstalledApps(r *incoming.Request) []apps.App
+	GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
 	GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
