@@ -117,7 +117,7 @@ func checkJWT(req *http.Request) (*apps.JWTClaims, error) {
 		return secret, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "JWT check failed")
 	}
 	return &claims, nil
 }
