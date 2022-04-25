@@ -78,12 +78,12 @@ type Notifier interface {
 // Internal implements go API used by other packages.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
-	CanDeploy(apps.DeployType) (allowed, usable bool)
-	GetAppBindings(*incoming.Request, apps.Context, apps.App) ([]apps.Binding, error)
-	GetInstalledApp(*incoming.Request, apps.AppID) (*apps.App, error)
-	GetInstalledApps(*incoming.Request) []apps.App
-	GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
-	GetManifest(*incoming.Request, apps.AppID) (*apps.Manifest, error)
+	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
+	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error)
+	GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error)
+	GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
+	GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
 }
 
