@@ -1,6 +1,7 @@
 # Hello, world!
 
-This is the quick start guide that explains how to write your first Mattermost app. This simple app:
+As customary, "hello, world!" is the simplest first app one would write and extend on a new platform.
+This app:
 
 - Provides a [manifest](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=var%20Manifest)
   ([docs](https://developers.mattermost.com/integrate/apps/api/manifest/)), in
@@ -9,11 +10,11 @@ This is the quick start guide that explains how to write your first Mattermost a
 - Contains a [send form](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=var%20SendForm)
   ([docs](https://developers.mattermost.com/integrate/apps/api/interactivity/))
   that allows to enter a custom message.
-- [Binds](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=var%20Bindinings%20callback)
+- [Binds](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=Bindinings%20callback)
   ([docs](https://developers.mattermost.com/integrate/apps/api/bindings/)) the
   form to the channel header, and defines a `/helloworld send` command.
 - Contains the [Send](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=func%20Send)
-  call handler that sends a parameterized message back to the user.
+  call ([docs](https://developers.mattermost.com/integrate/apps/api/call/)) handler that sends a parameterized message back to the user.
 
 ## Prerequisites
 
