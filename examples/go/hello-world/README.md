@@ -1,9 +1,12 @@
 # Hello, world!
 
-As customary, "hello, world!" is the simplest first app one would write and extend on a new platform.
+As customary, "hello, world!" is the simplest first app one would write, or extend.
+
+## What's in the App?
+
 This app:
 
-- Provides a [manifest](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=var%20Manifest)
+- Contains a [manifest](https://github.com/mattermost/mattermost-plugin-apps/blob/master/examples/go/hello-world/hello.go#:~:text=var%20Manifest)
   ([docs](https://developers.mattermost.com/integrate/apps/api/manifest/)), in
   which it declares itself an HTTP app that acts as a bot, and binds to
   locations in the user interface.
@@ -31,7 +34,7 @@ In the System Console, ensure that the following are set to **true**:
 You also need at least `go1.16` installed. Please follow the guide
 [here](https://golang.org/doc/install) to install the latest version.
 
-### Install the Apps plugin
+#### Install the Apps plugin
 
 The [apps plugin](https://github.com/mattermost/mattermost-plugin-apps) is a
 communication bridge between your app and the Mattermost server. To install it
@@ -51,7 +54,7 @@ make dist
 
 Then upload it to your local Mattermost server via the System Console.
 
-## Running the app
+## Run the app
 
 ```bash
 cd ./examples/go/hello-world
@@ -60,7 +63,7 @@ go run .
 
 The app runs on port `4000`.
 
-## Installing the app
+## Install the app to Mattermost
 
 Run the following slash commands on your Mattermost server:
 
@@ -70,7 +73,7 @@ Run the following slash commands on your Mattermost server:
 
 Confirm the installation in the modal that pops up.
 
-## Using the app
+## Use the app
 
 - Select the "Hello World" channel header button in Mattermost, which brings up a modal:
   ![image](https://user-images.githubusercontent.com/1187448/165161731-b486561c-792e-48aa-a421-de2bd9d7b506.png)
