@@ -156,11 +156,11 @@ func TestMergeBindings(t *testing.T) {
 					Location: "/post_menu",
 					Bindings: []apps.Binding{
 						{
-							AppID:       "hello",
-							Label:       "Create hello ticket",
-							Description: "Create ticket in hello",
+							AppID:       "test",
+							Label:       "Create test ticket",
+							Description: "Create ticket in test",
 							Form: &apps.Form{
-								Submit: apps.NewCall("http://localhost:4000/hello"),
+								Submit: apps.NewCall("http://localhost:4000/test"),
 							},
 						},
 					},
@@ -179,11 +179,11 @@ func TestMergeBindings(t *testing.T) {
 							},
 						},
 						{
-							AppID:       "hello",
-							Label:       "Create hello ticket",
-							Description: "Create ticket in hello",
+							AppID:       "test",
+							Label:       "Create test ticket",
+							Description: "Create ticket in test",
 							Form: &apps.Form{
-								Submit: apps.NewCall("http://localhost:4000/hello"),
+								Submit: apps.NewCall("http://localhost:4000/test"),
 							},
 						},
 					},
@@ -747,34 +747,34 @@ func TestCleanAppBinding(t *testing.T) {
 		"happy simplest": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test",
 				Label:    "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 		},
 		"trim location": {
 			in: apps.Binding{
 				Location: " test-1 \t",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test-1",
 				Label:    "test-1",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			expectedProblems: "1 error occurred:\n\t* /command/main-command/test-1: trimmed whitespace from location\n\n",
 		},
 		"ERROR location PostMenu not granted": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix:        apps.LocationPostMenu,
 			expected:         nil,
@@ -784,45 +784,45 @@ func TestCleanAppBinding(t *testing.T) {
 			in: apps.Binding{
 				Location: "test",
 				Label:    "\ntest-label \t",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test",
 				Label:    "test-label",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			expectedProblems: "1 error occurred:\n\t* /command/main-command/test: trimmed whitespace from label test-label\n\n",
 		},
 		"label defaults to location for command": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test",
 				Label:    "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 		},
 		"label does not default for non-commands": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationChannelHeader.Sub("some"),
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 		},
 		"ERROR neither location nor label": {
 			in: apps.Binding{
-				Submit: apps.NewCall("/hello"),
+				Submit: apps.NewCall("/test"),
 			},
 			locPrefix:        apps.LocationCommand.Sub("main-command"),
 			expected:         nil,
@@ -832,7 +832,7 @@ func TestCleanAppBinding(t *testing.T) {
 			in: apps.Binding{
 				Location: "test",
 				Label:    "test label",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix:        apps.LocationCommand.Sub("main-command"),
 			expected:         nil,
@@ -841,7 +841,7 @@ func TestCleanAppBinding(t *testing.T) {
 		"normalize icon path": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 				Icon:     "a///static.icon",
 			},
 			locPrefix: apps.LocationCommand.Sub("main-command"),
@@ -850,12 +850,12 @@ func TestCleanAppBinding(t *testing.T) {
 				Location: "test",
 				Label:    "test",
 				Icon:     "/apps/appid/static/a/static.icon",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 		},
 		"invalid icon path": {
 			in: apps.Binding{
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 				Location: "test",
 				Icon:     "../a/...//static.icon",
 			},
@@ -864,14 +864,14 @@ func TestCleanAppBinding(t *testing.T) {
 				AppID:    "appid",
 				Location: "test",
 				Label:    "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			expectedProblems: "1 error occurred:\n\t* /command/main-command/test: invalid icon path \"../a/...//static.icon\" in binding\n\n",
 		},
 		"ERROR: icon required for ChannelHeader in webapp": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			userAgent:        "webapp",
@@ -881,14 +881,14 @@ func TestCleanAppBinding(t *testing.T) {
 		"icon not required for ChannelHeader in mobile": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 			locPrefix: apps.LocationChannelHeader,
 			userAgent: "something-else",
 			expected: &apps.Binding{
 				AppID:    "appid",
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 			},
 		},
 		"ERROR: no submit/form/bindings": {
@@ -902,8 +902,8 @@ func TestCleanAppBinding(t *testing.T) {
 		"ERROR: submit and form": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
-				Form:     apps.NewBlankForm(apps.NewCall("/hello")),
+				Submit:   apps.NewCall("/test"),
+				Form:     apps.NewBlankForm(apps.NewCall("/test")),
 			},
 			locPrefix:        apps.LocationChannelHeader,
 			expected:         nil,
@@ -912,7 +912,7 @@ func TestCleanAppBinding(t *testing.T) {
 		"ERROR: submit and bindings": {
 			in: apps.Binding{
 				Location: "test",
-				Submit:   apps.NewCall("/hello"),
+				Submit:   apps.NewCall("/test"),
 				Bindings: []apps.Binding{
 					{
 						Location: "test1",
@@ -932,11 +932,11 @@ func TestCleanAppBinding(t *testing.T) {
 				Bindings: []apps.Binding{
 					{
 						Location: "test1",
-						Submit:   apps.NewCall("/hello"),
+						Submit:   apps.NewCall("/test"),
 					},
 					{
 						Location: "test2",
-						Submit:   apps.NewCall("/hello"),
+						Submit:   apps.NewCall("/test"),
 					},
 				},
 			},
@@ -948,12 +948,12 @@ func TestCleanAppBinding(t *testing.T) {
 					{
 						AppID:    "appid",
 						Location: "test1",
-						Submit:   apps.NewCall("/hello"),
+						Submit:   apps.NewCall("/test"),
 					},
 					{
 						AppID:    "appid",
 						Location: "test2",
-						Submit:   apps.NewCall("/hello"),
+						Submit:   apps.NewCall("/test"),
 					},
 				},
 			},
@@ -962,7 +962,7 @@ func TestCleanAppBinding(t *testing.T) {
 			in: apps.Binding{
 				Location: "test",
 				Form: &apps.Form{
-					Submit: apps.NewCall("/hello"),
+					Submit: apps.NewCall("/test"),
 					Fields: []apps.Field{
 						{Name: "in valid"},
 					},
@@ -973,7 +973,7 @@ func TestCleanAppBinding(t *testing.T) {
 				AppID:    "appid",
 				Location: "test",
 				Form: &apps.Form{
-					Submit: apps.NewCall("/hello"),
+					Submit: apps.NewCall("/test"),
 					Fields: []apps.Field{},
 				},
 			},

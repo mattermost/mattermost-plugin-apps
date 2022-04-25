@@ -23,7 +23,7 @@ var iconData []byte
 var manifest = apps.Manifest{
 	AppID:       "example-jwt",
 	Version:     "v1.0.0",
-	DisplayName: "Hello, JWT!",
+	DisplayName: "Example app with JWT",
 	Icon:        "icon.png",
 	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/jwt",
 	RequestedPermissions: []apps.Permission{

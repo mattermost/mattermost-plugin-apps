@@ -1,3 +1,6 @@
+**TODO** update
+
+
 ## Self-managed Apps Hosting demo
 
 #### Setup:
@@ -13,17 +16,16 @@ go run ./cmd/appsctl aws init --create
 ```
 - Build and deploy 2 apps to AWS
 ```sh
-cd ./examples/go/hello-serverless && make dist-aws
-go run ./cmd/appsctl aws deploy -v ./examples/go/hello-serverless/dist/bundle-aws.zip
+cd ./examples/go/serverless && make dist-aws
+go run ./cmd/appsctl aws deploy -v ./examples/go/serverless/dist/bundle-aws.zip
 ```
 - Install the apps
 ```
-/apps install listed hello-serverless 
+/apps install listed example-serverless 
 ```
 - Use the apps
 ```
-/hello-serverless send 
-/hello-typescript send 
+/example-serverless send 
 ```
 
 #### OpenFaaS/faasd
@@ -33,10 +35,10 @@ faas-cli list
 ```
 - Build and deploy an app to faasd
 ```sh
-cd ./examples/go/hello-serverless && make dist-openfaas
-go run ./cmd/appsctl openfaas deploy -v ./examples/go/hello-serverless/dist/bundle-openfaas.zip
+cd ./examples/go/serverless && make dist-openfaas
+go run ./cmd/appsctl openfaas deploy -v ./examples/go/serverless/dist/bundle-openfaas.zip
 ```
 - Install the app
 ```
-/apps install listed hello-serverless
+/apps install listed example-serverless
 ```

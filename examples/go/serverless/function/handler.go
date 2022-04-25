@@ -42,7 +42,7 @@ func init() {
 	http.HandleFunc("/bindings", httputils.DoHandleJSON(
 		apps.NewDataResponse(Bindings)))
 
-	// The main handler for sending a Hello message.
+	// The main handler for sending a test message.
 	http.HandleFunc("/send", send)
 }
 
@@ -52,14 +52,12 @@ var Bindings = []apps.Binding{
 		Bindings: []apps.Binding{
 			{
 				Icon:        "icon.png",
-				Label:       "hello-serverless",
-				Description: "Hello Serverless app",
-				Hint:        "[send]",
+				Label:       "example-serverless",
+				Description: "Example Serverless app",
 				Bindings: []apps.Binding{
 					{
 						Label: "send",
 						Form: &apps.Form{
-							Title: "Hello, serverless!",
 							Icon:  "/static/icon.png",
 							Fields: []apps.Field{
 								{
@@ -80,7 +78,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
 
-	message := fmt.Sprintf("Hello from a serverless app running as %s!", DeployType)
+	message := fmt.Sprintf("example-serverless app running as %s!", DeployType)
 	v, ok := creq.Values["message"]
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)

@@ -23,12 +23,12 @@ dist-http:
 dist-aws: 
 	rm -rf dist/aws && mkdir -p dist/aws
 	cd aws ; \
-	 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../dist/aws/hello-serverless . 
+	 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../dist/aws/example-serverless . 
 	cp manifest.json dist/aws
 	cp -r static dist/aws
 	cd dist/aws ; \
-		zip -m hello-serverless.zip hello-serverless ; \
-		zip -rm ../bundle-aws.zip hello-serverless.zip manifest.json static
+		zip -m example-serverless.zip example-serverless ; \
+		zip -rm ../bundle-aws.zip example-serverless.zip manifest.json static
 	rm -r dist/aws
 
 .PHONY: dist-openfaas

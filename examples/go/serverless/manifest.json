@@ -1,8 +1,8 @@
 {
-	"app_id": "hello-serverless",
+	"app_id": "example-serverless",
 	"version": "1.0.0",
-	"display_name": "Hello, Serverless!",
-	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
+	"display_name": "Example serverless App.",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/examples/go/serverless",
 	"requested_permissions": [
 		"act_as_bot"
 	],
@@ -16,8 +16,8 @@
 		"functions": [
 			{
 				"path": "/",
-				"name": "hello-serverless",
-				"handler": "hello-serverless",
+				"name": "example-serverless",
+				"handler": "example-serverless",
 				"runtime": "go1.x"
 			}
 		]
@@ -26,7 +26,7 @@
 		"functions": [
 			{
 				"path": "/",
-				"name": "hello"
+				"name": "example"
 			}
 		]
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/function"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/serverless/function"
 )
 
 func main() {

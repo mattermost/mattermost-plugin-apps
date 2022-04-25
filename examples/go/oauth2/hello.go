@@ -75,7 +75,7 @@ func main() {
 	http.HandleFunc("/connect", connect)
 	// `disconnect` command - disconnect your account.
 	http.HandleFunc("/disconnect", disconnect)
-	// `send` command - send a Hello message.
+	// `send` command - send a test message.
 	http.HandleFunc("/send", send)
 
 	rootURL := os.Getenv("ROOT_URL")
@@ -107,7 +107,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 	commandBinding := apps.Binding{
 		Icon:        "icon.png",
 		Label:       "example-oauth2",
-		Description: "Hello remote (3rd party) OAuth2 App",
+		Description: "Sends a test message with data from remote (3rd party) OAuth2 App (gCal).",
 		Bindings:    []apps.Binding{},
 	}
 
@@ -272,7 +272,7 @@ func send(w http.ResponseWriter, req *http.Request) {
 	uiService := oauth2api.NewUserinfoService(oauth2Service)
 
 	ui, _ := uiService.V2.Me.Get().Do()
-	message := fmt.Sprintf("Hello from Google, [%s](mailto:%s)!", ui.Name, ui.Email)
+	message := fmt.Sprintf("Google Calendar data for [%s](mailto:%s)!", ui.Name, ui.Email)
 	cl, _ := calService.CalendarList.List().Do()
 	if cl != nil && len(cl.Items) > 0 {
 		message += " You have the following calendars:\n"

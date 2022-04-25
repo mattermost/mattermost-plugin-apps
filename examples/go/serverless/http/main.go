@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/function"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/serverless/function"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 

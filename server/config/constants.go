@@ -25,9 +25,6 @@ const (
 )
 
 const (
-	// Top-level path(s) for HTTP example apps.
-	HelloHTTPPath = "/example/hello"
-
 	WebSocketEventRefreshBindings = "refresh_bindings"
 	WebSocketEventPluginEnabled   = "plugin_enabled"
 	WebSocketEventPluginDisabled  = "plugin_disabled"

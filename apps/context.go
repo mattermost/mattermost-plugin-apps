@@ -61,7 +61,7 @@ type UserAgentContext struct {
 	AppID AppID `json:"app_id"`
 
 	// Fully qualified original Location of the user action (if applicable),
-	// e.g. "/command/helloworld/send" or "/channel_header/send".
+	// e.g. "/command/myapp/send" or "/channel_header/send".
 	Location Location `json:"location,omitempty"`
 
 	// UserAgent used to perform the call. It can be either "webapp" or "mobile".

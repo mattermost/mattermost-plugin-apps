@@ -10,7 +10,7 @@ import (
 )
 
 func TestManifestUnmarshalJSON(t *testing.T) {
-	hello := Manifest{
+	m := Manifest{
 		AppID:                "hello-world",
 		DisplayName:          "Hello, world!",
 		Icon:                 "icon.png",
@@ -19,32 +19,32 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 		RequestedLocations:   Locations{LocationChannelHeader, LocationCommand},
 	}
 
-	helloHTTP := hello
-	helloHTTP.HTTP = &HTTP{
+	mHTTP := m
+	mHTTP.HTTP = &HTTP{
 		RootURL: "http://localhost:1111",
 	}
-	helloHTTP7 := helloHTTP
-	helloHTTP7.v7AppType = string(DeployHTTP)
+	mHTTP7 := mHTTP
+	mHTTP7.v7AppType = string(DeployHTTP)
 
-	helloPlugin := hello
-	helloPlugin.Plugin = &Plugin{
-		PluginID: "com.mattermost.hello-world",
+	mPlugin := m
+	mPlugin.Plugin = &Plugin{
+		PluginID: "com.mattermost.test",
 	}
-	helloPlugin7 := helloPlugin
-	helloPlugin7.v7AppType = string(DeployPlugin)
+	mPlugin7 := mPlugin
+	mPlugin7.v7AppType = string(DeployPlugin)
 
-	helloAWS := hello
-	helloAWS.AWSLambda = &AWSLambda{
+	mAWS := m
+	mAWS.AWSLambda = &AWSLambda{
 		Functions: []AWSLambdaFunction{
 			{
 				Path:    "/",
 				Name:    "go-function",
-				Handler: "hello-lambda",
+				Handler: "test-lambda",
 				Runtime: "go1.x",
 			},
 		},
 	}
-	helloAWS7 := helloAWS
+	helloAWS7 := mAWS
 	helloAWS7.v7AppType = string(DeployAWSLambda)
 
 	for name, test := range map[string]struct {
@@ -54,7 +54,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 	}{
 		"v0.7 http": {
 			In: `{
-					"app_id": "hello-world",
+					"app_id": "test-app",
 					"display_name": "Hello, world!",
 					"app_type": "http",
 					"icon": "icon.png",
@@ -68,11 +68,11 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						"/command"
 					]
 				}`,
-			Expected: helloHTTP7,
+			Expected: mHTTP7,
 		},
 		"v0.8 http": {
 			In: `{
-					"app_id": "hello-world",
+					"app_id": "test-app",
 					"display_name": "Hello, world!",
 					"icon": "icon.png",
 					"homepage_url":"http://localhost:1111",
@@ -87,7 +87,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						"/command"
 					]
 				}`,
-			Expected: helloHTTP,
+			Expected: mHTTP,
 		},
 		"v0.7 aws": {
 			In: `{
@@ -138,7 +138,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						"/command"
 					]
 				}`,
-			Expected: helloAWS,
+			Expected: mAWS,
 		},
 		"v0.7 plugin": {
 			In: `{
@@ -156,7 +156,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						"/command"
 					]
 				}`,
-			Expected: helloPlugin7,
+			Expected: mPlugin7,
 		},
 		"v0.8 plugin": {
 			In: `{
@@ -175,7 +175,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 						"/command"
 					]
 				}`,
-			Expected: helloPlugin,
+			Expected: mPlugin,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

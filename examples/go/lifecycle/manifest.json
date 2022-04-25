@@ -1,6 +1,6 @@
 {
 	"app_id": "example-lifecycle",
-	"display_name": "Hello, Lifecycle!",
+	"display_name": "Example of App lifecycle event handling.",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/lifecycle",
 	"requested_permissions": [
 		"act_as_bot"

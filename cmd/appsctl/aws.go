@@ -159,15 +159,15 @@ func helloServerless() apps.App {
 	return apps.App{
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
-			AppID:   "hello-serverless",
+			AppID:   "example-serverless",
 			Version: "1.0.0",
 			Deploy: apps.Deploy{
 				AWSLambda: &apps.AWSLambda{
 					Functions: []apps.AWSLambdaFunction{
 						{
 							Path:    "/",
-							Name:    "hello-serverless",
-							Handler: "hello-serverless",
+							Name:    "example-serverless",
+							Handler: "example-serverless",
 							Runtime: "go1.x",
 						},
 					},
@@ -220,7 +220,7 @@ var awsTestS3ListCmd = &cobra.Command{
 			return err
 		}
 
-		resp, err := upTest.ListS3Apps("hello")
+		resp, err := upTest.ListS3Apps("example")
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ var awsTestS3ListCmd = &cobra.Command{
 
 var awsTestLambdaCmd = &cobra.Command{
 	Use:   "lambda",
-	Short: "test accessing hello-serverless /ping function",
+	Short: "test accessing example-serverless /ping function",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		upTest, err := makeTestAWSUpstream()
@@ -272,9 +272,9 @@ var awsTestLambdaCmd = &cobra.Command{
 
 var awsTestDeployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "deploys 'hello-serverless' app for testing",
-	Long: `Test commands us the 'hello-serverless' example app for testing, see
-https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-serverless/README.md
+	Short: "deploys 'example-serverless' app for testing",
+	Long: `Test commands us the 'example-serverless' example app for testing, see
+https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/serverless/README.md
 
 The App needs to be built with 'make dist' in its own directory, then use
 

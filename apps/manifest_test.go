@@ -173,7 +173,7 @@ func TestValidateManifest(t *testing.T) {
 					AWSLambda: &apps.AWSLambda{
 						Functions: []apps.AWSLambdaFunction{{
 							Name:    "go-funcion",
-							Handler: "hello-lambda",
+							Handler: "blah",
 							Runtime: "go1.x",
 						}},
 					},
@@ -189,7 +189,7 @@ func TestValidateManifest(t *testing.T) {
 					AWSLambda: &apps.AWSLambda{
 						Functions: []apps.AWSLambdaFunction{{
 							Path:    "/",
-							Handler: "hello-lambda",
+							Handler: "blah",
 							Runtime: "go1.x",
 						}},
 					},
@@ -222,7 +222,7 @@ func TestValidateManifest(t *testing.T) {
 						Functions: []apps.AWSLambdaFunction{{
 							Path:    "/",
 							Name:    "go-funcion",
-							Handler: "hello-lambda",
+							Handler: "blah",
 						}},
 					},
 				},
@@ -238,7 +238,7 @@ func TestValidateManifest(t *testing.T) {
 						Functions: []apps.AWSLambdaFunction{{
 							Path:    "/",
 							Name:    "go-funcion",
-							Handler: "hello-lambda",
+							Handler: "blah",
 							Runtime: "go1.x",
 						}},
 					},
