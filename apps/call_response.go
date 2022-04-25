@@ -5,6 +5,8 @@ package apps
 
 import (
 	"fmt"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type CallResponseType string
@@ -122,13 +124,13 @@ func (cresp CallResponse) String() string {
 		case cresp.Text != "" && cresp.Data != nil:
 			return fmt.Sprintf("OK: %s; + data type %T", cresp.Text, cresp.Data)
 		case cresp.Data != nil:
-			return fmt.Sprintf("OK: %s; + data type %T, value: %v", cresp.Text, cresp.Data, cresp.Data)
+			return fmt.Sprintf("OK: data type %T, value: %v", cresp.Data, cresp.Data)
 		default:
 			return "OK: (none)"
 		}
 
 	case CallResponseTypeForm:
-		return fmt.Sprintf("Form: %v", cresp.Form)
+		return fmt.Sprintf("Form: %v", utils.ToJSON(cresp.Form))
 
 	case CallResponseTypeCall:
 		return fmt.Sprintf("Call: %v", cresp.Call)
@@ -146,7 +148,7 @@ func (cresp CallResponse) String() string {
 }
 
 func (cresp CallResponse) Loggable() []interface{} {
-	props := []interface{}{"response_type", cresp.Type}
+	props := []interface{}{"response_type", string(cresp.Type)}
 
 	switch cresp.Type {
 	case CallResponseTypeError:
@@ -165,10 +167,14 @@ func (cresp CallResponse) Loggable() []interface{} {
 		}
 
 	case CallResponseTypeForm:
-		props = append(props, "response_form", cresp.Form)
+		if cresp.Form != nil {
+			props = append(props, "response_form", *cresp.Form)
+		}
 
 	case CallResponseTypeCall:
-		props = append(props, "response_call", cresp.Call)
+		if cresp.Call != nil {
+			props = append(props, "response_call", cresp.Call.String())
+		}
 
 	case CallResponseTypeNavigate:
 		props = append(props, "response_url", cresp.NavigateToURL)
