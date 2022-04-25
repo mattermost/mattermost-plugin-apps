@@ -1,7 +1,7 @@
 {
-	"app_id": "hello-lifecycle",
+	"app_id": "example-lifecycle",
 	"display_name": "Hello, Lifecycle!",
-	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/hello-lifecycle",
+	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/tree/master/examples/go/lifecycle",
 	"requested_permissions": [
 		"act_as_bot"
 	],
