@@ -21,11 +21,11 @@ var secret = []byte("1234")
 var iconData []byte
 
 var manifest = apps.Manifest{
-	AppID:       "hello-jwt",
+	AppID:       "example-jwt",
 	Version:     "v1.0.0",
 	DisplayName: "Hello, JWT!",
 	Icon:        "icon.png",
-	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-jwt",
+	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/jwt",
 	RequestedPermissions: []apps.Permission{
 		apps.PermissionActAsBot,
 	},
@@ -46,15 +46,13 @@ var bindings = []apps.Binding{
 		Bindings: []apps.Binding{
 			{
 				Icon:        "icon.png",
-				Label:       "hello-jwt",
-				Description: "Hello JWT app",
-				Hint:        "[send]",
+				Label:       "example-jwt",
+				Description: "Example HTTP JWT app",
 				Bindings: []apps.Binding{
 					{
-						Location: "send",
-						Label:    "send",
+						Label: "test",
 						Submit: &apps.Call{
-							Path: "/send",
+							Path: "/test",
 						},
 					},
 				},
@@ -64,24 +62,19 @@ var bindings = []apps.Binding{
 }
 
 func main() {
-	// Serve its own manifest as HTTP for convenience in dev. mode.
 	http.HandleFunc("/manifest.json", httputils.DoHandleJSON(manifest))
 
-	// Ping to test the JWT connectivity upon install.
-	http.HandleFunc("/ping", withJWT(
-		httputils.DoHandleJSON(apps.NewDataResponse(nil))))
+	// Ping is invoke to confirm connectivity immediately after install.
+	http.HandleFunc("/ping", requireJWT(httputils.DoHandleJSON(apps.NewDataResponse(nil))))
 
-	// Returns the Channel Header and Command bindings for the app.
-	http.HandleFunc("/bindings", withJWT(
-		httputils.DoHandleJSON(apps.NewDataResponse(bindings))))
+	// Returns the bindings for the app.
+	http.HandleFunc("/bindings", requireJWT(httputils.DoHandleJSON(apps.NewDataResponse(bindings))))
 
-	// The main handler for sending a Hello message.
-	http.HandleFunc("/send", withJWT(
-		send))
+	// Sends a test message.
+	http.HandleFunc("/test", requireJWT(test))
 
 	// Serves the icon for the app.
-	http.HandleFunc("/static/icon.png",
-		httputils.DoHandleData("image/png", iconData))
+	http.HandleFunc("/static/icon.png", httputils.DoHandleData("image/png", iconData))
 
 	addr := ":8084" // matches manifest.json
 	fmt.Println("Listening on", addr)
@@ -90,17 +83,16 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func send(w http.ResponseWriter, req *http.Request) {
+func test(w http.ResponseWriter, req *http.Request) {
 	c := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&c)
 
-	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, "JWT check ok")
+	appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, "JWT tested ok")
 
-	httputils.WriteJSON(w,
-		apps.NewTextResponse("Created a post in your DM channel."))
+	httputils.WriteJSON(w, apps.NewTextResponse("Created a post in your DM channel."))
 }
 
-func withJWT(f http.HandlerFunc) http.HandlerFunc {
+func requireJWT(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if _, err := checkJWT(req); err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
