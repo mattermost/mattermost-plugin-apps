@@ -72,7 +72,7 @@ appsctl aws deploy -v ./dist/bundle-aws.zip --update --install
 This will create the app-specific Lambda and S3 resources, and update the
 policies to access them from Mattermost.
 
-### Deploy and run on OpenFaaS.
+## Deploy and run on OpenFaaS.
 
 Build the bundle with
 
