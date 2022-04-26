@@ -35,6 +35,8 @@ describe('Apps bindings - Channel header', () => {
         cy.apiInitSetup().then(({team}) => {
             testTeam = team;
         });
+
+        cy.apiEnablePluginById('com.mattermost.apps');
     });
 
     it('MM-32330 Bindings - Channel header submit', () => {
@@ -59,9 +61,15 @@ describe('Apps bindings - Channel header', () => {
         cy.get('a.SidebarLink[aria-label*="hello-world"]').click();
 
         // * Verify survey content
-        cy.getLastPostId().then((postID) => {
+        cy.getNthPostId(-2).then((postID) => {
             const postIDSelector = '#post_' + postID;
             cy.get(`${postIDSelector} .post__body`).should('have.text', 'Hello, world! ...and the test message!');
+        });
+
+        // * Verify survey content
+        cy.getLastPostId().then((postID) => {
+            const postIDSelector = '#post_' + postID;
+            cy.get(`${postIDSelector} .post__body`).should('have.text', 'Hello, bot!');
         });
     });
 });
