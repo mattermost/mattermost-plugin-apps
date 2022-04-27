@@ -42,11 +42,11 @@ ifneq ($(HAS_SERVER),)
 	rm -rf ./server/mocks
 endif
 
-## Run Go E2E tests
-.PHONY: test-e2e
-test-e2e: dist
-	@echo Running e2e tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=e2e ./...
+## Run Go REST API system tests
+.PHONY: test-rest-api
+test-rest-api: dist
+	@echo Running REST API tests
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=rest_api_test ./...
 
 ## Extract new translation messages
 .PHONY: i18n-extract-server
@@ -70,7 +70,13 @@ i18n-merge-server:
 dev_server:
 	cd dev && docker-compose up mattermost db
 
-## Run hello-world example
-.PHONY: hello_world
-hello_world:
-	cd examples/go/hello-world && go run hello.go
+## Run the hello-world app
+.PHONY: run-example-hello-4000
+run-example-hello-4000:
+	cd examples/go/hello-world && go run .
+
+## Run the test app
+.PHONY: run-test-app-8081
+run-test-app-8081:
+	cd test/app && go run .
+
