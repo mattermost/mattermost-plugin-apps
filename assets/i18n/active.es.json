@@ -19,10 +19,6 @@
     "hash": "sha1-6a1cec45eaf37b34e1b1d89130d7746fe4006346",
     "other": "limpiar"
   },
-  "command.debug.clean.submit": {
-    "hash": "sha1-56290358b8e6c2d856b8668240035c92f47e220a",
-    "other": "Todos los registros KV han sido eliminados y la configuración vaciada."
-  },
   "command.debug.label": {
     "hash": "sha1-32faaecac742100f7753f0c1d0aa0add01b4046b",
     "other": "depurar"

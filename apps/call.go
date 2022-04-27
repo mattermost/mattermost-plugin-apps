@@ -5,6 +5,9 @@ package apps
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // Call defines a way to invoke an App's function. Calls are used to fetch App's
@@ -127,4 +130,26 @@ func (c *Call) PartialCopy() *Call {
 		clone.State = cloneState
 	}
 	return &clone
+}
+
+func (c Call) String() string {
+	s := c.Path
+	if c.Expand != nil {
+		s += fmt.Sprintf(", expand: %v", c.Expand.String())
+	}
+	if c.State != nil {
+		s += fmt.Sprintf(", state: %v", utils.LogDigest(c.State))
+	}
+	return s
+}
+
+func (c Call) Loggable() []interface{} {
+	props := []interface{}{"call_path", c.Path}
+	if c.Expand != nil {
+		props = append(props, "call_expand", c.Expand.String())
+	}
+	if c.State != nil {
+		props = append(props, "call_state", utils.LogDigest(c.State))
+	}
+	return props
 }

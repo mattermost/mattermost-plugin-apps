@@ -38,10 +38,10 @@ func (a *restapi) initKV(h *httpin.Handler) {
 //   Method: GET
 //   Input: none
 //   Output: a JSON object
-func (a *restapi) KVGet(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["key"]
-	prefix := mux.Vars(r)["prefix"]
-	data, err := a.appServices.KVGet(req, req.AppID(), req.ActingUserID(), prefix, id)
+func (a *restapi) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["key"]
+	prefix := mux.Vars(req)["prefix"]
+	data, err := a.appServices.KVGet(r, r.AppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -56,17 +56,17 @@ func (a *restapi) KVGet(req *incoming.Request, w http.ResponseWriter, r *http.Re
 //   Output: a JSON object
 //   Output:
 //     changed: set to true if the key value was changed.
-func (a *restapi) KVPut(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["key"]
-	prefix := mux.Vars(r)["prefix"]
+func (a *restapi) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["key"]
+	prefix := mux.Vars(req)["prefix"]
 
-	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
+	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 
-	changed, err := a.appServices.KVSet(req, req.AppID(), req.ActingUserID(), prefix, id, data)
+	changed, err := a.appServices.KVSet(r, r.AppID(), r.ActingUserID(), prefix, id, data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -81,11 +81,11 @@ func (a *restapi) KVPut(req *incoming.Request, w http.ResponseWriter, r *http.Re
 //   Methods: DELETE
 //   Input: none
 //   Output: none
-func (a *restapi) KVDelete(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["key"]
-	prefix := mux.Vars(r)["prefix"]
+func (a *restapi) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["key"]
+	prefix := mux.Vars(req)["prefix"]
 
-	err := a.appServices.KVDelete(req, req.AppID(), req.ActingUserID(), prefix, id)
+	err := a.appServices.KVDelete(r, r.AppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

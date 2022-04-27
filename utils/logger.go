@@ -4,10 +4,12 @@
 package utils
 
 import (
+	"fmt"
+	"sort"
+	"strings"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 )
 
 const ErrorKey = "error"
@@ -31,19 +33,52 @@ type Logger interface {
 	With(args ...interface{}) Logger
 }
 
-type plugin struct {
-	zapcore.LevelEnabler
-	plog   pluginapi.LogService
-	fields map[string]zapcore.Field
+type logger struct {
+	*zap.SugaredLogger
 }
 
-func NewPluginLogger(client *pluginapi.Client) Logger {
-	pc := &plugin{
-		LevelEnabler: zapcore.DebugLevel,
-		plog:         client.Log,
+func (l *logger) WithError(err error) Logger {
+	if err == nil {
+		return l
 	}
 	return &logger{
-		SugaredLogger: zap.New(pc).Sugar(),
+		SugaredLogger: l.SugaredLogger.With(ErrorKey, err.Error()),
+	}
+}
+
+type HasLoggable interface {
+	Loggable() []interface{}
+}
+
+// expandWith expands anything that implements LogProps into name, value pairs.
+func expandWith(args []interface{}) []interface{} {
+	var with []interface{}
+
+	expectKeyOrProps := true
+	for _, v := range args {
+		lp, hasProps := v.(HasLoggable)
+		_, isString := v.(string)
+		switch {
+		case !expectKeyOrProps:
+			with = append(with, v)
+			expectKeyOrProps = true
+		case hasProps:
+			with = append(with, expandWith(lp.Loggable())...)
+		case !isString:
+			with = append(with, "log_error", fmt.Sprintf("expected a string key or hasLogProps, found %T", v))
+			return with
+		default:
+			// a string key.
+			with = append(with, v)
+			expectKeyOrProps = false
+		}
+	}
+	return with
+}
+
+func (l *logger) With(args ...interface{}) Logger {
+	return &logger{
+		SugaredLogger: l.SugaredLogger.With(expandWith(args)...),
 	}
 }
 
@@ -82,73 +117,27 @@ func MustMakeCommandLogger(level zapcore.Level) Logger {
 	}
 }
 
-func (p *plugin) With(fields []zapcore.Field) zapcore.Core {
-	return p.with(fields)
-}
-
-func (p *plugin) with(fields []zapcore.Field) *plugin {
-	ff := map[string]zapcore.Field{}
-	for k, v := range p.fields {
-		ff[k] = v
-	}
-	for _, f := range fields {
-		ff[f.Key] = f
-	}
-	c := *p
-	c.fields = ff
-	return &c
-}
-
-func (p *plugin) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	return ce.AddCore(e, p)
-}
-
-func (p *plugin) Sync() error {
-	return nil
-}
-
-func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
-	p = p.with(fields)
-	w := p.plog.Error
-	switch e.Level {
-	case zapcore.DebugLevel:
-		w = p.plog.Debug
-	case zapcore.InfoLevel:
-		w = p.plog.Info
-	case zapcore.WarnLevel:
-		w = p.plog.Warn
+func LogDigest(i interface{}) string {
+	if s, ok := i.(string); ok {
+		return s
 	}
 
-	pairs := []interface{}{}
-	for k, f := range p.fields {
-		switch {
-		case f.Integer != 0:
-			pairs = append(pairs, k, f.Integer)
-		case f.String != "":
-			pairs = append(pairs, k, f.String)
-		default:
-			pairs = append(pairs, k, f.Interface)
+	var keys []string
+	if m, ok := i.(map[string]interface{}); ok {
+		for key := range m {
+			keys = append(keys, key)
 		}
 	}
-	w(e.Message, pairs...)
-	return nil
-}
 
-type logger struct {
-	*zap.SugaredLogger
-}
+	if m, ok := i.(map[string]string); ok {
+		for key := range m {
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) > 0 {
+		sort.Strings(keys)
+		return strings.Join(keys, ",")
+	}
 
-func (l *logger) WithError(err error) Logger {
-	if err == nil {
-		return l
-	}
-	return &logger{
-		SugaredLogger: l.SugaredLogger.With(ErrorKey, err.Error()),
-	}
-}
-
-func (l *logger) With(args ...interface{}) Logger {
-	return &logger{
-		SugaredLogger: l.SugaredLogger.With(args...),
-	}
+	return fmt.Sprintf("%v", i)
 }

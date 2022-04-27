@@ -12,15 +12,12 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestCreateOAuth2State(t *testing.T) {
 	stateRE := `[A-Za-z0-9-_]+\.[A-Za-z0-9]`
 	userID := `userid-test`
 	conf, api := config.NewTestService(nil)
-	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
 	s := oauth2Store{
 		Service: &Service{
 			conf: conf,
@@ -33,32 +30,32 @@ func TestCreateOAuth2State(t *testing.T) {
 		data, _ := args.Get(1).([]byte)
 		require.Regexp(t, stateRE, string(data))
 	}).Return(true, nil)
-	urlState, err := s.CreateState(req, userID)
+	urlState, err := s.CreateState(userID)
 	require.NoError(t, err)
 	key := config.KVOAuth2StatePrefix + urlState
 	require.LessOrEqual(t, len(key), model.KeyValueKeyMaxRunes)
 	require.Regexp(t, stateRE, urlState)
 
 	// Validate errors
-	err = s.ValidateStateOnce(req, "invalidformat", userID)
+	err = s.ValidateStateOnce("invalidformat", userID)
 	require.EqualError(t, err, "forbidden")
 
-	err = s.ValidateStateOnce(req, "nonexistent.value", userID)
+	err = s.ValidateStateOnce("nonexistent.value", userID)
 	require.EqualError(t, err, "forbidden")
 
-	err = s.ValidateStateOnce(req, urlState, "idmismatch")
+	err = s.ValidateStateOnce(urlState, "idmismatch")
 	require.EqualError(t, err, "forbidden")
 
 	mismatchedState := "mismatched-random." + strings.Split(urlState, ".")[1]
 	mismatchedKey := config.KVOAuth2StatePrefix + mismatchedState
 	api.On("KVGet", mismatchedKey).Once().Return(nil, nil)                                          // not found
 	api.On("KVSetWithOptions", mismatchedKey, []byte(nil), mock.Anything).Once().Return(false, nil) // delete attempt
-	err = s.ValidateStateOnce(req, mismatchedState, userID)
+	err = s.ValidateStateOnce(mismatchedState, userID)
 	require.EqualError(t, err, "state mismatch: forbidden")
 
 	api.On("KVGet", key).Once().Return([]byte(`"`+urlState+`"`), nil)
 	api.On("KVSetWithOptions", key, []byte(nil), mock.Anything).Once().Return(true, nil) // delete
-	err = s.ValidateStateOnce(req, urlState, userID)
+	err = s.ValidateStateOnce(urlState, userID)
 	require.NoError(t, err)
 }
 
@@ -79,13 +76,12 @@ func TestOAuth2User(t *testing.T) {
 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
 	// CreateState
 	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
-	req := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
-	err := s.SaveUser(req, "some_app_id", userID, data)
+	err := s.SaveUser("some_app_id", userID, data)
 	require.NoError(t, err)
 
 	api.On("KVGet", key).Return(data, nil).Once()
 
-	rData, err := s.GetUser(req, "some_app_id", userID)
+	rData, err := s.GetUser("some_app_id", userID)
 	assert.NoError(t, err)
 	assert.NotNil(t, rData)
 	var r Entity

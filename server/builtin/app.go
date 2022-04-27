@@ -189,8 +189,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 			stack := string(debug.Stack())
 			txt := "Call `" + creq.Path + "` panic-ed."
 			log = log.With(
-				"path", creq.Path,
-				"values", creq.Values,
+				creq,
 				"error", x,
 				"stack", stack,
 			)
@@ -198,7 +197,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 				txt = "Command `" + creq.RawCommand + "` panic-ed."
 				log.Errorw("Recovered from a panic in a command", "command", creq.RawCommand)
 			} else {
-				log.Errorw("Recovered from a panic in a Call")
+				log.Errorf("Recovered from a panic in a Call")
 			}
 
 			if a.conf.Get().DeveloperMode {
