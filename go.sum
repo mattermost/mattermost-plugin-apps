@@ -1099,10 +1099,10 @@ github.com/mattermost/logr/v2 v2.0.15/go.mod h1:mpPp935r5dIkFDo2y9Q87cQWhFR/4xXp
 github.com/mattermost/mattermost-plugin-api v0.0.22-0.20211210183909-beb4761e4bd3 h1:lmlPLKFru+w/ObEfadd7r1RXouspgxxxM3RtWOrxezE=
 github.com/mattermost/mattermost-plugin-api v0.0.22-0.20211210183909-beb4761e4bd3/go.mod h1:I4yKjtDUWABNNultKu8EIl4hkBeEdaHgFi0moqEd/Hs=
 github.com/mattermost/mattermost-server/v6 v6.0.0-20211207185652-92e80bd4ed31/go.mod h1:be9lN1LmfsUnK2ilK+Iao8Al9fGd57oZBQsfNlzsOHU=
-github.com/mattermost/mattermost-server/v6 v6.0.0-20220329145947-2aa06529c50a h1:QkYK7ZmiuVmK2uTTY7d5o7xE16rR2h1T0ReooejSLh0=
-github.com/mattermost/mattermost-server/v6 v6.0.0-20220329145947-2aa06529c50a/go.mod h1:wuU+QtI2l7MiRvHY07i3Sdw3InnVIL3D36mYJ/XNzDA=
-github.com/mattermost/morph v0.0.0-20220222074146-cff3f12ff131 h1:agJMxBP8LV0nyV90PZ/BHmmjNyvzTWqR20wLwiXHx14=
-github.com/mattermost/morph v0.0.0-20220222074146-cff3f12ff131/go.mod h1:jxM3g1bx+k2Thz7jofcHguBS8TZn5Pc+o5MGmORObhw=
+github.com/mattermost/mattermost-server/v6 v6.6.0 h1:47XbXSJu9fdbhZWG5bQ5dj3ySrINImTfUMgf/+z8QgI=
+github.com/mattermost/mattermost-server/v6 v6.6.0/go.mod h1:oR6UCRo+SEvnfN2FEOdzHs1UljrskyCKU8tWeKlxgMo=
+github.com/mattermost/morph v0.0.0-20220401091636-39f834798da8 h1:gwliVjCTqAC01mSCNqa5nJ/4MmGq50vrjsottIhQ4d8=
+github.com/mattermost/morph v0.0.0-20220401091636-39f834798da8/go.mod h1:jxM3g1bx+k2Thz7jofcHguBS8TZn5Pc+o5MGmORObhw=
 github.com/mattermost/rsc v0.0.0-20160330161541-bbaefb05eaa0 h1:G9tL6JXRBMzjuD1kkBtcnd42kUiT6QDwxfFYu7adM6o=
 github.com/mattermost/rsc v0.0.0-20160330161541-bbaefb05eaa0/go.mod h1:nV5bfVpT//+B1RPD2JvRnxbkLmJEYXmRaaVl15fsXjs=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
