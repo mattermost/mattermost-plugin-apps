@@ -69,7 +69,7 @@ describe('Apps bindings - Channel header', () => {
         // * Verify survey content
         cy.getLastPostId().then((postID) => {
             const postIDSelector = '#post_' + postID;
-            cy.get(`${postIDSelector} .post__body`).should('have.text', 'Hello, bot!');
+            cy.get(`${postIDSelector} .post__body`).should('have.text', 'Hello back at you, bot!');
         });
     });
 });
