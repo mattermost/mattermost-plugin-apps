@@ -1,0 +1,49 @@
+{
+    "app_id": "test",
+    "version": "0_8_0",
+    "display_name": "Test App",
+    "description": "Test App",
+    "homepage_url": "https://github.com/mattermost/mattermost-app-test",
+    "requested_locations": [
+        "/post_menu",
+        "/command",
+        "/channel_header",
+        "/in_post"
+    ],
+    "requested_permissions": [
+        "act_as_bot",
+        "act_as_user"
+    ],
+    "on_install": {
+        "path": "/install",
+        "type": "",
+        "expand": {
+            "app": "all",
+            "acting_user": "all",
+            "acting_user_access_token": "all",
+            "channel": "all",
+            "parent_post": "all",
+            "post": "all",
+            "root_post": "all",
+            "team": "all"
+        }
+    },
+    "bindings": {
+        "path": "/bindings",
+        "type": "",
+        "expand": {
+            "app": "all",
+            "acting_user": "all",
+            "acting_user_access_token": "all",
+            "channel": "all",
+            "parent_post": "all",
+            "post": "all",
+            "root_post": "all",
+            "team": "all"
+        }
+    },
+    "http": {
+        "root_url": "http://localhost:8081",
+        "use_jwt": true
+	}
+}
