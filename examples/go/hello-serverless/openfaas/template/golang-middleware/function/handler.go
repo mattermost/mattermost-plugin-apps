@@ -6,13 +6,13 @@ import (
 	"net/http"
 )
 
-func Handle(w http.ResponseWriter, r *http.Request) {
+func Handle(w http.ResponseWriter, req *http.Request) {
 	var input []byte
 
-	if r.Body != nil {
-		defer r.Body.Close()
+	if req.Body != nil {
+		defer req.Body.Close()
 
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := ioutil.ReadAll(req.Body)
 
 		input = body
 	}

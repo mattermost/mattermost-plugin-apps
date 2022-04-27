@@ -78,12 +78,12 @@ type Notifier interface {
 // Internal implements go API used by other packages.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
-	CanDeploy(deployType apps.DeployType) (allowed, usable bool)
-	GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error)
-	GetInstalledApp(r *incoming.Request, appID apps.AppID) (*apps.App, error)
-	GetInstalledApps(r *incoming.Request) []apps.App
-	GetListedApps(r *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
-	GetManifest(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
+	CanDeploy(apps.DeployType) (allowed, usable bool)
+	GetAppBindings(*incoming.Request, apps.Context, apps.App) ([]apps.Binding, error)
+	GetInstalledApp(*incoming.Request, apps.AppID) (*apps.App, error)
+	GetInstalledApps(*incoming.Request) []apps.App
+	GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(*incoming.Request, apps.AppID) (*apps.Manifest, error)
 	SynchronizeInstalledApps() error
 }
 
@@ -212,15 +212,15 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		up, err := makef()
 		switch {
 		case errors.Cause(err) == utils.ErrNotFound:
-			log.WithError(err).Debugf("Skipped %q upstream: not configured.", typ)
+			log.WithError(err).Debugf("Skipped upstream: %s: not configured.", typ)
 		case err != nil:
-			log.WithError(err).Errorf("Failed to initialize %q upstream.", typ)
+			log.WithError(err).Errorf("Failed to initialize upstream %s.", typ)
 		default:
 			p.upstreams.Store(typ, up)
-			log.Debugf("Initialized %q upstream.", typ)
+			log.Debugw("available upstream", "type", typ)
 		}
 	} else {
 		p.upstreams.Delete(typ)
-		log.Debugf("Deploy type %q is not configured on this Mattermost server", typ)
+		log.Debugf("Deploy type %s is not supported on this Mattermost server", typ)
 	}
 }

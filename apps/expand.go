@@ -3,6 +3,13 @@
 
 package apps
 
+import (
+	"sort"
+	"strings"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+)
+
 type ExpandLevel string
 
 const (
@@ -80,4 +87,15 @@ type Expand struct {
 	// OAuth2User expands the remote (3rd party) OAuth2 user (custom object,
 	// previously stored with appclient.StoreOAuthUser).
 	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
+}
+
+func (e Expand) String() string {
+	m := map[string]string{}
+	utils.Remarshal(&m, e)
+	ss := []string{}
+	for k, v := range m {
+		ss = append(ss, k+":"+v)
+	}
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
 }

@@ -18,36 +18,36 @@ func (a *restapi) initOAuth2Store(h *httpin.Handler) {
 		a.OAuth2GetUser, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
 }
 
-func (a *restapi) OAuth2StoreApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
+func (a *restapi) OAuth2StoreApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 
-	err = a.appServices.StoreOAuth2App(req, req.AppID(), req.ActingUserID(), data)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-}
-
-func (a *restapi) OAuth2StoreUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	data, err := httputils.LimitReadAll(r.Body, MaxKVStoreValueLength)
-	if err != nil {
-		httputils.WriteError(w, err)
-		return
-	}
-
-	err = a.appServices.StoreOAuth2User(req, req.AppID(), req.ActingUserID(), data)
+	err = a.appServices.StoreOAuth2App(r, r.AppID(), r.ActingUserID(), data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 }
 
-func (a *restapi) OAuth2GetUser(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	data, err := a.appServices.GetOAuth2User(req, req.AppID(), req.ActingUserID())
+func (a *restapi) OAuth2StoreUser(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
+	if err != nil {
+		httputils.WriteError(w, err)
+		return
+	}
+
+	err = a.appServices.StoreOAuth2User(r, r.AppID(), r.ActingUserID(), data)
+	if err != nil {
+		httputils.WriteError(w, err)
+		return
+	}
+}
+
+func (a *restapi) OAuth2GetUser(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	data, err := a.appServices.GetOAuth2User(r, r.AppID(), r.ActingUserID())
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

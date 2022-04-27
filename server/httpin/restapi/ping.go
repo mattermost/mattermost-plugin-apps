@@ -18,7 +18,7 @@ func (a *restapi) initPing(h *httpin.Handler) {
 		a.Ping, httpin.RequireUser).Methods(http.MethodPost)
 }
 
-func (a *restapi) Ping(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) Ping(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	info := a.conf.Get().GetPluginVersionInfo()
 	_ = httputils.WriteJSON(w, info)
 }

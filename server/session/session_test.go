@@ -62,7 +62,7 @@ func TestGetOrCreate(t *testing.T) {
 		}
 
 		session.AddProp(model.SessionPropMattermostAppID, string(appID))
-		sessionStore.EXPECT().Get(r, appID, userID).Times(1).Return(session, nil)
+		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(session, nil)
 
 		rSession, err := sessionService.GetOrCreate(r, appID, userID)
 		assert.NoError(t, err)
@@ -88,9 +88,9 @@ func TestGetOrCreate(t *testing.T) {
 		api.On("ExtendSessionExpiry", s.Id, mock.Anything).Once().Return(nil)
 
 		s.AddProp(model.SessionPropMattermostAppID, string(appID))
-		sessionStore.EXPECT().Get(r, appID, userID).Times(1).Return(&s, nil)
+		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(&s, nil)
 
-		sessionStore.EXPECT().Save(r, appID, userID, gomock.Any()).Times(1).Return(nil)
+		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
 
 		rSession, err := sessionService.GetOrCreate(r, appID, userID)
 		assert.NoError(t, err)
@@ -145,9 +145,9 @@ func TestGetOrCreate(t *testing.T) {
 			assert.Equal(t, newSession, rSession)
 		}).Return(newSession, nil)
 
-		sessionStore.EXPECT().Get(r, appID, userID).Times(1).Return(nil, utils.ErrNotFound)
-		sessionStore.EXPECT().Save(r, appID, userID, gomock.Any()).Times(1).Return(nil)
-		appStore.EXPECT().Get(r, appID).Times(1).Return(&apps.App{
+		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(nil, utils.ErrNotFound)
+		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
+		appStore.EXPECT().Get(appID).Times(1).Return(&apps.App{
 			MattermostOAuth2: oAuthApp,
 		}, nil)
 
@@ -197,9 +197,9 @@ func TestRevokeSessionsForApp(t *testing.T) {
 	session2.AddProp(model.SessionPropMattermostAppID, string(appID))
 	sessions := []*model.Session{session1, session2}
 
-	sessionStore.EXPECT().ListForApp(r, appID).Return(sessions, nil).Times(1)
-	sessionStore.EXPECT().Delete(r, appID, userID1).Return(nil).Times(1)
-	sessionStore.EXPECT().Delete(r, appID, userID2).Return(nil).Times(1)
+	sessionStore.EXPECT().ListForApp(appID).Return(sessions, nil).Times(1)
+	sessionStore.EXPECT().Delete(appID, userID1).Return(nil).Times(1)
+	sessionStore.EXPECT().Delete(appID, userID2).Return(nil).Times(1)
 
 	api.On("RevokeSession", sessions[0].Id).Return(nil).Once()
 	api.On("RevokeSession", sessions[1].Id).Return(nil).Once()

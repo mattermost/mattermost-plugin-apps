@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
@@ -27,10 +26,7 @@ import (
 
 func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("no context params passed", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
 		conf := config.NewTestConfigService(nil)
-		sessionService := mock_session.NewMockService(ctrl)
-
 		a := &restapi{
 			conf: conf,
 		}
@@ -40,17 +36,13 @@ func TestCleanUserAgentContext(t *testing.T) {
 			UserAgentContext: apps.UserAgentContext{},
 		}
 
-		_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+		_, err := a.cleanUserAgentContext(userID, cc)
 		require.Error(t, err)
 	})
 
 	t.Run("post id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the post's channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
-
 			a := &restapi{
 				conf: conf,
 			}
@@ -86,7 +78,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -104,9 +96,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 		t.Run("user is not a member of the post's channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
-
 			a := &restapi{
 				conf: conf,
 			}
@@ -132,7 +121,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -140,9 +129,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("channel id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
-
 			a := &restapi{
 				conf: conf,
 			}
@@ -168,7 +154,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				TeamId: teamID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -182,8 +168,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 		t.Run("user is not a member of the channel", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
 			a := &restapi{
 				conf: conf,
 			}
@@ -202,7 +186,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified channel",
 			})
 
-			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -210,9 +194,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 	t.Run("team id provided in context", func(t *testing.T) {
 		t.Run("user is a member of the team", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
-
 			a := &restapi{
 				conf: conf,
 			}
@@ -231,7 +212,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				UserId: userID,
 			}, nil)
 
-			cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			cc, err := a.cleanUserAgentContext(userID, cc)
 			require.NoError(t, err)
 			expected := apps.Context{
 				ActingUserID: "some_user_id",
@@ -244,9 +225,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 		t.Run("user is not a member of the team", func(t *testing.T) {
 			conf, api := config.NewTestService(nil)
-			ctrl := gomock.NewController(t)
-			sessionService := mock_session.NewMockService(ctrl)
-
 			a := &restapi{
 				conf: conf,
 			}
@@ -264,7 +242,7 @@ func TestCleanUserAgentContext(t *testing.T) {
 				Message: "user is not a member of the specified team",
 			})
 
-			_, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+			_, err := a.cleanUserAgentContext(userID, cc)
 			require.Error(t, err)
 		})
 	})
@@ -272,8 +250,6 @@ func TestCleanUserAgentContext(t *testing.T) {
 
 func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 	conf, api := config.NewTestService(nil)
-	ctrl := gomock.NewController(t)
-	sessionService := mock_session.NewMockService(ctrl)
 	a := &restapi{
 		conf: conf,
 	}
@@ -325,7 +301,7 @@ func TestCleanUserAgentContextIgnoredValues(t *testing.T) {
 		TeamId: teamID,
 	}, nil)
 
-	cc, err := a.cleanUserAgentContext(incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService), userID, cc)
+	cc, err := a.cleanUserAgentContext(userID, cc)
 	require.NoError(t, err)
 	expected := apps.Context{
 		ActingUserID: "some_user_id",

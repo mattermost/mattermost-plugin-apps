@@ -14,7 +14,7 @@ import (
 
 func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
 	mm := p.conf.MattermostAPI()
-	app, err := p.store.App.Get(r, appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}

@@ -11,52 +11,52 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	err := g.doHandleWebhook(req, w, r)
+func (g *gateway) handleWebhook(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	err := g.doHandleWebhook(r, w, req)
 	if err != nil {
-		req.Log.WithError(err).Warnw("failed to process remote webhook")
+		r.Log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
 }
 
-func (g *gateway) doHandleWebhook(req *incoming.Request, _ http.ResponseWriter, r *http.Request) error {
-	appID := appIDVar(r)
+func (g *gateway) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, req *http.Request) error {
+	appID := appIDVar(req)
 	if appID == "" {
 		return utils.NewInvalidError("app_id not specified")
 	}
-	req.SetAppID(appID)
+	r.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(r, g.conf.Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(req, g.conf.Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}
-	sreq.Path = mux.Vars(r)["path"]
-	req.Log = req.Log.With("call_path", sreq.Path)
+	sreq.Path = mux.Vars(req)["path"]
+	r.Log = r.Log.With("call_path", sreq.Path)
 
-	err = g.proxy.NotifyRemoteWebhook(req, appID, *sreq)
+	err = g.proxy.NotifyRemoteWebhook(r, appID, *sreq)
 	if err != nil {
 		return err
 	}
 
-	req.Log.Debugf("processed remote webhook")
+	r.Log.Debugf("processed remote webhook")
 	return nil
 }
 
-func newHTTPCallRequest(r *http.Request, limit int64) (*apps.HTTPCallRequest, error) {
-	data, err := httputils.LimitReadAll(r.Body, limit)
+func newHTTPCallRequest(req *http.Request, limit int64) (*apps.HTTPCallRequest, error) {
+	data, err := httputils.LimitReadAll(req.Body, limit)
 	if err != nil {
 		return nil, err
 	}
 
 	sreq := apps.HTTPCallRequest{
-		HTTPMethod: r.Method,
-		Path:       r.URL.Path,
-		RawQuery:   r.URL.RawQuery,
+		HTTPMethod: req.Method,
+		Path:       req.URL.Path,
+		RawQuery:   req.URL.RawQuery,
 		Body:       string(data),
 		Headers:    map[string]string{},
 	}
-	for key := range r.Header {
-		sreq.Headers[key] = r.Header.Get(key)
+	for key := range req.Header {
+		sreq.Headers[key] = req.Header.Get(key)
 	}
 
 	return &sreq, nil

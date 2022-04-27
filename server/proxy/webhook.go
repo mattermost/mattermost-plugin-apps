@@ -17,12 +17,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req apps.HTTPCallRequest) error {
-	app, err := p.store.App.Get(r, appID)
+func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpCallRequest apps.HTTPCallRequest) error {
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(r, *app) {
+	if !p.appIsEnabled(*app) {
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
@@ -34,7 +34,7 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req a
 
 	case "", apps.SecretAuth:
 		var q url.Values
-		q, err = url.ParseQuery(req.RawQuery)
+		q, err = url.ParseQuery(httpCallRequest.RawQuery)
 		if err != nil {
 			return utils.NewForbiddenError(err)
 		}
@@ -56,14 +56,14 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req a
 	}
 
 	var datav interface{}
-	err = json.Unmarshal([]byte(req.Body), &datav)
+	err = json.Unmarshal([]byte(httpCallRequest.Body), &datav)
 	if err != nil {
 		// if the data can not be decoded as JSON, send it "as is", as a string.
-		datav = req.Body
+		datav = httpCallRequest.Body
 	}
 
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
-	call.Path = path.Join(call.Path, req.Path)
+	call.Path = path.Join(call.Path, httpCallRequest.Path)
 
 	cc, err := p.expandContext(r, *app, nil, call.Expand)
 	if err != nil {
@@ -78,10 +78,10 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, req a
 		Call:    call,
 		Context: cc,
 		Values: map[string]interface{}{
-			"headers":    req.Headers,
+			"headers":    httpCallRequest.Headers,
 			"data":       datav,
-			"httpMethod": req.HTTPMethod,
-			"rawQuery":   req.RawQuery,
+			"httpMethod": httpCallRequest.HTTPMethod,
+			"rawQuery":   httpCallRequest.RawQuery,
 		},
 	})
 }
