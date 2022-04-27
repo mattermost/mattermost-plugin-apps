@@ -190,9 +190,6 @@ func (p *Proxy) pingApp(r *incoming.Request, app apps.App) (reachable bool) {
 	return err == nil || errors.Cause(err) == utils.ErrNotFound
 }
 
-// pingApp checks if the app is accessible. Call its ping path with nothing
-// expanded, ignore 404 errors coming back and consider everything else a
-// "success".
 func (p *Proxy) timeoutRequest(r *incoming.Request, timeout time.Duration) (*incoming.Request, context.CancelFunc) {
 	r = r.Clone()
 	ctx, cancel := context.WithTimeout(r.Ctx(), timeout)
