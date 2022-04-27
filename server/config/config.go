@@ -93,7 +93,7 @@ var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
 	`community-[a-z]+\.mattermost\.com`,
 }, "|") + "$")
 
-func (conf *Config) Update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
+func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -194,4 +194,15 @@ func (conf *Config) InfoTemplateData() map[string]string {
 		"DeveloperMode": fmt.Sprintf("%t", conf.DeveloperMode),
 		"AllowHTTPApps": fmt.Sprintf("%t", conf.AllowHTTPApps),
 	}
+}
+
+func (conf Config) Loggable() []interface{} {
+	return append([]interface{}{},
+		"version", conf.PluginManifest.Version,
+		"commit", conf.BuildHashShort,
+		"build_date", conf.BuildDate,
+		"cloud_mode", fmt.Sprintf("%t", conf.MattermostCloudMode),
+		"developer_mode", fmt.Sprintf("%t", conf.DeveloperMode),
+		"allow_http_apps", fmt.Sprintf("%t", conf.AllowHTTPApps),
+	)
 }

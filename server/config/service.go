@@ -27,8 +27,8 @@ type Service interface {
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 
-	Reconfigure(StoredConfig, ...Configurable) error
-	StoreConfig(sc StoredConfig) error
+	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
+	StoreConfig(StoredConfig, utils.Logger) error
 }
 
 var _ Service = (*service)(nil)
@@ -36,7 +36,6 @@ var _ Service = (*service)(nil)
 type service struct {
 	pluginManifest model.Manifest
 	botUserID      string
-	log            utils.Logger
 	mm             *pluginapi.Client
 	i18n           *i18n.Bundle
 	telemetry      *telemetry.Telemetry
@@ -50,7 +49,6 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 	return &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
-		log:            utils.NewPluginLogger(mm),
 		mm:             mm,
 		lock:           &sync.RWMutex{},
 		i18n:           i18nBundle,
@@ -110,7 +108,7 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) error {
+func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
 
@@ -121,11 +119,11 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil {
-			s.log.Infof("Failed to fetch license twice. May incorrectly default to on-prem mode.")
+			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
 		}
 	}
 
-	err := newConfig.Update(stored, mmconf, license, s.log)
+	err := newConfig.update(stored, mmconf, license, log)
 	if err != nil {
 		return err
 	}
@@ -134,25 +132,27 @@ func (s *service) Reconfigure(stored StoredConfig, services ...Configurable) err
 	s.conf = &newConfig
 	s.lock.Unlock()
 
-	log := s.log
-	for _, s := range services {
-		err = s.Configure(newConfig, log)
+	for _, service := range services {
+		err = service.Configure(newConfig, log)
 		if err != nil {
-			return errors.Wrapf(err, "error configuring %T", s)
+			return errors.Wrapf(err, "failed to configure service %T", service)
 		}
 	}
 
 	return nil
 }
 
-func (s *service) StoreConfig(sc StoredConfig) error {
+func (s *service) StoreConfig(stored StoredConfig, log utils.Logger) error {
+	log.Debugf("Storing configuration, %v installed , %v listed apps",
+		len(stored.InstalledApps), len(stored.LocalManifests))
+
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(sc)
+	err := s.Reconfigure(stored, log)
 	if err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(sc)
+	data, err := json.Marshal(stored)
 	if err != nil {
 		return err
 	}

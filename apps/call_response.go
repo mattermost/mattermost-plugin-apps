@@ -5,6 +5,8 @@ package apps
 
 import (
 	"fmt"
+
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type CallResponseType string
@@ -103,9 +105,83 @@ func NewLookupResponse(opts []SelectOption) CallResponse {
 }
 
 // Error makes CallResponse a valid error, for convenience
-func (cr CallResponse) Error() string {
-	if cr.Type == CallResponseTypeError {
-		return cr.Text
+func (cresp CallResponse) Error() string {
+	if cresp.Type == CallResponseTypeError {
+		return cresp.Text
 	}
 	return ""
+}
+
+func (cresp CallResponse) String() string {
+	switch cresp.Type {
+	case CallResponseTypeError:
+		return fmt.Sprint("Error: ", cresp.Text)
+
+	case "", CallResponseTypeOK:
+		switch {
+		case cresp.Text != "" && cresp.Data == nil:
+			return fmt.Sprint("OK: ", cresp.Text)
+		case cresp.Text != "" && cresp.Data != nil:
+			return fmt.Sprintf("OK: %s; + data type %T", cresp.Text, cresp.Data)
+		case cresp.Data != nil:
+			return fmt.Sprintf("OK: data type %T, value: %v", cresp.Data, cresp.Data)
+		default:
+			return "OK: (none)"
+		}
+
+	case CallResponseTypeForm:
+		return fmt.Sprintf("Form: %v", utils.ToJSON(cresp.Form))
+
+	case CallResponseTypeCall:
+		return fmt.Sprintf("Call: %v", cresp.Call)
+
+	case CallResponseTypeNavigate:
+		s := fmt.Sprintf("Navigate to: %q", cresp.NavigateToURL)
+		if cresp.UseExternalBrowser {
+			s += ", using external browser"
+		}
+		return s
+
+	default:
+		return fmt.Sprintf("?? unknown response type %q", cresp.Type)
+	}
+}
+
+func (cresp CallResponse) Loggable() []interface{} {
+	props := []interface{}{"response_type", string(cresp.Type)}
+
+	switch cresp.Type {
+	case CallResponseTypeError:
+		props = append(props, "error", cresp.Text)
+
+	case "", CallResponseTypeOK:
+		if cresp.Text != "" {
+			text := cresp.Text
+			if len(text) > 100 {
+				text = text[:100] + "...(truncated)"
+			}
+			props = append(props, "response_text", text)
+		}
+		if cresp.Data != nil {
+			props = append(props, "response_data", cresp.Data)
+		}
+
+	case CallResponseTypeForm:
+		if cresp.Form != nil {
+			props = append(props, "response_form", *cresp.Form)
+		}
+
+	case CallResponseTypeCall:
+		if cresp.Call != nil {
+			props = append(props, "response_call", cresp.Call.String())
+		}
+
+	case CallResponseTypeNavigate:
+		props = append(props, "response_url", cresp.NavigateToURL)
+		if cresp.UseExternalBrowser {
+			props = append(props, "use_external_browser", true)
+		}
+	}
+
+	return props
 }

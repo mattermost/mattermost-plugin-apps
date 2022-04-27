@@ -21,11 +21,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+const pingAppTimeout = 1 * time.Second
+
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	conf := p.conf.Get()
-	m, err := p.store.Manifest.Get(r, appID)
+	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to find manifest to install app")
 	}
@@ -37,7 +39,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
-	app, err := p.store.App.Get(r, appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
@@ -69,17 +71,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	// See if the app is inaaccessible. Call its ping path with nothing
-	// expanded, ignore 404 errors coming back and consider everything else a
-	// "success".
-	//
-	// Note that this check is often ineffective, but "the best we can do"
-	// before we start the diffcult-to-revert install process.
-	_, err = p.callApp(r, *app, apps.CallRequest{
-		Call:    apps.DefaultPing,
-		Context: cc,
-	})
-	if err != nil && errors.Cause(err) != utils.ErrNotFound {
+	if !p.pingApp(r, *app) {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
@@ -130,8 +122,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) error {
 	mm := p.conf.MattermostAPI()
 	if app.MattermostOAuth2 != nil {
-		r.Log.Debugw("App install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
-
+		r.Log.Debugw("app install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
 		return nil
 	}
 
@@ -153,7 +144,7 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 
 	app.MattermostOAuth2 = oAuthApp
 
-	r.Log.Debugw("App install flow: Created OAuth2 App", "id", app.MattermostOAuth2.Id)
+	r.Log.Debugw("app install flow: created OAuth2 App", "id", app.MattermostOAuth2.Id)
 
 	return nil
 }
@@ -166,7 +157,7 @@ func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error 
 		return err
 	}
 
-	r.Log.Debugw("App install flow: created Bot Account ",
+	r.Log.Debugw("app install flow: created Bot Account ",
 		"username", bot.Username, "bot_user_id", bot.UserId)
 
 	const tryCount = 5
@@ -175,16 +166,16 @@ func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error 
 	for {
 		bb, ee := mm.Bot.Get(bot.UserId, false)
 		if bb != nil {
-			r.Log.Debugw("App install flow: validated Bot Account", "bot_user_id", bb.UserId)
+			r.Log.Debugw("app install flow: validated Bot Account", "bot_user_id", bb.UserId)
 			return nil
 		}
 
 		i++
 		if i >= tryCount {
-			r.Log.Debugw("App install flow: failed to validate Bot Account, try re-installing the App", "try", i+1, "error", ee)
+			r.Log.Debugw("app install flow: failed to validate Bot Account, try re-installing the App", "try", i+1, "error", ee)
 			return ee
 		}
-		r.Log.Debugw("App install flow: retrying Bot Account after delay", "try", i+1, "error", ee, "delay", delay)
+		r.Log.Debugw("app install flow: retrying Bot Account after delay", "try", i+1, "error", ee, "delay", delay)
 		time.Sleep(delay)
 		delay *= 2
 	}
@@ -227,7 +218,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 		} else {
 			bot.UserId = user.Id
 			bot.Username = user.Username
-			r.Log.Debugw("App install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
+			r.Log.Debugw("app install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
 		}
 	}
 	app.BotUserID = bot.UserId
@@ -236,7 +227,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 	if icon != nil {
 		err := mm.User.SetProfileImage(app.BotUserID, icon)
 		if err != nil {
-			r.Log.WithError(err).Errorw("App install flow: failed to update Bot Account profile icon, try re-installing")
+			r.Log.WithError(err).Errorf("app install flow: failed to update Bot Account profile icon, try re-installing")
 		}
 	}
 

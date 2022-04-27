@@ -20,12 +20,12 @@ aliases:
     - "/go/pkg/mod"
 - &restore_cypress_cache
   restore_cache:
-    key: cypress-cache-{{ checksum "e2e/package-lock.json" }}
+    key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
 - &save_cypress_cache
   save_cache:
-    key: cypress-cache-{{ checksum "e2e/package-lock.json" }}
+    key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
     paths:
-      - ./tests-e2e/node_modules
+      - ./test/e2e/node_modules
       - /home/circleci/.cache/Cypress
 
 commands:
@@ -161,7 +161,7 @@ jobs:
       - store_artifacts:
           path: dist
 
-  test-e2e-postgres11:
+  test-rest-postgres11:
     docker:
       - image: cimg/go:1.17.3
       - image: cimg/postgres:11.13
@@ -187,11 +187,11 @@ jobs:
           # Keep the commit in sync with go.mod
           command: |
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout 2aa06529c50a
+            cd mattermost-server && git checkout v6.6.0
       - *restore_go_cache
       - run:
-          name: Running e2e tests
-          command: MM_SERVER_PATH=$(pwd)/mattermost-server make test-e2e
+          name: Running REST API tests
+          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
       - *save_go_cache
   e2e-cypress-tests-pinned:
     resource_class: xlarge
@@ -281,8 +281,8 @@ jobs:
           name: Install Apps plugin
           command: make deploy
       - run:
-          name: Start hello-world App
-          command: make hello_world
+          name: Start Test App
+          command: make run-test-app
           background: true
       - *save_go_cache
       - *restore_cypress_cache
@@ -290,8 +290,6 @@ jobs:
           name: Run Cypress Tests
           no_output_timeout: 30m
           command: |
-            # curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-            # nvm install 14 && nvm use 14
             export FAILURE_MESSAGE="At least one test has failed."
             export RESULTS_OUTPUT="results-output.txt"
             cd e2e
@@ -299,9 +297,9 @@ jobs:
             npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
       - *save_cypress_cache
       - store_artifacts:
-          path: e2e/cypress/screenshots
+          path: test/e2e/cypress/screenshots
       - store_artifacts:
-          path: e2e/cypress/videos
+          path: test/e2e/cypress/videos
   e2e-cypress-tests-master:
     resource_class: xlarge
     docker:
@@ -390,8 +388,8 @@ jobs:
           name: Install Apps plugin
           command: make deploy
       - run:
-          name: Start hello-world App
-          command: make hello_world
+          name: Start Test App
+          command: make run-test-app
           background: true
       - *save_go_cache
       - *restore_cypress_cache
@@ -399,14 +397,16 @@ jobs:
           name: Run Cypress Tests
           no_output_timeout: 30m
           command: |
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+            nvm install 13 && nvm use 13
             export FAILURE_MESSAGE="At least one test has failed."
             export RESULTS_OUTPUT="results-output.txt"
-            cd e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
+            cd test/e2e && npm install && npm run test |& tee $RESULTS_OUTPUT; if grep "$FAILURE_MESSAGE" "$RESULTS_OUTPUT"; then exit 1; fi
       - *save_cypress_cache
       - store_artifacts:
-          path: e2e/cypress/screenshots
+          path: test/e2e/cypress/screenshots
       - store_artifacts:
-          path: e2e/cypress/videos
+          path: test/e2e/cypress/videos
 
   deploy-ci:
     docker:
@@ -448,7 +448,7 @@ workflows:
       - build
       - e2e-cypress-tests-pinned
       - e2e-cypress-tests-master
-      - test-e2e-postgres11
+      - test-rest-postgres11
   ci:
     jobs:
       - check-mocks:
@@ -467,7 +467,7 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-      - test-e2e-postgres11:
+      - test-rest-postgres11:
           filters:
             tags:
               only: /^v.*/
@@ -490,7 +490,7 @@ workflows:
             - check-i18n
             - lint
             - coverage
-            - test-e2e-postgres11
+            - test-rest-postgres11
             - e2e-cypress-tests-pinned
             - e2e-cypress-tests-master
             - build
@@ -506,5 +506,5 @@ workflows:
             - check-i18n
             - lint
             - coverage
-            - test-e2e-postgres11
+            - test-rest-postgres11
             - build

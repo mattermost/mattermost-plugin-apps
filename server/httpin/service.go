@@ -16,18 +16,19 @@ import (
 )
 
 type Service interface {
-	ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request)
+	ServeHTTP(c *plugin.Context, w http.ResponseWriter, req *http.Request)
 }
 
+// TODO <>/<>: 1/5: Can Handler be combined into Service?
 type service struct {
 	h *Handler
 }
 
 var _ Service = (*service)(nil)
 
-func NewService(mm *pluginapi.Client, router *mux.Router, config config.Service, log utils.Logger, session incoming.SessionService, proxy proxy.Service, appServices appservices.Service,
+func NewService(mm *pluginapi.Client, router *mux.Router, config config.Service, baseLog utils.Logger, session incoming.SessionService, proxy proxy.Service, appServices appservices.Service,
 	initf ...func(*Handler, config.Service, proxy.Service, appservices.Service)) Service {
-	rh := NewHandler(mm, config, log, session, router)
+	rh := NewHandler(mm, config, baseLog, session, router)
 
 	for _, f := range initf {
 		f(rh, config, proxy, appServices)
@@ -41,7 +42,7 @@ func NewService(mm *pluginapi.Client, router *mux.Router, config config.Service,
 }
 
 // Handle should be called by the plugin when a command invocation is received from the Mattermost server.
-func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
-	s.h.router.ServeHTTP(w, r)
+func (s *service) ServeHTTP(c *plugin.Context, w http.ResponseWriter, req *http.Request) {
+	req.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
+	s.h.router.ServeHTTP(w, req)
 }
