@@ -191,7 +191,7 @@ jobs:
       - *restore_go_cache
       - run:
           name: Running REST API tests
-          command: MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
+          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
       - *save_go_cache
   e2e-cypress-tests-pinned:
     resource_class: xlarge
