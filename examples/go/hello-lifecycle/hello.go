@@ -41,12 +41,12 @@ func main() {
 	panic(http.ListenAndServe(addr, nil))
 }
 
-func respondWithMessage(message string) func(w http.ResponseWriter, r *http.Request) {
+func respondWithMessage(message string) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		c := apps.CallRequest{}
-		json.NewDecoder(req.Body).Decode(&c)
+		creq := apps.CallRequest{}
+		json.NewDecoder(req.Body).Decode(&creq)
 
-		_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
+		_, err := appclient.AsBot(creq.Context).DM(creq.Context.ActingUser.Id, message)
 		if err != nil {
 			json.NewEncoder(w).Encode(apps.NewErrorResponse(err))
 			return

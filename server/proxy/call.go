@@ -53,7 +53,7 @@ func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
 			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
 	}
 
-	app, err := p.store.App.Get(r, creq.Context.AppID)
+	app, err := p.store.App.Get(creq.Context.AppID)
 	if err != nil {
 		return NewProxyCallResponse(apps.NewErrorResponse(err))
 	}
@@ -99,7 +99,7 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 
 	conf := p.conf.Get()
 
-	if !p.appIsEnabled(r, app) {
+	if !p.appIsEnabled(app) {
 		return respondErr(errors.Errorf("%s is disabled", app.AppID))
 	}
 
@@ -135,7 +135,7 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 	if cresp.Form != nil {
 		clean, err := cleanForm(*cresp.Form, conf, app.AppID)
 		if err != nil {
-			r.Log.WithError(err).Debugw("invalid form")
+			r.Log.WithError(err).Debugf("invalid form")
 		}
 		cresp.Form = &clean
 	}
@@ -160,12 +160,13 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 }
 
 func (p *Proxy) GetStatic(r *incoming.Request, appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	app, err := p.store.App.Get(r, appID)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
 			status = http.StatusNotFound
 		}
+		r.Log = r.Log.WithError(err)
 		return nil, status, err
 	}
 

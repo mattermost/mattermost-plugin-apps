@@ -14,8 +14,8 @@ type pluginAPIRoundTripper struct {
 	client PluginHTTPAPI
 }
 
-func (p *pluginAPIRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	resp := p.client.HTTP(r)
+func (p *pluginAPIRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := p.client.HTTP(req)
 	if resp == nil {
 		return nil, errors.Errorf("Failed to make interplugin request")
 	}

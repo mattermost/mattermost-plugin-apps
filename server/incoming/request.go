@@ -68,7 +68,9 @@ func NewRequest(mm *pluginapi.Client, config config.Service, log utils.Logger, s
 		config:         config,
 		Log:            log,
 		sessionService: session,
-		requestID:      model.NewId(),
+
+		// TODO <>/<>: is the incoming Mattermost request ID available, and should it be used?
+		requestID: model.NewId(),
 	}
 
 	r.Log = r.Log.With(
@@ -121,7 +123,6 @@ func (r *Request) AppID() apps.AppID {
 
 func (r *Request) SetAppID(appID apps.AppID) {
 	r.Log = r.Log.With("app_id", appID)
-
 	r.appID = appID
 }
 
@@ -130,7 +131,7 @@ func (r *Request) ActingUserID() string {
 }
 
 func (r *Request) SetActingUserID(userID string) {
-	r.Log = r.Log.With("user_id", userID)
+	r.Log = r.Log.With("acting_user_id", userID)
 
 	r.actingUserID = userID
 }

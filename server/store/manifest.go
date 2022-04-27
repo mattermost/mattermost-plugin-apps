@@ -26,11 +26,11 @@ import (
 type ManifestStore interface {
 	config.Configurable
 
-	StoreLocal(r *incoming.Request, m apps.Manifest) error
-	Get(r *incoming.Request, appID apps.AppID) (*apps.Manifest, error)
-	GetFromS3(r *incoming.Request, appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
-	AsMap(r *incoming.Request) map[apps.AppID]apps.Manifest
-	DeleteLocal(r *incoming.Request, appID apps.AppID) error
+	StoreLocal(*incoming.Request, apps.Manifest) error
+	Get(apps.AppID) (*apps.Manifest, error)
+	GetFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error)
+	AsMap() map[apps.AppID]apps.Manifest
+	DeleteLocal(*incoming.Request, apps.AppID) error
 }
 
 // manifestStore combines global (aka marketplace) manifests, and locally
@@ -115,12 +115,12 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) er
 		case len(parts) == 2 && (parts[0] == "http" || parts[0] == "https"):
 			data, err = httpOut.GetFromURL(loc, conf.DeveloperMode, apps.MaxManifestSize)
 		default:
-			log.WithError(err).Errorw("Failed to load global manifest",
+			log.WithError(err).Errorw("failed to load global manifest",
 				"app_id", appID)
 			continue
 		}
 		if err != nil {
-			log.WithError(err).Errorw("Failed to load global manifest",
+			log.WithError(err).Errorw("failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
@@ -128,14 +128,14 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) er
 
 		m, err := apps.DecodeCompatibleManifest(data)
 		if err != nil {
-			log.WithError(err).Errorw("Failed to load global manifest",
+			log.WithError(err).Errorw("failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
 		}
 		if m.AppID != appID {
 			err = errors.Errorf("mismatched app ids while getting manifest %s != %s", m.AppID, appID)
-			log.WithError(err).Errorw("Failed to load global manifest",
+			log.WithError(err).Errorw("failed to load global manifest",
 				"app_id", appID,
 				"loc", loc)
 			continue
@@ -184,7 +184,7 @@ func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
 	return nil
 }
 
-func (s *manifestStore) Get(_ *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
+func (s *manifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
@@ -201,7 +201,7 @@ func (s *manifestStore) Get(_ *incoming.Request, appID apps.AppID) (*apps.Manife
 	return nil, errors.Wrap(utils.ErrNotFound, string(appID))
 }
 
-func (s *manifestStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.Manifest {
+func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 	s.mutex.RLock()
 	local := s.local
 	global := s.global
@@ -254,7 +254,7 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 	updated[string(m.AppID)] = sha
 	sc := conf.StoredConfig
 	sc.LocalManifests = updated
-	err = s.conf.StoreConfig(sc)
+	err = s.conf.StoreConfig(sc, r.Log)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (s *manifestStore) DeleteLocal(r *incoming.Request, appID apps.AppID) error
 	sc := conf.StoredConfig
 	sc.LocalManifests = updated
 
-	return s.conf.StoreConfig(sc)
+	return s.conf.StoreConfig(sc, r.Log)
 }
 
 // getFromS3 returns manifest data for an app from the S3
@@ -314,7 +314,7 @@ func (s *manifestStore) getDataFromS3(appID apps.AppID, version apps.AppVersion)
 }
 
 // GetFromS3 returns the manifest for an app from the S3
-func (s *manifestStore) GetFromS3(_ *incoming.Request, appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
+func (s *manifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*apps.Manifest, error) {
 	data, err := s.getDataFromS3(appID, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get manifest data")

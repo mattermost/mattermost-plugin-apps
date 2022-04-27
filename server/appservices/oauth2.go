@@ -21,7 +21,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, acti
 		return err
 	}
 
-	app, err := a.store.App.Get(r, appID)
+	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 		return utils.NewInvalidError("payload is no valid json")
 	}
 
-	app, err := a.store.App.Get(r, appID)
+	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 		return err
 	}
 
-	oldData, err := a.store.OAuth2.GetUser(r, appID, actingUserID)
+	oldData, err := a.store.OAuth2.GetUser(appID, actingUserID)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 		return nil
 	}
 
-	err = a.store.OAuth2.SaveUser(r, appID, actingUserID, data)
+	err = a.store.OAuth2.SaveUser(appID, actingUserID, data)
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,8 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 
 // GetOAuth2User returns the stored OAuth2 user data for a given user and app.
 // If err != nil, the returned data is always valid JSON.
-func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
-	app, err := a.store.App.Get(r, appID)
+func (a *AppServices) GetOAuth2User(_ *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
+	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request, appID apps.AppID, actin
 		return nil, err
 	}
 
-	data, err := a.store.OAuth2.GetUser(r, appID, actingUserID)
+	data, err := a.store.OAuth2.GetUser(appID, actingUserID)
 	if err != nil && !errors.Is(err, utils.ErrNotFound) {
 		return nil, err
 	}

@@ -43,14 +43,14 @@ func (a *restapi) initAdmin(h *httpin.Handler) {
 //      "add_deploys": []string e.g. ["aws_lambda","http"]
 //      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
-func (a *restapi) UpdateAppListing(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	listReq := appclient.UpdateAppListingRequest{}
-	err := json.NewDecoder(r.Body).Decode(&listReq)
+	err := json.NewDecoder(req.Body).Decode(&listReq)
 	if err != nil {
 		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
 		return
 	}
-	m, err := a.proxy.UpdateAppListing(req, listReq)
+	m, err := a.proxy.UpdateAppListing(r, listReq)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -65,17 +65,17 @@ func (a *restapi) UpdateAppListing(req *incoming.Request, w http.ResponseWriter,
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
 //   Output: None
-func (a *restapi) InstallApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) InstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var input apps.App
-	err := json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
 
-	req.SetAppID(input.AppID)
+	r.SetAppID(input.AppID)
 
-	_, _, err = a.proxy.InstallApp(req, apps.Context{}, input.AppID, input.DeployType, false, "")
+	_, _, err = a.proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -87,17 +87,17 @@ func (a *restapi) InstallApp(req *incoming.Request, w http.ResponseWriter, r *ht
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) EnableApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) EnableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var input apps.App
-	err := json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
 
-	req.SetAppID(input.AppID)
+	r.SetAppID(input.AppID)
 
-	_, err = a.proxy.EnableApp(req, apps.Context{}, input.AppID)
+	_, err = a.proxy.EnableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -109,17 +109,17 @@ func (a *restapi) EnableApp(req *incoming.Request, w http.ResponseWriter, r *htt
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) DisableApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) DisableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var input apps.App
-	err := json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
 
-	req.SetAppID(input.AppID)
+	r.SetAppID(input.AppID)
 
-	_, err = a.proxy.DisableApp(req, apps.Context{}, input.AppID)
+	_, err = a.proxy.DisableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -131,17 +131,17 @@ func (a *restapi) DisableApp(req *incoming.Request, w http.ResponseWriter, r *ht
 //   Method: POST
 //   Input: JSON {app_id}
 //   Output: None
-func (a *restapi) UninstallApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
+func (a *restapi) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var input apps.App
-	err := json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
 		return
 	}
 
-	req.SetAppID(input.AppID)
+	r.SetAppID(input.AppID)
 
-	_, err = a.proxy.UninstallApp(req, apps.Context{}, input.AppID)
+	_, err = a.proxy.UninstallApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -160,15 +160,15 @@ func (a *restapi) initGetApp(h *httpin.Handler) {
 //   Method: GET
 //   Input: none
 //   Output: App
-func (a *restapi) GetApp(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	appID := appIDVar(r)
+func (a *restapi) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	appID := appIDVar(req)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))
 		return
 	}
-	req.SetAppID(appID)
+	r.SetAppID(appID)
 
-	app, err := a.proxy.GetInstalledApp(req, appID)
+	app, err := a.proxy.GetInstalledApp(r, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

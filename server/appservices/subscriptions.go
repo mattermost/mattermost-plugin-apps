@@ -66,7 +66,7 @@ func CheckSubscriptionPermission(checker PermissionChecker, sub apps.Subscriptio
 	return nil
 }
 
-func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) error {
+func (a *AppServices) Subscribe(_ *incoming.Request, sub apps.Subscription) error {
 	if err := sub.Validate(); err != nil {
 		return utils.NewInvalidError("invalid subscription")
 	}
@@ -75,17 +75,17 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 		return err
 	}
 
-	return a.store.Subscription.Save(r, sub)
+	return a.store.Subscription.Save(sub)
 }
 
-func (a *AppServices) GetSubscriptions(r *incoming.Request, appID apps.AppID, userID string) ([]apps.Subscription, error) {
-	return a.store.Subscription.ListByUserID(r, appID, userID)
+func (a *AppServices) GetSubscriptions(_ *incoming.Request, appID apps.AppID, userID string) ([]apps.Subscription, error) {
+	return a.store.Subscription.ListByUserID(appID, userID)
 }
 
-func (a *AppServices) Unsubscribe(r *incoming.Request, sub apps.Subscription) error {
+func (a *AppServices) Unsubscribe(_ *incoming.Request, sub apps.Subscription) error {
 	if err := sub.Validate(); err != nil {
 		return utils.NewInvalidError("invalid subscription")
 	}
 
-	return a.store.Subscription.Delete(r, sub)
+	return a.store.Subscription.Delete(sub)
 }

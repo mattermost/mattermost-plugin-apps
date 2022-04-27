@@ -38,14 +38,14 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	if err != nil {
 		return errors.Wrap(err, "failed to add local manifest to Mattermost")
 	}
-	log.Debugw("Updated local manifest", "app_id", m.AppID, "deploy_type", deployType)
+	log.Debugw("updated local manifest", "app_id", m.AppID, "deploy_type", deployType)
 
 	if installApp {
 		_, err = appClient.InstallApp(m.AppID, deployType)
 		if err != nil {
 			return errors.Wrap(err, "failed to install the app to Mattermost")
 		}
-		log.Debugw("Installed app to Mattermost", "app_id", m.AppID)
+		log.Debugw("installed app to Mattermost", "app_id", m.AppID)
 	}
 
 	return nil

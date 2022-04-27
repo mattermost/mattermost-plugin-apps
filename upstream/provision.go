@@ -48,7 +48,7 @@ func GetAppBundle(bundlePath string, log utils.Logger) (*apps.Manifest, string, 
 	if err != nil {
 		return nil, "", errors.Wrap(err, "invalid manifest.json")
 	}
-	log.Debugw("Loaded App bundle",
+	log.Debugw("loaded App bundle",
 		"bundle", bundlePath,
 		"app_id", m.AppID)
 
