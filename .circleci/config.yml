@@ -187,7 +187,7 @@ jobs:
           # Keep the commit in sync with go.mod
           command: |
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout 2aa06529c50a
+            cd mattermost-server && git checkout v6.6.0
       - *restore_go_cache
       - run:
           name: Running REST API tests

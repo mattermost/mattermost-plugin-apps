@@ -187,17 +187,18 @@ func (mr *MockServiceMockRecorder) GetInstalledApp(arg0, arg1 interface{}) *gomo
 }
 
 // GetInstalledApps mocks base method.
-func (m *MockService) GetInstalledApps(arg0 *incoming.Request) []apps.App {
+func (m *MockService) GetInstalledApps(arg0 *incoming.Request, arg1 bool) ([]apps.App, map[apps.AppID]bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstalledApps", arg0)
+	ret := m.ctrl.Call(m, "GetInstalledApps", arg0, arg1)
 	ret0, _ := ret[0].([]apps.App)
-	return ret0
+	ret1, _ := ret[1].(map[apps.AppID]bool)
+	return ret0, ret1
 }
 
 // GetInstalledApps indicates an expected call of GetInstalledApps.
-func (mr *MockServiceMockRecorder) GetInstalledApps(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetInstalledApps(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps), arg0, arg1)
 }
 
 // GetListedApps mocks base method.
