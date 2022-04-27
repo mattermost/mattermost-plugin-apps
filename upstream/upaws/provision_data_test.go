@@ -11,10 +11,10 @@ import (
 )
 
 func TestGetDeployData(t *testing.T) {
-	testDir, found := utils.FindDir("tests")
+	testDir, found := utils.FindDir("test")
 	require.True(t, found)
 
-	bundlepath := filepath.Join(testDir, "test-bundle.zip")
+	bundlepath := filepath.Join(testDir, "testfiles/test_aws_bundle.zip")
 	deployData, err := GetDeployDataFromFile(bundlepath, utils.NewTestLogger())
 	require.NoError(t, err)
 	require.Equal(t, apps.AppID("com.mattermost.servicenow"), deployData.Manifest.AppID)
