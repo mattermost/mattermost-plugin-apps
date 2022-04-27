@@ -5,4 +5,4 @@
 // Read more at: https://on.cypress.io/configuration
 // ***********************************************************
 
-import 'mattermost-webapp/e2e/cypress/support';
+import 'mattermost-webapp/e2e/cypress/tests/support';
