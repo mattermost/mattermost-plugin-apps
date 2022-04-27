@@ -86,7 +86,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't unmarshal manifest.json file %s", string(data))
 			}
-			log.Infow("Found manifest", "file", file.Name)
+			log.Infow("found manifest", "file", file.Name)
 
 		case strings.HasSuffix(file.Name, ".zip"):
 			lambdaFunctionFile, err := file.Open()
@@ -98,7 +98,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 				Name:   strings.TrimSuffix(file.Name, ".zip"),
 				Bundle: lambdaFunctionFile,
 			})
-			log.Infow("Found lambda function bundle", "file", file.Name)
+			log.Infow("found lambda function bundle", "file", file.Name)
 
 		case strings.HasPrefix(file.Name, path.StaticFolder+"/"):
 			assetName := strings.TrimPrefix(file.Name, path.StaticFolder+"/")
@@ -113,10 +113,10 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 				Key:  assetName,
 				File: assetFile,
 			})
-			log.Infow("Found static asset", "file", file.Name)
+			log.Infow("found static asset", "file", file.Name)
 
 		default:
-			log.Infow("Ignored unknown file", "file", file.Name)
+			log.Infow("ignored unknown file", "file", file.Name)
 		}
 	}
 

@@ -26,8 +26,8 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	mm := p.conf.MattermostAPI()
 	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
 
-	installed := p.store.App.AsMap(r)
-	listed := p.store.Manifest.AsMap(r)
+	installed := p.store.App.AsMap()
+	listed := p.store.Manifest.AsMap()
 
 	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
@@ -65,7 +65,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 				return nil
 			})
 			if err != nil {
-				r.Log.WithError(err).Errorw("Failed in callOnce:OnVersionChanged",
+				r.Log.WithError(err).Errorw("failed in callOnce:OnVersionChanged",
 					"app_id", app.AppID)
 			}
 		}

@@ -12,6 +12,7 @@ import (
 	i18n "github.com/mattermost/mattermost-plugin-api/i18n"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	telemetry "github.com/mattermost/mattermost-plugin-apps/server/telemetry"
+	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 	configservice "github.com/mattermost/mattermost-server/v6/services/configservice"
 )
 
@@ -95,10 +96,10 @@ func (mr *MockServiceMockRecorder) MattermostConfig() *gomock.Call {
 }
 
 // Reconfigure mocks base method.
-func (m *MockService) Reconfigure(arg0 config.StoredConfig, arg1 ...config.Configurable) error {
+func (m *MockService) Reconfigure(arg0 config.StoredConfig, arg1 utils.Logger, arg2 ...config.Configurable) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Reconfigure", varargs...)
@@ -107,24 +108,24 @@ func (m *MockService) Reconfigure(arg0 config.StoredConfig, arg1 ...config.Confi
 }
 
 // Reconfigure indicates an expected call of Reconfigure.
-func (mr *MockServiceMockRecorder) Reconfigure(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Reconfigure(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0}, arg1...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconfigure", reflect.TypeOf((*MockService)(nil).Reconfigure), varargs...)
 }
 
 // StoreConfig mocks base method.
-func (m *MockService) StoreConfig(arg0 config.StoredConfig) error {
+func (m *MockService) StoreConfig(arg0 config.StoredConfig, arg1 utils.Logger) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreConfig", arg0)
+	ret := m.ctrl.Call(m, "StoreConfig", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StoreConfig indicates an expected call of StoreConfig.
-func (mr *MockServiceMockRecorder) StoreConfig(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) StoreConfig(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreConfig", reflect.TypeOf((*MockService)(nil).StoreConfig), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreConfig", reflect.TypeOf((*MockService)(nil).StoreConfig), arg0, arg1)
 }
 
 // Telemetry mocks base method.

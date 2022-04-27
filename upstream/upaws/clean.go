@@ -16,9 +16,9 @@ func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Infow("Not found "+typ, "key", name)
+			log.Infow("not found "+typ, "key", name)
 		} else {
-			log.Infow("Deleted "+typ, "key", name)
+			log.Infow("deleted "+typ, "key", name)
 		}
 		return nil
 	}
@@ -26,7 +26,7 @@ func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 	err := asAdmin.RemoveUserFromGroup(DefaultUserName, DefaultGroupName)
 	switch {
 	case err == nil:
-		log.Infow("Removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
+		log.Infow("removed user from group", "user", DefaultUserName, "group", DefaultGroupName)
 	case errors.Is(err, utils.ErrNotFound):
 		// nothing to do
 	default:
@@ -38,7 +38,7 @@ func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 		err = asAdmin.DetachGroupPolicy(DefaultGroupName, ARN(*policy.Arn))
 		switch {
 		case err == nil:
-			log.Infow("Detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
+			log.Infow("detached policy from group", "policy", DefaultPolicyName, "group", DefaultGroupName)
 		case errors.Is(err, utils.ErrNotFound):
 			// nothing to do
 		default:
@@ -67,9 +67,9 @@ func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 			if !errors.Is(err, utils.ErrNotFound) {
 				return err
 			}
-			log.Infow("Not found policy", "ARN", *policy.Arn)
+			log.Infow("not found policy", "ARN", *policy.Arn)
 		} else {
-			log.Infow("Deleted policy", "ARN", *policy.Arn)
+			log.Infow("deleted policy", "ARN", *policy.Arn)
 		}
 	}
 

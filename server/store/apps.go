@@ -23,10 +23,10 @@ type AppStore interface {
 
 	InitBuiltin(...apps.App)
 
-	Get(r *incoming.Request, appID apps.AppID) (*apps.App, error)
-	AsMap(r *incoming.Request) map[apps.AppID]apps.App
-	Save(r *incoming.Request, app apps.App) error
-	Delete(r *incoming.Request, appID apps.AppID) error
+	Get(apps.AppID) (*apps.App, error)
+	AsMap() map[apps.AppID]apps.App
+	Save(*incoming.Request, apps.App) error
+	Delete(*incoming.Request, apps.AppID) error
 }
 
 // appStore combines installed and builtin Apps.  The installed Apps are stored
@@ -75,19 +75,19 @@ func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 		var data []byte
 		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &data)
 		if err != nil {
-			log.WithError(err).Errorw("Failed to load app")
+			log.WithError(err).Errorw("failed to load app")
 			continue
 		}
 
 		if len(data) == 0 {
 			err = utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
-			log.WithError(err).Errorw("Failed to load app")
+			log.WithError(err).Errorw("failed to load app")
 			continue
 		}
 
 		app, err := apps.DecodeCompatibleApp(data)
 		if err != nil {
-			log.WithError(err).Errorw("Failed to decode app")
+			log.WithError(err).Errorw("failed to decode app")
 			continue
 		}
 		newInstalled[apps.AppID(id)] = *app
@@ -99,7 +99,7 @@ func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 	return nil
 }
 
-func (s *appStore) Get(r *incoming.Request, appID apps.AppID) (*apps.App, error) {
+func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -116,7 +116,7 @@ func (s *appStore) Get(r *incoming.Request, appID apps.AppID) (*apps.App, error)
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) AsMap(_ *incoming.Request) map[apps.AppID]apps.App {
+func (s *appStore) AsMap() map[apps.AppID]apps.App {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -184,7 +184,7 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 	}
 	updated[string(app.AppID)] = sha
 	sc.InstalledApps = updated
-	err = s.conf.StoreConfig(sc)
+	err = s.conf.StoreConfig(sc, r.Log)
 	if err != nil {
 		return err
 	}
@@ -237,5 +237,5 @@ func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
 	}
 	delete(updated, string(appID))
 	sc.InstalledApps = updated
-	return s.conf.StoreConfig(sc)
+	return s.conf.StoreConfig(sc, r.Log)
 }

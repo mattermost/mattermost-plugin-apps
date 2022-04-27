@@ -14,15 +14,14 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type OAuth2Store interface {
-	CreateState(r *incoming.Request, actingUserID string) (string, error)
-	ValidateStateOnce(r *incoming.Request, urlState, actingUserID string) error
-	SaveUser(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error
-	GetUser(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error)
+	CreateState(actingUserID string) (string, error)
+	ValidateStateOnce(urlState, actingUserID string) error
+	SaveUser(appID apps.AppID, actingUserID string, data []byte) error
+	GetUser(appID apps.AppID, actingUserID string) ([]byte, error)
 }
 
 type oauth2Store struct {
@@ -31,7 +30,7 @@ type oauth2Store struct {
 
 var _ OAuth2Store = (*oauth2Store)(nil)
 
-func (s *oauth2Store) CreateState(r *incoming.Request, actingUserID string) (string, error) {
+func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	// fit the max key size of ~50chars
 	buf := make([]byte, 15)
 	_, _ = rand.Read(buf)
@@ -43,7 +42,7 @@ func (s *oauth2Store) CreateState(r *incoming.Request, actingUserID string) (str
 	return state, nil
 }
 
-func (s *oauth2Store) ValidateStateOnce(r *incoming.Request, urlState, actingUserID string) error {
+func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 	ss := strings.Split(urlState, ".")
 	if len(ss) != 2 || ss[1] != actingUserID {
 		return utils.ErrForbidden
@@ -63,7 +62,7 @@ func (s *oauth2Store) ValidateStateOnce(r *incoming.Request, urlState, actingUse
 	return nil
 }
 
-func (s *oauth2Store) SaveUser(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error {
+func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byte) error {
 	if appID == "" || actingUserID == "" {
 		return utils.NewInvalidError("app and user IDs must be provided")
 	}
@@ -77,7 +76,7 @@ func (s *oauth2Store) SaveUser(r *incoming.Request, appID apps.AppID, actingUser
 	return err
 }
 
-func (s *oauth2Store) GetUser(r *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
+func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, error) {
 	if appID == "" || actingUserID == "" {
 		return nil, utils.NewInvalidError("app and user IDs must be provided")
 	}

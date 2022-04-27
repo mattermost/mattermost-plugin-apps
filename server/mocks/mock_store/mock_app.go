@@ -38,17 +38,17 @@ func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 }
 
 // AsMap mocks base method.
-func (m *MockAppStore) AsMap(arg0 *incoming.Request) map[apps.AppID]apps.App {
+func (m *MockAppStore) AsMap() map[apps.AppID]apps.App {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AsMap", arg0)
+	ret := m.ctrl.Call(m, "AsMap")
 	ret0, _ := ret[0].(map[apps.AppID]apps.App)
 	return ret0
 }
 
 // AsMap indicates an expected call of AsMap.
-func (mr *MockAppStoreMockRecorder) AsMap(arg0 interface{}) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) AsMap() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap))
 }
 
 // Configure mocks base method.
@@ -80,18 +80,18 @@ func (mr *MockAppStoreMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call 
 }
 
 // Get mocks base method.
-func (m *MockAppStore) Get(arg0 *incoming.Request, arg1 apps.AppID) (*apps.App, error) {
+func (m *MockAppStore) Get(arg0 apps.AppID) (*apps.App, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", arg0)
 	ret0, _ := ret[0].(*apps.App)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAppStoreMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppStore)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppStore)(nil).Get), arg0)
 }
 
 // InitBuiltin mocks base method.

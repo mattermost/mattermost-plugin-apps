@@ -45,19 +45,19 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	all := make(chan []apps.Binding)
 	defer close(all)
 
-	allApps := store.SortApps(p.store.App.AsMap(r))
+	allApps := store.SortApps(p.store.App.AsMap())
 	for i := range allApps {
 		app := allApps[i]
 		copy := r.Clone()
 		copy.SetAppID(app.AppID)
 
-		go func(r *incoming.Request, app apps.App) {
-			bb, err := p.GetAppBindings(r, cc, app)
+		go func(app apps.App) {
+			bb, err := p.GetAppBindings(copy, cc, app)
 			if err != nil {
-				r.Log.WithError(err).Debugw("Binding errors")
+				copy.Log.WithError(err).Debugf("failed to fetch app bindings")
 			}
 			all <- bb
-		}(copy, app)
+		}(app)
 	}
 
 	ret := []apps.Binding{}
@@ -71,7 +71,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 // GetAppBindings fetches bindings for a specific apps. We should avoid
 // unnecessary logging here as this route is called very often.
 func (p *Proxy) GetAppBindings(r *incoming.Request, cc apps.Context, app apps.App) ([]apps.Binding, error) {
-	if !p.appIsEnabled(r, app) {
+	if !p.appIsEnabled(app) {
 		return nil, nil
 	}
 	if len(app.GrantedLocations) == 0 {

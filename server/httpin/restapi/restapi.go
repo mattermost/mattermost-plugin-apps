@@ -51,8 +51,8 @@ func Init(h *httpin.Handler, conf config.Service, p proxy.Service, appServices a
 	a.initMarketplace(h)
 }
 
-func appIDVar(r *http.Request) apps.AppID {
-	s, ok := mux.Vars(r)["appid"]
+func appIDVar(req *http.Request) apps.AppID {
+	s, ok := mux.Vars(req)["appid"]
 	if ok {
 		return apps.AppID(s)
 	}

@@ -11,15 +11,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) static(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	appID := appIDVar(r)
+func (g *gateway) static(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	appID := appIDVar(req)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
-	req.SetAppID(appID)
+	r.SetAppID(appID)
 
-	vars := mux.Vars(r)
+	vars := mux.Vars(req)
 	if len(vars) == 0 {
 		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
 		return
@@ -32,14 +32,14 @@ func (g *gateway) static(req *incoming.Request, w http.ResponseWriter, r *http.R
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := g.proxy.GetStatic(req, appID, assetName)
+	body, status, err := g.proxy.GetStatic(r, appID, assetName)
 	if err != nil {
-		req.Log.WithError(err).Debugw("Failed to get asset", "asset_name", assetName)
+		r.Log.WithError(err).Debugw("failed to get asset", "asset_name", assetName)
 		httputils.WriteError(w, err)
 		return
 	}
 
-	copyHeader(w.Header(), r.Header)
+	copyHeader(w.Header(), req.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
 		httputils.WriteError(w, err)

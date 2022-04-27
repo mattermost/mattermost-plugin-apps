@@ -13,10 +13,10 @@ func (a *restapi) initMarketplace(h *httpin.Handler) {
 	h.HandleFunc(path.Marketplace, a.GetMarketplace, httpin.RequireUser).Methods(http.MethodGet)
 }
 
-func (a *restapi) GetMarketplace(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	filter := r.URL.Query().Get("filter")
-	includePlugins := r.URL.Query().Get("include_plugins") != ""
+func (a *restapi) GetMarketplace(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	filter := req.URL.Query().Get("filter")
+	includePlugins := req.URL.Query().Get("include_plugins") != ""
 
-	result := a.proxy.GetListedApps(req, filter, includePlugins)
+	result := a.proxy.GetListedApps(r, filter, includePlugins)
 	_ = httputils.WriteJSON(w, result)
 }

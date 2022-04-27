@@ -21,10 +21,10 @@ func (a *restapi) initGetBindings(h *httpin.Handler) {
 //   Method: GET
 //   Input: none
 //   Output: []Binding
-func (a *restapi) GetBindings(req *incoming.Request, w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
+func (a *restapi) GetBindings(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	q := req.URL.Query()
 
-	bindings, err := a.proxy.GetBindings(req, apps.Context{
+	bindings, err := a.proxy.GetBindings(r, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),
