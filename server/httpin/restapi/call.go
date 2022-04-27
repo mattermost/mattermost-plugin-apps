@@ -48,8 +48,6 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 	r.Log = r.Log.With(creq, cresp)
 
 	// Only track submit calls.
-	// TODO: <>/<>  1/5 should we be tracking submit _attempts_? I.e. move this
-	// above the Call?
 	if creq.Context.UserAgentContext.TrackAsSubmit {
 		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
 	}

@@ -53,14 +53,29 @@ func TestLoggable(t *testing.T) {
 			"vkey2": "confidential2",
 		},
 	}
-	// TODO <>/<> Add test cases for CallResponse
+	var testData = map[string]interface{}{
+		"A": "test",
+		"B": 99,
+	}
+	var testForm = Form{
+		Title: "name",
+		Fields: []Field{
+			{
+				Name: "f1",
+			},
+			{
+				Name: "f2",
+			},
+		},
+		Submit: &simpleCall,
+	}
 
 	for name, test := range map[string]struct {
 		In             interface{}
 		ExpectedProps  []interface{}
 		ExpectedString string
 	}{
-		"simple Context": {
+		"Context": {
 			In: simpleContext,
 			ExpectedProps: []interface{}{
 				"is_not_submit", "true",
@@ -69,14 +84,14 @@ func TestLoggable(t *testing.T) {
 			},
 			ExpectedString: "bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true",
 		},
-		"simple Call": {
+		"Call simple": {
 			In: simpleCall,
 			ExpectedProps: []interface{}{
 				"call_path", "/some-path",
 			},
 			ExpectedString: "/some-path",
 		},
-		"full Call": {
+		"Call full": {
 			In: fullCall,
 			ExpectedProps: []interface{}{
 				"call_path", "/some-path",
@@ -85,15 +100,57 @@ func TestLoggable(t *testing.T) {
 			},
 			ExpectedString: "/some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2",
 		},
-		"simple CallRequest": {
+		"CallRequest simple": {
 			In:             simpleCallRequest,
 			ExpectedProps:  []interface{}{simpleCall, simpleContext},
 			ExpectedString: "call: /some-path, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true",
 		},
-		"full CallRequest": {
+		"CallRequest full": {
 			In:             fullCallRequest,
 			ExpectedProps:  []interface{}{fullCall, simpleContext, "values", "vkey1,vkey2"},
 			ExpectedString: "call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true, values: vkey1,vkey2",
+		},
+		"CallResponse text": {
+			In:             NewTextResponse("test"),
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_text", "test"},
+			ExpectedString: "OK: test",
+		},
+		"CallResponse JSON data": {
+			In:             NewDataResponse(testData),
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", testData},
+			ExpectedString: "OK: data type map[string]interface {}, value: map[A:test B:99]",
+		},
+		"CallResponse byte data": {
+			In:             NewDataResponse([]byte("12345")),
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", []byte("12345")},
+			ExpectedString: "OK: data type []uint8, value: [49 50 51 52 53]",
+		},
+		"CallResponse text data": {
+			In:             NewDataResponse("12345"),
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "12345"},
+			ExpectedString: "OK: data type string, value: 12345",
+		},
+		"CallResponse form": {
+			In:             NewFormResponse(testForm),
+			ExpectedProps:  []interface{}{"response_type", "form", "response_form", testForm},
+			ExpectedString: `Form: {"title":"name","submit":{"path":"/some-path"},"fields":[{"name":"f1","type":""},{"name":"f2","type":""}]}`,
+		},
+		"CallResponse navigate": {
+			In: CallResponse{
+				Type:               CallResponseTypeNavigate,
+				NavigateToURL:      "http://x.y.z",
+				UseExternalBrowser: true,
+			},
+			ExpectedProps:  []interface{}{"response_type", "navigate", "response_url", "http://x.y.z", "use_external_browser", true},
+			ExpectedString: `Navigate to: "http://x.y.z", using external browser`,
+		},
+		"CallResponse call": {
+			In: CallResponse{
+				Type: CallResponseTypeCall,
+				Call: &fullCall,
+			},
+			ExpectedProps:  []interface{}{"response_type", "call", "response_call", "/some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2"},
+			ExpectedString: `Call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2`,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
