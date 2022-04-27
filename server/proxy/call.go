@@ -4,9 +4,11 @@
 package proxy
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -177,4 +179,20 @@ func (p *Proxy) getStatic(r *incoming.Request, app apps.App, path string) (io.Re
 		return nil, http.StatusInternalServerError, err
 	}
 	return up.GetStatic(r.Ctx(), app, path)
+}
+
+// pingApp checks if the app is accessible. Call its ping path with nothing
+// expanded, ignore 404 errors coming back and consider everything else a
+// "success".
+func (p *Proxy) pingApp(r *incoming.Request, app apps.App) (reachable bool) {
+	_, err := p.callApp(r, app, apps.CallRequest{Call: apps.DefaultPing})
+
+	return err == nil || errors.Cause(err) == utils.ErrNotFound
+}
+
+func (p *Proxy) timeoutRequest(r *incoming.Request, timeout time.Duration) (*incoming.Request, context.CancelFunc) {
+	r = r.Clone()
+	ctx, cancel := context.WithTimeout(r.Ctx(), timeout)
+	incoming.WithCtx(ctx)(r)
+	return r, cancel
 }

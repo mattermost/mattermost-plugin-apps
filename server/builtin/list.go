@@ -56,7 +56,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	includePluginApps := creq.BoolValue("plugin-apps")
 
 	listed := a.proxy.GetListedApps(r, "", includePluginApps)
-	installed := a.proxy.GetInstalledApps(r)
+	installed, reachable := a.proxy.GetInstalledApps(r, true)
 
 	// All of this information is non sensitive.
 	// Checks for the user's permissions might be needed in the future.
@@ -87,6 +87,13 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 				ID:    "command.list.submit.status.disabled",
 				Other: "Installed, Disabled",
 			})
+		} else {
+			if !reachable[app.AppID] {
+				status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.list.submit.status.unreachable",
+					Other: "Installed, **Unreachable**",
+				})
+			}
 		}
 
 		version := string(app.Version)
@@ -121,8 +128,13 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
+		deployType := string(app.DeployType)
+		if app.DeployType == apps.DeployHTTP && app.HTTP != nil {
+			deployType = app.HTTP.RootURL
+		}
+
 		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-			name, status, app.DeployType, version, account, app.GrantedLocations, app.GrantedPermissions)
+			name, status, deployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
 	listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
