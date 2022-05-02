@@ -20,6 +20,10 @@ func Pretty(in interface{}) string {
 	return string(bb)
 }
 
+func PrettyBlock(in interface{}) string {
+	return "\n```json\n" + Pretty(in) + "\n```\n"
+}
+
 func Remarshal(dst, src interface{}) {
 	data, _ := json.Marshal(src)
 	_ = json.Unmarshal(data, dst)

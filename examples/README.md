@@ -10,5 +10,6 @@
 | hello-oauth2 | 8082 |
 | hello-lifecycle | 8083 |
 | hello-jwt | 8084 |
+| expand | 8085 |
 
 - js
