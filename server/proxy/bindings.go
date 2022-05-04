@@ -96,7 +96,6 @@ func (p *Proxy) GetAppBindings(r *incoming.Request, cc apps.Context, app apps.Ap
 		err := json.Unmarshal(b, &bindings)
 		if err != nil {
 			problems = multierror.Append(problems, errors.Wrap(err, "failed to decode bindings"))
-			r.Log.Debugf("failed bindings: %s", utils.ToJSON(resp.Data))
 			return nil, problems
 		}
 		bindings, err = cleanAppBindings(app, bindings, "", cc.UserAgent, conf)
