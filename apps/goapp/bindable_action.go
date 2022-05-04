@@ -44,10 +44,6 @@ func (b BindableAction) Init(app *App) {
 	app.HandleCall(b.submit.Path, b.checkedHandler(b.submitHandler))
 }
 
-func completeSubmit(s apps.Call, name string) *apps.Call {
-	return &s
-}
-
 func (b BindableAction) Binding(creq CallRequest) *apps.Binding {
 	binding := b.prepareBinding(creq)
 	if binding == nil {

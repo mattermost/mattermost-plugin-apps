@@ -33,7 +33,6 @@ func (app *App) HandleCall(p string, h HandlerFunc) {
 		}
 		copy := *app
 		creq.App = &copy
-		creq.App.Log = app.Log.With("path", creq.Path)
 
 		cresp := h(creq)
 		if cresp.Type == apps.CallResponseTypeError {
@@ -41,7 +40,7 @@ func (app *App) HandleCall(p string, h HandlerFunc) {
 		}
 		_ = httputils.WriteJSON(w, cresp)
 
-		app.Log.Debugw("Call", "request", creq, "response", cresp)
+		app.Log.With(creq, cresp).Debugw("Call:")
 	})
 }
 

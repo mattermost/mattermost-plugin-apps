@@ -31,7 +31,7 @@ func NewApp(m apps.Manifest, log utils.Logger) *App {
 			apps.PermissionActAsBot,
 		}
 	}
-	
+
 	app := &App{
 		Manifest: m,
 		Log:      log,
@@ -122,6 +122,6 @@ func (app *App) RunHTTP() error {
 	http.Handle("/", app.Router)
 
 	listen := ":" + portStr
-	app.Log.Infof("%s app started, listening on port %s, manifest at `%s/manifest.json`", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
+	app.Log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
 	panic(http.ListenAndServe(listen, nil))
 }

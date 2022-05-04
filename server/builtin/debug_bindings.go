@@ -49,8 +49,6 @@ func (a *builtinApp) debugBindings(r *incoming.Request, creq apps.CallRequest) a
 			return apps.NewErrorResponse(err)
 		}
 
-		r.Log.Debugf("<>/<> builtin calling ")
-
 		bindings, err = a.proxy.GetAppBindings(r, creq.Context, *app)
 		if err != nil {
 			out += "\n\n### PROBLEMS:\n" + err.Error()

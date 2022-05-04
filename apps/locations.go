@@ -76,4 +76,3 @@ func (list Locations) Contains(loc Location) bool {
 	}
 	return false
 }
-
