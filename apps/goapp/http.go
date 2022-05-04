@@ -12,20 +12,17 @@ import (
 
 type HandlerFunc func(CallRequest) apps.CallResponse
 
-func (a *App) Handle(b Bindable) {
-	h := b.Handler
-	if b.RequireAdmin {
-		h = RequireAdmin(h)
-	}
-	if b.RequireConnectedUser {
-		h = RequireConnectedUser(h)
-	}
-
-	a.HandleCall(b.Path(), b.Handler)
+type Requirer interface {
+	RequireSystemAdmin() bool
+	RequireConnectedUser() bool
 }
 
-func (a *App) HandleCall(p string, h HandlerFunc) {
-	a.Router.Path(p).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+type Initializer interface {
+	Init(app *App)
+}
+
+func (app *App) HandleCall(p string, h HandlerFunc) {
+	app.Router.Path(p).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		creq := CallRequest{
 			GoContext: req.Context(),
 		}
@@ -34,8 +31,8 @@ func (a *App) HandleCall(p string, h HandlerFunc) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		creq.App = a
-		creq.App.Log = a.Log.With("path", creq.Path)
+		creq.App = app
+		creq.App.Log = app.Log.With("path", creq.Path)
 
 		cresp := h(creq)
 		if cresp.Type == apps.CallResponseTypeError {
@@ -76,7 +73,7 @@ func CallHandler(h func(CallRequest) (string, error)) HandlerFunc {
 
 func RequireAdmin(h HandlerFunc) HandlerFunc {
 	return func(creq CallRequest) apps.CallResponse {
-		if creq.Context.ActingUser != nil && !creq.Context.ActingUser.IsSystemAdmin() {
+		if !creq.IsSystemAdmin() {
 			return apps.NewErrorResponse(
 				utils.NewUnauthorizedError("system administrator role is required to invoke " + creq.Path))
 		}
@@ -86,7 +83,7 @@ func RequireAdmin(h HandlerFunc) HandlerFunc {
 
 func RequireConnectedUser(h HandlerFunc) HandlerFunc {
 	return func(creq CallRequest) apps.CallResponse {
-		if creq.Context.OAuth2.User == nil {
+		if !creq.IsConnectedUser() {
 			return apps.NewErrorResponse(
 				utils.NewUnauthorizedError("missing user record, required for " + creq.Path +
 					". Please use `/apps connect` to connect your ServiceNow account."))

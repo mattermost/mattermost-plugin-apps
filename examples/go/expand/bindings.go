@@ -7,8 +7,8 @@ import (
 
 func getBindings(creq goapp.CallRequest) apps.CallResponse {
 	return apps.NewDataResponse([]apps.Binding{
-		*creq.App.CommandBindings(noExpand.Binding(creq)),
-		*creq.App.PostMenuBindings(noExpand.Binding(creq)),
-		*creq.App.ChannelHeaderBindings(noExpand.Binding(creq)),
+		*creq.App.CommandBindings(action.Binding(creq)),
+		*creq.App.PostMenuBindings(action.Binding(creq)),
+		*creq.App.ChannelHeaderBindings(action.Binding(creq)),
 	})
 }

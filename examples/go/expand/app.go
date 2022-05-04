@@ -13,37 +13,27 @@ const iconPath = "icon.png"
 //go:embed static
 var static embed.FS
 
-var Manifest = apps.Manifest{
-	AppID:       "example-expand",
-	Version:     "v1.0.0",
-	DisplayName: "Example of hwow Expand works in Calls",
-	Icon:        "icon.png",
-	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/expand",
-	RequestedPermissions: []apps.Permission{
-		apps.PermissionActAsBot,
-		apps.PermissionActAsUser,
-	},
-	RequestedLocations: []apps.Location{
-		apps.LocationChannelHeader,
-		apps.LocationPostMenu,
-		apps.LocationCommand,
-	},
-	Deploy: apps.Deploy{
-		HTTP: &apps.HTTP{
-			RootURL: "http://localhost:8085",
-		},
-	},
-}
-
 func main() {
-	app := goapp.NewApp(Manifest).
+	simplifiedManifest := apps.Manifest{
+		AppID:       "example-expand",
+		Version:     "v1.0.0",
+		DisplayName: "Example of hwow Expand works in Calls",
+		Icon:        "icon.png",
+		HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/expand",
+		RequestedPermissions: []apps.Permission{
+			apps.PermissionActAsBot,
+			apps.PermissionActAsUser,
+		},
+	}
+
+	app := goapp.NewApp(simplifiedManifest).
 		WithStatic(static).
-		WithIcon(iconPath)
+		WithAppCommand("", userAction)
+		// .
+		// WithChannelHeaderButton(noExpand).
+		// WithPostMenu(noExpand)
 
-	// Bindings.
-	app.HandleCall("/bindings", getBindings)
-
-	app.Handle(noExpand)
-
+	app.HandleCall("/echo", handleEcho)
+		
 	panic(app.RunHTTP())
 }

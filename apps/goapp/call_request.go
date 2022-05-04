@@ -123,3 +123,11 @@ func (creq CallRequest) BoolValue(name string) (value, found bool) {
 
 	return false, false
 }
+
+func (creq CallRequest) IsSystemAdmin() bool {
+	return creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin()
+}
+
+func (creq CallRequest) IsConnectedUser() bool {
+	return creq.Context.OAuth2.User != nil
+}

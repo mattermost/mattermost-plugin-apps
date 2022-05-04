@@ -17,7 +17,7 @@ type User struct {
 	Token        *oauth2.Token
 }
 
-func (a *App) RemoveConnectedUser(creq CallRequest) error {
+func (app *App) RemoveConnectedUser(creq CallRequest) error {
 	asActingUser := appclient.AsActingUser(creq.Context)
 	err := asActingUser.StoreOAuth2User(nil)
 	if err != nil {
@@ -28,9 +28,9 @@ func (a *App) RemoveConnectedUser(creq CallRequest) error {
 	return nil
 }
 
-func (a *App) StoreConnectedUser(creq CallRequest, user *User) error {
+func (app *App) StoreConnectedUser(creq CallRequest, user *User) error {
 	if user == nil {
-		return a.RemoveConnectedUser(creq)
+		return app.RemoveConnectedUser(creq)
 	}
 
 	asActingUser := appclient.AsActingUser(creq.Context)

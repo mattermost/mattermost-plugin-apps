@@ -13,7 +13,7 @@ import (
 )
 
 func RunAWSLambda(app *goapp.App) error {
-	if app.Deploy.AWSLambda == nil {
+	if app.Manifest.Deploy.AWSLambda == nil {
 		return errors.New("no aws_lambda in the app's manifest")
 	}
 

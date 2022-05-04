@@ -1,7 +1,6 @@
 package goapp
 
 import (
-	"errors"
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -16,14 +15,15 @@ import (
 )
 
 type App struct {
-	apps.Manifest
+	Manifest apps.Manifest
 
-	Icon   string
 	Log    utils.Logger
 	Mode   apps.DeployType
 	Router *mux.Router
 
-	Bindables map[apps.Location]Bindable
+	command       *BindableMulti
+	postMenu      []Bindable
+	channelHeader []Bindable
 }
 
 func NewApp(m apps.Manifest) *App {
@@ -38,6 +38,9 @@ func NewApp(m apps.Manifest) *App {
 	// GET manifest.json.
 	app.Router.Path("/manifest.json").HandlerFunc(httputils.DoHandleJSON(app.Manifest)).Methods("GET")
 
+	// Bindings.
+	app.HandleCall("/bindings", app.getBindings)
+
 	app.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		app.Log.Debugf("App request: not found: %q", req.URL.String())
 		http.NotFound(w, req)
@@ -51,25 +54,27 @@ func (app *App) WithStatic(staticFS fs.FS) *App {
 	return app
 }
 
-func (app *App) WithIcon(iconPath string) *App {
-	app.Icon = iconPath
+func (app *App) WithCommand(subcommands ...Bindable) *App {
+	appCommand := NewBindableMulti(string(app.Manifest.AppID), subcommands...)
+	app.command = &appCommand
+	app.command.Init(app)
 	return app
 }
 
 func (app *App) RunHTTP() error {
-	if app.Deploy.HTTP == nil {
-		return errors.New("no HTTP in the app's manifest")
+	if app.Manifest.Deploy.HTTP == nil {
+		app.Manifest.Deploy.HTTP = &apps.HTTP{}
 	}
 	app.Mode = apps.DeployHTTP
 
 	rootURL := os.Getenv("ROOT_URL")
 	if rootURL != "" {
-		app.Deploy.HTTP.RootURL = rootURL
+		app.Manifest.Deploy.HTTP.RootURL = rootURL
 	}
 
 	portStr := os.Getenv("PORT")
 	if portStr == "" {
-		u, err := url.Parse(app.Deploy.HTTP.RootURL)
+		u, err := url.Parse(app.Manifest.Deploy.HTTP.RootURL)
 		if err != nil {
 			panic(err)
 		}
@@ -79,51 +84,14 @@ func (app *App) RunHTTP() error {
 		}
 	}
 
+	if app.Manifest.Deploy.HTTP.RootURL == "" {
+		app.Manifest.Deploy.HTTP.RootURL = "http://localhost:" + portStr
+	}
+
 	app.Log = utils.MustMakeCommandLogger(zapcore.DebugLevel)
 	http.Handle("/", app.Router)
 
 	listen := ":" + portStr
-	app.Log.Infof("%s app started, listening on port %s, manifest at `%s/manifest.json`", app.AppID, portStr, app.Deploy.HTTP.RootURL)
+	app.Log.Infof("%s app started, listening on port %s, manifest at `%s/manifest.json`", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
 	panic(http.ListenAndServe(listen, nil))
-}
-
-func (app *App) Bindings(bindings ...apps.Binding) *apps.Binding {
-
-
-
-func (app *App) CommandBindings(bindings ...apps.Binding) *apps.Binding {
-	return &apps.Binding{
-		Location: apps.LocationCommand,
-		Bindings: []apps.Binding{
-			{
-				Label:       string(app.AppID),
-				Description: app.Description,
-				Icon:        app.Icon,
-				Bindings:    bindings,
-			},
-		},
-	}
-}
-
-func (app *App) PostMenuBindings(bindings ...apps.Binding) *apps.Binding {
-	return &apps.Binding{
-		Location: apps.LocationPostMenu,
-		Bindings: bindings,
-	}
-}
-
-func (app *App) ChannelHeaderBindings(bindings ...apps.Binding) *apps.Binding {
-	return &apps.Binding{
-		Location: apps.LocationChannelHeader,
-		Bindings: bindings,
-	}
-}
-
-func AppendBinding(bb []apps.Binding, b *apps.Binding) []apps.Binding {
-	var out []apps.Binding
-	out = append(out, bb...)
-	if b != nil {
-		out = append(out, *b)
-	}
-	return out
 }
