@@ -23,12 +23,17 @@ func NewBindableMulti(name string, children ...Bindable) BindableMulti {
 }
 
 func (b BindableMulti) Init(app *App) {
-	for _, sub := range b.children {
+	runInitializers(b.children, app)
+}
+
+func runInitializers(list []Bindable, app *App) {
+	for _, sub := range list {
 		if i, ok := sub.(Initializer); ok {
 			i.Init(app)
 		}
 	}
 }
+
 func (b BindableMulti) Binding(creq CallRequest) *apps.Binding {
 	binding := b.prepareBinding(creq)
 	if binding == nil {

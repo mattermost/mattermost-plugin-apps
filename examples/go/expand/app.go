@@ -5,6 +5,8 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"go.uber.org/zap/zapcore"
 )
 
 const iconPath = "icon.png"
@@ -17,7 +19,7 @@ func main() {
 	simplifiedManifest := apps.Manifest{
 		AppID:       "example-expand",
 		Version:     "v1.0.0",
-		DisplayName: "Example of hwow Expand works in Calls",
+		DisplayName: "A Mattermost app illustrating how `Call.Expand` works",
 		Icon:        "icon.png",
 		HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/expand",
 		RequestedPermissions: []apps.Permission{
@@ -26,14 +28,13 @@ func main() {
 		},
 	}
 
-	app := goapp.NewApp(simplifiedManifest).
+	app := goapp.NewApp(simplifiedManifest, utils.MustMakeCommandLogger(zapcore.DebugLevel)).
 		WithStatic(static).
-		WithAppCommand("", userAction)
-		// .
-		// WithChannelHeaderButton(noExpand).
-		// WithPostMenu(noExpand)
+		WithCommand(userAction).
+		WithChannelHeader(userAction).
+		WithPostMenu(userAction)
 
 	app.HandleCall("/echo", handleEcho)
-		
+
 	panic(app.RunHTTP())
 }

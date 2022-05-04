@@ -16,34 +16,36 @@ var _ Bindable = BindableAction{}
 var _ Initializer = BindableAction{}
 var _ Requirer = BindableAction{}
 
-func NewBindableAction(name string, submit apps.Call, submitHandler HandlerFunc) BindableAction {
+func NewBindableAction(name string, submitHandler HandlerFunc, submit apps.Call) BindableAction {
+	if submit.Path == "" {
+		submit.Path = "/" + url.PathEscape(name)
+	}
+
 	return BindableAction{
 		bindable: bindable{
 			name: name,
 		},
-		submit:        &submit,
 		submitHandler: submitHandler,
+		submit:        &submit,
 	}
+}
+
+func (b BindableAction) WithExpand(e apps.Expand) BindableAction {
+	b.submit = b.submit.WithExpand(e)
+	return b
+}
+
+func (b BindableAction) WithState(state interface{}) BindableAction {
+	b.submit = b.submit.WithState(state)
+	return b
 }
 
 func (b BindableAction) Init(app *App) {
-	app.HandleCall(b.path(), b.checkedHandler(b.submitHandler))
+	app.HandleCall(b.submit.Path, b.checkedHandler(b.submitHandler))
 }
 
-func (b BindableAction) path() string {
-	return url.PathEscape("/" + b.name)
-}
-
-func (b BindableAction) getSubmit() *apps.Call {
-	s := b.submit
-	if s == nil {
-		s = apps.NewCall(b.path())
-	}
-	s = s.PartialCopy()
-	if s.Path == "" {
-		s.Path = b.path()
-	}
-	return s
+func completeSubmit(s apps.Call, name string) *apps.Call {
+	return &s
 }
 
 func (b BindableAction) Binding(creq CallRequest) *apps.Binding {
@@ -52,6 +54,6 @@ func (b BindableAction) Binding(creq CallRequest) *apps.Binding {
 		return nil
 	}
 
-	binding.Submit = b.getSubmit()
+	binding.Submit = b.submit
 	return binding
 }

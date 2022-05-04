@@ -7,8 +7,8 @@ import (
 )
 
 func handleEcho(creq goapp.CallRequest) apps.CallResponse {
-	originallCallJSON := utils.PrettyBlock(creq.Call.State)
-	contextJSON := utils.PrettyBlock(creq.Context)
+	originallCallJSON := utils.JSONBlock(creq.Call)
+	contextJSON := utils.JSONBlock(creq.Context)
 
 	return apps.NewTextResponse("Original Call:%s\n---\nResulting CallRequest.Context:%s",
 		originallCallJSON, contextJSON)

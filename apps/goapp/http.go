@@ -31,7 +31,8 @@ func (app *App) HandleCall(p string, h HandlerFunc) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		creq.App = app
+		copy := *app
+		creq.App = &copy
 		creq.App.Log = app.Log.With("path", creq.Path)
 
 		cresp := h(creq)
@@ -39,6 +40,8 @@ func (app *App) HandleCall(p string, h HandlerFunc) {
 			creq.App.Log.WithError(cresp).Debugw("Call failed.")
 		}
 		_ = httputils.WriteJSON(w, cresp)
+
+		app.Log.Debugw("Call", "request", creq, "response", cresp)
 	})
 }
 

@@ -1,6 +1,8 @@
 package goapp
 
 import (
+	"net/url"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -12,20 +14,17 @@ type BindableForm struct {
 
 var _ Bindable = BindableForm{}
 
-func (b BindableAction) WithForm(form apps.Form) BindableForm {
+func NewBindableForm(name string, submitHandler HandlerFunc, form apps.Form) BindableForm {
 	if form.Submit == nil {
-		form.Submit = b.getSubmit()
-	}
-	if form.Submit.Path == "" {
-		form.Submit.Path = b.path()
+		form.Submit = apps.NewCall("/" + url.PathEscape(name))
 	}
 	return BindableForm{
-		BindableAction: b,
+		BindableAction: NewBindableAction(name, submitHandler, *form.Submit),
 		form:           &form,
 	}
 }
 
-func (b BindableForm) getForm(creq CallRequest) *apps.Form {
+func (b BindableForm) prepareForm(creq CallRequest) *apps.Form {
 	if b.form == nil {
 		return nil
 	}
@@ -33,6 +32,7 @@ func (b BindableForm) getForm(creq CallRequest) *apps.Form {
 	if form.Icon == "" {
 		form.Icon = creq.App.Manifest.Icon
 	}
+	form.Submit = b.submit
 	return &form
 }
 
@@ -42,6 +42,6 @@ func (b BindableForm) Binding(creq CallRequest) *apps.Binding {
 		return nil
 	}
 
-	binding.Form = b.getForm(creq)
+	binding.Form = b.prepareForm(creq)
 	return binding
 }

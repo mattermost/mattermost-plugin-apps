@@ -1,32 +1,79 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var userAction = goapp.NewBindableForm("user-action", apps.Form{
-	Title: "Test how Expand works on user actions"
-	Header: "TODO",
-	// Submit is the call to make when the user clicks a submit button (or enter
-	// for a command). A simple call can be specified as a path (string). It
-	// will contain no expand/state.
-	Submit *Call `json:"submit,omitempty"`
+var userAction = goapp.NewBindableForm("user-action",
+	handleUserAction,
+	apps.Form{
+		Title:  "Test how Expand works on user actions",
+		Header: "TODO",
+		Fields: []apps.Field{
+			expandField("app"),
+			expandField("acting_user"),
+			expandField("acting_user_access_token"),
+			expandField("locale"),
+			expandField("channel"),
+			expandField("channel_member"),
+			expandField("team"),
+			expandField("team_member"),
+			expandField("post"),
+			expandField("root_post"),
+			expandField("oauth2_app"),
+			expandField("oauth2_user"),
+		},
+	})
 
-	// SubmitButtons refers to a field name that must be a FieldTypeStaticSelect
-	// or FieldTypeDynamicSelect.
-	//
-	// In Modal view, the field will be rendered as a list of buttons at the
-	// bottom. Clicking one of them submits the Call, providing the button
-	// reference as the corresponding Field's value. Leaving this property
-	// blank, displays the default "OK".
-	//
-	// In Autocomplete, it is ignored.
-	SubmitButtons string `json:"submit_buttons,omitempty"`
+func handleUserAction(creq goapp.CallRequest) apps.CallResponse {
+	submit := apps.NewCall("/echo").WithExpand(
+		apps.Expand{
+			App:                   apps.ExpandLevel(creq.GetValue("app", "")),
+			ActingUser:            apps.ExpandLevel(creq.GetValue("acting_user", "")),
+			ActingUserAccessToken: apps.ExpandLevel(creq.GetValue("acting_user_access_token", "")),
+			Locale:                apps.ExpandLevel(creq.GetValue("locale", "")),
+			Channel:               apps.ExpandLevel(creq.GetValue("channel", "")),
+			ChannelMember:         apps.ExpandLevel(creq.GetValue("channel_member", "")),
+			Team:                  apps.ExpandLevel(creq.GetValue("team", "")),
+			TeamMember:            apps.ExpandLevel(creq.GetValue("team_member", "")),
+			Post:                  apps.ExpandLevel(creq.GetValue("post", "")),
+			RootPost:              apps.ExpandLevel(creq.GetValue("root_post", "")),
+			OAuth2App:             apps.ExpandLevel(creq.GetValue("oauth2_app", "")),
+			OAuth2User:            apps.ExpandLevel(creq.GetValue("oauth2_user", "")),
+		})
 
-	// Fields is the list of fields in the form.
-	Fields []Field `json:"fields,omitempty"`
+	return apps.NewFormResponse(apps.Form{
+		Title:  "Example of a user call with expand",
+		Header: fmt.Sprintf("Press OK to submit the following call: %s", utils.JSONBlock(submit)),
+		Submit: submit,
+	})
+}
 
-})
-
-actionForm 
+func expandField(name string) apps.Field {
+	return apps.Field{
+		Type: apps.FieldTypeStaticSelect,
+		Name: name,
+		SelectStaticOptions: []apps.SelectOption{
+			{
+				Label: string(apps.ExpandNone),
+				Value: string(apps.ExpandNone),
+			},
+			{
+				Label: string(apps.ExpandID),
+				Value: string(apps.ExpandID),
+			},
+			{
+				Label: string(apps.ExpandSummary),
+				Value: string(apps.ExpandSummary),
+			},
+			{
+				Label: string(apps.ExpandAll),
+				Value: string(apps.ExpandAll),
+			},
+		},
+	}
+}

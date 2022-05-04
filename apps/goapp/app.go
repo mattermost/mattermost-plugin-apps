@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -26,9 +25,16 @@ type App struct {
 	channelHeader []Bindable
 }
 
-func NewApp(m apps.Manifest) *App {
+func NewApp(m apps.Manifest, log utils.Logger) *App {
+	if len(m.RequestedPermissions) == 0 {
+		m.RequestedPermissions = []apps.Permission{
+			apps.PermissionActAsBot,
+		}
+	}
+	
 	app := &App{
 		Manifest: m,
+		Log:      log,
 		Router:   mux.NewRouter(),
 	}
 
@@ -36,7 +42,7 @@ func NewApp(m apps.Manifest) *App {
 	app.Router.Path("/ping").HandlerFunc(httputils.DoHandleJSONData([]byte("{}")))
 
 	// GET manifest.json.
-	app.Router.Path("/manifest.json").HandlerFunc(httputils.DoHandleJSON(app.Manifest)).Methods("GET")
+	app.Router.Path("/manifest.json").HandlerFunc(httputils.DoHandleJSON(&app.Manifest)).Methods("GET")
 
 	// Bindings.
 	app.HandleCall("/bindings", app.getBindings)
@@ -58,14 +64,39 @@ func (app *App) WithCommand(subcommands ...Bindable) *App {
 	appCommand := NewBindableMulti(string(app.Manifest.AppID), subcommands...)
 	app.command = &appCommand
 	app.command.Init(app)
+
+	if !app.Manifest.RequestedLocations.Contains(apps.LocationCommand) {
+		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationCommand)
+	}
+	return app
+}
+
+func (app *App) WithPostMenu(items ...Bindable) *App {
+	app.postMenu = items
+	runInitializers(app.postMenu, app)
+
+	if !app.Manifest.RequestedLocations.Contains(apps.LocationPostMenu) {
+		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationPostMenu)
+	}
+	return app
+}
+
+func (app *App) WithChannelHeader(items ...Bindable) *App {
+	app.channelHeader = items
+	runInitializers(app.channelHeader, app)
+
+	if !app.Manifest.RequestedLocations.Contains(apps.LocationChannelHeader) {
+		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationChannelHeader)
+	}
 	return app
 }
 
 func (app *App) RunHTTP() error {
+	app.Mode = apps.DeployHTTP
 	if app.Manifest.Deploy.HTTP == nil {
+		app.Log.Debugf("Using default HTTP deploy settings")
 		app.Manifest.Deploy.HTTP = &apps.HTTP{}
 	}
-	app.Mode = apps.DeployHTTP
 
 	rootURL := os.Getenv("ROOT_URL")
 	if rootURL != "" {
@@ -88,7 +119,6 @@ func (app *App) RunHTTP() error {
 		app.Manifest.Deploy.HTTP.RootURL = "http://localhost:" + portStr
 	}
 
-	app.Log = utils.MustMakeCommandLogger(zapcore.DebugLevel)
 	http.Handle("/", app.Router)
 
 	listen := ":" + portStr
