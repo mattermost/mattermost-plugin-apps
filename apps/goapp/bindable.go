@@ -8,6 +8,8 @@ type Bindable interface {
 	Binding(CallRequest) *apps.Binding
 }
 
+type BindableOption func(Bindable) error
+
 type bindable struct {
 	// name is the short "location" of the function, will also be used as the
 	// default for command names and such.

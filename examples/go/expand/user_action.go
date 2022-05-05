@@ -11,7 +11,7 @@ import (
 //userAction defines /user-action command, the app's only channel header button,
 //and a Post Menu item. The command can be autocompleted, or filled as a form;
 //the other locations pop a modal dialog to customize the subsequent Expand.
-var userAction = goapp.NewBindableForm("user-action",
+var userAction = goapp.MakeBindableFormOrPanic("user-action",
 	handleUserAction,
 	apps.Form{
 		Title:  "Test how Expand works on user actions",

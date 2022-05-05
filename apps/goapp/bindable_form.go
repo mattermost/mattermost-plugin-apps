@@ -4,23 +4,49 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
+// BindableForm is a bindable action, with a form attached to it. It allows
+// binding submittable forms to commands for the autocomplete of parameters and
+// flags, and to the channel header and post actions menu where they open as
+// modal dialogs.
 type BindableForm struct {
 	BindableAction
+
+	// form is the template of the form to be used. If it contains a
 	form *apps.Form
 	// TODO: add a formHandler when source= actually works
 }
 
-var _ Bindable = BindableForm{}
+type asForm interface {
+	formActionPtr() *BindableForm
+}
 
-func NewBindableForm(name string, submitHandler HandlerFunc, form apps.Form) BindableForm {
-	base := NewBindableAction(name, submitHandler)
-	if form.Submit != nil {
-		base = base.WithSubmit(form.Submit)
+func (b *BindableForm) formActionPtr() *BindableForm { return b }
+
+var _ Bindable = (*BindableForm)(nil)
+var _ Initializer = (*BindableForm)(nil)
+var _ Requirer = (*BindableForm)(nil)
+var _ asForm = (*BindableForm)(nil)
+var _ asAction = (*BindableForm)(nil)
+
+func MakeBindableFormOrPanic(name string, submitHandler HandlerFunc, form apps.Form, opts ...BindableOption) *BindableForm {
+	b, err := MakeBindableForm(name, submitHandler, form, opts...)
+	if err != nil {
+		panic(err)
 	}
-	return BindableForm{
-		BindableAction: base,
+	return b
+}
+
+func MakeBindableForm(name string, submitHandler HandlerFunc, form apps.Form, opts ...BindableOption) (*BindableForm, error) {
+	action, err := MakeBindableAction(name, submitHandler, WithSubmit(form.Submit))
+	if err != nil {
+		return nil, err
+	}
+
+	b := &BindableForm{
+		BindableAction: *action,
 		form:           &form,
 	}
+	return b, nil
 }
 
 func (b BindableForm) prepareForm(creq CallRequest) *apps.Form {
