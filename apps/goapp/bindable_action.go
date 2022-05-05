@@ -1,7 +1,7 @@
 package goapp
 
 import (
-	"net/url"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
@@ -12,36 +12,73 @@ type BindableAction struct {
 	submitHandler HandlerFunc
 }
 
-var _ Bindable = BindableAction{}
-var _ Initializer = BindableAction{}
-var _ Requirer = BindableAction{}
+type asAction interface {
+	actionPtr() *BindableAction
+}
 
-func NewBindableAction(name string, submitHandler HandlerFunc, submit apps.Call) BindableAction {
-	if submit.Path == "" {
-		submit.Path = "/" + url.PathEscape(name)
+func (b *BindableAction) actionPtr() *BindableAction { return b }
+
+var _ Bindable = (*BindableAction)(nil)
+var _ Initializer = (*BindableAction)(nil)
+var _ Requirer = (*BindableAction)(nil)
+
+func MakeBindableActionOrPanic(name string, submitHandler HandlerFunc, opts ...BindableOption) *BindableAction {
+	b, err := MakeBindableAction(name, submitHandler, opts...)
+	if err != nil {
+		panic(err)
 	}
+	return b
+}
 
-	return BindableAction{
+func MakeBindableAction(name string, submitHandler HandlerFunc, opts ...BindableOption) (*BindableAction, error) {
+	b := &BindableAction{
 		bindable: bindable{
 			name: name,
 		},
 		submitHandler: submitHandler,
-		submit:        &submit,
 	}
+
+	for _, opt := range opts {
+		err := opt(b)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return b, nil
 }
 
-func (b BindableAction) WithExpand(e apps.Expand) BindableAction {
-	b.submit = b.submit.WithExpand(e)
-	return b
+func WithSubmit(submit *apps.Call) BindableOption {
+	return optionWithActionPtr(func(b *BindableAction) {
+		if submit == nil {
+			submit = &apps.Call{}
+		}
+		if submit.Path == "" {
+			submit.Path = pathFromName(b.name)
+		}
+		b.submit = submit
+	})
 }
 
-func (b BindableAction) WithState(state interface{}) BindableAction {
-	b.submit = b.submit.WithState(state)
-	return b
+func WithExpand(expand apps.Expand) BindableOption {
+	return optionWithActionPtr(func(b *BindableAction) {
+		// Make sure submit is initialized, even if redundant.
+		_ = WithSubmit(b.submit)(b)
+		b.submit.Expand = &expand
+	})
 }
 
-func (b BindableAction) Init(app *App) {
+func WithState(state interface{}) BindableOption {
+	return optionWithActionPtr(func(b *BindableAction) {
+		// Make sure submit is initialized.
+		_ = WithSubmit(b.submit)(b)
+		b.submit.State = state
+	})
+}
+
+func (b BindableAction) Init(app *App) error {
 	app.HandleCall(b.submit.Path, b.checkedHandler(b.submitHandler))
+	return nil
 }
 
 func (b BindableAction) Binding(creq CallRequest) *apps.Binding {
@@ -52,4 +89,15 @@ func (b BindableAction) Binding(creq CallRequest) *apps.Binding {
 
 	binding.Submit = b.submit
 	return binding
+}
+
+func optionWithActionPtr(f func(*BindableAction)) BindableOption {
+	return func(b Bindable) error {
+		ba, ok := b.(asAction)
+		if !ok {
+			return errors.Errorf("bindable action %s: With... method called on a wrong type: %T", b, b)
+		}
+		f(ba.actionPtr())
+		return nil
+	}
 }

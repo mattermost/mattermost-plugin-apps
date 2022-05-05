@@ -1,10 +1,11 @@
 package goapp
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"net/url"
-	"os"
+	"unicode"
 
 	"github.com/gorilla/mux"
 
@@ -25,26 +26,37 @@ type App struct {
 	channelHeader []Bindable
 }
 
-func NewApp(m apps.Manifest, log utils.Logger) *App {
-	if len(m.RequestedPermissions) == 0 {
-		m.RequestedPermissions = []apps.Permission{
-			apps.PermissionActAsBot,
-		}
+type AppOption func(app *App) error
+
+func MakeAppOrPanic(m apps.Manifest, opts ...AppOption) *App {
+	app, err := MakeApp(m, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return app
+}
+
+func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
+	// Default the app's permissions
+	m.RequestedPermissions = []apps.Permission{
+		apps.PermissionActAsBot,
 	}
 
 	app := &App{
 		Manifest: m,
-		Log:      log,
 		Router:   mux.NewRouter(),
 	}
 
-	// Ping.
+	for _, opt := range opts {
+		err := opt(app)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Set up the auto-served HTTP routes.
 	app.Router.Path("/ping").HandlerFunc(httputils.DoHandleJSONData([]byte("{}")))
-
-	// GET manifest.json.
 	app.Router.Path("/manifest.json").HandlerFunc(httputils.DoHandleJSON(&app.Manifest)).Methods("GET")
-
-	// Bindings.
 	app.HandleCall("/bindings", app.getBindings)
 
 	app.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -52,76 +64,76 @@ func NewApp(m apps.Manifest, log utils.Logger) *App {
 		http.NotFound(w, req)
 	})
 
-	return app
+	return app, nil
 }
 
-func (app *App) WithStatic(staticFS fs.FS) *App {
-	app.Router.PathPrefix("/static/").Handler(http.FileServer(http.FS(staticFS)))
-	return app
+func WithLog(log utils.Logger) AppOption {
+	return func(app *App) error {
+		app.Log = log
+		return nil
+	}
 }
 
-func (app *App) WithCommand(subcommands ...Bindable) *App {
-	appCommand := NewBindableMulti(string(app.Manifest.AppID), subcommands...)
-	app.command = &appCommand
-	app.command.Init(app)
-
-	if !app.Manifest.RequestedLocations.Contains(apps.LocationCommand) {
-		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationCommand)
+func WithStatic(staticFS fs.FS) AppOption {
+	return func(app *App) error {
+		app.Router.PathPrefix("/static/").Handler(http.FileServer(http.FS(staticFS)))
+		return nil
 	}
-	return app
 }
 
-func (app *App) WithPostMenu(items ...Bindable) *App {
-	app.postMenu = items
-	runInitializers(app.postMenu, app)
-
-	if !app.Manifest.RequestedLocations.Contains(apps.LocationPostMenu) {
-		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationPostMenu)
-	}
-	return app
-}
-
-func (app *App) WithChannelHeader(items ...Bindable) *App {
-	app.channelHeader = items
-	runInitializers(app.channelHeader, app)
-
-	if !app.Manifest.RequestedLocations.Contains(apps.LocationChannelHeader) {
-		app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationChannelHeader)
-	}
-	return app
-}
-
-func (app *App) RunHTTP() error {
-	app.Mode = apps.DeployHTTP
-	if app.Manifest.Deploy.HTTP == nil {
-		app.Log.Debugf("Using default HTTP deploy settings")
-		app.Manifest.Deploy.HTTP = &apps.HTTP{}
-	}
-
-	rootURL := os.Getenv("ROOT_URL")
-	if rootURL != "" {
-		app.Manifest.Deploy.HTTP.RootURL = rootURL
-	}
-
-	portStr := os.Getenv("PORT")
-	if portStr == "" {
-		u, err := url.Parse(app.Manifest.Deploy.HTTP.RootURL)
+func WithCommand(subcommands ...Bindable) AppOption {
+	return func(app *App) error {
+		appCommand := NewBindableMulti(string(app.Manifest.AppID), subcommands...)
+		app.command = &appCommand
+		err := app.command.Init(app)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		portStr = u.Port()
-		if portStr == "" {
-			portStr = "8080"
+
+		if !app.Manifest.RequestedLocations.Contains(apps.LocationCommand) {
+			app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationCommand)
 		}
+		return nil
 	}
+}
 
-	if app.Manifest.Deploy.HTTP.RootURL == "" {
-		app.Manifest.Deploy.HTTP.RootURL = "http://localhost:" + portStr
+func WithPostMenu(items ...Bindable) AppOption {
+	return func(app *App) error {
+		app.postMenu = items
+		err := runInitializers(app.postMenu, app)
+		if err != nil {
+			return err
+		}
+
+		if !app.Manifest.RequestedLocations.Contains(apps.LocationPostMenu) {
+			app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationPostMenu)
+		}
+		return nil
 	}
+}
 
-	http.Handle("/", app.Router)
+func WithChannelHeader(items ...Bindable) AppOption {
+	return func(app *App) error {
+		app.channelHeader = items
+		err := runInitializers(app.channelHeader, app)
+		if err != nil {
+			return err
+		}
 
-	listen := ":" + portStr
-	app.Log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
-	panic(http.ListenAndServe(listen, nil))
+		if !app.Manifest.RequestedLocations.Contains(apps.LocationChannelHeader) {
+			app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationChannelHeader)
+		}
+		return nil
+	}
+}
+
+func pathFromName(name string) string {
+	b := bytes.Buffer{}
+	for _, c := range name {
+		if unicode.IsSpace(c) {
+			c = '-'
+		}
+		_, _ = b.WriteRune(c)
+	}
+	return "/" + url.PathEscape(b.String())
 }

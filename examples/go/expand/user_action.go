@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var userAction = goapp.NewBindableForm("user-action",
+var userAction = goapp.MakeBindableFormOrPanic("user-action",
 	handleUserAction,
 	apps.Form{
 		Title:  "Test how Expand works on user actions",
