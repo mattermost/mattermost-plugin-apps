@@ -54,7 +54,7 @@ func (b bindable) prepareBinding(creq CallRequest) *apps.Binding {
 	}
 
 	binding := apps.Binding{
-		Location:    apps.Location(b.name),
+		Location:    apps.Location(pathFromName(b.name)),
 		Icon:        b.icon,
 		Hint:        b.hint,
 		Description: b.description,

@@ -52,10 +52,35 @@ func WithSubmit(submit *apps.Call) BindableOption {
 	return optionWithActionPtr(func(b *BindableAction) {
 		if submit == nil {
 			submit = &apps.Call{}
+		} else {
+			submit = submit.PartialCopy()
 		}
+
 		if submit.Path == "" {
 			submit.Path = pathFromName(b.name)
 		}
+
+		// Auto-fill Expand to satisfy RequireSystemAdmin, etc.
+		if b.requireSystemAdmin {
+			if b.submit.Expand == nil {
+				b.submit.Expand = &apps.Expand{}
+			}
+			if b.submit.Expand.ActingUser == "" {
+				b.submit.Expand.ActingUser = apps.ExpandSummary
+			}
+		}
+		if b.requireConnectedUser {
+			if b.submit.Expand == nil {
+				b.submit.Expand = &apps.Expand{}
+			}
+			if b.submit.Expand.ActingUserAccessToken == "" {
+				b.submit.Expand.ActingUserAccessToken = apps.ExpandAll
+			}
+			if b.submit.Expand.ActingUser == "" {
+				b.submit.Expand.ActingUser = apps.ExpandSummary
+			}
+		}
+
 		b.submit = submit
 	})
 }

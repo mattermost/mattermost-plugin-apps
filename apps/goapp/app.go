@@ -38,8 +38,10 @@ func MakeAppOrPanic(m apps.Manifest, opts ...AppOption) *App {
 
 func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
 	// Default the app's permissions
-	m.RequestedPermissions = []apps.Permission{
-		apps.PermissionActAsBot,
+	if len(m.RequestedPermissions) == 0 {
+		m.RequestedPermissions = []apps.Permission{
+			apps.PermissionActAsBot,
+		}
 	}
 
 	app := &App{
@@ -47,6 +49,7 @@ func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
 		Router:   mux.NewRouter(),
 	}
 
+	// Run the options.
 	for _, opt := range opts {
 		err := opt(app)
 		if err != nil {
