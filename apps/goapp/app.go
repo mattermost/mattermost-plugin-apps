@@ -1,10 +1,12 @@
 package goapp
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
+	"unicode"
 
 	"github.com/gorilla/mux"
 
@@ -124,4 +126,15 @@ func (app *App) RunHTTP() error {
 	listen := ":" + portStr
 	app.Log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
 	panic(http.ListenAndServe(listen, nil))
+}
+
+func pathFromName(name string) string {
+	b := bytes.Buffer{}
+	for _, c := range name {
+		if unicode.IsSpace(c) {
+			c = '-'
+		}
+		_, _ = b.WriteRune(c)
+	}
+	return "/" + url.PathEscape(b.String())
 }

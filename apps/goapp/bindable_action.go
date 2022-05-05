@@ -1,8 +1,6 @@
 package goapp
 
 import (
-	"net/url"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -16,18 +14,27 @@ var _ Bindable = BindableAction{}
 var _ Initializer = BindableAction{}
 var _ Requirer = BindableAction{}
 
-func NewBindableAction(name string, submitHandler HandlerFunc, submit apps.Call) BindableAction {
-	if submit.Path == "" {
-		submit.Path = "/" + url.PathEscape(name)
-	}
-
+func NewBindableAction(name string, submitHandler HandlerFunc) BindableAction {
 	return BindableAction{
 		bindable: bindable{
 			name: name,
 		},
 		submitHandler: submitHandler,
-		submit:        &submit,
 	}
+}
+
+func (b BindableAction) WithSubmit(submit *apps.Call) BindableAction {
+	if submit == nil {
+		submit = &apps.Call{}
+	} else {
+		submit = submit.PartialCopy()
+	}
+	if submit.Path == "" {
+		submit.Path = pathFromName(b.name)
+	}
+
+	b.submit = submit
+	return b
 }
 
 func (b BindableAction) WithExpand(e apps.Expand) BindableAction {

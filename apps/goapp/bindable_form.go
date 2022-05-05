@@ -1,8 +1,6 @@
 package goapp
 
 import (
-	"net/url"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -15,11 +13,12 @@ type BindableForm struct {
 var _ Bindable = BindableForm{}
 
 func NewBindableForm(name string, submitHandler HandlerFunc, form apps.Form) BindableForm {
-	if form.Submit == nil {
-		form.Submit = apps.NewCall("/" + url.PathEscape(name))
+	base := NewBindableAction(name, submitHandler)
+	if form.Submit != nil {
+		base = base.WithSubmit(form.Submit)
 	}
 	return BindableForm{
-		BindableAction: NewBindableAction(name, submitHandler, *form.Submit),
+		BindableAction: base,
 		form:           &form,
 	}
 }
