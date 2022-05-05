@@ -2,6 +2,7 @@ package incoming
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -46,6 +47,19 @@ func WithCtx(ctx context.Context) RequestOption {
 	}
 }
 
+func WithTimeout(timeout time.Duration, cancelFunc *context.CancelFunc) RequestOption {
+	return func(r *Request) {
+		if timeout == 0 {
+			return
+		}
+		if cancelFunc == nil {
+			panic("nil cancel function pointer")
+		}
+
+		r.ctx, *cancelFunc = context.WithTimeout(r.Ctx(), timeout)
+	}
+}
+
 func WithAppContext(cc apps.Context) RequestOption {
 	return func(r *Request) {
 		if cc.ActingUser != nil {
@@ -85,8 +99,8 @@ func NewRequest(mm *pluginapi.Client, config config.Service, log utils.Logger, s
 }
 
 // Clone creates a shallow copy of request, allowing clones to apply per-request changes.
-func (r *Request) Clone() *Request {
-	return &Request{
+func (r *Request) Clone(opts ...RequestOption) *Request {
+	r = &Request{
 		ctx:                   r.ctx,
 		mm:                    r.mm,
 		config:                r.config,
@@ -98,6 +112,12 @@ func (r *Request) Clone() *Request {
 		actingUserID:          r.actingUserID,
 		actingUserAccessToken: r.actingUserAccessToken,
 	}
+
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	return r
 }
 
 func (r *Request) UpdateAppContext(cc apps.Context) apps.Context {
