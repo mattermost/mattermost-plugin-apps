@@ -2,7 +2,7 @@ version: '3'
 services:
     mattermost:
         # This can be updated with docker tags from https://hub.docker.com/r/mattermost/mattermost-enterprise-edition/tags
-        image: mattermost/mattermost-enterprise-edition:master.227937
+        image: mattermost/mattermost-enterprise-edition:6.6
 
         ports:
             - "8066:8066"

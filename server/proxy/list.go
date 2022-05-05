@@ -4,14 +4,18 @@
 package proxy
 
 import (
+	"context"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
+
+const pingAppTimeout = 1 * time.Second
 
 func (p *Proxy) GetManifest(_ *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
@@ -27,11 +31,12 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 	// all ping requests must respond, unreachable respond with "".
 	reachableCh := make(chan apps.AppID)
 	for _, app := range all {
-		rr, cancel := p.timeoutRequest(r, pingAppTimeout)
+		var cancel context.CancelFunc
+		pingReq := r.Clone(incoming.WithTimeout(pingAppTimeout, &cancel))
 		go func(a apps.App) {
 			var response apps.AppID
 			if !a.Disabled {
-				if p.pingApp(rr, a) {
+				if p.pingApp(pingReq, a) {
 					response = a.AppID
 				}
 			}
