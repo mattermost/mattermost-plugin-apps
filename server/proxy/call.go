@@ -4,11 +4,9 @@
 package proxy
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -188,11 +186,4 @@ func (p *Proxy) pingApp(r *incoming.Request, app apps.App) (reachable bool) {
 	_, err := p.callApp(r, app, apps.CallRequest{Call: apps.DefaultPing})
 
 	return err == nil || errors.Cause(err) == utils.ErrNotFound
-}
-
-func (p *Proxy) timeoutRequest(r *incoming.Request, timeout time.Duration) (*incoming.Request, context.CancelFunc) {
-	r = r.Clone()
-	ctx, cancel := context.WithTimeout(r.Ctx(), timeout)
-	incoming.WithCtx(ctx)(r)
-	return r, cancel
 }
