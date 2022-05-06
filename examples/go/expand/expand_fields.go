@@ -5,7 +5,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
 )
 
-var expandFields = []apps.Field{
+var userActionExpandFields = []apps.Field{
 	expandField("app"),
 	expandField("acting_user"),
 	expandField("acting_user_access_token"),
@@ -18,6 +18,7 @@ var expandFields = []apps.Field{
 	expandField("root_post"),
 	expandField("oauth2_app"),
 	expandField("oauth2_user"),
+	expandField("user"),
 }
 
 func expandField(name string) apps.Field {
@@ -59,5 +60,6 @@ func expandFromValues(creq goapp.CallRequest) apps.Expand {
 		RootPost:              apps.ExpandLevel(creq.GetValue("root_post", "")),
 		OAuth2App:             apps.ExpandLevel(creq.GetValue("oauth2_app", "")),
 		OAuth2User:            apps.ExpandLevel(creq.GetValue("oauth2_user", "")),
+		User:                  apps.ExpandLevel(creq.GetValue("user", "")),
 	}
 }

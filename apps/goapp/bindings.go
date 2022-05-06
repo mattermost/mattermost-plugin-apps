@@ -1,6 +1,8 @@
 package goapp
 
-import "github.com/mattermost/mattermost-plugin-apps/apps"
+import (
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+)
 
 func (app *App) getBindings(creq CallRequest) apps.CallResponse {
 	return apps.NewDataResponse(app.Bindings(creq))

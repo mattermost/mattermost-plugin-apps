@@ -44,6 +44,6 @@ func handleSend(creq goapp.CallRequest) apps.CallResponse {
 	if custom != "" {
 		message += " ...and " + custom + "!"
 	}
-	creq.AsBot().DM(creq.Context.ActingUser.Id, message)
+	creq.AsBot().DM(creq.ActingUserID(), message)
 	return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
 }

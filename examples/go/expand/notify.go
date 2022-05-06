@@ -1,26 +1,167 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
+	"time"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixMilli())
+}
 
 // notify is the "container" for all /notify subcommands.
-var notify = goapp.NewBindableMulti("notify", notifyUserHasBeenCreated).
-	WithDescription("Example of how Expand works in subscriptions/notifications", "[ subcommand ]")
+func notify() goapp.Bindable {
+	return goapp.MakeBindableMultiOrPanic(
+		"notify",
+		goapp.WithDescription("Example of how Expand works in subscriptions/notifications"),
+		goapp.WithHint("[ subcommand ]"),
+		goapp.WithChildren(notifyUserCreated),
+	)
+}
 
-// notifyUserHasBeenCreated defines /notify user-has-been-created command.
-var notifyUserHasBeenCreated = goapp.MakeBindableActionOrPanic(
-	"user-has-been-created",
-	handleNotifyUserHasBeenCreated,
-	goapp.WithExpand(
-		apps.Expand{
-			ActingUser:            apps.ExpandSummary,
-			ActingUserAccessToken: apps.ExpandAll,
-		}),
-)
+type notifySetupFunc func(h *notifyHelper, creq goapp.CallRequest) error
+type notifyCleanupFunc func(h *notifyHelper, creq goapp.CallRequest)
 
-// handleUserAction processes the submit
-func handleNotifyUserHasBeenCreated(creq goapp.CallRequest) apps.CallResponse {
-	return apps.NewTextResponse("OK")
+type notifyHelper struct {
+	subject          apps.Subject
+	setupDescription string
+	expandFields     []apps.Field
+	setup            []notifySetupFunc
+	cleanup          []notifyCleanupFunc
+
+	testSub       *apps.Subscription
+	testUserID    string
+	testChannelID string
+	testTeamID    string
+}
+
+var notifyUserCreated = notifyHelper{
+	subject:          apps.SubjectUserCreated,
+	setupDescription: "create a test user",
+	expandFields: []apps.Field{
+		expandField("app"),
+		expandField("user"),
+	},
+	setup: []notifySetupFunc{
+		testSubscribe,
+		testCreateUser,
+	},
+	cleanup: []notifyCleanupFunc{
+		cleanupTestSub,
+		cleanupTestUser,
+	},
+}.bindable()
+
+// Make creates a bindable /notify subcommandcommand.
+func (h notifyHelper) bindable() goapp.Bindable {
+	return goapp.MakeBindableFormOrPanic(
+		string(h.subject),
+		h.handle,
+		apps.Form{
+			Title: fmt.Sprintf("Test how Expand works on `%s` notification", h.subject),
+			Header: fmt.Sprintf("On submit this will subscribe to `%s` event notifications, then %s, "+
+				"and display the received notifications. The subscription will use the Expand customized here.",
+				h.subject, h.setupDescription),
+			Fields: h.expandFields,
+		},
+		goapp.WithExpand(
+			apps.Expand{
+				ActingUser:            apps.ExpandSummary,
+				ActingUserAccessToken: apps.ExpandAll,
+				App:                   apps.ExpandAll,
+			}),
+	)
+}
+
+// handle process the `/notify {subject}` command or form submission.
+func (h *notifyHelper) handle(creq goapp.CallRequest) apps.CallResponse {
+	for _, f := range h.setup {
+		if err := f(h, creq); err != nil {
+			return apps.NewErrorResponse(err)
+		}
+	}
+	defer func() {
+		for _, f := range h.cleanup {
+			f(h, creq)
+		}
+	}()
+	return apps.NewTextResponse("Done testing %s. See direct channel with @%s for results.", h.subject, creq.Context.App.BotUsername)
+}
+
+// handleEvent processes the event (subscription) notification from Mattermost.
+func handleEvent(creq goapp.CallRequest) apps.CallResponse {
+	actingUserID, _ := creq.State.(string)
+	if actingUserID != "" {
+		_, _ = creq.AsBot().DM(actingUserID, "**%s** notification received!\n%s", creq.Context.Subject, utils.JSONBlock(creq))
+	} else {
+		creq.Log.Errorf("**INVALID NOTIFICATION RECEIVED**: state (type %T) does not contain an user ID", creq.State)
+	}
+	return apps.CallResponse{}
+}
+
+// testSubscribe creates a test subscription.
+func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
+	h.testSub = &apps.Subscription{
+		Subject: h.subject,
+		Call: *apps.NewCall("/event").
+			// customize Expand as per the user's submission.
+			WithExpand(expandFromValues(creq)).
+
+			// the user to send notification messages to.
+			WithState(creq.ActingUserID()),
+	}
+	err := creq.AsActingUser().Subscribe(h.testSub)
+	if err != nil {
+		return err
+	}
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: subscription for `%s`: ok.", h.subject)
+	return nil
+}
+
+// cleanupTestSub removes the test subscription.
+func cleanupTestSub(h *notifyHelper, creq goapp.CallRequest) {
+	err := creq.AsActingUser().Unsubscribe(h.testSub)
+	if err != nil {
+		return
+	}
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove previous subscription: ok.")
+
+}
+
+// testCreateUser creates a user (to trigger a `user_created` event).
+func testCreateUser(h *notifyHelper, creq goapp.CallRequest) error {
+	testUsername := fmt.Sprintf("test_%v", rand.Int())
+	testEmail := fmt.Sprintf("%s@test.test", testUsername)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "creating user @%s", testUsername)
+	testUser, _, err := creq.AsActingUser().CreateUser(&model.User{
+		Username: testUsername,
+		Email:    testEmail,
+	})
+	if err != nil {
+		return err
+	}
+	h.testUserID = testUser.Id
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "created user @%s, id: `%s`", testUser.Username, testUser.Id)
+	return nil
+}
+
+// cleanupTestUser removes the test user created by testCreateUser.
+func cleanupTestUser(h *notifyHelper, creq goapp.CallRequest) {
+	if h.testUserID == "" {
+		return
+	}
+	_, err := creq.AsActingUser().DeleteUser(h.testUserID)
+	if err == nil {
+		_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove user: ok.")
+	} else {
+		_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove user: error: %v.", err)
+	}
+
 }

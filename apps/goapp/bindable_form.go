@@ -9,7 +9,7 @@ import (
 // flags, and to the channel header and post actions menu where they open as
 // modal dialogs.
 type BindableForm struct {
-	BindableAction
+	*BindableAction
 
 	// form is the template of the form to be used. If it contains a
 	form *apps.Form
@@ -43,9 +43,17 @@ func MakeBindableForm(name string, submitHandler HandlerFunc, form apps.Form, op
 	}
 
 	b := &BindableForm{
-		BindableAction: *action,
+		BindableAction: action,
 		form:           &form,
 	}
+
+	for _, opt := range opts {
+		err := opt(b)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return b, nil
 }
 

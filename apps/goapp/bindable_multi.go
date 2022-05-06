@@ -1,6 +1,8 @@
 package goapp
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -9,16 +11,49 @@ type BindableMulti struct {
 	children []Bindable
 }
 
+type asMulti interface {
+	multiPtr() *BindableMulti
+}
+
+func (b *BindableMulti) multiPtr() *BindableMulti { return b }
+
 var _ Bindable = BindableMulti{}
 var _ Initializer = BindableMulti{}
 var _ Requirer = BindableMulti{}
 
-func NewBindableMulti(name string, children ...Bindable) BindableMulti {
-	return BindableMulti{
+func MakeBindableMultiOrPanic(name string, opts ...BindableOption) *BindableMulti {
+	b, err := MakeBindableMulti(name, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func MakeBindableMulti(name string, opts ...BindableOption) (*BindableMulti, error) {
+	b := &BindableMulti{
 		bindable: bindable{
 			name: name,
 		},
-		children: children,
+	}
+
+	for _, opt := range opts {
+		if err := opt(b); err != nil {
+			return nil, err
+		}
+	}
+
+	return b, nil
+}
+
+func WithChildren(children ...Bindable) BindableOption {
+	return func(bb Bindable) error {
+		i, ok := bb.(asMulti)
+		if !ok {
+			return errors.Errorf("bindable multi  %s: WithChildren method called on a wrong type: %T", bb, bb)
+		}
+		b := i.multiPtr()
+		b.children = children
+		return nil
 	}
 }
 
@@ -49,5 +84,6 @@ func (b BindableMulti) Binding(creq CallRequest) *apps.Binding {
 			binding.Bindings = append(binding.Bindings, *subBinding)
 		}
 	}
+
 	return binding
 }

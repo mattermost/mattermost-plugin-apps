@@ -24,7 +24,7 @@ func (app *App) RemoveConnectedUser(creq CallRequest) error {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to removed the user record"))
 	}
 
-	creq.App.Log.Debugw("Removed user record", "id", creq.Context.ActingUser.Id)
+	creq.Log.Debugw("Removed user record", "id", creq.ActingUserID())
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (app *App) StoreConnectedUser(creq CallRequest, user *User) error {
 	}
 
 	asActingUser := appclient.AsActingUser(creq.Context)
-	user.MattermostID = creq.Context.ActingUser.Id
+	user.MattermostID = creq.ActingUserID()
 	err := asActingUser.StoreOAuth2User(user)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to store the user record"))
@@ -48,7 +48,7 @@ func (app *App) StoreConnectedUser(creq CallRequest, user *User) error {
 		expires = user.Token.Expiry.Format(time.RFC822)
 		refreshTokenLog = utils.LastN(user.Token.RefreshToken, 4)
 	}
-	creq.App.Log.Debugw("Updated user record", "id", user.MattermostID, "access_token", accessTokenLog, "expires", expires, "refresh_token", refreshTokenLog)
+	creq.Log.Debugw("Updated user record", "id", user.MattermostID, "access_token", accessTokenLog, "expires", expires, "refresh_token", refreshTokenLog)
 	return nil
 }
 

@@ -398,7 +398,7 @@ func (c *ClientPP) doAPIRequestReader(method, url string, data io.Reader, etag s
 			return rp, err
 		}
 
-		return rp, errors.New((string(data)))
+		return rp, errors.New(strings.TrimSpace(string(data)))
 	}
 
 	return rp, nil
