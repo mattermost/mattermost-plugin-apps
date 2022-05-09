@@ -179,7 +179,7 @@ func (c Context) loggable() (map[string]string, []interface{}) {
 	}
 	if c.ExpandedContext.Team != nil {
 		display["team"] = c.ExpandedContext.Team.Name
-		props = append(props, "team_id", c.ExpandedContext.Channel.Id)
+		props = append(props, "team_id", c.ExpandedContext.Team.Id)
 	}
 	if c.ExpandedContext.Post != nil {
 		display["post"] = utils.LastN(c.ExpandedContext.Post.Message, 32)
