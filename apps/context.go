@@ -109,8 +109,7 @@ type ExpandedContext struct {
 	RootPost              *model.Post          `json:"root_post,omitempty"`
 
 	// TODO replace User with mentions
-	User      *model.User   `json:"user,omitempty"`
-	Mentioned []*model.User `json:"mentioned,omitempty"`
+	User *model.User `json:"user,omitempty"`
 
 	OAuth2 OAuth2Context `json:"oauth2,omitempty"`
 }

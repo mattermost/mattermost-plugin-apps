@@ -91,6 +91,9 @@ func TestExpand(t *testing.T) {
 		ec.DeveloperMode = true
 		ec.AppPath = "/apps/app1"
 		ec.BotUserID = "botid"
+		ec.App = &apps.App{
+			BotUserID: "botid",
+		}
 		return ec
 	}
 
