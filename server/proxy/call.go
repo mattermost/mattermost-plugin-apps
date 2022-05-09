@@ -34,35 +34,55 @@ type AppMetadataForClient struct {
 	BotUsername string `json:"bot_username,omitempty"`
 }
 
-func NewProxyCallResponse(response apps.CallResponse) CallResponse {
-	return CallResponse{
-		CallResponse: response,
+func (r CallResponse) WithAppMetadata(app *apps.App) CallResponse {
+	r.AppMetadata = AppMetadataForClient{
+		BotUserID:   app.BotUserID,
+		BotUsername: app.BotUsername,
 	}
-}
-
-func (r CallResponse) WithMetadata(metadata AppMetadataForClient) CallResponse {
-	r.AppMetadata = metadata
 	return r
 }
 
 func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
-	if creq.Context.AppID == "" {
-		return NewProxyCallResponse(apps.NewErrorResponse(
-			utils.NewInvalidError("app_id is not set in Context, don't know what app to call")))
+	var app *apps.App
+	respondErr := func(err error) CallResponse {
+		out := CallResponse{
+			CallResponse: apps.NewErrorResponse(err),
+		}
+		if app != nil {
+			out = out.WithAppMetadata(app)
+		}
+		return out
 	}
 
-	app, err := p.store.App.Get(creq.Context.AppID)
+	appID := r.AppID()
+	if appID == "" {
+		return respondErr(utils.NewInvalidError("app_id is not set in request, don't know what app to call"))
+	}
+	if creq.Context.AppID != appID {
+		return respondErr(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
+	}
+
+	app, err := p.store.App.Get(appID)
 	if err != nil {
-		return NewProxyCallResponse(apps.NewErrorResponse(err))
+		return respondErr(err)
 	}
 
-	cresp, _ := p.callApp(r, *app, creq)
-	return NewProxyCallResponse(cresp).WithMetadata(AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
-	})
+	if creq.Path[0] != '/' {
+		return respondErr(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
+	}
+	cleanPath, err := utils.CleanPath(creq.Path)
+	if err != nil {
+		return respondErr(errors.Wrap(err, "failed to clean call path"))
+	}
+	creq.Path = cleanPath
+
+	cresp := p.callApp(r, *app, creq)
+	return CallResponse{
+		CallResponse: cresp,
+	}.WithAppMetadata(app)
 }
 
+// <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?
 func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
 	values := map[string]interface{}{}
 	for len(valuePairs) > 0 {
@@ -82,7 +102,7 @@ func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cresp, _ := p.callApp(r, app, apps.CallRequest{
+	cresp := p.callApp(r, app, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
 		Values:  values,
@@ -90,41 +110,31 @@ func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps
 	return cresp
 }
 
-func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest) (apps.CallResponse, error) {
-	respondErr := func(err error) (apps.CallResponse, error) {
-		return apps.NewErrorResponse(err), err
-	}
-
-	conf := p.conf.Get()
-
+// callApp in an internal method to execute a call to an upstream app. It does
+// not perform any cleanup of the inputs.
+//
+// It returns the CallResponse to return to the client, and a separate error for the
+func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest) apps.CallResponse {
 	if !p.appIsEnabled(app) {
-		return respondErr(errors.Errorf("%s is disabled", app.AppID))
+		return apps.NewErrorResponse(errors.Errorf("app %s is disabled", app.AppID))
 	}
-
-	if creq.Path[0] != '/' {
-		return respondErr(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
-	}
-	cleanPath, err := utils.CleanPath(creq.Path)
-	if err != nil {
-		return respondErr(errors.Wrap(err, "failed to clean call path"))
-	}
-	creq.Path = cleanPath
+	conf := p.conf.Get()
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return respondErr(errors.Wrap(err, "failed to get upstream"))
+		return apps.NewErrorResponse(errors.Wrapf(err, "no available upstream for %s", app.AppID))
 	}
 
-	cc := creq.Context
-	cc = r.UpdateAppContext(cc)
-	creq.Context, err = p.expandContext(r, app, &cc, creq.Expand)
+	// expand
+	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
 	if err != nil {
-		return respondErr(errors.Wrap(err, "failed to expand context"))
+		return apps.NewErrorResponse(errors.Wrap(err, "failed to expand context"))
 	}
+	creq.Context = *expanded
 
 	cresp, err := upstream.Call(r.Ctx(), up, app, creq)
 	if err != nil {
-		return cresp, errors.Wrap(err, "upstream call failed")
+		return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
 	}
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
@@ -133,12 +143,12 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 	if cresp.Form != nil {
 		clean, err := cleanForm(*cresp.Form, conf, app.AppID)
 		if err != nil {
-			r.Log.WithError(err).Debugf("invalid form")
+			r.Log.WithError(err).Debugf("invalid form in call response")
 		}
 		cresp.Form = &clean
 	}
 
-	return cresp, nil
+	return cresp
 }
 
 // normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
@@ -183,7 +193,17 @@ func (p *Proxy) getStatic(r *incoming.Request, app apps.App, path string) (io.Re
 // expanded, ignore 404 errors coming back and consider everything else a
 // "success".
 func (p *Proxy) pingApp(r *incoming.Request, app apps.App) (reachable bool) {
-	_, err := p.callApp(r, app, apps.CallRequest{Call: apps.DefaultPing})
+	if !p.appIsEnabled(app) {
+		return false
+	}
 
+	up, err := p.upstreamForApp(app)
+	if err != nil {
+		return false
+	}
+
+	_, err = upstream.Call(r.Ctx(), up, app, apps.CallRequest{
+		Call: apps.DefaultPing,
+	})
 	return err == nil || errors.Cause(err) == utils.ErrNotFound
 }

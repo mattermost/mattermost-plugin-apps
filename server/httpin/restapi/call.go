@@ -13,8 +13,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-var emptyCC = apps.Context{}
-
 func (a *restapi) initCall(h *httpin.Handler) {
 	h.HandleFunc(path.Call,
 		a.Call, httpin.RequireUser).Methods(http.MethodPost)
@@ -28,20 +26,14 @@ func (a *restapi) initCall(h *httpin.Handler) {
 func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
-		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "failed to unmarshal Call request")))
+		err = errors.Wrap(err, "failed to unmarshal Call request")
+		r.Log.WithError(err).Infof("incoming call failed")
+		httputils.WriteError(w, utils.NewInvalidError(err))
 		return
 	}
 	r.SetAppID(creq.Context.AppID)
 
-	// Clear out anythging in the incoming expanded context for security
-	// reasons, it will be set by Expand before passing to the app.
-	creq.Context.ExpandedContext = apps.ExpandedContext{}
-	creq.Context, err = a.cleanUserAgentContext(r.ActingUserID(), creq.Context)
-	if err != nil {
-		httputils.WriteError(w, utils.NewInvalidError(errors.Wrap(err, "invalid call context for user")))
-		return
-	}
-
+	// Call the app.
 	cresp := a.proxy.Call(r, *creq)
 
 	// Add the request and response digests to the logger.
@@ -53,66 +45,4 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 	}
 
 	_ = httputils.WriteJSON(w, cresp)
-}
-
-func (a *restapi) cleanUserAgentContext(userID string, orig apps.Context) (apps.Context, error) {
-	mm := a.conf.MattermostAPI()
-	var postID, channelID, teamID string
-	cc := apps.Context{
-		UserAgentContext: orig.UserAgentContext,
-	}
-
-	switch {
-	case cc.PostID != "":
-		postID = cc.PostID
-		post, err := mm.Post.GetPost(postID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get post. post=%v", postID)
-		}
-
-		channelID = post.ChannelId
-		_, err = mm.Channel.GetMember(channelID, userID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
-		}
-
-		c, err := mm.Channel.Get(channelID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
-		}
-
-		teamID = c.TeamId
-
-	case cc.ChannelID != "":
-		channelID = cc.ChannelID
-
-		_, err := mm.Channel.GetMember(channelID, userID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get channel membership. user=%v channel=%v", userID, channelID)
-		}
-
-		c, err := mm.Channel.Get(channelID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get channel. channel=%v", channelID)
-		}
-
-		teamID = c.TeamId
-
-	case cc.TeamID != "":
-		teamID = cc.TeamID
-
-		_, err := mm.Team.GetMember(teamID, userID)
-		if err != nil {
-			return emptyCC, errors.Wrapf(err, "failed to get team membership. user=%v team=%v", userID, teamID)
-		}
-
-	default:
-		return emptyCC, errors.Errorf("no post, channel, or team context provided. user=%v", userID)
-	}
-
-	cc.PostID = postID
-	cc.ChannelID = channelID
-	cc.TeamID = teamID
-	cc.ActingUserID = userID
-	return cc, nil
 }

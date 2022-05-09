@@ -120,15 +120,6 @@ func (r *Request) Clone(opts ...RequestOption) *Request {
 	return r
 }
 
-func (r *Request) UpdateAppContext(cc apps.Context) apps.Context {
-	updated := cc
-	updated.ActingUserID = r.ActingUserID()
-	updated.ExpandedContext = apps.ExpandedContext{
-		ActingUserAccessToken: r.actingUserAccessToken,
-	}
-	return updated
-}
-
 func (r *Request) Ctx() context.Context {
 	return r.ctx
 }
@@ -185,4 +176,8 @@ func (r *Request) GetMMClient() (mmclient.Client, error) {
 	}
 
 	return mmclient.NewHTTPClient(conf, token), nil
+}
+
+func (r *Request) Config() config.Service {
+	return r.config
 }

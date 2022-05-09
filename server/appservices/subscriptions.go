@@ -70,7 +70,7 @@ func (a *AppServices) Subscribe(_ *incoming.Request, sub apps.Subscription) erro
 		return err
 	}
 
-	if err := CheckSubscriptionPermission(&a.conf.MattermostAPI().User, sub, "", ""); err != nil {
+	if err := CheckSubscriptionPermission(&a.conf.MattermostAPI().User, sub, sub.ChannelID, sub.TeamID); err != nil {
 		return err
 	}
 

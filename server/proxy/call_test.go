@@ -40,7 +40,9 @@ func TestAppMetadataForClient(t *testing.T) {
 
 	r := incoming.NewRequest(proxy.conf.MattermostAPI(), proxy.conf, utils.NewTestLogger(), nil)
 	r.Log = utils.NewTestLogger()
+	r.SetAppID("app1")
 	resp := proxy.Call(r, creq)
+	require.Equal(t, apps.CallResponseTypeOK, resp.Type)
 	require.Equal(t, resp.AppMetadata, AppMetadataForClient{
 		BotUserID:   "botid",
 		BotUsername: "botusername",

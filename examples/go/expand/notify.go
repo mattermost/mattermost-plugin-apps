@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -22,7 +23,10 @@ func notify() goapp.Bindable {
 		"notify",
 		goapp.WithDescription("Example of how Expand works in subscriptions/notifications"),
 		goapp.WithHint("[ subcommand ]"),
-		goapp.WithChildren(notifyUserCreated),
+		goapp.WithChildren(
+			notifyUserCreated,
+			notifyUserJoinedTeam,
+		),
 	)
 }
 
@@ -59,6 +63,27 @@ var notifyUserCreated = notifyHelper{
 	},
 }.bindable()
 
+var notifyUserJoinedTeam = notifyHelper{
+	subject:          apps.SubjectUserJoinedTeam,
+	setupDescription: "create a test user, have it join this team",
+	expandFields: []apps.Field{
+		expandField("app"),
+		expandField("user"),
+		expandField("team"),
+		expandField("team_member"),
+	},
+	setup: []notifySetupFunc{
+		testCreateUser,
+		testSetCurrentTeamID,
+		testSubscribe,
+		testUserJoinTeam,
+	},
+	cleanup: []notifyCleanupFunc{
+		cleanupTestSub,
+		cleanupTestUser,
+	},
+}.bindable()
+
 // Make creates a bindable /notify subcommandcommand.
 func (h notifyHelper) bindable() goapp.Bindable {
 	return goapp.MakeBindableFormOrPanic(
@@ -76,6 +101,7 @@ func (h notifyHelper) bindable() goapp.Bindable {
 				ActingUser:            apps.ExpandSummary,
 				ActingUserAccessToken: apps.ExpandAll,
 				App:                   apps.ExpandAll,
+				Team:                  apps.ExpandAll,
 			}),
 	)
 }
@@ -109,7 +135,9 @@ func handleEvent(creq goapp.CallRequest) apps.CallResponse {
 // testSubscribe creates a test subscription.
 func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
 	h.testSub = &apps.Subscription{
-		Subject: h.subject,
+		Subject:   h.subject,
+		TeamID:    h.testTeamID,
+		ChannelID: h.testChannelID,
 		Call: *apps.NewCall("/event").
 			// customize Expand as per the user's submission.
 			WithExpand(expandFromValues(creq)).
@@ -117,11 +145,19 @@ func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
 			// the user to send notification messages to.
 			WithState(creq.ActingUserID()),
 	}
+
 	err := creq.AsActingUser().Subscribe(h.testSub)
 	if err != nil {
 		return err
 	}
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: subscription for `%s`: ok.", h.subject)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: subscribed to `%s.", h.subject)
+	return nil
+}
+
+// testSubscribe creates a test subscription.
+func testSetCurrentTeamID(h *notifyHelper, creq goapp.CallRequest) error {
+	h.testTeamID = creq.Context.Team.Id
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: using current team: %s.", creq.Context.Team.Name)
 	return nil
 }
 
@@ -164,4 +200,20 @@ func cleanupTestUser(h *notifyHelper, creq goapp.CallRequest) {
 		_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove user: error: %v.", err)
 	}
 
+}
+
+// testUserJoinTeam makes the test user join the current team(to trigger a
+// `user_joined_team` event).
+func testUserJoinTeam(h *notifyHelper, creq goapp.CallRequest) error {
+	if h.testUserID == "" || h.testTeamID == "" {
+		return errors.New("testUserJoinTeam requires testUserID and testTeamID")
+	}
+
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "adding user `%s` to team `%s`", h.testUserID, h.testTeamID)
+	_, _, err := creq.AsActingUser().AddTeamMember(h.testTeamID, h.testUserID)
+	if err != nil {
+		return err
+	}
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "added user `%s` to team `%s`", h.testUserID, h.testTeamID)
+	return nil
 }

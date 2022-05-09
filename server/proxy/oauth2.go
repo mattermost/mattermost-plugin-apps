@@ -56,7 +56,7 @@ func (p *Proxy) CompleteRemoteOAuth2(r *incoming.Request, appID apps.AppID, urlV
 		return err
 	}
 
-	cresp, _ := p.callApp(r, *app, apps.CallRequest{
+	cresp := p.callApp(r, *app, apps.CallRequest{
 		Call:    app.OnOAuth2Complete.WithDefault(apps.DefaultOnOAuth2Complete),
 		Context: apps.Context{},
 		Values:  urlValues,
