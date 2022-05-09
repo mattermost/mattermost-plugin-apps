@@ -28,6 +28,9 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpC
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
 	}
+	if !app.GrantedPermissions.Contains(apps.PermissionActAsBot) {
+		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionActAsBot)
+	}
 
 	switch app.RemoteWebhookAuthType {
 	case apps.NoAuth:
@@ -65,14 +68,13 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpC
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, httpCallRequest.Path)
 
+	// Set acting user to bot.
+	r = r.Clone()
+	r.SetActingUserID("")
 	cc, err := p.expandContext(r, *app, nil, call.Expand)
 	if err != nil {
 		return err
 	}
-
-	// Set acting user to bot.
-	cc.ActingUserID = cc.BotUserID
-	cc.ActingUserAccessToken = cc.BotAccessToken
 
 	return upstream.Notify(r.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,

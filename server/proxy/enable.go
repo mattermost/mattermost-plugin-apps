@@ -45,7 +45,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	r.Log.Infof("Enabled app")
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	if message == "" {
 		message = fmt.Sprintf("Enabled %s", app.DisplayName)

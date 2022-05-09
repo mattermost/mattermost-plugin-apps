@@ -41,7 +41,7 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 
 	// Only track submit calls.
 	if creq.Context.UserAgentContext.TrackAsSubmit {
-		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), creq.Context.ActingUserID, "submit")
+		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), r.ActingUserID(), "submit")
 	}
 
 	_ = httputils.WriteJSON(w, cresp)

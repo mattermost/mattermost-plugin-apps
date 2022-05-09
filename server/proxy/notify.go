@@ -69,8 +69,6 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	// r.Log.Debugf("<>/<> notifyForSubscription: sub %s", utils.ToJSON(sub))
-
 	expanded, err := p.expandContext(r, *app, base, sub.Call.Expand)
 	if err != nil {
 		return err

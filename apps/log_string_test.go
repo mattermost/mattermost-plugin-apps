@@ -19,7 +19,6 @@ func TestLoggable(t *testing.T) {
 	var _ utils.HasLoggable = Context{}
 
 	var simpleContext = Context{
-		ActingUserID: "id_of_acting_user",
 		ExpandedContext: ExpandedContext{
 			BotUserID:      "id_of_bot_user",
 			BotAccessToken: "bot_user_access_tokenXYZ",

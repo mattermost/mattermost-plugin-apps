@@ -82,6 +82,7 @@ func TestExpand(t *testing.T) {
 
 	type TC struct {
 		base              apps.Context
+		noActingUser      bool
 		expectClientCalls func(*mock_mmclient.MockClient)
 		expect            map[string]interface{} // string for err.Error, or apps.ExpandedContext for success
 	}
@@ -91,9 +92,6 @@ func TestExpand(t *testing.T) {
 		ec.DeveloperMode = true
 		ec.AppPath = "/apps/app1"
 		ec.BotUserID = "botid"
-		ec.App = &apps.App{
-			BotUserID: "botid",
-		}
 		return ec
 	}
 
@@ -105,9 +103,6 @@ func TestExpand(t *testing.T) {
 			name: "acting_user",
 			tcs: map[string]TC{
 				"happy with API GetUser": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
 						client.EXPECT().GetUser(userID).Times(1).Return(actingUser(), nil)
 					},
@@ -121,9 +116,6 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"happy no API": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expect: map[string]interface{}{
 						"-id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
 						"+id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
@@ -133,9 +125,6 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"error GetUser fail": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
 						client.EXPECT().GetUser(userID).Times(1).Return(nil, utils.ErrForbidden)
 					},
@@ -149,9 +138,6 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"error invalid": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expect: map[string]interface{}{
 						"garbage":  `"garbage" is not a known expand level`,
 						"+garbage": `"garbage" is not a known expand level`,
@@ -159,6 +145,7 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"error no ID": {
+					noActingUser: true,
 					expect: map[string]interface{}{
 						"+id":  `failed to expand required acting_user: no user ID to expand`,
 						"+all": `failed to expand required acting_user: no user ID to expand`,
@@ -166,13 +153,11 @@ func TestExpand(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "channel_member",
 			tcs: map[string]TC{
 				"happy with API GetChannelMemner": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
@@ -185,7 +170,6 @@ func TestExpand(t *testing.T) {
 				},
 				"happy no API": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expect: map[string]interface{}{
@@ -198,21 +182,18 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
+					noActingUser: true,
 					expect: map[string]interface{}{
 						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
 					},
 				},
 				"error no channel ID": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expect: map[string]interface{}{
 						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
 					},
 				},
 				"error API": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
@@ -229,7 +210,6 @@ func TestExpand(t *testing.T) {
 			tcs: map[string]TC{
 				"happy with API GetTeamMember": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
@@ -242,7 +222,6 @@ func TestExpand(t *testing.T) {
 				},
 				"happy with no API": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expect: map[string]interface{}{
@@ -255,21 +234,18 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
+					noActingUser: true,
 					expect: map[string]interface{}{
 						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
 				"no team ID": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
 					expect: map[string]interface{}{
 						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
 				"API error": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
@@ -311,6 +287,10 @@ func TestExpand(t *testing.T) {
 							require.NoError(t, err)
 
 							r := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
+							r.SetAppID(app.AppID)
+							if !tc.noActingUser {
+								r.SetActingUserID(userID)
+							}
 							prev := tc.base
 							cc, err := p.expandContext(r, app, &prev, &e)
 							if err != nil {

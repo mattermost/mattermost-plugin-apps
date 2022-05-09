@@ -150,14 +150,14 @@ func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
 	if err != nil {
 		return err
 	}
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: subscribed to `%s.", h.subject)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "subscribed to `%s.", h.subject)
 	return nil
 }
 
 // testSubscribe creates a test subscription.
 func testSetCurrentTeamID(h *notifyHelper, creq goapp.CallRequest) error {
 	h.testTeamID = creq.Context.Team.Id
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "set up: using current team: %s.", creq.Context.Team.Name)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "using current team: %s.", creq.Context.Team.Name)
 	return nil
 }
 
@@ -167,7 +167,7 @@ func cleanupTestSub(h *notifyHelper, creq goapp.CallRequest) {
 	if err != nil {
 		return
 	}
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove previous subscription: ok.")
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "removed previous subscription.")
 
 }
 
@@ -195,9 +195,9 @@ func cleanupTestUser(h *notifyHelper, creq goapp.CallRequest) {
 	}
 	_, err := creq.AsActingUser().DeleteUser(h.testUserID)
 	if err == nil {
-		_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove user: ok.")
+		_, _ = creq.AsBot().DM(creq.ActingUserID(), "removed user.")
 	} else {
-		_, _ = creq.AsBot().DM(creq.ActingUserID(), "clean up: remove user: error: %v.", err)
+		_, _ = creq.AsBot().DM(creq.ActingUserID(), "remove user: error: %v.", err)
 	}
 
 }

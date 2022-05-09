@@ -23,14 +23,8 @@ import (
 //
 // TODO: Refactor to an incoming Context and an outgoing Context.
 type Context struct {
-	// ActingUserID is primarily (or exclusively?) for calls originating from
-	// user submissions.
-	//
-	// ActingUserID is not send down to Apps.
-	ActingUserID string `json:"acting_user_id,omitempty"`
-
-	// UserID indicates the subject of the command. Once Mentions is
-	// implemented, it may be replaced by Mentions.
+	// UserID indicates the subject of the call. Once Mentions is implemented,
+	// it may be replaced by Mentions.
 	//
 	// UserID is not send down to Apps.
 	UserID string `json:"user_id,omitempty"`

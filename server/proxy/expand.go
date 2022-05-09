@@ -108,15 +108,15 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 		}, {
 			name:           "acting_user",
 			requestedLevel: expand.ActingUser,
-			f:              e.expandUser(&e.ExpandedContext.ActingUser, e.ActingUserID),
+			f:              e.expandUser(&e.ExpandedContext.ActingUser, e.r.ActingUserID()),
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
 			defaultExpand:  apps.ExpandNone.Required(),
 		}, {
 			name:           "app",
 			requestedLevel: expand.App,
 			f:              e.expandApp,
-			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandID.Required(),
+			expandableAs:   []apps.ExpandLevel{apps.ExpandSummary, apps.ExpandAll},
+			defaultExpand:  apps.ExpandNone.Required(),
 		}, {
 			name:           "channel_member",
 			requestedLevel: expand.ChannelMember,
@@ -220,7 +220,6 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 	cc.UserAgentContext.RootPostID = ""
 	cc.UserAgentContext.PostID = ""
 	cc.UserID = ""
-	cc.ActingUserID = ""
 
 	return &cc, nil
 }
@@ -291,10 +290,6 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 
 func (e *expander) expandApp(level apps.ExpandLevel) error {
 	switch level {
-	case apps.ExpandID:
-		e.ExpandedContext.App = &apps.App{
-			BotUserID: e.app.BotUserID,
-		}
 	case apps.ExpandSummary:
 		e.ExpandedContext.App = &apps.App{
 			Manifest: apps.Manifest{
@@ -324,7 +319,7 @@ func (e *expander) expandChannelMember(level apps.ExpandLevel) error {
 	channelID := e.UserAgentContext.ChannelID
 	userID := e.UserID
 	if userID == "" {
-		userID = e.ActingUserID
+		userID = e.r.ActingUserID()
 	}
 	if userID == "" || channelID == "" {
 		return errors.New("no user ID or channel ID to expand")
@@ -425,7 +420,7 @@ func (e *expander) expandTeamMember(level apps.ExpandLevel) error {
 	teamID := e.UserAgentContext.TeamID
 	userID := e.UserID
 	if userID == "" {
-		userID = e.ActingUserID
+		userID = e.r.ActingUserID()
 	}
 	if userID == "" || teamID == "" {
 		return errors.New("no user ID or channel ID to expand")
@@ -489,7 +484,7 @@ func (e *expander) expandLocale(level apps.ExpandLevel) error {
 	if e.ExpandedContext.ActingUser != nil {
 		e.ExpandedContext.Locale = utils.GetLocaleWithUser(e.r.Config().MattermostConfig().Config(), e.ExpandedContext.ActingUser)
 	} else {
-		e.ExpandedContext.Locale = utils.GetLocale(e.r.Config().MattermostAPI(), e.r.Config().MattermostConfig().Config(), e.ActingUserID)
+		e.ExpandedContext.Locale = utils.GetLocale(e.r.Config().MattermostAPI(), e.r.Config().MattermostConfig().Config(), e.r.ActingUserID())
 	}
 	return nil
 }
@@ -507,7 +502,7 @@ func (e *expander) expandOAuth2App(level apps.ExpandLevel) error {
 }
 
 func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
-	userID := e.ActingUserID
+	userID := e.r.ActingUserID()
 	if userID == "" {
 		return errors.New("no acting user id to expand")
 	}
@@ -586,7 +581,7 @@ func (e *expander) consistencyCheck() error {
 			return errors.Errorf("expanded channel member's channel ID %s is different from user agent context %s",
 				e.ExpandedContext.ChannelMember.ChannelId, e.UserAgentContext.ChannelID)
 		}
-		if e.ExpandedContext.ChannelMember.UserId != e.ActingUserID && e.ExpandedContext.ChannelMember.UserId != e.UserID {
+		if e.ExpandedContext.ChannelMember.UserId != e.r.ActingUserID() && e.ExpandedContext.ChannelMember.UserId != e.UserID {
 			return errors.Errorf("expanded channel member's user ID %s is different from user agent context",
 				e.ExpandedContext.ChannelMember.UserId)
 		}
@@ -597,7 +592,7 @@ func (e *expander) consistencyCheck() error {
 			return errors.Errorf("expanded team member's team ID %s is different from user agent context %s",
 				e.ExpandedContext.TeamMember.TeamId, e.UserAgentContext.TeamID)
 		}
-		if e.ExpandedContext.TeamMember.UserId != e.ActingUserID && e.ExpandedContext.TeamMember.UserId != e.UserID {
+		if e.ExpandedContext.TeamMember.UserId != e.r.ActingUserID() && e.ExpandedContext.TeamMember.UserId != e.UserID {
 			return errors.Errorf("expanded team member's user ID %s is different from user agent context",
 				e.ExpandedContext.ChannelMember.UserId)
 		}
