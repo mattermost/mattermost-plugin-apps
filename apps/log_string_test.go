@@ -117,17 +117,17 @@ func TestLoggable(t *testing.T) {
 		},
 		"CallResponse JSON data": {
 			In:             NewDataResponse(testData),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", testData},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
 			ExpectedString: "OK: data type map[string]interface {}, value: map[A:test B:99]",
 		},
 		"CallResponse byte data": {
 			In:             NewDataResponse([]byte("12345")),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", []byte("12345")},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
 			ExpectedString: "OK: data type []uint8, value: [49 50 51 52 53]",
 		},
 		"CallResponse text data": {
 			In:             NewDataResponse("12345"),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "12345"},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
 			ExpectedString: "OK: data type string, value: 12345",
 		},
 		"CallResponse form": {
