@@ -28,11 +28,10 @@ type appKVStore struct {
 var _ AppKVStore = (*appKVStore)(nil)
 
 func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (bool, error) {
-	if r.SourceApp() == nil || r.ActingUserID() == "" {
+	if r.SourceAppID() == "" || r.ActingUserID() == "" {
 		return false, utils.NewInvalidError("source app ID or user ID missing in the request")
 	}
-
-	key, err := Hashkey(config.KVAppPrefix, r.SourceApp().AppID, r.ActingUserID(), prefix, id)
+	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return false, err
 	}
@@ -48,7 +47,7 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 }
 
 func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error) {
-	key, err := Hashkey(config.KVAppPrefix, r.SourceApp().AppID, r.ActingUserID(), prefix, id)
+	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +61,7 @@ func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error)
 }
 
 func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
-	key, err := Hashkey(config.KVAppPrefix, r.SourceApp().AppID, r.ActingUserID(), prefix, id)
+	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return err
 	}
@@ -94,10 +93,12 @@ func (s *appKVStore) List(r *incoming.Request, namespace string, processf func(k
 				r.Log.WithError(err).Debugw("failed to parse key", "key", key)
 				continue
 			}
-			if appID != r.SourceApp().AppID {
+			if appID != r.SourceAppID() {
+				// Key not belong to the requesting app.
 				continue
 			}
 			if namespace != "" && ns != namespace {
+				// Namespace did not match the query.
 				continue
 			}
 

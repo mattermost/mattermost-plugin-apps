@@ -178,13 +178,14 @@ func App(conf config.Config) apps.App {
 	}
 }
 
+// TODO: <>/<> consider passing r into Upstream.Rountrip; has issues with appsctl? Maybe a per-request wrapper for builtin?
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
 	self := App(a.conf.Get())
 	log := utils.NewPluginLogger(a.conf.MattermostAPI())
 	r := a.proxy.NewIncomingRequest(log).
 		WithCtx(ctx).
-		ToApp(&self).
-		WithActingUserFromContext(creq.Context)
+		WithDestination(self.AppID).
+		WithPrevContext(creq.Context)
 
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {

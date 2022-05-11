@@ -16,16 +16,11 @@ import (
 )
 
 func (a *restapi) initAdmin(h *handler.Handler) {
-	h.HandleFunc(path.UpdateAppListing,
-		a.UpdateAppListing, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	h.HandleFunc(path.InstallApp,
-		a.InstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	h.HandleFunc(path.EnableApp,
-		a.EnableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	h.HandleFunc(path.DisableApp,
-		a.DisableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
-	h.HandleFunc(path.UninstallApp,
-		a.UninstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	h.HandleFunc(path.UpdateAppListing, a.UpdateAppListing, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	h.HandleFunc(path.InstallApp, a.InstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	h.HandleFunc(path.EnableApp, a.EnableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	h.HandleFunc(path.DisableApp, a.DisableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
+	h.HandleFunc(path.UninstallApp, a.UninstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 }
 
 // UpdateAppListing adds (or updates) the specified Manifest to the local
@@ -151,13 +146,7 @@ func (a *restapi) initGetApp(h *handler.Handler) {
 //   Input: none
 //   Output: App
 func (a *restapi) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	appID := appIDVar(req)
-	if appID == "" {
-		httputils.WriteError(w, utils.NewInvalidError("app is required"))
-		return
-	}
-
-	app, err := a.Proxy.GetInstalledApp(r, appID)
+	app, err := a.Proxy.GetInstalledApp(r.Destination(), true)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

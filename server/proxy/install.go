@@ -61,7 +61,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		app.WebhookSecret = model.NewId()
 	}
 
-	icon, err := p.getAppIcon(r, *app)
+	icon, err := p.getAppIcon(r, app)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get bot icon")
 	}
@@ -69,7 +69,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	if !p.pingApp(r, *app) {
+	if !p.pingApp(r, app) {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
@@ -90,7 +90,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		cresp := p.call(r.ToApp(app), *app.OnInstall, &cc)
+		cresp := p.call(r, app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			r.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
@@ -100,7 +100,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(r.ToApp(app), app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(r, app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			r.Log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
@@ -235,7 +235,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 // getAppIcon gets the icon of a given app.
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
-func (p *Proxy) getAppIcon(r *incoming.Request, app apps.App) (io.ReadCloser, error) {
+func (p *Proxy) getAppIcon(r *incoming.Request, app *apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
 	if iconPath == "" {
 		return nil, nil

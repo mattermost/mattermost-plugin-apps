@@ -38,7 +38,7 @@ func (a *restapi) Subscribe(r *incoming.Request, w http.ResponseWriter, req *htt
 //   Input: None
 //   Output: []Subscription
 func (a *restapi) GetSubscriptions(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(r, r.SourceApp().AppID, r.ActingUserID())
+	subs, err := a.appServices.GetSubscriptions(r)
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -65,8 +65,7 @@ func (a *restapi) handleSubscribeCore(r *incoming.Request, w http.ResponseWriter
 		if err := json.NewDecoder(req.Body).Decode(&sub); err != nil {
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
-
-		sub.AppID = r.SourceApp().AppID
+		sub.AppID = r.SourceAppID()
 		sub.UserID = r.ActingUserID()
 
 		// TODO replace with an appropriate API-level call that would deduplicate, etc.

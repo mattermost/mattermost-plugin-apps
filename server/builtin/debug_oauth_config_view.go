@@ -34,7 +34,7 @@ func (a *builtinApp) debugOAuthConfigViewBinding(loc *i18n.Localizer) apps.Bindi
 func (a *builtinApp) debugOAuthConfigView(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 
-	app, err := a.proxy.GetInstalledApp(r, appID)
+	app, err := a.proxy.GetInstalledApp(appID, true)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

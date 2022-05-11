@@ -47,28 +47,24 @@ func (p *Proxy) notify(r *incoming.Request, base apps.Context, subs []apps.Subsc
 }
 
 func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, sub apps.Subscription) error {
-	app, err := p.store.App.Get(sub.AppID)
+	app, err := p.GetInstalledApp(sub.AppID, true)
 	if err != nil {
 		return err
 	}
-	if !p.appIsEnabled(*app) {
-		return errors.Errorf("%s is disabled", app.AppID)
-	}
-
 	creq := apps.CallRequest{
 		Call: sub.Call,
 	}
 
-	r = r.ToApp(app)
+	r = r.WithDestination(app.AppID)
 	r.Log = r.Log.With(sub)
-	expanded, err := p.expandContext(r, base, sub.Call.Expand)
+	expanded, err := p.expandContext(r, app, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}
 	creq.Context = *expanded
 	creq.Context.Subject = sub.Subject
 
-	up, err := p.upstreamForApp(*app)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
 	}

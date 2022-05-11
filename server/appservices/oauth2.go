@@ -14,13 +14,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error {
+func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	var oapp apps.OAuth2App
 	err := json.Unmarshal(data, &oapp)
 	if err != nil {
 		return err
 	}
 
+	appID := r.SourceAppID()
 	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -45,11 +46,13 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, appID apps.AppID, acti
 	return nil
 }
 
-func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, actingUserID string, data []byte) error {
+func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 	if !json.Valid(data) {
 		return utils.NewInvalidError("payload is no valid json")
 	}
 
+	appID := r.SourceAppID()
+	actingUserID := r.ActingUserID()
 	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return err
@@ -57,7 +60,6 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
-
 	if err = a.ensureFromUser(actingUserID); err != nil {
 		return err
 	}
@@ -81,7 +83,9 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, appID apps.AppID, act
 
 // GetOAuth2User returns the stored OAuth2 user data for a given user and app.
 // If err != nil, the returned data is always valid JSON.
-func (a *AppServices) GetOAuth2User(_ *incoming.Request, appID apps.AppID, actingUserID string) ([]byte, error) {
+func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
+	appID := r.SourceAppID()
+	actingUserID := r.ActingUserID()
 	app, err := a.store.App.Get(appID)
 	if err != nil {
 		return nil, err

@@ -4,41 +4,27 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
 func (g *gateway) remoteOAuth2Connect(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	appID := appIDVar(req)
-	if appID == "" {
-		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
-		return
-	}
-
-	connectURL, err := g.Proxy.GetRemoteOAuth2ConnectURL(r, appID)
+	connectURL, err := g.Proxy.InvokeGetRemoteOAuth2ConnectURL(r)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to get remote OAuth2 connect URL")
 		httputils.WriteError(w, err)
 		return
 	}
-
 	http.Redirect(w, req, connectURL, http.StatusTemporaryRedirect)
 }
 
 func (g *gateway) remoteOAuth2Complete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	appID := appIDVar(req)
-	if appID == "" {
-		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
-		return
-	}
-
 	q := req.URL.Query()
 	urlValues := map[string]interface{}{}
 	for key := range q {
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.Proxy.CompleteRemoteOAuth2(r, appID, urlValues)
+	err := g.Proxy.InvokeCompleteRemoteOAuth2(r, urlValues)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to complete remote OAuth2")
 		httputils.WriteError(w, err)

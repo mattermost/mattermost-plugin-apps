@@ -4,14 +4,9 @@
 package proxy
 
 import (
-	"io"
-	"net/http"
-	"strings"
-
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -34,7 +29,7 @@ type AppMetadataForClient struct {
 	BotUsername string `json:"bot_username,omitempty"`
 }
 
-func (p *Proxy) Call(r *incoming.Request, appID apps.AppID, creq apps.CallRequest) CallResponse {
+func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) CallResponse {
 	var app *apps.App
 	respondErr := func(err error) CallResponse {
 		out := CallResponse{
@@ -49,16 +44,12 @@ func (p *Proxy) Call(r *incoming.Request, appID apps.AppID, creq apps.CallReques
 		return out
 	}
 
-	if appID == "" {
-		return respondErr(utils.NewInvalidError("app_id is not set in request, don't know what app to call"))
-	}
-	if creq.Context.AppID != appID {
-		return respondErr(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
-	}
-
-	app, err := p.store.App.Get(appID)
+	app, err := p.getEnabledDestination(r)
 	if err != nil {
 		return respondErr(err)
+	}
+	if creq.Context.AppID != app.AppID {
+		return respondErr(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
 	}
 
 	if creq.Path[0] != '/' {
@@ -70,7 +61,8 @@ func (p *Proxy) Call(r *incoming.Request, appID apps.AppID, creq apps.CallReques
 	}
 	creq.Path = cleanPath
 
-	cresp := p.callApp(r.ToApp(app), creq)
+	appRequest := r.WithDestination(app.AppID)
+	cresp := p.callApp(appRequest, app, creq)
 
 	return CallResponse{
 		CallResponse: cresp,
@@ -82,7 +74,7 @@ func (p *Proxy) Call(r *incoming.Request, appID apps.AppID, creq apps.CallReques
 }
 
 // <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?
-func (p *Proxy) call(r *incoming.Request, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
 	values := map[string]interface{}{}
 	for len(valuePairs) > 0 {
 		if len(valuePairs) == 1 {
@@ -101,7 +93,7 @@ func (p *Proxy) call(r *incoming.Request, call apps.Call, cc *apps.Context, valu
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cresp := p.callApp(r, apps.CallRequest{
+	cresp := p.callApp(r, app, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
 		Values:  values,
@@ -113,14 +105,11 @@ func (p *Proxy) call(r *incoming.Request, call apps.Call, cc *apps.Context, valu
 // not perform any cleanup of the inputs.
 //
 // It returns the CallResponse to return to the client, and a separate error for the
-func (p *Proxy) callApp(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	if r.To() == nil {
-		return apps.NewErrorResponse(errors.New("internal unreachable error: no destination app in the incoming request"))
-	}
-	app := *r.To()
-	if !p.appIsEnabled(app) {
-		return apps.NewErrorResponse(errors.Errorf("app %s is disabled", app.AppID))
-	}
+func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+	// this may be invoked from various places in the code, and the Destination
+	// may or may not be set in the request. Since we have the app explicitly
+	// here, make sure it's set in the request
+	r = r.WithDestination(app.AppID)
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
@@ -128,13 +117,13 @@ func (p *Proxy) callApp(r *incoming.Request, creq apps.CallRequest) apps.CallRes
 	}
 
 	// expand
-	expanded, err := p.expandContext(r, &creq.Context, creq.Expand)
+	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to expand context"))
 	}
 	creq.Context = *expanded
 
-	cresp, err := upstream.Call(r.Ctx(), up, app, creq)
+	cresp, err := upstream.Call(r.Ctx(), up, *app, creq)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
 	}
@@ -151,62 +140,4 @@ func (p *Proxy) callApp(r *incoming.Request, creq apps.CallRequest) apps.CallRes
 	}
 
 	return cresp
-}
-
-// normalizeStaticPath converts a given URL to a absolute one pointing to a static asset if needed.
-// If icon is an absolute URL, it's not changed.
-// Otherwise assume it's a path to a static asset and the static path URL prepended.
-func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
-	if !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") {
-		cleanIcon, err := utils.CleanStaticPath(icon)
-		if err != nil {
-			return "", errors.Wrap(err, "invalid icon path")
-		}
-
-		icon = conf.StaticURL(appID, cleanIcon)
-	}
-
-	return icon, nil
-}
-
-func (p *Proxy) GetStatic(r *incoming.Request, appID apps.AppID, path string) (io.ReadCloser, int, error) {
-	app, err := p.store.App.Get(appID)
-	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, utils.ErrNotFound) {
-			status = http.StatusNotFound
-		}
-		r.Log = r.Log.WithError(err)
-		return nil, status, err
-	}
-	r = r.ToApp(app)
-
-	return p.getStatic(r, *app, path)
-}
-
-func (p *Proxy) getStatic(r *incoming.Request, app apps.App, path string) (io.ReadCloser, int, error) {
-	up, err := p.upstreamForApp(app)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-	return up.GetStatic(r.Ctx(), app, path)
-}
-
-// pingApp checks if the app is accessible. Call its ping path with nothing
-// expanded, ignore 404 errors coming back and consider everything else a
-// "success".
-func (p *Proxy) pingApp(r *incoming.Request, app apps.App) (reachable bool) {
-	if !p.appIsEnabled(app) {
-		return false
-	}
-
-	up, err := p.upstreamForApp(app)
-	if err != nil {
-		return false
-	}
-
-	_, err = upstream.Call(r.Ctx(), up, app, apps.CallRequest{
-		Call: apps.DefaultPing,
-	})
-	return err == nil || errors.Cause(err) == utils.ErrNotFound
 }

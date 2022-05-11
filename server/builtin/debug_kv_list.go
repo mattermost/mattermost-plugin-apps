@@ -45,7 +45,8 @@ func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) app
 	encode := creq.BoolValue(fBase64)
 
 	keys := []string{}
-	err := a.appservices.KVList(r, appID, r.ActingUserID(), namespace, func(key string) error {
+	appservicesRequest := r.WithSourceAppID(appID)
+	err := a.appservices.KVList(appservicesRequest, namespace, func(key string) error {
 		keys = append(keys, key)
 		return nil
 	})

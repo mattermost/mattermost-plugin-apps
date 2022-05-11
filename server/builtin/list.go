@@ -55,7 +55,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	loc := a.newLocalizer(creq)
 	includePluginApps := creq.BoolValue("plugin-apps")
 
-	listed := a.proxy.GetListedApps(r, "", includePluginApps)
+	listed := a.proxy.GetListedApps("", includePluginApps)
 	installed, reachable := a.proxy.GetInstalledApps(r, true)
 
 	// All of this information is non sensitive.
@@ -67,7 +67,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
-		m, _ := a.proxy.GetManifest(r, app.AppID)
+		m, _ := a.proxy.GetManifest(app.AppID)
 		if m == nil {
 			continue
 		}
@@ -141,7 +141,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	})
 
 	for _, l := range listed {
-		app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
+		app, _ := a.proxy.GetInstalledApp(l.Manifest.AppID, false)
 		if app != nil {
 			continue
 		}

@@ -17,8 +17,8 @@ import (
 func (a *builtinApp) debugListKeys(r *incoming.Request, appID apps.AppID) (int, map[string]int, error) {
 	n := 0
 	namespaces := map[string]int{}
-	err := a.appservices.KVList(r,
-		appID, r.ActingUserID(),
+	appservicesRequest := r.WithSourceAppID(appID)
+	err := a.appservices.KVList(appservicesRequest,
 		"", func(key string) error {
 			_, _, _, ns, _, e := store.ParseHashkey(key)
 			if e != nil {

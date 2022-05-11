@@ -18,7 +18,7 @@ func (p *Proxy) UpdateAppListing(r *incoming.Request, req appclient.UpdateAppLis
 	}
 
 	if !req.Replace {
-		prev, err := p.GetManifest(r, req.AppID)
+		prev, err := p.GetManifest(req.AppID)
 		if err != nil && errors.Cause(err) != utils.ErrNotFound {
 			return nil, errors.Wrap(err, "failed to load previous listing")
 		}

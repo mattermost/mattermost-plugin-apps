@@ -203,5 +203,5 @@ func (a *builtinApp) stateAsManifest(r *incoming.Request, creq apps.CallRequest)
 	}
 	appID := apps.AppID(id)
 
-	return a.proxy.GetManifest(r, appID)
+	return a.proxy.GetManifest(appID)
 }

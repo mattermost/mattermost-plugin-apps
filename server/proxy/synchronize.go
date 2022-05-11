@@ -55,7 +55,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				resp := p.call(r.ToApp(&app), *app.OnVersionChanged, nil, PrevVersion, app.Version)
+				resp := p.call(r, &app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}

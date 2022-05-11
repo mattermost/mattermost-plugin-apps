@@ -45,7 +45,8 @@ func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) a
 	namespace := creq.GetValue(fNamespace, "")
 	id := creq.GetValue(fID, "")
 
-	data, err := a.appservices.KVGet(r, appID, creq.Context.ActingUser.Id, namespace, id)
+	appservicesRequest := r.WithSourceAppID(appID)
+	data, err := a.appservices.KVGet(appservicesRequest, namespace, id)
 	if err != nil && errors.Cause(err) != utils.ErrNotFound {
 		return apps.NewErrorResponse(err)
 	}
@@ -53,7 +54,7 @@ func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) a
 		return apps.NewErrorResponse(errors.New("key already exists, please use `/apps debug kv edit"))
 	}
 
-	_, err = a.appservices.KVSet(r, appID, creq.Context.ActingUser.Id, namespace, id, []byte("{}"))
+	_, err = a.appservices.KVSet(appservicesRequest, namespace, id, []byte("{}"))
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

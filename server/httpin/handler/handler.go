@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
@@ -19,6 +20,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/sessionutils"
 )
+
+const AppIDVar = "appid"
+const AppIDPath = "/{appid}"
 
 // check returns a potentially modified incoming.Request upon success. Upon
 // failure it returns nil and writes the HTTP error.
@@ -109,6 +113,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
+	actingUserID := req.Header.Get(config.MattermostUserIDHeader)
+	if actingUserID != "" {
+		r = r.WithActingUserID(actingUserID)
+	}
+	pluginID := req.Header.Get(config.MattermostPluginIDHeader)
+	if pluginID != "" {
+		r = r.WithSourcePluginID(pluginID)
+	}
+	// SourceAppID is not set here, only in Require because it is more expensive.
+
 	for _, check := range h.checks {
 		r = check(r, w, req)
 		if r == nil {
@@ -123,13 +137,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (h *Handler) error(txt string, r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
+	err := utils.NewUnauthorizedError(txt)
+	r.Log = r.Log.WithError(err)
+	httputils.WriteError(w, err)
+	return nil
+}
+
 func (h *Handler) RequireActingUser(r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
-	actingUserID := req.Header.Get(config.MattermostUserIDHeader)
-	if actingUserID == "" {
-		httputils.WriteError(w, utils.NewUnauthorizedError("user ID is required"))
-		return nil
+	if r.ActingUserID() == "" {
+		return h.error("user ID is required", r, w, req)
 	}
-	return r.WithActingUser(actingUserID, "")
+	return r
 }
 
 func (h *Handler) RequireSysadmin(r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
@@ -137,22 +156,22 @@ func (h *Handler) RequireSysadmin(r *incoming.Request, w http.ResponseWriter, re
 	if r == nil {
 		return nil
 	}
-
 	mm := r.Config().MattermostAPI()
 	if !mm.User.HasPermissionTo(r.ActingUserID(), model.PermissionManageSystem) {
-		httputils.WriteError(w, utils.NewUnauthorizedError("user is not a system admin"))
-		return nil
+		return h.error("access to this operation is limited to system administrators", r, w, req)
 	}
-
 	return r
 }
 
 func (h *Handler) RequireSysadminOrPlugin(r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
-	pluginID := req.Header.Get(config.MattermostPluginIDHeader)
-	if pluginID != "" {
-		return r.FromPlugin(pluginID)
+	radmin := h.RequireSysadmin(r, w, req)
+	if radmin != nil {
+		return radmin
 	}
-	return h.RequireSysadmin(r, w, req)
+	if r.SourcePluginID() == "" {
+		return h.error("access to this operation is limited to system administrators, or plugins", r, w, req)
+	}
+	return r
 }
 
 func (h *Handler) RequireFromApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
@@ -161,29 +180,25 @@ func (h *Handler) RequireFromApp(r *incoming.Request, w http.ResponseWriter, req
 		httputils.WriteError(w, utils.NewUnauthorizedError("a session is required"))
 		return nil
 	}
-
 	mm := r.Config().MattermostAPI()
 	s, err := mm.Session.Get(sessionID)
 	if err != nil {
 		httputils.WriteError(w, errors.New("session check failed"))
 		return nil
 	}
-
 	appID := sessionutils.GetAppID(s)
 	if appID == "" {
 		httputils.WriteError(w, utils.NewUnauthorizedError("not an app session"))
 		return nil
 	}
+	return r.WithSourceAppID(appID)
+}
 
-	app, err := h.Proxy.GetInstalledApp(r, appID)
-	if err != nil {
-		httputils.WriteError(w, utils.NewNotFoundError("app %s is not installed", appID))
+func (h *Handler) RequireToAppFromPath(r *incoming.Request, w http.ResponseWriter, req *http.Request) *incoming.Request {
+	s, ok := mux.Vars(req)[AppIDVar]
+	if !ok {
+		httputils.WriteError(w, utils.NewUnauthorizedError("app ID is required in path"))
 		return nil
 	}
-	if app.Disabled {
-		httputils.WriteError(w, utils.NewNotFoundError("app %s is disabled", appID))
-		return nil
-	}
-
-	return r.FromApp(app)
+	return r.WithDestination(apps.AppID(s))
 }

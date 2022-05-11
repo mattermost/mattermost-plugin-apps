@@ -12,7 +12,6 @@ import (
 
 // Upstream should be abbreviated as `up`.
 type Upstream interface {
-	// TODO: Upstream sh
 	Roundtrip(ctx context.Context, _ apps.App, _ apps.CallRequest, async bool) (io.ReadCloser, error)
 	GetStatic(ctx context.Context, _ apps.App, path string) (io.ReadCloser, int, error)
 }

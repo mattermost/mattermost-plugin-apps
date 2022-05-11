@@ -17,13 +17,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpCallRequest apps.HTTPCallRequest) error {
-	app, err := p.store.App.Get(appID)
+func (p *Proxy) InvokeRemoteWebhook(r *incoming.Request, httpCallRequest apps.HTTPCallRequest) error {
+	app, err := p.getEnabledDestination(r)
 	if err != nil {
 		return err
-	}
-	if !p.appIsEnabled(*app) {
-		return errors.Errorf("%s is disabled", app.AppID)
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteWebhooks) {
 		return utils.NewForbiddenError("%s does not have permission %s", app.AppID, apps.PermissionRemoteWebhooks)
@@ -53,7 +50,7 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpC
 		return errors.Errorf("%s is not a known webhook authentication type", app.RemoteWebhookAuthType)
 	}
 
-	up, err := p.upstreamForApp(*app)
+	up, err := p.upstreamForApp(app)
 	if err != nil {
 		return err
 	}
@@ -68,8 +65,8 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpC
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, httpCallRequest.Path)
 
-	r = r.ToApp(app).WithActingUser("", "")
-	cc, err := p.expandContext(r, nil, call.Expand)
+	r = r.WithActingUserID("")
+	cc, err := p.expandContext(r, app, nil, call.Expand)
 	if err != nil {
 		return err
 	}

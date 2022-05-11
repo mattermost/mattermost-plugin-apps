@@ -45,7 +45,9 @@ type Proxy struct {
 	expandClientOverride mmclient.Client
 }
 
-// Admin defines the REST API methods to manipulate Apps.
+// Admin defines the REST API methods to manipulate Apps. Since they operate in
+// "admin" space, they accept a separate appID parameter rather than expecting a
+// ToApp too be set in the request.
 type Admin interface {
 	DisableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	EnableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
@@ -54,20 +56,22 @@ type Admin interface {
 	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 }
 
-// Invoker implements operations that invoke the Apps.
+// Invoker implements operations that invoke individual Apps. These methods
+// expect the acting user, to and from apps to be set in the request.
 type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(*incoming.Request, apps.AppID, apps.CallRequest) CallResponse
-	CompleteRemoteOAuth2(_ *incoming.Request, _ apps.AppID, urlValues map[string]interface{}) error
-	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(*incoming.Request, apps.AppID) (string, error)
-	GetStatic(_ *incoming.Request, _ apps.AppID, path string) (io.ReadCloser, int, error)
+	InvokeCall(*incoming.Request, apps.CallRequest) CallResponse
+	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]interface{}) error
+	InvokeGetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
+	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
+	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)
+	InvokeRemoteWebhook(*incoming.Request, apps.HTTPCallRequest) error
 }
 
-// Notifier implements user-less notification sinks.
+// Notifier implements subscription notifications, each one may be going out to
+// multiple apps. Notify functions create their own app requests.
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(*incoming.Request, apps.AppID, apps.HTTPCallRequest) error
 	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error
@@ -75,17 +79,20 @@ type Notifier interface {
 	NotifyUserHasLeftTeam(apps.Context) error
 }
 
-// Internal implements go API used by other packages.
+// Internal implements go API used by other plugin-apps packages. When relevant,
+// they rely on the ActingUser set in the request, but usually have the app id
+// parameters passed in explicitly, using request for logging.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(apps.DeployType) (allowed, usable bool)
-	GetAppBindings(*incoming.Request, apps.Context, apps.App) ([]apps.Binding, error)
-	GetInstalledApp(*incoming.Request, apps.AppID) (*apps.App, error)
-	GetInstalledApps(_ *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
-	GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
-	GetManifest(*incoming.Request, apps.AppID) (*apps.Manifest, error)
 	NewIncomingRequest(log utils.Logger) *incoming.Request
 	SynchronizeInstalledApps() error
+
+	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
+	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
+	GetInstalledApps(_ *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
+	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(apps.AppID) (*apps.Manifest, error)
 }
 
 type Service interface {
@@ -183,7 +190,7 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 	p.store.App.InitBuiltin()
 }
 
-func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
+func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	if app.DeployType == apps.DeployBuiltin {
 		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {
@@ -226,6 +233,10 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 	}
 }
 
-func (p *Proxy) NewIncomingRequest(log utils.Logger ) *incoming.Request {
+func (p *Proxy) NewIncomingRequest(log utils.Logger) *incoming.Request {
 	return incoming.NewRequest(p.conf, log, p.sessionService)
+}
+
+func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {
+	return p.GetInstalledApp(r.Destination(), true)
 }

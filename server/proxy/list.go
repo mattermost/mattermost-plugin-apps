@@ -17,12 +17,21 @@ import (
 
 const pingAppTimeout = 1 * time.Second
 
-func (p *Proxy) GetManifest(_ *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
+func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
 }
 
-func (p *Proxy) GetInstalledApp(_ *incoming.Request, appID apps.AppID) (*apps.App, error) {
-	return p.store.App.Get(appID)
+func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App, error) {
+	app, err := p.store.App.Get(appID)
+	if err != nil {
+		return nil, err
+	}
+	if checkEnabled {
+		if err = p.ensureEnabled(app); err != nil {
+			return nil, err
+		}
+	}
+	return app, nil
 }
 
 func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool) {
@@ -36,7 +45,7 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 		go func(a apps.App) {
 			var response apps.AppID
 			if !a.Disabled {
-				if p.pingApp(pingReq, a) {
+				if p.pingApp(pingReq, &a) {
 					response = a.AppID
 				}
 			}
@@ -64,7 +73,7 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 	return installed, reachable
 }
 
-func (p *Proxy) GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp {
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
 	conf := p.conf.Get()
 	out := []apps.ListedApp{}
 

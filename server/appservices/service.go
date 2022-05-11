@@ -22,21 +22,21 @@ type Service interface {
 	// Subscriptions
 
 	Subscribe(*incoming.Request, apps.Subscription) error
-	GetSubscriptions(_ *incoming.Request, _ apps.AppID, actingUserID string) ([]apps.Subscription, error)
+	GetSubscriptions(_ *incoming.Request) ([]apps.Subscription, error)
 	Unsubscribe(*incoming.Request, apps.Subscription) error
 
 	// KV
 
-	KVSet(_ *incoming.Request, _ apps.AppID, actingUserID, prefix, id string, data []byte) (bool, error)
-	KVGet(_ *incoming.Request, _ apps.AppID, actingUserID, prefix, id string) ([]byte, error)
-	KVDelete(_ *incoming.Request, _ apps.AppID, actingUserID, prefix, id string) error
-	KVList(_ *incoming.Request, _ apps.AppID, actingUserID, namespace string, processf func(key string) error) error
+	KVSet(_ *incoming.Request, prefix, id string, data []byte) (bool, error)
+	KVGet(_ *incoming.Request, prefix, id string) ([]byte, error)
+	KVDelete(_ *incoming.Request, prefix, id string) error
+	KVList(_ *incoming.Request, namespace string, processf func(key string) error) error
 
 	// Remote (3rd party) OAuth2
 
-	StoreOAuth2App(_ *incoming.Request, _ apps.AppID, actingUserID string, data []byte) error
-	StoreOAuth2User(_ *incoming.Request, _ apps.AppID, actingUserID string, data []byte) error
-	GetOAuth2User(_ *incoming.Request, _ apps.AppID, actingUserID string) ([]byte, error)
+	StoreOAuth2App(_ *incoming.Request, data []byte) error
+	StoreOAuth2User(_ *incoming.Request, data []byte) error
+	GetOAuth2User(_ *incoming.Request) ([]byte, error)
 }
 
 type AppServices struct {

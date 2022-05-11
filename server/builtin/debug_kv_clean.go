@@ -42,7 +42,8 @@ func (a *builtinApp) debugKVClean(r *incoming.Request, creq apps.CallRequest) ap
 	namespace := creq.GetValue(fNamespace, "")
 
 	n := 0
-	err := a.appservices.KVList(r, appID, creq.Context.ActingUser.Id, namespace,
+	appservicesRequest := r.WithSourceAppID(appID)
+	err := a.appservices.KVList(appservicesRequest, namespace,
 		func(key string) error {
 			n++
 			return a.conf.MattermostAPI().KV.Delete(key)

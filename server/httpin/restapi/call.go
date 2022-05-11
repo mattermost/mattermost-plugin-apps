@@ -31,9 +31,16 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 		httputils.WriteError(w, utils.NewInvalidError(err))
 		return
 	}
+	if creq.Context.UserAgentContext.AppID == "" {
+		err = errors.Wrap(err, "app ID is not set in Call request")
+		r.Log.WithError(err).Infof("incoming call failed")
+		httputils.WriteError(w, utils.NewInvalidError(err))
+		return
+	}
+	r = r.WithDestination(creq.Context.UserAgentContext.AppID)
 
 	// Call the app.
-	cresp := a.Proxy.Call(r, creq.Context.UserAgentContext.AppID, *creq)
+	cresp := a.Proxy.InvokeCall(r, *creq)
 
 	// Only track submit calls.
 	if creq.Context.UserAgentContext.TrackAsSubmit {

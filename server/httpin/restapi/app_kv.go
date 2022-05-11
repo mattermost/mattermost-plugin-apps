@@ -41,7 +41,7 @@ func (a *restapi) initKV(h *handler.Handler) {
 func (a *restapi) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
-	data, err := a.appServices.KVGet(r, r.SourceApp().AppID, r.ActingUserID(), prefix, id)
+	data, err := a.appServices.KVGet(r, prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -65,7 +65,7 @@ func (a *restapi) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	changed, err := a.appServices.KVSet(r, r.SourceApp().AppID, r.ActingUserID(), prefix, id, data)
+	changed, err := a.appServices.KVSet(r, prefix, id, data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -84,7 +84,7 @@ func (a *restapi) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
 
-	err := a.appServices.KVDelete(r, r.SourceApp().AppID, r.ActingUserID(), prefix, id)
+	err := a.appServices.KVDelete(r, prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

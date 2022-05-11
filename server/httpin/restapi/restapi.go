@@ -1,11 +1,6 @@
 package restapi
 
 import (
-	"net/http"
-
-	"github.com/gorilla/mux"
-
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
@@ -45,12 +40,4 @@ func Init(h *handler.Handler, appServices appservices.Service) {
 	a.initAdmin(h)
 	a.initGetApp(h)
 	a.initMarketplace(h)
-}
-
-func appIDVar(req *http.Request) apps.AppID {
-	s, ok := mux.Vars(req)["appid"]
-	if ok {
-		return apps.AppID(s)
-	}
-	return ""
 }

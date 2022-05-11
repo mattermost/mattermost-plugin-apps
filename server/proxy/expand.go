@@ -10,7 +10,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -20,40 +19,33 @@ type expandFunc func(apps.ExpandLevel) error
 
 type expander struct {
 	apps.Context
-	client      mmclient.Client
-	r           *incoming.Request
-	appservices appservices.Service
+	app    *apps.App
+	client mmclient.Client
+	r      *incoming.Request
+	proxy  *Proxy
 }
 
-func (p *Proxy) expandContext(r *incoming.Request, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
+// expandContext performs `expand` on a `context` of an outgoing CallRequest. It
+// ensures a fresh/correct ExpandedContext. It preserves the UserAgentContext
+// since it is used during expand, which cleans it out before returning. It
+// relies on `r` configured with correct source and destination app IDs, as well
+// as the acting user data. (destination) `app` is passed in as a shortcut since
+// it's already available in all callers.
+func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
 
-	e, err := p.newExpander(r, cc, p.appservices)
-	if err != nil {
-		return nil, err
-	}
-
-	return e.expand(expand)
-}
-
-// newExpander creates a context expander. It ensures a fresh/correct
-// ExpandedContext, ActingUserID, and UserAgentContext.AppID. It preserves the
-// UserAgentContext since it is used during expand, which cleans it out before
-// returning.
-func (p *Proxy) newExpander(r *incoming.Request, in *apps.Context, appservices appservices.Service) (*expander, error) {
 	client, err := p.getExpandClient(r)
 	if err != nil {
 		return nil, err
 	}
-
-	app := r.To()
 	e := &expander{
-		Context:     *in,
-		appservices: appservices,
-		client:      client,
-		r:           r,
+		app:     app,
+		Context: *cc,
+		proxy:   p,
+		client:  client,
+		r:       r,
 	}
 
 	conf := r.Config().Get()
@@ -64,10 +56,6 @@ func (p *Proxy) newExpander(r *incoming.Request, in *apps.Context, appservices a
 		MattermostSiteURL: conf.MattermostSiteURL,
 	}
 
-	// For a call the AppID comes in the CallRequest now, so copy it to
-	// UserAgentContext.
-	e.UserAgentContext.AppID = app.AppID
-
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
 		botAccessToken, err := p.getBotAccessToken(r, app)
 		if err != nil {
@@ -76,7 +64,7 @@ func (p *Proxy) newExpander(r *incoming.Request, in *apps.Context, appservices a
 		e.ExpandedContext.BotAccessToken = botAccessToken
 	}
 
-	return e, nil
+	return e.expand(expand)
 }
 
 // expand expands the context according to the expand parameter, and the IDs
@@ -224,12 +212,12 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 }
 
 func (e *expander) expandActingUserAccessToken(level apps.ExpandLevel) error {
-	to := e.r.To()
+	to := e.app
 	if !to.GrantedPermissions.Contains(apps.PermissionActAsUser) {
 		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionActAsUser)
 	}
 
-	token, err := e.r.UserAccessToken()
+	token, err := e.r.ActingUserAccessTokenForDestination()
 	if err != nil {
 		return err
 	}
@@ -297,28 +285,27 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 }
 
 func (e *expander) expandApp(level apps.ExpandLevel) error {
-	app := e.r.To()
 	switch level {
 	case apps.ExpandSummary:
 		e.ExpandedContext.App = &apps.App{
 			Manifest: apps.Manifest{
-				AppID:   app.AppID,
-				Version: app.Version,
+				AppID:   e.app.AppID,
+				Version: e.app.Version,
 			},
-			BotUserID:   app.BotUserID,
-			BotUsername: app.BotUsername,
+			BotUserID:   e.app.BotUserID,
+			BotUsername: e.app.BotUsername,
 		}
 
 	case apps.ExpandAll:
 		e.ExpandedContext.App = &apps.App{
 			Manifest: apps.Manifest{
-				AppID:   app.AppID,
-				Version: app.Version,
+				AppID:   e.app.AppID,
+				Version: e.app.Version,
 			},
-			BotUserID:     app.BotUserID,
-			BotUsername:   app.BotUsername,
-			DeployType:    app.DeployType,
-			WebhookSecret: app.WebhookSecret,
+			BotUserID:     e.app.BotUserID,
+			BotUsername:   e.app.BotUsername,
+			DeployType:    e.app.DeployType,
+			WebhookSecret: e.app.WebhookSecret,
 		}
 	}
 	return nil
@@ -489,7 +476,10 @@ func (e *expander) expandLocale(level apps.ExpandLevel) error {
 }
 
 func (e *expander) expandOAuth2App(level apps.ExpandLevel) error {
-	to := e.r.To()
+	to, err := e.proxy.GetInstalledApp(e.r.Destination(), true)
+	if err != nil {
+		return err
+	}
 	if !to.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionRemoteOAuth2)
 	}
@@ -503,15 +493,19 @@ func (e *expander) expandOAuth2App(level apps.ExpandLevel) error {
 
 func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 	userID := e.r.ActingUserID()
-	to := e.r.To()
 	if userID == "" {
 		return errors.New("no acting user id to expand")
+	}
+	to, err := e.proxy.GetInstalledApp(e.r.Destination(), true)
+	if err != nil {
+		return err
 	}
 	if !to.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionRemoteOAuth2)
 	}
 
-	data, err := e.appservices.GetOAuth2User(e.r, to.AppID, userID)
+	appServicesRequest := e.r.WithSourceAppID(e.r.Destination())
+	data, err := e.proxy.appservices.GetOAuth2User(appServicesRequest)
 	if err != nil {
 		return errors.Wrap(err, "user_id: "+userID)
 	}
@@ -531,7 +525,10 @@ func (p *Proxy) getExpandClient(r *incoming.Request) (mmclient.Client, error) {
 	if p.expandClientOverride != nil {
 		return p.expandClientOverride, nil
 	}
-	app := r.To()
+	app, err := p.getEnabledDestination(r)
+	if err != nil {
+		return nil, err
+	}
 	conf := p.conf.Get()
 
 	switch {
