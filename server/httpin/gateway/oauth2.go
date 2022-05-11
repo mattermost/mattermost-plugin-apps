@@ -14,9 +14,8 @@ func (g *gateway) remoteOAuth2Connect(r *incoming.Request, w http.ResponseWriter
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
-	r.SetAppID(appID)
 
-	connectURL, err := g.proxy.GetRemoteOAuth2ConnectURL(r, appID)
+	connectURL, err := g.Proxy.GetRemoteOAuth2ConnectURL(r, appID)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to get remote OAuth2 connect URL")
 		httputils.WriteError(w, err)
@@ -32,7 +31,6 @@ func (g *gateway) remoteOAuth2Complete(r *incoming.Request, w http.ResponseWrite
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
-	r.SetAppID(appID)
 
 	q := req.URL.Query()
 	urlValues := map[string]interface{}{}
@@ -40,7 +38,7 @@ func (g *gateway) remoteOAuth2Complete(r *incoming.Request, w http.ResponseWrite
 		urlValues[key] = q.Get(key)
 	}
 
-	err := g.proxy.CompleteRemoteOAuth2(r, appID, urlValues)
+	err := g.Proxy.CompleteRemoteOAuth2(r, appID, urlValues)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to complete remote OAuth2")
 		httputils.WriteError(w, err)

@@ -9,23 +9,23 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initAdmin(h *httpin.Handler) {
+func (a *restapi) initAdmin(h *handler.Handler) {
 	h.HandleFunc(path.UpdateAppListing,
-		a.UpdateAppListing, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+		a.UpdateAppListing, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 	h.HandleFunc(path.InstallApp,
-		a.InstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+		a.InstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 	h.HandleFunc(path.EnableApp,
-		a.EnableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+		a.EnableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 	h.HandleFunc(path.DisableApp,
-		a.DisableApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+		a.DisableApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 	h.HandleFunc(path.UninstallApp,
-		a.UninstallApp, httpin.RequireSysadminOrPlugin).Methods(http.MethodPost)
+		a.UninstallApp, h.RequireSysadminOrPlugin).Methods(http.MethodPost)
 }
 
 // UpdateAppListing adds (or updates) the specified Manifest to the local
@@ -50,7 +50,7 @@ func (a *restapi) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, r
 		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
 		return
 	}
-	m, err := a.proxy.UpdateAppListing(r, listReq)
+	m, err := a.Proxy.UpdateAppListing(r, listReq)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -73,9 +73,7 @@ func (a *restapi) InstallApp(r *incoming.Request, w http.ResponseWriter, req *ht
 		return
 	}
 
-	r.SetAppID(input.AppID)
-
-	_, _, err = a.proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, "")
+	_, _, err = a.Proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -95,9 +93,7 @@ func (a *restapi) EnableApp(r *incoming.Request, w http.ResponseWriter, req *htt
 		return
 	}
 
-	r.SetAppID(input.AppID)
-
-	_, err = a.proxy.EnableApp(r, apps.Context{}, input.AppID)
+	_, err = a.Proxy.EnableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -117,9 +113,7 @@ func (a *restapi) DisableApp(r *incoming.Request, w http.ResponseWriter, req *ht
 		return
 	}
 
-	r.SetAppID(input.AppID)
-
-	_, err = a.proxy.DisableApp(r, apps.Context{}, input.AppID)
+	_, err = a.Proxy.DisableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -139,20 +133,16 @@ func (a *restapi) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *
 		return
 	}
 
-	r.SetAppID(input.AppID)
-
-	_, err = a.proxy.UninstallApp(r, apps.Context{}, input.AppID)
+	_, err = a.Proxy.UninstallApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
 }
 
-func (a *restapi) initGetApp(h *httpin.Handler) {
-	h = h.PathPrefix(path.Apps)
-	h = h.PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`)
-	h.HandleFunc("",
-		a.GetApp).Methods(http.MethodGet)
+func (a *restapi) initGetApp(h *handler.Handler) {
+	h = h.PathPrefix(path.Apps).PathPrefix(`/{appid:[A-Za-z0-9-_.]+}`)
+	h.HandleFunc("", a.GetApp, h.RequireSysadminOrPlugin).Methods(http.MethodGet)
 }
 
 // GetApp returns the App's record.
@@ -166,12 +156,16 @@ func (a *restapi) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.R
 		httputils.WriteError(w, utils.NewInvalidError("app is required"))
 		return
 	}
-	r.SetAppID(appID)
 
-	app, err := a.proxy.GetInstalledApp(r, appID)
+	app, err := a.Proxy.GetInstalledApp(r, appID)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
 	}
+
+	// Sanitize.
+	app.WebhookSecret = ""
+	app.RemoteOAuth2 = apps.OAuth2App{}
+
 	_ = httputils.WriteJSON(w, app)
 }

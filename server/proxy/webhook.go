@@ -68,10 +68,8 @@ func (p *Proxy) NotifyRemoteWebhook(r *incoming.Request, appID apps.AppID, httpC
 	call := app.OnRemoteWebhook.WithDefault(apps.DefaultOnRemoteWebhook)
 	call.Path = path.Join(call.Path, httpCallRequest.Path)
 
-	// Set acting user to bot.
-	r = r.Clone()
-	r.SetActingUserID("")
-	cc, err := p.expandContext(r, *app, nil, call.Expand)
+	r = r.ToApp(app).WithActingUser("", "")
+	cc, err := p.expandContext(r, nil, call.Expand)
 	if err != nil {
 		return err
 	}

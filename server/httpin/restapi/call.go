@@ -7,15 +7,15 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initCall(h *httpin.Handler) {
+func (a *restapi) initCall(h *handler.Handler) {
 	h.HandleFunc(path.Call,
-		a.Call, httpin.RequireUser).Methods(http.MethodPost)
+		a.Call, h.RequireActingUser).Methods(http.MethodPost)
 }
 
 // Call handles a call request for an App.
@@ -31,17 +31,13 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 		httputils.WriteError(w, utils.NewInvalidError(err))
 		return
 	}
-	r.SetAppID(creq.Context.AppID)
 
 	// Call the app.
-	cresp := a.proxy.Call(r, *creq)
-
-	// Add the request and response digests to the logger.
-	r.Log = r.Log.With(creq, cresp)
+	cresp := a.Proxy.Call(r, creq.Context.UserAgentContext.AppID, *creq)
 
 	// Only track submit calls.
 	if creq.Context.UserAgentContext.TrackAsSubmit {
-		a.conf.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), r.ActingUserID(), "submit")
+		a.Config.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), r.ActingUserID(), "submit")
 	}
 
 	_ = httputils.WriteJSON(w, cresp)

@@ -24,7 +24,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
 
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
@@ -42,9 +42,6 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	}
 
 	for id := range diff {
-		r = r.Clone()
-		r.SetAppID(id)
-
 		app := diff[id]
 		m := listed[app.AppID]
 
@@ -58,7 +55,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				resp := p.call(r, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
+				resp := p.call(r.ToApp(&app), *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}

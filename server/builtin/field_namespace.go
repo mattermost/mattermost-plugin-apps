@@ -40,7 +40,6 @@ func (a *builtinApp) lookupNamespace(r *incoming.Request, creq apps.CallRequest)
 	if appID == "" {
 		return apps.NewErrorResponse(errors.Errorf("please select --" + fAppID + " first"))
 	}
-	r.SetAppID(appID)
 
 	var options []apps.SelectOption
 	_, namespaces, err := a.debugListKeys(r, appID)

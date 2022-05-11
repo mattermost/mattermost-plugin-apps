@@ -17,7 +17,6 @@ func (g *gateway) static(r *incoming.Request, w http.ResponseWriter, req *http.R
 		httputils.WriteError(w, utils.NewInvalidError("app_id not specified"))
 		return
 	}
-	r.SetAppID(appID)
 
 	vars := mux.Vars(req)
 	if len(vars) == 0 {
@@ -32,7 +31,7 @@ func (g *gateway) static(r *incoming.Request, w http.ResponseWriter, req *http.R
 
 	// TODO verify that request is from the correct app
 
-	body, status, err := g.proxy.GetStatic(r, appID, assetName)
+	body, status, err := g.Proxy.GetStatic(r, appID, assetName)
 	if err != nil {
 		r.Log.WithError(err).Debugw("failed to get asset", "asset_name", assetName)
 		httputils.WriteError(w, err)

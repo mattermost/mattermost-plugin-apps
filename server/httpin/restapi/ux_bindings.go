@@ -6,14 +6,14 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initGetBindings(h *httpin.Handler) {
+func (a *restapi) initGetBindings(h *handler.Handler) {
 	h.HandleFunc(path.Bindings,
-		a.GetBindings, httpin.RequireUser).Methods(http.MethodGet)
+		a.GetBindings, h.RequireActingUser).Methods(http.MethodGet)
 }
 
 // GetBindings returns combined bindings for all Apps.
@@ -24,7 +24,7 @@ func (a *restapi) initGetBindings(h *httpin.Handler) {
 func (a *restapi) GetBindings(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
 
-	bindings, err := a.proxy.GetBindings(r, apps.Context{
+	bindings, err := a.Proxy.GetBindings(r, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),

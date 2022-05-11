@@ -67,8 +67,6 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
-		r = r.Clone()
-		r.SetAppID(app.AppID)
 		m, _ := a.proxy.GetManifest(r, app.AppID)
 		if m == nil {
 			continue
@@ -143,8 +141,6 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	})
 
 	for _, l := range listed {
-		r = r.Clone()
-		r.SetAppID(l.Manifest.AppID)
 		app, _ := a.proxy.GetInstalledApp(r, l.Manifest.AppID)
 		if app != nil {
 			continue

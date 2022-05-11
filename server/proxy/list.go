@@ -32,7 +32,7 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 	reachableCh := make(chan apps.AppID)
 	for _, app := range all {
 		var cancel context.CancelFunc
-		pingReq := r.Clone(incoming.WithTimeout(pingAppTimeout, &cancel))
+		pingReq := r.WithTimeout(pingAppTimeout, &cancel)
 		go func(a apps.App) {
 			var response apps.AppID
 			if !a.Disabled {

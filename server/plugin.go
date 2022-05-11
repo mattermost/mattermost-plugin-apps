@@ -7,7 +7,6 @@ import (
 	gohttp "net/http"
 	"path/filepath"
 
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -22,8 +21,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/gateway"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
@@ -126,10 +123,8 @@ func (p *Plugin) OnActivate() (err error) {
 	)
 	p.log.Debugf("initialized the app proxy")
 
-	p.httpIn = httpin.NewService(mm, mux.NewRouter(), p.conf, p.log, p.sessionService, p.proxy, p.appservices,
-		restapi.Init,
-		gateway.Init,
-	)
+	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf, p.log)
+	p.log.Debugf("initialized incoming HTTP")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
@@ -188,7 +183,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
-	p.httpIn.ServeHTTP(c, w, req)
+	p.httpIn.ServePluginHTTP(c, w, req)
 }
 
 func (p *Plugin) UserHasBeenCreated(_ *plugin.Context, user *model.User) {

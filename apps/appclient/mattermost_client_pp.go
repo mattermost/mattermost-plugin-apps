@@ -104,8 +104,12 @@ func (c *ClientPP) KVDelete(prefix, id string) (*model.Response, error) {
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) Subscribe(request *apps.Subscription) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe), request.ToJSON()) // nolint:bodyclose
+func (c *ClientPP) Subscribe(sub *apps.Subscription) (*model.Response, error) {
+	data, err := json.Marshal(sub)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe), string(data)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
@@ -130,8 +134,12 @@ func (c *ClientPP) GetSubscriptions() ([]apps.Subscription, *model.Response, err
 	return subs, model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) Unsubscribe(request *apps.Subscription) (*model.Response, error) {
-	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), request.ToJSON()) // nolint:bodyclose
+func (c *ClientPP) Unsubscribe(sub *apps.Subscription) (*model.Response, error) {
+	data, err := json.Marshal(sub)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.Unsubscribe), string(data)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}

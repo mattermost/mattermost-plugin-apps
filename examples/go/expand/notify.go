@@ -54,8 +54,8 @@ var notifyUserCreated = notifyHelper{
 		expandField("user"),
 	},
 	setup: []notifySetupFunc{
-		testSubscribe,
-		testCreateUser,
+		subscribe,
+		createUser,
 	},
 	cleanup: []notifyCleanupFunc{
 		cleanupTestSub,
@@ -73,10 +73,11 @@ var notifyUserJoinedTeam = notifyHelper{
 		expandField("team_member"),
 	},
 	setup: []notifySetupFunc{
-		testCreateUser,
-		testSetCurrentTeamID,
-		testSubscribe,
-		testUserJoinTeam,
+		createUser,
+		setCurrentTeamID,
+		ensureAppBotInCurrentTeam,
+		subscribe,
+		userJoinTeam,
 	},
 	cleanup: []notifyCleanupFunc{
 		cleanupTestSub,
@@ -125,15 +126,16 @@ func (h *notifyHelper) handle(creq goapp.CallRequest) apps.CallResponse {
 func handleEvent(creq goapp.CallRequest) apps.CallResponse {
 	actingUserID, _ := creq.State.(string)
 	if actingUserID != "" {
+		creq.Log.Debugf("NOTIFICATION: to %s", creq.State)
 		_, _ = creq.AsBot().DM(actingUserID, "**%s** notification received!\n%s", creq.Context.Subject, utils.JSONBlock(creq))
 	} else {
-		creq.Log.Errorf("**INVALID NOTIFICATION RECEIVED**: state (type %T) does not contain an user ID", creq.State)
+		creq.Log.Errorf("INVALID NOTIFICATION RECEIVED: state (type %T) does not contain an user ID", creq.State)
 	}
 	return apps.CallResponse{}
 }
 
-// testSubscribe creates a test subscription.
-func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
+// subscribe creates a test subscription.
+func subscribe(h *notifyHelper, creq goapp.CallRequest) error {
 	h.testSub = &apps.Subscription{
 		Subject:   h.subject,
 		TeamID:    h.testTeamID,
@@ -150,14 +152,30 @@ func testSubscribe(h *notifyHelper, creq goapp.CallRequest) error {
 	if err != nil {
 		return err
 	}
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "subscribed to `%s.", h.subject)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "subscribed to:%s", utils.JSONBlock(h.testSub))
 	return nil
 }
 
 // testSubscribe creates a test subscription.
-func testSetCurrentTeamID(h *notifyHelper, creq goapp.CallRequest) error {
+func setCurrentTeamID(h *notifyHelper, creq goapp.CallRequest) error {
 	h.testTeamID = creq.Context.Team.Id
-	_, _ = creq.AsBot().DM(creq.ActingUserID(), "using current team: %s.", creq.Context.Team.Name)
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "using current team: %s, id: `%s`.", creq.Context.Team.Name, creq.Context.Team.Id)
+	return nil
+}
+
+// testCreateUser creates a user (to trigger a `user_created` event).
+func ensureAppBotInCurrentTeam(h *notifyHelper, creq goapp.CallRequest) error {
+	tm, _, err := creq.AsActingUser().GetTeamMember(h.testTeamID, h.testUserID, "")
+	if err == nil {
+		_, _ = creq.AsBot().DM(creq.ActingUserID(), "bot @%s already a member of current team id: `%s`, roles: `%s`", creq.Context.App.BotUsername, tm.TeamId, tm.Roles)
+		return nil
+	}
+
+	tm, _, err = creq.AsActingUser().AddTeamMember(h.testTeamID, h.testUserID)
+	if err != nil {
+		return err
+	}
+	_, _ = creq.AsBot().DM(creq.ActingUserID(), "added bot @%s to current team id: `%s`, roles: `%s`", creq.Context.App.BotUsername, tm.TeamId, tm.Roles)
 	return nil
 }
 
@@ -171,8 +189,8 @@ func cleanupTestSub(h *notifyHelper, creq goapp.CallRequest) {
 
 }
 
-// testCreateUser creates a user (to trigger a `user_created` event).
-func testCreateUser(h *notifyHelper, creq goapp.CallRequest) error {
+// createUser creates a user (to trigger a `user_created` event).
+func createUser(h *notifyHelper, creq goapp.CallRequest) error {
 	testUsername := fmt.Sprintf("test_%v", rand.Int())
 	testEmail := fmt.Sprintf("%s@test.test", testUsername)
 	_, _ = creq.AsBot().DM(creq.ActingUserID(), "creating user @%s", testUsername)
@@ -202,9 +220,9 @@ func cleanupTestUser(h *notifyHelper, creq goapp.CallRequest) {
 
 }
 
-// testUserJoinTeam makes the test user join the current team(to trigger a
+// userJoinTeam makes the test user join the current team(to trigger a
 // `user_joined_team` event).
-func testUserJoinTeam(h *notifyHelper, creq goapp.CallRequest) error {
+func userJoinTeam(h *notifyHelper, creq goapp.CallRequest) error {
 	if h.testUserID == "" || h.testTeamID == "" {
 		return errors.New("testUserJoinTeam requires testUserID and testTeamID")
 	}

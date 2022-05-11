@@ -42,12 +42,11 @@ func (a *builtinApp) debugBindings(r *incoming.Request, creq apps.CallRequest) a
 			return apps.NewErrorResponse(err)
 		}
 	} else {
-		r.SetAppID(appID)
-
 		app, err := a.proxy.GetInstalledApp(r, appID)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
+
 		bindings, err = a.proxy.GetAppBindings(r, creq.Context, *app)
 		if err != nil {
 			out += "\n\n### PROBLEMS:\n" + err.Error()

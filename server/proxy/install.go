@@ -90,7 +90,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	message := fmt.Sprintf("Installed %s.", app.DisplayName)
 	if app.OnInstall != nil {
-		cresp := p.call(r, *app, *app.OnInstall, &cc)
+		cresp := p.call(r.ToApp(app), *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			r.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
@@ -100,7 +100,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(r, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(r.ToApp(app), app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
 			r.Log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)

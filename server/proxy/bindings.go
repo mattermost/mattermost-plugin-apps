@@ -48,13 +48,10 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	allApps := store.SortApps(p.store.App.AsMap())
 	for i := range allApps {
 		app := allApps[i]
-		copy := r.Clone()
-		copy.SetAppID(app.AppID)
-
 		go func(app apps.App) {
-			bb, err := p.GetAppBindings(copy, cc, app)
+			bb, err := p.GetAppBindings(r, cc, app)
 			if err != nil {
-				copy.Log.WithError(err).Debugf("failed to fetch app bindings")
+				r.Log.WithError(err).Debugf("failed to fetch app bindings")
 			}
 			all <- bb
 		}(app)
@@ -87,8 +84,8 @@ func (p *Proxy) GetAppBindings(r *incoming.Request, cc apps.Context, app apps.Ap
 	// TODO PERF: Add caching
 	bindingsCall := app.Bindings.WithDefault(apps.DefaultBindings)
 
-	// no need to clean the context, Call will do.
-	resp := p.call(r, app, bindingsCall, &cc)
+	// no need to clean the context, Call will do it.
+	resp := p.call(r.ToApp(&app), bindingsCall, &cc)
 	switch resp.Type {
 	case apps.CallResponseTypeOK:
 		var bindings = []apps.Binding{}

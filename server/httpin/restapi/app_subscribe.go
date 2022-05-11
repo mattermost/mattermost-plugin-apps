@@ -6,21 +6,21 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (a *restapi) initSubscriptions(h *httpin.Handler) {
+func (a *restapi) initSubscriptions(h *handler.Handler) {
 	// Subscribe
 	h.HandleFunc(path.Subscribe,
-		a.Subscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
+		a.Subscribe, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodPost)
 	// GetSubscriptions
 	h.HandleFunc(path.Subscribe,
-		a.GetSubscriptions, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodGet)
+		a.GetSubscriptions, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodGet)
 	// Unsubscribe
 	h.HandleFunc(path.Unsubscribe,
-		a.Unsubscribe, httpin.RequireUser, httpin.RequireApp).Methods(http.MethodPost)
+		a.Unsubscribe, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodPost)
 }
 
 // Subscribe starts or updates an App subscription to Mattermost events.
@@ -38,7 +38,7 @@ func (a *restapi) Subscribe(r *incoming.Request, w http.ResponseWriter, req *htt
 //   Input: None
 //   Output: []Subscription
 func (a *restapi) GetSubscriptions(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	subs, err := a.appServices.GetSubscriptions(r, r.AppID(), r.ActingUserID())
+	subs, err := a.appServices.GetSubscriptions(r, r.SourceApp().AppID, r.ActingUserID())
 	if err != nil {
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -66,7 +66,7 @@ func (a *restapi) handleSubscribeCore(r *incoming.Request, w http.ResponseWriter
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
 
-		sub.AppID = r.AppID()
+		sub.AppID = r.SourceApp().AppID
 		sub.UserID = r.ActingUserID()
 
 		// TODO replace with an appropriate API-level call that would deduplicate, etc.

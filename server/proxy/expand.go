@@ -20,18 +20,17 @@ type expandFunc func(apps.ExpandLevel) error
 
 type expander struct {
 	apps.Context
-	app         *apps.App
 	client      mmclient.Client
 	r           *incoming.Request
 	appservices appservices.Service
 }
 
-func (p *Proxy) expandContext(r *incoming.Request, app apps.App, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
+func (p *Proxy) expandContext(r *incoming.Request, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
 	if cc == nil {
 		cc = &apps.Context{}
 	}
 
-	e, err := p.newExpander(r, app, cc, p.appservices)
+	e, err := p.newExpander(r, cc, p.appservices)
 	if err != nil {
 		return nil, err
 	}
@@ -43,15 +42,15 @@ func (p *Proxy) expandContext(r *incoming.Request, app apps.App, cc *apps.Contex
 // ExpandedContext, ActingUserID, and UserAgentContext.AppID. It preserves the
 // UserAgentContext since it is used during expand, which cleans it out before
 // returning.
-func (p *Proxy) newExpander(r *incoming.Request, app apps.App, in *apps.Context, appservices appservices.Service) (*expander, error) {
-	client, err := p.getExpandClient(r, app)
+func (p *Proxy) newExpander(r *incoming.Request, in *apps.Context, appservices appservices.Service) (*expander, error) {
+	client, err := p.getExpandClient(r)
 	if err != nil {
 		return nil, err
 	}
 
+	app := r.To()
 	e := &expander{
 		Context:     *in,
-		app:         &app,
 		appservices: appservices,
 		client:      client,
 		r:           r,
@@ -225,8 +224,9 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 }
 
 func (e *expander) expandActingUserAccessToken(level apps.ExpandLevel) error {
-	if !e.app.GrantedPermissions.Contains(apps.PermissionActAsUser) {
-		return utils.NewForbiddenError("%s does not have permission to %s", e.app.AppID, apps.PermissionActAsUser)
+	to := e.r.To()
+	if !to.GrantedPermissions.Contains(apps.PermissionActAsUser) {
+		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionActAsUser)
 	}
 
 	token, err := e.r.UserAccessToken()
@@ -243,73 +243,82 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 			return errors.New("no user ID to expand")
 		}
 		if userPtr == nil {
-			return nil
+			return errors.New("internal unreachable error: nil userPtr")
 		}
 
 		switch level {
 		case apps.ExpandID:
+			// The GetUser API invocation here serves as the access check, but
+			// it is not needed for the acting user, so skip it, as an
+			// optimization.
+			if userID != e.r.ActingUserID() {
+				if _, err := e.client.GetUser(userID); err != nil {
+					return errors.Wrapf(err, "id: %s", userID)
+				}
+			}
 			*userPtr = &model.User{
 				Id: userID,
 			}
 
 		case apps.ExpandSummary:
-			user, err := e.client.GetUser(userID)
+			u, err := e.client.GetUser(userID)
 			if err != nil {
 				return errors.Wrapf(err, "id: %s", userID)
 			}
 			*userPtr = &model.User{
-				BotDescription: user.BotDescription,
-				DeleteAt:       user.DeleteAt,
-				Email:          user.Email,
-				FirstName:      user.FirstName,
-				Id:             user.Id,
-				IsBot:          user.IsBot,
-				LastName:       user.LastName,
-				Locale:         user.Locale,
-				Nickname:       user.Nickname,
-				Roles:          user.Roles,
-				Timezone:       user.Timezone,
-				Username:       user.Username,
+				BotDescription: u.BotDescription,
+				DeleteAt:       u.DeleteAt,
+				Email:          u.Email,
+				FirstName:      u.FirstName,
+				Id:             u.Id,
+				IsBot:          u.IsBot,
+				LastName:       u.LastName,
+				Locale:         u.Locale,
+				Nickname:       u.Nickname,
+				Roles:          u.Roles,
+				Timezone:       u.Timezone,
+				Username:       u.Username,
 			}
 
 		case apps.ExpandAll:
-			user, err := e.client.GetUser(userID)
+			u, err := e.client.GetUser(userID)
 			if err != nil {
 				return errors.Wrapf(err, "id: %s", userID)
 			}
-			user.Sanitize(map[string]bool{
+			u.Sanitize(map[string]bool{
 				"email":    true,
 				"fullname": true,
 			})
-			user.AuthData = nil
-			*userPtr = user
+			u.AuthData = nil
+			*userPtr = u
 		}
 		return nil
 	}
 }
 
 func (e *expander) expandApp(level apps.ExpandLevel) error {
+	app := e.r.To()
 	switch level {
 	case apps.ExpandSummary:
 		e.ExpandedContext.App = &apps.App{
 			Manifest: apps.Manifest{
-				AppID:   e.app.AppID,
-				Version: e.app.Version,
+				AppID:   app.AppID,
+				Version: app.Version,
 			},
-			BotUserID:   e.app.BotUserID,
-			BotUsername: e.app.BotUsername,
+			BotUserID:   app.BotUserID,
+			BotUsername: app.BotUsername,
 		}
 
 	case apps.ExpandAll:
 		e.ExpandedContext.App = &apps.App{
 			Manifest: apps.Manifest{
-				AppID:   e.app.AppID,
-				Version: e.app.Version,
+				AppID:   app.AppID,
+				Version: app.Version,
 			},
-			BotUserID:     e.app.BotUserID,
-			BotUsername:   e.app.BotUsername,
-			DeployType:    e.app.DeployType,
-			WebhookSecret: e.app.WebhookSecret,
+			BotUserID:     app.BotUserID,
+			BotUsername:   app.BotUsername,
+			DeployType:    app.DeployType,
+			WebhookSecret: app.WebhookSecret,
 		}
 	}
 	return nil
@@ -325,17 +334,20 @@ func (e *expander) expandChannelMember(level apps.ExpandLevel) error {
 		return errors.New("no user ID or channel ID to expand")
 	}
 
+	cm, err := e.client.GetChannelMember(channelID, userID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get channel membership")
+	}
+
 	switch level {
 	case apps.ExpandID:
 		e.ExpandedContext.ChannelMember = &model.ChannelMember{
-			UserId:    userID,
-			ChannelId: channelID,
+			UserId:    cm.UserId,
+			ChannelId: cm.ChannelId,
 		}
-	case apps.ExpandSummary, apps.ExpandAll:
-		cm, err := e.client.GetChannelMember(channelID, userID)
-		if err != nil {
-			return errors.Wrap(err, "failed to get channel membership")
-		}
+
+	case apps.ExpandSummary,
+		apps.ExpandAll:
 		e.ExpandedContext.ChannelMember = cm
 	}
 	return nil
@@ -346,18 +358,18 @@ func (e *expander) expandChannel(level apps.ExpandLevel) error {
 	if channelID == "" {
 		return errors.New("no channel ID to expand")
 	}
+	channel, err := e.client.GetChannel(channelID)
+	if err != nil {
+		return errors.Wrap(err, "id: "+channelID)
+	}
 
 	switch level {
 	case apps.ExpandID:
 		e.ExpandedContext.Channel = &model.Channel{
-			Id: channelID,
+			Id: channel.Id,
 		}
 
 	case apps.ExpandSummary:
-		channel, err := e.client.GetChannel(channelID)
-		if err != nil {
-			return errors.Wrap(err, "id: "+channelID)
-		}
 		e.ExpandedContext.Channel = &model.Channel{
 			Id:          channel.Id,
 			DeleteAt:    channel.DeleteAt,
@@ -368,10 +380,6 @@ func (e *expander) expandChannel(level apps.ExpandLevel) error {
 		}
 
 	case apps.ExpandAll:
-		channel, err := e.client.GetChannel(channelID)
-		if err != nil {
-			return errors.Wrap(err, "id: "+channelID)
-		}
 		e.ExpandedContext.Channel = channel
 	}
 	return nil
@@ -382,17 +390,17 @@ func (e *expander) expandTeam(level apps.ExpandLevel) error {
 	if teamID == "" {
 		return errors.New("no team ID to expand")
 	}
+	team, err := e.client.GetTeam(teamID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get team %s", teamID)
+	}
 
 	switch level {
 	case apps.ExpandID:
 		e.ExpandedContext.Team = &model.Team{
-			Id: teamID,
+			Id: team.Id,
 		}
 	case apps.ExpandSummary:
-		team, err := e.client.GetTeam(teamID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get team %s", teamID)
-		}
 		e.ExpandedContext.Team = &model.Team{
 			Id:          team.Id,
 			DisplayName: team.DisplayName,
@@ -403,11 +411,6 @@ func (e *expander) expandTeam(level apps.ExpandLevel) error {
 		}
 
 	case apps.ExpandAll:
-		team, err := e.client.GetTeam(teamID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get team %s", teamID)
-		}
-
 		sanitized := *team
 		sanitized.Sanitize()
 		e.ExpandedContext.Team = &sanitized
@@ -425,18 +428,18 @@ func (e *expander) expandTeamMember(level apps.ExpandLevel) error {
 	if userID == "" || teamID == "" {
 		return errors.New("no user ID or channel ID to expand")
 	}
+	tm, err := e.client.GetTeamMember(teamID, userID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get team membership")
+	}
 
 	switch level {
 	case apps.ExpandID:
 		e.ExpandedContext.TeamMember = &model.TeamMember{
-			UserId: userID,
-			TeamId: teamID,
+			UserId: tm.UserId,
+			TeamId: tm.TeamId,
 		}
 	case apps.ExpandSummary, apps.ExpandAll:
-		tm, err := e.client.GetTeamMember(teamID, userID)
-		if err != nil {
-			return errors.Wrap(err, "failed to get team membership")
-		}
 		e.ExpandedContext.TeamMember = tm
 	}
 	return nil
@@ -447,17 +450,18 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 		if postID == "" {
 			return errors.New("no post ID to expand")
 		}
+		post, err := e.client.GetPost(postID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get post %s", postID)
+		}
 
 		switch level {
 		case apps.ExpandID:
 			*postPtr = &model.Post{
-				Id: postID,
+				Id: post.Id,
 			}
+
 		case apps.ExpandSummary:
-			post, err := e.client.GetPost(postID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get post %s", postID)
-			}
 			*postPtr = &model.Post{
 				Id:        post.Id,
 				Type:      post.Type,
@@ -468,11 +472,6 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 			}
 
 		case apps.ExpandAll:
-			post, err := e.client.GetPost(postID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get post %s", postID)
-			}
-
 			post.SanitizeProps()
 			*postPtr = post
 		}
@@ -490,27 +489,29 @@ func (e *expander) expandLocale(level apps.ExpandLevel) error {
 }
 
 func (e *expander) expandOAuth2App(level apps.ExpandLevel) error {
-	if !e.app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
-		return utils.NewForbiddenError("%s does not have permission to %s", e.app.AppID, apps.PermissionRemoteOAuth2)
+	to := e.r.To()
+	if !to.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
+		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionRemoteOAuth2)
 	}
 
 	conf := e.r.Config().Get()
-	e.ExpandedContext.OAuth2.OAuth2App = e.app.RemoteOAuth2
-	e.ExpandedContext.OAuth2.ConnectURL = conf.AppURL(e.app.AppID) + appspath.RemoteOAuth2Connect
-	e.ExpandedContext.OAuth2.CompleteURL = conf.AppURL(e.app.AppID) + appspath.RemoteOAuth2Complete
+	e.ExpandedContext.OAuth2.OAuth2App = to.RemoteOAuth2
+	e.ExpandedContext.OAuth2.ConnectURL = conf.AppURL(to.AppID) + appspath.RemoteOAuth2Connect
+	e.ExpandedContext.OAuth2.CompleteURL = conf.AppURL(to.AppID) + appspath.RemoteOAuth2Complete
 	return nil
 }
 
 func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 	userID := e.r.ActingUserID()
+	to := e.r.To()
 	if userID == "" {
 		return errors.New("no acting user id to expand")
 	}
-	if !e.app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
-		return utils.NewForbiddenError("%s does not have permission to %s", e.app.AppID, apps.PermissionRemoteOAuth2)
+	if !to.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
+		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionRemoteOAuth2)
 	}
 
-	data, err := e.appservices.GetOAuth2User(e.r, e.app.AppID, userID)
+	data, err := e.appservices.GetOAuth2User(e.r, to.AppID, userID)
 	if err != nil {
 		return errors.Wrap(err, "user_id: "+userID)
 	}
@@ -526,11 +527,11 @@ func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 	return nil
 }
 
-func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Client, error) {
+func (p *Proxy) getExpandClient(r *incoming.Request) (mmclient.Client, error) {
 	if p.expandClientOverride != nil {
 		return p.expandClientOverride, nil
 	}
-
+	app := r.To()
 	conf := p.conf.Get()
 
 	switch {
@@ -552,7 +553,7 @@ func (p *Proxy) getExpandClient(r *incoming.Request, app apps.App) (mmclient.Cli
 	}
 }
 
-func (p *Proxy) getBotAccessToken(r *incoming.Request, app apps.App) (string, error) {
+func (p *Proxy) getBotAccessToken(r *incoming.Request, app *apps.App) (string, error) {
 	session, err := p.sessionService.GetOrCreate(r, app.AppID, app.BotUserID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get bot session")

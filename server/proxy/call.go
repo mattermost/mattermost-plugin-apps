@@ -34,27 +34,21 @@ type AppMetadataForClient struct {
 	BotUsername string `json:"bot_username,omitempty"`
 }
 
-func (r CallResponse) WithAppMetadata(app *apps.App) CallResponse {
-	r.AppMetadata = AppMetadataForClient{
-		BotUserID:   app.BotUserID,
-		BotUsername: app.BotUsername,
-	}
-	return r
-}
-
-func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
+func (p *Proxy) Call(r *incoming.Request, appID apps.AppID, creq apps.CallRequest) CallResponse {
 	var app *apps.App
 	respondErr := func(err error) CallResponse {
 		out := CallResponse{
 			CallResponse: apps.NewErrorResponse(err),
 		}
 		if app != nil {
-			out = out.WithAppMetadata(app)
+			out.AppMetadata = AppMetadataForClient{
+				BotUserID:   app.BotUserID,
+				BotUsername: app.BotUsername,
+			}
 		}
 		return out
 	}
 
-	appID := r.AppID()
 	if appID == "" {
 		return respondErr(utils.NewInvalidError("app_id is not set in request, don't know what app to call"))
 	}
@@ -76,14 +70,19 @@ func (p *Proxy) Call(r *incoming.Request, creq apps.CallRequest) CallResponse {
 	}
 	creq.Path = cleanPath
 
-	cresp := p.callApp(r, *app, creq)
+	cresp := p.callApp(r.ToApp(app), creq)
+
 	return CallResponse{
 		CallResponse: cresp,
-	}.WithAppMetadata(app)
+		AppMetadata: AppMetadataForClient{
+			BotUserID:   app.BotUserID,
+			BotUsername: app.BotUsername,
+		},
+	}
 }
 
 // <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?
-func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
+func (p *Proxy) call(r *incoming.Request, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
 	values := map[string]interface{}{}
 	for len(valuePairs) > 0 {
 		if len(valuePairs) == 1 {
@@ -102,7 +101,7 @@ func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps
 	if cc == nil {
 		cc = &apps.Context{}
 	}
-	cresp := p.callApp(r, app, apps.CallRequest{
+	cresp := p.callApp(r, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
 		Values:  values,
@@ -114,11 +113,14 @@ func (p *Proxy) call(r *incoming.Request, app apps.App, call apps.Call, cc *apps
 // not perform any cleanup of the inputs.
 //
 // It returns the CallResponse to return to the client, and a separate error for the
-func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest) apps.CallResponse {
+func (p *Proxy) callApp(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+	if r.To() == nil {
+		return apps.NewErrorResponse(errors.New("internal unreachable error: no destination app in the incoming request"))
+	}
+	app := *r.To()
 	if !p.appIsEnabled(app) {
 		return apps.NewErrorResponse(errors.Errorf("app %s is disabled", app.AppID))
 	}
-	conf := p.conf.Get()
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
@@ -126,7 +128,7 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 	}
 
 	// expand
-	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
+	expanded, err := p.expandContext(r, &creq.Context, creq.Expand)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to expand context"))
 	}
@@ -141,7 +143,7 @@ func (p *Proxy) callApp(r *incoming.Request, app apps.App, creq apps.CallRequest
 	}
 
 	if cresp.Form != nil {
-		clean, err := cleanForm(*cresp.Form, conf, app.AppID)
+		clean, err := cleanForm(*cresp.Form, p.conf.Get(), app.AppID)
 		if err != nil {
 			r.Log.WithError(err).Debugf("invalid form in call response")
 		}
@@ -177,6 +179,7 @@ func (p *Proxy) GetStatic(r *incoming.Request, appID apps.AppID, path string) (i
 		r.Log = r.Log.WithError(err)
 		return nil, status, err
 	}
+	r = r.ToApp(app)
 
 	return p.getStatic(r, *app, path)
 }

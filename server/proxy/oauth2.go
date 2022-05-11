@@ -23,7 +23,7 @@ func (p *Proxy) GetRemoteOAuth2ConnectURL(r *incoming.Request, appID apps.AppID)
 	}
 
 	call := app.GetOAuth2ConnectURL.WithDefault(apps.DefaultGetOAuth2ConnectURL)
-	cresp := p.call(r, *app, call, nil, "state", state)
+	cresp := p.call(r.ToApp(app), call, nil, "state", state)
 	if cresp.Type == apps.CallResponseTypeError {
 		return "", &cresp
 	}
@@ -56,7 +56,7 @@ func (p *Proxy) CompleteRemoteOAuth2(r *incoming.Request, appID apps.AppID, urlV
 		return err
 	}
 
-	cresp := p.callApp(r, *app, apps.CallRequest{
+	cresp := p.callApp(r.ToApp(app), apps.CallRequest{
 		Call:    app.OnOAuth2Complete.WithDefault(apps.DefaultOnOAuth2Complete),
 		Context: apps.Context{},
 		Values:  urlValues,

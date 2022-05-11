@@ -24,16 +24,15 @@ func (g *gateway) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, re
 	if appID == "" {
 		return utils.NewInvalidError("app_id not specified")
 	}
-	r.SetAppID(appID)
 
-	sreq, err := newHTTPCallRequest(req, g.conf.Get().MaxWebhookSize)
+	sreq, err := newHTTPCallRequest(req, g.Config.Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}
 	sreq.Path = mux.Vars(req)["path"]
 	r.Log = r.Log.With("call_path", sreq.Path)
 
-	err = g.proxy.NotifyRemoteWebhook(r, appID, *sreq)
+	err = g.Proxy.NotifyRemoteWebhook(r, appID, *sreq)
 	if err != nil {
 		return err
 	}

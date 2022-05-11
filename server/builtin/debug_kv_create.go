@@ -42,7 +42,6 @@ func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Bindi
 
 func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	r.SetAppID(appID)
 	namespace := creq.GetValue(fNamespace, "")
 	id := creq.GetValue(fID, "")
 

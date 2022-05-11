@@ -13,7 +13,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -25,7 +24,8 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+	log := utils.NewPluginLogger(mm).With("subject", subj)
+	r := incoming.NewRequest(p.conf, log, p.sessionService).WithCtx(ctx)
 
 	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
 	if err != nil {
@@ -37,30 +37,16 @@ func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
 
 func (p *Proxy) notify(r *incoming.Request, base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		// TODO(Ben): Convert to use App session
-		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub, base.ChannelID, base.TeamID)
+		err := p.notifyForSubscription(r, &base, sub)
 		if err != nil {
-			// Don't log the error it can be to spammy
-			continue
-		}
-
-		r = r.Clone()
-		r.SetAppID(sub.AppID)
-		r.Log = r.Log.With("subject", sub.Subject)
-
-		err = p.notifyForSubscription(r, &base, sub)
-		if err != nil {
-			r.Log.WithError(err).Debugf("failed to send subscription notification to app")
+			r.Log.WithError(err).Debugw("failed to notify")
+			continue // attempting to notify other subs
 		}
 	}
-
 	return nil
 }
 
 func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, sub apps.Subscription) error {
-	creq := apps.CallRequest{
-		Call: sub.Call,
-	}
 	app, err := p.store.App.Get(sub.AppID)
 	if err != nil {
 		return err
@@ -69,7 +55,13 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 		return errors.Errorf("%s is disabled", app.AppID)
 	}
 
-	expanded, err := p.expandContext(r, *app, base, sub.Call.Expand)
+	creq := apps.CallRequest{
+		Call: sub.Call,
+	}
+
+	r = r.ToApp(app)
+	r.Log = r.Log.With(sub)
+	expanded, err := p.expandContext(r, base, sub.Call.Expand)
 	if err != nil {
 		return err
 	}
@@ -80,7 +72,15 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 	if err != nil {
 		return err
 	}
-	return upstream.Notify(r.Ctx(), up, *app, creq)
+	err = upstream.Notify(r.Ctx(), up, *app, creq)
+	if p.conf.Get().DeveloperMode {
+		if err != nil {
+			r.Log.WithError(err).Errorf("Notify error")
+		} else {
+			r.Log.Debugf("Notify")
+		}
+	}
+	return err
 }
 
 func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
@@ -88,32 +88,31 @@ func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) er
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
 
-	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+	subs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrap(err, "failed to get post_created subscriptions")
 	}
 
-	subs := []apps.Subscription{}
-	subs = append(subs, postSubs...)
-
-	mentions := possibleAtMentions(post.Message)
-
-	if len(mentions) > 0 {
-		appsMap := p.store.App.AsMap()
+	appMentions := []string{}
+	allApps := p.store.App.AsMap()
+	for _, m := range possibleAtMentions(post.Message) {
+		for _, app := range allApps {
+			if app.BotUsername == m {
+				appMentions = append(appMentions, m)
+			}
+		}
+	}
+	if len(appMentions) > 0 {
 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
 		if err != nil && err != utils.ErrNotFound {
 			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
 		}
-
 		for _, sub := range mentionSubs {
-			app, ok := appsMap[sub.AppID]
-			if !ok {
-				continue
-			}
-			for _, mention := range mentions {
-				if mention == app.BotUsername {
+			for _, mention := range appMentions {
+				app, ok := allApps[sub.AppID]
+				if ok && mention == app.BotUsername {
 					subs = append(subs, sub)
 				}
 			}
@@ -148,17 +147,20 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
+	r.Log.Debugf("<>/<> notifyJoinLeave: request created, context: %s", utils.ToJSON(cc))
 
 	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
 	}
+	r.Log.Debugf("<>/<> notifyJoinLeave: userSubs: %v", utils.ToJSON(userSubs))
 
 	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
 	if err != nil && err != utils.ErrNotFound {
 		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
 	}
+	r.Log.Debugf("<>/<> notifyJoinLeave: botSubs: %v", utils.ToJSON(botSubs))
 
 	subs := []apps.Subscription{}
 	subs = append(subs, userSubs...)
@@ -175,6 +177,7 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 		}
 	}
 
+	r.Log.Debugf("<>/<> notifyJoinLeave: subs to notify: %v", utils.ToJSON(subs))
 	return p.notify(r, cc, subs)
 }
 

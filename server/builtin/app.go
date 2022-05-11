@@ -179,7 +179,12 @@ func App(conf config.Config) apps.App {
 }
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
-	r := incoming.NewRequest(a.conf.MattermostAPI(), a.conf, utils.NewPluginLogger(a.conf.MattermostAPI()), a.sessionService, incoming.WithCtx(ctx), incoming.WithAppContext(creq.Context))
+	self := App(a.conf.Get())
+	log := utils.NewPluginLogger(a.conf.MattermostAPI())
+	r := a.proxy.NewIncomingRequest(log).
+		WithCtx(ctx).
+		ToApp(&self).
+		WithActingUserFromContext(creq.Context)
 
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {
@@ -213,7 +218,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 			err = nil
 			out = ioutil.NopCloser(bytes.NewReader(data))
 		}
-	}(r.Log)
+	}(log)
 
 	readcloser := func(cresp apps.CallResponse) (io.ReadCloser, error) {
 		data, err := json.Marshal(cresp)

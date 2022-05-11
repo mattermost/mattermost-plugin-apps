@@ -57,7 +57,7 @@ type Admin interface {
 // Invoker implements operations that invoke the Apps.
 type Invoker interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(*incoming.Request, apps.CallRequest) CallResponse
+	Call(*incoming.Request, apps.AppID, apps.CallRequest) CallResponse
 	CompleteRemoteOAuth2(_ *incoming.Request, _ apps.AppID, urlValues map[string]interface{}) error
 	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	GetRemoteOAuth2ConnectURL(*incoming.Request, apps.AppID) (string, error)
@@ -84,6 +84,7 @@ type Internal interface {
 	GetInstalledApps(_ *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
 	GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(*incoming.Request, apps.AppID) (*apps.Manifest, error)
+	NewIncomingRequest(log utils.Logger) *incoming.Request
 	SynchronizeInstalledApps() error
 }
 
@@ -223,4 +224,8 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		p.upstreams.Delete(typ)
 		log.Debugf("Deploy type %s is not supported on this Mattermost server", typ)
 	}
+}
+
+func (p *Proxy) NewIncomingRequest(log utils.Logger ) *incoming.Request {
+	return incoming.NewRequest(p.conf, log, p.sessionService)
 }

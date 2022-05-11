@@ -62,7 +62,6 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(fAppID, ""))
 	n, namespaces, err := a.debugListKeys(r, appID)
-	r.SetAppID(appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

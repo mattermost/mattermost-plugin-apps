@@ -20,8 +20,7 @@ type SessionService interface {
 }
 
 type Request struct {
-	ctx context.Context
-
+	ctx            context.Context
 	mm             *pluginapi.Client
 	config         config.Service
 	Log            utils.Logger
@@ -30,152 +29,129 @@ type Request struct {
 	requestID string
 	pluginID  string
 
-	appID                 apps.AppID
+	toApp                 *apps.App
+	fromApp               *apps.App
 	actingUserID          string
 	actingUserAccessToken string
 }
 
-type RequestOption func(*Request)
-
-func WithCtx(ctx context.Context) RequestOption {
-	return func(r *Request) {
-		if ctx == nil {
-			panic("nil context")
-		}
-
-		r.ctx = ctx
-	}
-}
-
-func WithTimeout(timeout time.Duration, cancelFunc *context.CancelFunc) RequestOption {
-	return func(r *Request) {
-		if timeout == 0 {
-			return
-		}
-		if cancelFunc == nil {
-			panic("nil cancel function pointer")
-		}
-
-		r.ctx, *cancelFunc = context.WithTimeout(r.Ctx(), timeout)
-	}
-}
-
-func WithAppContext(cc apps.Context) RequestOption {
-	return func(r *Request) {
-		if cc.ActingUser != nil {
-			r.SetActingUserID(cc.ActingUser.Id)
-		}
-		r.actingUserAccessToken = cc.ActingUserAccessToken
-	}
-}
-
-func WithAppID(appID apps.AppID) RequestOption {
-	return func(r *Request) {
-		r.SetAppID(appID)
-	}
-}
-
-func NewRequest(mm *pluginapi.Client, config config.Service, log utils.Logger, session SessionService, opts ...RequestOption) *Request {
-	r := &Request{
+func NewRequest(config config.Service, log utils.Logger, session SessionService) *Request {
+	// TODO <>/<>: is the incoming Mattermost request ID available, and should it be used?
+	requestID := model.NewId()
+	return &Request{
 		ctx:            context.Background(),
-		mm:             mm,
+		mm:             config.MattermostAPI(),
 		config:         config,
-		Log:            log,
+		Log:            log.With("request_id", requestID),
 		sessionService: session,
-
-		// TODO <>/<>: is the incoming Mattermost request ID available, and should it be used?
-		requestID: model.NewId(),
+		requestID:      requestID,
 	}
-
-	r.Log = r.Log.With(
-		"request_id", r.requestID,
-	)
-
-	for _, opt := range opts {
-		opt(r)
-	}
-
-	return r
 }
 
 // Clone creates a shallow copy of request, allowing clones to apply per-request changes.
-func (r *Request) Clone(opts ...RequestOption) *Request {
-	r = &Request{
-		ctx:                   r.ctx,
-		mm:                    r.mm,
-		config:                r.config,
-		Log:                   r.Log,
-		sessionService:        r.sessionService,
-		requestID:             r.requestID,
-		pluginID:              r.pluginID,
-		appID:                 r.appID,
-		actingUserID:          r.actingUserID,
-		actingUserAccessToken: r.actingUserAccessToken,
-	}
+func (r *Request) Clone() *Request {
+	clone := *r
+	return &clone
+}
 
-	for _, opt := range opts {
-		opt(r)
-	}
-
+func (r *Request) WithCtx(ctx context.Context) *Request {
+	r = r.Clone()
+	r.ctx = ctx
 	return r
+}
+
+func (r *Request) WithTimeout(timeout time.Duration, cancelFunc *context.CancelFunc) *Request {
+	if timeout == 0 {
+		return r
+	}
+	r = r.Clone()
+	ctx, f := context.WithTimeout(r.Ctx(), timeout)
+	r.ctx = ctx
+	if cancelFunc != nil {
+		*cancelFunc = f
+	}
+	return r
+}
+
+func (r *Request) ToApp(app *apps.App) *Request {
+	if app == nil {
+		return r
+	}
+	r.Log = r.Log.With("app_id", app.AppID)
+	r.toApp = app
+	return r
+}
+
+func (r *Request) FromApp(app *apps.App) *Request {
+	if app == nil {
+		return r
+	}
+	r.Log = r.Log.With("from_app_id", app.AppID)
+	r.fromApp = app
+	return r
+}
+
+func (r *Request) FromPlugin(pluginID string) *Request {
+	r.Log = r.Log.With("from_plugin_id", pluginID)
+	r.pluginID = pluginID
+	return r
+}
+
+func (r *Request) WithActingUser(id, token string) *Request {
+	r = r.Clone()
+	r.actingUserID = id
+	r.actingUserAccessToken = token
+	r.Log = r.Log.With("acting_user_id", id)
+	return r
+}
+
+func (r *Request) WithActingUserFromContext(cc apps.Context) *Request {
+	id := ""
+	if cc.ActingUser != nil {
+		id = cc.ActingUser.Id
+	}
+	return r.WithActingUser(id, cc.ActingUserAccessToken)
 }
 
 func (r *Request) Ctx() context.Context {
 	return r.ctx
 }
 
-func (r *Request) PluginID() string {
-	return r.pluginID
+func (r *Request) To() *apps.App {
+	return r.toApp
 }
 
-func (r *Request) AppID() apps.AppID {
-	return r.appID
-}
-
-func (r *Request) SetAppID(appID apps.AppID) {
-	r.Log = r.Log.With("app_id", appID)
-	r.appID = appID
+func (r *Request) SourceApp() *apps.App {
+	return r.fromApp
 }
 
 func (r *Request) ActingUserID() string {
 	return r.actingUserID
 }
 
-func (r *Request) SetActingUserID(userID string) {
-	r.Log = r.Log.With("acting_user_id", userID)
-
-	r.actingUserID = userID
-}
-
 func (r *Request) UserAccessToken() (string, error) {
 	if r.actingUserAccessToken != "" {
 		return r.actingUserAccessToken, nil
 	}
-
-	appID := r.AppID()
-	if r.AppID() == "" {
-		return "", errors.New("missing appID in context")
+	if r.toApp == nil {
+		return "", errors.New("missing destination app ID in request")
 	}
 
-	session, err := r.sessionService.GetOrCreate(r, appID, r.ActingUserID())
+	session, err := r.sessionService.GetOrCreate(r, r.toApp.AppID, r.actingUserID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get session")
 	}
-
 	r.actingUserAccessToken = session.Token
 
 	return r.actingUserAccessToken, nil
 }
 
 func (r *Request) GetMMClient() (mmclient.Client, error) {
-	conf := r.config.Get()
-
 	token, err := r.UserAccessToken()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to use the current user's token for access to Mattermost")
+		return nil, errors.Wrap(err, "failed to use the current user's token to access Mattermost")
 	}
-
-	return mmclient.NewHTTPClient(conf, token), nil
+	return mmclient.NewHTTPClient(r.config.Get(), token), nil
 }
 
 func (r *Request) Config() config.Service {
