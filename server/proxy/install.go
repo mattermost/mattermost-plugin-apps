@@ -88,7 +88,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
-	message := fmt.Sprintf("Installed %s.", app.DisplayName)
+	message := fmt.Sprintf("Installed `%s`: %s.", app.AppID, app.DisplayName)
 	if app.OnInstall != nil {
 		cresp := p.call(r, app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {

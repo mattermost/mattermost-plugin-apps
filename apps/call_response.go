@@ -168,7 +168,7 @@ func (cresp CallResponse) Loggable() []interface{} {
 
 	case CallResponseTypeForm:
 		if cresp.Form != nil {
-			props = append(props, "response_form", *cresp.Form)
+			props = append(props, "response_form", "not shown")
 		}
 
 	case CallResponseTypeCall:

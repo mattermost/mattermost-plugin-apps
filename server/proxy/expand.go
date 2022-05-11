@@ -201,14 +201,9 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 	}
 
 	// Cleanup fields that must not go to the app.
-	cc := e.Context
-	cc.UserAgentContext.ChannelID = ""
-	cc.UserAgentContext.TeamID = ""
-	cc.UserAgentContext.RootPostID = ""
-	cc.UserAgentContext.PostID = ""
-	cc.UserID = ""
-
-	return &cc, nil
+	e.Context.UserAgentContext = apps.UserAgentContext{}
+	e.Context.UserID = ""
+	return &e.Context, nil
 }
 
 func (e *expander) expandActingUserAccessToken(level apps.ExpandLevel) error {
@@ -568,7 +563,7 @@ func (e *expander) consistencyCheck() error {
 	}
 
 	if e.ExpandedContext.Channel != nil {
-		if e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
+		if e.ExpandedContext.Channel.Type != model.ChannelTypeDirect && e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
 			return errors.Errorf("expanded channel's team ID %s is different from user agent context %s",
 				e.ExpandedContext.Channel.TeamId, e.UserAgentContext.TeamID)
 		}

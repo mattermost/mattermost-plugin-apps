@@ -153,9 +153,6 @@ func (c Context) loggable() (map[string]string, []interface{}) {
 	add("subject", string(c.Subject))
 	add("ua", c.UserAgentContext.UserAgent)
 	add("ua_loc", string(c.UserAgentContext.Location))
-	if !c.UserAgentContext.TrackAsSubmit {
-		add("is_not_submit", "true")
-	}
 
 	if c.ExpandedContext.ActingUser != nil {
 		display["acting_user"] = c.ExpandedContext.ActingUser.GetDisplayName(model.ShowNicknameFullName)
