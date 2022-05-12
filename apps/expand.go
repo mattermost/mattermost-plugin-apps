@@ -108,11 +108,7 @@ func (l ExpandLevel) parse() (prefix ExpandLevel, level ExpandLevel, err error) 
 		level = l
 	}
 
-	if level == ExpandNone {
-		return "", level, nil
-	}
-
-	for _, known := range []ExpandLevel{ExpandDefault, ExpandID, ExpandSummary, ExpandAll} {
+	for _, known := range []ExpandLevel{ExpandNone, ExpandDefault, ExpandID, ExpandSummary, ExpandAll} {
 		if level == known {
 			return prefix, level, nil
 		}

@@ -42,6 +42,16 @@ func TestParseExpandLevel(t *testing.T) {
 			def:      "-id",
 			expected: "-id",
 		},
+		{
+			in:       "",
+			def:      "-none",
+			expected: "-none",
+		},
+		{
+			in:       "",
+			def:      "+none",
+			expected: "+none",
+		},
 
 		// "-"
 		{
