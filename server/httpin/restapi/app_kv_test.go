@@ -19,10 +19,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_session"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -43,13 +43,14 @@ func TestKV(t *testing.T) {
 	}
 	proxy := mock_proxy.NewMockService(ctrl)
 	appService := appservices.NewService(conf, mockStore)
-	sessionService := mock_session.NewMockService(ctrl)
+	// TODO: <>/<> impossible, but is it necessary?
+	// proxy.sessionService = mock_session.NewMockService(ctrl)
 
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
-	rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-	Init(rh, conf, proxy, appService)
+	rh := handler.NewHandler(proxy, conf, utils.NewTestLogger())
+	Init(rh, appService)
 
 	itemURL := strings.Join([]string{strings.TrimSuffix(server.URL, "/"), path.API, path.KV, "/test-id"}, "")
 	item := []byte(`{"test_string":"test","test_bool":true}`)
@@ -66,10 +67,10 @@ func TestKV(t *testing.T) {
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
-	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(appID apps.AppID, actingUserID, prefix, id string, ref []byte) (bool, error) {
-			assert.Equal(t, apps.AppID("some_app_id"), appID)
-			assert.Equal(t, "01234567890123456789012345", actingUserID)
+	mocked.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, prefix, id string, ref []byte) (bool, error) {
+			assert.Equal(t, apps.AppID("some_app_id"), r.SourceAppID())
+			assert.Equal(t, "01234567890123456789012345", r.ActingUserID())
 			assert.Equal(t, "", prefix)
 			assert.Equal(t, "test-id", id)
 			assert.Equal(t, []byte(`{"test_string":"test","test_bool":true}`), ref)
@@ -85,10 +86,10 @@ func TestKV(t *testing.T) {
 	req.Header.Set(config.MattermostUserIDHeader, "01234567890123456789012345")
 	req.Header.Add(config.MattermostSessionIDHeader, "some_session_id")
 	require.NoError(t, err)
-	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(appID apps.AppID, botUserID, prefix, id string) ([]byte, error) {
-			assert.Equal(t, apps.AppID("some_app_id"), appID)
-			require.Equal(t, "01234567890123456789012345", botUserID)
+	mocked.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(r *incoming.Request, prefix, id string) ([]byte, error) {
+			assert.Equal(t, apps.AppID("some_app_id"), r.SourceAppID())
+			require.Equal(t, "01234567890123456789012345", r.ActingUserID())
 			require.Equal(t, "", prefix)
 			require.Equal(t, "test-id", id)
 			return item, nil
@@ -110,13 +111,14 @@ func TestKVPut(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		proxy := mock_proxy.NewMockService(ctrl)
 		appServices := mock_appservices.NewMockService(ctrl)
-		sessionService := mock_session.NewMockService(ctrl)
+		// TODO: <>/<> impossible, but is it necessary?
+		// sessionService := mock_session.NewMockService(ctrl)
 
 		router := mux.NewRouter()
 		server := httptest.NewServer(router)
 		t.Cleanup(server.Close)
-		rh := httpin.NewHandler(conf.MattermostAPI(), conf, utils.NewTestLogger(), sessionService, router)
-		Init(rh, conf, proxy, appServices)
+		rh := handler.NewHandler(proxy, conf, utils.NewTestLogger())
+		Init(rh, appServices)
 
 		payload := make([]byte, MaxKVStoreValueLength+1)
 		expectedPayload := make([]byte, MaxKVStoreValueLength)

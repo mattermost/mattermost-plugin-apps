@@ -54,20 +54,6 @@ func (mr *MockServiceMockRecorder) AddBuiltinUpstream(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBuiltinUpstream", reflect.TypeOf((*MockService)(nil).AddBuiltinUpstream), arg0, arg1)
 }
 
-// Call mocks base method.
-func (m *MockService) Call(arg0 *incoming.Request, arg1 apps.CallRequest) proxy.CallResponse {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Call", arg0, arg1)
-	ret0, _ := ret[0].(proxy.CallResponse)
-	return ret0
-}
-
-// Call indicates an expected call of Call.
-func (mr *MockServiceMockRecorder) Call(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Call", reflect.TypeOf((*MockService)(nil).Call), arg0, arg1)
-}
-
 // CanDeploy mocks base method.
 func (m *MockService) CanDeploy(arg0 apps.DeployType) (bool, bool) {
 	m.ctrl.T.Helper()
@@ -81,20 +67,6 @@ func (m *MockService) CanDeploy(arg0 apps.DeployType) (bool, bool) {
 func (mr *MockServiceMockRecorder) CanDeploy(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeploy", reflect.TypeOf((*MockService)(nil).CanDeploy), arg0)
-}
-
-// CompleteRemoteOAuth2 mocks base method.
-func (m *MockService) CompleteRemoteOAuth2(arg0 *incoming.Request, arg1 apps.AppID, arg2 map[string]interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteRemoteOAuth2", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CompleteRemoteOAuth2 indicates an expected call of CompleteRemoteOAuth2.
-func (mr *MockServiceMockRecorder) CompleteRemoteOAuth2(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteRemoteOAuth2", reflect.TypeOf((*MockService)(nil).CompleteRemoteOAuth2), arg0, arg1, arg2)
 }
 
 // Configure mocks base method.
@@ -141,21 +113,6 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2)
 }
 
-// GetAppBindings mocks base method.
-func (m *MockService) GetAppBindings(arg0 *incoming.Request, arg1 apps.Context, arg2 apps.App) ([]apps.Binding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAppBindings", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]apps.Binding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAppBindings indicates an expected call of GetAppBindings.
-func (mr *MockServiceMockRecorder) GetAppBindings(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAppBindings", reflect.TypeOf((*MockService)(nil).GetAppBindings), arg0, arg1, arg2)
-}
-
 // GetBindings mocks base method.
 func (m *MockService) GetBindings(arg0 *incoming.Request, arg1 apps.Context) ([]apps.Binding, error) {
 	m.ctrl.T.Helper()
@@ -172,7 +129,7 @@ func (mr *MockServiceMockRecorder) GetBindings(arg0, arg1 interface{}) *gomock.C
 }
 
 // GetInstalledApp mocks base method.
-func (m *MockService) GetInstalledApp(arg0 *incoming.Request, arg1 apps.AppID) (*apps.App, error) {
+func (m *MockService) GetInstalledApp(arg0 apps.AppID, arg1 bool) (*apps.App, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInstalledApp", arg0, arg1)
 	ret0, _ := ret[0].(*apps.App)
@@ -202,63 +159,32 @@ func (mr *MockServiceMockRecorder) GetInstalledApps(arg0, arg1 interface{}) *gom
 }
 
 // GetListedApps mocks base method.
-func (m *MockService) GetListedApps(arg0 *incoming.Request, arg1 string, arg2 bool) []apps.ListedApp {
+func (m *MockService) GetListedApps(arg0 string, arg1 bool) []apps.ListedApp {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetListedApps", arg0, arg1)
 	ret0, _ := ret[0].([]apps.ListedApp)
 	return ret0
 }
 
 // GetListedApps indicates an expected call of GetListedApps.
-func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetListedApps(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListedApps", reflect.TypeOf((*MockService)(nil).GetListedApps), arg0, arg1)
 }
 
 // GetManifest mocks base method.
-func (m *MockService) GetManifest(arg0 *incoming.Request, arg1 apps.AppID) (*apps.Manifest, error) {
+func (m *MockService) GetManifest(arg0 apps.AppID) (*apps.Manifest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManifest", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetManifest", arg0)
 	ret0, _ := ret[0].(*apps.Manifest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetManifest indicates an expected call of GetManifest.
-func (mr *MockServiceMockRecorder) GetManifest(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetManifest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0, arg1)
-}
-
-// GetRemoteOAuth2ConnectURL mocks base method.
-func (m *MockService) GetRemoteOAuth2ConnectURL(arg0 *incoming.Request, arg1 apps.AppID) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRemoteOAuth2ConnectURL", arg0, arg1)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRemoteOAuth2ConnectURL indicates an expected call of GetRemoteOAuth2ConnectURL.
-func (mr *MockServiceMockRecorder) GetRemoteOAuth2ConnectURL(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteOAuth2ConnectURL", reflect.TypeOf((*MockService)(nil).GetRemoteOAuth2ConnectURL), arg0, arg1)
-}
-
-// GetStatic mocks base method.
-func (m *MockService) GetStatic(arg0 *incoming.Request, arg1 apps.AppID, arg2 string) (io.ReadCloser, int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStatic", arg0, arg1, arg2)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetStatic indicates an expected call of GetStatic.
-func (mr *MockServiceMockRecorder) GetStatic(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockService)(nil).GetStatic), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockService)(nil).GetManifest), arg0)
 }
 
 // InstallApp mocks base method.
@@ -275,6 +201,108 @@ func (m *MockService) InstallApp(arg0 *incoming.Request, arg1 apps.Context, arg2
 func (mr *MockServiceMockRecorder) InstallApp(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallApp", reflect.TypeOf((*MockService)(nil).InstallApp), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
+// InvokeCall mocks base method.
+func (m *MockService) InvokeCall(arg0 *incoming.Request, arg1 apps.CallRequest) proxy.CallResponse {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeCall", arg0, arg1)
+	ret0, _ := ret[0].(proxy.CallResponse)
+	return ret0
+}
+
+// InvokeCall indicates an expected call of InvokeCall.
+func (mr *MockServiceMockRecorder) InvokeCall(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeCall", reflect.TypeOf((*MockService)(nil).InvokeCall), arg0, arg1)
+}
+
+// InvokeCompleteRemoteOAuth2 mocks base method.
+func (m *MockService) InvokeCompleteRemoteOAuth2(arg0 *incoming.Request, arg1 map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeCompleteRemoteOAuth2", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InvokeCompleteRemoteOAuth2 indicates an expected call of InvokeCompleteRemoteOAuth2.
+func (mr *MockServiceMockRecorder) InvokeCompleteRemoteOAuth2(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeCompleteRemoteOAuth2", reflect.TypeOf((*MockService)(nil).InvokeCompleteRemoteOAuth2), arg0, arg1)
+}
+
+// InvokeGetBindings mocks base method.
+func (m *MockService) InvokeGetBindings(arg0 *incoming.Request, arg1 apps.Context) ([]apps.Binding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeGetBindings", arg0, arg1)
+	ret0, _ := ret[0].([]apps.Binding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InvokeGetBindings indicates an expected call of InvokeGetBindings.
+func (mr *MockServiceMockRecorder) InvokeGetBindings(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeGetBindings", reflect.TypeOf((*MockService)(nil).InvokeGetBindings), arg0, arg1)
+}
+
+// InvokeGetRemoteOAuth2ConnectURL mocks base method.
+func (m *MockService) InvokeGetRemoteOAuth2ConnectURL(arg0 *incoming.Request) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeGetRemoteOAuth2ConnectURL", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InvokeGetRemoteOAuth2ConnectURL indicates an expected call of InvokeGetRemoteOAuth2ConnectURL.
+func (mr *MockServiceMockRecorder) InvokeGetRemoteOAuth2ConnectURL(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeGetRemoteOAuth2ConnectURL", reflect.TypeOf((*MockService)(nil).InvokeGetRemoteOAuth2ConnectURL), arg0)
+}
+
+// InvokeGetStatic mocks base method.
+func (m *MockService) InvokeGetStatic(arg0 *incoming.Request, arg1 string) (io.ReadCloser, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeGetStatic", arg0, arg1)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// InvokeGetStatic indicates an expected call of InvokeGetStatic.
+func (mr *MockServiceMockRecorder) InvokeGetStatic(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeGetStatic", reflect.TypeOf((*MockService)(nil).InvokeGetStatic), arg0, arg1)
+}
+
+// InvokeRemoteWebhook mocks base method.
+func (m *MockService) InvokeRemoteWebhook(arg0 *incoming.Request, arg1 apps.HTTPCallRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvokeRemoteWebhook", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InvokeRemoteWebhook indicates an expected call of InvokeRemoteWebhook.
+func (mr *MockServiceMockRecorder) InvokeRemoteWebhook(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvokeRemoteWebhook", reflect.TypeOf((*MockService)(nil).InvokeRemoteWebhook), arg0, arg1)
+}
+
+// NewIncomingRequest mocks base method.
+func (m *MockService) NewIncomingRequest(arg0 utils.Logger) *incoming.Request {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewIncomingRequest", arg0)
+	ret0, _ := ret[0].(*incoming.Request)
+	return ret0
+}
+
+// NewIncomingRequest indicates an expected call of NewIncomingRequest.
+func (mr *MockServiceMockRecorder) NewIncomingRequest(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewIncomingRequest", reflect.TypeOf((*MockService)(nil).NewIncomingRequest), arg0)
 }
 
 // Notify mocks base method.
@@ -303,20 +331,6 @@ func (m *MockService) NotifyMessageHasBeenPosted(arg0 *model.Post, arg1 apps.Con
 func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyMessageHasBeenPosted", reflect.TypeOf((*MockService)(nil).NotifyMessageHasBeenPosted), arg0, arg1)
-}
-
-// NotifyRemoteWebhook mocks base method.
-func (m *MockService) NotifyRemoteWebhook(arg0 *incoming.Request, arg1 apps.AppID, arg2 apps.HTTPCallRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRemoteWebhook", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// NotifyRemoteWebhook indicates an expected call of NotifyRemoteWebhook.
-func (mr *MockServiceMockRecorder) NotifyRemoteWebhook(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRemoteWebhook", reflect.TypeOf((*MockService)(nil).NotifyRemoteWebhook), arg0, arg1, arg2)
 }
 
 // NotifyUserHasJoinedChannel mocks base method.

@@ -28,15 +28,15 @@ var _ Requirer = (*BindableForm)(nil)
 var _ asForm = (*BindableForm)(nil)
 var _ asAction = (*BindableForm)(nil)
 
-func MakeBindableFormOrPanic(name string, submitHandler HandlerFunc, form apps.Form, opts ...BindableOption) *BindableForm {
-	b, err := MakeBindableForm(name, submitHandler, form, opts...)
+func MakeBindableFormOrPanic(name string, form apps.Form, submitHandler HandlerFunc, opts ...BindableOption) *BindableForm {
+	b, err := MakeBindableForm(name, form, submitHandler, opts...)
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-func MakeBindableForm(name string, submitHandler HandlerFunc, form apps.Form, opts ...BindableOption) (*BindableForm, error) {
+func MakeBindableForm(name string, form apps.Form, submitHandler HandlerFunc, opts ...BindableOption) (*BindableForm, error) {
 	action, err := MakeBindableAction(name, submitHandler, WithSubmit(form.Submit))
 	if err != nil {
 		return nil, err

@@ -36,119 +36,119 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // GetOAuth2User mocks base method.
-func (m *MockService) GetOAuth2User(arg0 *incoming.Request, arg1 apps.AppID, arg2 string) ([]byte, error) {
+func (m *MockService) GetOAuth2User(arg0 *incoming.Request) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOAuth2User", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetOAuth2User", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOAuth2User indicates an expected call of GetOAuth2User.
-func (mr *MockServiceMockRecorder) GetOAuth2User(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetOAuth2User(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2User", reflect.TypeOf((*MockService)(nil).GetOAuth2User), arg0)
 }
 
 // GetSubscriptions mocks base method.
-func (m *MockService) GetSubscriptions(arg0 *incoming.Request, arg1 apps.AppID, arg2 string) ([]apps.Subscription, error) {
+func (m *MockService) GetSubscriptions(arg0 *incoming.Request) ([]apps.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSubscriptions", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetSubscriptions", arg0)
 	ret0, _ := ret[0].([]apps.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSubscriptions indicates an expected call of GetSubscriptions.
-func (mr *MockServiceMockRecorder) GetSubscriptions(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetSubscriptions(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockService)(nil).GetSubscriptions), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockService)(nil).GetSubscriptions), arg0)
 }
 
 // KVDelete mocks base method.
-func (m *MockService) KVDelete(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string) error {
+func (m *MockService) KVDelete(arg0 *incoming.Request, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVDelete", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "KVDelete", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // KVDelete indicates an expected call of KVDelete.
-func (mr *MockServiceMockRecorder) KVDelete(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVDelete(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVDelete", reflect.TypeOf((*MockService)(nil).KVDelete), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVDelete", reflect.TypeOf((*MockService)(nil).KVDelete), arg0, arg1, arg2)
 }
 
 // KVGet mocks base method.
-func (m *MockService) KVGet(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string) ([]byte, error) {
+func (m *MockService) KVGet(arg0 *incoming.Request, arg1, arg2 string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "KVGet", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KVGet indicates an expected call of KVGet.
-func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVGet(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVGet", reflect.TypeOf((*MockService)(nil).KVGet), arg0, arg1, arg2)
 }
 
 // KVList mocks base method.
-func (m *MockService) KVList(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3 string, arg4 func(string) error) error {
+func (m *MockService) KVList(arg0 *incoming.Request, arg1 string, arg2 func(string) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVList", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "KVList", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // KVList indicates an expected call of KVList.
-func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVList(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVList", reflect.TypeOf((*MockService)(nil).KVList), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVList", reflect.TypeOf((*MockService)(nil).KVList), arg0, arg1, arg2)
 }
 
 // KVSet mocks base method.
-func (m *MockService) KVSet(arg0 *incoming.Request, arg1 apps.AppID, arg2, arg3, arg4 string, arg5 []byte) (bool, error) {
+func (m *MockService) KVSet(arg0 *incoming.Request, arg1, arg2 string, arg3 []byte) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "KVSet", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KVSet indicates an expected call of KVSet.
-func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) KVSet(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVSet", reflect.TypeOf((*MockService)(nil).KVSet), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVSet", reflect.TypeOf((*MockService)(nil).KVSet), arg0, arg1, arg2, arg3)
 }
 
 // StoreOAuth2App mocks base method.
-func (m *MockService) StoreOAuth2App(arg0 *incoming.Request, arg1 apps.AppID, arg2 string, arg3 []byte) error {
+func (m *MockService) StoreOAuth2App(arg0 *incoming.Request, arg1 []byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreOAuth2App", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "StoreOAuth2App", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StoreOAuth2App indicates an expected call of StoreOAuth2App.
-func (mr *MockServiceMockRecorder) StoreOAuth2App(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) StoreOAuth2App(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2App", reflect.TypeOf((*MockService)(nil).StoreOAuth2App), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2App", reflect.TypeOf((*MockService)(nil).StoreOAuth2App), arg0, arg1)
 }
 
 // StoreOAuth2User mocks base method.
-func (m *MockService) StoreOAuth2User(arg0 *incoming.Request, arg1 apps.AppID, arg2 string, arg3 []byte) error {
+func (m *MockService) StoreOAuth2User(arg0 *incoming.Request, arg1 []byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreOAuth2User", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "StoreOAuth2User", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StoreOAuth2User indicates an expected call of StoreOAuth2User.
-func (mr *MockServiceMockRecorder) StoreOAuth2User(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) StoreOAuth2User(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2User", reflect.TypeOf((*MockService)(nil).StoreOAuth2User), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOAuth2User", reflect.TypeOf((*MockService)(nil).StoreOAuth2User), arg0, arg1)
 }
 
 // Subscribe mocks base method.

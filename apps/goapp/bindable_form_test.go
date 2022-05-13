@@ -19,7 +19,7 @@ func TestMakeBindableForm(t *testing.T) {
 		},
 	}
 
-	b := MakeBindableFormOrPanic("test îtem", nil, testForm)
+	b := MakeBindableFormOrPanic("test îtem", testForm, nil)
 	require.EqualValues(t, b,
 		&BindableForm{
 			BindableAction: &BindableAction{
@@ -31,7 +31,7 @@ func TestMakeBindableForm(t *testing.T) {
 			form: &testForm,
 		})
 
-	b = MakeBindableFormOrPanic("test îtem", nil, testForm,
+	b = MakeBindableFormOrPanic("test îtem", testForm, nil,
 		WithExpand(apps.Expand{
 			ActingUser:            apps.ExpandSummary,
 			ActingUserAccessToken: apps.ExpandAll,

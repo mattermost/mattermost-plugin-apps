@@ -256,6 +256,9 @@ ifneq ($(HAS_WEBAPP),)
 	rm -fr webapp/node_modules
 endif
 	rm -fr build/bin/
+	rm -fr test/restapitest/mattermost.log
+	rm -fr test/restapitest/notifications.log
+	rm -fr test/restapitest/data/
 
 # Help documentation à la https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:

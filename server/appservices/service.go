@@ -62,7 +62,7 @@ func (a *AppServices) ensureFromUser(mattermostUserID string) error {
 		return err
 	}
 	if mmuser.IsBot {
-		return errors.Wrap(ErrIsABot, mmuser.GetDisplayName(model.ShowNicknameFullName))
+		return errors.Wrapf(ErrIsABot, "@%s (%s)", mmuser.Username, mmuser.GetDisplayName(model.ShowNicknameFullName))
 	}
 	return nil
 }

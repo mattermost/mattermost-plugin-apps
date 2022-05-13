@@ -32,7 +32,7 @@ func (a *restapi) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 		return
 	}
 	if creq.Context.UserAgentContext.AppID == "" {
-		err = errors.Wrap(err, "app ID is not set in Call request")
+		err = errors.New("app ID is not set in Call request")
 		r.Log.WithError(err).Infof("incoming call failed")
 		httputils.WriteError(w, utils.NewInvalidError(err))
 		return

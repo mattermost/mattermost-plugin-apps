@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/fs"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"unicode"
@@ -134,6 +135,25 @@ func WithChannelHeader(items ...Bindable) AppOption {
 		}
 		return nil
 	}
+}
+
+func (app *App) NewTestServer() *httptest.Server {
+	if app.log == nil {
+		app.log = utils.NewTestLogger()
+	}
+	app.Mode = apps.DeployHTTP
+	if app.Manifest.Deploy.HTTP == nil {
+		app.log.Debugf("Using default HTTP deploy settings")
+		app.Manifest.Deploy.HTTP = &apps.HTTP{}
+	}
+	appServer := httptest.NewServer(app.Router)
+	rootURL := appServer.URL
+	app.Manifest.Deploy.HTTP.RootURL = rootURL
+
+	u, _ := url.Parse(rootURL)
+	portStr := u.Port()
+	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
+	return appServer
 }
 
 func (app *App) RunHTTP() {
