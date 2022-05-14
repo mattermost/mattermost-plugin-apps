@@ -46,7 +46,7 @@ endif
 .PHONY: test-rest-api
 test-rest-api: dist
 	@echo Running REST API tests
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) -tags=rest_api_test ./...
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest
 
 ## Extract new translation messages
 .PHONY: i18n-extract-server

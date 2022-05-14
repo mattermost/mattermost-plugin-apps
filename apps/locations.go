@@ -67,3 +67,12 @@ func (l Location) Markdown() string {
 	}
 	return string(l)
 }
+
+func (list Locations) Contains(loc Location) bool {
+	for _, current := range list {
+		if current == loc {
+			return true
+		}
+	}
+	return false
+}

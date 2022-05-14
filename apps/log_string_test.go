@@ -19,7 +19,6 @@ func TestLoggable(t *testing.T) {
 	var _ utils.HasLoggable = Context{}
 
 	var simpleContext = Context{
-		ActingUserID: "id_of_acting_user",
 		ExpandedContext: ExpandedContext{
 			BotUserID:      "id_of_bot_user",
 			BotAccessToken: "bot_user_access_tokenXYZ",
@@ -132,8 +131,8 @@ func TestLoggable(t *testing.T) {
 		},
 		"CallResponse form": {
 			In:             NewFormResponse(testForm),
-			ExpectedProps:  []interface{}{"response_type", "form", "response_form", testForm},
-			ExpectedString: `Form: {"title":"name","submit":{"path":"/some-path"},"fields":[{"name":"f1","type":""},{"name":"f2","type":""}]}`,
+			ExpectedProps:  []interface{}{"response_type", "form", "response_form", "not shown"},
+			ExpectedString: `Form: not shown`,
 		},
 		"CallResponse navigate": {
 			In: CallResponse{

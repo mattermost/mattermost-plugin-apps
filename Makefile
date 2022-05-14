@@ -10,6 +10,7 @@ MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
 DEFAULT_GOOS := $(shell go env GOOS)
 DEFAULT_GOARCH := $(shell go env GOARCH)
+SANS_RESTAPITEST = $(shell go list ./... | grep -v 'github.com/mattermost/mattermost-plugin-apps/test/restapitest' | grep -v 'github.com/mattermost/mattermost-plugin-apps/examples' | sed -e 's/github.com\/mattermost\/mattermost-plugin-apps\//.\//g')
 
 export GO111MODULE=on
 
@@ -192,7 +193,7 @@ detach: setup-attach
 .PHONY: test
 test: webapp/node_modules
 ifneq ($(HAS_SERVER),)
-	$(GO) test -v $(GO_TEST_FLAGS) ./...
+	$(GO) test -v $(GO_TEST_FLAGS) $(SANS_RESTAPITEST)
 endif
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && $(NPM) run test;
@@ -202,7 +203,7 @@ endif
 .PHONY: coverage
 coverage: webapp/node_modules
 ifneq ($(HAS_SERVER),)
-	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./...
+	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt $(SANS_RESTAPITEST)
 	$(GO) tool cover -html=server/coverage.txt
 endif
 
@@ -256,6 +257,9 @@ ifneq ($(HAS_WEBAPP),)
 	rm -fr webapp/node_modules
 endif
 	rm -fr build/bin/
+	rm -fr test/restapitest/mattermost.log
+	rm -fr test/restapitest/notifications.log
+	rm -fr test/restapitest/data/
 
 # Help documentation à la https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:
