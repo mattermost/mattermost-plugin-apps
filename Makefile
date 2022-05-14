@@ -10,7 +10,7 @@ MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
 DEFAULT_GOOS := $(shell go env GOOS)
 DEFAULT_GOARCH := $(shell go env GOARCH)
-SANS_RESTAPITEST = $(shell go list ./... | grep -v 'github.com/mattermost/mattermost-plugin-apps/test/restapitest' | grep -v 'github.com/mattermost/mattermost-plugin-apps/examples' | sed -e 's/github.com\/mattermost\/mattermost-plugin-apps\//.\//g')
+SANS_RESTAPITEST = $(shell go list ./... | grep -v 'github.com/mattermost/mattermost-plugin-apps/test/restapitest' | sed -e 's/github.com\/mattermost\/mattermost-plugin-apps\//.\//g')
 
 export GO111MODULE=on
 
