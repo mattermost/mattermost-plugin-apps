@@ -4,7 +4,6 @@
 package restapitest
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"testing"
@@ -103,70 +102,6 @@ func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 
 func (th *Helper) TearDown() {
 	th.ServerTestHelper.TearDown()
-}
-
-func (th *Helper) InstallAppsPlugin() {
-	require := require.New(th)
-
-	bundle := os.Getenv("PLUGIN_BUNDLE")
-	require.NotEmpty(bundle, "PLUGIN_BUNDLE is not set, please run `make test-rest-api`")
-
-	// Install the PP and enable it
-	pluginBytes, err := os.ReadFile(bundle)
-	require.NoError(err)
-	require.NotNil(pluginBytes)
-
-	manifest, appErr := th.ServerTestHelper.App.InstallPlugin(bytes.NewReader(pluginBytes), true)
-	require.Nil(appErr)
-	require.Equal(pluginID, manifest.Id)
-
-	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
-	require.Nil(appErr)
-}
-
-func (th *Helper) Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
-	return th.UserClientPP.Call(creq)
-}
-
-func (th *Helper) User2Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
-	return th.User2ClientPP.Call(creq)
-}
-
-func (th *Helper) AdminCall(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
-	return th.SystemAdminClientPP.Call(creq)
-}
-
-func (th *Helper) HappyCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.Call(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
-}
-
-func (th *Helper) HappyUser2Call(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.User2Call(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
-}
-
-func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.AdminCall(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
 }
 
 func (th *Helper) Run(name string, f func(th *Helper)) bool {

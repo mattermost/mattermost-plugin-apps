@@ -1,7 +1,9 @@
 package restapitest
 
 import (
+	"bytes"
 	"embed"
+	"os"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,4 +38,23 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	resp, err = th.SystemAdminClientPP.InstallApp(app.Manifest.AppID, apps.DeployHTTP)
 	assert.NoError(err)
 	api4.CheckOKStatus(th, resp)
+}
+
+func (th *Helper) InstallAppsPlugin() {
+	require := require.New(th)
+
+	bundle := os.Getenv("PLUGIN_BUNDLE")
+	require.NotEmpty(bundle, "PLUGIN_BUNDLE is not set, please run `make test-rest-api`")
+
+	// Install the PP and enable it
+	pluginBytes, err := os.ReadFile(bundle)
+	require.NoError(err)
+	require.NotNil(pluginBytes)
+
+	manifest, appErr := th.ServerTestHelper.App.InstallPlugin(bytes.NewReader(pluginBytes), true)
+	require.Nil(appErr)
+	require.Equal(pluginID, manifest.Id)
+
+	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
+	require.Nil(appErr)
 }
