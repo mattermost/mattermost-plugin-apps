@@ -11,7 +11,9 @@ import (
 type BindableForm struct {
 	*BindableAction
 
-	// form is the template of the form to be used. If it contains a
+	// form is the template of the form to be used. If it contains a Submit, it
+	// will be used as a template. Internally, the implementation copies it over
+	// to the BindableAction to leverage its methods.
 	form *apps.Form
 	// TODO: add a formHandler when source= actually works
 }

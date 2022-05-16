@@ -136,7 +136,6 @@ func testSubscriptions(th *Helper) {
 		assert.Empty(subs)
 		assert.Error(err)
 		api4.CheckUnauthorizedStatus(th, resp)
-
 	})
 
 	th.Run("subscribe-list-delete", func(th *Helper) {

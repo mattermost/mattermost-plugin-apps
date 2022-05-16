@@ -59,7 +59,7 @@ func RequireConnectedUser(h HandlerFunc) HandlerFunc {
 		if !creq.IsConnectedUser() {
 			return apps.NewErrorResponse(
 				utils.NewUnauthorizedError("missing user record, required for " + creq.Path +
-					". Please use `/apps connect` to connect your ServiceNow account."))
+					". Please use `/apps connect` to connect your account."))
 		}
 		return h(creq)
 	}

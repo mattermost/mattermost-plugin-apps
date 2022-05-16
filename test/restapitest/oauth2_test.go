@@ -218,6 +218,7 @@ func testOAuth2(th *Helper) {
 	})
 
 	storeAppAsAdmin := func(th *Helper, oapp apps.OAuth2App) {
+		th.Helper()
 		require := require.New(th)
 		creq := apps.CallRequest{
 			Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{

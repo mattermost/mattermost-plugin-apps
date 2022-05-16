@@ -8,11 +8,12 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"testing"
 
+	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 )
 
@@ -62,40 +63,47 @@ func (th *Helper) CreateLocalClient(socketPath string) *appclient.ClientPP {
 	return client
 }
 
-func (th *Helper) TestForUser(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
-	var testName string
-	if len(name) > 0 {
-		testName = name[0] + "/"
-	}
-
-	t.Run(testName+"UserClientPP", func(t *testing.T) {
-		f(t, th.UserClientPP)
-	})
+func (th *Helper) Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
+	creq.Context.UserAgentContext.AppID = appID
+	creq.Context.UserAgentContext.UserAgent = "test"
+	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
+	return th.UserClientPP.Call(creq)
 }
 
-func (th *Helper) TestForSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
-	var testName string
-	if len(name) > 0 {
-		testName = name[0] + "/"
-	}
-
-	t.Run(testName+"SystemAdminClientPP", func(t *testing.T) {
-		f(t, th.SystemAdminClientPP)
-	})
+func (th *Helper) User2Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
+	creq.Context.UserAgentContext.AppID = appID
+	creq.Context.UserAgentContext.UserAgent = "test"
+	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
+	return th.User2ClientPP.Call(creq)
 }
 
-func (th *Helper) TestForLocal(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
-	var testName string
-	if len(name) > 0 {
-		testName = name[0] + "/"
-	}
-
-	t.Run(testName+"LocalClientPP", func(t *testing.T) {
-		f(t, th.LocalClientPP)
-	})
+func (th *Helper) AdminCall(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
+	creq.Context.UserAgentContext.AppID = appID
+	creq.Context.UserAgentContext.UserAgent = "test"
+	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
+	return th.SystemAdminClientPP.Call(creq)
 }
 
-func (th *Helper) TestForUserAndSystemAdmin(t *testing.T, f func(*testing.T, *appclient.ClientPP), name ...string) {
-	th.TestForUser(t, f)
-	th.TestForSystemAdmin(t, f)
+func (th *Helper) HappyCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
+	cresp, resp, err := th.Call(appID, creq)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
+	return cresp
+}
+
+func (th *Helper) HappyUser2Call(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
+	cresp, resp, err := th.User2Call(appID, creq)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
+	return cresp
+}
+
+func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
+	cresp, resp, err := th.AdminCall(appID, creq)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
+	return cresp
 }

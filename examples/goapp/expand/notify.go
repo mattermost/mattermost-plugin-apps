@@ -89,7 +89,6 @@ var notifyUserJoinedTeam = notifyHelper{
 func (h notifyHelper) bindable() goapp.Bindable {
 	return goapp.MakeBindableFormOrPanic(
 		string(h.subject),
-		h.handle,
 		apps.Form{
 			Title: fmt.Sprintf("Test how Expand works on `%s` notification", h.subject),
 			Header: fmt.Sprintf("On submit this will subscribe to `%s` event notifications, then %s, "+
@@ -97,6 +96,7 @@ func (h notifyHelper) bindable() goapp.Bindable {
 				h.subject, h.setupDescription),
 			Fields: h.expandFields,
 		},
+		h.handle,
 		goapp.WithExpand(
 			apps.Expand{
 				ActingUser:            apps.ExpandSummary,

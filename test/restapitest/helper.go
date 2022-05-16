@@ -4,7 +4,6 @@
 package restapitest
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"testing"
@@ -34,14 +33,14 @@ type Helper struct {
 }
 
 func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
+	require := require.New(t)
 	// Check environment
-	require.NotEmpty(t,
-		os.Getenv("MM_SERVER_PATH"),
+	require.NotEmpty(os.Getenv("MM_SERVER_PATH"),
 		"MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
 	// Unset SiteURL, just in case it's set
 	err := os.Unsetenv("MM_SERVICESETTINGS_SITEURL")
-	require.NoError(t, err)
+	require.NoError(err)
 
 	// Setup Mattermost server (helper)
 	serverTestHelper := api4.Setup(t)
@@ -87,67 +86,6 @@ func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 
 func (th *Helper) TearDown() {
 	th.ServerTestHelper.TearDown()
-}
-
-func (th *Helper) InstallAppsPlugin() {
-	require := require.New(th)
-
-	bundle := os.Getenv("PLUGIN_BUNDLE")
-	require.NotEmpty(bundle, "PLUGIN_BUNDLE is not set, please run `make test-rest-api`")
-
-	// Install the PP and enable it
-	pluginBytes, err := os.ReadFile(bundle)
-	require.NoError(err)
-	require.NotNil(pluginBytes)
-
-	manifest, appErr := th.ServerTestHelper.App.InstallPlugin(bytes.NewReader(pluginBytes), true)
-	require.Nil(appErr)
-	require.Equal(pluginID, manifest.Id)
-
-	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
-	require.Nil(appErr)
-}
-
-func (th *Helper) Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	return th.UserClientPP.Call(creq)
-}
-
-func (th *Helper) User2Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	return th.User2ClientPP.Call(creq)
-}
-
-func (th *Helper) AdminCall(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
-	creq.Context.UserAgentContext.AppID = appID
-	creq.Context.UserAgentContext.UserAgent = "test"
-	return th.SystemAdminClientPP.Call(creq)
-}
-
-func (th *Helper) HappyCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.Call(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
-}
-
-func (th *Helper) HappyUser2Call(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.User2Call(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
-}
-
-func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse {
-	cresp, resp, err := th.AdminCall(appID, creq)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
-	return cresp
 }
 
 func (th *Helper) Run(name string, f func(th *Helper)) bool {
