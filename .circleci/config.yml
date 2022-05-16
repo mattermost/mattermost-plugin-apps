@@ -46,7 +46,7 @@ commands:
     parameters:
       version:
         type: string
-        default: 1.31.0
+        default: 1.46.1
       gobin:
         type: string
         default: $GOPATH/bin
