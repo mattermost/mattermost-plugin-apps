@@ -1,6 +1,8 @@
 package goapp
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -9,6 +11,12 @@ type Bindable interface {
 }
 
 type BindableOption func(Bindable) error
+
+type asBindable interface {
+	bindablePtr() *bindable
+}
+
+func (b *bindable) bindablePtr() *bindable { return b }
 
 type bindable struct {
 	// name is the short "location" of the function, will also be used as the
@@ -27,15 +35,40 @@ type bindable struct {
 
 var _ Requirer = bindable{}
 
-func (b bindable) WithDescription(description, hint string) bindable {
-	b.hint = hint
-	b.description = description
-	return b
+func WithDescription(description string) BindableOption {
+	return func(bb Bindable) error {
+		i, ok := bb.(asBindable)
+		if !ok {
+			return errors.Errorf("bindable  %s: WithDescription method called on a wrong type: %T", bb, bb)
+		}
+		b := i.bindablePtr()
+		b.description = description
+		return nil
+	}
 }
 
-func (b bindable) WithIcon(icon string) bindable {
-	b.icon = icon
-	return b
+func WithHint(hint string) BindableOption {
+	return func(bb Bindable) error {
+		i, ok := bb.(asBindable)
+		if !ok {
+			return errors.Errorf("bindable  %s: WithHint method called on a wrong type: %T", bb, bb)
+		}
+		b := i.bindablePtr()
+		b.hint = hint
+		return nil
+	}
+}
+
+func WithIcon(icon string) BindableOption {
+	return func(bb Bindable) error {
+		i, ok := bb.(asBindable)
+		if !ok {
+			return errors.Errorf("bindable  %s: WithIcon method called on a wrong type: %T", bb, bb)
+		}
+		b := i.bindablePtr()
+		b.icon = icon
+		return nil
+	}
 }
 
 func (b bindable) String() string {
@@ -49,12 +82,12 @@ func (b bindable) prepareBinding(creq CallRequest) *apps.Binding {
 	if b.requireSystemAdmin && !creq.IsSystemAdmin() {
 		return nil
 	}
-	if b.requireConnectedUser && creq.IsConnectedUser() {
+	if b.requireConnectedUser && !creq.IsConnectedUser() {
 		return nil
 	}
 
 	binding := apps.Binding{
-		Location:    apps.Location(pathFromName(b.name)),
+		Location:    locationFromName(b.name),
 		Icon:        b.icon,
 		Hint:        b.hint,
 		Description: b.description,

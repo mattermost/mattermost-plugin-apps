@@ -38,6 +38,9 @@ func MakeBindableAction(name string, submitHandler HandlerFunc, opts ...Bindable
 		submitHandler: submitHandler,
 	}
 
+	// Initialize the default submit.
+	_ = WithSubmit(&apps.Call{})(b)
+
 	for _, opt := range opts {
 		err := opt(b)
 		if err != nil {
@@ -87,16 +90,12 @@ func WithSubmit(submit *apps.Call) BindableOption {
 
 func WithExpand(expand apps.Expand) BindableOption {
 	return optionWithActionPtr(func(b *BindableAction) {
-		// Make sure submit is initialized, even if redundant.
-		_ = WithSubmit(b.submit)(b)
 		b.submit.Expand = &expand
 	})
 }
 
 func WithState(state interface{}) BindableOption {
 	return optionWithActionPtr(func(b *BindableAction) {
-		// Make sure submit is initialized.
-		_ = WithSubmit(b.submit)(b)
 		b.submit.State = state
 	})
 }

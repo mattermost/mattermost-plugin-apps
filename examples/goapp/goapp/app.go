@@ -31,19 +31,19 @@ func main() {
 
 // send is the bindable (form) action that implements the /hello-goapp send
 // command.
-var send = goapp.MakeBindableFormOrPanic("send", handleSend, apps.Form{
-	Title:  "Hello, world!",
-	Icon:   "icon.png",
-	Fields: []apps.Field{{Name: "message"}},
-})
-
-// handleSend processes the send call.
-func handleSend(creq goapp.CallRequest) apps.CallResponse {
-	message := "Hello from a goapp."
-	custom := creq.GetValue("message", "")
-	if custom != "" {
-		message += " ...and " + custom + "!"
-	}
-	creq.AsBot().DM(creq.Context.ActingUser.Id, message)
-	return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
-}
+var send = goapp.MakeBindableFormOrPanic("send",
+	apps.Form{
+		Title:  "Hello, world!",
+		Icon:   "icon.png",
+		Fields: []apps.Field{{Name: "message"}},
+	},
+	func(creq goapp.CallRequest) apps.CallResponse {
+		message := "Hello from a goapp."
+		custom := creq.GetValue("message", "")
+		if custom != "" {
+			message += " ...and " + custom + "!"
+		}
+		creq.AsBot().DM(creq.Context.ActingUser.Id, message)
+		return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
+	},
+)

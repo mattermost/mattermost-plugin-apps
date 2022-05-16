@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"encoding/json"
-
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -144,7 +142,13 @@ func (sub Subscription) EqualScope(s2 Subscription) bool {
 	return sub == s2
 }
 
-func (sub *Subscription) ToJSON() string {
-	b, _ := json.Marshal(sub)
-	return string(b)
+func (sub Subscription) Loggable() []interface{} {
+	props := []interface{}{"app_id", sub.AppID, "subject", sub.Subject}
+	if len(sub.ChannelID) > 0 {
+		props = append(props, "channel_id", sub.ChannelID)
+	}
+	if len(sub.TeamID) > 0 {
+		props = append(props, "team_id", sub.TeamID)
+	}
+	return props
 }

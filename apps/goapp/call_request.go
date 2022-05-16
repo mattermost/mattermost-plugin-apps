@@ -11,10 +11,11 @@ import (
 type CallRequest struct {
 	apps.CallRequest
 
-	App          *App
-	GoContext    context.Context
-	asBot        *appclient.Client
-	asActingUser *appclient.Client
+	App          *App              `json:"-"`
+	GoContext    context.Context   `json:"-"`
+	asBot        *appclient.Client `json:"-"`
+	asActingUser *appclient.Client `json:"-"`
+	Log          utils.Logger      `json:"-"`
 }
 
 func (creq CallRequest) AsBot() *appclient.Client {
@@ -130,4 +131,15 @@ func (creq CallRequest) IsSystemAdmin() bool {
 
 func (creq CallRequest) IsConnectedUser() bool {
 	return creq.Context.OAuth2.User != nil
+}
+
+func (creq *CallRequest) ActingUserID() string {
+	if creq == nil {
+		return ""
+	}
+	if creq.Context.ActingUser == nil {
+		creq.Log.Debugw(`Looking for ActingUserID when Context.ActingUser is nil; maybe add "acting_user":"id" to Expand?`)
+		return ""
+	}
+	return creq.Context.ActingUser.Id
 }

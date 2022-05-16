@@ -49,18 +49,18 @@ var DefaultOnRemoteWebhook = Call{
 
 type Manifest struct {
 	// Set to the version of the Apps plugin that stores it, e.g. "v0.8.0"
-	SchemaVersion string
+	SchemaVersion string `json:",omitempty"`
 
 	// The AppID is a globally unique identifier that represents your app. IDs
 	// must be at least 3 characters, at most 32 characters and must contain
 	// only alphanumeric characters, dashes, underscores and periods.
-	AppID AppID `json:"app_id"`
+	AppID AppID `json:"app_id,omitempty"`
 
 	// Version of the app, formatted as v00.00.000
-	Version AppVersion `json:"version"`
+	Version AppVersion `json:"version,omitempty"`
 
 	// HomepageURL is required.
-	HomepageURL string `json:"homepage_url"`
+	HomepageURL string `json:"homepage_url,omitempty"`
 
 	// DisplayName and Description provide optional information about the App.
 	DisplayName string `json:"display_name,omitempty"`

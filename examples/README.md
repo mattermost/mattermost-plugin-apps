@@ -10,6 +10,5 @@
 | hello-oauth2 | 8082 |
 | hello-lifecycle | 8083 |
 | hello-jwt | 8084 |
-| expand | `$PORT` (def `8080`) |
 
 - js

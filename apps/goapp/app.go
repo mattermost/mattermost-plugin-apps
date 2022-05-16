@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"io/fs"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"os"
 	"unicode"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -17,7 +20,7 @@ import (
 type App struct {
 	Manifest apps.Manifest
 
-	Log    utils.Logger
+	log    utils.Logger
 	Mode   apps.DeployType
 	Router *mux.Router
 
@@ -63,7 +66,7 @@ func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
 	app.HandleCall("/bindings", app.getBindings)
 
 	app.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		app.Log.Debugf("App request: not found: %q", req.URL.String())
+		app.log.Debugf("App request: not found: %q", req.URL.String())
 		http.NotFound(w, req)
 	})
 
@@ -72,7 +75,7 @@ func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
 
 func WithLog(log utils.Logger) AppOption {
 	return func(app *App) error {
-		app.Log = log
+		app.log = log
 		return nil
 	}
 }
@@ -86,9 +89,13 @@ func WithStatic(staticFS fs.FS) AppOption {
 
 func WithCommand(subcommands ...Bindable) AppOption {
 	return func(app *App) error {
-		appCommand := NewBindableMulti(string(app.Manifest.AppID), subcommands...)
-		app.command = &appCommand
-		err := app.command.Init(app)
+		command, err := MakeBindableMulti(string(app.Manifest.AppID), WithChildren(subcommands...))
+		if err != nil {
+			return err
+		}
+		app.command = command
+
+		err = app.command.Init(app)
 		if err != nil {
 			return err
 		}
@@ -130,13 +137,75 @@ func WithChannelHeader(items ...Bindable) AppOption {
 	}
 }
 
+func (app *App) NewTestServer() *httptest.Server {
+	if app.log == nil {
+		app.log = utils.NewTestLogger()
+	}
+	app.Mode = apps.DeployHTTP
+	if app.Manifest.Deploy.HTTP == nil {
+		app.log.Debugf("Using default HTTP deploy settings")
+		app.Manifest.Deploy.HTTP = &apps.HTTP{}
+	}
+	appServer := httptest.NewServer(app.Router)
+	rootURL := appServer.URL
+	app.Manifest.Deploy.HTTP.RootURL = rootURL
+
+	u, _ := url.Parse(rootURL)
+	portStr := u.Port()
+	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
+	return appServer
+}
+
+func (app *App) RunHTTP() {
+	if app.log == nil {
+		app.log = utils.MustMakeCommandLogger(zapcore.DebugLevel)
+	}
+
+	app.Mode = apps.DeployHTTP
+	if app.Manifest.Deploy.HTTP == nil {
+		app.log.Debugf("Using default HTTP deploy settings")
+		app.Manifest.Deploy.HTTP = &apps.HTTP{}
+	}
+
+	rootURL := os.Getenv("ROOT_URL")
+	if rootURL != "" {
+		app.Manifest.Deploy.HTTP.RootURL = rootURL
+	}
+
+	portStr := os.Getenv("PORT")
+	if portStr == "" {
+		u, err := url.Parse(app.Manifest.Deploy.HTTP.RootURL)
+		if err != nil {
+			panic(err)
+		}
+		portStr = u.Port()
+		if portStr == "" {
+			portStr = "8080"
+		}
+	}
+
+	if app.Manifest.Deploy.HTTP.RootURL == "" {
+		app.Manifest.Deploy.HTTP.RootURL = "http://localhost:" + portStr
+	}
+
+	http.Handle("/", app.Router)
+
+	listen := ":" + portStr
+	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
+	panic(http.ListenAndServe(listen, nil))
+}
+
 func pathFromName(name string) string {
+	return "/" + url.PathEscape(string(locationFromName(name)))
+}
+
+func locationFromName(name string) apps.Location {
 	b := bytes.Buffer{}
 	for _, c := range name {
-		if unicode.IsSpace(c) {
+		if unicode.IsSpace(c) || c == '_' {
 			c = '-'
 		}
 		_, _ = b.WriteRune(c)
 	}
-	return "/" + url.PathEscape(b.String())
+	return apps.Location(b.String())
 }
