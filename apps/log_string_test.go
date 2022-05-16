@@ -132,7 +132,7 @@ func TestLoggable(t *testing.T) {
 		"CallResponse form": {
 			In:             NewFormResponse(testForm),
 			ExpectedProps:  []interface{}{"response_type", "form", "response_form", "omitted for logging"},
-			ExpectedString: `Form: not shown`,
+			ExpectedString: `Form: omitted for logging`,
 		},
 		"CallResponse navigate": {
 			In: CallResponse{
