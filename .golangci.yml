@@ -44,6 +44,9 @@ linters:
 
 issues:
   exclude-rules:
+    - path: server/incoming/request.go
+      linters: 
+        - govet
     - path: server/manifest.go
       linters:
         - deadcode
