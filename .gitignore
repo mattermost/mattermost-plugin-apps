@@ -10,9 +10,9 @@ dist/
 .idea/
 
 # e2e test aux output
-/server/httpin/restapi/mattermost.log
-/server/httpin/restapi/notifications.log
-/server/httpin/restapi/data/
+/test/restapitest/mattermost.log
+/test/restapitest/notifications.log
+/test/restapitest/data
 
 node_modules
 
