@@ -82,7 +82,7 @@ func (b bindable) prepareBinding(creq CallRequest) *apps.Binding {
 	if b.requireSystemAdmin && !creq.IsSystemAdmin() {
 		return nil
 	}
-	if b.requireConnectedUser && creq.IsConnectedUser() {
+	if b.requireConnectedUser && !creq.IsConnectedUser() {
 		return nil
 	}
 
