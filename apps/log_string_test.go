@@ -77,11 +77,10 @@ func TestLoggable(t *testing.T) {
 		"Context": {
 			In: simpleContext,
 			ExpectedProps: []interface{}{
-				"is_not_submit", "true",
 				"bot_user_id", "id_of_bot_user",
 				"bot_access_token", "***nXYZ",
 			},
-			ExpectedString: "bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true",
+			ExpectedString: "bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user",
 		},
 		"Call simple": {
 			In: simpleCall,
@@ -102,12 +101,12 @@ func TestLoggable(t *testing.T) {
 		"CallRequest simple": {
 			In:             simpleCallRequest,
 			ExpectedProps:  []interface{}{simpleCall, simpleContext},
-			ExpectedString: "call: /some-path, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true",
+			ExpectedString: "call: /some-path, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user",
 		},
 		"CallRequest full": {
 			In:             fullCallRequest,
 			ExpectedProps:  []interface{}{fullCall, simpleContext, "values", "vkey1,vkey2"},
-			ExpectedString: "call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, is_not_submit: true, values: vkey1,vkey2",
+			ExpectedString: "call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, values: vkey1,vkey2",
 		},
 		"CallResponse text": {
 			In:             NewTextResponse("test"),

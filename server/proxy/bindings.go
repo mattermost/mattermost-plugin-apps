@@ -43,7 +43,8 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	for i := range allApps {
 		app := allApps[i]
 		go func(app apps.App) {
-			bb, err := p.InvokeGetBindings(r.WithDestination(app.AppID), cc)
+			apprequest := r.WithDestination(app.AppID)
+			bb, err := p.InvokeGetBindings(apprequest, cc)
 			if err != nil {
 				r.Log.WithError(err).Debugf("failed to fetch app bindings")
 			}

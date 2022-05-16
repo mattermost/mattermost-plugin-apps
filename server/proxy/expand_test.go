@@ -19,7 +19,7 @@ import (
 )
 
 func TestExpand(t *testing.T) {
-	app := apps.App{
+	app := &apps.App{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
 		DeployType:  apps.DeployBuiltin,
@@ -156,6 +156,7 @@ func TestExpand(t *testing.T) {
 		{
 			name: "channel_member",
 			tcs: map[string]TC{
+				// <>/<> TODO: add:GetChannelMember should work for ActingUserID and UserID, with the latter overriding
 				"happy with API GetChannelMemner": {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
@@ -164,7 +165,9 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(&channelMember, nil)
 					},
 					expect: map[string]interface{}{
-						"+summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
+						"+id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"-id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"-summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
 						"+all":     expected(apps.ExpandedContext{ChannelMember: &channelMember}),
 					},
 				},
@@ -173,7 +176,6 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expect: map[string]interface{}{
-						"+id":  expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
 						"":     expected(apps.ExpandedContext{}),
 						"none": expected(apps.ExpandedContext{}),
 					},
@@ -208,6 +210,7 @@ func TestExpand(t *testing.T) {
 		{
 			name: "team_member",
 			tcs: map[string]TC{
+				// <>/<> TODO: add:GetTeamMember should work for ActingUserID and UserID, with the latter overriding
 				"happy with API GetTeamMember": {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
@@ -216,8 +219,10 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(&teamMember, nil)
 					},
 					expect: map[string]interface{}{
+						"+id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
+						"-id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
 						"+all":     expected(apps.ExpandedContext{TeamMember: &teamMember}),
-						"+summary": expected(apps.ExpandedContext{TeamMember: &teamMember}),
+						"-summary": expected(apps.ExpandedContext{TeamMember: &teamMember}),
 					},
 				},
 				"happy with no API": {
@@ -225,7 +230,6 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expect: map[string]interface{}{
-						"+id":  expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
 						"":     expected(apps.ExpandedContext{}),
 						"none": expected(apps.ExpandedContext{}),
 					},
@@ -286,10 +290,9 @@ func TestExpand(t *testing.T) {
 							err := json.Unmarshal([]byte(expandData), &e)
 							require.NoError(t, err)
 
-							r := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
-							r.SetAppID(app.AppID)
+							r := incoming.NewRequest(conf, utils.NewTestLogger(), nil).WithDestination(app.AppID)
 							if !tc.noActingUser {
-								r.SetActingUserID(userID)
+								r = r.WithActingUserID(userID)
 							}
 							prev := tc.base
 							cc, err := p.expandContext(r, app, &prev, &e)
