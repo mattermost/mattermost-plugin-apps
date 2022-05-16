@@ -39,7 +39,7 @@ func WithDescription(description string) BindableOption {
 	return func(bb Bindable) error {
 		i, ok := bb.(asBindable)
 		if !ok {
-			return errors.Errorf("bindable  %s: With... method called on a wrong type: %T", bb, bb)
+			return errors.Errorf("bindable  %s: WithDescription method called on a wrong type: %T", bb, bb)
 		}
 		b := i.bindablePtr()
 		b.description = description
@@ -51,7 +51,7 @@ func WithHint(hint string) BindableOption {
 	return func(bb Bindable) error {
 		i, ok := bb.(asBindable)
 		if !ok {
-			return errors.Errorf("bindable  %s: With... method called on a wrong type: %T", bb, bb)
+			return errors.Errorf("bindable  %s: WithHint method called on a wrong type: %T", bb, bb)
 		}
 		b := i.bindablePtr()
 		b.hint = hint
@@ -63,7 +63,7 @@ func WithIcon(icon string) BindableOption {
 	return func(bb Bindable) error {
 		i, ok := bb.(asBindable)
 		if !ok {
-			return errors.Errorf("bindable  %s: With... method called on a wrong type: %T", bb, bb)
+			return errors.Errorf("bindable  %s: WithIcon method called on a wrong type: %T", bb, bb)
 		}
 		b := i.bindablePtr()
 		b.icon = icon
