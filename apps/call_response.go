@@ -128,7 +128,7 @@ func (cresp CallResponse) String() string {
 		}
 
 	case CallResponseTypeForm:
-		return fmt.Sprintf("Form: %v", "not shown")
+		return fmt.Sprintf("Form: %v", "omitted for logging")
 
 	case CallResponseTypeCall:
 		return fmt.Sprintf("Call: %v", cresp.Call)
@@ -161,12 +161,12 @@ func (cresp CallResponse) Loggable() []interface{} {
 			props = append(props, "response_text", text)
 		}
 		if cresp.Data != nil {
-			props = append(props, "response_data", "not shown")
+			props = append(props, "response_data", "omitted for logging")
 		}
 
 	case CallResponseTypeForm:
 		if cresp.Form != nil {
-			props = append(props, "response_form", "not shown")
+			props = append(props, "response_form", "omitted for logging")
 		}
 
 	case CallResponseTypeCall:
