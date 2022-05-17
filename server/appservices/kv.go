@@ -11,7 +11,7 @@ import (
 
 func (a *AppServices) KVSet(r *incoming.Request, prefix, id string, data []byte) (bool, error) {
 	if !json.Valid(data) {
-		return false, utils.NewInvalidError("payload is no valid json")
+		return false, utils.NewInvalidError("payload is not valid json")
 	}
 
 	return a.store.AppKV.Set(r, prefix, id, data)

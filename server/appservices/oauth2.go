@@ -18,7 +18,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	var oapp apps.OAuth2App
 	err := json.Unmarshal(data, &oapp)
 	if err != nil {
-		return err
+		return utils.NewInvalidError(errors.Wrap(err, "OAuth2App is not valid JSON"))
 	}
 
 	appID := r.SourceAppID()
@@ -48,7 +48,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 
 func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 	if !json.Valid(data) {
-		return utils.NewInvalidError("payload is no valid json")
+		return utils.NewInvalidError("payload is not valid JSON")
 	}
 
 	appID := r.SourceAppID()

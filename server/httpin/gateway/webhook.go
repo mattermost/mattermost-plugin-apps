@@ -35,7 +35,7 @@ func (g *gateway) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, re
 	return nil
 }
 
-func newHTTPCallRequest(req *http.Request, limit int64) (*apps.HTTPCallRequest, error) {
+func newHTTPCallRequest(req *http.Request, limit int) (*apps.HTTPCallRequest, error) {
 	data, err := httputils.LimitReadAll(req.Body, limit)
 	if err != nil {
 		return nil, err

@@ -16,6 +16,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -29,6 +31,11 @@ var testOAuth2App = apps.OAuth2App{
 		"test_bool":   true,
 		"test_string": "test",
 	},
+}
+
+var testOAuth2User = map[string]interface{}{
+	"test_bool":   true,
+	"test_string": "test",
 }
 
 func oauth2App(t *testing.T) *goapp.App {
@@ -62,7 +69,19 @@ func oauth2App(t *testing.T) *goapp.App {
 		return appclient.AsActingUser(creq.Context), value
 	}
 
-	app.HandleCall("/get",
+	largeJSON := struct {
+		Fields []interface{}
+	}{}
+	for {
+		data, err := json.Marshal(largeJSON)
+		require.NoError(t, err)
+		if len(data) > restapi.MaxKVStoreValueLength {
+			break
+		}
+		largeJSON.Fields = append(largeJSON.Fields, largeJSON)
+	}
+
+	app.HandleCall("/get-user",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, _ := params(creq)
 			v := map[string]interface{}{}
@@ -70,7 +89,7 @@ func oauth2App(t *testing.T) *goapp.App {
 			return respond(utils.ToJSON(v), err)
 		})
 
-	app.HandleCall("/store",
+	app.HandleCall("/store-user",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, value := params(creq)
 			err := client.StoreOAuth2User(value)
@@ -89,12 +108,49 @@ func oauth2App(t *testing.T) *goapp.App {
 			return respond("stored", err)
 		})
 
+	app.HandleCall("/err-user-too-large",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, _ := params(creq)
+			err := client.StoreOAuth2User(largeJSON)
+			return respond("impossible", err)
+		})
+
+	app.HandleCall("/err-user-not-json",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, _ := params(creq)
+			_, err := client.DoAPIPOST(
+				client.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.OAuth2User,
+				"test") // nolint:bodyclose
+			return respond("impossible", err)
+		})
+
+	app.HandleCall("/err-app-too-large",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, _ := params(creq)
+			err := client.StoreOAuth2App(apps.OAuth2App{
+				ClientID:      "test_id",
+				ClientSecret:  "test_secret",
+				RemoteRootURL: "test.test",
+				Data:          largeJSON,
+			})
+			return respond("impossible", err)
+		})
+
+	app.HandleCall("/err-app-not-json",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, _ := params(creq)
+			_, err := client.DoAPIPOST(
+				client.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.OAuth2App,
+				"test") // nolint:bodyclose
+			return respond("impossible", err)
+		})
+
 	app.HandleCall("/echo", Echo)
 
 	return app
 }
 
-func oauth2Call(th *Helper, path string, asBot bool, value interface{}) apps.CallResponse {
+func oauth2Call(th *Helper, path string, asBot bool, value interface{}) *apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
@@ -112,13 +168,84 @@ func oauth2Call(th *Helper, path string, asBot bool, value interface{}) apps.Cal
 	if value != nil {
 		creq.Values["value"] = value
 	}
-	return *th.HappyCall(oauth2ID, creq)
+	return th.HappyCall(oauth2ID, creq)
 }
 
 func testOAuth2(th *Helper) {
 	th.InstallApp(oauth2App(th.T))
 
-	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
+	storeOAuth2App := func(th *Helper, oapp apps.OAuth2App) {
+		th.Helper()
+		require := require.New(th)
+		creq := apps.CallRequest{
+			Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{
+				ActingUser:            apps.ExpandAll,
+				ActingUserAccessToken: apps.ExpandAll,
+			}),
+			Values: model.StringInterface{
+				"as_bot": false,
+				"value":  oapp,
+			},
+		}
+		// By making an admin call, the admin-level token should propagage to the app
+		cresp := th.HappyAdminCall(oauth2ID, creq)
+		require.Equal(apps.CallResponseTypeOK, cresp.Type)
+		require.Equal(`stored`, cresp.Text)
+	}
+
+	cleanupOAuth2App := func(th *Helper) func() {
+		return func() {
+			storeOAuth2App(th, apps.OAuth2App{})
+		}
+	}
+
+	cleanupOAuth2User := func(th *Helper) func() {
+		return func() {
+			cresp := oauth2Call(th, "/store-user", false, struct{}{})
+			cresp = oauth2Call(th, "/get-user", false, nil)
+			require.Equal(th, `{}`, cresp.Text)
+		}
+	}
+
+	th.Run("users can store and get OAuth2User via REST API", func(th *Helper) {
+		require := require.New(th)
+		th.Cleanup(cleanupOAuth2User(th))
+
+		cresp := oauth2Call(th, "/store-user", false, testOAuth2User)
+		require.Equal(`stored`, cresp.Text)
+
+		cresp = oauth2Call(th, "/get-user", false, nil)
+		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
+	})
+
+	th.Run("System administrators can store OAuth2App", func(th *Helper) {
+		th.Cleanup(cleanupOAuth2App(th))
+		storeOAuth2App(th, testOAuth2App)
+	})
+
+	th.Run("User and bot calls can expand OAuth2App", func(th *Helper) {
+		require := require.New(th)
+		th.Cleanup(func() {
+			cleanupOAuth2App(th)()
+			cleanupOAuth2User(th)()
+		})
+
+		// Store the app and the user.
+		storeOAuth2App(th, testOAuth2App)
+		cresp := oauth2Call(th, "/store-user", false, testOAuth2User)
+		require.Equal(`stored`, cresp.Text)
+
+		// Call echo and verify the expand result.
+		cresp = oauth2Call(th, "/echo", false, nil)
+		creq := apps.CallRequest{}
+		require.Equal(apps.CallResponseTypeOK, cresp.Type)
+		err := json.Unmarshal([]byte(cresp.Text), &creq)
+		require.NoError(err)
+		require.EqualValues(&testOAuth2App, &creq.Context.ExpandedContext.OAuth2.OAuth2App)
+		require.EqualValues(map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
+	})
+
+	th.Run("Error unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)
 		client := th.CreateUnauthenticatedClientPP()
 
@@ -140,28 +267,106 @@ func testOAuth2(th *Helper) {
 		api4.CheckUnauthorizedStatus(th, resp)
 	})
 
-	th.Run("Users can store and get OAuth2User via REST API", func(th *Helper) {
+	th.Run("Error StoreOAuth2User is size limited", func(th *Helper) {
 		require := require.New(th)
+		th.Cleanup(cleanupOAuth2User(th))
 
-		cresp := oauth2Call(th, "/get", false, nil)
-		require.Equal(`{}`, cresp.Text)
-
-		cresp = oauth2Call(th, "/store", false, map[string]interface{}{
+		// set a "previous" value.
+		cresp := oauth2Call(th, "/store-user", false, map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
 		})
 		require.Equal(`stored`, cresp.Text)
 
-		cresp = oauth2Call(th, "/get", false, nil)
+		creq := apps.CallRequest{
+			Call: *apps.NewCall("/err-user-too-large").
+				WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary.Required(),
+					ActingUserAccessToken: apps.ExpandAll.Required(),
+				}),
+		}
+		cresp, resp, err := th.Call(oauth2ID, creq)
+		require.NoError(err)
+		require.Equal(apps.CallResponseTypeError, cresp.Type)
+		require.Equal(`size limit of 8Kb exceeded`, cresp.Text)
+		api4.CheckOKStatus(th, resp)
+
+		// verify "previous" value unchanged.
+		cresp = oauth2Call(th, "/get-user", false, nil)
 		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
 	})
 
-	th.Run("Bots have no access to OAuth2User via REST API", func(th *Helper) {
+	th.Run("Error StoreOAuth2User requires JSON", func(th *Helper) {
+		require := require.New(th)
+		th.Cleanup(cleanupOAuth2User(th))
+
+		// set a "previous" value.
+		cresp := oauth2Call(th, "/store-user", false, map[string]interface{}{
+			"test_bool":   true,
+			"test_string": "test",
+		})
+
+		require.Equal(`stored`, cresp.Text)
+		creq := apps.CallRequest{
+			Call: *apps.NewCall("/err-user-not-json").
+				WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary.Required(),
+					ActingUserAccessToken: apps.ExpandAll.Required(),
+				}),
+		}
+		cresp, resp, err := th.Call(oauth2ID, creq)
+		require.NoError(err)
+		require.Equal(`payload is not valid JSON: invalid input`, cresp.Text)
+		require.Equal(apps.CallResponseTypeError, cresp.Type)
+		api4.CheckOKStatus(th, resp)
+
+		// verify "previous" value unchanged.
+		cresp = oauth2Call(th, "/get-user", false, nil)
+		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
+	})
+
+	th.Run("Error StoreOAuth2App is size limited", func(th *Helper) {
+		require := require.New(th)
+		th.Cleanup(cleanupOAuth2App(th))
+
+		creq := apps.CallRequest{
+			Call: *apps.NewCall("/err-app-too-large").
+				WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary.Required(),
+					ActingUserAccessToken: apps.ExpandAll.Required(),
+				}),
+		}
+		cresp, resp, err := th.AdminCall(oauth2ID, creq)
+		require.NoError(err)
+		require.Equal(apps.CallResponseTypeError, cresp.Type)
+		require.Equal(`size limit of 8Kb exceeded`, cresp.Text)
+		api4.CheckOKStatus(th, resp)
+	})
+
+	th.Run("Error StoreOAuth2App requires JSON", func(th *Helper) {
+		require := require.New(th)
+		th.Cleanup(cleanupOAuth2App(th))
+
+		creq := apps.CallRequest{
+			Call: *apps.NewCall("/err-app-not-json").
+				WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary.Required(),
+					ActingUserAccessToken: apps.ExpandAll.Required(),
+				}),
+		}
+		cresp, resp, err := th.AdminCall(oauth2ID, creq)
+		require.NoError(err)
+		require.Equal(`OAuth2App is not valid JSON: invalid character 'e' in literal true (expecting 'r'): invalid input`, cresp.Text)
+		require.Equal(apps.CallResponseTypeError, cresp.Type)
+		api4.CheckOKStatus(th, resp)
+	})
+
+	th.Run("Error Bots have no access to OAuth2User via REST API", func(th *Helper) {
 		require := require.New(th)
 
 		// try to get.
 		creq := apps.CallRequest{
-			Call: *apps.NewCall("/get"),
+			Call: *apps.NewCall("/get-user"),
 			Values: model.StringInterface{
 				"as_bot": true,
 			},
@@ -170,12 +375,11 @@ func testOAuth2(th *Helper) {
 		require.NoError(err)
 		require.Equal(apps.CallResponseTypeError, cresp.Type)
 		require.Equal(`@oauth2test (tests App's OAuth2 APIs): is a bot`, cresp.Text)
-		require.NotNil(resp)
 		// TODO: should be a 403!
-		require.Equal(resp.StatusCode, 200)
+		api4.CheckOKStatus(th, resp)
 
 		// try to store.
-		creq.Call = *apps.NewCall("/store")
+		creq.Call = *apps.NewCall("/store-user")
 		creq.Values["value"] = map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
@@ -189,7 +393,7 @@ func testOAuth2(th *Helper) {
 		require.Equal(resp.StatusCode, 200)
 	})
 
-	th.Run("Users and bots can not store OAuth2App", func(th *Helper) {
+	th.Run("Error Users and bots can not store OAuth2App", func(th *Helper) {
 		for _, asBot := range []bool{true, false} {
 			name := "as acting user"
 			if asBot {
@@ -215,48 +419,5 @@ func testOAuth2(th *Helper) {
 				require.Equal(resp.StatusCode, 200)
 			})
 		}
-	})
-
-	storeAppAsAdmin := func(th *Helper, oapp apps.OAuth2App) {
-		th.Helper()
-		require := require.New(th)
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{
-				ActingUser:            apps.ExpandAll,
-				ActingUserAccessToken: apps.ExpandAll,
-			}),
-			Values: model.StringInterface{
-				"as_bot": false,
-				"value":  oapp,
-			},
-		}
-		// By making an admin call, the admin-level token should propagage to the app
-		cresp := th.HappyAdminCall(oauth2ID, creq)
-		require.Equal(apps.CallResponseTypeOK, cresp.Type)
-		require.Equal(`stored`, cresp.Text)
-	}
-
-	th.Run("System administrators can store OAuth2App", func(th *Helper) {
-		th.Cleanup(func() {
-			storeAppAsAdmin(th, apps.OAuth2App{})
-		})
-		storeAppAsAdmin(th, testOAuth2App)
-	})
-
-	th.Run("User and bot calls can expand OAuth2App", func(th *Helper) {
-		th.Cleanup(func() {
-			storeAppAsAdmin(th, apps.OAuth2App{})
-		})
-		storeAppAsAdmin(th, testOAuth2App)
-
-		require := require.New(th)
-		cresp := oauth2Call(th, "/echo", false, nil)
-
-		creq := apps.CallRequest{}
-		require.Equal(apps.CallResponseTypeOK, cresp.Type)
-		err := json.Unmarshal([]byte(cresp.Text), &creq)
-		require.NoError(err)
-		require.EqualValues(&testOAuth2App, &creq.Context.ExpandedContext.OAuth2.OAuth2App)
-		require.EqualValues(map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
 	})
 }

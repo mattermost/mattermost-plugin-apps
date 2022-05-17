@@ -6,6 +6,7 @@ package restapitest
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
@@ -93,6 +94,14 @@ func (th *Helper) Run(name string, f func(th *Helper)) bool {
 		h := *th
 		h.T = t
 		f(&h)
+	})
+}
+
+func (th *Helper) Cleanup(f func()) {
+	th.Helper()
+	ss := strings.Split(th.Name(), "/")
+	th.T.Cleanup(func() {
+		th.T.Run("cleanup "+ss[len(ss)-1], func(*testing.T) { f() })
 	})
 }
 

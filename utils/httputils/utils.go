@@ -115,11 +115,18 @@ func ReadAndClose(in io.ReadCloser) ([]byte, error) {
 	return LimitReadAll(in, InLimit)
 }
 
-func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
+func LimitReadAll(in io.Reader, limit int) ([]byte, error) {
 	if in == nil {
 		return []byte{}, nil
 	}
-	return io.ReadAll(&io.LimitedReader{R: in, N: limit})
+	data, err := io.ReadAll(&io.LimitedReader{R: in, N: int64(limit + 1)})
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > limit {
+		return nil, errors.Errorf("size limit of %vKb exceeded", (limit+512)/1024)
+	}
+	return data, nil
 }
 
 func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {
