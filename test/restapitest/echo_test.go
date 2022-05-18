@@ -83,4 +83,16 @@ func testEcho(th *Helper) {
 			},
 		}, echoResp)
 	})
+
+	th.Run("AppsMetadata in response", func(th *Helper) {
+		require := require.New(th)
+
+		proxyResponse, _, err := th.CallWithAppMetadata(echoID, apps.CallRequest{
+			Call: *apps.NewCall("/echo"),
+		})
+
+		require.NoError(err)
+		require.Equal(string(echoID), proxyResponse.AppMetadata.BotUsername)
+		require.NotEmpty(proxyResponse.AppMetadata.BotUserID)
+	})
 }

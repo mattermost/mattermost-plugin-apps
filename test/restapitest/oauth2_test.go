@@ -118,9 +118,12 @@ func oauth2App(t *testing.T) *goapp.App {
 	app.HandleCall("/err-user-not-json",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, _ := params(creq)
-			_, err := client.DoAPIPOST(
+			resp, err := client.DoAPIPOST(
 				client.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.OAuth2User,
 				"test") // nolint:bodyclose
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
 			return respond("impossible", err)
 		})
 
@@ -201,8 +204,8 @@ func testOAuth2(th *Helper) {
 
 	cleanupOAuth2User := func(th *Helper) func() {
 		return func() {
-			cresp := oauth2Call(th, "/store-user", false, struct{}{})
-			cresp = oauth2Call(th, "/get-user", false, nil)
+			_ = oauth2Call(th, "/store-user", false, struct{}{})
+			cresp := oauth2Call(th, "/get-user", false, nil)
 			require.Equal(th, `{}`, cresp.Text)
 		}
 	}

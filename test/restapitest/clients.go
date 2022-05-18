@@ -4,6 +4,7 @@
 package restapitest
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,10 +12,13 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 )
 
 type TestClientPP struct {
@@ -68,6 +72,33 @@ func (th *Helper) Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallRespo
 	creq.Context.UserAgentContext.UserAgent = "test"
 	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
 	return th.UserClientPP.Call(creq)
+}
+
+func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (*proxy.CallResponse, *model.Response, error) {
+	creq.Context.UserAgentContext.AppID = appID
+	creq.Context.UserAgentContext.UserAgent = "test"
+	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
+	b, err := json.Marshal(&creq)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := th.UserClientPP.DoAPIPOST(
+		th.UserClientPP.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.Call, string(b)) // nolint:bodyclose
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return nil, model.BuildResponse(resp), err
+	}
+
+	var cresp proxy.CallResponse
+	err = json.NewDecoder(resp.Body).Decode(&cresp)
+	if err != nil {
+		return nil, model.BuildResponse(resp), errors.Wrap(err, "failed to decode response")
+	}
+
+	return &cresp, model.BuildResponse(resp), nil
 }
 
 func (th *Helper) User2Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error) {
