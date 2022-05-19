@@ -27,15 +27,11 @@ func CheckSubscriptionPermission(checker PermissionChecker, sub apps.Subscriptio
 		if !checker.HasPermissionTo(userID, model.PermissionViewMembers) {
 			return errors.New("no permission to read user")
 		}
-	case apps.SubjectUserJoinedChannel,
-		apps.SubjectUserLeftChannel,
-		apps.SubjectPostCreated:
+	case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /*, apps.SubjectPostCreated */ :
 		if !checker.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 			return errors.New("no permission to read channel")
 		}
-	case apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
-		apps.SubjectBotMentioned:
+	case apps.SubjectBotJoinedChannel, apps.SubjectBotLeftChannel /*, apps.SubjectBotMentioned*/ :
 		// Only check if there is dynamic context i.e. a channelID
 		if channelID != "" {
 			if !checker.HasPermissionToChannel(userID, channelID, model.PermissionReadChannel) {

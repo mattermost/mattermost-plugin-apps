@@ -34,12 +34,10 @@ func subsKey(subject apps.Subject, teamID, channelID string) (string, error) {
 		apps.SubjectBotJoinedChannel,
 		apps.SubjectBotLeftChannel,
 		apps.SubjectBotJoinedTeam,
-		apps.SubjectBotLeftTeam,
-		apps.SubjectBotMentioned:
+		apps.SubjectBotLeftTeam /*, apps.SubjectBotMentioned */ :
 		// Global, no suffix
 	case apps.SubjectUserJoinedChannel,
-		apps.SubjectUserLeftChannel,
-		apps.SubjectPostCreated:
+		apps.SubjectUserLeftChannel /* , apps.SubjectPostCreated */ :
 		idSuffix = "." + channelID
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
