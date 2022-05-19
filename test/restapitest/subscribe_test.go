@@ -94,7 +94,7 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 	return app
 }
 
-func subCall(th *Helper, path string, asBot bool, subject apps.Subject, teamID, channelID string) apps.CallResponse {
+func subCall(th *Helper, path string, asBot bool, subject apps.Subject, teamID, channelID string) apps.CallResponse { //nolint:golint,unparam
 	return *th.HappyCall(subID, subCallRequest(path, asBot, subject, teamID, channelID))
 }
 

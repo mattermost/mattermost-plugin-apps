@@ -41,29 +41,34 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 		reachableCh := make(chan apps.AppID)
 		defer close(reachableCh)
 
-		for _, app := range all {
-			var cancel context.CancelFunc
-			pingReq := r.WithTimeout(pingAppTimeout, &cancel)
-			go func(a apps.App) {
-				var response apps.AppID
-				if !a.Disabled {
-					if p.pingApp(pingReq, &a) {
-						response = a.AppID
+		if ping {
+			// all ping requests must respond, unreachable respond with "".
+			reachableCh := make(chan apps.AppID)
+			defer close(reachableCh)
+			for _, app := range all {
+				var cancel context.CancelFunc
+				pingReq := r.WithTimeout(pingAppTimeout, &cancel)
+				go func(a apps.App) {
+					var response apps.AppID
+					if !a.Disabled {
+						if p.pingApp(pingReq, &a) {
+							response = a.AppID
+						}
 					}
-				}
-				reachableCh <- response
-				cancel()
-			}(app)
-		}
+					reachableCh <- response
+					cancel()
+				}(app)
+			}
 
-		for _, app := range all {
-			installed = append(installed, app)
-			appID := <-reachableCh
-			if appID != "" {
-				if reachable == nil {
-					reachable = map[apps.AppID]bool{}
+			for _, app := range all {
+				installed = append(installed, app)
+				appID := <-reachableCh
+				if appID != "" {
+					if reachable == nil {
+						reachable = map[apps.AppID]bool{}
+					}
+					reachable[appID] = true
 				}
-				reachable[appID] = true
 			}
 		}
 	}

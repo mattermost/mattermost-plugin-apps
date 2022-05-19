@@ -39,11 +39,11 @@ var allSubjects = map[apps.Subject]apps.Expand{
 		Team:       apps.ExpandAll,
 		TeamMember: apps.ExpandAll,
 	},
-	apps.SubjectBotMentioned: {
-		Channel:  apps.ExpandAll,
-		Post:     apps.ExpandSummary,
-		RootPost: apps.ExpandSummary,
-	},
+	// apps.SubjectBotMentioned: {
+	// 	Channel:  apps.ExpandAll,
+	// 	Post:     apps.ExpandSummary,
+	// 	RootPost: apps.ExpandSummary,
+	// },
 	apps.SubjectUserJoinedChannel: {
 		User:          apps.ExpandAll,
 		Channel:       apps.ExpandAll,
@@ -54,10 +54,10 @@ var allSubjects = map[apps.Subject]apps.Expand{
 		Channel:       apps.ExpandAll,
 		ChannelMember: apps.ExpandAll,
 	},
-	apps.SubjectPostCreated: {
-		Post:    apps.ExpandAll,
-		Channel: apps.ExpandAll,
-	},
+	// apps.SubjectPostCreated: {
+	// 	Post:    apps.ExpandAll,
+	// 	Channel: apps.ExpandAll,
+	// },
 	apps.SubjectUserJoinedTeam: {
 		User:       apps.ExpandAll,
 		Team:       apps.ExpandAll,
@@ -126,8 +126,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 
 	switch subject {
 	case apps.SubjectUserJoinedChannel,
-		apps.SubjectBotLeftChannel,
-		apps.SubjectPostCreated:
+		apps.SubjectBotLeftChannel /*, apps.SubjectPostCreated*/ :
 		sub.ChannelID = creq.Context.Channel.Id
 
 	case apps.SubjectUserJoinedTeam,

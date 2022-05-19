@@ -5,12 +5,8 @@ package proxy
 
 import (
 	"context"
-	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -79,48 +75,48 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 	return err
 }
 
-func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
+// func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
+// 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+// 	defer cancel()
 
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
+// 	mm := p.conf.MattermostAPI()
+// 	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
 
-	subs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get post_created subscriptions")
-	}
+// 	subs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+// 	if err != nil && err != utils.ErrNotFound {
+// 		return errors.Wrap(err, "failed to get post_created subscriptions")
+// 	}
 
-	appMentions := []string{}
-	allApps := p.store.App.AsMap()
-	for _, m := range possibleAtMentions(post.Message) {
-		for _, app := range allApps {
-			if app.BotUsername == m {
-				appMentions = append(appMentions, m)
-			}
-		}
-	}
-	if len(appMentions) > 0 {
-		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
-		if err != nil && err != utils.ErrNotFound {
-			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
-		}
-		for _, sub := range mentionSubs {
-			for _, mention := range appMentions {
-				app, ok := allApps[sub.AppID]
-				if ok && mention == app.BotUsername {
-					subs = append(subs, sub)
-				}
-			}
-		}
-	}
+// 	appMentions := []string{}
+// 	allApps := p.store.App.AsMap()
+// 	for _, m := range possibleAtMentions(post.Message) {
+// 		for _, app := range allApps {
+// 			if app.BotUsername == m {
+// 				appMentions = append(appMentions, m)
+// 			}
+// 		}
+// 	}
+// 	if len(appMentions) > 0 {
+// 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+// 		if err != nil && err != utils.ErrNotFound {
+// 			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+// 		}
+// 		for _, sub := range mentionSubs {
+// 			for _, mention := range appMentions {
+// 				app, ok := allApps[sub.AppID]
+// 				if ok && mention == app.BotUsername {
+// 					subs = append(subs, sub)
+// 				}
+// 			}
+// 		}
+// 	}
 
-	if len(subs) == 0 {
-		return nil
-	}
+// 	if len(subs) == 0 {
+// 		return nil
+// 	}
 
-	return p.notify(r, cc, subs)
-}
+// 	return p.notify(r, cc, subs)
+// }
 
 func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
 	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
@@ -177,24 +173,24 @@ func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subjec
 	return p.notify(r, cc, subs)
 }
 
-var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
+// var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
 
-// possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
-func possibleAtMentions(message string) []string {
-	var names []string
+// // possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
+// func possibleAtMentions(message string) []string {
+// 	var names []string
 
-	if !strings.Contains(message, "@") {
-		return names
-	}
+// 	if !strings.Contains(message, "@") {
+// 		return names
+// 	}
 
-	alreadyMentioned := make(map[string]bool)
-	for _, match := range atMentionRegexp.FindAllString(message, -1) {
-		name := model.NormalizeUsername(match[1:])
-		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
-			names = append(names, name)
-			alreadyMentioned[name] = true
-		}
-	}
+// 	alreadyMentioned := make(map[string]bool)
+// 	for _, match := range atMentionRegexp.FindAllString(message, -1) {
+// 		name := model.NormalizeUsername(match[1:])
+// 		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+// 			names = append(names, name)
+// 			alreadyMentioned[name] = true
+// 		}
+// 	}
 
-	return names
-}
+// 	return names
+// }

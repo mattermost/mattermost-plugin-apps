@@ -47,6 +47,7 @@ func newContextBindingsApp(th *Helper) *contextBindingsApp {
 		goapp.WithBindingsExpand(contextBindingsExpand),
 		goapp.TestWithBindingsHandler(
 			func(creq goapp.CallRequest) apps.CallResponse {
+				panic("<>/<>")
 				app.in = creq.CallRequest
 				commandBinding := apps.Binding{
 					Location: apps.LocationCommand,

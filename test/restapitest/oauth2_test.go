@@ -153,23 +153,20 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	return app
 }
 
-func oauth2Call(th *Helper, path string, asBot bool, value interface{}) *apps.CallResponse {
+func oauth2Call(th *Helper, path string, value interface{}) *apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
 				OAuth2App:  apps.ExpandAll.Optional(),
 				OAuth2User: apps.ExpandAll.Optional(),
 			}),
-		Values: model.StringInterface{
-			"as_bot": asBot,
-		},
 	}
-	if !asBot {
-		creq.Call.Expand.ActingUser = apps.ExpandSummary.Required()
-		creq.Call.Expand.ActingUserAccessToken = apps.ExpandAll.Required()
-	}
+	creq.Call.Expand.ActingUser = apps.ExpandSummary
+	creq.Call.Expand.ActingUserAccessToken = apps.ExpandAll
 	if value != nil {
-		creq.Values["value"] = value
+		creq.Values = map[string]interface{}{
+			"value": value,
+		}
 	}
 	return th.HappyCall(oauth2ID, creq)
 }
@@ -204,8 +201,8 @@ func testOAuth2(th *Helper) {
 
 	cleanupOAuth2User := func(th *Helper) func() {
 		return func() {
-			_ = oauth2Call(th, "/store-user", false, struct{}{})
-			cresp := oauth2Call(th, "/get-user", false, nil)
+			_ = oauth2Call(th, "/store-user", struct{}{})
+			cresp := oauth2Call(th, "/get-user", nil)
 			require.Equal(th, `{}`, cresp.Text)
 		}
 	}
@@ -214,10 +211,10 @@ func testOAuth2(th *Helper) {
 		require := require.New(th)
 		th.Cleanup(cleanupOAuth2User(th))
 
-		cresp := oauth2Call(th, "/store-user", false, testOAuth2User)
+		cresp := oauth2Call(th, "/store-user", testOAuth2User)
 		require.Equal(`stored`, cresp.Text)
 
-		cresp = oauth2Call(th, "/get-user", false, nil)
+		cresp = oauth2Call(th, "/get-user", nil)
 		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
 	})
 
@@ -235,11 +232,11 @@ func testOAuth2(th *Helper) {
 
 		// Store the app and the user.
 		storeOAuth2App(th, testOAuth2App)
-		cresp := oauth2Call(th, "/store-user", false, testOAuth2User)
+		cresp := oauth2Call(th, "/store-user", testOAuth2User)
 		require.Equal(`stored`, cresp.Text)
 
 		// Call echo and verify the expand result.
-		cresp = oauth2Call(th, "/echo", false, nil)
+		cresp = oauth2Call(th, "/echo", nil)
 		creq := apps.CallRequest{}
 		require.Equal(apps.CallResponseTypeOK, cresp.Type)
 		err := json.Unmarshal([]byte(cresp.Text), &creq)
@@ -275,7 +272,7 @@ func testOAuth2(th *Helper) {
 		th.Cleanup(cleanupOAuth2User(th))
 
 		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", false, map[string]interface{}{
+		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
 		})
@@ -295,7 +292,7 @@ func testOAuth2(th *Helper) {
 		api4.CheckOKStatus(th, resp)
 
 		// verify "previous" value unchanged.
-		cresp = oauth2Call(th, "/get-user", false, nil)
+		cresp = oauth2Call(th, "/get-user", nil)
 		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
 	})
 
@@ -304,7 +301,7 @@ func testOAuth2(th *Helper) {
 		th.Cleanup(cleanupOAuth2User(th))
 
 		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", false, map[string]interface{}{
+		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
 		})
@@ -324,7 +321,7 @@ func testOAuth2(th *Helper) {
 		api4.CheckOKStatus(th, resp)
 
 		// verify "previous" value unchanged.
-		cresp = oauth2Call(th, "/get-user", false, nil)
+		cresp = oauth2Call(th, "/get-user", nil)
 		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
 	})
 

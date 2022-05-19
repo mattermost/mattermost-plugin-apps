@@ -16,7 +16,6 @@ import (
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
-	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
 // MockService is a mock of Service interface.
@@ -317,20 +316,6 @@ func (m *MockService) Notify(arg0 apps.Context, arg1 apps.Subject) error {
 func (mr *MockServiceMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockService)(nil).Notify), arg0, arg1)
-}
-
-// NotifyMessageHasBeenPosted mocks base method.
-func (m *MockService) NotifyMessageHasBeenPosted(arg0 *model.Post, arg1 apps.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyMessageHasBeenPosted", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// NotifyMessageHasBeenPosted indicates an expected call of NotifyMessageHasBeenPosted.
-func (mr *MockServiceMockRecorder) NotifyMessageHasBeenPosted(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyMessageHasBeenPosted", reflect.TypeOf((*MockService)(nil).NotifyMessageHasBeenPosted), arg0, arg1)
 }
 
 // NotifyUserHasJoinedChannel mocks base method.
