@@ -323,12 +323,12 @@ func TestSubsKey(t *testing.T) {
 			"channel-id",
 			"sub.channel_created.team-id",
 		},
-		string(apps.SubjectPostCreated): {
-			apps.SubjectPostCreated,
-			"team-id",
-			"channel-id",
-			"sub.post_created.channel-id",
-		},
+		// string(apps.SubjectPostCreated): {
+		// 	apps.SubjectPostCreated,
+		// 	"team-id",
+		// 	"channel-id",
+		// 	"sub.post_created.channel-id",
+		// },
 	} {
 		t.Run(name, func(t *testing.T) {
 			r, err := subsKey(testcase.Subject, testcase.TeamID, testcase.ChannelID)

@@ -50,15 +50,18 @@ const (
 	// used to expand other entities.
 	SubjectChannelCreated Subject = "channel_created"
 
+	// TODO: re-enable post_created and bot_mentioned once perf issues are
+	// resolved, see https://mattermost.atlassian.net/browse/MM-44388
+
 	// SubjectPostCreated subscribes to MessageHasBeenPosted plugin events, for
 	// the specified channel. By default notifications include UserID (author), PostID,
 	// RootPostID, ChannelID, but only Post is fully expanded. Expand can be
 	// used to expand other entities.
-	SubjectPostCreated Subject = "post_created"
+	// SubjectPostCreated Subject = "post_created"
 
 	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
 	// when the App's bot is mentioned in the post.
-	SubjectBotMentioned Subject = "bot_mentioned"
+	// SubjectBotMentioned Subject = "bot_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
@@ -100,8 +103,7 @@ func (sub Subscription) Validate() error {
 		SubjectBotJoinedChannel,
 		SubjectBotLeftChannel,
 		SubjectBotJoinedTeam,
-		SubjectBotLeftTeam,
-		SubjectBotMentioned:
+		SubjectBotLeftTeam /*, SubjectBotMentioned*/ :
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
@@ -110,8 +112,7 @@ func (sub Subscription) Validate() error {
 		}
 
 	case SubjectUserJoinedChannel,
-		SubjectUserLeftChannel,
-		SubjectPostCreated:
+		SubjectUserLeftChannel /*, SubjectPostCreated */ :
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
