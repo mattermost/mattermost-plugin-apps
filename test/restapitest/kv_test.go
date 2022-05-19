@@ -82,6 +82,7 @@ func kvApp(t testing.TB) *goapp.App {
 	return app
 }
 
+//nolint:golint,unparam
 func kvCall(th *Helper, path string, asBot bool, key string, value interface{}) apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path),

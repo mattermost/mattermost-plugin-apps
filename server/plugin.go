@@ -146,7 +146,7 @@ func (p *Plugin) OnActivate() (err error) {
 	return nil
 }
 
-func (p *Plugin) OnDeactivate() error {
+func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	conf := p.conf.Get()
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
@@ -205,28 +205,28 @@ func (p *Plugin) UserHasBeenCreated(_ *plugin.Context, user *model.User) {
 	}
 }
 
-func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
 	err := p.proxy.NotifyUserHasJoinedChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedChannel")
 	}
 }
 
-func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, actingUser *model.User) {
+func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
 	err := p.proxy.NotifyUserHasLeftChannel(p.newChannelMemberContext(cm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftChannel")
 	}
 }
 
-func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
 	err := p.proxy.NotifyUserHasJoinedTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasJoinedTeam")
 	}
 }
 
-func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, actingUser *model.User) {
+func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
 	err := p.proxy.NotifyUserHasLeftTeam(p.newTeamMemberContext(tm))
 	if err != nil {
 		p.log.WithError(err).Debugf("Error handling UserHasLeftTeam")

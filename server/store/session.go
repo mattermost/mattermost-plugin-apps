@@ -37,7 +37,7 @@ func appKey(appID apps.AppID) string {
 	return config.KVTokenPrefix + "_" + string(appID)
 }
 
-func parseKey(key string) (apps.AppID, string, error) {
+func parseKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
 	s := strings.Split(key, "_")
 	if len(s) != 3 {
 		return "", "", errors.New("invalid key pattern")

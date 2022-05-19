@@ -94,23 +94,20 @@ func oauth2App(t *testing.T) *goapp.App {
 	return app
 }
 
-func oauth2Call(th *Helper, path string, asBot bool, value interface{}) apps.CallResponse {
+func oauth2Call(th *Helper, path string, value interface{}) apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
 				OAuth2App:  apps.ExpandAll,
 				OAuth2User: apps.ExpandAll,
 			}),
-		Values: model.StringInterface{
-			"as_bot": asBot,
-		},
 	}
-	if !asBot {
-		creq.Call.Expand.ActingUser = apps.ExpandSummary
-		creq.Call.Expand.ActingUserAccessToken = apps.ExpandAll
-	}
+	creq.Call.Expand.ActingUser = apps.ExpandSummary
+	creq.Call.Expand.ActingUserAccessToken = apps.ExpandAll
 	if value != nil {
-		creq.Values["value"] = value
+		creq.Values = map[string]interface{}{
+			"value": value,
+		}
 	}
 	return *th.HappyCall(oauth2ID, creq)
 }
@@ -143,16 +140,16 @@ func testOAuth2(th *Helper) {
 	th.Run("Users can store and get OAuth2User via REST API", func(th *Helper) {
 		require := require.New(th)
 
-		cresp := oauth2Call(th, "/get", false, nil)
+		cresp := oauth2Call(th, "/get", nil)
 		require.Equal(`{}`, cresp.Text)
 
-		cresp = oauth2Call(th, "/store", false, map[string]interface{}{
+		cresp = oauth2Call(th, "/store", map[string]interface{}{
 			"test_bool":   true,
 			"test_string": "test",
 		})
 		require.Equal(`stored`, cresp.Text)
 
-		cresp = oauth2Call(th, "/get", false, nil)
+		cresp = oauth2Call(th, "/get", nil)
 		require.Equal(`{"test_bool":true,"test_string":"test"}`, cresp.Text)
 	})
 
@@ -250,7 +247,7 @@ func testOAuth2(th *Helper) {
 		storeAppAsAdmin(th, testOAuth2App)
 
 		require := require.New(th)
-		cresp := oauth2Call(th, "/echo", false, nil)
+		cresp := oauth2Call(th, "/echo", nil)
 
 		creq := apps.CallRequest{}
 		require.Equal(apps.CallResponseTypeOK, cresp.Type)
