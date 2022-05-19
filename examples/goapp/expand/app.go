@@ -17,7 +17,7 @@ func main() {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       "example-expand",
-			Version:     "v1.0.0",
+			Version:     "v1.1.0",
 			DisplayName: "A Mattermost app illustrating how `Call.Expand` works",
 			Icon:        "icon.png",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/expand",

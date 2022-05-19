@@ -35,7 +35,7 @@ func oauth2App(t *testing.T) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       oauth2ID,
-			Version:     "v1.0.0",
+			Version:     "v1.1.0",
 			DisplayName: "tests App's OAuth2 APIs",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			RequestedPermissions: []apps.Permission{

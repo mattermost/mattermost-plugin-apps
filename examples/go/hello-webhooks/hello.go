@@ -24,7 +24,7 @@ var iconData []byte
 
 var manifest = apps.Manifest{
 	AppID:       "hello-webhooks",
-	Version:     "1.0.0",
+	Version:     "v1.1.0",
 	DisplayName: "Hello, Webhooks!",
 	Icon:        "icon.png",
 	HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/hello-webhooks",
