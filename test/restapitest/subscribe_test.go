@@ -21,7 +21,7 @@ import (
 
 const subID = apps.AppID("subtest")
 
-func subApp(t testing.TB) *goapp.App {
+func newSubscribeApp(t testing.TB) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       subID,
@@ -118,7 +118,7 @@ func subCallRequest(path string, asBot bool, subject apps.Subject, teamID, chann
 }
 
 func testSubscriptions(th *Helper) {
-	th.InstallApp(subApp(th.T))
+	th.InstallApp(newSubscribeApp(th.T))
 
 	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)

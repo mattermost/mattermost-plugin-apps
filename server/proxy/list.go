@@ -36,35 +36,37 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App,
 
 func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool) {
 	all := p.store.App.AsMap()
+	if ping {
+		// all ping requests must respond, unreachable respond with "".
+		reachableCh := make(chan apps.AppID)
+		defer close(reachableCh)
 
-	// all ping requests must respond, unreachable respond with "".
-	reachableCh := make(chan apps.AppID)
-	for _, app := range all {
-		var cancel context.CancelFunc
-		pingReq := r.WithTimeout(pingAppTimeout, &cancel)
-		go func(a apps.App) {
-			var response apps.AppID
-			if !a.Disabled {
-				if p.pingApp(pingReq, &a) {
-					response = a.AppID
+		for _, app := range all {
+			var cancel context.CancelFunc
+			pingReq := r.WithTimeout(pingAppTimeout, &cancel)
+			go func(a apps.App) {
+				var response apps.AppID
+				if !a.Disabled {
+					if p.pingApp(pingReq, &a) {
+						response = a.AppID
+					}
 				}
-			}
-			reachableCh <- response
-			cancel()
-		}(app)
-	}
+				reachableCh <- response
+				cancel()
+			}(app)
+		}
 
-	for _, app := range all {
-		installed = append(installed, app)
-		appID := <-reachableCh
-		if appID != "" {
-			if reachable == nil {
-				reachable = map[apps.AppID]bool{}
+		for _, app := range all {
+			installed = append(installed, app)
+			appID := <-reachableCh
+			if appID != "" {
+				if reachable == nil {
+					reachable = map[apps.AppID]bool{}
+				}
+				reachable[appID] = true
 			}
-			reachable[appID] = true
 		}
 	}
-
 	// Sort result alphabetically, by display name.
 	sort.SliceStable(installed, func(i, j int) bool {
 		return strings.ToLower(installed[i].DisplayName) < strings.ToLower(installed[j].DisplayName)

@@ -21,7 +21,7 @@ func Echo(creq goapp.CallRequest) apps.CallResponse {
 	return apps.NewTextResponse(utils.ToJSON(creq))
 }
 
-func echoApp() *goapp.App {
+func newEchoApp() *goapp.App {
 	var echoBindable = goapp.MakeBindableFormOrPanic(
 		"echo",
 		apps.Form{
@@ -47,7 +47,7 @@ func echoApp() *goapp.App {
 }
 
 func testEcho(th *Helper) {
-	th.InstallApp(echoApp())
+	th.InstallApp(newEchoApp())
 
 	th.Run("simple", func(th *Helper) {
 		require := require.New(th)

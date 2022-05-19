@@ -30,10 +30,11 @@ func TestSingleServer(t *testing.T) {
 	th := NewHelper(t)
 
 	for name, testF := range map[string]func(*Helper){
-		"echo":          testEcho,
-		"KV":            testKV,
-		"OAuth2":        testOAuth2,
-		"Subscriptions": testSubscriptions,
+		"context-specific bindings": testContextBindings,
+		"echo":                      testEcho,
+		"KV":                        testKV,
+		"OAuth2":                    testOAuth2,
+		"subscriptions":             testSubscriptions,
 	} {
 		th.Run(name, testF)
 	}

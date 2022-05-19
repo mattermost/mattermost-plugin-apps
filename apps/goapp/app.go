@@ -51,6 +51,9 @@ func MakeApp(m apps.Manifest, opts ...AppOption) (*App, error) {
 		Manifest: m,
 		Router:   mux.NewRouter(),
 	}
+	if app.Manifest.Bindings == nil {
+		app.Manifest.Bindings = apps.NewCall("/bindings")
+	}
 
 	// Run the options.
 	for _, opt := range opts {
@@ -107,6 +110,20 @@ func WithCommand(subcommands ...Bindable) AppOption {
 	}
 }
 
+func WithBindingsPath(path string) AppOption {
+	return func(app *App) error {
+		app.Manifest.Bindings.Path = path
+		return nil
+	}
+}
+
+func WithBindingsExpand(e apps.Expand) AppOption {
+	return func(app *App) error {
+		app.Manifest.Bindings.Expand = &e
+		return nil
+	}
+}
+
 func WithPostMenu(items ...Bindable) AppOption {
 	return func(app *App) error {
 		app.postMenu = items
@@ -135,25 +152,6 @@ func WithChannelHeader(items ...Bindable) AppOption {
 		}
 		return nil
 	}
-}
-
-func (app *App) NewTestServer() *httptest.Server {
-	if app.log == nil {
-		app.log = utils.NewTestLogger()
-	}
-	app.Mode = apps.DeployHTTP
-	if app.Manifest.Deploy.HTTP == nil {
-		app.log.Debugf("Using default HTTP deploy settings")
-		app.Manifest.Deploy.HTTP = &apps.HTTP{}
-	}
-	appServer := httptest.NewServer(app.Router)
-	rootURL := appServer.URL
-	app.Manifest.Deploy.HTTP.RootURL = rootURL
-
-	u, _ := url.Parse(rootURL)
-	portStr := u.Port()
-	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
-	return appServer
 }
 
 func (app *App) RunHTTP() {
@@ -208,4 +206,30 @@ func locationFromName(name string) apps.Location {
 		_, _ = b.WriteRune(c)
 	}
 	return apps.Location(b.String())
+}
+
+func (app *App) NewTestServer() *httptest.Server {
+	if app.log == nil {
+		app.log = utils.NewTestLogger()
+	}
+	app.Mode = apps.DeployHTTP
+	if app.Manifest.Deploy.HTTP == nil {
+		app.log.Debugf("Using default HTTP deploy settings")
+		app.Manifest.Deploy.HTTP = &apps.HTTP{}
+	}
+	appServer := httptest.NewServer(app.Router)
+	rootURL := appServer.URL
+	app.Manifest.Deploy.HTTP.RootURL = rootURL
+
+	u, _ := url.Parse(rootURL)
+	portStr := u.Port()
+	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
+	return appServer
+}
+
+func TestWithBindingsHandler(h HandlerFunc) AppOption {
+	return func(app *App) error {
+		app.HandleCall("/bindings", h)
+		return nil
+	}
 }

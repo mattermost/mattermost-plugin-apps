@@ -20,7 +20,7 @@ import (
 
 const kvID = apps.AppID("kvtest")
 
-func kvApp(t testing.TB) *goapp.App {
+func newKVApp(t testing.TB) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       kvID,
@@ -105,7 +105,7 @@ func kvCall(th *Helper, path string, asBot bool, key string, value interface{}) 
 }
 
 func testKV(th *Helper) {
-	th.InstallApp(kvApp(th.T))
+	th.InstallApp(newKVApp(th.T))
 
 	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)

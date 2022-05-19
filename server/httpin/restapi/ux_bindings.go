@@ -23,7 +23,6 @@ func (a *restapi) initGetBindings(h *handler.Handler) {
 //   Output: []Binding
 func (a *restapi) GetBindings(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
-
 	bindings, err := a.Proxy.GetBindings(r, apps.Context{
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
@@ -32,9 +31,18 @@ func (a *restapi) GetBindings(r *incoming.Request, w http.ResponseWriter, req *h
 			UserAgent: q.Get(config.PropUserAgent),
 		},
 	})
-	if err != nil {
-		httputils.WriteError(w, err)
+
+	apiTestFlag := q.Get("test") != ""
+	if apiTestFlag {
+		testOut := map[string]interface{}{
+			"bindings": bindings,
+		}
+		if err != nil {
+			testOut["error"] = err.Error()
+		}
+		_ = httputils.WriteJSON(w, testOut)
 		return
 	}
+
 	_ = httputils.WriteJSON(w, bindings)
 }

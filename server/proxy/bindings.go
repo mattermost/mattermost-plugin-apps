@@ -1,7 +1,9 @@
 package proxy
 
 import (
+	"github.com/hashicorp/go-multierror"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -36,10 +38,17 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Binding, error) {
-	all := make(chan []apps.Binding)
+	type result struct {
+		appID    apps.AppID
+		bindings []apps.Binding
+		err      error
+	}
+
+	all := make(chan result)
 	defer close(all)
 
 	allApps := store.SortApps(p.store.App.AsMap())
+
 	for i := range allApps {
 		app := allApps[i]
 		go func(app apps.App) {
@@ -48,16 +57,25 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 			if err != nil {
 				r.Log.WithError(err).Debugf("failed to fetch app bindings")
 			}
-			all <- bb
+
+			all <- result{
+				appID:    app.AppID,
+				bindings: bb,
+				err:      err,
+			}
 		}(app)
 	}
 
 	ret := []apps.Binding{}
+	var problems error
 	for i := 0; i < len(allApps); i++ {
-		bb := <-all
-		ret = mergeBindings(ret, bb)
+		res := <-all
+		ret = mergeBindings(ret, res.bindings)
+		if res.err != nil {
+			problems = multierror.Append(problems, errors.Wrap(res.err, string(res.appID)))
+		}
 	}
-	return ret, nil
+	return ret, problems
 }
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {

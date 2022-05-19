@@ -38,7 +38,7 @@ var testOAuth2User = map[string]interface{}{
 	"test_string": "test",
 }
 
-func oauth2App(t *testing.T) *goapp.App {
+func newOAuth2App(t *testing.T) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       oauth2ID,
@@ -175,7 +175,7 @@ func oauth2Call(th *Helper, path string, asBot bool, value interface{}) *apps.Ca
 }
 
 func testOAuth2(th *Helper) {
-	th.InstallApp(oauth2App(th.T))
+	th.InstallApp(newOAuth2App(th.T))
 
 	storeOAuth2App := func(th *Helper, oapp apps.OAuth2App) {
 		th.Helper()
