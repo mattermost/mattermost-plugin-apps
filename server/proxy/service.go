@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -68,7 +67,7 @@ type Invoker interface {
 type Notifier interface {
 	Notify(apps.Context, apps.Subject) error
 	NotifyRemoteWebhook(*incoming.Request, apps.AppID, apps.HTTPCallRequest) error
-	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
+	// NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
 	NotifyUserHasJoinedChannel(apps.Context) error
 	NotifyUserHasLeftChannel(apps.Context) error
 	NotifyUserHasJoinedTeam(apps.Context) error
