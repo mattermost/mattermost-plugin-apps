@@ -80,7 +80,7 @@ func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 	th.InitClients()
 	th.InstallAppsPlugin()
 	for _, a := range apps {
-		th.InstallApp(a)
+		th.InstallAppWithCleanup(a)
 	}
 	return th
 }

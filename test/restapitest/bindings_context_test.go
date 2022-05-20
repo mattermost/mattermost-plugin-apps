@@ -47,7 +47,6 @@ func newContextBindingsApp(th *Helper) *contextBindingsApp {
 		goapp.WithBindingsExpand(contextBindingsExpand),
 		goapp.TestWithBindingsHandler(
 			func(creq goapp.CallRequest) apps.CallResponse {
-				panic("<>/<>")
 				app.in = creq.CallRequest
 				commandBinding := apps.Binding{
 					Location: apps.LocationCommand,
@@ -83,7 +82,7 @@ func newContextBindingsApp(th *Helper) *contextBindingsApp {
 
 func testContextBindings(th *Helper) {
 	app := newContextBindingsApp(th)
-	th.InstallApp(app.App)
+	th.InstallAppWithCleanup(app.App)
 
 	th.Run("context-specific bindings", func(th *Helper) {
 		require := require.New(th)

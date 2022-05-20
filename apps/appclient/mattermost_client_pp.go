@@ -244,7 +244,7 @@ func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.UninstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}

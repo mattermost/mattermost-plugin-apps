@@ -92,7 +92,7 @@ func kvCall(th *Helper, path string, asBot bool, key string, value interface{}) 
 	}
 	if !asBot {
 		creq.Call.Expand = &apps.Expand{
-			ActingUser:            apps.ExpandSummary,
+			ActingUser:            apps.ExpandSummary.Required(),
 			ActingUserAccessToken: apps.ExpandAll,
 		}
 	}
@@ -106,7 +106,7 @@ func kvCall(th *Helper, path string, asBot bool, key string, value interface{}) 
 }
 
 func testKV(th *Helper) {
-	th.InstallApp(newKVApp(th.T))
+	th.InstallAppWithCleanup(newKVApp(th.T))
 
 	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)

@@ -172,14 +172,14 @@ func oauth2Call(th *Helper, path string, value interface{}) *apps.CallResponse {
 }
 
 func testOAuth2(th *Helper) {
-	th.InstallApp(newOAuth2App(th.T))
+	th.InstallAppWithCleanup(newOAuth2App(th.T))
 
 	storeOAuth2App := func(th *Helper, oapp apps.OAuth2App) {
 		th.Helper()
 		require := require.New(th)
 		creq := apps.CallRequest{
 			Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{
-				ActingUser:            apps.ExpandAll,
+				ActingUser:            apps.ExpandSummary.Required(),
 				ActingUserAccessToken: apps.ExpandAll,
 			}),
 			Values: model.StringInterface{

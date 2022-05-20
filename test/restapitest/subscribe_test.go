@@ -118,7 +118,7 @@ func subCallRequest(path string, asBot bool, subject apps.Subject, teamID, chann
 }
 
 func testSubscriptions(th *Helper) {
-	th.InstallApp(newSubscribeApp(th.T))
+	th.InstallAppWithCleanup(newSubscribeApp(th.T))
 
 	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)

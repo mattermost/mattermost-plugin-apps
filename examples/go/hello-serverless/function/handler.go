@@ -67,7 +67,9 @@ var Bindings = []apps.Binding{
 									Name: "message",
 								},
 							},
-							Submit: apps.NewCall("/send"),
+							Submit: apps.NewCall("/send").WithExpand(apps.Expand{
+								ActingUser: apps.ExpandID.Required(),
+							}),
 						},
 					},
 				},

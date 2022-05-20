@@ -47,7 +47,7 @@ func newEchoApp() *goapp.App {
 }
 
 func testEcho(th *Helper) {
-	th.InstallApp(newEchoApp())
+	th.InstallAppWithCleanup(newEchoApp())
 
 	th.Run("simple", func(th *Helper) {
 		require := require.New(th)

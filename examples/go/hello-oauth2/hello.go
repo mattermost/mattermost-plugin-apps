@@ -36,10 +36,12 @@ var manifest = apps.Manifest{
 	RequestedLocations: []apps.Location{
 		apps.LocationCommand,
 	},
-	Bindings: apps.NewCall("/bindings").WithExpand(apps.Expand{
-		ActingUser: apps.ExpandAll,
-		OAuth2User: apps.ExpandAll,
-	}),
+	Bindings: apps.NewCall("/bindings").WithExpand(
+		apps.Expand{
+			ActingUser: apps.ExpandSummary.Required(),
+			OAuth2User: apps.ExpandAll.Required(),
+		},
+	),
 	Deploy: apps.Deploy{
 		HTTP: &apps.HTTP{
 			RootURL: "http://localhost:8082",

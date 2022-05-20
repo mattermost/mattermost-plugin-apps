@@ -36,6 +36,11 @@ var send = goapp.MakeBindableFormOrPanic("send",
 		Title:  "Hello, world!",
 		Icon:   "icon.png",
 		Fields: []apps.Field{{Name: "message"}},
+		Submit: &apps.Call{
+			Expand: &apps.Expand{
+				ActingUser: apps.ExpandID.Required(),
+			},
+		},
 	},
 	func(creq goapp.CallRequest) apps.CallResponse {
 		message := "Hello from a goapp."
@@ -43,6 +48,7 @@ var send = goapp.MakeBindableFormOrPanic("send",
 		if custom != "" {
 			message += " ...and " + custom + "!"
 		}
+
 		creq.AsBot().DM(creq.Context.ActingUser.Id, message)
 		return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
 	},

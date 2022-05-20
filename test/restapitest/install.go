@@ -19,6 +19,11 @@ import (
 //go:embed static
 var static embed.FS
 
+func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
+	th.InstallApp(app)
+	th.Cleanup(func() { th.UninstallApp(app.Manifest.AppID) })
+}
+
 func (th *Helper) InstallApp(app *goapp.App) {
 	require := require.New(th)
 	assert := assert.New(th)
@@ -37,6 +42,13 @@ func (th *Helper) InstallApp(app *goapp.App) {
 
 	resp, err = th.SystemAdminClientPP.InstallApp(app.Manifest.AppID, apps.DeployHTTP)
 	assert.NoError(err)
+	api4.CheckOKStatus(th, resp)
+}
+
+func (th *Helper) UninstallApp(appID apps.AppID) {
+	require := require.New(th)
+	resp, err := th.SystemAdminClientPP.UninstallApp(appID)
+	require.NoError(err)
 	api4.CheckOKStatus(th, resp)
 }
 
