@@ -5,6 +5,7 @@ package restapitest
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/url"
 
@@ -178,6 +179,7 @@ func testBindings(th *Helper) {
 	})
 
 	th.Run("bindings are accepted only for requested locations", func(th *Helper) {
+		th.Skip()
 		appID := apps.AppID("location_bindings")
 
 		appBindings := []apps.Binding{
@@ -233,6 +235,11 @@ func testBindings(th *Helper) {
 				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu},
 				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedChannelHeaderBinding, expectedPostMenuBinding},
 			},
+			"no locations": {
+				requestedLocations: apps.Locations{},
+				expectedBindings:   []apps.Binding{},
+				expectedError:      "TODO",
+			},
 			"command only": {
 				requestedLocations: apps.Locations{apps.LocationCommand},
 				expectedBindings:   []apps.Binding{expectedCommandBinding},
@@ -274,5 +281,185 @@ func testBindings(th *Helper) {
 				th.EqualBindings(tc.expectedBindings, out.Bindings)
 			})
 		}
+	})
+
+	th.Run("multiple apps have commands", func(th *Helper) {
+		app1ID := apps.AppID("bind1")
+		app1 := newBindingsApp(th, app1ID, nil,
+			[]apps.Binding{
+				{
+					Location: apps.LocationCommand,
+					Bindings: []apps.Binding{
+						{
+							Location:    "baseCommandLocation",
+							Label:       "baseCommandLabel",
+							Icon:        "base command icon",
+							Hint:        "base command hint",
+							Description: "base command description",
+							Bindings: []apps.Binding{
+								{
+									Location:    "message",
+									Label:       "message",
+									Icon:        "https://example.com/image.png",
+									Hint:        "message command hint",
+									Description: "message command description",
+									Submit:      &apps.Call{Path: "/path"},
+								}, {
+									Location:    "message-modal",
+									Label:       "message-modal",
+									Icon:        "message-modal command icon",
+									Hint:        "message-modal command hint",
+									Description: "message-modal command description",
+									Submit:      &apps.Call{Path: "/path"},
+								}, {
+									Location:    "manage",
+									Label:       "manage",
+									Icon:        "valid/path",
+									Hint:        "manage command hint",
+									Description: "manage command description",
+									Bindings: []apps.Binding{
+										{
+											Location:    "subscribe",
+											Label:       "subscribe",
+											Icon:        "subscribe command icon",
+											Hint:        "subscribe command hint",
+											Description: "subscribe command description",
+											Submit:      &apps.Call{Path: "/path"},
+										}, {
+											Location:    "unsubscribe",
+											Label:       "unsubscribe",
+											Icon:        "unsubscribe command icon",
+											Hint:        "unsubscribe command hint",
+											Description: "unsubscribe command description",
+											Submit:      &apps.Call{Path: "/path"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}).
+			WithLocations(apps.Locations{apps.LocationCommand})
+
+		app2ID := apps.AppID("bind2")
+		app2 := newBindingsApp(th, app2ID, nil,
+			[]apps.Binding{
+				{
+					Location: apps.LocationCommand,
+					Bindings: []apps.Binding{
+						{
+							Location:    "app2BaseCommandLocation",
+							Label:       "app2BaseCommandLabel",
+							Icon:        "app2-base-command-icon",
+							Hint:        "app2 base command hint",
+							Description: "app2 base command description",
+							Bindings: []apps.Binding{
+								{
+									Location:    "connect",
+									Label:       "connect",
+									Icon:        "connect command icon",
+									Hint:        "connect command hint",
+									Description: "connect command description",
+									Submit:      &apps.Call{Path: "/path"},
+								},
+							},
+						},
+					},
+				},
+			}).
+			WithLocations(apps.Locations{apps.LocationCommand})
+
+		require := require.New(th)
+		th.InstallAppWithCleanup(app1.App)
+		th.InstallAppWithCleanup(app2.App)
+
+		out, err := httpGetBindings(th, "", "")
+		require.NoError(err)
+		require.Equal("", out.Err)
+		appsURL := fmt.Sprintf("http://localhost:%v/plugins/com.mattermost.apps/apps", th.ServerTestHelper.Server.ListenAddr.Port)
+		expected := []apps.Binding{
+			{
+				Location: "/command",
+				Bindings: []apps.Binding{
+					{
+						AppID:       "bind2",
+						Location:    "app2BaseCommandLocation",
+						Icon:        appsURL + "/bind2/static/app2-base-command-icon",
+						Label:       "app2BaseCommandLabel",
+						Hint:        "app2 base command hint",
+						Description: "app2 base command description",
+						Bindings: []apps.Binding{
+							{
+								AppID:       "bind2",
+								Location:    "connect",
+								Icon:        appsURL + "/bind2/static/connect command icon",
+								Label:       "connect",
+								Hint:        "connect command hint",
+								Description: "connect command description",
+								Submit:      apps.NewCall("/path"),
+							},
+						},
+					},
+					{
+						AppID:       "bind1",
+						Location:    "baseCommandLocation",
+						Icon:        appsURL + "/bind1/static/base command icon",
+						Label:       "baseCommandLabel",
+						Hint:        "base command hint",
+						Description: "base command description",
+						Bindings: []apps.Binding{
+							{
+								AppID:       "bind1",
+								Location:    "message",
+								Icon:        "https://example.com/image.png",
+								Label:       "message",
+								Hint:        "message command hint",
+								Description: "message command description",
+								Submit:      apps.NewCall("/path"),
+							},
+							{
+								AppID:       "bind1",
+								Location:    "message-modal",
+								Icon:        appsURL + "/bind1/static/message-modal command icon",
+								Label:       "message-modal",
+								Hint:        "message-modal command hint",
+								Description: "message-modal command description",
+								Submit:      apps.NewCall("/path"),
+							},
+							{
+								AppID:       "bind1",
+								Location:    "manage",
+								Icon:        appsURL + "/bind1/static/valid/path",
+								Label:       "manage",
+								Hint:        "manage command hint",
+								Description: "manage command description",
+								Bindings: []apps.Binding{
+									{
+										AppID:       "bind1",
+										Location:    "subscribe",
+										Icon:        appsURL + "/bind1/static/subscribe command icon",
+										Label:       "subscribe",
+										Hint:        "subscribe command hint",
+										Description: "subscribe command description",
+										Submit:      apps.NewCall("/path"),
+									},
+									{
+										AppID:       "bind1",
+										Location:    "unsubscribe",
+										Icon:        appsURL + "/bind1/static/unsubscribe command icon",
+										Label:       "unsubscribe",
+										Hint:        "unsubscribe command hint",
+										Description: "unsubscribe command description",
+										Submit:      apps.NewCall("/path"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		require.EqualValues(expected, out.Bindings)
 	})
 }

@@ -110,7 +110,9 @@ func (th *Helper) Cleanup(f func()) {
 func (th *Helper) NamedCleanup(name string, f func()) {
 	th.Helper()
 	th.T.Cleanup(func() {
-		th.T.Run("cleanup "+name, func(*testing.T) { f() })
+		th.T.Run("cleanup "+name, func(*testing.T) {
+			f()
+		})
 	})
 }
 

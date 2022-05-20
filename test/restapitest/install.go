@@ -21,7 +21,9 @@ var static embed.FS
 
 func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
 	th.InstallApp(app)
-	th.NamedCleanup("uninstall app", func() { th.UninstallApp(app.Manifest.AppID) })
+	th.NamedCleanup(
+		"uninstall app "+string(app.Manifest.AppID),
+		func() { th.UninstallApp(app.Manifest.AppID) })
 }
 
 func (th *Helper) InstallApp(app *goapp.App) {
@@ -29,7 +31,9 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	assert := assert.New(th)
 
 	appServer := app.NewTestServer()
-	th.NamedCleanup("shut down app", appServer.Close)
+	th.NamedCleanup(
+		"shut down app "+string(app.Manifest.AppID),
+		appServer.Close)
 	require.Equal(appServer.URL, app.Manifest.Deploy.HTTP.RootURL)
 
 	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
