@@ -20,7 +20,7 @@ const (
 )
 
 type Service interface {
-	GetOrCreate(_ *incoming.Request, _ apps.AppID, userID string) (*model.Session, error)
+	GetOrCreate(_ *incoming.Request, userID string) (*model.Session, error)
 	ListForUser(_ *incoming.Request, userID string) ([]*model.Session, error)
 	RevokeSessionsForApp(*incoming.Request, apps.AppID) error
 	RevokeSessionsForUser(_ *incoming.Request, userID string) error
@@ -40,7 +40,8 @@ func NewService(mm *pluginapi.Client, store *store.Service) Service {
 	}
 }
 
-func (s *service) GetOrCreate(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error) {
+func (s *service) GetOrCreate(r *incoming.Request, userID string) (*model.Session, error) {
+	appID := r.Destination()
 	session, err := s.store.Session.Get(appID, userID)
 
 	if err == nil && !session.IsExpired() {
@@ -71,7 +72,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 	}
 
 	if app.DeployType == apps.DeployBuiltin {
-		return nil, errors.New("builtin apps can't have app specific session")
+		return nil, errors.Errorf("builtin app '%s' can't have app specific session", app.AppID)
 	}
 
 	session := &model.Session{

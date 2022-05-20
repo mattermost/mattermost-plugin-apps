@@ -184,8 +184,10 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 	log := utils.NewPluginLogger(a.conf.MattermostAPI())
 	r := a.proxy.NewIncomingRequest(log).
 		WithCtx(ctx).
-		WithDestination(self.AppID).
-		WithPrevContext(creq.Context)
+		WithDestination(self.AppID)
+	if creq.Context.ActingUser != nil {
+		r = r.WithActingUserID(creq.Context.ActingUser.Id)
+	}
 
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {

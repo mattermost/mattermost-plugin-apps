@@ -23,6 +23,9 @@ type expander struct {
 	client mmclient.Client
 	r      *incoming.Request
 	proxy  *Proxy
+
+	botAccessToken        string
+	actingUserAccessToken string
 }
 
 // expandContext performs `expand` on a `context` of an outgoing CallRequest. It
@@ -32,19 +35,17 @@ type expander struct {
 // as the acting user data. (destination) `app` is passed in as a shortcut since
 // it's already available in all callers.
 func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
+	if r.Destination() == "" {
+		return nil, errors.New("missing destination app ID in request")
+	}
 	if cc == nil {
 		cc = &apps.Context{}
 	}
 
-	client, err := p.getExpandClient(r)
-	if err != nil {
-		return nil, err
-	}
 	e := &expander{
 		app:     app,
 		Context: *cc,
 		proxy:   p,
-		client:  client,
 		r:       r,
 	}
 
@@ -57,7 +58,7 @@ func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Conte
 	}
 
 	if app.GrantedPermissions.Contains(apps.PermissionActAsBot) && app.BotUserID != "" {
-		botAccessToken, err := p.getBotAccessToken(r, app)
+		botAccessToken, err := e.getBotAccessToken()
 		if err != nil {
 			return nil, err
 		}
@@ -188,9 +189,15 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 			continue
 		}
 
+		// Don't attempt to make a client (session and all) unless we need to expand.
+		err = e.ensureClient()
+		if err != nil {
+			return nil, err
+		}
+
 		// Execute the expand function, skip the error unless the field is
 		// required.
-		if err := step.f(level.Level()); err != nil && level.IsRequired() {
+		if err := step.f(l); err != nil && level.IsRequired() {
 			return nil, errors.Wrap(err, "failed to expand required "+step.name)
 		}
 	}
@@ -212,7 +219,7 @@ func (e *expander) expandActingUserAccessToken(level apps.ExpandLevel) error {
 		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionActAsUser)
 	}
 
-	token, err := e.r.ActingUserAccessTokenForDestination()
+	token, err := e.getActingUserAccessToken()
 	if err != nil {
 		return err
 	}
@@ -516,41 +523,67 @@ func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 	return nil
 }
 
-func (p *Proxy) getExpandClient(r *incoming.Request) (mmclient.Client, error) {
-	if p.expandClientOverride != nil {
-		return p.expandClientOverride, nil
+func (e *expander) ensureClient() error {
+	client := e.client
+	if client != nil {
+		return nil
 	}
-	app, err := p.getEnabledDestination(r)
+	if e.proxy.expandClientOverride != nil {
+		e.client = e.proxy.expandClientOverride
+		return nil
+	}
+	app, err := e.proxy.getEnabledDestination(e.r)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	conf := p.conf.Get()
+	conf := e.proxy.conf.Get()
 
 	switch {
 	case app.DeployType == apps.DeployBuiltin:
-		return mmclient.NewRPCClient(p.conf.MattermostAPI()), nil
+		client, err = mmclient.NewRPCClient(e.proxy.conf.MattermostAPI()), nil
 
-	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && r.ActingUserID() != "":
-		return r.GetMMClient()
+	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && e.r.ActingUserID() != "":
+		token, err := e.getActingUserAccessToken()
+		if err != nil {
+			return errors.Wrap(err, "failed to get the current user's access token")
+		}
+		client = mmclient.NewHTTPClient(e.proxy.conf.Get(), token)
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsBot):
-		accessToken, err := p.getBotAccessToken(r, app)
+		accessToken, err := e.getBotAccessToken()
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to get the bot's access token")
 		}
-		return mmclient.NewHTTPClient(conf, accessToken), nil
+		client = mmclient.NewHTTPClient(conf, accessToken)
 
 	default:
-		return nil, utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
+		return utils.NewUnauthorizedError("apps without any ActAs* permission can't expand")
 	}
+	e.client = client
+	return nil
 }
 
-func (p *Proxy) getBotAccessToken(r *incoming.Request, app *apps.App) (string, error) {
-	session, err := p.sessionService.GetOrCreate(r, app.AppID, app.BotUserID)
+func (e *expander) getBotAccessToken() (string, error) {
+	if e.botAccessToken != "" {
+		return e.botAccessToken, nil
+	}
+	session, err := e.proxy.sessionService.GetOrCreate(e.r, e.app.BotUserID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get bot session")
 	}
+	e.botAccessToken = session.Token
+	return session.Token, nil
+}
 
+func (e *expander) getActingUserAccessToken() (string, error) {
+	if e.actingUserAccessToken != "" {
+		return e.actingUserAccessToken, nil
+	}
+	session, err := e.proxy.sessionService.GetOrCreate(e.r, e.r.ActingUserID())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get session")
+	}
+	e.actingUserAccessToken = session.Token
 	return session.Token, nil
 }
 

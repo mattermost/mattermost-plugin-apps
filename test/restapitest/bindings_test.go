@@ -27,12 +27,10 @@ func newBindingsApp(th *Helper, appID apps.AppID, bindExpand *apps.Expand, bindi
 	app := bindingsApp{}
 	app.App = goapp.MakeAppOrPanic(
 		apps.Manifest{
-			AppID:                appID,
-			Version:              "v1.0.0",
-			DisplayName:          "Returns bindings",
-			HomepageURL:          "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
-			RequestedLocations:   apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu},
-			RequestedPermissions: apps.Permissions{apps.PermissionActAsUser},
+			AppID:       appID,
+			Version:     "v1.0.0",
+			DisplayName: "Returns bindings",
+			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 		},
 		goapp.WithBindingsExpand(bindExpand),
 		goapp.TestWithBindingsHandler(
@@ -55,6 +53,16 @@ func newBindingsApp(th *Helper, appID apps.AppID, bindExpand *apps.Expand, bindi
 	return &app
 }
 
+func (a *bindingsApp) WithLocations(requested apps.Locations) *bindingsApp {
+	a.Manifest.RequestedLocations = requested
+	return a
+}
+
+func (a *bindingsApp) WithPermissions(requested apps.Permissions) *bindingsApp {
+	a.Manifest.RequestedPermissions = requested
+	return a
+}
+
 func removeAppsPluginBindings(in []apps.Binding) []apps.Binding {
 	// remove the apps plugin's own bindings
 	filtered := []apps.Binding{}
@@ -64,6 +72,9 @@ func removeAppsPluginBindings(in []apps.Binding) []apps.Binding {
 		}
 		if len(b.Bindings) != 0 {
 			b.Bindings = removeAppsPluginBindings(b.Bindings)
+			if len(b.Bindings) == 0 {
+				continue
+			}
 		}
 		filtered = append(filtered, b)
 	}
@@ -104,12 +115,14 @@ func testBindings(th *Helper) {
 	th.Run("expand all HTTP GET query args", func(th *Helper) {
 		appID := apps.AppID("context_bindings")
 		app := newBindingsApp(th, appID,
+			// Expand everything we realistically can.
 			&apps.Expand{
 				ActingUser:            apps.ExpandSummary.Required(),
 				ActingUserAccessToken: apps.ExpandAll.Required(),
 				Channel:               apps.ExpandSummary.Required(),
-				Team:                  apps.ExpandSummary.Optional(),
-				Post:                  apps.ExpandSummary.Optional(),
+				Team:                  apps.ExpandSummary.Required(),
+				ChannelMember:         apps.ExpandSummary.Required(),
+				TeamMember:            apps.ExpandSummary.Required(),
 			},
 			[]apps.Binding{
 				{
@@ -126,8 +139,10 @@ func testBindings(th *Helper) {
 						},
 					},
 				},
-			},
-		)
+			}).
+			WithLocations(apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu}).
+			WithPermissions(apps.Permissions{apps.PermissionActAsUser})
+
 		th.InstallAppWithCleanup(app.App)
 		require := require.New(th)
 
@@ -160,5 +175,104 @@ func testBindings(th *Helper) {
 		require.NotEmpty(app.creq)
 		require.EqualValues(th.ServerTestHelper.BasicChannel.TeamId, app.creq.Context.ExpandedContext.Team.Id)
 		require.EqualValues(th.ServerTestHelper.BasicChannel.Id, app.creq.Context.ExpandedContext.Channel.Id)
+	})
+
+	th.Run("bindings are accepted only for requested locations", func(th *Helper) {
+		appID := apps.AppID("location_bindings")
+
+		appBindings := []apps.Binding{
+			{
+				Location: "loc-test",
+				Label:    "lab-test",
+				Submit:   apps.NewCall("/does-not-matter"),
+			},
+		}
+
+		expectedCommandBinding := apps.Binding{
+			Location: apps.LocationCommand,
+			Bindings: []apps.Binding{
+				{
+					AppID:    appID,
+					Label:    "lab-test",
+					Location: "loc-test",
+					Submit:   apps.NewCall("/does-not-matter"),
+				},
+			},
+		}
+
+		expectedChannelHeaderBinding := apps.Binding{
+			Location: apps.LocationChannelHeader,
+			Bindings: []apps.Binding{
+				{
+					AppID:    appID,
+					Label:    "lab-test",
+					Location: "loc-test",
+					Submit:   apps.NewCall("/does-not-matter"),
+				},
+			},
+		}
+
+		expectedPostMenuBinding := apps.Binding{
+			Location: apps.LocationPostMenu,
+			Bindings: []apps.Binding{
+				{
+					AppID:    appID,
+					Label:    "lab-test",
+					Location: "loc-test",
+					Submit:   apps.NewCall("/does-not-matter"),
+				},
+			},
+		}
+
+		for name, tc := range map[string]struct {
+			requestedLocations apps.Locations
+			expectedBindings   []apps.Binding
+			expectedError      string
+		}{
+			"all locations": {
+				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu},
+				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedChannelHeaderBinding, expectedPostMenuBinding},
+			},
+			"command only": {
+				requestedLocations: apps.Locations{apps.LocationCommand},
+				expectedBindings:   []apps.Binding{expectedCommandBinding},
+				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n\n\n",
+			},
+			"channel header only": {
+				requestedLocations: apps.Locations{apps.LocationChannelHeader},
+				expectedBindings:   []apps.Binding{expectedChannelHeaderBinding},
+				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n\n\n",
+			},
+			"post menu only": {
+				requestedLocations: apps.Locations{apps.LocationPostMenu},
+				expectedBindings:   []apps.Binding{expectedPostMenuBinding},
+				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /channel_header: location is not granted: forbidden\n\n\n\n",
+			},
+			"command and post menu": {
+				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationPostMenu},
+				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedPostMenuBinding},
+				expectedError:      "1 error occurred:\n\t* location_bindings: 1 error occurred:\n\t* /channel_header: location is not granted: forbidden\n\n\n\n",
+			},
+		} {
+			th.Run(name, func(th *Helper) {
+				app := newBindingsApp(th, appID, nil,
+					[]apps.Binding{
+						{Location: apps.LocationCommand, Bindings: appBindings},
+						{Location: apps.LocationChannelHeader, Bindings: appBindings},
+						{Location: apps.LocationPostMenu, Bindings: appBindings},
+					}).
+					WithLocations(tc.requestedLocations).
+					WithPermissions(apps.Permissions{apps.PermissionActAsUser})
+
+				th.InstallAppWithCleanup(app.App)
+				require := require.New(th)
+
+				out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
+				require.NoError(err)
+				require.Equal(tc.expectedError, out.Err)
+				// require.Equal("", utils.Pretty(app.cresp.Data))
+				th.EqualBindings(tc.expectedBindings, out.Bindings)
+			})
+		}
 	})
 }

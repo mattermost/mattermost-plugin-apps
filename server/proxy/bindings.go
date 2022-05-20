@@ -50,20 +50,17 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	allApps := store.SortApps(p.store.App.AsMap())
 
 	for i := range allApps {
-		app := allApps[i]
 		go func(app apps.App) {
 			apprequest := r.WithDestination(app.AppID)
-			bb, err := p.InvokeGetBindings(apprequest, cc)
-			if err != nil {
-				r.Log.WithError(err).Debugf("failed to fetch app bindings")
+			res := result{
+				appID: app.AppID,
 			}
-
-			all <- result{
-				appID:    app.AppID,
-				bindings: bb,
-				err:      err,
+			res.bindings, res.err = p.InvokeGetBindings(apprequest, cc)
+			if res.err != nil {
+				r.Log.WithError(res.err).Debugf("failed to fetch app bindings")
 			}
-		}(app)
+			all <- res
+		}(allApps[i])
 	}
 
 	ret := []apps.Binding{}

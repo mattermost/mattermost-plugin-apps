@@ -64,7 +64,8 @@ func TestGetOrCreate(t *testing.T) {
 		session.AddProp(model.SessionPropMattermostAppID, string(appID))
 		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(session, nil)
 
-		rSession, err := sessionService.GetOrCreate(r, appID, userID)
+		r = r.WithDestination(appID)
+		rSession, err := sessionService.GetOrCreate(r, userID)
 		assert.NoError(t, err)
 		assert.NotNil(t, rSession)
 	})
@@ -92,7 +93,8 @@ func TestGetOrCreate(t *testing.T) {
 
 		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
 
-		rSession, err := sessionService.GetOrCreate(r, appID, userID)
+		r = r.WithDestination(appID)
+		rSession, err := sessionService.GetOrCreate(r, userID)
 		assert.NoError(t, err)
 		require.NotNil(t, rSession)
 		assert.Equal(t, userID, rSession.UserId)
@@ -151,7 +153,8 @@ func TestGetOrCreate(t *testing.T) {
 			MattermostOAuth2: oAuthApp,
 		}, nil)
 
-		rSession, err := sessionService.GetOrCreate(r, appID, userID)
+		r = r.WithDestination(appID)
+		rSession, err := sessionService.GetOrCreate(r, userID)
 		assert.NoError(t, err)
 		assert.NotNil(t, rSession)
 	})

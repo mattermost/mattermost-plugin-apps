@@ -107,6 +107,13 @@ func (th *Helper) Cleanup(f func()) {
 	})
 }
 
+func (th *Helper) NamedCleanup(name string, f func()) {
+	th.Helper()
+	th.T.Cleanup(func() {
+		th.T.Run("cleanup "+name, func(*testing.T) { f() })
+	})
+}
+
 func respond(text string, err error) apps.CallResponse {
 	if err != nil {
 		return apps.NewErrorResponse(err)
@@ -119,6 +126,7 @@ func respond(text string, err error) apps.CallResponse {
 // appearances of each of them in both lists should match. EqualBindings calls
 // th.Fail if the elements not match.
 func (th *Helper) EqualBindings(expected, actual []apps.Binding) {
+	th.Helper()
 	opt := cmpopts.SortSlices(func(a apps.Binding, b apps.Binding) bool {
 		return a.AppID < b.AppID
 	})

@@ -209,7 +209,7 @@ func testOAuth2(th *Helper) {
 
 	th.Run("users can store and get OAuth2User via REST API", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(cleanupOAuth2User(th))
+		th.NamedCleanup("delete OAuth2User", cleanupOAuth2User(th))
 
 		cresp := oauth2Call(th, "/store-user", testOAuth2User)
 		require.Equal(`stored`, cresp.Text)
@@ -219,13 +219,13 @@ func testOAuth2(th *Helper) {
 	})
 
 	th.Run("System administrators can store OAuth2App", func(th *Helper) {
-		th.Cleanup(cleanupOAuth2App(th))
+		th.NamedCleanup("delete OAuth2App", cleanupOAuth2App(th))
 		storeOAuth2App(th, testOAuth2App)
 	})
 
 	th.Run("User and bot calls can expand OAuth2App", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(func() {
+		th.NamedCleanup("delete OAuth2 user and app", func() {
 			cleanupOAuth2App(th)()
 			cleanupOAuth2User(th)()
 		})
@@ -269,7 +269,7 @@ func testOAuth2(th *Helper) {
 
 	th.Run("Error StoreOAuth2User is size limited", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(cleanupOAuth2User(th))
+		th.NamedCleanup("delete OAuth2User", cleanupOAuth2User(th))
 
 		// set a "previous" value.
 		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
@@ -298,7 +298,7 @@ func testOAuth2(th *Helper) {
 
 	th.Run("Error StoreOAuth2User requires JSON", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(cleanupOAuth2User(th))
+		th.NamedCleanup("delete OAuth2User", cleanupOAuth2User(th))
 
 		// set a "previous" value.
 		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
@@ -327,7 +327,7 @@ func testOAuth2(th *Helper) {
 
 	th.Run("Error StoreOAuth2App is size limited", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(cleanupOAuth2App(th))
+		th.NamedCleanup("delete OAuth2App", cleanupOAuth2App(th))
 
 		creq := apps.CallRequest{
 			Call: *apps.NewCall("/err-app-too-large").
@@ -345,7 +345,7 @@ func testOAuth2(th *Helper) {
 
 	th.Run("Error StoreOAuth2App requires JSON", func(th *Helper) {
 		require := require.New(th)
-		th.Cleanup(cleanupOAuth2App(th))
+		th.NamedCleanup("delete OAuth2App", cleanupOAuth2App(th))
 
 		creq := apps.CallRequest{
 			Call: *apps.NewCall("/err-app-not-json").
