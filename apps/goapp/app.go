@@ -117,9 +117,9 @@ func WithBindingsPath(path string) AppOption {
 	}
 }
 
-func WithBindingsExpand(e apps.Expand) AppOption {
+func WithBindingsExpand(e *apps.Expand) AppOption {
 	return func(app *App) error {
-		app.Manifest.Bindings.Expand = &e
+		app.Manifest.Bindings.Expand = e
 		return nil
 	}
 }

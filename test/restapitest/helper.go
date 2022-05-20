@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/stretchr/testify/require"
@@ -110,4 +112,18 @@ func respond(text string, err error) apps.CallResponse {
 		return apps.NewErrorResponse(err)
 	}
 	return apps.NewTextResponse(text)
+}
+
+// EqualBindings asserts that two slices of bindings are equal ignoring the
+// order of the elements. If there are duplicate elements, the number of
+// appearances of each of them in both lists should match. EqualBindings calls
+// th.Fail if the elements not match.
+func (th *Helper) EqualBindings(expected, actual []apps.Binding) {
+	opt := cmpopts.SortSlices(func(a apps.Binding, b apps.Binding) bool {
+		return a.AppID < b.AppID
+	})
+
+	if diff := cmp.Diff(expected, actual, opt); diff != "" {
+		th.Errorf("Bindings mismatch (-expected +actual):\n%s", diff)
+	}
 }

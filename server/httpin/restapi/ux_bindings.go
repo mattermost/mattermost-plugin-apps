@@ -27,7 +27,6 @@ func (a *restapi) GetBindings(r *incoming.Request, w http.ResponseWriter, req *h
 		UserAgentContext: apps.UserAgentContext{
 			TeamID:    q.Get(config.PropTeamID),
 			ChannelID: q.Get(config.PropChannelID),
-			PostID:    q.Get(config.PropPostID),
 			UserAgent: q.Get(config.PropUserAgent),
 		},
 	})
