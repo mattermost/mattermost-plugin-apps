@@ -1,0 +1,92 @@
+[
+	{
+		"location": "/command",
+		"bindings": [
+			{
+				"app_id": "bind2",
+				"location": "app2BaseCommandLocation",
+				"icon": "{{ .AppsURL }}/bind2/static/app2-base-command-icon",
+				"label": "app2BaseCommandLabel",
+				"hint": "app2 base command hint",
+				"description": "app2 base command description",
+				"bindings": [
+					{
+						"app_id": "bind2",
+						"location": "connect",
+						"icon": "{{ .AppsURL }}/bind2/static/connect command icon",
+						"label": "connect",
+						"hint": "connect command hint",
+						"description": "connect command description",
+						"submit": {
+							"path": "/path"
+						}
+					}
+				]
+			},
+			{
+				"app_id": "bind1",
+				"location": "baseCommandLocation",
+				"icon": "{{ .AppsURL }}/bind1/static/base command icon",
+				"label": "baseCommandLabel",
+				"hint": "base command hint",
+				"description": "base command description",
+				"bindings": [
+					{
+						"app_id": "bind1",
+						"location": "message",
+						"icon": "https://example.com/image.png",
+						"label": "message",
+						"hint": "message command hint",
+						"description": "message command description",
+						"submit": {
+							"path": "/path"
+						}
+					},
+					{
+						"app_id": "bind1",
+						"location": "message-modal",
+						"icon": "{{ .AppsURL }}/bind1/static/message-modal command icon",
+						"label": "message-modal",
+						"hint": "message-modal command hint",
+						"description": "message-modal command description",
+						"submit": {
+							"path": "/path"
+						}
+					},
+					{
+						"app_id": "bind1",
+						"location": "manage",
+						"icon": "{{ .AppsURL }}/bind1/static/valid/path",
+						"label": "manage",
+						"hint": "manage command hint",
+						"description": "manage command description",
+						"bindings": [
+							{
+								"app_id": "bind1",
+								"location": "subscribe",
+								"icon": "{{ .AppsURL }}/bind1/static/subscribe command icon",
+								"label": "subscribe",
+								"hint": "subscribe command hint",
+								"description": "subscribe command description",
+								"submit": {
+									"path": "/path"
+								}
+							},
+							{
+								"app_id": "bind1",
+								"location": "unsubscribe",
+								"icon": "{{ .AppsURL }}/bind1/static/unsubscribe command icon",
+								"label": "unsubscribe",
+								"hint": "unsubscribe command hint",
+								"description": "unsubscribe command description",
+								"submit": {
+									"path": "/path"
+								}
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+]

@@ -541,6 +541,9 @@ func (e *expander) ensureClient() error {
 	switch {
 	case app.DeployType == apps.DeployBuiltin:
 		client, err = mmclient.NewRPCClient(e.proxy.conf.MattermostAPI()), nil
+		if err != nil {
+			return errors.Wrap(err, "failed to get an RPC client")
+		}
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && e.r.ActingUserID() != "":
 		token, err := e.getActingUserAccessToken()
