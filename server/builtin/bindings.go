@@ -18,8 +18,10 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 	}
 
 	if creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin() {
+		if a.conf.Get().DeveloperMode {
+			commands = append(commands, a.debugCommandBinding(loc))
+		}
 		commands = append(commands,
-			a.debugCommandBinding(loc),
 			a.disableCommandBinding(loc),
 			a.enableCommandBinding(loc),
 			a.installCommandBinding(loc),
