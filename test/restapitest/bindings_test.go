@@ -6,6 +6,7 @@ package restapitest
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/url"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type bindingsApp struct {
@@ -24,9 +24,6 @@ type bindingsApp struct {
 	creq  apps.CallRequest
 	cresp apps.CallResponse
 }
-
-//go:embed testdata/bindings_multiple_apps_have_commands.json
-var multipleAppsHaveCommandsJSON []byte
 
 func newBindingsApp(th *Helper, appID apps.AppID, bindExpand *apps.Expand, bindings []apps.Binding) *bindingsApp {
 	app := bindingsApp{}
@@ -46,15 +43,6 @@ func newBindingsApp(th *Helper, appID apps.AppID, bindExpand *apps.Expand, bindi
 			},
 		),
 	)
-
-	app.HandleCall("/echo", Echo)
-	app.HandleCall("/creq", func(_ goapp.CallRequest) apps.CallResponse {
-		return apps.NewDataResponse(app.creq)
-	})
-	app.HandleCall("/cresp", func(_ goapp.CallRequest) apps.CallResponse {
-		return apps.NewDataResponse(app.cresp)
-	})
-
 	return &app
 }
 
@@ -118,7 +106,6 @@ func testBindings(th *Helper) {
 	}
 
 	th.Run("expand all HTTP GET query args", func(th *Helper) {
-		th.Skip()
 		appID := apps.AppID("context_bindings")
 		app := newBindingsApp(th, appID,
 			// Expand everything we realistically can.
@@ -153,6 +140,7 @@ func testBindings(th *Helper) {
 		require := require.New(th)
 
 		require.Equal(th.ServerTestHelper.BasicPost.ChannelId, th.ServerTestHelper.BasicChannel.Id)
+		app.creq = apps.CallRequest{}
 		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
 		require.NoError(err)
 		require.Equal("", out.Err)
@@ -237,32 +225,33 @@ func testBindings(th *Helper) {
 		}{
 			"all locations": {
 				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu},
-				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedChannelHeaderBinding, expectedPostMenuBinding},
+				// Top-level bindings are sorted by Location.
+				expectedBindings: []apps.Binding{expectedChannelHeaderBinding, expectedCommandBinding, expectedPostMenuBinding},
 			},
 			"no locations": {
 				requestedLocations: apps.Locations{},
 				expectedBindings:   []apps.Binding{},
-				expectedError:      "1 error occurred:\n\t* location_bindings: no location granted to bind to: forbidden\n\n",
+				expectedError:      "1 error occurred:\n\t* no location granted to bind to: forbidden\n\n",
 			},
 			"command only": {
 				requestedLocations: apps.Locations{apps.LocationCommand},
 				expectedBindings:   []apps.Binding{expectedCommandBinding},
-				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n\n\n",
+				expectedError:      "2 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
 			},
 			"channel header only": {
 				requestedLocations: apps.Locations{apps.LocationChannelHeader},
 				expectedBindings:   []apps.Binding{expectedChannelHeaderBinding},
-				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n\n\n",
+				expectedError:      "2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
 			},
 			"post menu only": {
 				requestedLocations: apps.Locations{apps.LocationPostMenu},
 				expectedBindings:   []apps.Binding{expectedPostMenuBinding},
-				expectedError:      "1 error occurred:\n\t* location_bindings: 2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /channel_header: location is not granted: forbidden\n\n\n\n",
+				expectedError:      "2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /channel_header: location is not granted: forbidden\n\n",
 			},
 			"command and post menu": {
 				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationPostMenu},
 				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedPostMenuBinding},
-				expectedError:      "1 error occurred:\n\t* location_bindings: 1 error occurred:\n\t* /channel_header: location is not granted: forbidden\n\n\n\n",
+				expectedError:      "1 error occurred:\n\t* /channel_header: location is not granted: forbidden\n\n",
 			},
 		} {
 			th.Run(name, func(th *Helper) {
@@ -278,13 +267,49 @@ func testBindings(th *Helper) {
 				th.InstallAppWithCleanup(app.App)
 				require := require.New(th)
 
+				app.creq = apps.CallRequest{}
 				out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
 				require.NoError(err)
 				require.Equal(tc.expectedError, out.Err)
-				// require.Equal("", utils.Pretty(app.cresp.Data))
-				require.Equal(utils.Pretty(tc.expectedBindings), utils.Pretty(out.Bindings))
+				require.EqualValues(tc.expectedBindings, out.Bindings)
+
+				if len(tc.requestedLocations) == 0 {
+					th.Run("app with no locations doesn't get a request", func(*Helper) {
+						require.Empty(app.creq)
+					})
+				}
 			})
 		}
+	})
+
+	th.Run("disabled app doesn't get a request", func(th *Helper) {
+		appID := apps.AppID("disabled-app")
+
+		appBindings := []apps.Binding{
+			{
+				Location: "loc-test",
+				Label:    "lab-test",
+				Submit:   apps.NewCall("/does-not-matter"),
+			},
+		}
+		app := newBindingsApp(th, appID, nil,
+			[]apps.Binding{
+				{Location: apps.LocationCommand, Bindings: appBindings},
+				{Location: apps.LocationChannelHeader, Bindings: appBindings},
+				{Location: apps.LocationPostMenu, Bindings: appBindings},
+			}).
+			WithLocations(apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu}).
+			WithPermissions(apps.Permissions{apps.PermissionActAsUser})
+
+		th.InstallAppWithCleanup(app.App)
+		th.DisableApp(app.App)
+		require := require.New(th)
+
+		app.creq = apps.CallRequest{}
+		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
+		require.NoError(err)
+		require.Equal("1 error occurred:\n\t* app is disabled by the administrator: disabled-app: forbidden\n\n", out.Err)
+		require.Empty(app.creq)
 	})
 
 	th.Run("multiple apps have commands", func(th *Helper) {
@@ -381,6 +406,91 @@ func testBindings(th *Helper) {
 		out, err := httpGetBindings(th, "", "")
 		require.NoError(err)
 		require.Equal("", out.Err)
-		th.EqualBindings([]byte(multipleAppsHaveCommandsJSON), out.Bindings)
+
+		appsURL := fmt.Sprintf("http://localhost:%v/plugins/com.mattermost.apps/apps", th.ServerTestHelper.Server.ListenAddr.Port)
+		expected := []apps.Binding{
+			{
+				Location: "/command",
+				Bindings: []apps.Binding{
+					{
+						AppID:       "bind1",
+						Location:    "baseCommandLocation",
+						Icon:        appsURL + "/bind1/static/base command icon",
+						Label:       "baseCommandLabel",
+						Hint:        "base command hint",
+						Description: "base command description",
+						Bindings: []apps.Binding{
+							{
+								AppID:       "bind1",
+								Location:    "message",
+								Icon:        "https://example.com/image.png",
+								Label:       "message",
+								Hint:        "message command hint",
+								Description: "message command description",
+								Submit:      apps.NewCall("/path"),
+							},
+							{
+								AppID:       "bind1",
+								Location:    "message-modal",
+								Icon:        appsURL + "/bind1/static/message-modal command icon",
+								Label:       "message-modal",
+								Hint:        "message-modal command hint",
+								Description: "message-modal command description",
+								Submit:      apps.NewCall("/path"),
+							},
+							{
+								AppID:       "bind1",
+								Location:    "manage",
+								Icon:        appsURL + "/bind1/static/valid/path",
+								Label:       "manage",
+								Hint:        "manage command hint",
+								Description: "manage command description",
+								Bindings: []apps.Binding{
+									{
+										AppID:       "bind1",
+										Location:    "subscribe",
+										Icon:        appsURL + "/bind1/static/subscribe command icon",
+										Label:       "subscribe",
+										Hint:        "subscribe command hint",
+										Description: "subscribe command description",
+										Submit:      apps.NewCall("/path"),
+									},
+									{
+										AppID:       "bind1",
+										Location:    "unsubscribe",
+										Icon:        appsURL + "/bind1/static/unsubscribe command icon",
+										Label:       "unsubscribe",
+										Hint:        "unsubscribe command hint",
+										Description: "unsubscribe command description",
+										Submit:      apps.NewCall("/path"),
+									},
+								},
+							},
+						},
+					},
+					{
+						AppID:       "bind2",
+						Location:    "app2BaseCommandLocation",
+						Icon:        appsURL + "/bind2/static/app2-base-command-icon",
+						Label:       "app2BaseCommandLabel",
+						Hint:        "app2 base command hint",
+						Description: "app2 base command description",
+						Bindings: []apps.Binding{
+							{
+								AppID:       "bind2",
+								Location:    "connect",
+								Icon:        appsURL + "/bind2/static/connect command icon",
+								Label:       "connect",
+								Hint:        "connect command hint",
+								Description: "connect command description",
+								Submit:      apps.NewCall("/path"),
+							},
+						},
+					},
+				},
+			},
+		}
+
+		require.EqualValues(expected, out.Bindings)
 	})
 }

@@ -167,9 +167,10 @@ func testKV(th *Helper) {
 		botData := model.StringInterface{
 			"key2": "botvalue",
 		}
-		th.NamedCleanup("delete KV keys", func() {
+		th.Cleanup(func() {
 			_ = kvCall(th, "/delete", true, "", nil)
 			_ = kvCall(th, "/delete", false, "", nil)
+			th.Logf("deleted test KV keys")
 		})
 		require := require.New(th)
 

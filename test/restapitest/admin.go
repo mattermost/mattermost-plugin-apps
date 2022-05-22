@@ -21,9 +21,7 @@ var static embed.FS
 
 func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
 	th.InstallApp(app)
-	th.NamedCleanup(
-		"uninstall app "+string(app.Manifest.AppID),
-		func() { th.UninstallApp(app.Manifest.AppID) })
+	th.Cleanup(func() { th.UninstallApp(app.Manifest.AppID) })
 }
 
 func (th *Helper) InstallApp(app *goapp.App) {
@@ -31,9 +29,11 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	assert := assert.New(th)
 
 	appServer := app.NewTestServer()
-	th.NamedCleanup(
-		"shut down app "+string(app.Manifest.AppID),
-		appServer.Close)
+	th.Logf("started: '%s', listening on %s", app.Manifest.AppID, appServer.Listener.Addr().String())
+	th.Cleanup(func() {
+		appServer.Close()
+		th.Logf("shut down: '%s'", app.Manifest.AppID)
+	})
 	require.Equal(appServer.URL, app.Manifest.Deploy.HTTP.RootURL)
 
 	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
@@ -47,6 +47,22 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	resp, err = th.SystemAdminClientPP.InstallApp(app.Manifest.AppID, apps.DeployHTTP)
 	assert.NoError(err)
 	api4.CheckOKStatus(th, resp)
+
+	th.Logf("installed: '%s'", app.Manifest.AppID)
+}
+
+func (th *Helper) DisableApp(app *goapp.App) {
+	resp, err := th.SystemAdminClientPP.DisableApp(app.Manifest.AppID)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("disabled: '%s'", app.Manifest.AppID)
+}
+
+func (th *Helper) EnableApp(app *goapp.App) {
+	resp, err := th.SystemAdminClientPP.EnableApp(app.Manifest.AppID)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("enabled: '%s'", app.Manifest.AppID)
 }
 
 func (th *Helper) UninstallApp(appID apps.AppID) {
@@ -54,6 +70,7 @@ func (th *Helper) UninstallApp(appID apps.AppID) {
 	resp, err := th.SystemAdminClientPP.UninstallApp(appID)
 	require.NoError(err)
 	api4.CheckOKStatus(th, resp)
+	th.Logf("uninstall: '%s'", appID)
 }
 
 func (th *Helper) InstallAppsPlugin() {
@@ -73,4 +90,6 @@ func (th *Helper) InstallAppsPlugin() {
 
 	appErr = th.ServerTestHelper.App.EnablePlugin(pluginID)
 	require.Nil(appErr)
+
+	th.Logf("installed the apps plugin from bundle: '%s'", bundle)
 }

@@ -1,9 +1,10 @@
 package proxy
 
 import (
+	"sort"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -69,10 +70,11 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 		res := <-all
 		ret = mergeBindings(ret, res.bindings)
 		if res.err != nil {
-			problems = multierror.Append(problems, errors.Wrap(res.err, string(res.appID)))
+			problems = multierror.Append(problems, res.err)
 		}
 	}
-	return ret, problems
+
+	return SortTopBindings(ret), problems
 }
 
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
@@ -80,4 +82,16 @@ func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
 		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
 			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
 	}
+}
+
+// SortTopBindings ensures that the top-level bindings are sorted by Location,
+// and their sub-bindings are sorted by their AppID. The children of those are
+// left untouched.
+func SortTopBindings(in []apps.Binding) (out []apps.Binding) {
+	for _, b := range in {
+		sort.Slice(b.Bindings, func(i, j int) bool { return b.Bindings[i].AppID < b.Bindings[j].AppID })
+		out = append(out, b)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Location < out[j].Location })
+	return out
 }

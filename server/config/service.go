@@ -147,7 +147,7 @@ func (s *service) StoreConfig(stored StoredConfig, log utils.Logger) error {
 		len(stored.InstalledApps), len(stored.LocalManifests))
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(stored, log)
+	err := s.Reconfigure(stored, utils.NilLogger{})
 	if err != nil {
 		return err
 	}

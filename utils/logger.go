@@ -33,6 +33,24 @@ type Logger interface {
 	With(args ...interface{}) Logger
 }
 
+type NilLogger struct{}
+
+var _ Logger = NilLogger{}
+
+func (NilLogger) Debugf(string, ...interface{}) {}
+func (NilLogger) Debugw(string, ...interface{}) {}
+func (NilLogger) Warnf(string, ...interface{})  {}
+func (NilLogger) Warnw(string, ...interface{})  {}
+func (NilLogger) Infof(string, ...interface{})  {}
+func (NilLogger) Infow(string, ...interface{})  {}
+func (NilLogger) Errorf(string, ...interface{}) {}
+func (NilLogger) Errorw(string, ...interface{}) {}
+func (NilLogger) Fatalf(string, ...interface{}) {}
+func (NilLogger) Fatalw(string, ...interface{}) {}
+
+func (l NilLogger) WithError(error) Logger          { return l }
+func (l NilLogger) With(args ...interface{}) Logger { return l }
+
 type logger struct {
 	*zap.SugaredLogger
 }

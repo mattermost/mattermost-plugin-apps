@@ -174,7 +174,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	err = p.conf.Reconfigure(stored, p.log, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.log.WithError(err).Infof("failed to reconfigure")
 		return err
