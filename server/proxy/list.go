@@ -28,7 +28,7 @@ func (p *Proxy) GetInstalledApp(_ *incoming.Request, appID apps.AppID) (*apps.Ap
 func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool) {
 	all := p.store.App.AsMap()
 
-	if ping {
+	if ping && len(all) > 0 {
 		// all ping requests must respond, unreachable respond with "".
 		reachableCh := make(chan apps.AppID)
 		defer close(reachableCh)
