@@ -141,6 +141,7 @@ func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *m
 
 	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
+		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
 		conf.AllowHTTPApps = true
 	}
 
