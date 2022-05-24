@@ -1,6 +1,6 @@
 {
 	"app_id": "hello-serverless",
-	"version": "1.0.0",
+	"version": "v1.1.0",
 	"display_name": "Hello, Serverless!",
 	"homepage_url": "https://github.com/mattermost/mattermost-plugin-apps",
 	"requested_permissions": [

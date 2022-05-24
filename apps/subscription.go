@@ -71,7 +71,7 @@ type Subscription struct {
 	Event
 
 	// Call is the (one-way) call to make upon the event.
-	Call Call `json:"call,omitempty"`
+	Call Call `json:"call"`
 }
 
 type Event struct {
