@@ -61,7 +61,13 @@ func (s *service) GetOrCreate(r *incoming.Request, userID string) (*model.Sessio
 }
 
 func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID string) (*model.Session, error) {
-	user, err := s.mm.User.Get(userID)
+	var user *model.User
+	var err error
+	if userID == r.ActingUserID() {
+		user, err = r.GetActingUser()
+	} else {
+		user, err = s.mm.User.Get(userID)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch user for new session")
 	}

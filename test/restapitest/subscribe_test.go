@@ -155,7 +155,7 @@ func testSubscriptions(th *Helper) {
 				err := json.Unmarshal([]byte(cresp.Text), &subs)
 				require.NoError(err)
 				require.Equal(1, len(subs))
-				require.NotEmpty(subs[0].UserID)
+				require.NotEmpty(subs[0].CreatedByUserID)
 				require.Equal(apps.SubjectUserCreated, subs[0].Subject)
 				require.Equal(subID, subs[0].AppID)
 

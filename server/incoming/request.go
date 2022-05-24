@@ -30,6 +30,7 @@ type Request struct {
 	sourceAppID           apps.AppID
 	actingUserID          string
 	actingUserAccessToken string
+	actingUser            *model.User
 }
 
 func NewRequest(config config.Service, log utils.Logger, session SessionService) *Request {
@@ -114,9 +115,20 @@ func (r *Request) ActingUserID() string {
 func (r *Request) WithActingUserID(id string) *Request {
 	r = r.Clone()
 	r.actingUserID = id
+	r.actingUser = nil
 	r.actingUserAccessToken = ""
 	r.Log = r.Log.With("from_user_id", id)
 	return r
+}
+
+func (r *Request) GetActingUser() (*model.User, error) {
+	if r.actingUser != nil {
+		return r.actingUser, nil
+	}
+	if r.actingUserID == "" {
+		return nil, utils.ErrInvalid
+	}
+	return r.mm.User.Get(r.actingUserID)
 }
 
 func (r *Request) WithPrevContext(cc apps.Context) *Request {

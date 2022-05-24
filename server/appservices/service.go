@@ -53,11 +53,11 @@ func NewService(conf config.Service, store *store.Service) *AppServices {
 	}
 }
 
-func (a *AppServices) ensureFromUser(mattermostUserID string) error {
-	if mattermostUserID == "" {
+func (a *AppServices) ensureFromUser(r *incoming.Request) error {
+	if r.ActingUserID() == "" {
 		return utils.NewUnauthorizedError("not logged in")
 	}
-	mmuser, err := a.conf.MattermostAPI().User.Get(mattermostUserID)
+	mmuser, err := r.GetActingUser()
 	if err != nil {
 		return err
 	}

@@ -68,83 +68,89 @@ const (
 // events the app would like to be notified on, and how these notifications
 // should be invoked.
 type Subscription struct {
-	// AppID is used internally by Mattermost. It does not need to be set by app
-	// developers.
-	AppID AppID `json:"app_id"`
+	Event
 
-	// UserID is used internally by Mattermost. It does not need to be set by app
-	// developers.
-	UserID string `json:"user_id"`
+	// Call is the (one-way) call to make upon the event.
+	Call Call `json:"call,omitempty"`
+}
 
+type Event struct {
 	// Subscription subject. See type Subject godoc (linked) for details.
 	Subject Subject `json:"subject"`
 
 	// ChannelID and TeamID are the subscription scope, as applicable to the subject.
 	ChannelID string `json:"channel_id,omitempty"`
 	TeamID    string `json:"team_id,omitempty"`
-
-	// Call is the (one-way) call to make upon the event.
-	Call Call
 }
 
 func (sub Subscription) Validate() error {
 	var result error
-	if sub.Subject == "" {
-		result = multierror.Append(result, utils.NewInvalidError("subject most not be empty"))
-	}
-
 	emptyCall := Call{}
 	if sub.Call == emptyCall {
 		result = multierror.Append(result, utils.NewInvalidError("call most not be empty"))
 	}
+	return sub.Event.validate(result)
+}
 
-	switch sub.Subject {
+func (e Event) Validate() error {
+	var result error
+	return e.validate(result)
+}
+
+func (e Event) validate(appendTo error) error {
+	if e.Subject == "" {
+		appendTo = multierror.Append(appendTo, utils.NewInvalidError("subject most not be empty"))
+	}
+
+	switch e.Subject {
 	case SubjectUserCreated,
 		SubjectBotJoinedChannel,
 		SubjectBotLeftChannel,
 		SubjectBotJoinedTeam,
 		SubjectBotLeftTeam /*, SubjectBotMentioned*/ :
-		if sub.TeamID != "" {
-			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
+		if e.TeamID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("teamID must be empty"))
 		}
-		if sub.ChannelID != "" {
-			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		if e.ChannelID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("channelID must be empty"))
 		}
 
 	case SubjectUserJoinedChannel,
 		SubjectUserLeftChannel /*, SubjectPostCreated */ :
-		if sub.TeamID != "" {
-			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
+		if e.TeamID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("teamID must be empty"))
 		}
 
-		if sub.ChannelID == "" {
-			result = multierror.Append(result, utils.NewInvalidError("channelID must not be empty"))
+		if e.ChannelID == "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("channelID must not be empty"))
 		}
 
 	case SubjectUserJoinedTeam,
 		SubjectUserLeftTeam,
 		SubjectChannelCreated:
-		if sub.TeamID == "" {
-			result = multierror.Append(result, utils.NewInvalidError("teamID must not be empty"))
+		if e.TeamID == "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("teamID must not be empty"))
 		}
 
-		if sub.ChannelID != "" {
-			result = multierror.Append(result, utils.NewInvalidError("channelID must be empty"))
+		if e.ChannelID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("channelID must be empty"))
 		}
 	default:
-		result = multierror.Append(result, utils.NewInvalidError("Unknown subject %s", sub.Subject))
+		appendTo = multierror.Append(appendTo, utils.NewInvalidError("Unknown subject %s", e.Subject))
 	}
 
-	return result
+	return appendTo
 }
 
+// EqualScope compares 2 subscriptions to have the same scope, i.e. Subject, and
+// Channel/Team IDs.
 func (sub Subscription) EqualScope(s2 Subscription) bool {
 	sub.Call, s2.Call = Call{}, Call{}
 	return sub == s2
 }
 
 func (sub Subscription) Loggable() []interface{} {
-	props := []interface{}{"app_id", sub.AppID, "subject", sub.Subject}
+	props := []interface{}{"subject", sub.Subject}
 	if len(sub.ChannelID) > 0 {
 		props = append(props, "channel_id", sub.ChannelID)
 	}

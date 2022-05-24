@@ -66,7 +66,7 @@ func (a *restapi) handleSubscribeCore(r *incoming.Request, w http.ResponseWriter
 			return http.StatusBadRequest, "Failed to parse Subscription", err
 		}
 		sub.AppID = r.SourceAppID()
-		sub.UserID = r.ActingUserID()
+		sub.CreatedByUserID = r.ActingUserID()
 
 		// TODO replace with an appropriate API-level call that would deduplicate, etc.
 		var err error

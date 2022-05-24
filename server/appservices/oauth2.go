@@ -60,7 +60,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
-	if err = a.ensureFromUser(actingUserID); err != nil {
+	if err = a.ensureFromUser(r); err != nil {
 		return err
 	}
 
@@ -94,7 +94,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 		return nil, utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
 
-	if err = a.ensureFromUser(actingUserID); err != nil {
+	if err = a.ensureFromUser(r); err != nil {
 		return nil, err
 	}
 

@@ -21,51 +21,65 @@ func TestDeleteSub(t *testing.T) {
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
-	toDelete := apps.Subscription{
-		Subject:   "user_joined_channel",
-		ChannelID: "channel-id",
-		AppID:     "app-id",
+	toDelete := Subscription{
+		Subscription: apps.Subscription{
+			Subject:   "user_joined_channel",
+			ChannelID: "channel-id",
+		},
+		AppID: "app-id",
 	}
 
-	storedSubs := []apps.Subscription{
+	storedSubs := []Subscription{
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test1",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test1",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test2",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test2",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test3",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test3",
 		},
 	}
 	storedSubsBytes, _ := json.Marshal(storedSubs)
 
-	storedSubsWithToDelete := []apps.Subscription{
+	storedSubsWithToDelete := []Subscription{
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test1",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			}, AppID: "test1",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test2",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			}, AppID: "test2",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "app-id",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "app-id",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test3",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test3",
 		},
 	}
 	storedSubsWithToDeleteBytes, _ := json.Marshal(storedSubsWithToDelete)
@@ -128,21 +142,27 @@ func TestGetSubs(t *testing.T) {
 	emptySubs := []apps.Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
-	storedSubs := []apps.Subscription{
+	storedSubs := []Subscription{
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test1",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test1",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test2",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test2",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test3",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test3",
 		},
 	}
 
@@ -185,60 +205,73 @@ func TestStoreSub(t *testing.T) {
 	s, err := MakeService(utils.NewTestLogger(), conf, nil)
 	require.NoError(t, err)
 
-	toStore := apps.Subscription{
-		Subject:   "user_joined_channel",
-		ChannelID: "channel-id",
-		AppID:     "app-id",
+	toStore := Subscription{
+		Subscription: apps.Subscription{
+			Subject:   "user_joined_channel",
+			ChannelID: "channel-id",
+		},
+		AppID: "app-id",
 	}
 
-	storedSubs := []apps.Subscription{
+	storedSubs := []Subscription{
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test1",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			}, AppID: "test1",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test2",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test2",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test3",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test3",
 		},
 	}
 
 	storedSubsBytes, _ := json.Marshal(storedSubs)
 
-	storedSubsWithToStore := []apps.Subscription{
+	storedSubsWithToStore := []Subscription{
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test1",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			}, AppID: "test1",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test2",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			}, AppID: "test2",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "test3",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "test3",
 		},
 		{
-			Subject:   "user_joined_channel",
-			ChannelID: "channel-id",
-			AppID:     "app-id",
+			Subscription: apps.Subscription{
+				Subject:   "user_joined_channel",
+				ChannelID: "channel-id",
+			},
+			AppID: "app-id",
 		},
 	}
 	storedSubsWithToStoreBytes, _ := json.Marshal(storedSubsWithToStore)
 
-	emptySubs := []apps.Subscription{}
+	emptySubs := []Subscription{}
 	emptySubsBytes, _ := json.Marshal(emptySubs)
 
-	emptySubsWithToStore := []apps.Subscription{toStore}
+	emptySubsWithToStore := []Subscription{toStore}
 	emptySubsWithToStoreBytes, _ := json.Marshal(emptySubsWithToStore)
 
 	subKey := "sub.user_joined_channel.channel-id"
