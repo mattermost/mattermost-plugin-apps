@@ -84,7 +84,7 @@ type Subscription struct {
 	TeamID    string `json:"team_id,omitempty"`
 
 	// Call is the (one-way) call to make upon the event.
-	Call Call
+	Call Call `json:"call"`
 }
 
 func (sub Subscription) Validate() error {
