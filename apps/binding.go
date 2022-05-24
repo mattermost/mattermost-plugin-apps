@@ -188,13 +188,6 @@ type Binding struct {
 	// RoleID is a role required to see the item (hidden for other users).
 	RoleID string `json:"role_id,omitempty"`
 
-	// DependsOnTeam, etc. specifies the scope of the binding and how it can be
-	// shared across various user sessions.
-	DependsOnTeam    bool `json:"depends_on_team,omitempty"`
-	DependsOnChannel bool `json:"depends_on_channel,omitempty"`
-	DependsOnUser    bool `json:"depends_on_user,omitempty"`
-	DependsOnPost    bool `json:"depends_on_post,omitempty"`
-
 	// A Binding is either an action, a form (embedded or fetched), or a
 	// "container" for other locations/bindings - i.e. menu sub-items or
 	// subcommands. An attempt to specify more than one of these fields is
