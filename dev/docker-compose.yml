@@ -20,7 +20,7 @@ services:
             MM_FEATUREFLAGS_AppsEnabled: "true"
 
             # This can be updated with release versions from https://github.com/mattermost/mattermost-plugin-apps/releases
-            MM_FEATUREFLAGS_PluginApps: "1.0.0"
+            MM_FEATUREFLAGS_PluginApps: "1.1.0"
 
             MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
             MM_LOGSETTINGS_FILELEVEL: DEBUG

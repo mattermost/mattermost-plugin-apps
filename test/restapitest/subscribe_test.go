@@ -25,7 +25,7 @@ func subApp(t testing.TB) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       subID,
-			Version:     "v1.0.0",
+			Version:     "v1.1.0",
 			DisplayName: "tests Subscription API",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			RequestedPermissions: []apps.Permission{
