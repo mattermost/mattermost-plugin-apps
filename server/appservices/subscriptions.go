@@ -48,7 +48,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 		return err
 	}
 
-	r.Log.Debugf("stored %v subscriptions for %v", len(all), sub.Event)
+	r.Log.Debugf("subscribed %s to %v, stored %v subscriptions", r.SourceAppID(), sub.Event, len(all))
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (a *AppServices) Unsubscribe(r *incoming.Request, e apps.Event) error {
 	if err != nil {
 		return err
 	}
-	r.Log.Debugf("unsubscribed stored %v subscriptions for %v", len(modified), e)
+	r.Log.Debugf("unsubscribed %s from %v, stored %v subscriptions", r.SourceAppID(), e, len(modified))
 
 	return err
 }

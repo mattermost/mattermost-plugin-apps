@@ -10,7 +10,6 @@ var ErrForbidden = errors.New("forbidden")
 var ErrInvalid = errors.New("invalid input")
 var ErrNotFound = errors.New("not found")
 var ErrUnauthorized = errors.New("unauthorized")
-var ErrUnreachable = errors.New("internal unreachable error")
 
 func NewError(source error, args ...interface{}) error {
 	s, _ := args[0].(string)

@@ -129,7 +129,7 @@ func (s *Service) ServePluginHTTP(c *plugin.Context, w http.ResponseWriter, req 
 // ServeHTTP is the go http.Handler (mux compliant).
 func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Setup the incoming request.
-	r := s.Proxy.NewIncomingRequest(s.baseLog)
+	r := s.Proxy.NewIncomingRequest()
 	r = r.WithActingUserID(req.Header.Get(config.MattermostUserIDHeader))
 	r = r.WithSourcePluginID(req.Header.Get(config.MattermostPluginIDHeader))
 	r = r.WithSessionID(req.Header.Get(config.MattermostSessionIDHeader))

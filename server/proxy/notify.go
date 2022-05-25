@@ -51,7 +51,7 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contextToExpand *apps.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
-	r := incoming.NewRequest(p.conf, p.log, p.sessionService).WithCtx(ctx)
+	r := p.NewIncomingRequest().WithCtx(ctx)
 	r.Log = r.Log.With(e)
 
 	subs, err := p.store.Subscription.Get(e)

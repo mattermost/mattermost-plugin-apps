@@ -91,7 +91,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(apps.DeployType) (allowed, usable bool)
-	NewIncomingRequest(log utils.Logger) *incoming.Request
+	NewIncomingRequest() *incoming.Request
 	SynchronizeInstalledApps() error
 
 	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
@@ -240,8 +240,8 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 	}
 }
 
-func (p *Proxy) NewIncomingRequest(log utils.Logger) *incoming.Request {
-	return incoming.NewRequest(p.conf, log, p.sessionService)
+func (p *Proxy) NewIncomingRequest() *incoming.Request {
+	return incoming.NewRequest(p.conf, p.log, p.sessionService)
 }
 
 func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {
