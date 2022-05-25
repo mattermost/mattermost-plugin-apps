@@ -92,11 +92,6 @@ func (p *Proxy) GetListedApps(_ *incoming.Request, filter string, includePluginA
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled
-			marketApp.Labels = []model.MarketplaceLabel{{
-				Name:        "Experimental",
-				Description: "Apps are marked as experimental and not meant for production use. Please use with caution.",
-				URL:         "",
-			}}
 
 			if !marketApp.Enabled {
 				marketApp.Labels = append(marketApp.Labels, model.MarketplaceLabel{
