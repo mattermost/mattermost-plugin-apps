@@ -18,7 +18,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	if err := r.Check(
 		r.RequireActingUser,
 		r.RequireUserPermission(model.PermissionManageSystem),
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 	if err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 		r.RequireActingUserIsNotBot,
 	); err != nil {
 		return err
@@ -99,7 +99,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 	if err := r.Check(
 		r.RequireActingUser,
 		r.RequireActingUserIsNotBot,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return nil, err
 	}

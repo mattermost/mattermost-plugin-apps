@@ -23,7 +23,7 @@ type PermissionChecker interface {
 func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) error {
 	err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 		sub.Validate,
 		a.canSubscribe(r, sub),
 	)
@@ -55,7 +55,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 func (a *AppServices) Unsubscribe(r *incoming.Request, e apps.Event) error {
 	err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 		e.Validate,
 	)
 	if err != nil {
@@ -74,7 +74,7 @@ func (a *AppServices) Unsubscribe(r *incoming.Request, e apps.Event) error {
 func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscription, err error) {
 	if err = r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return nil, err
 	}

@@ -209,7 +209,7 @@ func (r *Request) RequireSysadminOrPlugin() error {
 	return utils.NewUnauthorizedError("access to this operation is limited to system administrators, or plugins")
 }
 
-func (r *Request) RequireFromApp() error {
+func (r *Request) RequireSourceApp() error {
 	if r.sourceAppID != "" {
 		return nil
 	}

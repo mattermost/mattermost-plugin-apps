@@ -12,7 +12,7 @@ import (
 func (a *AppServices) KVSet(r *incoming.Request, prefix, id string, data []byte) (bool, error) {
 	if err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return false, err
 	}
@@ -28,7 +28,7 @@ func (a *AppServices) KVSet(r *incoming.Request, prefix, id string, data []byte)
 func (a *AppServices) KVGet(r *incoming.Request, prefix, id string) ([]byte, error) {
 	if err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (a *AppServices) KVGet(r *incoming.Request, prefix, id string) ([]byte, err
 func (a *AppServices) KVDelete(r *incoming.Request, prefix, id string) error {
 	if err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (a *AppServices) KVDelete(r *incoming.Request, prefix, id string) error {
 func (a *AppServices) KVList(r *incoming.Request, prefix string, processf func(key string) error) error {
 	if err := r.Check(
 		r.RequireActingUser,
-		r.RequireFromApp,
+		r.RequireSourceApp,
 	); err != nil {
 		return err
 	}
