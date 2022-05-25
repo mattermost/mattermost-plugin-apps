@@ -39,6 +39,12 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
 func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Binding, error) {
+	if err := r.Check(
+		r.RequireActingUser,
+	); err != nil {
+		return nil, err
+	}
+
 	type result struct {
 		appID    apps.AppID
 		bindings []apps.Binding

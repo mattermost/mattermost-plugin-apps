@@ -32,6 +32,8 @@ type Helper struct {
 	LocalClientPP       *appclient.ClientPP
 }
 
+type Caller func(apps.AppID, apps.CallRequest) *apps.CallResponse
+
 func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 	require := require.New(t)
 	// Check environment

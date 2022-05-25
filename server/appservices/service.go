@@ -4,26 +4,17 @@
 package appservices
 
 import (
-	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-server/v6/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-var ErrNotABot = errors.New("not a bot")
-var ErrIsABot = errors.New("is a bot")
 
 type Service interface {
 	// Subscriptions
 
 	Subscribe(*incoming.Request, apps.Subscription) error
 	GetSubscriptions(_ *incoming.Request) ([]apps.Subscription, error)
-	Unsubscribe(*incoming.Request, apps.Subscription) error
+	Unsubscribe(*incoming.Request, apps.Event) error
 
 	// KV
 
@@ -40,29 +31,13 @@ type Service interface {
 }
 
 type AppServices struct {
-	conf  config.Service
 	store *store.Service
 }
 
 var _ Service = (*AppServices)(nil)
 
-func NewService(conf config.Service, store *store.Service) *AppServices {
+func NewService(store *store.Service) *AppServices {
 	return &AppServices{
-		conf:  conf,
 		store: store,
 	}
-}
-
-func (a *AppServices) ensureFromUser(r *incoming.Request) error {
-	if r.ActingUserID() == "" {
-		return utils.NewUnauthorizedError("not logged in")
-	}
-	mmuser, err := r.GetActingUser()
-	if err != nil {
-		return err
-	}
-	if mmuser.IsBot {
-		return errors.Wrapf(ErrIsABot, "@%s (%s)", mmuser.Username, mmuser.GetDisplayName(model.ShowNicknameFullName))
-	}
-	return nil
 }

@@ -13,6 +13,12 @@ import (
 )
 
 func (p *Proxy) UpdateAppListing(r *incoming.Request, req appclient.UpdateAppListingRequest) (*apps.Manifest, error) {
+	if err := r.Check(
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return nil, err
+	}
+
 	if err := req.Manifest.Validate(); err != nil {
 		return nil, utils.NewInvalidError(err, "invalid app manifest in the request")
 	}

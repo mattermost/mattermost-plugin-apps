@@ -24,6 +24,13 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
+	if err := r.Check(
+		r.RequireActingUser,
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return nil, "", err
+	}
+
 	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
@@ -69,7 +76,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	if !p.pingApp(r, app) {
+	if !p.pingApp(r.Ctx(), app) {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 

@@ -166,7 +166,7 @@ func (mr *MockServiceMockRecorder) Subscribe(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // Unsubscribe mocks base method.
-func (m *MockService) Unsubscribe(arg0 *incoming.Request, arg1 apps.Subscription) error {
+func (m *MockService) Unsubscribe(arg0 *incoming.Request, arg1 apps.Event) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unsubscribe", arg0, arg1)
 	ret0, _ := ret[0].(error)

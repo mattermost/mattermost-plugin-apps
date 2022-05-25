@@ -5,6 +5,7 @@
 package mock_proxy
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -16,6 +17,7 @@ import (
 	proxy "github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	upstream "github.com/mattermost/mattermost-plugin-apps/upstream"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
+	model "github.com/mattermost/mattermost-server/v6/model"
 )
 
 // MockService is a mock of Service interface.
@@ -112,6 +114,21 @@ func (mr *MockServiceMockRecorder) EnableApp(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableApp", reflect.TypeOf((*MockService)(nil).EnableApp), arg0, arg1, arg2)
 }
 
+// GetApp mocks base method.
+func (m *MockService) GetApp(arg0 *incoming.Request) (*apps.App, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetApp", arg0)
+	ret0, _ := ret[0].(*apps.App)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetApp indicates an expected call of GetApp.
+func (mr *MockServiceMockRecorder) GetApp(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApp", reflect.TypeOf((*MockService)(nil).GetApp), arg0)
+}
+
 // GetBindings mocks base method.
 func (m *MockService) GetBindings(arg0 *incoming.Request, arg1 apps.Context) ([]apps.Binding, error) {
 	m.ctrl.T.Helper()
@@ -143,18 +160,17 @@ func (mr *MockServiceMockRecorder) GetInstalledApp(arg0, arg1 interface{}) *gomo
 }
 
 // GetInstalledApps mocks base method.
-func (m *MockService) GetInstalledApps(arg0 *incoming.Request, arg1 bool) ([]apps.App, map[apps.AppID]bool) {
+func (m *MockService) GetInstalledApps() []apps.App {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstalledApps", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetInstalledApps")
 	ret0, _ := ret[0].([]apps.App)
-	ret1, _ := ret[1].(map[apps.AppID]bool)
-	return ret0, ret1
+	return ret0
 }
 
 // GetInstalledApps indicates an expected call of GetInstalledApps.
-func (mr *MockServiceMockRecorder) GetInstalledApps(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetInstalledApps() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstalledApps", reflect.TypeOf((*MockService)(nil).GetInstalledApps))
 }
 
 // GetListedApps mocks base method.
@@ -304,74 +320,91 @@ func (mr *MockServiceMockRecorder) NewIncomingRequest(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewIncomingRequest", reflect.TypeOf((*MockService)(nil).NewIncomingRequest), arg0)
 }
 
-// Notify mocks base method.
-func (m *MockService) Notify(arg0 apps.Context, arg1 apps.Subject) error {
+// NotifyChannelCreated mocks base method.
+func (m *MockService) NotifyChannelCreated(arg0, arg1 string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Notify", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "NotifyChannelCreated", arg0, arg1)
 }
 
-// Notify indicates an expected call of Notify.
-func (mr *MockServiceMockRecorder) Notify(arg0, arg1 interface{}) *gomock.Call {
+// NotifyChannelCreated indicates an expected call of NotifyChannelCreated.
+func (mr *MockServiceMockRecorder) NotifyChannelCreated(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockService)(nil).Notify), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyChannelCreated", reflect.TypeOf((*MockService)(nil).NotifyChannelCreated), arg0, arg1)
 }
 
-// NotifyUserHasJoinedChannel mocks base method.
-func (m *MockService) NotifyUserHasJoinedChannel(arg0 apps.Context) error {
+// NotifyUserCreated mocks base method.
+func (m *MockService) NotifyUserCreated(arg0 string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyUserHasJoinedChannel", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "NotifyUserCreated", arg0)
 }
 
-// NotifyUserHasJoinedChannel indicates an expected call of NotifyUserHasJoinedChannel.
-func (mr *MockServiceMockRecorder) NotifyUserHasJoinedChannel(arg0 interface{}) *gomock.Call {
+// NotifyUserCreated indicates an expected call of NotifyUserCreated.
+func (mr *MockServiceMockRecorder) NotifyUserCreated(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasJoinedChannel", reflect.TypeOf((*MockService)(nil).NotifyUserHasJoinedChannel), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserCreated", reflect.TypeOf((*MockService)(nil).NotifyUserCreated), arg0)
 }
 
-// NotifyUserHasJoinedTeam mocks base method.
-func (m *MockService) NotifyUserHasJoinedTeam(arg0 apps.Context) error {
+// NotifyUserJoinedChannel mocks base method.
+func (m *MockService) NotifyUserJoinedChannel(arg0 string, arg1 *model.User) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyUserHasJoinedTeam", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "NotifyUserJoinedChannel", arg0, arg1)
 }
 
-// NotifyUserHasJoinedTeam indicates an expected call of NotifyUserHasJoinedTeam.
-func (mr *MockServiceMockRecorder) NotifyUserHasJoinedTeam(arg0 interface{}) *gomock.Call {
+// NotifyUserJoinedChannel indicates an expected call of NotifyUserJoinedChannel.
+func (mr *MockServiceMockRecorder) NotifyUserJoinedChannel(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasJoinedTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasJoinedTeam), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserJoinedChannel", reflect.TypeOf((*MockService)(nil).NotifyUserJoinedChannel), arg0, arg1)
 }
 
-// NotifyUserHasLeftChannel mocks base method.
-func (m *MockService) NotifyUserHasLeftChannel(arg0 apps.Context) error {
+// NotifyUserJoinedTeam mocks base method.
+func (m *MockService) NotifyUserJoinedTeam(arg0 string, arg1 *model.User) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyUserHasLeftChannel", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "NotifyUserJoinedTeam", arg0, arg1)
 }
 
-// NotifyUserHasLeftChannel indicates an expected call of NotifyUserHasLeftChannel.
-func (mr *MockServiceMockRecorder) NotifyUserHasLeftChannel(arg0 interface{}) *gomock.Call {
+// NotifyUserJoinedTeam indicates an expected call of NotifyUserJoinedTeam.
+func (mr *MockServiceMockRecorder) NotifyUserJoinedTeam(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftChannel", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftChannel), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserJoinedTeam", reflect.TypeOf((*MockService)(nil).NotifyUserJoinedTeam), arg0, arg1)
 }
 
-// NotifyUserHasLeftTeam mocks base method.
-func (m *MockService) NotifyUserHasLeftTeam(arg0 apps.Context) error {
+// NotifyUserLeftChannel mocks base method.
+func (m *MockService) NotifyUserLeftChannel(arg0 string, arg1 *model.User) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyUserHasLeftTeam", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "NotifyUserLeftChannel", arg0, arg1)
 }
 
-// NotifyUserHasLeftTeam indicates an expected call of NotifyUserHasLeftTeam.
-func (mr *MockServiceMockRecorder) NotifyUserHasLeftTeam(arg0 interface{}) *gomock.Call {
+// NotifyUserLeftChannel indicates an expected call of NotifyUserLeftChannel.
+func (mr *MockServiceMockRecorder) NotifyUserLeftChannel(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserHasLeftTeam", reflect.TypeOf((*MockService)(nil).NotifyUserHasLeftTeam), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserLeftChannel", reflect.TypeOf((*MockService)(nil).NotifyUserLeftChannel), arg0, arg1)
+}
+
+// NotifyUserLeftTeam mocks base method.
+func (m *MockService) NotifyUserLeftTeam(arg0 string, arg1 *model.User) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "NotifyUserLeftTeam", arg0, arg1)
+}
+
+// NotifyUserLeftTeam indicates an expected call of NotifyUserLeftTeam.
+func (mr *MockServiceMockRecorder) NotifyUserLeftTeam(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUserLeftTeam", reflect.TypeOf((*MockService)(nil).NotifyUserLeftTeam), arg0, arg1)
+}
+
+// PingInstalledApps mocks base method.
+func (m *MockService) PingInstalledApps(arg0 context.Context) ([]apps.App, map[apps.AppID]bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PingInstalledApps", arg0)
+	ret0, _ := ret[0].([]apps.App)
+	ret1, _ := ret[1].(map[apps.AppID]bool)
+	return ret0, ret1
+}
+
+// PingInstalledApps indicates an expected call of PingInstalledApps.
+func (mr *MockServiceMockRecorder) PingInstalledApps(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingInstalledApps", reflect.TypeOf((*MockService)(nil).PingInstalledApps), arg0)
 }
 
 // SynchronizeInstalledApps mocks base method.

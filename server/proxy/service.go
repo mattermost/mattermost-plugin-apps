@@ -4,12 +4,14 @@
 package proxy
 
 import (
+	"context"
 	"io"
 	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -42,6 +44,8 @@ type Proxy struct {
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
+
+	log utils.Logger
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -55,10 +59,13 @@ type Admin interface {
 	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 }
 
-// Invoker implements operations that invoke individual Apps. These methods
-// expect the acting user, to and from apps to be set in the request.
-type Invoker interface {
+// API implements user-level operations, usually invoked from httoin handlers.
+// These methods expect the acting user, to and from apps to be set in the
+// request.
+type API interface {
 	// REST API methods used by user agents (mobile, desktop, web).
+	GetApp(*incoming.Request) (*apps.App, error)
+	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	InvokeCall(*incoming.Request, apps.CallRequest) CallResponse
 	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]interface{}) error
 	InvokeGetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
@@ -70,12 +77,12 @@ type Invoker interface {
 // Notifier implements subscription notifications, each one may be going out to
 // multiple apps. Notify functions create their own app requests.
 type Notifier interface {
-	Notify(apps.Context, apps.Subject) error
-	// NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
-	NotifyUserHasJoinedChannel(apps.Context) error
-	NotifyUserHasLeftChannel(apps.Context) error
-	NotifyUserHasJoinedTeam(apps.Context) error
-	NotifyUserHasLeftTeam(apps.Context) error
+	NotifyUserCreated(userID string)
+	NotifyUserJoinedChannel(channelID string, user *model.User)
+	NotifyUserLeftChannel(channelID string, user *model.User)
+	NotifyUserJoinedTeam(teamID string, user *model.User)
+	NotifyUserLeftTeam(teamID string, user *model.User)
+	NotifyChannelCreated(teamID, channelID string)
 }
 
 // Internal implements go API used by other plugin-apps packages. When relevant,
@@ -87,9 +94,9 @@ type Internal interface {
 	NewIncomingRequest(log utils.Logger) *incoming.Request
 	SynchronizeInstalledApps() error
 
-	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
-	GetInstalledApps(_ *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
+	GetInstalledApps() []apps.App
+	PingInstalledApps(context.Context) (installed []apps.App, reachable map[apps.AppID]bool)
 	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
 	GetManifest(apps.AppID) (*apps.Manifest, error)
 }
@@ -100,13 +107,13 @@ type Service interface {
 
 	Admin
 	Internal
-	Invoker
+	API
 	Notifier
 }
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service, log utils.Logger) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
@@ -115,6 +122,7 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
 		appservices:      appservices,
+		log:              log,
 	}
 }
 

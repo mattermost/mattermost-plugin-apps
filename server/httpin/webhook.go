@@ -1,4 +1,4 @@
-package gateway
+package httpin
 
 import (
 	"net/http"
@@ -10,23 +10,23 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) handleWebhook(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	err := g.doHandleWebhook(r, w, req)
+func (s *Service) Webhook(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	err := s.doHandleWebhook(r, w, req)
 	if err != nil {
 		r.Log.WithError(err).Warnw("failed to process remote webhook")
 		httputils.WriteError(w, err)
 	}
 }
 
-func (g *gateway) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, req *http.Request) error {
-	sreq, err := newHTTPCallRequest(req, g.Config.Get().MaxWebhookSize)
+func (s *Service) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, req *http.Request) error {
+	sreq, err := newHTTPCallRequest(req, s.Config.Get().MaxWebhookSize)
 	if err != nil {
 		return err
 	}
 	sreq.Path = mux.Vars(req)["path"]
 	r.Log = r.Log.With("call_path", sreq.Path)
 
-	err = g.Proxy.InvokeRemoteWebhook(r, *sreq)
+	err = s.Proxy.InvokeRemoteWebhook(r, *sreq)
 	if err != nil {
 		return err
 	}

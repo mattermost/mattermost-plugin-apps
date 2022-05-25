@@ -41,9 +41,11 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 		teamID, _ := creq.StringValue("team_id")
 		asBot, _ := creq.BoolValue("as_bot")
 		sub := apps.Subscription{
-			Subject:   apps.Subject(subject),
-			TeamID:    teamID,
-			ChannelID: channelID,
+			Event: apps.Event{
+				Subject:   apps.Subject(subject),
+				TeamID:    teamID,
+				ChannelID: channelID,
+			},
 			Call: *apps.NewCall("/echo").
 				WithExpand(apps.Expand{
 					App:                   apps.ExpandAll.Optional(),
@@ -94,8 +96,12 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 	return app
 }
 
-func subCall(th *Helper, path string, asBot bool, subject apps.Subject, teamID, channelID string) apps.CallResponse { //nolint:golint,unparam
-	return *th.HappyCall(subID, subCallRequest(path, asBot, subject, teamID, channelID))
+func assertNumSubs(th *Helper, callf Caller, n int) {
+	cresp := callf(subID, subCallRequest("/list", false, "", "", ""))
+	subs := []apps.Subscription{}
+	err := json.Unmarshal([]byte(cresp.Text), &subs)
+	require.NoError(th, err)
+	require.Equal(th, n, len(subs))
 }
 
 func subCallRequest(path string, asBot bool, subject apps.Subject, teamID, channelID string) apps.CallRequest {
@@ -124,11 +130,11 @@ func testSubscriptions(th *Helper) {
 		assert := assert.New(th)
 		client := th.CreateUnauthenticatedClientPP()
 
-		resp, err := client.Subscribe(&apps.Subscription{Subject: apps.SubjectUserCreated})
+		resp, err := client.Subscribe(&apps.Subscription{Event: apps.Event{Subject: apps.SubjectUserCreated}})
 		assert.Error(err)
 		api4.CheckUnauthorizedStatus(th, resp)
 
-		resp, err = client.Unsubscribe(&apps.Subscription{Subject: apps.SubjectUserCreated})
+		resp, err = client.Unsubscribe(&apps.Subscription{Event: apps.Event{Subject: apps.SubjectUserCreated}})
 		assert.Error(err)
 		api4.CheckUnauthorizedStatus(th, resp)
 
@@ -138,100 +144,89 @@ func testSubscriptions(th *Helper) {
 		api4.CheckUnauthorizedStatus(th, resp)
 	})
 
-	th.Run("subscribe-list-delete", func(th *Helper) {
-		for _, asBot := range []bool{true, false} {
-			name := "as acting user"
-			if asBot {
-				name = "as bot"
-			}
-			th.Run(name, func(th *Helper) {
-				require := require.New(th)
+	th.Run("subscribe-list-delete as user", func(th *Helper) {
+		require := require.New(th)
 
-				cresp := subCall(th, "/subscribe", asBot, apps.SubjectUserCreated, "", "")
-				require.Equal(`subscribed`, cresp.Text)
+		cresp := th.HappyCall(subID, subCallRequest("/subscribe", false, apps.SubjectUserCreated, "", ""))
+		require.Equal(`subscribed`, cresp.Text)
+		cresp = th.HappyCall(subID, subCallRequest("/subscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+		require.Equal(`subscribed`, cresp.Text)
+		cresp = th.HappyCall(subID, subCallRequest("/subscribe", false, apps.SubjectUserJoinedTeam, th.ServerTestHelper.BasicTeam.Id, ""))
+		require.Equal(`subscribed`, cresp.Text)
+		assertNumSubs(th, th.HappyCall, 3)
+		th.Cleanup(func() {
+			_, _, _ = th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+			_, _, _ = th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectUserJoinedTeam, th.ServerTestHelper.BasicTeam.Id, ""))
+			_, _, _ = th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectUserCreated, "", ""))
+			assertNumSubs(th, th.HappyCall, 0)
+		})
 
-				cresp = subCall(th, "/list", asBot, "", "", "")
-				subs := []apps.Subscription{}
-				err := json.Unmarshal([]byte(cresp.Text), &subs)
-				require.NoError(err)
-				require.Equal(1, len(subs))
-				require.NotEmpty(subs[0].CreatedByUserID)
-				require.Equal(apps.SubjectUserCreated, subs[0].Subject)
-				require.Equal(subID, subs[0].AppID)
+		cresp = th.HappyCall(subID, subCallRequest("/unsubscribe", false, apps.SubjectUserCreated, "", ""))
+		require.Equal(`unsubscribed`, cresp.Text)
+		assertNumSubs(th, th.HappyCall, 2)
 
-				cresp = subCall(th, "/unsubscribe", asBot, apps.SubjectUserCreated, "", "")
-				require.Equal(`unsubscribed`, cresp.Text)
-
-				cresp = subCall(th, "/list", asBot, "", "", "")
-				subs = []apps.Subscription{}
-				err = json.Unmarshal([]byte(cresp.Text), &subs)
-				require.NoError(err)
-				require.Equal(0, len(subs))
-			})
-		}
+		// Unsubscribe from a non-existing subscription.
+		badResponse, _, err := th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, "does-not-exist", ""))
+		require.NoError(err)
+		require.Equal(apps.CallResponseTypeError, badResponse.Type)
+		require.Equal("not found", badResponse.Text)
+		assertNumSubs(th, th.HappyCall, 2)
 	})
 
-	th.Run("user-namespace", func(th *Helper) {
+	th.Run("subscribe as bot list as user", func(th *Helper) {
+		require := require.New(th)
+
+		cresp := th.HappyCall(subID, subCallRequest("/subscribe", true, apps.SubjectUserCreated, "", ""))
+		require.Equal(`subscribed`, cresp.Text)
+
+		// listing subs as user, we don't see the bot subscription.
+		assertNumSubs(th, th.HappyCall, 0)
+
+		cresp = th.HappyCall(subID, subCallRequest("/unsubscribe", true, apps.SubjectUserCreated, "", ""))
+		require.Equal(`unsubscribed`, cresp.Text)
+	})
+
+	th.Run("users have their namespaces", func(th *Helper) {
 		require := require.New(th)
 
 		// subscribe both users to user_created and channel_created.
-		creq := subCallRequest("/subscribe", false, apps.SubjectUserCreated, "", "")
-		cresp := th.HappyCall(subID, creq)
-		require.Equal(`subscribed`, cresp.Text)
-		cresp = th.HappyUser2Call(subID, creq)
-		require.Equal(`subscribed`, cresp.Text)
+		subscribeUserCreated := subCallRequest("/subscribe", false, apps.SubjectUserCreated, "", "")
+		unsubscribeUserCreated := subCallRequest("/unsubscribe", false, apps.SubjectUserCreated, "", "")
+		subscribeChannelCreated := subCallRequest("/subscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, "")
+		unsubscribeChannelCreated := subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, "")
 
-		creq = subCallRequest("/subscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, "")
-		cresp = th.HappyCall(subID, creq)
+		cresp := th.HappyCall(subID, subscribeUserCreated)
 		require.Equal(`subscribed`, cresp.Text)
-		cresp = th.HappyUser2Call(subID, creq)
+		cresp = th.HappyCall(subID, subscribeChannelCreated)
 		require.Equal(`subscribed`, cresp.Text)
+		assertNumSubs(th, th.HappyCall, 2)
+		th.Cleanup(func() {
+			_, _, _ = th.Call(subID, unsubscribeUserCreated)
+			_, _, _ = th.Call(subID, unsubscribeChannelCreated)
+			assertNumSubs(th, th.HappyCall, 0)
+		})
 
-		creq = subCallRequest("/list", false, "", "", "")
-		cresp = th.HappyCall(subID, creq)
-		subs := []apps.Subscription{}
-		err := json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(2, len(subs))
-		cresp = th.HappyUser2Call(subID, creq)
-		subs = []apps.Subscription{}
-		err = json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(2, len(subs))
+		cresp = th.HappyUser2Call(subID, subscribeUserCreated)
+		require.Equal(`subscribed`, cresp.Text)
+		cresp = th.HappyUser2Call(subID, subscribeChannelCreated)
+		require.Equal(`subscribed`, cresp.Text)
+		assertNumSubs(th, th.HappyUser2Call, 2)
+		th.Cleanup(func() {
+			_, _, _ = th.User2Call(subID, unsubscribeUserCreated)
+			_, _, _ = th.User2Call(subID, unsubscribeChannelCreated)
+			assertNumSubs(th, th.HappyUser2Call, 0)
+		})
 
 		// Unsubscribe user1 from user_created, check.
-		creq = subCallRequest("/unsubscribe", false, apps.SubjectUserCreated, "", "")
-		cresp = th.HappyCall(subID, creq)
+		cresp = th.HappyCall(subID, unsubscribeUserCreated)
 		require.Equal(`unsubscribed`, cresp.Text)
-		creq = subCallRequest("/list", false, "", "", "")
-		cresp = th.HappyCall(subID, creq)
-		subs = []apps.Subscription{}
-		err = json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(1, len(subs))
-		require.Equal(apps.SubjectChannelCreated, subs[0].Subject)
-		cresp = th.HappyUser2Call(subID, creq)
-		subs = []apps.Subscription{}
-		err = json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(2, len(subs))
+		assertNumSubs(th, th.HappyCall, 1)
+		assertNumSubs(th, th.HappyUser2Call, 2)
 
 		// Unsubscribe user2 from channel_created, cross-check.
-		creq = subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, "")
-		cresp = th.HappyUser2Call(subID, creq)
+		cresp = th.HappyUser2Call(subID, unsubscribeChannelCreated)
 		require.Equal(`unsubscribed`, cresp.Text)
-		creq = subCallRequest("/list", false, "", "", "")
-		cresp = th.HappyUser2Call(subID, creq)
-		subs = []apps.Subscription{}
-		err = json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(1, len(subs))
-		require.Equal(apps.SubjectUserCreated, subs[0].Subject)
-		cresp = th.HappyCall(subID, creq)
-		subs = []apps.Subscription{}
-		err = json.Unmarshal([]byte(cresp.Text), &subs)
-		require.NoError(err)
-		require.Equal(1, len(subs))
-		require.Equal(apps.SubjectChannelCreated, subs[0].Subject)
+		assertNumSubs(th, th.HappyCall, 1)
+		assertNumSubs(th, th.HappyUser2Call, 1)
 	})
 }

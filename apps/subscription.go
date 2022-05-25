@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -142,13 +144,6 @@ func (e Event) validate(appendTo error) error {
 	return appendTo
 }
 
-// EqualScope compares 2 subscriptions to have the same scope, i.e. Subject, and
-// Channel/Team IDs.
-func (sub Subscription) EqualScope(s2 Subscription) bool {
-	sub.Call, s2.Call = Call{}, Call{}
-	return sub == s2
-}
-
 func (sub Subscription) Loggable() []interface{} {
 	props := []interface{}{"subject", sub.Subject}
 	if len(sub.ChannelID) > 0 {
@@ -158,4 +153,26 @@ func (sub Subscription) Loggable() []interface{} {
 		props = append(props, "team_id", sub.TeamID)
 	}
 	return props
+}
+
+func (e Event) Loggable() []interface{} {
+	props := []interface{}{"subject", string(e.Subject)}
+	if e.ChannelID != "" {
+		props = append(props, "channel_id", e.ChannelID)
+	}
+	if e.TeamID != "" {
+		props = append(props, "team_id", e.TeamID)
+	}
+	return props
+}
+
+func (e Event) String() string {
+	s := fmt.Sprintf("subject: %s", e.Subject)
+	if e.ChannelID != "" {
+		s += fmt.Sprintf("channel_id: %s", e.ChannelID)
+	}
+	if e.TeamID != "" {
+		s += fmt.Sprintf("team_id: %s", e.TeamID)
+	}
+	return s
 }

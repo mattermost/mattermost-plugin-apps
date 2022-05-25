@@ -1,12 +1,10 @@
-package restapi
+package httpin
 
 import (
 	"net/http"
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/handler"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
@@ -16,32 +14,15 @@ const (
 	MaxKVStoreValueLength = 8192
 )
 
-func (a *restapi) initKV(h *handler.Handler) {
-	h.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVGet, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodGet)
-	h.HandleFunc(path.KV+"/{key}",
-		a.KVGet, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodGet)
-
-	h.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVPut, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodPut, http.MethodPost)
-	h.HandleFunc(path.KV+"/{key}",
-		a.KVPut, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodPut, http.MethodPost)
-
-	h.HandleFunc(path.KV+"/{prefix}/{key}",
-		a.KVDelete, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodDelete)
-	h.HandleFunc(path.KV+"/{key}",
-		a.KVDelete, h.RequireActingUser, h.RequireFromApp).Methods(http.MethodDelete)
-}
-
 // KVGet returns a value stored by the App in the KV store.
 //   Path: /api/v1/kv/[{prefix}/]{key}
 //   Method: GET
 //   Input: none
 //   Output: a JSON object
-func (a *restapi) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+func (s *Service) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
-	data, err := a.appServices.KVGet(r, prefix, id)
+	data, err := s.AppServices.KVGet(r, prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -56,7 +37,7 @@ func (a *restapi) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Re
 //   Output: a JSON object
 //   Output:
 //     changed: set to true if the key value was changed.
-func (a *restapi) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+func (s *Service) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
 	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
@@ -65,7 +46,7 @@ func (a *restapi) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	changed, err := a.appServices.KVSet(r, prefix, id, data)
+	changed, err := s.AppServices.KVSet(r, prefix, id, data)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return
@@ -80,11 +61,11 @@ func (a *restapi) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 //   Methods: DELETE
 //   Input: none
 //   Output: none
-func (a *restapi) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+func (s *Service) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
 
-	err := a.appServices.KVDelete(r, prefix, id)
+	err := s.AppServices.KVDelete(r, prefix, id)
 	if err != nil {
 		httputils.WriteError(w, err)
 		return

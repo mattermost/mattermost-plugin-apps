@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpin/restapi"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -75,7 +75,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	for {
 		data, err := json.Marshal(largeJSON)
 		require.NoError(t, err)
-		if len(data) > restapi.MaxKVStoreValueLength {
+		if len(data) > httpin.MaxKVStoreValueLength {
 			break
 		}
 		largeJSON.Fields = append(largeJSON.Fields, largeJSON)
@@ -374,7 +374,7 @@ func testOAuth2(th *Helper) {
 		cresp, resp, err := th.Call(oauth2ID, creq)
 		require.NoError(err)
 		require.Equal(apps.CallResponseTypeError, cresp.Type)
-		require.Equal(`@oauth2test (tests App's OAuth2 APIs): is a bot`, cresp.Text)
+		require.Equal(`@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
 		// TODO: should be a 403!
 		api4.CheckOKStatus(th, resp)
 
@@ -387,7 +387,7 @@ func testOAuth2(th *Helper) {
 		cresp, resp, err = th.Call(oauth2ID, creq)
 		require.NoError(err)
 		require.Equal(apps.CallResponseTypeError, cresp.Type)
-		require.Equal(`@oauth2test (tests App's OAuth2 APIs): is a bot`, cresp.Text)
+		require.Equal(`@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
 		require.NotNil(resp)
 		// TODO: should be a 403!
 		require.Equal(resp.StatusCode, 200)
@@ -413,7 +413,7 @@ func testOAuth2(th *Helper) {
 				})
 				require.NoError(err)
 				require.Equal(apps.CallResponseTypeError, cresp.Type)
-				require.Equal(`access to this operation is limited to system administrators: unauthorized`, cresp.Text)
+				require.Equal(`access to this operation is limited to users with permission: manage_system: unauthorized`, cresp.Text)
 				require.NotNil(resp)
 				// TODO: should be a 403!
 				require.Equal(resp.StatusCode, 200)

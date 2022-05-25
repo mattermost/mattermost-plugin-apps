@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -22,9 +23,9 @@ type SubscriptionStore interface {
 }
 
 type Subscription struct {
-	Call            apps.Call
-	AppID           apps.AppID `json:"app_id"`
-	CreatedByUserID string     `json:"user_id"`
+	Call        apps.Call
+	AppID       apps.AppID `json:"app_id"`
+	OwnerUserID string     `json:"user_id"`
 }
 
 type StoredSubscriptions struct {

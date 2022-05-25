@@ -62,7 +62,7 @@ func (p *Proxy) InvokeCompleteRemoteOAuth2(r *incoming.Request, urlValues map[st
 		Call:    app.OnOAuth2Complete.WithDefault(apps.DefaultOnOAuth2Complete),
 		Context: apps.Context{},
 		Values:  urlValues,
-	})
+	}, false)
 	if cresp.Type == apps.CallResponseTypeError {
 		return &cresp
 	}

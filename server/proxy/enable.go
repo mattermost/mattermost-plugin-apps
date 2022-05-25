@@ -14,6 +14,12 @@ import (
 )
 
 func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
+	if err := r.Check(
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return "", err
+	}
+
 	app, err := p.GetInstalledApp(appID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
@@ -55,6 +61,12 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 }
 
 func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
+	if err := r.Check(
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return "", err
+	}
+
 	app, err := p.GetInstalledApp(appID, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)

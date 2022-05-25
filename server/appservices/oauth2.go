@@ -15,6 +15,14 @@ import (
 )
 
 func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
+	if err := r.Check(
+		r.RequireActingUser,
+		r.RequireUserPermission(model.PermissionManageSystem),
+		r.RequireFromApp,
+	); err != nil {
+		return err
+	}
+
 	var oapp apps.OAuth2App
 	err := json.Unmarshal(data, &oapp)
 	if err != nil {
@@ -41,12 +49,19 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 		return err
 	}
 
-	a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
+	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
 
 	return nil
 }
 
 func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
+	if err := r.Check(
+		r.RequireActingUser,
+		r.RequireFromApp,
+		r.RequireActingUserIsNotBot,
+	); err != nil {
+		return err
+	}
 	if !json.Valid(data) {
 		return utils.NewInvalidError("payload is not valid JSON")
 	}
@@ -59,9 +74,6 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
-	}
-	if err = a.ensureFromUser(r); err != nil {
-		return err
 	}
 
 	oldData, err := a.store.OAuth2.GetUser(appID, actingUserID)
@@ -77,13 +89,21 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 		return err
 	}
 
-	a.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	return nil
 }
 
 // GetOAuth2User returns the stored OAuth2 user data for a given user and app.
 // If err != nil, the returned data is always valid JSON.
 func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
+	if err := r.Check(
+		r.RequireActingUser,
+		r.RequireActingUserIsNotBot,
+		r.RequireFromApp,
+	); err != nil {
+		return nil, err
+	}
+
 	appID := r.SourceAppID()
 	actingUserID := r.ActingUserID()
 	app, err := a.store.App.Get(appID)
@@ -92,10 +112,6 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 	}
 	if !app.GrantedPermissions.Contains(apps.PermissionRemoteOAuth2) {
 		return nil, utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
-	}
-
-	if err = a.ensureFromUser(r); err != nil {
-		return nil, err
 	}
 
 	data, err := a.store.OAuth2.GetUser(appID, actingUserID)

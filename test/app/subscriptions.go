@@ -119,9 +119,10 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 	client := appclient.AsActingUser(creq.Context)
 
 	sub := &apps.Subscription{
-		Subject: subject,
-		AppID:   creq.Context.AppID,
-		Call:    *apps.NewCall(NotifyPath).WithExpand(allSubjects[subject]),
+		Event: apps.Event{
+			Subject: subject,
+		},
+		Call: *apps.NewCall(NotifyPath).WithExpand(allSubjects[subject]),
 	}
 
 	switch subject {

@@ -6,73 +6,122 @@ package proxy
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
+func (p *Proxy) NotifyUserCreated(userID string) {
+	p.notify(nil, apps.Event{Subject: apps.SubjectUserCreated}, &apps.Context{UserID: userID})
+}
+
+func (p *Proxy) NotifyUserJoinedChannel(channelID string, user *model.User) {
+	p.notifyJoinLeave("", channelID, user, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func (p *Proxy) NotifyUserLeftChannel(channelID string, user *model.User) {
+	p.notifyJoinLeave("", channelID, user, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+}
+
+func (p *Proxy) NotifyUserJoinedTeam(teamID string, user *model.User) {
+	p.notifyJoinLeave(teamID, "", user, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+}
+
+func (p *Proxy) NotifyUserLeftTeam(teamID string, user *model.User) {
+	p.notifyJoinLeave(teamID, "", user, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+}
+
+func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
+	p.notify(nil,
+		apps.Event{
+			Subject: apps.SubjectChannelCreated,
+			TeamID:  teamID,
+		},
+		&apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    teamID,
+				ChannelID: channelID,
+			},
+		})
+}
+
+func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contextToExpand *apps.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
+	r := incoming.NewRequest(p.conf, p.log, p.sessionService).WithCtx(ctx)
+	r.Log = r.Log.With(e)
 
-	mm := p.conf.MattermostAPI()
-	log := utils.NewPluginLogger(mm).With("subject", subj)
-	r := incoming.NewRequest(p.conf, log, p.sessionService).WithCtx(ctx)
-
-	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
+	subs, err := p.store.Subscription.Get(e)
 	if err != nil {
-		return err
+		r.Log.WithError(err).Errorf("Notify error")
+		return
 	}
 
-	return p.notify(r, base, subs)
-}
-
-func (p *Proxy) notify(r *incoming.Request, base apps.Context, subs []apps.Subscription) error {
 	for _, sub := range subs {
-		err := p.notifyForSubscription(r, &base, sub)
-		if err != nil {
-			r.Log.WithError(err).Debugw("failed to notify")
-			continue // attempting to notify other subs
+		if match(sub) {
+			go p.notifyForSubscription(r, e, sub, contextToExpand)
 		}
 	}
-	return nil
 }
 
-func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, sub apps.Subscription) error {
-	app, err := p.GetInstalledApp(sub.AppID, true)
-	if err != nil {
-		return err
-	}
-	creq := apps.CallRequest{
-		Call: sub.Call,
-	}
-
-	r = r.WithDestination(app.AppID)
-	r.Log = r.Log.With(sub)
-	expanded, err := p.expandContext(r, app, base, sub.Call.Expand)
-	if err != nil {
-		return err
-	}
-	creq.Context = *expanded
-	creq.Context.Subject = sub.Subject
-
-	up, err := p.upstreamForApp(app)
-	if err != nil {
-		return err
-	}
-	err = upstream.Notify(r.Ctx(), up, *app, creq)
-	if p.conf.Get().DeveloperMode {
-		if err != nil {
+func (p *Proxy) notifyForSubscription(r *incoming.Request, e apps.Event, sub store.Subscription, contextToExpand *apps.Context) {
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		if p.conf.Get().DeveloperMode {
 			r.Log.WithError(err).Errorf("Notify error")
 		} else {
 			r.Log.Debugf("Notify")
 		}
+	}()
+
+	app, err := p.GetInstalledApp(sub.AppID, true)
+	if err != nil {
+		return
 	}
-	return err
+
+	if contextToExpand == nil {
+		contextToExpand = &apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    e.TeamID,
+				ChannelID: e.ChannelID,
+			},
+		}
+	}
+
+	appRequest := r.WithDestination(sub.AppID)
+	appRequest = appRequest.WithActingUserID(sub.OwnerUserID)
+	err = p.callApp(appRequest, app, apps.CallRequest{
+		Call:    sub.Call,
+		Context: *contextToExpand,
+	}, true)
+}
+
+func (p *Proxy) notifyJoinLeave(teamID, channelID string, user *model.User, subject, botSubject apps.Subject) {
+	e := apps.Event{
+		Subject:   subject,
+		ChannelID: channelID,
+		TeamID:    teamID,
+	}
+	p.notify(nil, e, &apps.Context{UserID: user.Id})
+
+	// If the user is a bot, process SubjectBotLeftChannel; only notify the app
+	// with the matching BotUserID.
+	if user.IsBot {
+		allApps := p.store.App.AsMap()
+		e.Subject = botSubject
+		p.notify(func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == sub.OwnerUserID
+			}
+			return false
+		}, e, &apps.Context{UserID: user.Id})
+	}
 }
 
 // func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
@@ -117,61 +166,6 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, s
 
 // 	return p.notify(r, cc, subs)
 // }
-
-func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
-}
-
-func (p *Proxy) NotifyUserHasLeftChannel(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
-}
-
-func (p *Proxy) NotifyUserHasJoinedTeam(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
-}
-
-func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
-}
-
-func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
-
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
-	r.Log.Debugf("<>/<> notifyJoinLeave: request created, context: %s", utils.ToJSON(cc))
-
-	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
-	}
-	r.Log.Debugf("<>/<> notifyJoinLeave: userSubs: %v", utils.ToJSON(userSubs))
-
-	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
-	}
-	r.Log.Debugf("<>/<> notifyJoinLeave: botSubs: %v", utils.ToJSON(botSubs))
-
-	subs := []apps.Subscription{}
-	subs = append(subs, userSubs...)
-
-	appsMap := p.store.App.AsMap()
-	for _, sub := range botSubs {
-		app, ok := appsMap[sub.AppID]
-		if !ok {
-			continue
-		}
-
-		if app.BotUserID == cc.UserID {
-			subs = append(subs, sub)
-		}
-	}
-
-	r.Log.Debugf("<>/<> notifyJoinLeave: subs to notify: %v", utils.ToJSON(subs))
-	return p.notify(r, cc, subs)
-}
 
 // var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
 

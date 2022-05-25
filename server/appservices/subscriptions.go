@@ -21,10 +21,13 @@ type PermissionChecker interface {
 }
 
 func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) error {
-	if err := sub.Validate(); err != nil {
-		return err
-	}
-	if err := a.canSubscribe(r, sub); err != nil {
+	err := r.Check(
+		r.RequireActingUser,
+		r.RequireFromApp,
+		sub.Validate,
+		a.canSubscribe(r, sub),
+	)
+	if err != nil {
 		return err
 	}
 
@@ -33,20 +36,49 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 	if err != nil && errors.Cause(err) != utils.ErrNotFound {
 		return err
 	}
+
+	// Make a nd save the new subscription.
 	all = append(all, store.Subscription{
-		Call:            sub.Call,
-		AppID:           r.SourceAppID(),
-		CreatedByUserID: r.ActingUserID(),
+		Call:        sub.Call,
+		AppID:       r.SourceAppID(),
+		OwnerUserID: r.ActingUserID(),
 	})
-	return a.store.Subscription.Save(sub.Event, all)
+	err = a.store.Subscription.Save(sub.Event, all)
+	if err != nil {
+		return err
+	}
+
+	r.Log.Debugf("stored %v subscriptions for %v", len(all), sub.Event)
+	return nil
 }
 
 func (a *AppServices) Unsubscribe(r *incoming.Request, e apps.Event) error {
-	_, err := a.unsubscribe(r, e)
+	err := r.Check(
+		r.RequireActingUser,
+		r.RequireFromApp,
+		e.Validate,
+	)
+	if err != nil {
+		return err
+	}
+
+	modified, err := a.unsubscribe(r, e)
+	if err != nil {
+		return err
+	}
+	r.Log.Debugf("unsubscribed stored %v subscriptions for %v", len(modified), e)
+
 	return err
 }
 
 func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscription, err error) {
+	if err = r.Check(
+		r.RequireActingUser,
+		r.RequireFromApp,
+	); err != nil {
+		return nil, err
+	}
+
 	allStored, err := a.store.Subscription.List()
 	if err != nil {
 		return nil, err
@@ -54,7 +86,7 @@ func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscrip
 
 	for _, stored := range allStored {
 		for _, s := range stored.Subscriptions {
-			if s.AppID == r.SourceAppID() {
+			if s.AppID == r.SourceAppID() && s.OwnerUserID == r.ActingUserID() {
 				out = append(out, apps.Subscription{
 					Event: stored.Event,
 					Call:  s.Call,
@@ -67,17 +99,13 @@ func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscrip
 }
 
 func (a *AppServices) unsubscribe(r *incoming.Request, e apps.Event) ([]store.Subscription, error) {
-	if err := e.Validate(); err != nil {
-		return nil, err
-	}
 	all, err := a.store.Subscription.Get(e)
 	if err != nil {
 		return nil, err
 	}
 
-	appID := r.SourceAppID()
 	for i, s := range all {
-		if s.AppID != appID {
+		if s.AppID != r.SourceAppID() || s.OwnerUserID != r.ActingUserID() {
 			continue
 		}
 
@@ -98,124 +126,52 @@ func (a *AppServices) unsubscribe(r *incoming.Request, e apps.Event) ([]store.Su
 	return all, utils.ErrNotFound
 }
 
-func (a *AppServices) canSubscribe(r *incoming.Request, sub apps.Subscription) error {
-	userID := sub.CreatedByUserID
+func (a *AppServices) canSubscribe(r *incoming.Request, sub apps.Subscription) func() error {
+	return func() error {
+		mm := r.Config().MattermostAPI()
+		userID := r.ActingUserID()
 
-	switch sub.Subject {
-	case apps.SubjectUserCreated:
-		if !checker.HasPermissionTo(userID, model.PermissionViewMembers) {
-			return errors.New("no permission to read user")
-		}
-	case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /*, apps.SubjectPostCreated */ :
-		if !checker.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
-			return errors.New("no permission to read channel")
-		}
-	case apps.SubjectBotJoinedChannel, apps.SubjectBotLeftChannel /*, apps.SubjectBotMentioned*/ :
-		// Only check if there is dynamic context i.e. a channelID
-		if channelID != "" {
-			if !checker.HasPermissionToChannel(userID, channelID, model.PermissionReadChannel) {
+		switch sub.Subject {
+		case apps.SubjectUserCreated:
+			if !mm.User.HasPermissionTo(userID, model.PermissionViewMembers) {
+				return errors.New("no permission to read user")
+			}
+
+		case apps.SubjectUserJoinedChannel,
+			apps.SubjectUserLeftChannel, /*, apps.SubjectPostCreated */
+			apps.SubjectBotJoinedChannel,
+			apps.SubjectBotLeftChannel /*, apps.SubjectBotMentioned*/ :
+			if !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 				return errors.New("no permission to read channel")
 			}
-		}
-	case apps.SubjectUserJoinedTeam,
-		apps.SubjectUserLeftTeam:
-		if !checker.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
-			return errors.New("no permission to view team")
-		}
-	case apps.SubjectBotJoinedTeam,
-		apps.SubjectBotLeftTeam:
-		// Only check if there is dynamic context i.e. a channelID
-		if teamID != "" {
-			if !checker.HasPermissionToTeam(userID, teamID, model.PermissionViewTeam) {
-				return errors.New("no permission to read channel")
+
+		case apps.SubjectUserJoinedTeam,
+			apps.SubjectUserLeftTeam,
+			apps.SubjectBotJoinedTeam,
+			apps.SubjectBotLeftTeam:
+			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
+				return errors.New("no permission to view team")
 			}
-		}
-	case apps.SubjectChannelCreated:
-		if !checker.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
-			return errors.New("no permission to list channels")
-		}
-	default:
-		return errors.Errorf("Unknown subject %s", sub.Subject)
-	}
 
-	return nil
-}
+		case apps.SubjectChannelCreated:
+			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
+				return errors.New("no permission to list channels")
+			}
 
-func SubscriptionsForAppUser(in []Subscription, appID apps.AppID, userID string) []Subscription {
-	var out []Subscription
-	for _, s := range in {
-		if s.AppID == appID && s.CreatedByUserID == userID {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
-func (s subscriptionStore) Save(sub Subscription) error {
-	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
-	if err != nil {
-		return err
-	}
-	// get all subscriptions for the subject
-	var subs []Subscription
-	err = s.conf.MattermostAPI().KV.Get(key, &subs)
-	if err != nil {
-		return err
-	}
-
-	add := true
-	for i, s := range subs {
-		if s.EqualScope(sub) && s.AppID == sub.AppID {
-			subs[i] = sub
-			add = false
-			break
-		}
-	}
-	if add {
-		subs = append(subs, sub)
-	}
-
-	_, err = s.conf.MattermostAPI().KV.Set(key, subs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s subscriptionStore) Delete(sub Subscription) error {
-	key, err := subsKey(sub.Subject, sub.TeamID, sub.ChannelID)
-	if err != nil {
-		return err
-	}
-
-	// get all subscriptions for the subject
-	var subs []Subscription
-	err = s.conf.MattermostAPI().KV.Get(key, &subs)
-	if err != nil {
-		return err
-	}
-
-	for i, current := range subs {
-		if !sub.EqualScope(current) {
-			continue
+		default:
+			return errors.Errorf("Unknown subject %s", sub.Subject)
 		}
 
-		// sub exists and needs to be deleted
-		updated := subs[:i]
-		if i < len(subs) {
-			updated = append(updated, subs[i+1:]...)
-		}
-
-		_, err = s.conf.MattermostAPI().KV.Set(key, updated)
-		if err != nil {
-			return errors.Wrap(err, "failed to save subscriptions")
-		}
 		return nil
 	}
-
-	return utils.ErrNotFound
 }
 
-func (s Subscription) EqualScope(other Subscription) bool {
-	return s.AppID == other.AppID && s.Subscription.EqualScope(other.Subscription)
-}
+// func SubscriptionsForAppUser(in []Subscription, appID apps.AppID, userID string) []Subscription {
+// 	var out []Subscription
+// 	for _, s := range in {
+// 		if s.AppID == appID && s.CreatedByUserID == userID {
+// 			out = append(out, s)
+// 		}
+// 	}
+// 	return out
+// }

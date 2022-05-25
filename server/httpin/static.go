@@ -1,4 +1,4 @@
-package gateway
+package httpin
 
 import (
 	"io"
@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-func (g *gateway) static(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+func (s *Service) Static(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	if len(vars) == 0 {
 		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
@@ -23,7 +23,7 @@ func (g *gateway) static(r *incoming.Request, w http.ResponseWriter, req *http.R
 		return
 	}
 
-	body, status, err := g.Proxy.InvokeGetStatic(r, assetName)
+	body, status, err := s.Proxy.InvokeGetStatic(r, assetName)
 	if err != nil {
 		r.Log.WithError(err).Debugw("failed to get asset", "asset_name", assetName)
 		httputils.WriteError(w, err)

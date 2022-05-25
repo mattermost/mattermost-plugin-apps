@@ -44,6 +44,12 @@ func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) CallRespo
 		return out
 	}
 
+	if err := r.Check(
+		r.RequireActingUser,
+	); err != nil {
+		return respondErr(err)
+	}
+
 	app, err := p.getEnabledDestination(r)
 	if err != nil {
 		return respondErr(err)
@@ -62,7 +68,7 @@ func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) CallRespo
 	creq.Path = cleanPath
 
 	appRequest := r.WithDestination(app.AppID)
-	cresp := p.callApp(appRequest, app, creq)
+	cresp := p.callApp(appRequest, app, creq, false)
 
 	return CallResponse{
 		CallResponse: cresp,
@@ -97,7 +103,7 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 		Call:    call,
 		Context: *cc,
 		Values:  values,
-	})
+	}, false)
 	return cresp
 }
 
@@ -105,7 +111,7 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 // not perform any cleanup of the inputs.
 //
 // It returns the CallResponse to return to the client, and a separate error for the
-func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest) apps.CallResponse {
+func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) apps.CallResponse {
 	// this may be invoked from various places in the code, and the Destination
 	// may or may not be set in the request. Since we have the app explicitly
 	// here, make sure it's set in the request
@@ -123,6 +129,14 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 	}
 	creq.Context = *expanded
 
+	if notify {
+		err = upstream.Notify(r.Ctx(), up, *app, creq)
+		if err != nil {
+			return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
+		}
+		return apps.NewTextResponse("OK")
+	}
+
 	cresp, err := upstream.Call(r.Ctx(), up, *app, creq)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
@@ -130,7 +144,6 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
 	}
-
 	if cresp.Form != nil {
 		clean, err := cleanForm(*cresp.Form, p.conf.Get(), app.AppID)
 		if err != nil {
@@ -138,6 +151,5 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 		}
 		cresp.Form = &clean
 	}
-
 	return cresp
 }
