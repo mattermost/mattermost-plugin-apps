@@ -37,7 +37,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 		return err
 	}
 
-	// Make a nd save the new subscription.
+	// Make and save the new subscription.
 	all = append(all, store.Subscription{
 		Call:        sub.Call,
 		AppID:       r.SourceAppID(),
