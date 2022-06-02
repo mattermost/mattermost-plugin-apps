@@ -14,30 +14,30 @@ import (
 func (s *Service) Static(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	if len(vars) == 0 {
-		httputils.WriteError(w, utils.NewInvalidError("invalid URL format"))
+		httputils.WriteErrorIfNeeded(w, utils.NewInvalidError("invalid URL format"))
 		return
 	}
 	assetName, err := utils.CleanStaticPath(vars["name"])
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 
 	body, status, err := s.Proxy.InvokeGetStatic(r, assetName)
 	if err != nil {
 		r.Log.WithError(err).Debugw("failed to get asset", "asset_name", assetName)
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 
 	copyHeader(w.Header(), req.Header)
 	w.WriteHeader(status)
 	if _, err := io.Copy(w, body); err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	if err := body.Close(); err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 }

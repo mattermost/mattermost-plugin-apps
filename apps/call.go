@@ -72,6 +72,17 @@ func (c Call) WithExpand(expand Expand) *Call {
 	return &c
 }
 
+func (c Call) ExpandActingUserClient() *Call {
+	if c.Expand == nil {
+		c.Expand = &Expand{}
+	}
+	c.Expand.ActingUserAccessToken = ExpandAll
+	if c.Expand.ActingUser == "" {
+		c.Expand.ActingUser = ExpandID
+	}
+	return &c
+}
+
 func (c Call) WithState(state interface{}) *Call {
 	c.State = state
 	return &c

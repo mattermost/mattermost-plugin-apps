@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -29,15 +27,16 @@ import (
 //      "remove_deploys": []string e.g. ["aws_lambda","http"]
 //   Output: The updated listing manifest
 func (s *Service) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
+
 	listReq := appclient.UpdateAppListingRequest{}
-	err := json.NewDecoder(req.Body).Decode(&listReq)
-	if err != nil {
-		httputils.WriteError(w, utils.NewInvalidError(err, "failed to unmarshal input"))
+	if err = json.NewDecoder(req.Body).Decode(&listReq); err != nil {
+		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
 	m, err := s.Proxy.UpdateAppListing(r, listReq)
 	if err != nil {
-		httputils.WriteError(w, err)
 		return
 	}
 
@@ -49,60 +48,72 @@ func (s *Service) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, r
 //   Path: /api/v1/install-app
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
-//   Output: None
+//   Output: JSON, sanitized App record
 func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	var input apps.App
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
-		return
-	}
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
 
-	_, _, err = s.Proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, "")
-	if err != nil {
-		httputils.WriteError(w, err)
+	var input apps.App
+	if err = json.NewDecoder(req.Body).Decode(&input); err != nil {
+		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
+	if _, _, err = s.Proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, ""); err != nil {
+		return
+	}
+	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	if err != nil {
+		return
+	}
+	_ = httputils.WriteJSON(w, app)
 }
 
 // EnableApp enables an App .
 //   Path: /api/v1/enable-app
 //   Method: POST
 //   Input: JSON {app_id}
-//   Output: None
+//   Output: JSON, sanitized App record
 func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	var input apps.App
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
-		return
-	}
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
 
-	_, err = s.Proxy.EnableApp(r, apps.Context{}, input.AppID)
-	if err != nil {
-		httputils.WriteError(w, err)
+	var input apps.App
+	if err = json.NewDecoder(req.Body).Decode(&input); err != nil {
+		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
+	if _, err = s.Proxy.EnableApp(r, apps.Context{}, input.AppID); err != nil {
+		return
+	}
+	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	if err != nil {
+		return
+	}
+	_ = httputils.WriteJSON(w, app)
 }
 
 // DisableApp disables an App .
 //   Path: /api/v1/disable-app
 //   Method: POST
 //   Input: JSON {app_id}
-//   Output: None
+//   Output: JSON, sanitized App record
 func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
-	var input apps.App
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
-		return
-	}
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
 
-	_, err = s.Proxy.DisableApp(r, apps.Context{}, input.AppID)
-	if err != nil {
-		httputils.WriteError(w, err)
+	var input apps.App
+	if err = json.NewDecoder(req.Body).Decode(&input); err != nil {
+		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
+	if _, err = s.Proxy.DisableApp(r, apps.Context{}, input.AppID); err != nil {
+		return
+	}
+	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	if err != nil {
+		return
+	}
+	_ = httputils.WriteJSON(w, app)
 }
 
 // UninstallApp uninstalls an App .
@@ -111,16 +122,15 @@ func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *ht
 //   Input: JSON {app_id}
 //   Output: None
 func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
+
 	var input apps.App
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		httputils.WriteError(w, errors.Wrap(err, "failed to unmarshal input"))
+	if err = json.NewDecoder(req.Body).Decode(&input); err != nil {
+		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
-
-	_, err = s.Proxy.UninstallApp(r, apps.Context{}, input.AppID)
-	if err != nil {
-		httputils.WriteError(w, err)
+	if _, err = s.Proxy.UninstallApp(r, apps.Context{}, input.AppID); err != nil {
 		return
 	}
 }
@@ -131,9 +141,11 @@ func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *
 //   Input: none
 //   Output: App
 func (s *Service) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	var err error
+	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
+
 	app, err := s.Proxy.GetApp(r)
 	if err != nil {
-		httputils.WriteError(w, err)
 		return
 	}
 	_ = httputils.WriteJSON(w, app)

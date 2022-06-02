@@ -89,13 +89,13 @@ func handle(f callHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		creq, err := apps.CallRequestFromJSONReader(r.Body)
 		if err != nil {
-			httputils.WriteError(w, utils.NewInvalidError(err))
+			httputils.WriteErrorIfNeeded(w, utils.NewInvalidError(err))
 			return
 		}
 
 		err = checkJWT(r, creq)
 		if err != nil {
-			httputils.WriteError(w, utils.NewInvalidError(err))
+			httputils.WriteErrorIfNeeded(w, utils.NewInvalidError(err))
 			return
 		}
 

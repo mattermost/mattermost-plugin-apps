@@ -35,6 +35,7 @@ func TestSingleServer(t *testing.T) {
 		"KV":            testKV,
 		"OAuth2":        testOAuth2,
 		"subscriptions": testSubscriptions,
+		"notify":        testNotify,
 	} {
 		th.Run(name, testF)
 	}

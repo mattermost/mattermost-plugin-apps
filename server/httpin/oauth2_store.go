@@ -10,12 +10,12 @@ import (
 func (s *Service) OAuth2StoreApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	err = s.AppServices.StoreOAuth2App(r, data)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 }
@@ -23,12 +23,12 @@ func (s *Service) OAuth2StoreApp(r *incoming.Request, w http.ResponseWriter, req
 func (s *Service) OAuth2StoreUser(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	err = s.AppServices.StoreOAuth2User(r, data)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 }
@@ -36,7 +36,7 @@ func (s *Service) OAuth2StoreUser(r *incoming.Request, w http.ResponseWriter, re
 func (s *Service) OAuth2GetUser(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	data, err := s.AppServices.GetOAuth2User(r)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	_, _ = w.Write(data)

@@ -6,8 +6,6 @@ package proxy
 import (
 	"context"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -15,23 +13,23 @@ import (
 )
 
 func (p *Proxy) NotifyUserCreated(userID string) {
-	p.notify(nil, apps.Event{Subject: apps.SubjectUserCreated}, &apps.Context{UserID: userID})
+	p.notify(nil, apps.Event{Subject: apps.SubjectUserCreated}, apps.Context{UserID: userID})
 }
 
-func (p *Proxy) NotifyUserJoinedChannel(channelID string, user *model.User) {
-	p.notifyJoinLeave("", channelID, user, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
+	p.notifyJoinLeave("", channelID, userID, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
 }
 
-func (p *Proxy) NotifyUserLeftChannel(channelID string, user *model.User) {
-	p.notifyJoinLeave("", channelID, user, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
+	p.notifyJoinLeave("", channelID, userID, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
 }
 
-func (p *Proxy) NotifyUserJoinedTeam(teamID string, user *model.User) {
-	p.notifyJoinLeave(teamID, "", user, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
+	p.notifyJoinLeave(teamID, "", userID, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
 }
 
-func (p *Proxy) NotifyUserLeftTeam(teamID string, user *model.User) {
-	p.notifyJoinLeave(teamID, "", user, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
+	p.notifyJoinLeave(teamID, "", userID, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
 }
 
 func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
@@ -40,7 +38,7 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 			Subject: apps.SubjectChannelCreated,
 			TeamID:  teamID,
 		},
-		&apps.Context{
+		apps.Context{
 			UserAgentContext: apps.UserAgentContext{
 				TeamID:    teamID,
 				ChannelID: channelID,
@@ -48,7 +46,7 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 		})
 }
 
-func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contextToExpand *apps.Context) {
+func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contextToExpand apps.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 	r := p.NewIncomingRequest().WithCtx(ctx)
@@ -60,9 +58,11 @@ func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contex
 		return
 	}
 
+	contextToExpand.Subject = e.Subject
+
 	for _, sub := range subs {
-		if match(sub) {
-			go p.notifyForSubscription(r, e, sub, contextToExpand)
+		if match == nil || match(sub) {
+			go p.notifyForSubscription(r, e, sub, &contextToExpand)
 		}
 	}
 }
@@ -96,19 +96,27 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, e apps.Event, sub sto
 
 	appRequest := r.WithDestination(sub.AppID)
 	appRequest = appRequest.WithActingUserID(sub.OwnerUserID)
-	err = p.callApp(appRequest, app, apps.CallRequest{
+	creq := apps.CallRequest{
 		Call:    sub.Call,
 		Context: *contextToExpand,
-	}, true)
+	}
+	r.Log = r.Log.With(creq)
+	err = p.callApp(appRequest, app, creq, true)
 }
 
-func (p *Proxy) notifyJoinLeave(teamID, channelID string, user *model.User, subject, botSubject apps.Subject) {
+func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSubject apps.Subject) {
+	user, err := p.conf.MattermostAPI().User.Get(userID)
+	if err != nil {
+		p.log.WithError(err).Errorf("Notify join/leave: failed to get user")
+		return
+	}
+
 	e := apps.Event{
 		Subject:   subject,
 		ChannelID: channelID,
 		TeamID:    teamID,
 	}
-	p.notify(nil, e, &apps.Context{UserID: user.Id})
+	p.notify(nil, e, apps.Context{UserID: user.Id})
 
 	// If the user is a bot, process SubjectBotLeftChannel; only notify the app
 	// with the matching BotUserID.
@@ -120,7 +128,7 @@ func (p *Proxy) notifyJoinLeave(teamID, channelID string, user *model.User, subj
 				return app.BotUserID == sub.OwnerUserID
 			}
 			return false
-		}, e, &apps.Context{UserID: user.Id})
+		}, e, apps.Context{UserID: user.Id})
 	}
 }
 

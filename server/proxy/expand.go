@@ -210,6 +210,7 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 	// Cleanup fields that must not go to the app.
 	e.Context.UserAgentContext = apps.UserAgentContext{}
 	e.Context.UserID = ""
+
 	return &e.Context, nil
 }
 

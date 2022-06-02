@@ -24,7 +24,7 @@ func (s *Service) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Re
 	prefix := mux.Vars(req)["prefix"]
 	data, err := s.AppServices.KVGet(r, prefix, id)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 
@@ -42,13 +42,13 @@ func (s *Service) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 	prefix := mux.Vars(req)["prefix"]
 	data, err := httputils.LimitReadAll(req.Body, MaxKVStoreValueLength)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 
 	changed, err := s.AppServices.KVSet(r, prefix, id, data)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	_ = httputils.WriteJSON(w, map[string]interface{}{
@@ -67,7 +67,7 @@ func (s *Service) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http
 
 	err := s.AppServices.KVDelete(r, prefix, id)
 	if err != nil {
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 }

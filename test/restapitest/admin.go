@@ -19,16 +19,17 @@ import (
 //go:embed static
 var static embed.FS
 
-func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
-	th.InstallApp(app)
-	th.Cleanup(func() { th.UninstallApp(app.Manifest.AppID) })
+func (th *Helper) InstallAppWithCleanup(app *goapp.App) *apps.App {
+	installed := th.InstallApp(app)
+	th.Cleanup(func() { th.UninstallApp(installed.AppID) })
+	return installed
 }
 
-func (th *Helper) InstallApp(app *goapp.App) {
+func (th *Helper) InstallApp(app *goapp.App) *apps.App {
 	require := require.New(th)
 	assert := assert.New(th)
 
-	appServer := app.NewTestServer()
+	appServer := app.NewTestServer(th)
 	th.Logf("started: '%s', listening on %s", app.Manifest.AppID, appServer.Listener.Addr().String())
 	th.Cleanup(func() {
 		appServer.Close()
@@ -36,7 +37,7 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	})
 	require.Equal(appServer.URL, app.Manifest.Deploy.HTTP.RootURL)
 
-	resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
+	_, resp, err := th.SystemAdminClientPP.UpdateAppListing(appclient.UpdateAppListingRequest{
 		Manifest:   app.Manifest,
 		Replace:    true,
 		AddDeploys: apps.DeployTypes{apps.DeployHTTP},
@@ -44,22 +45,23 @@ func (th *Helper) InstallApp(app *goapp.App) {
 	assert.NoError(err)
 	api4.CheckOKStatus(th, resp)
 
-	resp, err = th.SystemAdminClientPP.InstallApp(app.Manifest.AppID, apps.DeployHTTP)
+	installed, resp, err := th.SystemAdminClientPP.InstallApp(app.Manifest.AppID, apps.DeployHTTP)
 	assert.NoError(err)
 	api4.CheckOKStatus(th, resp)
 
-	th.Logf("installed: '%s'", app.Manifest.AppID)
+	th.Logf("installed: '%s' on '%s'", app.Manifest.AppID, app.Manifest.Deploy.HTTP.RootURL)
+	return installed
 }
 
 func (th *Helper) DisableApp(app *goapp.App) {
-	resp, err := th.SystemAdminClientPP.DisableApp(app.Manifest.AppID)
+	_, resp, err := th.SystemAdminClientPP.DisableApp(app.Manifest.AppID)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("disabled: '%s'", app.Manifest.AppID)
 }
 
 func (th *Helper) EnableApp(app *goapp.App) {
-	resp, err := th.SystemAdminClientPP.EnableApp(app.Manifest.AppID)
+	_, resp, err := th.SystemAdminClientPP.EnableApp(app.Manifest.AppID)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("enabled: '%s'", app.Manifest.AppID)

@@ -2,11 +2,14 @@ package goapp
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"runtime/debug"
+	"testing"
 	"unicode"
 
 	"github.com/gorilla/mux"
@@ -208,7 +211,7 @@ func locationFromName(name string) apps.Location {
 	return apps.Location(b.String())
 }
 
-func (app *App) NewTestServer() *httptest.Server {
+func (app *App) NewTestServer(t testing.TB) *httptest.Server {
 	if app.log == nil {
 		app.log = utils.NewTestLogger()
 	}
@@ -217,7 +220,22 @@ func (app *App) NewTestServer() *httptest.Server {
 		app.log.Debugf("Using default HTTP deploy settings")
 		app.Manifest.Deploy.HTTP = &apps.HTTP{}
 	}
-	appServer := httptest.NewServer(app.Router)
+
+	withPanicLog := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// Output panics in dev. mode.
+		defer func() {
+			if x := recover(); x != nil {
+				txt := fmt.Sprintf("Recovered from a panic in an HTTP handler, url: %q, error: %q, stack:\n%s",
+					req.URL.String(), x, string(debug.Stack()))
+				t.Log(txt)
+				http.Error(w, txt, http.StatusInternalServerError)
+			}
+		}()
+
+		app.Router.ServeHTTP(w, req)
+	})
+
+	appServer := httptest.NewServer(withPanicLog)
 	rootURL := appServer.URL
 	app.Manifest.Deploy.HTTP.RootURL = rootURL
 

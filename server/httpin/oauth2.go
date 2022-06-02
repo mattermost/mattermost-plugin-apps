@@ -11,7 +11,7 @@ func (s *Service) RemoteOAuth2Connect(r *incoming.Request, w http.ResponseWriter
 	connectURL, err := s.Proxy.InvokeGetRemoteOAuth2ConnectURL(r)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to get remote OAuth2 connect URL")
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 	http.Redirect(w, req, connectURL, http.StatusTemporaryRedirect)
@@ -27,7 +27,7 @@ func (s *Service) RemoteOAuth2Complete(r *incoming.Request, w http.ResponseWrite
 	err := s.Proxy.InvokeCompleteRemoteOAuth2(r, urlValues)
 	if err != nil {
 		r.Log.WithError(err).Warnf("Failed to complete remote OAuth2")
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
 

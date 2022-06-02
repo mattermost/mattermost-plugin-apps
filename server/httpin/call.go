@@ -21,13 +21,13 @@ func (s *Service) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 	if err != nil {
 		err = errors.Wrap(err, "failed to unmarshal Call request")
 		r.Log.WithError(err).Infof("incoming call failed")
-		httputils.WriteError(w, utils.NewInvalidError(err))
+		httputils.WriteErrorIfNeeded(w, utils.NewInvalidError(err))
 		return
 	}
 	if creq.Context.UserAgentContext.AppID == "" {
 		err = errors.New("app ID is not set in Call request")
 		r.Log.WithError(err).Infof("incoming call failed")
-		httputils.WriteError(w, utils.NewInvalidError(err))
+		httputils.WriteErrorIfNeeded(w, utils.NewInvalidError(err))
 		return
 	}
 	r = r.WithDestination(creq.Context.UserAgentContext.AppID)

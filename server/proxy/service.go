@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -78,10 +77,10 @@ type API interface {
 // multiple apps. Notify functions create their own app requests.
 type Notifier interface {
 	NotifyUserCreated(userID string)
-	NotifyUserJoinedChannel(channelID string, user *model.User)
-	NotifyUserLeftChannel(channelID string, user *model.User)
-	NotifyUserJoinedTeam(teamID string, user *model.User)
-	NotifyUserLeftTeam(teamID string, user *model.User)
+	NotifyUserJoinedChannel(channelID, userID string)
+	NotifyUserLeftChannel(channelID, userID string)
+	NotifyUserJoinedTeam(teamID, userID string)
+	NotifyUserLeftTeam(teamID, userID string)
 	NotifyChannelCreated(teamID, channelID string)
 }
 

@@ -40,6 +40,7 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 		channelID, _ := creq.StringValue("channel_id")
 		teamID, _ := creq.StringValue("team_id")
 		asBot, _ := creq.BoolValue("as_bot")
+
 		sub := apps.Subscription{
 			Event: apps.Event{
 				Subject:   apps.Subject(subject),
@@ -47,21 +48,7 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 				ChannelID: channelID,
 			},
 			Call: *apps.NewCall("/echo").
-				WithExpand(apps.Expand{
-					App:                   apps.ExpandAll.Optional(),
-					ActingUser:            apps.ExpandAll.Optional(),
-					ActingUserAccessToken: apps.ExpandAll.Optional(),
-					Locale:                apps.ExpandAll.Optional(),
-					Channel:               apps.ExpandAll.Optional(),
-					ChannelMember:         apps.ExpandAll.Optional(),
-					Team:                  apps.ExpandAll.Optional(),
-					TeamMember:            apps.ExpandAll.Optional(),
-					Post:                  apps.ExpandAll.Optional(),
-					RootPost:              apps.ExpandAll.Optional(),
-					User:                  apps.ExpandAll.Optional(),
-					OAuth2App:             apps.ExpandAll.Optional(),
-					OAuth2User:            apps.ExpandAll.Optional(),
-				}),
+				WithExpand(expandAll),
 		}
 
 		if asBot {

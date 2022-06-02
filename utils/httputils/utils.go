@@ -48,9 +48,9 @@ func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error)
 	return remoteURL, nil
 }
 
-func WriteError(w http.ResponseWriter, err error) {
+func WriteErrorIfNeeded(w http.ResponseWriter, err error) {
 	if err == nil {
-		http.Error(w, "invalid (unknown?) error", http.StatusInternalServerError)
+		// do nothing
 		return
 	}
 

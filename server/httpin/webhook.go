@@ -14,7 +14,7 @@ func (s *Service) Webhook(r *incoming.Request, w http.ResponseWriter, req *http.
 	err := s.doHandleWebhook(r, w, req)
 	if err != nil {
 		r.Log.WithError(err).Warnw("failed to process remote webhook")
-		httputils.WriteError(w, err)
+		httputils.WriteErrorIfNeeded(w, err)
 	}
 }
 

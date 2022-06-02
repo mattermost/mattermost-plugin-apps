@@ -138,3 +138,65 @@ func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.
 	require.True(th, cresp.Type != apps.CallResponseTypeError, "Error: %s", cresp.Text)
 	return cresp
 }
+
+// All calls to the App are made by invoking the /api/v1/call API, and must be
+// made in the context of a user.
+type clientCombination struct {
+	name         string
+	happyCall    func(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse
+	call         func(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error)
+	appActsAsBot bool
+}
+
+func userAsBotClientCombination(th *Helper) clientCombination {
+	return clientCombination{
+		name:         "user as bot",
+		happyCall:    th.HappyCall,
+		call:         th.Call,
+		appActsAsBot: true,
+	}
+}
+
+func adminAsBotClientCombination(th *Helper) clientCombination {
+	return clientCombination{
+		name:         "admin as bot",
+		happyCall:    th.HappyAdminCall,
+		call:         th.AdminCall,
+		appActsAsBot: true,
+	}
+}
+
+func userClientCombination(th *Helper) clientCombination {
+	return clientCombination{
+
+		name:      "user",
+		happyCall: th.HappyCall,
+		call:      th.Call,
+	}
+}
+
+func user2ClientCombination(th *Helper) clientCombination {
+	return clientCombination{
+		name:      "user2",
+		happyCall: th.HappyUser2Call,
+		call:      th.User2Call,
+	}
+}
+
+func adminClientCombination(th *Helper) clientCombination {
+	return clientCombination{
+		name:      "admin",
+		happyCall: th.HappyAdminCall,
+		call:      th.AdminCall,
+	}
+}
+
+func allClientCombinations(th *Helper) []clientCombination {
+	return []clientCombination{
+		userAsBotClientCombination(th),
+		adminAsBotClientCombination(th),
+		userClientCombination(th),
+		user2ClientCombination(th),
+		adminClientCombination(th),
+	}
+}
