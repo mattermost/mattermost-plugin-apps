@@ -206,6 +206,19 @@ func triggerUserJoinedTeam() func(*Helper) interface{} {
 	}
 }
 
+func triggerUserLeftTeam() func(*Helper) interface{} {
+	return func(th *Helper) interface{} {
+		require := require.New(th)
+
+		user := createTestUser(th)
+		_ = addUserToBasicTeam(th, user)
+		_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(th.ServerTestHelper.BasicTeam.Id, user.Id)
+		require.NoError(err)
+		th.Logf("removed user @%s from team %s)", user.Username, th.ServerTestHelper.BasicTeam.Id)
+		return nil
+	}
+}
+
 func triggerUserLeftChannel() func(*Helper) interface{} {
 	return func(th *Helper) interface{} {
 		require := require.New(th)
@@ -276,10 +289,10 @@ func testNotify(th *Helper) {
 			{
 				event:    apps.Event{Subject: apps.SubjectUserJoinedTeam, TeamID: th.ServerTestHelper.BasicTeam.Id},
 				triggerf: triggerUserJoinedTeam(),
-				// clientCombinations: []clientCombination{
-				// 	userClientCombination(th),
-				// 	adminClientCombination(th),
-				// },
+			},
+			{
+				event:    apps.Event{Subject: apps.SubjectUserLeftTeam, TeamID: th.ServerTestHelper.BasicTeam.Id},
+				triggerf: triggerUserLeftTeam(),
 			},
 		} {
 			th.Run(string(tc.event.Subject), func(th *Helper) {
