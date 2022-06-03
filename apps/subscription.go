@@ -109,7 +109,7 @@ func (sub Subscription) Validate() error {
 	var result error
 	emptyCall := Call{}
 	if sub.Call == emptyCall {
-		result = multierror.Append(result, utils.NewInvalidError("call most not be empty"))
+		result = multierror.Append(result, utils.NewInvalidError("call must not be empty"))
 	}
 	return sub.Event.validate(result)
 }
@@ -121,7 +121,7 @@ func (e Event) Validate() error {
 
 func (e Event) validate(appendTo error) error {
 	if e.Subject == "" {
-		appendTo = multierror.Append(appendTo, utils.NewInvalidError("subject most not be empty"))
+		appendTo = multierror.Append(appendTo, utils.NewInvalidError("subject must not be empty"))
 	}
 
 	switch e.Subject {
