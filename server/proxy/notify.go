@@ -125,7 +125,7 @@ func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSu
 		e.Subject = botSubject
 		p.notify(func(sub store.Subscription) bool {
 			if app, ok := allApps[sub.AppID]; ok {
-				return app.BotUserID == sub.OwnerUserID
+				return app.BotUserID == userID
 			}
 			return false
 		}, e, apps.Context{UserID: user.Id})

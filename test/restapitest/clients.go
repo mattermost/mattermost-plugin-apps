@@ -169,7 +169,7 @@ func adminAsBotClientCombination(th *Helper) clientCombination {
 func userClientCombination(th *Helper) clientCombination {
 	return clientCombination{
 
-		name:      "user",
+		name:      "user self",
 		happyCall: th.HappyCall,
 		call:      th.Call,
 	}
@@ -177,7 +177,7 @@ func userClientCombination(th *Helper) clientCombination {
 
 func user2ClientCombination(th *Helper) clientCombination {
 	return clientCombination{
-		name:      "user2",
+		name:      "user2 self",
 		happyCall: th.HappyUser2Call,
 		call:      th.User2Call,
 	}
@@ -185,7 +185,7 @@ func user2ClientCombination(th *Helper) clientCombination {
 
 func adminClientCombination(th *Helper) clientCombination {
 	return clientCombination{
-		name:      "admin",
+		name:      "admin self",
 		happyCall: th.HappyAdminCall,
 		call:      th.AdminCall,
 	}

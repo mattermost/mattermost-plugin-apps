@@ -5,14 +5,12 @@ package restapitest
 
 import (
 	_ "embed"
-	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -122,121 +120,6 @@ func newNotifyApp(th *Helper, received chan apps.CallRequest) *goapp.App {
 	return app
 }
 
-func createTestUser(th *Helper) *model.User {
-	require := require.New(th)
-	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
-	testEmail := fmt.Sprintf("%s@test.test", testUsername)
-	u, resp, err := th.ServerTestHelper.SystemAdminClient.CreateUser(&model.User{
-		Username: testUsername,
-		Email:    testEmail,
-	})
-	require.NoError(err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("created test user @%s (%s)", u.Username, u.Id)
-	th.Cleanup(func() {
-		_, err := th.ServerTestHelper.SystemAdminClient.DeleteUser(u.Id)
-		require.NoError(err)
-		th.Logf("deleted test user @%s (%s)", u.Username, u.Id)
-	})
-	return u
-}
-
-func addUserToBasicTeam(th *Helper, user *model.User) *model.TeamMember {
-	require := require.New(th)
-	teamID := th.ServerTestHelper.BasicTeam.Id
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(teamID, user.Id)
-	require.NoError(err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("added user @%s to team %s)", user.Username, teamID)
-	return tm
-}
-
-func createTestChannel(th *Helper) *model.Channel {
-	require := require.New(th)
-
-	testName := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
-	ch, resp, err := th.ServerTestHelper.Client.CreateChannel(&model.Channel{
-		Name:   testName,
-		Type:   model.ChannelTypePrivate,
-		TeamId: th.ServerTestHelper.BasicTeam.Id,
-	})
-	require.NoError(err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("created test channel %s (%s)", ch.Name, ch.Id)
-	th.Cleanup(func() {
-		_, err := th.ServerTestHelper.SystemAdminClient.DeleteChannel(ch.Id)
-		require.NoError(err)
-		th.Logf("deleted test channel @%s (%s)", ch.Name, ch.Id)
-	})
-	return ch
-}
-
-func triggerUserCreated() func(*Helper) interface{} {
-	return func(th *Helper) interface{} { return createTestUser(th) }
-}
-
-func triggerChannelCreated() func(*Helper) interface{} {
-	return func(th *Helper) interface{} { return createTestChannel(th) }
-}
-
-func triggerUserJoinedChannel() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		user := createTestUser(th)
-		_ = addUserToBasicTeam(th, user)
-		ch := th.ServerTestHelper.BasicChannel
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added user @%s to channel %s", user.Username, ch.Name)
-		th.Cleanup(func() {
-			_, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(ch.Id, user.Id)
-			require.NoError(err)
-			th.Logf("removed user @%s from channel %s)", user.Username, ch.Name)
-		})
-
-		return cm
-	}
-}
-
-func triggerUserJoinedTeam() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		return addUserToBasicTeam(th, createTestUser(th))
-	}
-}
-
-func triggerUserLeftTeam() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		user := createTestUser(th)
-		_ = addUserToBasicTeam(th, user)
-		_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(th.ServerTestHelper.BasicTeam.Id, user.Id)
-		require.NoError(err)
-		th.Logf("removed user @%s from team %s)", user.Username, th.ServerTestHelper.BasicTeam.Id)
-		return nil
-	}
-}
-
-func triggerUserLeftChannel() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		user := createTestUser(th)
-		_ = addUserToBasicTeam(th, user)
-		ch := th.ServerTestHelper.BasicChannel
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added user @%s to channel %s", user.Username, ch.Name)
-		_, err = th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(ch.Id, user.Id)
-		require.NoError(err)
-		th.Logf("removed user @%s from channel %s)", user.Username, ch.Name)
-		return cm
-	}
-}
-
 func testNotify(th *Helper) {
 	th.Run("happy no expand", func(th *Helper) {
 		// 1000 is enough to receive all possible notifications that might come in a single test.
@@ -247,12 +130,19 @@ func testNotify(th *Helper) {
 		require := require.New(th)
 		rand.Seed(time.Now().UnixMilli())
 
-		// Make sure the bot is a team member to be able to subscribe and be
-		// notified; the user already is, and sysadmin can see everything.
+		// Make sure the bot is a team and a channel member to be able to
+		// subscribe and be notified; the user already is, and sysadmin can see
+		// everything.
 		tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, installedApp.BotUserID)
 		require.NoError(err)
-		require.NotNil(th.ServerTestHelper.BasicTeam.Id, tm.TeamId)
-		require.NotNil(installedApp.BotUserID, tm.UserId)
+		require.Equal(th.ServerTestHelper.BasicTeam.Id, tm.TeamId)
+		require.Equal(installedApp.BotUserID, tm.UserId)
+		api4.CheckCreatedStatus(th, resp)
+
+		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, installedApp.BotUserID)
+		require.NoError(err)
+		require.Equal(th.ServerTestHelper.BasicChannel.Id, cm.ChannelId)
+		require.Equal(installedApp.BotUserID, cm.UserId)
 		api4.CheckCreatedStatus(th, resp)
 
 		type TC struct {
@@ -263,36 +153,84 @@ func testNotify(th *Helper) {
 
 		for _, tc := range []TC{
 			{
-				event:    apps.Event{Subject: apps.SubjectUserCreated},
+				event: apps.Event{
+					Subject: apps.SubjectUserCreated,
+				},
 				triggerf: triggerUserCreated(),
 			},
 			{
-				event:    apps.Event{Subject: apps.SubjectChannelCreated, TeamID: th.ServerTestHelper.BasicTeam.Id},
-				triggerf: triggerChannelCreated(),
+				event: apps.Event{
+					Subject: apps.SubjectChannelCreated,
+					TeamID:  th.ServerTestHelper.BasicTeam.Id,
+				},
+				triggerf: triggerChannelCreated(th.ServerTestHelper.BasicTeam.Id),
 			},
 			{
-				event:    apps.Event{Subject: apps.SubjectUserJoinedChannel, ChannelID: th.ServerTestHelper.BasicChannel.Id},
-				triggerf: triggerUserJoinedChannel(),
+				event: apps.Event{
+					Subject:   apps.SubjectUserJoinedChannel,
+					ChannelID: th.ServerTestHelper.BasicChannel.Id,
+				},
+				triggerf: triggerUserJoinedChannel(th.ServerTestHelper.BasicChannel),
+				// user2 is not a member of the channel, so must be excluded.
 				clientCombinations: []clientCombination{
+					userAsBotClientCombination(th),
+					adminAsBotClientCombination(th),
 					userClientCombination(th),
 					adminClientCombination(th),
 				},
 			},
 			{
-				event:    apps.Event{Subject: apps.SubjectUserLeftChannel, ChannelID: th.ServerTestHelper.BasicChannel.Id},
-				triggerf: triggerUserLeftChannel(),
+				event: apps.Event{
+					Subject:   apps.SubjectUserLeftChannel,
+					ChannelID: th.ServerTestHelper.BasicChannel.Id,
+				},
+				triggerf: triggerUserLeftChannel(th.ServerTestHelper.BasicChannel),
 				clientCombinations: []clientCombination{
+					userAsBotClientCombination(th),
+					adminAsBotClientCombination(th),
 					userClientCombination(th),
 					adminClientCombination(th),
 				},
 			},
 			{
-				event:    apps.Event{Subject: apps.SubjectUserJoinedTeam, TeamID: th.ServerTestHelper.BasicTeam.Id},
+				event: apps.Event{
+					Subject: apps.SubjectUserJoinedTeam,
+					TeamID:  th.ServerTestHelper.BasicTeam.Id,
+				},
 				triggerf: triggerUserJoinedTeam(),
 			},
 			{
-				event:    apps.Event{Subject: apps.SubjectUserLeftTeam, TeamID: th.ServerTestHelper.BasicTeam.Id},
+				event: apps.Event{
+					Subject: apps.SubjectUserLeftTeam,
+					TeamID:  th.ServerTestHelper.BasicTeam.Id,
+				},
 				triggerf: triggerUserLeftTeam(),
+			},
+			{
+				event: apps.Event{
+					Subject: apps.SubjectBotJoinedChannel,
+					TeamID:  th.ServerTestHelper.BasicTeam.Id,
+				},
+				triggerf: triggerBotJoinedChannel(th.ServerTestHelper.BasicTeam.Id, installedApp.BotUserID),
+			},
+			{
+				event: apps.Event{
+					Subject: apps.SubjectBotLeftChannel,
+					TeamID:  th.ServerTestHelper.BasicTeam.Id,
+				},
+				triggerf: triggerBotLeftChannel(th.ServerTestHelper.BasicTeam.Id, installedApp.BotUserID),
+			},
+			{
+				event: apps.Event{
+					Subject: apps.SubjectBotJoinedTeam,
+				},
+				triggerf: triggerBotJoinedTeam(installedApp.BotUserID),
+			},
+			{
+				event: apps.Event{
+					Subject: apps.SubjectBotLeftTeam,
+				},
+				triggerf: triggerBotLeftTeam(installedApp.BotUserID),
 			},
 		} {
 			th.Run(string(tc.event.Subject), func(th *Helper) {

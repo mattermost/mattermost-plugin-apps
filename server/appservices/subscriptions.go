@@ -137,21 +137,23 @@ func (a *AppServices) canSubscribe(r *incoming.Request, sub apps.Subscription) f
 				return errors.New("no permission to read user")
 			}
 
-		case apps.SubjectUserJoinedChannel,
-			apps.SubjectUserLeftChannel, /*, apps.SubjectPostCreated */
-			apps.SubjectBotJoinedChannel,
-			apps.SubjectBotLeftChannel /*, apps.SubjectBotMentioned*/ :
+		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /*, apps.SubjectPostCreated, apps.SubjectBotMentioned */ :
 			if !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 				return errors.New("no permission to read channel")
 			}
 
-		case apps.SubjectUserJoinedTeam,
-			apps.SubjectUserLeftTeam,
-			apps.SubjectBotJoinedTeam,
-			apps.SubjectBotLeftTeam:
+		case apps.SubjectUserJoinedTeam, apps.SubjectUserLeftTeam:
 			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
 				return errors.New("no permission to view team")
 			}
+
+		case apps.SubjectBotJoinedChannel,
+			apps.SubjectBotLeftChannel,
+			apps.SubjectBotJoinedTeam,
+			apps.SubjectBotLeftTeam:
+			// When the bot has joined an entity, it will have the permission to
+			// read it.
+			return nil
 
 		case apps.SubjectChannelCreated:
 			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
@@ -165,13 +167,3 @@ func (a *AppServices) canSubscribe(r *incoming.Request, sub apps.Subscription) f
 		return nil
 	}
 }
-
-// func SubscriptionsForAppUser(in []Subscription, appID apps.AppID, userID string) []Subscription {
-// 	var out []Subscription
-// 	for _, s := range in {
-// 		if s.AppID == appID && s.CreatedByUserID == userID {
-// 			out = append(out, s)
-// 		}
-// 	}
-// 	return out
-// }
