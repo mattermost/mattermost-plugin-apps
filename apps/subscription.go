@@ -11,16 +11,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var PermissionListPublicTeams *Permission
-var PermissionListPrivateTeams *Permission
-var PermissionListTeamChannels *Permission
-var PermissionReadChannel *Permission
-var PermissionReadPublicChannelGroups *Permission
-var PermissionReadPrivateChannelGroups *Permission
-var PermissionReadPublicChannel *Permission
-var PermissionViewTeam *Permission
-var PermissionListUsersWithoutTeam *Permission
-
 type Subject string
 
 const (
