@@ -4,7 +4,6 @@
 package restapitest
 
 import (
-	_ "embed"
 	"math/rand"
 	"time"
 

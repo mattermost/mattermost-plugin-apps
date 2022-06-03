@@ -4,7 +4,6 @@
 package restapitest
 
 import (
-	_ "embed"
 	"fmt"
 	"math/rand"
 
@@ -195,9 +194,9 @@ func createTestTeam(th *Helper) *model.Team {
 
 	testName := fmt.Sprintf("test%v", rand.Int()) //nolint:gosec
 	team, resp, err := th.ServerTestHelper.SystemAdminClient.CreateTeam(&model.Team{
-		Name: testName,
+		Name:        testName,
 		DisplayName: testName,
-		Type: model.TeamOpen,
+		Type:        model.TeamOpen,
 	})
 	require.NoError(err)
 	api4.CheckCreatedStatus(th, resp)
