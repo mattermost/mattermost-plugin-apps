@@ -48,7 +48,7 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 				ChannelID: channelID,
 			},
 			Call: *apps.NewCall("/echo").
-				WithExpand(expandAll),
+				WithExpand(expandEverything(apps.ExpandAll)),
 		}
 
 		if asBot {

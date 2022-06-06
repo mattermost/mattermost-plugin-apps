@@ -48,7 +48,7 @@ func (s *Service) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, r
 //   Path: /api/v1/install-app
 //   Method: POST
 //   Input: JSON {app_id, deploy_type}
-//   Output: JSON, sanitized App record
+//   Output: JSON, unsanitized App record
 func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -58,10 +58,7 @@ func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *ht
 		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
-	if _, _, err = s.Proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, ""); err != nil {
-		return
-	}
-	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	app, _, err := s.Proxy.InstallApp(r, apps.Context{}, input.AppID, input.DeployType, false, "")
 	if err != nil {
 		return
 	}
@@ -72,7 +69,7 @@ func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *ht
 //   Path: /api/v1/enable-app
 //   Method: POST
 //   Input: JSON {app_id}
-//   Output: JSON, sanitized App record
+//   Output: none
 func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -82,21 +79,18 @@ func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *htt
 		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
-	if _, err = s.Proxy.EnableApp(r, apps.Context{}, input.AppID); err != nil {
-		return
-	}
-	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	text, err := s.Proxy.EnableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		return
 	}
-	_ = httputils.WriteJSON(w, app)
+	_, _ = w.Write([]byte(text))
 }
 
 // DisableApp disables an App .
 //   Path: /api/v1/disable-app
 //   Method: POST
 //   Input: JSON {app_id}
-//   Output: JSON, sanitized App record
+//   Output: JSON, unsanitized App record
 func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -106,14 +100,11 @@ func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *ht
 		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
-	if _, err = s.Proxy.DisableApp(r, apps.Context{}, input.AppID); err != nil {
-		return
-	}
-	app, err := s.Proxy.GetApp(r.WithDestination(input.AppID))
+	text, err := s.Proxy.DisableApp(r, apps.Context{}, input.AppID)
 	if err != nil {
 		return
 	}
-	_ = httputils.WriteJSON(w, app)
+	_, _ = w.Write([]byte(text))
 }
 
 // UninstallApp uninstalls an App .
@@ -135,7 +126,8 @@ func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *
 	}
 }
 
-// GetApp returns the App's record.
+// GetApp returns the App's record. If requestor is a system administrator, the
+// raw record with secrets is returned, otherwise the output is sanitized.
 //   Path: /apps/{AppID}
 //   Method: GET
 //   Input: none

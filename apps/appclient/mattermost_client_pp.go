@@ -279,46 +279,36 @@ func (c *ClientPP) GetApp(appID apps.AppID) (*apps.App, *model.Response, error) 
 	return &app, model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) EnableApp(appID apps.AppID) (*apps.App, *model.Response, error) {
+func (c *ClientPP) EnableApp(appID apps.AppID) (*model.Response, error) {
 	b, err := json.Marshal(apps.Manifest{
 		AppID: appID,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	r, err := c.DoAPIPOST(c.apipath(appspath.EnableApp), string(b)) // nolint:bodyclose
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	var app apps.App
-	err = json.NewDecoder(r.Body).Decode(&app)
-	if err != nil {
-		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
-	}
-	return &app, model.BuildResponse(r), nil
+	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) DisableApp(appID apps.AppID) (*apps.App, *model.Response, error) {
+func (c *ClientPP) DisableApp(appID apps.AppID) (*model.Response, error) {
 	b, err := json.Marshal(apps.Manifest{
 		AppID: appID,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	r, err := c.DoAPIPOST(c.apipath(appspath.DisableApp), string(b)) // nolint:bodyclose
 	if err != nil {
-		return nil, model.BuildResponse(r), err
+		return model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	var app apps.App
-	err = json.NewDecoder(r.Body).Decode(&app)
-	if err != nil {
-		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
-	}
-	return &app, model.BuildResponse(r), nil
+	return model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) GetListedApps(filter string, includePlugins bool) ([]apps.ListedApp, *model.Response, error) {

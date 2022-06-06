@@ -107,21 +107,17 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetUser(userID).Times(1).Return(actingUser(), nil)
 					},
 					expect: map[string]interface{}{
-						"-all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
-						"-summary": expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
-						"+all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
-						"+summary": expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
 						"all":      expected(apps.ExpandedContext{ActingUser: actingUser()}),
 						"summary":  expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
+						"+all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
+						"+summary": expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
 					},
 				},
 				"happy no API": {
 					expect: map[string]interface{}{
-						"-id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
-						"+id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
-						"id":   expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
-						"":     expected(apps.ExpandedContext{}),
-						"none": expected(apps.ExpandedContext{}),
+						"id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
+						"+id": expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
+						"":    expected(apps.ExpandedContext{}),
 					},
 				},
 				"error GetUser fail": {
@@ -129,19 +125,16 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetUser(userID).Times(1).Return(nil, utils.ErrForbidden)
 					},
 					expect: map[string]interface{}{
-						"-all":     expected(apps.ExpandedContext{}),
-						"-summary": expected(apps.ExpandedContext{}),
 						"+all":     "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
 						"+summary": "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
-						"all":      "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
-						"summary":  "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
+						"all":      expected(apps.ExpandedContext{}),
+						"summary":  expected(apps.ExpandedContext{}),
 					},
 				},
 				"error invalid": {
 					expect: map[string]interface{}{
 						"garbage":  `"garbage" is not a known expand level`,
 						"+garbage": `"garbage" is not a known expand level`,
-						"-garbage": `"garbage" is not a known expand level`,
 					},
 				},
 				"error no ID": {
@@ -165,10 +158,10 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(&channelMember, nil)
 					},
 					expect: map[string]interface{}{
-						"+id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
-						"-id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
-						"-summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
-						"+all":     expected(apps.ExpandedContext{ChannelMember: &channelMember}),
+						"+id":     expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
+						"+all":    expected(apps.ExpandedContext{ChannelMember: &channelMember}),
 					},
 				},
 				"happy no API": {
@@ -176,8 +169,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expect: map[string]interface{}{
-						"":     expected(apps.ExpandedContext{}),
-						"none": expected(apps.ExpandedContext{}),
+						"": expected(apps.ExpandedContext{}),
 					},
 				},
 				"error no user ID": {
@@ -219,10 +211,10 @@ func TestExpand(t *testing.T) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(&teamMember, nil)
 					},
 					expect: map[string]interface{}{
-						"+id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
-						"-id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
-						"+all":     expected(apps.ExpandedContext{TeamMember: &teamMember}),
-						"-summary": expected(apps.ExpandedContext{TeamMember: &teamMember}),
+						"+id":     expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
+						"id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
+						"+all":    expected(apps.ExpandedContext{TeamMember: &teamMember}),
+						"summary": expected(apps.ExpandedContext{TeamMember: &teamMember}),
 					},
 				},
 				"happy with no API": {
@@ -230,8 +222,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expect: map[string]interface{}{
-						"":     expected(apps.ExpandedContext{}),
-						"none": expected(apps.ExpandedContext{}),
+						"": expected(apps.ExpandedContext{}),
 					},
 				},
 				"no user ID": {

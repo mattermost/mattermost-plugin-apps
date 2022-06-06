@@ -33,10 +33,12 @@ func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
 		return nil, err
 	}
 
-	// Sanitize.
-	app.WebhookSecret = ""
-	app.RemoteOAuth2 = apps.OAuth2App{}
-
+	if err = r.RequireSysadminOrPlugin(); err != nil {
+		// Sanitize for non-sysadmins.
+		app.WebhookSecret = ""
+		app.MattermostOAuth2 = nil
+		app.RemoteOAuth2 = apps.OAuth2App{}
+	}
 	return app, nil
 }
 

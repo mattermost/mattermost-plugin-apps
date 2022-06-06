@@ -142,59 +142,66 @@ func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.
 // All calls to the App are made by invoking the /api/v1/call API, and must be
 // made in the context of a user.
 type clientCombination struct {
-	name         string
-	happyCall    func(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse
-	call         func(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error)
-	appActsAsBot bool
+	name                 string
+	expectedActingUser   *model.User
+	happyCall            func(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse
+	call                 func(appID apps.AppID, creq apps.CallRequest) (*apps.CallResponse, *model.Response, error)
+	appActsAsBot         bool
+	appActsAsSystemAdmin bool
 }
 
-func userAsBotClientCombination(th *Helper) clientCombination {
+func userAsBotClientCombination(th *Helper, botUser *model.User) clientCombination {
 	return clientCombination{
-		name:         "user as bot",
-		happyCall:    th.HappyCall,
-		call:         th.Call,
-		appActsAsBot: true,
+		name:               "user as bot",
+		expectedActingUser: botUser,
+		happyCall:          th.HappyCall,
+		call:               th.Call,
+		appActsAsBot:       true,
 	}
 }
 
-func adminAsBotClientCombination(th *Helper) clientCombination {
+func adminAsBotClientCombination(th *Helper, botUser *model.User) clientCombination {
 	return clientCombination{
-		name:         "admin as bot",
-		happyCall:    th.HappyAdminCall,
-		call:         th.AdminCall,
-		appActsAsBot: true,
+		name:               "admin as bot",
+		expectedActingUser: botUser,
+		happyCall:          th.HappyAdminCall,
+		call:               th.AdminCall,
+		appActsAsBot:       true,
 	}
 }
 
 func userClientCombination(th *Helper) clientCombination {
 	return clientCombination{
-
-		name:      "user self",
-		happyCall: th.HappyCall,
-		call:      th.Call,
+		name:               "user self",
+		expectedActingUser: th.ServerTestHelper.BasicUser,
+		happyCall:          th.HappyCall,
+		call:               th.Call,
 	}
 }
 
 func user2ClientCombination(th *Helper) clientCombination {
 	return clientCombination{
-		name:      "user2 self",
-		happyCall: th.HappyUser2Call,
-		call:      th.User2Call,
+		name:               "user2 self",
+		expectedActingUser: th.ServerTestHelper.BasicUser2,
+		happyCall:          th.HappyUser2Call,
+		call:               th.User2Call,
 	}
 }
 
 func adminClientCombination(th *Helper) clientCombination {
 	return clientCombination{
-		name:      "admin self",
-		happyCall: th.HappyAdminCall,
-		call:      th.AdminCall,
+		name:                 "admin self",
+		expectedActingUser:   th.ServerTestHelper.SystemAdminUser,
+		happyCall:            th.HappyAdminCall,
+		call:                 th.AdminCall,
+		appActsAsSystemAdmin: true,
 	}
 }
 
-func allClientCombinations(th *Helper) []clientCombination {
+func allClientCombinations(th *Helper, botUser *model.User) []clientCombination {
 	return []clientCombination{
-		userAsBotClientCombination(th),
-		adminAsBotClientCombination(th),
+		userAsBotClientCombination(th, botUser),
+		adminAsBotClientCombination(th, botUser),
 		userClientCombination(th),
 		user2ClientCombination(th),
 		adminClientCombination(th),

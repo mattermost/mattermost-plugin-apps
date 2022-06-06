@@ -274,7 +274,7 @@ func testBindings(th *Helper) {
 				require.EqualValues(tc.expectedBindings, out.Bindings)
 
 				if len(tc.requestedLocations) == 0 {
-					th.Run("app with no locations doesn't get a request", func(*Helper) {
+					th.Run("app with no locations does not get a request", func(*Helper) {
 						require.Empty(app.creq)
 					})
 				}
@@ -282,7 +282,7 @@ func testBindings(th *Helper) {
 		}
 	})
 
-	th.Run("disabled app doesn't get a request", func(th *Helper) {
+	th.Run("disabled app does not get a request", func(th *Helper) {
 		appID := apps.AppID("disabled-app")
 
 		appBindings := []apps.Binding{

@@ -13,134 +13,86 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-func triggerUserCreated() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		return createTestUserWithCleanup(th)
-	}
+func (th *Helper) triggerUserJoinedChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
+	require := require.New(th)
+	_ = th.triggerUserJoinedTeam(ch.TeamId, user)
+	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
+	require.NoError(err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s to channel %s", user.Username, ch.Name)
+	return cm
 }
 
-func triggerUserJoinedChannel(ch *model.Channel) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		user := createTestUserWithCleanup(th)
-		_ = addUserToBasicTeam(th, user)
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added user @%s to channel %s", user.Username, ch.Name)
-
-		return cm
-	}
+func (th *Helper) triggerUserLeftChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
+	require := require.New(th)
+	cm := th.triggerUserJoinedChannel(ch, user)
+	_, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(ch.Id, cm.UserId)
+	require.NoError(err)
+	th.Logf("removed user @%s from channel %s)", user.Username, ch.Name)
+	return cm
 }
 
-func triggerUserLeftChannel(ch *model.Channel) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		user := createTestUserWithCleanup(th)
-		_ = addUserToBasicTeam(th, user)
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added user @%s to channel %s", user.Username, ch.Name)
-		_, err = th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(ch.Id, user.Id)
-		require.NoError(err)
-		th.Logf("removed user @%s from channel %s)", user.Username, ch.Name)
-		return cm
-	}
+func (th *Helper) triggerUserJoinedTeam(teamID string, user *model.User) *model.TeamMember {
+	require := require.New(th)
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(teamID, user.Id)
+	require.NoError(err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s to team %s)", user.Username, teamID)
+	return tm
 }
 
-func triggerUserJoinedTeam() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		return addUserToBasicTeam(th, createTestUserWithCleanup(th))
-	}
+func (th *Helper) triggerUserLeftTeam(teamID string, user *model.User) *model.TeamMember {
+	require := require.New(th)
+	tm := th.triggerUserJoinedTeam(teamID, user)
+	_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(teamID, user.Id)
+	require.NoError(err)
+	th.Logf("removed user @%s from team %s)", user.Username, teamID)
+	return tm
 }
 
-func triggerUserLeftTeam() func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-		user := createTestUserWithCleanup(th)
-		_ = addUserToBasicTeam(th, user)
-		_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(th.ServerTestHelper.BasicTeam.Id, user.Id)
-		require.NoError(err)
-		th.Logf("removed user @%s from team %s)", user.Username, th.ServerTestHelper.BasicTeam.Id)
-		return nil
-	}
+func (th *Helper) triggerBotJoinedChannel(ch *model.Channel, botUserID string) *model.ChannelMember {
+	require := require.New(th)
+	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, botUserID)
+	require.NoError(err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added app's bot to channel %s", ch.Name)
+	return cm
 }
 
-func triggerBotJoinedChannel(teamID, botUserID string) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		ch := createTestChannel(th, teamID)
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, botUserID)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to channel %s", ch.Name)
-		return cm
-	}
+func (th *Helper) triggerBotLeftChannel(ch *model.Channel, botUserID string) *model.ChannelMember {
+	require := require.New(th)
+	cm := th.triggerBotJoinedChannel(ch, botUserID)
+	resp, err := th.ServerTestHelper.Client.RemoveUserFromChannel(cm.ChannelId, cm.UserId)
+	require.NoError(err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed app's bot from channel %s", ch.Name)
+	return cm
 }
 
-func triggerBotLeftChannel(teamID, botUserID string) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		ch := createTestChannel(th, teamID)
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, botUserID)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to channel %s", ch.Name)
-
-		resp, err = th.ServerTestHelper.Client.RemoveUserFromChannel(ch.Id, botUserID)
-		require.NoError(err)
-		api4.CheckOKStatus(th, resp)
-		th.Logf("removed app's bot from channel %s", ch.Name)
-
-		return cm
-	}
+func (th *Helper) triggerBotJoinedTeam(team *model.Team, botUserID string) *model.TeamMember {
+	require := require.New(th)
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
+	require.NoError(err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added app's bot to team %s", team.Name)
+	return cm
 }
 
-func triggerBotJoinedTeam(botUserID string) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		team := createTestTeam(th)
-		cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to team %s", team.Name)
-
-		return cm
-	}
+func (th *Helper) triggerBotLeftTeam(team *model.Team, botUserID string) *model.TeamMember {
+	require := require.New(th)
+	tm := th.triggerBotJoinedTeam(team, botUserID)
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, botUserID)
+	require.NoError(err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed app's bot from team %s", team.Name)
+	return tm
 }
 
-func triggerBotLeftTeam(botUserID string) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		require := require.New(th)
-
-		team := createTestTeam(th)
-		cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
-		require.NoError(err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to team %s", team.Name)
-
-		resp, err = th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, botUserID)
-		require.NoError(err)
-		api4.CheckOKStatus(th, resp)
-		th.Logf("removed app's bot from team %s", team.Name)
-
-		return cm
-	}
+func (th *Helper) triggerChannelCreated(teamID string) *model.Channel {
+	return th.createTestChannel(teamID)
 }
 
-func triggerChannelCreated(teamID string) func(*Helper) interface{} {
-	return func(th *Helper) interface{} {
-		return createTestChannel(th, teamID)
-	}
-}
-
-func createTestUserWithCleanup(th *Helper) *model.User {
+func (th *Helper) createTestUser() *model.User {
 	require := require.New(th)
 	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
 	testEmail := fmt.Sprintf("%s@test.test", testUsername)
@@ -159,17 +111,7 @@ func createTestUserWithCleanup(th *Helper) *model.User {
 	return u
 }
 
-func addUserToBasicTeam(th *Helper, user *model.User) *model.TeamMember {
-	require := require.New(th)
-	teamID := th.ServerTestHelper.BasicTeam.Id
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(teamID, user.Id)
-	require.NoError(err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("added user @%s to team %s)", user.Username, teamID)
-	return tm
-}
-
-func createTestChannel(th *Helper, teamID string) *model.Channel {
+func (th *Helper) createTestChannel(teamID string) *model.Channel {
 	require := require.New(th)
 
 	testName := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
@@ -189,7 +131,7 @@ func createTestChannel(th *Helper, teamID string) *model.Channel {
 	return ch
 }
 
-func createTestTeam(th *Helper) *model.Team {
+func (th *Helper) createTestTeam() *model.Team {
 	require := require.New(th)
 
 	testName := fmt.Sprintf("test%v", rand.Int()) //nolint:gosec

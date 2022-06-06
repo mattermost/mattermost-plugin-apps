@@ -34,7 +34,13 @@ type expander struct {
 // relies on `r` configured with correct source and destination app IDs, as well
 // as the acting user data. (destination) `app` is passed in as a shortcut since
 // it's already available in all callers.
-func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (*apps.Context, error) {
+func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (_ *apps.Context, err error) {
+	defer func() {
+		if err != nil && r.Config().Get().DeveloperMode {
+			r.Log.WithError(err).Debugw("Expand failed")
+		}
+	}()
+
 	if r.Destination() == "" {
 		return nil, errors.New("missing destination app ID in request")
 	}
@@ -83,7 +89,6 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 		f              expandFunc
 		requestedLevel apps.ExpandLevel
 		expandableAs   []apps.ExpandLevel
-		defaultExpand  apps.ExpandLevel
 		err            error
 	}{
 		{
@@ -91,96 +96,82 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 			requestedLevel: expand.ActingUserAccessToken,
 			f:              e.expandActingUserAccessToken,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Required(),
 			err:            utils.NewInvalidError(`invalid expand: "acting_user_access_token" must be "all" or empty`),
 		}, {
 			name:           "acting_user",
 			requestedLevel: expand.ActingUser,
 			f:              e.expandUser(&e.ExpandedContext.ActingUser, e.r.ActingUserID()),
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Required(),
 		}, {
 			name:           "app",
 			requestedLevel: expand.App,
 			f:              e.expandApp,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Required(),
 		}, {
 			name:           "channel_member",
 			requestedLevel: expand.ChannelMember,
 			f:              e.expandChannelMember,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "channel",
 			requestedLevel: expand.Channel,
 			f:              e.expandChannel,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			// Locale must be expanded after acting_user
 			name:           "locale",
 			requestedLevel: expand.Locale,
 			f:              e.expandLocale,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "oauth2_app",
 			requestedLevel: expand.OAuth2App,
 			f:              e.expandOAuth2App,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Required(),
 			err:            utils.NewInvalidError(`invalid expand: "oauth2_app" must be "all" or empty`),
 		}, {
 			name:           "oauth2_user",
 			requestedLevel: expand.OAuth2User,
 			f:              e.expandOAuth2User,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Required(),
 			err:            utils.NewInvalidError(`invalid expand: "oauth2_user" must be "all" or empty`),
 		}, {
 			name:           "post",
 			requestedLevel: expand.Post,
 			f:              e.expandPost(&e.ExpandedContext.Post, e.UserAgentContext.PostID),
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "root_post",
 			requestedLevel: expand.RootPost,
 			f:              e.expandPost(&e.ExpandedContext.RootPost, e.UserAgentContext.RootPostID),
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "team_member",
 			requestedLevel: expand.TeamMember,
 			f:              e.expandTeamMember,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "team",
 			requestedLevel: expand.Team,
 			f:              e.expandTeam,
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		}, {
 			name:           "user",
 			requestedLevel: expand.User,
 			f:              e.expandUser(&e.ExpandedContext.User, e.UserID),
 			expandableAs:   []apps.ExpandLevel{apps.ExpandID, apps.ExpandSummary, apps.ExpandAll},
-			defaultExpand:  apps.ExpandNone.Optional(),
 		},
 	} {
-		level, err := apps.ParseExpandLevel(string(step.requestedLevel), step.defaultExpand)
+		required, level, err := apps.ParseExpandLevel(step.requestedLevel)
 		if err != nil {
 			return nil, err
 		}
 
 		// Check the requested expand level to see if it's valid and if there is
 		// anything to do.
-		l := level.Level()
 		doExpand := false
 		for _, expandable := range step.expandableAs {
-			if l == expandable {
+			if level == expandable {
 				doExpand = true
 				break
 			}
@@ -197,7 +188,7 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 
 		// Execute the expand function, skip the error unless the field is
 		// required.
-		if err := step.f(l); err != nil && level.IsRequired() {
+		if err := step.f(level); err != nil && required {
 			return nil, errors.Wrap(err, "failed to expand required "+step.name)
 		}
 	}
@@ -266,6 +257,7 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 				LastName:       u.LastName,
 				Locale:         u.Locale,
 				Nickname:       u.Nickname,
+				Position:       u.Position,
 				Roles:          u.Roles,
 				Timezone:       u.Timezone,
 				Username:       u.Username,
@@ -305,10 +297,12 @@ func (e *expander) expandApp(level apps.ExpandLevel) error {
 				AppID:   e.app.AppID,
 				Version: e.app.Version,
 			},
-			BotUserID:     e.app.BotUserID,
-			BotUsername:   e.app.BotUsername,
-			DeployType:    e.app.DeployType,
-			WebhookSecret: e.app.WebhookSecret,
+			BotUserID:   e.app.BotUserID,
+			BotUsername: e.app.BotUsername,
+			DeployType:  e.app.DeployType,
+		}
+		if e.r.RequireSysadminOrPlugin() == nil {
+			e.ExpandedContext.App.WebhookSecret = e.app.WebhookSecret
 		}
 	}
 	return nil

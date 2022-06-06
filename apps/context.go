@@ -23,12 +23,6 @@ import (
 //
 // TODO: Refactor to an incoming Context and an outgoing Context.
 type Context struct {
-	// UserID indicates the subject of the call. Once Mentions is implemented,
-	// it may be replaced by Mentions.
-	//
-	// UserID is not send down to Apps.
-	UserID string `json:"user_id,omitempty"`
-
 	// Subject is a subject of notification, if the call originated from a
 	// subscription.
 	Subject Subject `json:"subject,omitempty"`
@@ -56,6 +50,9 @@ type UserAgentContext struct {
 	PostID string `json:"post_id,omitempty"`
 	// RootPostID is not send down to Apps.
 	RootPostID string `json:"root_post_id,omitempty"`
+	// UserID indicates the subject of the call, used only for notifications on
+	// subjects like user_created and user_joined_channel.
+	UserID string `json:"user_id,omitempty"`
 
 	// AppID is used for handling CallRequest internally.
 	AppID AppID `json:"app_id"`
@@ -131,7 +128,11 @@ func (c Context) String() string {
 	for _, k := range keys {
 		ss = append(ss, fmt.Sprintf("%s: %s", k, display[k]))
 	}
-	return strings.Join(ss, ", ")
+	out := strings.Join(ss, ", ")
+	if out == "" {
+		out = "(none)"
+	}
+	return out
 }
 
 func (c Context) Loggable() []interface{} {

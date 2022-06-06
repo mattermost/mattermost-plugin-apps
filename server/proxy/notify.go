@@ -13,7 +13,14 @@ import (
 )
 
 func (p *Proxy) NotifyUserCreated(userID string) {
-	p.notify(nil, apps.Event{Subject: apps.SubjectUserCreated}, apps.Context{UserID: userID})
+	p.notify(nil,
+		apps.Event{
+			Subject: apps.SubjectUserCreated,
+		},
+		apps.UserAgentContext{
+			UserID: userID,
+		},
+	)
 }
 
 func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
@@ -38,36 +45,35 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 			Subject: apps.SubjectChannelCreated,
 			TeamID:  teamID,
 		},
-		apps.Context{
-			UserAgentContext: apps.UserAgentContext{
-				TeamID:    teamID,
-				ChannelID: channelID,
-			},
+		apps.UserAgentContext{
+			TeamID:    teamID,
+			ChannelID: channelID,
 		})
 }
 
-func (p *Proxy) notify(match func(store.Subscription) bool, e apps.Event, contextToExpand apps.Context) {
+func (p *Proxy) notify(match func(store.Subscription) bool, event apps.Event, uac apps.UserAgentContext) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 	r := p.NewIncomingRequest().WithCtx(ctx)
-	r.Log = r.Log.With(e)
+	r.Log = r.Log.With(event)
 
-	subs, err := p.store.Subscription.Get(e)
+	subs, err := p.store.Subscription.Get(event)
 	if err != nil {
 		r.Log.WithError(err).Errorf("Notify error")
 		return
 	}
 
-	contextToExpand.Subject = e.Subject
-
 	for _, sub := range subs {
 		if match == nil || match(sub) {
-			go p.notifyForSubscription(r, e, sub, &contextToExpand)
+			go p.invokeNotify(r, event, sub, &apps.Context{
+				Subject:          event.Subject,
+				UserAgentContext: uac,
+			})
 		}
 	}
 }
 
-func (p *Proxy) notifyForSubscription(r *incoming.Request, e apps.Event, sub store.Subscription, contextToExpand *apps.Context) {
+func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Subscription, contextToExpand *apps.Context) {
 	var err error
 	defer func() {
 		if err == nil {
@@ -88,8 +94,8 @@ func (p *Proxy) notifyForSubscription(r *incoming.Request, e apps.Event, sub sto
 	if contextToExpand == nil {
 		contextToExpand = &apps.Context{
 			UserAgentContext: apps.UserAgentContext{
-				TeamID:    e.TeamID,
-				ChannelID: e.ChannelID,
+				TeamID:    event.TeamID,
+				ChannelID: event.ChannelID,
 			},
 		}
 	}
@@ -111,24 +117,32 @@ func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSu
 		return
 	}
 
-	e := apps.Event{
+	event := apps.Event{
 		Subject:   subject,
 		ChannelID: channelID,
 		TeamID:    teamID,
 	}
-	p.notify(nil, e, apps.Context{UserID: user.Id})
+	p.notify(nil, event, apps.UserAgentContext{
+		UserID: user.Id,
+	})
 
 	// If the user is a bot, process SubjectBotLeftChannel; only notify the app
 	// with the matching BotUserID.
 	if user.IsBot {
 		allApps := p.store.App.AsMap()
-		e.Subject = botSubject
-		p.notify(func(sub store.Subscription) bool {
-			if app, ok := allApps[sub.AppID]; ok {
-				return app.BotUserID == userID
-			}
-			return false
-		}, e, apps.Context{UserID: user.Id})
+		event.Subject = botSubject
+		p.notify(
+			func(sub store.Subscription) bool {
+				if app, ok := allApps[sub.AppID]; ok {
+					return app.BotUserID == userID
+				}
+				return false
+			},
+			event,
+			apps.UserAgentContext{
+				UserID: user.Id,
+			},
+		)
 	}
 }
 

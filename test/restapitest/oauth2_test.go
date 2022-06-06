@@ -157,8 +157,8 @@ func oauth2Call(th *Helper, path string, value interface{}) *apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
-				OAuth2App:  apps.ExpandAll.Optional(),
-				OAuth2User: apps.ExpandAll.Optional(),
+				OAuth2App:  apps.ExpandAll,
+				OAuth2User: apps.ExpandAll,
 			}),
 	}
 	creq.Call.Expand.ActingUser = apps.ExpandSummary

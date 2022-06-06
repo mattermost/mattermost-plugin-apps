@@ -23,11 +23,8 @@ import (
 type ExpandLevel string
 
 const (
-	// ExpandDefault is the default Expand value.
-	ExpandDefault ExpandLevel = ""
-
 	// ExpandNone means to include no data for the field.
-	ExpandNone ExpandLevel = "none"
+	ExpandNone ExpandLevel = ""
 
 	// ExpandID means include only the relevant ID(s), leaving other metadata
 	// out.
@@ -38,82 +35,31 @@ const (
 
 	// ExpandAll means to provide all the data available.
 	ExpandAll ExpandLevel = "all"
-
-	// ExpandRequired and ExpandOptional indicate how to treat the case when the
-	// data is not available; required means fail the call, optional means pass
-	// it through without the data.
-	ExpandRequired ExpandLevel = "+"
-	ExpandOptional ExpandLevel = "-"
 )
 
-// ParseExpandLevel combines a "raw" ExpandLevel (unvalidated string), validates
-// it, and fills in the default +|- flag, and the default level from
-// defaultLevel.
-func ParseExpandLevel(s string, defaultLevel ExpandLevel) (ExpandLevel, error) {
-	prefix, l, err := ExpandLevel(s).parse()
-	if err != nil {
-		return "", err
-	}
-	defPrefix, defL, err := defaultLevel.parse()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse default expand level")
-	}
-
-	// Require by default! (if there is no other default)
-	if defPrefix == "" {
-		defPrefix = ExpandRequired
-	}
-
-	if prefix == ExpandDefault {
-		prefix = defPrefix
-	}
-	if l == ExpandDefault {
-		l = defL
-	}
-	return prefix + l, nil
-}
-
-func (l ExpandLevel) IsRequired() bool {
-	prefix, _, _ := l.parse()
-	return prefix == ExpandRequired
+func (l ExpandLevel) isRequired() bool {
+	s := string(l)
+	return len(s) > 0 && s[0] == '+'
 }
 
 func (l ExpandLevel) Required() ExpandLevel {
-	return ExpandRequired + l.Level()
+	if l.isRequired() {
+		return l
+	}
+	return "+" + l
 }
 
-func (l ExpandLevel) Optional() ExpandLevel {
-	return ExpandOptional + l.Level()
-}
-
-func (l ExpandLevel) IsOptional() bool {
-	prefix, _, _ := l.parse()
-	return prefix == ExpandOptional
-}
-
-func (l ExpandLevel) Level() ExpandLevel {
-	_, level, _ := l.parse()
-	return level
-}
-
-func (l ExpandLevel) parse() (prefix ExpandLevel, level ExpandLevel, err error) {
-	switch {
-	case strings.HasPrefix(string(l), string(ExpandRequired)):
-		prefix = ExpandRequired
-		level = l[len(ExpandRequired):]
-	case strings.HasPrefix(string(l), string(ExpandOptional)):
-		prefix = ExpandOptional
-		level = l[len(ExpandOptional):]
+func ParseExpandLevel(raw ExpandLevel) (isRequired bool, clean ExpandLevel, err error) {
+	level := raw
+	if level.isRequired() {
+		level = level[1:]
+	}
+	switch level {
+	case ExpandNone, ExpandID, ExpandSummary, ExpandAll:
+		return raw.isRequired(), level, nil
 	default:
-		level = l
+		return false, "", errors.Errorf("%q is not a known expand level", level)
 	}
-
-	for _, known := range []ExpandLevel{ExpandNone, ExpandDefault, ExpandID, ExpandSummary, ExpandAll} {
-		if level == known {
-			return prefix, level, nil
-		}
-	}
-	return "", "", errors.Errorf("%q is not a known expand level", level)
 }
 
 // Expand is a clause in the Call struct that controls what additional
@@ -132,66 +78,65 @@ func (l ExpandLevel) parse() (prefix ExpandLevel, level ExpandLevel, err error) 
 // When expanding Mattermost data entities, the apps proxy must not exceed the
 // highest available access level in the request's Context.
 type Expand struct {
-	// App (default: "id", required). Details about the installed record of the
+	// App (default: none, required). Details about the installed record of the
 	// App. Of relevance to the app may be the version, and the Bot account
 	// details.
 	App ExpandLevel `json:"app,omitempty"`
 
-	// ActingUser (default: "none", required if set). Set to "all" for the
-	// entire (sanitized) model.User; to "summary" for BotDescription, DeleteAt,
-	// Email, FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,
+	// ActingUser (default: none, required). Set to "all" for the entire
+	// (sanitized) model.User; to "summary" for BotDescription, DeleteAt, Email,
+	// FirstName, Id, IsBot, LastName, Locale, Nickname, Roles, Timezone,
 	// Username; to "id" for Id only.
 	ActingUser ExpandLevel `json:"acting_user,omitempty"`
 
-	// ActingUserAccessToken (default: "none", required if set): Set to "all" to
-	// include user-level access token in the request. Requires act_as_user
-	// permission to have been granted to the app. Only supports "[+|-]all" or
-	// "none".
+	// ActingUserAccessToken (default: none, required): Set to "all" to include
+	// user-level access token in the request. Requires act_as_user permission
+	// to have been granted to the app. "summary" and "id" fail to expand.
 	ActingUserAccessToken ExpandLevel `json:"acting_user_access_token,omitempty"`
 
-	// Locale (default: "none", optional if set) expands the locale to use for
-	// this call. There is no difference between the modes.
+	// Locale (default: none, optional) expands the locale to use for this call. There is
+	// no difference between the modes.
 	Locale ExpandLevel `json:"locale,omitempty"`
 
-	// Channel (default: "none", optional if set): Set to "all" for
-	// model.Channel; to "summary" for Id, DeleteAt, TeamId, Type, DisplayName,
-	// Name; to "id" for Id only.
+	// Channel (default: none, optional): Set to "all" for model.Channel; to
+	// "summary" for Id, DeleteAt, TeamId, Type, DisplayName, Name; to "id" for
+	// Id only.
 	Channel ExpandLevel `json:"channel,omitempty"`
 
-	// ChannelMember (default: "none", optional if set): expand
-	// model.ChannelMember if ChannelID and ActingUserID (or UserID) are set. if
-	// both ActingUserID and UserID are set, it expands UserID, as may be
-	// relevant in UserJoinedChannel notifications. "all" and "summary" include
-	// the same full model.ChannelMember struct.
+	// ChannelMember (default: none, optional): expand model.ChannelMember if
+	// ChannelID and ActingUserID (or UserID) are set. if both ActingUserID and
+	// UserID are set, it expands UserID, as may be relevant in
+	// UserJoinedChannel notifications. "all" and "summary" include the same
+	// full model.ChannelMember struct.
 	ChannelMember ExpandLevel `json:"channel_member,omitempty"`
 
-	// Team (default: "none", optional if set): "all" for model.Team; "summary"
+	// Team (default: none, optional): "all" for model.Team; "summary"
 	// for Id, DisplayName, Name, Description, Email, Type; "id" for Id only.
 	Team ExpandLevel `json:"team,omitempty"`
 
-	// TeamMember (default: "none", optional if set): expand model.TeamMember if
-	// TeamID and ActingUserID (or UserID) are set. if both ActingUserID and
-	// UserID are set, it expands UserID, as may be relevant in UserJoinedTeam
+	// TeamMember (default: none, optional): expand model.TeamMember if TeamID
+	// and ActingUserID (or UserID) are set. if both ActingUserID and UserID are
+	// set, it expands UserID, as may be relevant in UserJoinedTeam
 	// notifications. "all" and "summary" include the same full model.TeamMember
 	// struct.
 	TeamMember ExpandLevel `json:"team_member,omitempty"`
 
-	// Post, RootPost (default: "none", optional if set): all for model.Post,
-	// summary for Id, Type, UserId, ChannelId, RootId, Message.
+	// Post, RootPost (default: none, optional): all for model.Post, summary for
+	// Id, Type, UserId, ChannelId, RootId, Message.
 	Post     ExpandLevel `json:"post,omitempty"`
 	RootPost ExpandLevel `json:"root_post,omitempty"`
 
-	// User (default: "none", optional if set): all for model.User, summary for
+	// User (default: none, optional): all for model.User, summary for
 	// BotDescription, DeleteAt, Email, FirstName, Id, IsBot, LastName, Locale,
 	// Nickname, Roles, Timezone, Username.
 	User ExpandLevel `json:"user,omitempty"`
 
-	// OAuth2App (default: "none", required if set) expands the remote (3rd
-	// party) OAuth2 app configuration data.
+	// OAuth2App (default: none, required) expands the remote (3rd party) OAuth2
+	// app configuration data.
 	OAuth2App ExpandLevel `json:"oauth2_app,omitempty"`
 
-	// OAuth2User (default: "none", required if set) expands the remote (3rd
-	// party) OAuth2 user (custom object, previously stored with
+	// OAuth2User (default: none, required) expands the remote (3rd party)
+	// OAuth2 user (custom object, previously stored with
 	// appclient.StoreOAuthUser).
 	OAuth2User ExpandLevel `json:"oauth2_user,omitempty"`
 }

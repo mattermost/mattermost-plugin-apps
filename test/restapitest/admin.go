@@ -54,14 +54,14 @@ func (th *Helper) InstallApp(app *goapp.App) *apps.App {
 }
 
 func (th *Helper) DisableApp(app *goapp.App) {
-	_, resp, err := th.SystemAdminClientPP.DisableApp(app.Manifest.AppID)
+	resp, err := th.SystemAdminClientPP.DisableApp(app.Manifest.AppID)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("disabled: '%s'", app.Manifest.AppID)
 }
 
 func (th *Helper) EnableApp(app *goapp.App) {
-	_, resp, err := th.SystemAdminClientPP.EnableApp(app.Manifest.AppID)
+	resp, err := th.SystemAdminClientPP.EnableApp(app.Manifest.AppID)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("enabled: '%s'", app.Manifest.AppID)
