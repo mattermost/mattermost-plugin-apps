@@ -58,7 +58,7 @@ type Admin interface {
 	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 }
 
-// API implements user-level operations, usually invoked from httoin handlers.
+// API implements user-level operations, usually invoked from httpin handlers.
 // These methods expect the acting user, to and from apps to be set in the
 // request.
 type API interface {

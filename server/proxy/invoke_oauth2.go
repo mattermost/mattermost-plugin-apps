@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// GetRemoteOAuth2ConnectURL returns the URL for the user to open, that would
+// InvokeGetRemoteOAuth2ConnectURL returns the URL for the user to open, that would
 // start the OAuth2 authentication flow. r.ActingUser and r.ToApp must be already set.
 func (p *Proxy) InvokeGetRemoteOAuth2ConnectURL(r *incoming.Request) (string, error) {
 	app, err := p.getEnabledDestination(r)
