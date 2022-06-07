@@ -201,9 +201,9 @@ endif
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
-coverage: dist
+coverage: webapp/node_modules
 ifneq ($(HAS_SERVER),)
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt ./...
+	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt $(SANS_RESTAPITEST)
 	$(GO) tool cover -html=server/coverage.txt
 endif
 
