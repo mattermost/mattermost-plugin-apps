@@ -1,7 +1,6 @@
 package function
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"

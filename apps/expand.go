@@ -9,6 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -150,4 +152,152 @@ func (e Expand) String() string {
 	}
 	sort.Strings(ss)
 	return strings.Join(ss, ",")
+}
+
+func StripUser(user *model.User, level ExpandLevel) *model.User {
+	switch level {
+	case ExpandID:
+		return &model.User{
+			Id: user.Id,
+		}
+
+	case ExpandSummary:
+		return &model.User{
+			BotDescription: user.BotDescription,
+			DeleteAt:       user.DeleteAt,
+			Email:          user.Email,
+			FirstName:      user.FirstName,
+			Id:             user.Id,
+			IsBot:          user.IsBot,
+			LastName:       user.LastName,
+			Locale:         user.Locale,
+			Nickname:       user.Nickname,
+			Position:       user.Position,
+			Roles:          user.Roles,
+			Timezone:       user.Timezone,
+			Username:       user.Username,
+		}
+
+	case ExpandAll:
+		clone := *user
+		clone.Sanitize(map[string]bool{
+			"email":    true,
+			"fullname": true,
+		})
+		clone.AuthData = nil
+		return &clone
+
+	default:
+		return nil
+	}
+}
+
+func StripChannelMember(cm *model.ChannelMember, level ExpandLevel) *model.ChannelMember {
+	switch level {
+	case ExpandID:
+		return &model.ChannelMember{
+			UserId:    cm.UserId,
+			ChannelId: cm.ChannelId,
+		}
+
+	case ExpandSummary, ExpandAll:
+		clone := *cm
+		return &clone
+	}
+	return nil
+}
+
+func StripTeamMember(tm *model.TeamMember, level ExpandLevel) *model.TeamMember {
+	switch level {
+	case ExpandID:
+		return &model.TeamMember{
+			UserId: tm.UserId,
+			TeamId: tm.TeamId,
+		}
+
+	case ExpandSummary, ExpandAll:
+		clone := *tm
+		return &clone
+	}
+	return nil
+}
+
+func StripChannel(channel *model.Channel, level ExpandLevel) *model.Channel {
+	switch level {
+	case ExpandID:
+		return &model.Channel{
+			Id: channel.Id,
+		}
+
+	case ExpandSummary:
+		return &model.Channel{
+			Id:          channel.Id,
+			DeleteAt:    channel.DeleteAt,
+			TeamId:      channel.TeamId,
+			Type:        channel.Type,
+			DisplayName: channel.DisplayName,
+			Name:        channel.Name,
+		}
+
+	case ExpandAll:
+		clone := *channel
+		return &clone
+
+	default:
+		return nil
+	}
+}
+
+func StripTeam(team *model.Team, level ExpandLevel) *model.Team {
+	switch level {
+	case ExpandID:
+		return &model.Team{
+			Id: team.Id,
+		}
+
+	case ExpandSummary:
+		return &model.Team{
+			Id:          team.Id,
+			DisplayName: team.DisplayName,
+			Name:        team.Name,
+			Description: team.Description,
+			Email:       team.Email,
+			Type:        team.Type,
+		}
+
+	case ExpandAll:
+		sanitized := *team
+		sanitized.Sanitize()
+		return &sanitized
+
+	default:
+		return nil
+	}
+}
+
+func StripPost(post *model.Post, level ExpandLevel) *model.Post {
+	switch level {
+	case ExpandID:
+		return &model.Post{
+			Id: post.Id,
+		}
+
+	case ExpandSummary:
+		return &model.Post{
+			Id:        post.Id,
+			Type:      post.Type,
+			UserId:    post.UserId,
+			ChannelId: post.ChannelId,
+			RootId:    post.RootId,
+			Message:   post.Message,
+		}
+
+	case ExpandAll:
+		clone := post.Clone()
+		clone.SanitizeProps()
+		return clone
+
+	default:
+		return nil
+	}
 }

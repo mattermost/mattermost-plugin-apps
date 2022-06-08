@@ -50,7 +50,6 @@ func testEcho(th *Helper) {
 	_ = th.InstallAppWithCleanup(newEchoApp())
 
 	th.Run("simple", func(th *Helper) {
-		require := require.New(th)
 		cresp := th.HappyCall(echoID, apps.CallRequest{
 			Call: *apps.NewCall("/echo"),
 			Values: model.StringInterface{
@@ -60,16 +59,16 @@ func testEcho(th *Helper) {
 
 		echoResp := apps.CallRequest{}
 		err := json.Unmarshal([]byte(cresp.Text), &echoResp)
-		require.NoError(err)
+		require.NoError(th, err)
 
-		require.NotEmpty(echoResp.Context.ExpandedContext.BotUserID)
+		require.NotEmpty(th, echoResp.Context.ExpandedContext.BotUserID)
 		echoResp.Context.ExpandedContext.BotUserID = ""
-		require.NotEmpty(echoResp.Context.ExpandedContext.BotAccessToken)
+		require.NotEmpty(th, echoResp.Context.ExpandedContext.BotAccessToken)
 		echoResp.Context.ExpandedContext.BotAccessToken = ""
-		require.NotEmpty(echoResp.Context.ExpandedContext.MattermostSiteURL)
+		require.NotEmpty(th, echoResp.Context.ExpandedContext.MattermostSiteURL)
 		echoResp.Context.ExpandedContext.MattermostSiteURL = ""
 
-		require.EqualValues(apps.CallRequest{
+		require.EqualValues(th, apps.CallRequest{
 			Call: apps.Call{
 				Path: "/echo",
 			},
@@ -79,20 +78,19 @@ func testEcho(th *Helper) {
 			Context: apps.Context{
 				ExpandedContext: apps.ExpandedContext{
 					AppPath: "/plugins/com.mattermost.apps/apps/" + string(echoID),
+					DeveloperMode: true,
 				},
 			},
 		}, echoResp)
 	})
 
 	th.Run("AppsMetadata in response", func(th *Helper) {
-		require := require.New(th)
-
 		proxyResponse, _, err := th.CallWithAppMetadata(echoID, apps.CallRequest{
 			Call: *apps.NewCall("/echo"),
 		})
 
-		require.NoError(err)
-		require.Equal(string(echoID), proxyResponse.AppMetadata.BotUsername)
-		require.NotEmpty(proxyResponse.AppMetadata.BotUserID)
+		require.NoError(th, err)
+		require.Equal(th, string(echoID), proxyResponse.AppMetadata.BotUsername)
+		require.NotEmpty(th, proxyResponse.AppMetadata.BotUserID)
 	})
 }

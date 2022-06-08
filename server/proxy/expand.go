@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -23,6 +24,7 @@ type expander struct {
 	client mmclient.Client
 	r      *incoming.Request
 	proxy  *Proxy
+	conf   config.Config
 
 	botAccessToken        string
 	actingUserAccessToken string
@@ -35,8 +37,9 @@ type expander struct {
 // as the acting user data. (destination) `app` is passed in as a shortcut since
 // it's already available in all callers.
 func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (_ *apps.Context, err error) {
+	conf := r.Config().Get()
 	defer func() {
-		if err != nil && r.Config().Get().DeveloperMode {
+		if err != nil && conf.DeveloperMode {
 			r.Log.WithError(err).Debugw("Expand failed")
 		}
 	}()
@@ -49,13 +52,13 @@ func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Conte
 	}
 
 	e := &expander{
+		conf:    conf,
 		app:     app,
 		Context: *cc,
 		proxy:   p,
 		r:       r,
 	}
 
-	conf := r.Config().Get()
 	e.ExpandedContext = apps.ExpandedContext{
 		AppPath:           path.Join(conf.PluginURLPath, appspath.Apps, string(app.AppID)),
 		BotUserID:         app.BotUserID,
@@ -188,8 +191,13 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 
 		// Execute the expand function, skip the error unless the field is
 		// required.
-		if err := step.f(level); err != nil && required {
-			return nil, errors.Wrap(err, "failed to expand required "+step.name)
+		if err := step.f(level); err != nil {
+			if e.conf.DeveloperMode {
+				e.r.Log.WithError(err).Debugf("failed to expand field %s", step.name)
+			}
+			if required {
+				return nil, errors.Wrap(err, "failed to expand required "+step.name)
+			}
 		}
 	}
 
@@ -242,68 +250,23 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 				Id: userID,
 			}
 
-		case apps.ExpandSummary:
-			u, err := e.client.GetUser(userID)
+		case apps.ExpandSummary, apps.ExpandAll:
+			user, err := e.client.GetUser(userID)
 			if err != nil {
 				return errors.Wrapf(err, "id: %s", userID)
 			}
-			*userPtr = &model.User{
-				BotDescription: u.BotDescription,
-				DeleteAt:       u.DeleteAt,
-				Email:          u.Email,
-				FirstName:      u.FirstName,
-				Id:             u.Id,
-				IsBot:          u.IsBot,
-				LastName:       u.LastName,
-				Locale:         u.Locale,
-				Nickname:       u.Nickname,
-				Position:       u.Position,
-				Roles:          u.Roles,
-				Timezone:       u.Timezone,
-				Username:       u.Username,
-			}
-
-		case apps.ExpandAll:
-			u, err := e.client.GetUser(userID)
-			if err != nil {
-				return errors.Wrapf(err, "id: %s", userID)
-			}
-			u.Sanitize(map[string]bool{
-				"email":    true,
-				"fullname": true,
-			})
-			u.AuthData = nil
-			*userPtr = u
+			*userPtr = apps.StripUser(user, level)
 		}
 		return nil
 	}
 }
 
 func (e *expander) expandApp(level apps.ExpandLevel) error {
-	switch level {
-	case apps.ExpandSummary:
-		e.ExpandedContext.App = &apps.App{
-			Manifest: apps.Manifest{
-				AppID:   e.app.AppID,
-				Version: e.app.Version,
-			},
-			BotUserID:   e.app.BotUserID,
-			BotUsername: e.app.BotUsername,
-		}
+	e.ExpandedContext.App = e.app.Strip(level)
 
-	case apps.ExpandAll:
-		e.ExpandedContext.App = &apps.App{
-			Manifest: apps.Manifest{
-				AppID:   e.app.AppID,
-				Version: e.app.Version,
-			},
-			BotUserID:   e.app.BotUserID,
-			BotUsername: e.app.BotUsername,
-			DeployType:  e.app.DeployType,
-		}
-		if e.r.RequireSysadminOrPlugin() == nil {
-			e.ExpandedContext.App.WebhookSecret = e.app.WebhookSecret
-		}
+	e.ExpandedContext.App.WebhookSecret = ""
+	if level == apps.ExpandAll && e.r.RequireSysadminOrPlugin() == nil {
+		e.ExpandedContext.App.WebhookSecret = e.app.WebhookSecret
 	}
 	return nil
 }
@@ -322,18 +285,7 @@ func (e *expander) expandChannelMember(level apps.ExpandLevel) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get channel membership")
 	}
-
-	switch level {
-	case apps.ExpandID:
-		e.ExpandedContext.ChannelMember = &model.ChannelMember{
-			UserId:    cm.UserId,
-			ChannelId: cm.ChannelId,
-		}
-
-	case apps.ExpandSummary,
-		apps.ExpandAll:
-		e.ExpandedContext.ChannelMember = cm
-	}
+	e.ExpandedContext.ChannelMember = apps.StripChannelMember(cm, level)
 	return nil
 }
 
@@ -342,30 +294,12 @@ func (e *expander) expandChannel(level apps.ExpandLevel) error {
 	if channelID == "" {
 		return errors.New("no channel ID to expand")
 	}
+
 	channel, err := e.client.GetChannel(channelID)
 	if err != nil {
 		return errors.Wrap(err, "id: "+channelID)
 	}
-
-	switch level {
-	case apps.ExpandID:
-		e.ExpandedContext.Channel = &model.Channel{
-			Id: channel.Id,
-		}
-
-	case apps.ExpandSummary:
-		e.ExpandedContext.Channel = &model.Channel{
-			Id:          channel.Id,
-			DeleteAt:    channel.DeleteAt,
-			TeamId:      channel.TeamId,
-			Type:        channel.Type,
-			DisplayName: channel.DisplayName,
-			Name:        channel.Name,
-		}
-
-	case apps.ExpandAll:
-		e.ExpandedContext.Channel = channel
-	}
+	e.ExpandedContext.Channel = apps.StripChannel(channel, level)
 	return nil
 }
 
@@ -374,32 +308,12 @@ func (e *expander) expandTeam(level apps.ExpandLevel) error {
 	if teamID == "" {
 		return errors.New("no team ID to expand")
 	}
+
 	team, err := e.client.GetTeam(teamID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get team %s", teamID)
 	}
-
-	switch level {
-	case apps.ExpandID:
-		e.ExpandedContext.Team = &model.Team{
-			Id: team.Id,
-		}
-	case apps.ExpandSummary:
-		e.ExpandedContext.Team = &model.Team{
-			Id:          team.Id,
-			DisplayName: team.DisplayName,
-			Name:        team.Name,
-			Description: team.Description,
-			Email:       team.Email,
-			Type:        team.Type,
-		}
-
-	case apps.ExpandAll:
-		sanitized := *team
-		sanitized.Sanitize()
-		e.ExpandedContext.Team = &sanitized
-	}
-
+	e.ExpandedContext.Team = apps.StripTeam(team, level)
 	return nil
 }
 
@@ -412,20 +326,12 @@ func (e *expander) expandTeamMember(level apps.ExpandLevel) error {
 	if userID == "" || teamID == "" {
 		return errors.New("no user ID or channel ID to expand")
 	}
+
 	tm, err := e.client.GetTeamMember(teamID, userID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get team membership")
 	}
-
-	switch level {
-	case apps.ExpandID:
-		e.ExpandedContext.TeamMember = &model.TeamMember{
-			UserId: tm.UserId,
-			TeamId: tm.TeamId,
-		}
-	case apps.ExpandSummary, apps.ExpandAll:
-		e.ExpandedContext.TeamMember = tm
-	}
+	e.ExpandedContext.TeamMember = apps.StripTeamMember(tm, level)
 	return nil
 }
 
@@ -434,40 +340,22 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 		if postID == "" {
 			return errors.New("no post ID to expand")
 		}
+
 		post, err := e.client.GetPost(postID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get post %s", postID)
 		}
-
-		switch level {
-		case apps.ExpandID:
-			*postPtr = &model.Post{
-				Id: post.Id,
-			}
-
-		case apps.ExpandSummary:
-			*postPtr = &model.Post{
-				Id:        post.Id,
-				Type:      post.Type,
-				UserId:    post.UserId,
-				ChannelId: post.ChannelId,
-				RootId:    post.RootId,
-				Message:   post.Message,
-			}
-
-		case apps.ExpandAll:
-			post.SanitizeProps()
-			*postPtr = post
-		}
+		e.ExpandedContext.Post = apps.StripPost(post, level)
 		return nil
 	}
 }
 
 func (e *expander) expandLocale(level apps.ExpandLevel) error {
+	confService := e.r.Config()
 	if e.ExpandedContext.ActingUser != nil {
-		e.ExpandedContext.Locale = utils.GetLocaleWithUser(e.r.Config().MattermostConfig().Config(), e.ExpandedContext.ActingUser)
+		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig().Config(), e.ExpandedContext.ActingUser)
 	} else {
-		e.ExpandedContext.Locale = utils.GetLocale(e.r.Config().MattermostAPI(), e.r.Config().MattermostConfig().Config(), e.r.ActingUserID())
+		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig().Config(), e.r.ActingUserID())
 	}
 	return nil
 }
@@ -481,10 +369,9 @@ func (e *expander) expandOAuth2App(level apps.ExpandLevel) error {
 		return utils.NewForbiddenError("%s does not have permission to %s", to.AppID, apps.PermissionRemoteOAuth2)
 	}
 
-	conf := e.r.Config().Get()
 	e.ExpandedContext.OAuth2.OAuth2App = to.RemoteOAuth2
-	e.ExpandedContext.OAuth2.ConnectURL = conf.AppURL(to.AppID) + appspath.RemoteOAuth2Connect
-	e.ExpandedContext.OAuth2.CompleteURL = conf.AppURL(to.AppID) + appspath.RemoteOAuth2Complete
+	e.ExpandedContext.OAuth2.ConnectURL = e.conf.AppURL(to.AppID) + appspath.RemoteOAuth2Connect
+	e.ExpandedContext.OAuth2.CompleteURL = e.conf.AppURL(to.AppID) + appspath.RemoteOAuth2Complete
 	return nil
 }
 
@@ -587,36 +474,36 @@ func (e *expander) getActingUserAccessToken() (string, error) {
 
 func (e *expander) consistencyCheck() error {
 	if e.ExpandedContext.Post != nil {
-		if e.ExpandedContext.Post.ChannelId != e.UserAgentContext.ChannelID {
+		if e.UserAgentContext.ChannelID != "" && e.ExpandedContext.Post.ChannelId != e.UserAgentContext.ChannelID {
 			return errors.Errorf("expanded post's channel ID %s is different from user agent context %s",
 				e.ExpandedContext.Post.ChannelId, e.UserAgentContext.ChannelID)
 		}
 	}
 
 	if e.ExpandedContext.Channel != nil {
-		if e.ExpandedContext.Channel.Type != model.ChannelTypeDirect && e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
+		if e.UserAgentContext.TeamID != "" && e.ExpandedContext.Channel.Type != model.ChannelTypeDirect && e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
 			return errors.Errorf("expanded channel's team ID %s is different from user agent context %s",
 				e.ExpandedContext.Channel.TeamId, e.UserAgentContext.TeamID)
 		}
 	}
 
 	if e.ExpandedContext.ChannelMember != nil {
-		if e.ExpandedContext.ChannelMember.ChannelId != e.UserAgentContext.ChannelID {
+		if e.UserAgentContext.ChannelID != "" && e.ExpandedContext.ChannelMember.ChannelId != e.UserAgentContext.ChannelID {
 			return errors.Errorf("expanded channel member's channel ID %s is different from user agent context %s",
 				e.ExpandedContext.ChannelMember.ChannelId, e.UserAgentContext.ChannelID)
 		}
-		if e.ExpandedContext.ChannelMember.UserId != e.r.ActingUserID() && e.ExpandedContext.ChannelMember.UserId != e.UserID {
+		if e.UserID != "" && e.ExpandedContext.ChannelMember.UserId != e.r.ActingUserID() && e.ExpandedContext.ChannelMember.UserId != e.UserID {
 			return errors.Errorf("expanded channel member's user ID %s is different from user agent context",
 				e.ExpandedContext.ChannelMember.UserId)
 		}
 	}
 
 	if e.ExpandedContext.TeamMember != nil {
-		if e.ExpandedContext.TeamMember.TeamId != e.UserAgentContext.TeamID {
+		if e.UserAgentContext.TeamID != "" && e.ExpandedContext.TeamMember.TeamId != e.UserAgentContext.TeamID {
 			return errors.Errorf("expanded team member's team ID %s is different from user agent context %s",
 				e.ExpandedContext.TeamMember.TeamId, e.UserAgentContext.TeamID)
 		}
-		if e.ExpandedContext.TeamMember.UserId != e.r.ActingUserID() && e.ExpandedContext.TeamMember.UserId != e.UserID {
+		if e.UserID != "" && e.ExpandedContext.TeamMember.UserId != e.r.ActingUserID() && e.ExpandedContext.TeamMember.UserId != e.UserID {
 			return errors.Errorf("expanded team member's user ID %s is different from user agent context",
 				e.ExpandedContext.ChannelMember.UserId)
 		}

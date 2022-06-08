@@ -135,27 +135,25 @@ func testKV(th *Helper) {
 				name = "as bot"
 			}
 			th.Run(name, func(th *Helper) {
-				require := require.New(th)
-
 				// Check that does not yet exist, should comes back empty.
 				cresp := kvCall(th, "/get", asBot, "", nil)
-				require.Equal(`{}`, cresp.Text)
+				require.Equal(th, `{}`, cresp.Text)
 
 				// Set.
 				cresp = kvCall(th, "/set", asBot, "", nil)
-				require.Equal("true", cresp.Text)
+				require.Equal(th, "true", cresp.Text)
 
 				// Check.
 				cresp = kvCall(th, "/get", asBot, "", nil)
-				require.Equal(`{"test-name":"test-data"}`, cresp.Text)
+				require.Equal(th, `{"test-name":"test-data"}`, cresp.Text)
 
 				// Delete.
 				cresp = kvCall(th, "/delete", asBot, "", nil)
-				require.Equal(`deleted`, cresp.Text)
+				require.Equal(th, `deleted`, cresp.Text)
 
 				// Check again - deleted comes back as empty.
 				cresp = kvCall(th, "/get", asBot, "", nil)
-				require.Equal(`{}`, cresp.Text)
+				require.Equal(th, `{}`, cresp.Text)
 			})
 		}
 	})
@@ -172,41 +170,40 @@ func testKV(th *Helper) {
 			_ = kvCall(th, "/delete", false, "", nil)
 			th.Logf("deleted test KV keys")
 		})
-		require := require.New(th)
 
 		// Check that neither user's nor bot's test keys exist.
 		cresp := kvCall(th, "/get", true, "", nil)
-		require.Equal(`{}`, cresp.Text)
+		require.Equal(th, `{}`, cresp.Text)
 		cresp = kvCall(th, "/get", false, "", nil)
-		require.Equal(`{}`, cresp.Text)
+		require.Equal(th, `{}`, cresp.Text)
 
 		// Set and check both keys.
 		cresp = kvCall(th, "/set", true, "", botData)
-		require.Equal("true", cresp.Text)
+		require.Equal(th, "true", cresp.Text)
 		cresp = kvCall(th, "/set", false, "", userData)
-		require.Equal("true", cresp.Text)
+		require.Equal(th, "true", cresp.Text)
 		cresp = kvCall(th, "/get", true, "", nil)
-		require.Equal(`{"key2":"botvalue"}`, cresp.Text)
+		require.Equal(th, `{"key2":"botvalue"}`, cresp.Text)
 		cresp = kvCall(th, "/get", false, "", nil)
-		require.Equal(`{"key1":"uservalue"}`, cresp.Text)
+		require.Equal(th, `{"key1":"uservalue"}`, cresp.Text)
 
 		// Delete the user's, check that the bot's still there.
 		cresp = kvCall(th, "/delete", false, "", nil)
-		require.Equal(`deleted`, cresp.Text)
+		require.Equal(th, `deleted`, cresp.Text)
 		cresp = kvCall(th, "/get", false, "", nil)
-		require.Equal(`{}`, cresp.Text)
+		require.Equal(th, `{}`, cresp.Text)
 		cresp = kvCall(th, "/get", true, "", nil)
-		require.Equal(`{"key2":"botvalue"}`, cresp.Text)
+		require.Equal(th, `{"key2":"botvalue"}`, cresp.Text)
 
 		// Create the user's key again, then delete bot's and re-test.
 		cresp = kvCall(th, "/set", false, "", userData)
-		require.Equal("true", cresp.Text)
+		require.Equal(th, "true", cresp.Text)
 		cresp = kvCall(th, "/delete", true, "", nil)
-		require.Equal(`deleted`, cresp.Text)
+		require.Equal(th, `deleted`, cresp.Text)
 		cresp = kvCall(th, "/get", true, "", nil)
-		require.Equal(`{}`, cresp.Text)
+		require.Equal(th, `{}`, cresp.Text)
 		cresp = kvCall(th, "/get", false, "", nil)
-		require.Equal(`{"key1":"uservalue"}`, cresp.Text)
+		require.Equal(th, `{"key1":"uservalue"}`, cresp.Text)
 	})
 
 	// TODO: Add a test for namespacing 2 separate users

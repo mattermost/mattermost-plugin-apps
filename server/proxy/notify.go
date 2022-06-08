@@ -59,7 +59,7 @@ func (p *Proxy) notify(match func(store.Subscription) bool, event apps.Event, ua
 
 	subs, err := p.store.Subscription.Get(event)
 	if err != nil {
-		r.Log.WithError(err).Errorf("Notify error")
+		r.Log.WithError(err).Errorf("notify: failed to load subscriptions")
 		return
 	}
 
@@ -80,9 +80,9 @@ func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Su
 			return
 		}
 		if p.conf.Get().DeveloperMode {
-			r.Log.WithError(err).Errorf("Notify error")
+			r.Log.WithError(err).Errorf("notify error")
 		} else {
-			r.Log.Debugf("Notify")
+			r.Log.Debugf("notify")
 		}
 	}()
 
@@ -122,27 +122,25 @@ func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSu
 		ChannelID: channelID,
 		TeamID:    teamID,
 	}
-	p.notify(nil, event, apps.UserAgentContext{
-		UserID: user.Id,
-	})
+	uac := apps.UserAgentContext{
+		UserID:    user.Id,
+		TeamID:    teamID,
+		ChannelID: channelID,
+	}
+
+	p.notify(nil, event, uac)
 
 	// If the user is a bot, process SubjectBotLeftChannel; only notify the app
 	// with the matching BotUserID.
 	if user.IsBot {
 		allApps := p.store.App.AsMap()
 		event.Subject = botSubject
-		p.notify(
-			func(sub store.Subscription) bool {
-				if app, ok := allApps[sub.AppID]; ok {
-					return app.BotUserID == userID
-				}
-				return false
-			},
-			event,
-			apps.UserAgentContext{
-				UserID: user.Id,
-			},
-		)
+		p.notify(func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == userID
+			}
+			return false
+		}, event, uac)
 	}
 }
 

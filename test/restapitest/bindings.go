@@ -4,7 +4,6 @@
 package restapitest
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -81,8 +80,6 @@ func testBindings(th *Helper) {
 		Err      string         `json:"error"`
 	}
 	httpGetBindings := func(th *Helper, teamID, channelID string) (getBindingsOut, error) {
-		require := require.New(th)
-
 		// Set the HTTP request query args. ?test=true makes the REST API return
 		// the errors in addition to the bindings
 		q := url.Values{}
@@ -93,11 +90,11 @@ func testBindings(th *Helper) {
 
 		url := th.UserClientPP.GetPluginRoute(appclient.AppsPluginName) + appspath.API + "/bindings?" + q.Encode()
 		httpResp, err := th.UserClientPP.DoAPIGET(url, "")
-		require.NoError(err)
-		require.NotEmpty(httpResp)
+		require.NoError(th, err)
+		require.NotEmpty(th, httpResp)
 		defer httpResp.Body.Close()
 		data, err := io.ReadAll(httpResp.Body)
-		require.NoError(err)
+		require.NoError(th, err)
 		// the output of the /bindings test mode
 		out := getBindingsOut{}
 		err = json.Unmarshal(data, &out)
@@ -137,14 +134,13 @@ func testBindings(th *Helper) {
 			WithPermissions(apps.Permissions{apps.PermissionActAsUser})
 
 		th.InstallAppWithCleanup(app.App)
-		require := require.New(th)
 
-		require.Equal(th.ServerTestHelper.BasicPost.ChannelId, th.ServerTestHelper.BasicChannel.Id)
+		require.Equal(th, th.ServerTestHelper.BasicPost.ChannelId, th.ServerTestHelper.BasicChannel.Id)
 		app.creq = apps.CallRequest{}
 		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
-		require.NoError(err)
-		require.Equal("", out.Err)
-		require.EqualValues([]apps.Binding{
+		require.NoError(th, err)
+		require.Equal(th, "", out.Err)
+		require.EqualValues(th, []apps.Binding{
 			{
 				Location: apps.LocationCommand,
 				Bindings: []apps.Binding{
@@ -166,9 +162,9 @@ func testBindings(th *Helper) {
 			},
 		}, out.Bindings)
 
-		require.NotEmpty(app.creq)
-		require.EqualValues(th.ServerTestHelper.BasicChannel.TeamId, app.creq.Context.ExpandedContext.Team.Id)
-		require.EqualValues(th.ServerTestHelper.BasicChannel.Id, app.creq.Context.ExpandedContext.Channel.Id)
+		require.NotEmpty(th, app.creq)
+		require.EqualValues(th, th.ServerTestHelper.BasicChannel.TeamId, app.creq.Context.ExpandedContext.Team.Id)
+		require.EqualValues(th, th.ServerTestHelper.BasicChannel.Id, app.creq.Context.ExpandedContext.Channel.Id)
 	})
 
 	th.Run("bindings are accepted only for requested locations", func(th *Helper) {
@@ -265,17 +261,16 @@ func testBindings(th *Helper) {
 					WithPermissions(apps.Permissions{apps.PermissionActAsUser})
 
 				th.InstallAppWithCleanup(app.App)
-				require := require.New(th)
 
 				app.creq = apps.CallRequest{}
 				out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
-				require.NoError(err)
-				require.Equal(tc.expectedError, out.Err)
-				require.EqualValues(tc.expectedBindings, out.Bindings)
+				require.NoError(th, err)
+				require.Equal(th, tc.expectedError, out.Err)
+				require.EqualValues(th, tc.expectedBindings, out.Bindings)
 
 				if len(tc.requestedLocations) == 0 {
 					th.Run("app with no locations does not get a request", func(*Helper) {
-						require.Empty(app.creq)
+						require.Empty(th, app.creq)
 					})
 				}
 			})
@@ -303,13 +298,12 @@ func testBindings(th *Helper) {
 
 		th.InstallAppWithCleanup(app.App)
 		th.DisableApp(app.App)
-		require := require.New(th)
 
 		app.creq = apps.CallRequest{}
 		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
-		require.NoError(err)
-		require.Equal("1 error occurred:\n\t* app is disabled by the administrator: disabled-app: forbidden\n\n", out.Err)
-		require.Empty(app.creq)
+		require.NoError(th, err)
+		require.Equal(th, "1 error occurred:\n\t* app is disabled by the administrator: disabled-app: forbidden\n\n", out.Err)
+		require.Empty(th, app.creq)
 	})
 
 	th.Run("multiple apps have commands", func(th *Helper) {
@@ -399,13 +393,12 @@ func testBindings(th *Helper) {
 			}).
 			WithLocations(apps.Locations{apps.LocationCommand})
 
-		require := require.New(th)
 		th.InstallAppWithCleanup(app1.App)
 		th.InstallAppWithCleanup(app2.App)
 
 		out, err := httpGetBindings(th, "", "")
-		require.NoError(err)
-		require.Equal("", out.Err)
+		require.NoError(th, err)
+		require.Empty(th, out.Err)
 
 		appsURL := fmt.Sprintf("http://localhost:%v/plugins/com.mattermost.apps/apps", th.ServerTestHelper.Server.ListenAddr.Port)
 		expected := []apps.Binding{
@@ -491,6 +484,6 @@ func testBindings(th *Helper) {
 			},
 		}
 
-		require.EqualValues(expected, out.Bindings)
+		require.EqualValues(th, expected, out.Bindings)
 	})
 }

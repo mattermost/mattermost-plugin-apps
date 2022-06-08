@@ -35,14 +35,13 @@ type Helper struct {
 type Caller func(apps.AppID, apps.CallRequest) *apps.CallResponse
 
 func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
-	require := require.New(t)
 	// Check environment
-	require.NotEmpty(os.Getenv("MM_SERVER_PATH"),
+	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"),
 		"MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
 
 	// Unset SiteURL, just in case it's set
 	err := os.Unsetenv("MM_SERVICESETTINGS_SITEURL")
-	require.NoError(err)
+	require.NoError(t, err)
 
 	// Setup Mattermost server (helper)
 	serverTestHelper := api4.Setup(t)
@@ -61,6 +60,10 @@ func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 		// Update the server own address, as we know it.
 		*cfg.ServiceSettings.SiteURL = fmt.Sprintf("http://localhost:%d", port)
 		*cfg.ServiceSettings.ListenAddress = fmt.Sprintf(":%d", port)
+
+		// Enable developer mode for better logging
+		*cfg.ServiceSettings.EnableDeveloper = true
+		*cfg.ServiceSettings.EnableTesting = true
 	})
 
 	// Create the helper and register for cleanup.
@@ -98,46 +101,45 @@ func respond(text string, err error) apps.CallResponse {
 }
 
 func (th *Helper) verifyContext(level apps.ExpandLevel, app *apps.App, asSystemAdmin bool, expected, got apps.Context) {
-	require := require.New(th)
-
 	th.verifyExpandedContext(level, app, asSystemAdmin, expected.ExpandedContext, got.ExpandedContext)
 
 	expected.ExpandedContext = apps.ExpandedContext{}
 	got.ExpandedContext = apps.ExpandedContext{}
-	require.EqualValues(expected, got)
+	require.EqualValues(th, expected, got)
 }
 
 func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, asSystemAdmin bool, expected, got apps.ExpandedContext) {
 	siteURL := *th.ServerTestHelper.Server.Config().ServiceSettings.SiteURL
 	appPath := "/plugins/com.mattermost.apps/apps/" + string(app.AppID)
-	require := require.New(th)
-	require.Equal(siteURL, got.MattermostSiteURL)
-	require.Equal(appPath, got.AppPath)
-	require.Equal(app.BotUserID, got.BotUserID)
-	require.Equal(expected.DeveloperMode, got.DeveloperMode)
+	require.Equal(th, siteURL, got.MattermostSiteURL)
+	require.Equal(th, appPath, got.AppPath)
+	require.Equal(th, app.BotUserID, got.BotUserID)
 
-	require.NotEmpty(got.BotAccessToken)
+	// The dev mode is always set in the test.
+	require.Equal(th, true, got.DeveloperMode)
+
+	require.NotEmpty(th, got.BotAccessToken)
 	expected.BotAccessToken, got.BotAccessToken = "", ""
 	if level != apps.ExpandAll {
-		require.Empty(got.ActingUserAccessToken)
+		require.Empty(th, got.ActingUserAccessToken)
 	} else {
-		require.NotEmpty(got.ActingUserAccessToken)
+		require.NotEmpty(th, got.ActingUserAccessToken)
 	}
 	expected.ActingUserAccessToken, got.ActingUserAccessToken = "", ""
 
 	if level == apps.ExpandNone {
 		// make sure nothing else is set.
-		require.EqualValues(apps.ExpandedContext{
+		require.EqualValues(th, apps.ExpandedContext{
 			MattermostSiteURL: siteURL,
 			AppPath:           appPath,
 			BotUserID:         app.BotUserID,
-			DeveloperMode:     expected.DeveloperMode,
+			DeveloperMode:     true,
 		}, got)
 		return
 	}
 
-	require.Equal(expected.Locale, got.Locale)
-	require.EqualValues(expected.OAuth2, got.OAuth2)
+	require.Equal(th, expected.Locale, got.Locale)
+	require.EqualValues(th, expected.OAuth2, got.OAuth2)
 	th.requireEqualApp(level, asSystemAdmin, expected.App, got.App)
 	th.requireEqualUser(level, expected.ActingUser, got.ActingUser)
 	th.requireEqualChannel(level, expected.Channel, got.Channel)
@@ -150,149 +152,153 @@ func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, a
 }
 
 func (th *Helper) requireEqualUser(level apps.ExpandLevel, expected, got *model.User) {
-	require := require.New(th)
 	if expected == nil || expected.Id == "" {
 		require.Empty(th, got)
 		return
 	}
 	require.NotNil(th, got)
 
-	switch level {
-	case apps.ExpandNone:
-		require.Empty(got)
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
 		return
-
-	case apps.ExpandID:
-		// Make sure nothing else is set.
-		expected = &model.User{Id: expected.Id}
-
-	case apps.ExpandSummary:
-		expected = &model.User{
-			Id:             expected.Id,
-			Email:          expected.Email,
-			Position:       expected.Position,
-			FirstName:      expected.FirstName,
-			LastName:       expected.LastName,
-			Locale:         expected.Locale,
-			Nickname:       expected.Nickname,
-			Roles:          expected.Roles,
-			Timezone:       expected.Timezone,
-			Username:       expected.Username,
-			IsBot:          expected.IsBot,
-			BotDescription: expected.BotDescription,
-			DeleteAt:       expected.DeleteAt,
-		}
-
-	case apps.ExpandAll:
-		expected = &model.User{
-			Id:             expected.Id,
-			Email:          expected.Email,
-			Position:       expected.Position,
-			FirstName:      expected.FirstName,
-			LastName:       expected.LastName,
-			Locale:         expected.Locale,
-			Nickname:       expected.Nickname,
-			Roles:          expected.Roles,
-			Timezone:       expected.Timezone,
-			Username:       expected.Username,
-			IsBot:          expected.IsBot,
-			BotDescription: expected.BotDescription,
-			DeleteAt:       expected.DeleteAt,
-			Props:          expected.Props,
-			CreateAt:       expected.CreateAt,
-		}
-
-		// Zero out "got" fields that are ignored for the purpose of verification.
-		comp := *got
-		got = &comp
-		got.UpdateAt = 0
-		got.AuthData = nil
-		got.AuthService = ""
-		got.EmailVerified = false
-		got.NotifyProps = nil
-		got.LastPasswordUpdate = 0
-		got.LastPictureUpdate = 0
-		got.FailedAttempts = 0
-		got.MfaActive = false
-		got.MfaSecret = ""
-		got.RemoteId = nil
-		got.LastActivityAt = 0
-		got.BotLastIconUpdate = 0
-		got.TermsOfServiceId = ""
-		got.TermsOfServiceCreateAt = 0
-		got.DisableWelcomeEmail = false
-		got.Password = ""
-
-		// empty props comes differently from different places; normalize for
-		// comparison.
-		if expected.Props == nil {
-			expected.Props = model.StringMap{}
-		}
-		if got.Props == nil {
-			got.Props = model.StringMap{}
-		}
 	}
 
-	sanitizeMap := map[string]bool{
-		"email":    true,
-		"fullname": true,
+	// Zero out fields that are ignored for the purpose of verification.
+	comparable := func(user *model.User) *model.User {
+		if user == nil {
+			return nil
+		}
+		clone := *user
+		clone.UpdateAt = 0
+		clone.AuthData = nil
+		clone.AuthService = ""
+		clone.EmailVerified = false
+		clone.NotifyProps = nil
+		clone.LastPasswordUpdate = 0
+		clone.LastPictureUpdate = 0
+		clone.FailedAttempts = 0
+		clone.MfaActive = false
+		clone.MfaSecret = ""
+		clone.RemoteId = nil
+		clone.LastActivityAt = 0
+		clone.BotLastIconUpdate = 0
+		clone.TermsOfServiceId = ""
+		clone.TermsOfServiceCreateAt = 0
+		clone.DisableWelcomeEmail = false
+		clone.Password = ""
+		if clone.Props == nil {
+			clone.Props = model.StringMap{}
+		}
+
+		clone.Sanitize(map[string]bool{
+			"email":    true,
+			"fullname": true,
+		})
+		return &clone
 	}
-	expected.Sanitize(sanitizeMap)
-	got.Sanitize(sanitizeMap)
-	require.EqualValues(expected, got)
+
+	expected = apps.StripUser(expected, level)
+	require.EqualValues(th, comparable(expected), comparable(got))
 }
 
 func (th *Helper) requireEqualApp(level apps.ExpandLevel, asSystemAdmin bool, expected, got *apps.App) {
-	switch level {
-	case apps.ExpandSummary:
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID:   expected.AppID,
-				Version: expected.Version,
-			},
-			BotUserID:   expected.BotUserID,
-			BotUsername: expected.BotUsername,
-		}
-		require.EqualValues(th, app, got)
-
-	case apps.ExpandAll:
-		app := &apps.App{
-			Manifest: apps.Manifest{
-				AppID:   expected.AppID,
-				Version: expected.Version,
-			},
-			BotUserID:     expected.BotUserID,
-			BotUsername:   expected.BotUsername,
-			DeployType:    expected.DeployType,
-			WebhookSecret: expected.WebhookSecret,
-		}
-		// Only sysadmins get the webhook secret expanded.
-		if !asSystemAdmin {
-			app.WebhookSecret = ""
-		}
-		require.EqualValues(th, app, got)
-
-	default:
-		require.Nil(th, got)
+	app := expected.Strip(level)
+	// Only sysadmins get the webhook secret expanded.
+	if !asSystemAdmin && app != nil {
+		app.WebhookSecret = ""
 	}
+	require.EqualValues(th, app, got)
 }
 
 func (th *Helper) requireEqualChannel(level apps.ExpandLevel, expected, got *model.Channel) {
-	require.EqualValues(th, expected, got)
+	if expected == nil || expected.Id == "" {
+		require.Empty(th, got)
+		return
+	}
+	require.NotNil(th, got)
+
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
+		return
+	}
+
+	// Zero out fields that are ignored for the purpose of verification.
+	comparable := func(channel *model.Channel) *model.Channel {
+		if channel == nil {
+			return nil
+		}
+		clone := *channel
+		clone.UpdateAt = 0
+		if clone.Props == nil {
+			clone.Props = map[string]interface{}{}
+		}
+		return &clone
+	}
+
+	expected = apps.StripChannel(expected, level)
+	require.EqualValues(th, comparable(expected), comparable(got))
 }
 
 func (th *Helper) requireEqualChannelMember(level apps.ExpandLevel, expected, got *model.ChannelMember) {
+	if expected == nil || expected.UserId == "" {
+		require.Empty(th, got)
+		return
+	}
+	require.NotNil(th, got)
+
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
+		return
+	}
+
+	expected = apps.StripChannelMember(expected, level)
 	require.EqualValues(th, expected, got)
 }
 
 func (th *Helper) requireEqualTeam(level apps.ExpandLevel, expected, got *model.Team) {
+	if expected == nil || expected.Id == "" {
+		require.Empty(th, got)
+		return
+	}
+	require.NotNil(th, got)
+
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
+		return
+	}
+
+	expected = apps.StripTeam(expected, level)
 	require.EqualValues(th, expected, got)
 }
 
 func (th *Helper) requireEqualTeamMember(level apps.ExpandLevel, expected, got *model.TeamMember) {
+	if expected == nil || expected.UserId == "" {
+		require.Empty(th, got)
+		return
+	}
+	require.NotNil(th, got)
+
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
+		return
+	}
+
+	expected = apps.StripTeamMember(expected, level)
 	require.EqualValues(th, expected, got)
 }
 
 func (th *Helper) requireEqualPost(level apps.ExpandLevel, expected, got *model.Post) {
+	if expected == nil || expected.Id == "" {
+		require.Empty(th, got)
+		return
+	}
+	require.NotNil(th, got)
+
+	if level == apps.ExpandNone {
+		require.Empty(th, got)
+		return
+	}
+
+	expected = apps.StripPost(expected, level)
 	require.EqualValues(th, expected, got)
 }
