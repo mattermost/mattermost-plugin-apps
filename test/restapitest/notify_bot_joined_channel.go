@@ -35,7 +35,7 @@ func testNotifyBotJoinedChannel(app *apps.App, appBotUser *model.User, received 
 				require.Empty(th, received)
 				require.EqualValues(th, apps.NewCall("/notify").WithExpand(expandEverything(level)), &n.Call)
 
-				// Get updated values
+				// Get updated values.
 				cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(ch.Id, appBotUser.Id, "")
 				require.NoError(th, err)
 				api4.CheckOKStatus(th, resp)
@@ -43,10 +43,6 @@ func testNotifyBotJoinedChannel(app *apps.App, appBotUser *model.User, received 
 				channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(ch.Id, "")
 				require.NoError(th, err)
 				api4.CheckOKStatus(th, resp)
-
-				// team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(ch.TeamId, "")
-				// require.NoError(err)
-				// api4.CheckOKStatus(th, resp)
 
 				th.verifyContext(level, app, cl.appActsAsSystemAdmin,
 					apps.Context{
@@ -57,8 +53,7 @@ func testNotifyBotJoinedChannel(app *apps.App, appBotUser *model.User, received 
 							Channel:       channel,
 							ChannelMember: cm,
 							Locale:        "en",
-							// Team:          team,
-							User: appBotUser,
+							User:          appBotUser,
 						},
 					},
 					n.Context)
