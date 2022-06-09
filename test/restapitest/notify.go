@@ -61,6 +61,26 @@ func verifyUserCreated() func(th *Helper, data apps.ExpandedContext) apps.Expand
 	}
 }
 
+func triggerChannelCreated(teamID string) func(*Helper) apps.ExpandedContext {
+	return func(th *Helper) apps.ExpandedContext {
+		ch := th.createTestChannel(teamID)
+		return apps.ExpandedContext{
+			Channel: ch,
+		}
+	}
+}
+
+func verifyChannelCreated() func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+		channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(data.Channel.Id, "")
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		return apps.ExpandedContext{
+			Channel: channel,
+		}
+	}
+}
+
 func triggerBotJoinedChannel(botUserID string) func(*Helper) apps.ExpandedContext {
 	return func(th *Helper) apps.ExpandedContext {
 		ch := th.createTestChannel(th.ServerTestHelper.BasicTeam.Id)
@@ -196,11 +216,10 @@ func verifyBotLeftTeam(appBotUser *model.User, expectTeam bool) func(th *Helper,
 	}
 }
 
-//
-//
-//
 
-func (th *Helper) triggerUserJoinedChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
+func triggerUserJoinedChannel(botUserID string) func(*Helper) apps.ExpandedContext {
+	return func(th *Helper) apps.ExpandedContext {
+func triggerUserJoinedChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
 	_ = th.triggerUserJoinedTeam(ch.TeamId, user)
 	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
 	require.NoError(th, err)
@@ -208,6 +227,12 @@ func (th *Helper) triggerUserJoinedChannel(ch *model.Channel, user *model.User) 
 	th.Logf("added user @%s to channel %s", user.Username, ch.Name)
 	return cm
 }
+
+
+
+//
+//
+//
 
 func (th *Helper) triggerUserLeftChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
 	cm := th.triggerUserJoinedChannel(ch, user)
@@ -232,12 +257,6 @@ func (th *Helper) triggerUserLeftTeam(teamID string, user *model.User) *model.Te
 	th.Logf("removed user @%s from team %s)", user.Username, teamID)
 	return tm
 }
-
-// func triggerChannelCreated(teamID string) TestFunc {
-// 	return func(th *Helper) {
-// 		_ = th.createTestChannel(teamID)
-// 	}
-// }
 
 func (th *Helper) createTestUser() *model.User {
 	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec

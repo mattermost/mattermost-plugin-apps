@@ -104,6 +104,7 @@ func testNotify(th *Helper) {
 		clientCombinations []clientCombination
 		expandCombinations []apps.ExpandLevel
 	}{
+		// User, channel created.
 		{
 			event: apps.Event{
 				Subject: apps.SubjectUserCreated,
@@ -111,7 +112,16 @@ func testNotify(th *Helper) {
 			triggerF:  triggerUserCreated(),
 			expectedF: verifyUserCreated(),
 		},
+		{
+			event: apps.Event{
+				Subject: apps.SubjectChannelCreated,
+				TeamID:  th.ServerTestHelper.BasicTeam.Id,
+			},
+			triggerF:  triggerChannelCreated(th.ServerTestHelper.BasicTeam.Id),
+			expectedF: verifyChannelCreated(),
+		},
 
+		// Bot joined/left channels or teams
 		{
 			event: apps.Event{
 				Subject: apps.SubjectBotJoinedChannel,
@@ -127,7 +137,6 @@ func testNotify(th *Helper) {
 			triggerF:  triggerBotJoinedChannel(appBotUser.Id),
 			expectedF: verifyBotJoinedChannel(appBotUser),
 		},
-
 		{
 			event: apps.Event{
 				Subject: apps.SubjectBotLeftChannel,
@@ -154,7 +163,6 @@ func testNotify(th *Helper) {
 			triggerF:  triggerBotLeftChannel(appBotUser.Id),
 			expectedF: verifyBotLeftChannel(appBotUser, expectExpandedChannel),
 		},
-
 		{
 			event: apps.Event{
 				Subject: apps.SubjectBotJoinedTeam,
@@ -168,7 +176,6 @@ func testNotify(th *Helper) {
 			triggerF:  triggerBotJoinedTeam(appBotUser.Id),
 			expectedF: verifyBotJoinedTeam(appBotUser),
 		},
-
 		{
 			event: apps.Event{
 				Subject: apps.SubjectBotLeftTeam,
@@ -192,6 +199,16 @@ func testNotify(th *Helper) {
 			},
 			triggerF:  triggerBotLeftTeam(appBotUser.Id),
 			expectedF: verifyBotLeftTeam(appBotUser, expectExpandedTeam),
+		},
+
+		// User joined/left specific channels or teams. Note that
+		{
+			event: apps.Event{
+				Subject:   apps.SubjectUserJoinedChannel,
+				ChannelID: th.ServerTestHelper.BasicChannel.Id,
+			},
+			triggerF:  triggerUserJoinedChannel(),
+			expectedF: verifyUserJoinedChannel(),
 		},
 	} {
 		th.Run(string(tc.event.Subject), func(th *Helper) {
@@ -219,13 +236,6 @@ func testNotify(th *Helper) {
 	}
 }
 
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectChannelCreated,
-// 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-// 			},
-// 			triggerf: triggerChannelCreated(th.ServerTestHelper.BasicTeam.Id),
-// 		},
 // 		{
 // 			event: apps.Event{
 // 				Subject:   apps.SubjectUserJoinedChannel,
