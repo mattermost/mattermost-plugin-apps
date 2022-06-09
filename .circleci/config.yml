@@ -7,7 +7,7 @@ orbs:
 executors:
   default:
     docker:
-      - image: cimg/go:1.18.2
+      - image: cimg/go:1.18.3
 
 aliases:
 - &restore_go_cache
