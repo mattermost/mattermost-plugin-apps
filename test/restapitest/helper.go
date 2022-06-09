@@ -32,6 +32,7 @@ type Helper struct {
 	LocalClientPP       *appclient.ClientPP
 }
 
+type TestFunc func(*Helper)
 type Caller func(apps.AppID, apps.CallRequest) *apps.CallResponse
 
 func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {

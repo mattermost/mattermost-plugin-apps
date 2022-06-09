@@ -107,7 +107,10 @@ func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Su
 		Context: *contextToExpand,
 	}
 	r.Log = r.Log.With(creq)
-	err = p.callApp(appRequest, app, creq, true)
+	cresp := p.callApp(appRequest, app, creq, true)
+	if cresp.Type == apps.CallResponseTypeError {
+		err = cresp
+	}
 }
 
 func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSubject apps.Subject) {

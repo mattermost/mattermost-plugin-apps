@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	mainHelper.Main(m)
 }
 
-func TestSingleServer(t *testing.T) {
+func TestRESTAPI(t *testing.T) {
 	th := NewHelper(t)
 
 	for name, testF := range map[string]func(*Helper){
