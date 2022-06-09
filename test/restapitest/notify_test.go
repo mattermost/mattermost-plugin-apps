@@ -117,6 +117,7 @@ func testNotify(th *Helper) {
 				Subject: apps.SubjectBotJoinedChannel,
 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
 			},
+			// no user2 - it can't access the test channel
 			clientCombinations: []clientCombination{
 				userAsBotClientCombination(th, appBotUser),
 				adminAsBotClientCombination(th, appBotUser),
@@ -132,24 +133,65 @@ func testNotify(th *Helper) {
 				Subject: apps.SubjectBotLeftChannel,
 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
 			},
+			// the bot won't be able to expand the channel after having been removed.
 			clientCombinations: []clientCombination{
 				userAsBotClientCombination(th, appBotUser),
 				adminAsBotClientCombination(th, appBotUser),
 			},
 			triggerF:  triggerBotLeftChannel(appBotUser.Id),
-			expectedF: verifyBotLeftChannel(appBotUser, expectNoExpandedChannel), // the bot won't be able to expand the channel after having been removed.
+			expectedF: verifyBotLeftChannel(appBotUser, expectNoExpandedChannel),
 		},
 		{
 			event: apps.Event{
 				Subject: apps.SubjectBotLeftChannel,
 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
 			},
+			// the user and admin can still to expand the channel after having been removed.
 			clientCombinations: []clientCombination{
 				userClientCombination(th),
 				adminClientCombination(th),
 			},
 			triggerF:  triggerBotLeftChannel(appBotUser.Id),
 			expectedF: verifyBotLeftChannel(appBotUser, expectExpandedChannel),
+		},
+
+		{
+			event: apps.Event{
+				Subject: apps.SubjectBotJoinedTeam,
+			},
+			// no user, user2 - they can't access the test team
+			clientCombinations: []clientCombination{
+				userAsBotClientCombination(th, appBotUser),
+				adminAsBotClientCombination(th, appBotUser),
+				adminClientCombination(th),
+			},
+			triggerF:  triggerBotJoinedTeam(appBotUser.Id),
+			expectedF: verifyBotJoinedTeam(appBotUser),
+		},
+
+		{
+			event: apps.Event{
+				Subject: apps.SubjectBotLeftTeam,
+			},
+			// the bot won't be able to expand the team after having been removed.
+			clientCombinations: []clientCombination{
+				userAsBotClientCombination(th, appBotUser),
+				adminAsBotClientCombination(th, appBotUser),
+				userClientCombination(th),
+			},
+			triggerF:  triggerBotLeftTeam(appBotUser.Id),
+			expectedF: verifyBotLeftTeam(appBotUser, expectNoExpandedTeam),
+		},
+		{
+			event: apps.Event{
+				Subject: apps.SubjectBotLeftTeam,
+			},
+			// the user and admin can still to expand the channel after having been removed.
+			clientCombinations: []clientCombination{
+				adminClientCombination(th),
+			},
+			triggerF:  triggerBotLeftTeam(appBotUser.Id),
+			expectedF: verifyBotLeftTeam(appBotUser, expectExpandedTeam),
 		},
 	} {
 		th.Run(string(tc.event.Subject), func(th *Helper) {

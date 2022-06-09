@@ -268,8 +268,19 @@ func (th *Helper) requireEqualTeam(level apps.ExpandLevel, expected, got *model.
 		return
 	}
 
+	// Zero out fields that are ignored for the purpose of verification.
+	comparable := func(team *model.Team) *model.Team {
+		if team == nil {
+			return nil
+		}
+		clone := *team
+		clone.UpdateAt = 0
+		clone.Email = ""
+		return &clone
+	}
+
 	expected = apps.StripTeam(expected, level)
-	require.EqualValues(th, expected, got)
+	require.EqualValues(th, comparable(expected), comparable(got))
 }
 
 func (th *Helper) requireEqualTeamMember(level apps.ExpandLevel, expected, got *model.TeamMember) {

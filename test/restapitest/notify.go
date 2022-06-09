@@ -115,15 +115,83 @@ func verifyBotLeftChannel(appBotUser *model.User, expectChannel bool) func(th *H
 				User: appBotUser,
 			}
 		}
-
 		// Get updated values.
 		channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(data.Channel.Id, "")
 		require.NoError(th, err)
 		api4.CheckOKStatus(th, resp)
-
 		return apps.ExpandedContext{
 			Channel: channel,
 			User:    appBotUser,
+		}
+	}
+}
+
+func triggerBotJoinedTeam(botUserID string) func(*Helper) apps.ExpandedContext {
+	return func(th *Helper) apps.ExpandedContext {
+		team := th.createTestTeam()
+
+		tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
+		require.NoError(th, err)
+		api4.CheckCreatedStatus(th, resp)
+		th.Logf("added app's bot to team %s", team.Name)
+		return apps.ExpandedContext{
+			Team:       team,
+			TeamMember: tm,
+		}
+	}
+}
+
+func verifyBotJoinedTeam(appBotUser *model.User) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+		// Get updated values.
+		tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(data.Team.Id, appBotUser.Id, "")
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(data.Team.Id, "")
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		return apps.ExpandedContext{
+			Team:       team,
+			TeamMember: tm,
+			User:       appBotUser,
+		}
+	}
+}
+
+func triggerBotLeftTeam(botUserID string) func(*Helper) apps.ExpandedContext {
+	return func(th *Helper) apps.ExpandedContext {
+		data := triggerBotJoinedTeam(botUserID)(th)
+		resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(data.Team.Id, botUserID)
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		th.Logf("removed app's bot from team %s", data.Team.Name)
+		return apps.ExpandedContext{
+			Team: data.Team,
+		}
+	}
+}
+
+const expectExpandedTeam = true
+const expectNoExpandedTeam = false
+
+func verifyBotLeftTeam(appBotUser *model.User, expectTeam bool) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+		if !expectTeam {
+			return apps.ExpandedContext{
+				User: appBotUser,
+			}
+		}
+		// Get updated values.
+		tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(data.Team.Id, appBotUser.Id, "")
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(data.Team.Id, "")
+		require.NoError(th, err)
+		api4.CheckOKStatus(th, resp)
+		return apps.ExpandedContext{
+			Team:       team,
+			TeamMember: tm,
+			User:       appBotUser,
 		}
 	}
 }
@@ -162,23 +230,6 @@ func (th *Helper) triggerUserLeftTeam(teamID string, user *model.User) *model.Te
 	_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(teamID, user.Id)
 	require.NoError(th, err)
 	th.Logf("removed user @%s from team %s)", user.Username, teamID)
-	return tm
-}
-
-func (th *Helper) triggerBotJoinedTeam(team *model.Team, botUserID string) *model.TeamMember {
-	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
-	require.NoError(th, err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("added app's bot to team %s", team.Name)
-	return cm
-}
-
-func (th *Helper) triggerBotLeftTeam(team *model.Team, botUserID string) *model.TeamMember {
-	tm := th.triggerBotJoinedTeam(team, botUserID)
-	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, botUserID)
-	require.NoError(th, err)
-	api4.CheckOKStatus(th, resp)
-	th.Logf("removed app's bot from team %s", team.Name)
 	return tm
 }
 
