@@ -163,7 +163,7 @@ jobs:
 
   test-rest-postgres11:
     docker:
-      - image: cimg/go:1.17.3
+      - image: cimg/go:1.18.3
       - image: cimg/postgres:11.13
         environment:
           POSTGRES_USER: mmuser
