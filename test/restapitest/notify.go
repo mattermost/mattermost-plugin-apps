@@ -233,11 +233,11 @@ func (th *Helper) triggerUserLeftTeam(teamID string, user *model.User) *model.Te
 	return tm
 }
 
-func triggerChannelCreated(teamID string) TestFunc {
-	return func(th *Helper) {
-		_ = th.createTestChannel(teamID)
-	}
-}
+// func triggerChannelCreated(teamID string) TestFunc {
+// 	return func(th *Helper) {
+// 		_ = th.createTestChannel(teamID)
+// 	}
+// }
 
 func (th *Helper) createTestUser() *model.User {
 	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
