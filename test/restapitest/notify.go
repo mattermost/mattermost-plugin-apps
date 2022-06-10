@@ -13,249 +13,63 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (th *Helper) subscribeAs(cl clientCombination, appID apps.AppID, event apps.Event, expand apps.Expand) {
-	cresp := cl.happyCall(appID, apps.CallRequest{
-		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
-		Values: map[string]interface{}{
-			"sub": apps.Subscription{
-				Event: event,
-				Call:  *apps.NewCall("/notify").WithExpand(expand),
+func newNotifyApp(th *Helper, received chan apps.CallRequest) *goapp.App {
+	app := goapp.MakeAppOrPanic(
+		apps.Manifest{
+			AppID:       "testnotify",
+			Version:     "v1.1.0",
+			DisplayName: "Tests notifications",
+			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
+			RequestedPermissions: []apps.Permission{
+				apps.PermissionActAsBot,
+				apps.PermissionActAsUser,
 			},
-			"as_bot": cl.appActsAsBot,
 		},
-	})
-	require.Equal(th, `subscribed`, cresp.Text)
-	th.Cleanup(func() {
-		cresp := cl.happyCall(appID, apps.CallRequest{
-			Call: *apps.NewCall("/unsubscribe").ExpandActingUserClient(),
-			Values: map[string]interface{}{
-				"sub": apps.Subscription{
-					Event: event,
-				},
-				"as_bot": cl.appActsAsBot,
-			},
+	)
+
+	params := func(creq goapp.CallRequest) (*appclient.Client, apps.Subscription) {
+		asBot, _ := creq.BoolValue("as_bot")
+		var sub apps.Subscription
+		utils.Remarshal(&sub, creq.Values["sub"])
+
+		if asBot {
+			require.NotEmpty(th, creq.Context.BotAccessToken)
+			return appclient.AsBot(creq.Context), sub
+		}
+		require.NotEmpty(th, creq.Context.ActingUserAccessToken)
+		return appclient.AsActingUser(creq.Context), sub
+	}
+
+	app.HandleCall("/subscribe",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, sub := params(creq)
+			err := client.Subscribe(&sub)
+			require.NoError(th, err)
+			th.Logf("subscribed to %s", sub.Event)
+			return apps.NewTextResponse("subscribed")
 		})
-		require.Equal(th, `unsubscribed`, cresp.Text)
-	})
-}
 
-func triggerUserCreated() func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		user := th.createTestUser()
-		return apps.ExpandedContext{
-			User: user,
-		}
-	}
-}
+	app.HandleCall("/unsubscribe",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			client, sub := params(creq)
+			err := client.Unsubscribe(&sub)
+			require.NoError(th, err)
+			th.Logf("unsubscribed from %s", sub.Event)
+			return apps.NewTextResponse("unsubscribed")
+		})
 
-func verifyUserCreated() func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		user, resp, err := th.ServerTestHelper.SystemAdminClient.GetUser(data.User.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			User: user,
-		}
-	}
-}
+	app.HandleCall("/notify",
+		func(creq goapp.CallRequest) apps.CallResponse {
+			received <- creq.CallRequest
+			return respond("OK", nil)
+		})
 
-func triggerChannelCreated(teamID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		ch := th.createTestChannel(teamID)
-		return apps.ExpandedContext{
-			Channel: ch,
-		}
-	}
-}
-
-func verifyChannelCreated() func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(data.Channel.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			Channel: channel,
-		}
-	}
-}
-
-func triggerBotJoinedChannel(botUserID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		ch := th.createTestChannel(th.ServerTestHelper.BasicTeam.Id)
-		cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, botUserID)
-		require.NoError(th, err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to channel %s", ch.Name)
-		return apps.ExpandedContext{
-			Channel:       ch,
-			ChannelMember: cm,
-		}
-	}
-}
-
-func verifyBotJoinedChannel(appBotUser *model.User) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		// Get updated values.
-		cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(data.Channel.Id, appBotUser.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(data.Channel.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			Channel:       channel,
-			ChannelMember: cm,
-			User:          appBotUser,
-		}
-	}
-}
-
-func triggerBotLeftChannel(botUserID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		ec := triggerBotJoinedChannel(botUserID)(th)
-		resp, err := th.ServerTestHelper.Client.RemoveUserFromChannel(ec.ChannelMember.ChannelId, ec.ChannelMember.UserId)
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		th.Logf("removed app's bot from channel %s", ec.Channel.Name)
-		return apps.ExpandedContext{
-			Channel: ec.Channel,
-		}
-	}
-}
-
-const expectExpandedChannel = true
-const expectNoExpandedChannel = false
-
-func verifyBotLeftChannel(appBotUser *model.User, expectChannel bool) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		if !expectChannel {
-			return apps.ExpandedContext{
-				User: appBotUser,
-			}
-		}
-		// Get updated values.
-		channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(data.Channel.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			Channel: channel,
-			User:    appBotUser,
-		}
-	}
-}
-
-func triggerBotJoinedTeam(botUserID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		team := th.createTestTeam()
-
-		tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, botUserID)
-		require.NoError(th, err)
-		api4.CheckCreatedStatus(th, resp)
-		th.Logf("added app's bot to team %s", team.Name)
-		return apps.ExpandedContext{
-			Team:       team,
-			TeamMember: tm,
-		}
-	}
-}
-
-func verifyBotJoinedTeam(appBotUser *model.User) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		// Get updated values.
-		tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(data.Team.Id, appBotUser.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(data.Team.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			Team:       team,
-			TeamMember: tm,
-			User:       appBotUser,
-		}
-	}
-}
-
-func triggerBotLeftTeam(botUserID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-		data := triggerBotJoinedTeam(botUserID)(th)
-		resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(data.Team.Id, botUserID)
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		th.Logf("removed app's bot from team %s", data.Team.Name)
-		return apps.ExpandedContext{
-			Team: data.Team,
-		}
-	}
-}
-
-const expectExpandedTeam = true
-const expectNoExpandedTeam = false
-
-func verifyBotLeftTeam(appBotUser *model.User, expectTeam bool) func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-	return func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-		if !expectTeam {
-			return apps.ExpandedContext{
-				User: appBotUser,
-			}
-		}
-		// Get updated values.
-		tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(data.Team.Id, appBotUser.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(data.Team.Id, "")
-		require.NoError(th, err)
-		api4.CheckOKStatus(th, resp)
-		return apps.ExpandedContext{
-			Team:       team,
-			TeamMember: tm,
-			User:       appBotUser,
-		}
-	}
-}
-
-
-func triggerUserJoinedChannel(botUserID string) func(*Helper) apps.ExpandedContext {
-	return func(th *Helper) apps.ExpandedContext {
-func triggerUserJoinedChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
-	_ = th.triggerUserJoinedTeam(ch.TeamId, user)
-	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(ch.Id, user.Id)
-	require.NoError(th, err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("added user @%s to channel %s", user.Username, ch.Name)
-	return cm
-}
-
-
-
-//
-//
-//
-
-func (th *Helper) triggerUserLeftChannel(ch *model.Channel, user *model.User) *model.ChannelMember {
-	cm := th.triggerUserJoinedChannel(ch, user)
-	_, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(ch.Id, cm.UserId)
-	require.NoError(th, err)
-	th.Logf("removed user @%s from channel %s)", user.Username, ch.Name)
-	return cm
-}
-
-func (th *Helper) triggerUserJoinedTeam(teamID string, user *model.User) *model.TeamMember {
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(teamID, user.Id)
-	require.NoError(th, err)
-	api4.CheckCreatedStatus(th, resp)
-	th.Logf("added user @%s to team %s)", user.Username, teamID)
-	return tm
-}
-
-func (th *Helper) triggerUserLeftTeam(teamID string, user *model.User) *model.TeamMember {
-	tm := th.triggerUserJoinedTeam(teamID, user)
-	_, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(teamID, user.Id)
-	require.NoError(th, err)
-	th.Logf("removed user @%s from team %s)", user.Username, teamID)
-	return tm
+	return app
 }
 
 func (th *Helper) createTestUser() *model.User {
@@ -276,9 +90,9 @@ func (th *Helper) createTestUser() *model.User {
 	return u
 }
 
-func (th *Helper) createTestChannel(teamID string) *model.Channel {
+func (th *Helper) createTestChannel(client *model.Client4, teamID string) *model.Channel {
 	testName := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
-	ch, resp, err := th.ServerTestHelper.Client.CreateChannel(&model.Channel{
+	ch, resp, err := client.CreateChannel(&model.Channel{
 		Name:   testName,
 		Type:   model.ChannelTypePrivate,
 		TeamId: teamID,
@@ -310,4 +124,95 @@ func (th *Helper) createTestTeam() *model.Team {
 		th.Logf("deleted test team @%s (%s)", team.Name, team.Id)
 	})
 	return team
+}
+
+func (th *Helper) addChannelMember(channel *model.Channel, user *model.User) *model.ChannelMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddChannelMember(channel.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s (%s) to channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
+	return cm
+}
+
+func (th *Helper) addTeamMember(team *model.Team, user *model.User) *model.TeamMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s (%s) to team %s (%s)", user.Username, user.Id, team.Name, team.Id)
+	return cm
+}
+
+func (th *Helper) removeUserFromChannel(channel *model.Channel, user *model.User) {
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(channel.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed user @%s (%s) from channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
+}
+
+func (th *Helper) removeTeamMember(team *model.Team, user *model.User) {
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed user @%s (%s) from team %s (%s)", user.Username, user.Id, team.Name, team.Id)
+}
+
+func (th *Helper) getUser(userID string) *model.User {
+	user, resp, err := th.ServerTestHelper.SystemAdminClient.GetUser(userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return user
+}
+
+func (th *Helper) getChannel(channelID string) *model.Channel {
+	channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(channelID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return channel
+}
+
+func (th *Helper) getChannelMember(channelID, userID string) *model.ChannelMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(channelID, userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return cm
+}
+
+func (th *Helper) getTeam(channelID string) *model.Team {
+	team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(channelID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return team
+}
+
+func (th *Helper) getTeamMember(channelID, userID string) *model.TeamMember {
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(channelID, userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return tm
+}
+
+func (th *Helper) subscribeAs(cl clientCombination, appID apps.AppID, event apps.Event, expand apps.Expand) {
+	cresp := cl.happyCall(appID, apps.CallRequest{
+		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
+		Values: map[string]interface{}{
+			"sub": apps.Subscription{
+				Event: event,
+				Call:  *apps.NewCall("/notify").WithExpand(expand),
+			},
+			"as_bot": cl.appActsAsBot,
+		},
+	})
+	require.Equal(th, `subscribed`, cresp.Text)
+	th.Cleanup(func() {
+		cresp := cl.happyCall(appID, apps.CallRequest{
+			Call: *apps.NewCall("/unsubscribe").ExpandActingUserClient(),
+			Values: map[string]interface{}{
+				"sub": apps.Subscription{
+					Event: event,
+				},
+				"as_bot": cl.appActsAsBot,
+			},
+		})
+		require.Equal(th, `unsubscribed`, cresp.Text)
+	})
 }

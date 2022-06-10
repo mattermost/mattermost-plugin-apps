@@ -213,10 +213,10 @@ func (th *Helper) requireEqualApp(level apps.ExpandLevel, asSystemAdmin bool, ex
 
 func (th *Helper) requireEqualChannel(level apps.ExpandLevel, expected, got *model.Channel) {
 	if expected == nil || expected.Id == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "Channel")
 		return
 	}
-	require.NotNil(th, got)
+	require.NotNil(th, got, "Channel")
 
 	if level == apps.ExpandNone {
 		require.Empty(th, got)
@@ -242,26 +242,38 @@ func (th *Helper) requireEqualChannel(level apps.ExpandLevel, expected, got *mod
 
 func (th *Helper) requireEqualChannelMember(level apps.ExpandLevel, expected, got *model.ChannelMember) {
 	if expected == nil || expected.UserId == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "ChannelMember")
 		return
 	}
-	require.NotNil(th, got)
+	require.NotNil(th, got, "ChannelMember")
 
 	if level == apps.ExpandNone {
 		require.Empty(th, got)
 		return
 	}
 
+	// Zero out fields that are ignored for the purpose of verification.
+	comparable := func(cm *model.ChannelMember) *model.ChannelMember {
+		if cm == nil {
+			return nil
+		}
+		clone := *cm
+		clone.LastUpdateAt = 0
+		clone.MentionCount = 0
+		clone.MentionCountRoot = 0
+		return &clone
+	}
+
 	expected = apps.StripChannelMember(expected, level)
-	require.EqualValues(th, expected, got)
+	require.EqualValues(th, comparable(expected), comparable(got), "ChannelMember")
 }
 
 func (th *Helper) requireEqualTeam(level apps.ExpandLevel, expected, got *model.Team) {
 	if expected == nil || expected.Id == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "Team")
 		return
 	}
-	require.NotNil(th, got)
+	require.NotNil(th, got, "Team")
 
 	if level == apps.ExpandNone {
 		require.Empty(th, got)
@@ -285,10 +297,10 @@ func (th *Helper) requireEqualTeam(level apps.ExpandLevel, expected, got *model.
 
 func (th *Helper) requireEqualTeamMember(level apps.ExpandLevel, expected, got *model.TeamMember) {
 	if expected == nil || expected.UserId == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "TeamMember")
 		return
 	}
-	require.NotNil(th, got)
+	require.NotNil(th, got, "TeamMember")
 
 	if level == apps.ExpandNone {
 		require.Empty(th, got)
@@ -301,10 +313,10 @@ func (th *Helper) requireEqualTeamMember(level apps.ExpandLevel, expected, got *
 
 func (th *Helper) requireEqualPost(level apps.ExpandLevel, expected, got *model.Post) {
 	if expected == nil || expected.Id == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "Post")
 		return
 	}
-	require.NotNil(th, got)
+	require.NotNil(th, got, "Post")
 
 	if level == apps.ExpandNone {
 		require.Empty(th, got)

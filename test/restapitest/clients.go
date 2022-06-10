@@ -150,22 +150,12 @@ type clientCombination struct {
 	appActsAsSystemAdmin bool
 }
 
-func userAsBotClientCombination(th *Helper, botUser *model.User) clientCombination {
+func botClientCombination(th *Helper, botUser *model.User) clientCombination {
 	return clientCombination{
 		name:               "user as bot",
 		expectedActingUser: botUser,
 		happyCall:          th.HappyCall,
 		call:               th.Call,
-		appActsAsBot:       true,
-	}
-}
-
-func adminAsBotClientCombination(th *Helper, botUser *model.User) clientCombination {
-	return clientCombination{
-		name:               "admin as bot",
-		expectedActingUser: botUser,
-		happyCall:          th.HappyAdminCall,
-		call:               th.AdminCall,
 		appActsAsBot:       true,
 	}
 }
@@ -200,8 +190,7 @@ func adminClientCombination(th *Helper) clientCombination {
 
 func allClientCombinations(th *Helper, botUser *model.User) []clientCombination {
 	return []clientCombination{
-		userAsBotClientCombination(th, botUser),
-		adminAsBotClientCombination(th, botUser),
+		botClientCombination(th, botUser),
 		userClientCombination(th),
 		user2ClientCombination(th),
 		adminClientCombination(th),

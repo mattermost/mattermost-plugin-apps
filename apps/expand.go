@@ -226,7 +226,8 @@ func StripChannel(channel *model.Channel, level ExpandLevel) *model.Channel {
 	switch level {
 	case ExpandID:
 		return &model.Channel{
-			Id: channel.Id,
+			Id:     channel.Id,
+			TeamId: channel.TeamId,
 		}
 
 	case ExpandSummary:

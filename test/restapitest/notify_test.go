@@ -12,64 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/api4"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
-	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-func newNotifyApp(th *Helper, received chan apps.CallRequest) *goapp.App {
-	app := goapp.MakeAppOrPanic(
-		apps.Manifest{
-			AppID:       "testnotify",
-			Version:     "v1.1.0",
-			DisplayName: "Tests notifications",
-			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
-			RequestedPermissions: []apps.Permission{
-				apps.PermissionActAsBot,
-				apps.PermissionActAsUser,
-			},
-		},
-	)
-
-	params := func(creq goapp.CallRequest) (*appclient.Client, apps.Subscription) {
-		asBot, _ := creq.BoolValue("as_bot")
-		var sub apps.Subscription
-		utils.Remarshal(&sub, creq.Values["sub"])
-
-		if asBot {
-			require.NotEmpty(th, creq.Context.BotAccessToken)
-			return appclient.AsBot(creq.Context), sub
-		}
-		require.NotEmpty(th, creq.Context.ActingUserAccessToken)
-		return appclient.AsActingUser(creq.Context), sub
-	}
-
-	app.HandleCall("/subscribe",
-		func(creq goapp.CallRequest) apps.CallResponse {
-			client, sub := params(creq)
-			err := client.Subscribe(&sub)
-			require.NoError(th, err)
-			th.Logf("subscribed to %s", sub.Event)
-			return apps.NewTextResponse("subscribed")
-		})
-
-	app.HandleCall("/unsubscribe",
-		func(creq goapp.CallRequest) apps.CallResponse {
-			client, sub := params(creq)
-			err := client.Unsubscribe(&sub)
-			require.NoError(th, err)
-			th.Logf("unsubscribed from %s", sub.Event)
-			return apps.NewTextResponse("unsubscribed")
-		})
-
-	app.HandleCall("/notify",
-		func(creq goapp.CallRequest) apps.CallResponse {
-			received <- creq.CallRequest
-			return respond("OK", nil)
-		})
-
-	return app
-}
 
 func testNotify(th *Helper) {
 	// 1000 is enough to receive all possible notifications that might come in a single test.
@@ -97,134 +40,366 @@ func testNotify(th *Helper) {
 	require.Equal(th, installedApp.BotUserID, cm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
-	for _, tc := range []struct {
-		event              apps.Event
-		triggerF           func(*Helper) apps.ExpandedContext
-		expectedF          func(*Helper, apps.ExpandedContext) apps.ExpandedContext
+	basicTeam := th.ServerTestHelper.BasicTeam
+
+	for name, tc := range map[string]struct {
+		init               func(*Helper) apps.ExpandedContext
+		event              func(*Helper, apps.ExpandedContext) apps.Event
+		trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
+		expected           func(*Helper, apps.ExpandedContext) apps.ExpandedContext
 		clientCombinations []clientCombination
 		expandCombinations []apps.ExpandLevel
 	}{
-		// User, channel created.
-		{
-			event: apps.Event{
-				Subject: apps.SubjectUserCreated,
+		"all users receive user_created": {
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectUserCreated,
+				}
 			},
-			triggerF:  triggerUserCreated(),
-			expectedF: verifyUserCreated(),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectChannelCreated,
-				TeamID:  th.ServerTestHelper.BasicTeam.Id,
+			trigger: func(th *Helper, _ apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					User: th.createTestUser(),
+				}
 			},
-			triggerF:  triggerChannelCreated(th.ServerTestHelper.BasicTeam.Id),
-			expectedF: verifyChannelCreated(),
-		},
-
-		// Bot joined/left channels or teams
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotJoinedChannel,
-				TeamID:  th.ServerTestHelper.BasicTeam.Id,
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					User: th.getUser(data.User.Id),
+				}
 			},
-			// no user2 - it can't access the test channel
-			clientCombinations: []clientCombination{
-				userAsBotClientCombination(th, appBotUser),
-				adminAsBotClientCombination(th, appBotUser),
-				userClientCombination(th),
-				adminClientCombination(th),
-			},
-			triggerF:  triggerBotJoinedChannel(appBotUser.Id),
-			expectedF: verifyBotJoinedChannel(appBotUser),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotLeftChannel,
-				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-			},
-			// the bot won't be able to expand the channel after having been removed.
-			clientCombinations: []clientCombination{
-				userAsBotClientCombination(th, appBotUser),
-				adminAsBotClientCombination(th, appBotUser),
-			},
-			triggerF:  triggerBotLeftChannel(appBotUser.Id),
-			expectedF: verifyBotLeftChannel(appBotUser, expectNoExpandedChannel),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotLeftChannel,
-				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-			},
-			// the user and admin can still to expand the channel after having been removed.
-			clientCombinations: []clientCombination{
-				userClientCombination(th),
-				adminClientCombination(th),
-			},
-			triggerF:  triggerBotLeftChannel(appBotUser.Id),
-			expectedF: verifyBotLeftChannel(appBotUser, expectExpandedChannel),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotJoinedTeam,
-			},
-			// no user, user2 - they can't access the test team
-			clientCombinations: []clientCombination{
-				userAsBotClientCombination(th, appBotUser),
-				adminAsBotClientCombination(th, appBotUser),
-				adminClientCombination(th),
-			},
-			triggerF:  triggerBotJoinedTeam(appBotUser.Id),
-			expectedF: verifyBotJoinedTeam(appBotUser),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotLeftTeam,
-			},
-			// the bot won't be able to expand the team after having been removed.
-			clientCombinations: []clientCombination{
-				userAsBotClientCombination(th, appBotUser),
-				adminAsBotClientCombination(th, appBotUser),
-				userClientCombination(th),
-			},
-			triggerF:  triggerBotLeftTeam(appBotUser.Id),
-			expectedF: verifyBotLeftTeam(appBotUser, expectNoExpandedTeam),
-		},
-		{
-			event: apps.Event{
-				Subject: apps.SubjectBotLeftTeam,
-			},
-			// the user and admin can still to expand the channel after having been removed.
-			clientCombinations: []clientCombination{
-				adminClientCombination(th),
-			},
-			triggerF:  triggerBotLeftTeam(appBotUser.Id),
-			expectedF: verifyBotLeftTeam(appBotUser, expectExpandedTeam),
 		},
 
-		// User joined/left specific channels or teams. Note that
-		{
-			event: apps.Event{
-				Subject:   apps.SubjectUserJoinedChannel,
-				ChannelID: th.ServerTestHelper.BasicChannel.Id,
+		"creator receives channel_created with ChannelMember and TeamMember": {
+			clientCombinations: []clientCombination{
+				userClientCombination(th),
 			},
-			triggerF:  triggerUserJoinedChannel(),
-			expectedF: verifyUserJoinedChannel(),
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectChannelCreated,
+					TeamID:  basicTeam.Id,
+				}
+			},
+			trigger: func(th *Helper, _ apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.createTestChannel(th.ServerTestHelper.Client, basicTeam.Id),
+				}
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel:       th.getChannel(data.Channel.Id),
+					ChannelMember: th.getChannelMember(data.Channel.Id, th.ServerTestHelper.BasicUser.Id),
+					Team:          th.getTeam(data.Channel.TeamId),
+					TeamMember:    th.getTeamMember(data.Channel.TeamId, th.ServerTestHelper.BasicUser.Id),
+				}
+			},
+		},
+
+		"admin receives channel_created": {
+			clientCombinations: []clientCombination{
+				adminClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectChannelCreated,
+					TeamID:  basicTeam.Id,
+				}
+			},
+			trigger: func(th *Helper, _ apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.createTestChannel(th.ServerTestHelper.Client, basicTeam.Id),
+				}
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.getChannel(data.Channel.Id),
+					Team:    th.getTeam(data.Channel.TeamId),
+				}
+			},
+		},
+
+		"bot user and admin receive bot_joined_channel in basic team": {
+			clientCombinations: []clientCombination{
+				botClientCombination(th, appBotUser),
+				adminClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotJoinedChannel,
+					TeamID:  basicTeam.Id,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.createTestChannel(th.ServerTestHelper.SystemAdminClient, basicTeam.Id),
+					User:    appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				data.ChannelMember = th.addChannelMember(data.Channel, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel:       th.getChannel(data.Channel.Id),
+					ChannelMember: th.getChannelMember(data.Channel.Id, data.User.Id),
+					User:          th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"bot receives unexpanded bot_left_channel": {
+			clientCombinations: []clientCombination{
+				botClientCombination(th, appBotUser),
+				userClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotLeftChannel,
+					TeamID:  basicTeam.Id,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, basicTeam.Id)
+				cm := th.addChannelMember(channel, appBotUser)
+				return apps.ExpandedContext{
+					Channel:       channel,
+					ChannelMember: cm,
+					User:          appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				th.removeUserFromChannel(data.Channel, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					User: th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"admin receives expanded bot_left_channel": {
+			// the user and admin can still to expand the channel after having been removed.
+			clientCombinations: []clientCombination{
+				adminClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotLeftChannel,
+					TeamID:  basicTeam.Id,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, basicTeam.Id)
+				cm := th.addChannelMember(channel, appBotUser)
+				return apps.ExpandedContext{
+					Channel:       channel,
+					ChannelMember: cm,
+					User:          appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				th.removeUserFromChannel(data.Channel, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.getChannel(data.Channel.Id),
+					User:    th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"bot admin receive bot_joined_team": {
+			clientCombinations: []clientCombination{
+				botClientCombination(th, appBotUser),
+				adminClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotJoinedTeam,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				team := th.createTestTeam()
+				return apps.ExpandedContext{
+					Team: team,
+					User: appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				data.TeamMember = th.addTeamMember(data.Team, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Team:       th.getTeam(data.Team.Id),
+					TeamMember: th.getTeamMember(data.Team.Id, data.User.Id),
+					User:       th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"bot user user2 receive unexpanded bot_left_team": {
+			clientCombinations: []clientCombination{
+				botClientCombination(th, appBotUser),
+				userClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotLeftTeam,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				team := th.createTestTeam()
+				tm := th.addTeamMember(team, appBotUser)
+				return apps.ExpandedContext{
+					Team:       team,
+					TeamMember: tm,
+					User:       appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				th.removeTeamMember(data.Team, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					User: th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"admin receives expanded bot_left_team": {
+			clientCombinations: []clientCombination{
+				adminClientCombination(th),
+			},
+			event: func(*Helper, apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject: apps.SubjectBotLeftTeam,
+				}
+			},
+			init: func(th *Helper) apps.ExpandedContext {
+				team := th.createTestTeam()
+				tm := th.addTeamMember(team, appBotUser)
+				return apps.ExpandedContext{
+					Team:       team,
+					TeamMember: tm,
+					User:       appBotUser,
+				}
+			},
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				th.removeTeamMember(data.Team, data.User)
+				return data
+			},
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Team: th.getTeam(data.Team.Id),
+					// we get a DeleteAt set (unlike the channel member that
+					// fails after the member removal).
+					TeamMember: th.getTeamMember(data.Team.Id, data.User.Id),
+					User:       th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"admin and channel members receive user_joined_channel": {
+			init: func(th *Helper) apps.ExpandedContext {
+				// create it as User, add bot and User2 as members, Admin will
+				// have access anyway.
+				channel := th.createTestChannel(th.ServerTestHelper.Client, basicTeam.Id)
+				th.addChannelMember(channel, appBotUser)
+				th.addChannelMember(channel, th.ServerTestHelper.BasicUser2)
+				testUser := th.createTestUser()
+				th.addTeamMember(basicTeam, testUser)
+				return apps.ExpandedContext{
+					Channel: channel,
+					User:    testUser,
+				}
+			},
+
+			event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject:   apps.SubjectUserJoinedChannel,
+					ChannelID: data.Channel.Id,
+				}
+			},
+
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				data.ChannelMember = th.addChannelMember(data.Channel, data.User)
+				return data
+			},
+
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel:       th.getChannel(data.Channel.Id),
+					ChannelMember: th.getChannelMember(data.Channel.Id, data.User.Id),
+					User:          th.getUser(data.User.Id),
+				}
+			},
+		},
+
+		"admin and channel members receive user_left_channel": { // others can not subscribe.
+			clientCombinations: []clientCombination{
+				userClientCombination(th),
+				user2ClientCombination(th),
+				adminClientCombination(th),
+			},
+
+			init: func(th *Helper) apps.ExpandedContext {
+				// create it as User, add bot and User2 as members, Admin will
+				// have access anyway.
+				channel := th.createTestChannel(th.ServerTestHelper.Client, basicTeam.Id)
+				th.addChannelMember(channel, th.ServerTestHelper.BasicUser2)
+				testUser := th.createTestUser()
+				th.addTeamMember(basicTeam, testUser)
+				cm := th.addChannelMember(channel, testUser)
+				return apps.ExpandedContext{
+					Channel:       channel,
+					ChannelMember: cm,
+					User:          testUser,
+				}
+			},
+
+			event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+				return apps.Event{
+					Subject:   apps.SubjectUserLeftChannel,
+					ChannelID: data.Channel.Id,
+				}
+			},
+
+			trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				th.removeUserFromChannel(data.Channel, data.User)
+				return data
+			},
+
+			expected: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+				return apps.ExpandedContext{
+					Channel: th.getChannel(data.Channel.Id),
+					User:    th.getUser(data.User.Id),
+				}
+			},
 		},
 	} {
-		th.Run(string(tc.event.Subject), func(th *Helper) {
+		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, appBotUser, tc.expandCombinations, tc.clientCombinations,
 				func(th *Helper, level apps.ExpandLevel, cl clientCombination) {
-					th.subscribeAs(cl, installedApp.AppID, tc.event, expandEverything(level))
+					data := apps.ExpandedContext{}
+					if tc.init != nil {
+						data = tc.init(th)
+					}
 
-					data := tc.triggerF(th)
+					event := tc.event(th, data)
+					th.subscribeAs(cl, installedApp.AppID, event, expandEverything(level))
+
+					data = tc.trigger(th, data)
 
 					n := <-received
 					require.Empty(th, received)
 					require.EqualValues(th, apps.NewCall("/notify").WithExpand(expandEverything(level)), &n.Call)
 
 					expected := apps.Context{
-						Subject:         tc.event.Subject,
-						ExpandedContext: tc.expectedF(th, data),
+						Subject:         event.Subject,
+						ExpandedContext: tc.expected(th, data),
 					}
 					expected.ExpandedContext.App = installedApp
 					expected.ExpandedContext.ActingUser = cl.expectedActingUser
@@ -235,82 +410,3 @@ func testNotify(th *Helper) {
 		})
 	}
 }
-
-// 		{
-// 			event: apps.Event{
-// 				Subject:   apps.SubjectUserJoinedChannel,
-// 				ChannelID: th.ServerTestHelper.BasicChannel.Id,
-// 			},
-// 			triggerf: triggerUserJoinedChannel(th.ServerTestHelper.BasicChannel),
-// 			// user2 is not a member of the channel, so must be excluded.
-// 			clientCombinations: []clientCombination{
-// 				userAsBotClientCombination(th),
-// 				adminAsBotClientCombination(th),
-// 				userClientCombination(th),
-// 				adminClientCombination(th),
-// 			},
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject:   apps.SubjectUserLeftChannel,
-// 				ChannelID: th.ServerTestHelper.BasicChannel.Id,
-// 			},
-// 			triggerf: triggerUserLeftChannel(th.ServerTestHelper.BasicChannel),
-// 			clientCombinations: []clientCombination{
-// 				userAsBotClientCombination(th),
-// 				adminAsBotClientCombination(th),
-// 				userClientCombination(th),
-// 				adminClientCombination(th),
-// 			},
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectUserJoinedTeam,
-// 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-// 			},
-// 			triggerf: triggerUserJoinedTeam(),
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectUserLeftTeam,
-// 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-// 			},
-// 			triggerf: triggerUserLeftTeam(),
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectBotJoinedChannel,
-// 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-// 			},
-// 			triggerf: triggerBotJoinedChannel(th.ServerTestHelper.BasicTeam.Id, installedApp.BotUserID),
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectBotLeftChannel,
-// 				TeamID:  th.ServerTestHelper.BasicTeam.Id,
-// 			},
-// 			triggerf: triggerBotLeftChannel(th.ServerTestHelper.BasicTeam.Id, installedApp.BotUserID),
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectBotJoinedTeam,
-// 			},
-// 			triggerf: triggerBotJoinedTeam(installedApp.BotUserID),
-// 		},
-// 		{
-// 			event: apps.Event{
-// 				Subject: apps.SubjectBotLeftTeam,
-// 			},
-// 			triggerf: triggerBotLeftTeam(installedApp.BotUserID),
-// 		},
-// 	} {
-// 		th.Run(string(tc.event.Subject), func(th *Helper) {
-// 			if tc.expand == nil {
-// 				tc.expand = map[apps.Expand]func(interface{}) apps.ExpandedContext{}
-// 			}
-// 			tc.expand[apps.Expand{}] = func(interface{}) apps.ExpandedContext { return apps.ExpandedContext{} }
-
-// 			combinations := tc.clientCombinations
-// 			if combinations == nil {
-// 				combinations = allClientCombinations(th)
-// 			}
