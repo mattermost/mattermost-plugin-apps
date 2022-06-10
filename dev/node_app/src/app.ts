@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 const manifest = {
     app_id: 'node-example',
     display_name: "I'm an App!",
-    homepage_url: 'https://github.com/mattermost/mattermost-plugin-apps/dev',
+    homepage_url: 'https://github.com/mattermost/mattermost-plugin-apps',
     app_type: 'http',
     icon: 'icon.png',
     root_url: `http://${host}:${port}`,
@@ -61,8 +61,8 @@ const form: AppForm = {
             position: 1,
         },
     ],
-    call: {
-        path: '/send',
+    submit: {
+        path: '/send/submit',
     },
 };
 
@@ -73,7 +73,7 @@ const channelHeaderBindings = {
             location: 'send-button',
             icon: 'icon.png',
             label: 'send hello message',
-            call: {
+            submit: {
                 path: '/send',
             },
         },
@@ -86,20 +86,20 @@ const commandBindings = {
         {
             icon: 'icon.png',
             label: 'node-example',
-            description: 'Example App written with Node.js',
+            description: 'Example app written with Node.js',
             hint: '[send]',
             bindings: [
                 {
                     location: 'send',
                     label: 'send',
-                    form,
+                    form
                 },
             ],
         },
     ],
 } as AppBinding;
 
-// Serve icon.png and others from the static folder
+// Serve resources from the static folder
 app.use('/static', express.static('./static'));
 
 app.get('/manifest.json', (req, res) => {
@@ -121,6 +121,26 @@ app.post('/bindings', (req, res) => {
 type FormValues = {
     message: string;
 }
+
+app.post('/send', (req, res) => {
+    res.json({
+        type: 'form',
+        form: {
+            title: 'Hello, world!',
+            icon: 'icon.png',
+            fields: [
+                {
+                    type: 'text',
+                    name: 'message',
+                    label: 'message',
+                },
+            ],
+            submit: {
+                path: '/send/submit',
+            },
+        },
+    });
+});
 
 app.post('/send/submit', async (req, res) => {
     const call = req.body as AppCallRequest;
@@ -145,7 +165,7 @@ app.post('/send/submit', async (req, res) => {
     let channel: Channel;
     try {
         channel = await botClient.createDirectChannel(users);
-    } catch (e) {
+    } catch (e: any) {
         res.json({
             type: 'error',
             error: 'Failed to create/fetch DM channel: ' + e.message,
@@ -160,7 +180,7 @@ app.post('/send/submit', async (req, res) => {
 
     try {
         await botClient.createPost(post)
-    } catch (e) {
+    } catch (e: any) {
         res.json({
             type: 'error',
             error: 'Failed to create post in DM channel: ' + e.message,

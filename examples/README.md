@@ -1,6 +1,6 @@
 #### Preferred Ports for running in local http mode
 
-- go
+- Go
 
 | App | Port |
 | --- | --- |
@@ -11,4 +11,6 @@
 | hello-lifecycle | 8083 |
 | hello-jwt | 8084 |
 
-- js
+- Node.js
+
+See the [dev/node_app example](../dev/node_app).

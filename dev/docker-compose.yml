@@ -1,33 +1,29 @@
 version: '3'
 services:
     mattermost:
+        container_name: mattermost
         # This can be updated with docker tags from https://hub.docker.com/r/mattermost/mattermost-enterprise-edition/tags
         image: mattermost/mattermost-enterprise-edition:6.6
-
         ports:
-            - "8066:8066"
+            - 8065:8065
         environment:
             MM_SQLSETTINGS_DRIVERNAME: postgres
             MM_SQLSETTINGS_DATASOURCE: "postgres://mmuser:mostest@db/mattermost_test?sslmode=disable\u0026connect_timeout=10"
-            MM_SERVICESETTINGS_LISTENADDRESS: ":8066"
-            MM_SERVICESETTINGS_SITEURL: "http://localhost:8066"
+            MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
+            MM_SERVICESETTINGS_SITEURL: "http://localhost:8065"
             MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION: "true"
             MM_SERVICESETTINGS_ENABLEOAUTHSERVICEPROVIDER: "true"
             MM_SERVICESETTINGS_ENABLEDEVELOPER: "true"
             MM_SERVICESETTINGS_ENABLETESTING: "true"
             MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: "true"
             MM_PLUGINSETTINGS_ENABLEUPLOADS: "true"
-            MM_FEATUREFLAGS_AppsEnabled: "true"
-
-            # This can be updated with release versions from https://github.com/mattermost/mattermost-plugin-apps/releases
-            MM_FEATUREFLAGS_PluginApps: "1.1.0"
-
             MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
             MM_LOGSETTINGS_FILELEVEL: DEBUG
     db:
         image: postgres
+        container_name: postgres
         ports:
-            - "5433:5432"
+            - 5433:5432
         environment:
             POSTGRES_PASSWORD: mostest
             POSTGRES_USER: mmuser

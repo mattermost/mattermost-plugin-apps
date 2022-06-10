@@ -1,7 +1,7 @@
 {
   "name": "node-example-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Example Node.js app for Mattermost",
   "main": "app.js",
   "scripts": {
     "start": "nodemon",
@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "4.17.1",
-    "mattermost-redux": "github:mattermost/mattermost-redux#5fa256e1f5ae6ba237a276e35ec23a4c1f73af7b",
+    "mattermost-redux": "5.33.1",
     "node-fetch": "2.6.1"
   },
   "devDependencies": {
