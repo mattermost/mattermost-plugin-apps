@@ -47,7 +47,7 @@ func newEchoApp() *goapp.App {
 }
 
 func testEcho(th *Helper) {
-	_ = th.InstallAppWithCleanup(newEchoApp())
+	th.InstallAppWithCleanup(newEchoApp())
 
 	th.Run("simple", func(th *Helper) {
 		cresp := th.HappyCall(echoID, apps.CallRequest{

@@ -6,6 +6,7 @@ package restapitest
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -141,7 +142,7 @@ func (th *Helper) HappyAdminCall(appID apps.AppID, creq apps.CallRequest) *apps.
 
 // All calls to the App are made by invoking the /api/v1/call API, and must be
 // made in the context of a user.
-type clientCombination struct {
+type appClient struct {
 	name                 string
 	expectedActingUser   *model.User
 	happyCall            func(appID apps.AppID, creq apps.CallRequest) *apps.CallResponse
@@ -150,49 +151,121 @@ type clientCombination struct {
 	appActsAsSystemAdmin bool
 }
 
-func botClientCombination(th *Helper, botUser *model.User) clientCombination {
-	return clientCombination{
-		name:               "user as bot",
-		expectedActingUser: botUser,
-		happyCall:          th.HappyCall,
-		call:               th.Call,
-		appActsAsBot:       true,
-	}
+func (th *Helper) createTestUser() *model.User {
+	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
+	testEmail := fmt.Sprintf("%s@test.test", testUsername)
+	u, resp, err := th.ServerTestHelper.SystemAdminClient.CreateUser(&model.User{
+		Username: testUsername,
+		Email:    testEmail,
+	})
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("created test user @%s (%s)", u.Username, u.Id)
+	th.Cleanup(func() {
+		_, err := th.ServerTestHelper.SystemAdminClient.DeleteUser(u.Id)
+		require.NoError(th, err)
+		th.Logf("deleted test user @%s (%s)", u.Username, u.Id)
+	})
+	return u
 }
 
-func userClientCombination(th *Helper) clientCombination {
-	return clientCombination{
-		name:               "user self",
-		expectedActingUser: th.ServerTestHelper.BasicUser,
-		happyCall:          th.HappyCall,
-		call:               th.Call,
-	}
+func (th *Helper) createTestChannel(client *model.Client4, teamID string) *model.Channel {
+	testName := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
+	ch, resp, err := client.CreateChannel(&model.Channel{
+		Name:   testName,
+		Type:   model.ChannelTypePrivate,
+		TeamId: teamID,
+	})
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("created test channel %s (%s)", ch.Name, ch.Id)
+	th.Cleanup(func() {
+		_, err := th.ServerTestHelper.SystemAdminClient.DeleteChannel(ch.Id)
+		require.NoError(th, err)
+		th.Logf("deleted test channel @%s (%s)", ch.Name, ch.Id)
+	})
+	return ch
 }
 
-func user2ClientCombination(th *Helper) clientCombination {
-	return clientCombination{
-		name:               "user2 self",
-		expectedActingUser: th.ServerTestHelper.BasicUser2,
-		happyCall:          th.HappyUser2Call,
-		call:               th.User2Call,
-	}
+func (th *Helper) createTestTeam() *model.Team {
+	testName := fmt.Sprintf("test%v", rand.Int()) //nolint:gosec
+	team, resp, err := th.ServerTestHelper.SystemAdminClient.CreateTeam(&model.Team{
+		Name:        testName,
+		DisplayName: testName,
+		Type:        model.TeamOpen,
+	})
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("created test team %s (%s)", team.Name, team.Id)
+	th.Cleanup(func() {
+		_, err := th.ServerTestHelper.SystemAdminClient.SoftDeleteTeam(team.Id)
+		require.NoError(th, err)
+		th.Logf("deleted test team @%s (%s)", team.Name, team.Id)
+	})
+	return team
 }
 
-func adminClientCombination(th *Helper) clientCombination {
-	return clientCombination{
-		name:                 "admin self",
-		expectedActingUser:   th.ServerTestHelper.SystemAdminUser,
-		happyCall:            th.HappyAdminCall,
-		call:                 th.AdminCall,
-		appActsAsSystemAdmin: true,
-	}
+func (th *Helper) addChannelMember(channel *model.Channel, user *model.User) *model.ChannelMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddChannelMember(channel.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s (%s) to channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
+	return cm
 }
 
-func allClientCombinations(th *Helper, botUser *model.User) []clientCombination {
-	return []clientCombination{
-		botClientCombination(th, botUser),
-		userClientCombination(th),
-		user2ClientCombination(th),
-		adminClientCombination(th),
-	}
+func (th *Helper) addTeamMember(team *model.Team, user *model.User) *model.TeamMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckCreatedStatus(th, resp)
+	th.Logf("added user @%s (%s) to team %s (%s)", user.Username, user.Id, team.Name, team.Id)
+	return cm
+}
+
+func (th *Helper) removeUserFromChannel(channel *model.Channel, user *model.User) {
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(channel.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed user @%s (%s) from channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
+}
+
+func (th *Helper) removeTeamMember(team *model.Team, user *model.User) {
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, user.Id)
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	th.Logf("removed user @%s (%s) from team %s (%s)", user.Username, user.Id, team.Name, team.Id)
+}
+
+func (th *Helper) getUser(userID string) *model.User {
+	user, resp, err := th.ServerTestHelper.SystemAdminClient.GetUser(userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return user
+}
+
+func (th *Helper) getChannel(channelID string) *model.Channel {
+	channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(channelID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return channel
+}
+
+func (th *Helper) getChannelMember(channelID, userID string) *model.ChannelMember {
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(channelID, userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return cm
+}
+
+func (th *Helper) getTeam(channelID string) *model.Team {
+	team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(channelID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return team
+}
+
+func (th *Helper) getTeamMember(channelID, userID string) *model.TeamMember {
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(channelID, userID, "")
+	require.NoError(th, err)
+	api4.CheckOKStatus(th, resp)
+	return tm
 }

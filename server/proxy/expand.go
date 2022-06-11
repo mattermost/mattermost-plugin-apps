@@ -236,27 +236,11 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 			return errors.New("internal unreachable error: nil userPtr")
 		}
 
-		switch level {
-		case apps.ExpandID:
-			// The GetUser API invocation here serves as the access check, but
-			// it is not needed for the acting user, so skip it, as an
-			// optimization.
-			if userID != e.r.ActingUserID() {
-				if _, err := e.client.GetUser(userID); err != nil {
-					return errors.Wrapf(err, "id: %s", userID)
-				}
-			}
-			*userPtr = &model.User{
-				Id: userID,
-			}
-
-		case apps.ExpandSummary, apps.ExpandAll:
-			user, err := e.client.GetUser(userID)
-			if err != nil {
-				return errors.Wrapf(err, "id: %s", userID)
-			}
-			*userPtr = apps.StripUser(user, level)
+		user, err := e.client.GetUser(userID)
+		if err != nil {
+			return errors.Wrapf(err, "id: %s", userID)
 		}
+		*userPtr = apps.StripUser(user, level)
 		return nil
 	}
 }
@@ -297,6 +281,17 @@ func (e *expander) expandChannel(level apps.ExpandLevel) error {
 
 	channel, err := e.client.GetChannel(channelID)
 	if err != nil {
+		if level == apps.ExpandID {
+			// Always expand Channel and Team IDs to make `bot_left_channel`
+			// work. This really should be fixed on the server by redefining the
+			// semantics to UserWillLeaveChannel, called before the user's
+			// permission disappear.
+			e.ExpandedContext.Channel = &model.Channel{
+				Id:     channelID,
+				TeamId: e.UserAgentContext.TeamID,
+			}
+			return nil
+		}
 		return errors.Wrap(err, "id: "+channelID)
 	}
 	e.ExpandedContext.Channel = apps.StripChannel(channel, level)
@@ -311,6 +306,15 @@ func (e *expander) expandTeam(level apps.ExpandLevel) error {
 
 	team, err := e.client.GetTeam(teamID)
 	if err != nil {
+		if level == apps.ExpandID {
+			// Always expand Team ID to make `bot_left_team` works. This really
+			// should be fixed on the server by redefining the semantics to
+			// UserWillLeaveTeam, called before the user's permission disappear.
+			e.ExpandedContext.Team = &model.Team{
+				Id: teamID,
+			}
+			return nil
+		}
 		return errors.Wrapf(err, "failed to get team %s", teamID)
 	}
 	e.ExpandedContext.Team = apps.StripTeam(team, level)
@@ -345,7 +349,7 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 		if err != nil {
 			return errors.Wrapf(err, "failed to get post %s", postID)
 		}
-		e.ExpandedContext.Post = apps.StripPost(post, level)
+		*postPtr = apps.StripPost(post, level)
 		return nil
 	}
 }

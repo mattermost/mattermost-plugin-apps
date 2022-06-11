@@ -27,7 +27,7 @@ func expandEverything(level apps.ExpandLevel) apps.Expand {
 	}
 }
 
-func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet []apps.ExpandLevel, clSet []clientCombination, runf func(*Helper, apps.ExpandLevel, clientCombination)) {
+func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet []apps.ExpandLevel, appClients []appClient, runf func(*Helper, apps.ExpandLevel, appClient)) {
 	if len(expandSet) == 0 {
 		expandSet = []apps.ExpandLevel{
 			apps.ExpandNone,
@@ -36,8 +36,8 @@ func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet [
 			apps.ExpandAll,
 		}
 	}
-	if len(clSet) == 0 {
-		clSet = allClientCombinations(th, appBotUser)
+	if len(appClients) == 0 {
+		appClients = []appClient{th.asBot, th.asUser, th.asUser2, th.asAdmin}
 	}
 
 	for _, level := range expandSet {
@@ -46,7 +46,7 @@ func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet [
 			name = "none"
 		}
 		th.Run("expand "+name, func(th *Helper) {
-			for _, cl := range clSet {
+			for _, cl := range appClients {
 				th.Run(cl.name, func(th *Helper) {
 					runf(th, level, cl)
 				})

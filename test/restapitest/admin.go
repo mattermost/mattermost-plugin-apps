@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -18,10 +19,43 @@ import (
 //go:embed static
 var static embed.FS
 
-func (th *Helper) InstallAppWithCleanup(app *goapp.App) *apps.App {
-	installed := th.InstallApp(app)
-	th.Cleanup(func() { th.UninstallApp(installed.AppID) })
-	return installed
+func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
+	th.App = th.InstallApp(app)
+	th.Cleanup(func() { th.UninstallApp(th.App.AppID) })
+
+	var appErr *model.AppError
+	th.AppBotUser, appErr = th.ServerTestHelper.App.GetUser(th.App.BotUserID)
+	require.Nil(th, appErr)
+
+	th.asBot = appClient{
+		name:               "bot",
+		expectedActingUser: th.AppBotUser,
+		happyCall:          th.HappyCall,
+		call:               th.Call,
+		appActsAsBot:       true,
+	}
+
+	th.asUser = appClient{
+		name:               "user",
+		expectedActingUser: th.ServerTestHelper.BasicUser,
+		happyCall:          th.HappyCall,
+		call:               th.Call,
+	}
+
+	th.asUser2 = appClient{
+		name:               "user2",
+		expectedActingUser: th.ServerTestHelper.BasicUser2,
+		happyCall:          th.HappyUser2Call,
+		call:               th.User2Call,
+	}
+
+	th.asAdmin = appClient{
+		name:                 "admin",
+		expectedActingUser:   th.ServerTestHelper.SystemAdminUser,
+		happyCall:            th.HappyAdminCall,
+		call:                 th.AdminCall,
+		appActsAsSystemAdmin: true,
+	}
 }
 
 func (th *Helper) InstallApp(app *goapp.App) *apps.App {

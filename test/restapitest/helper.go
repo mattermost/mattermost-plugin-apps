@@ -26,10 +26,18 @@ type Helper struct {
 	*testing.T
 	ServerTestHelper *api4.TestHelper
 
+	AppBotUser *model.User
+	App        *apps.App
+
 	UserClientPP        *appclient.ClientPP
 	User2ClientPP       *appclient.ClientPP
 	SystemAdminClientPP *appclient.ClientPP
 	LocalClientPP       *appclient.ClientPP
+
+	asBot   appClient
+	asUser  appClient
+	asUser2 appClient
+	asAdmin appClient
 }
 
 type TestFunc func(*Helper)
@@ -154,7 +162,7 @@ func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, a
 
 func (th *Helper) requireEqualUser(level apps.ExpandLevel, expected, got *model.User) {
 	if expected == nil || expected.Id == "" {
-		require.Empty(th, got)
+		require.Empty(th, got, "User")
 		return
 	}
 	require.NotNil(th, got)
@@ -233,6 +241,8 @@ func (th *Helper) requireEqualChannel(level apps.ExpandLevel, expected, got *mod
 		if clone.Props == nil {
 			clone.Props = map[string]interface{}{}
 		}
+		clone.LastPostAt = 0
+		clone.LastRootPostAt = 0
 		return &clone
 	}
 

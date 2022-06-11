@@ -111,13 +111,13 @@ func TestExpand(t *testing.T) {
 						"summary":  expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
 						"+all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
 						"+summary": expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
+						"id":       expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
+						"+id":      expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
 					},
 				},
 				"happy no API": {
 					expect: map[string]interface{}{
-						"id":  expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
-						"+id": expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
-						"":    expected(apps.ExpandedContext{}),
+						"": expected(apps.ExpandedContext{}),
 					},
 				},
 				"error GetUser fail": {
