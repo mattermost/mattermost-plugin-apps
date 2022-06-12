@@ -26,8 +26,8 @@ type Helper struct {
 	*testing.T
 	ServerTestHelper *api4.TestHelper
 
-	AppBotUser *model.User
-	App        *apps.App
+	LastInstalledBotUser *model.User
+	LastInstalledApp     *apps.App
 
 	UserClientPP        *appclient.ClientPP
 	User2ClientPP       *appclient.ClientPP

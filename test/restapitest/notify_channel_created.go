@@ -38,23 +38,22 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 				Channel: th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id),
 			}
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, cl appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			// only user, user2 and admin can get here, bit wouldn't be able to
 			// subscribe since it was not added to the team in init.
-			switch cl.name {
+			switch appclient.name {
 			case "admin":
 				return apps.ExpandedContext{
 					Channel:       th.getChannel(data.Channel.Id), // data.Channel,
-					ChannelMember: th.getChannelMember(data.Channel.Id, cl.expectedActingUser.Id),
+					ChannelMember: th.getChannelMember(data.Channel.Id, appclient.expectedActingUser.Id),
 					Team:          th.getTeam(data.Channel.TeamId),
-					TeamMember:    th.getTeamMember(data.Channel.TeamId, cl.expectedActingUser.Id),
+					TeamMember:    th.getTeamMember(data.Channel.TeamId, appclient.expectedActingUser.Id),
 				}
 
-			default: // user, user2
+			default: // user, user2, bot
 				ec := apps.ExpandedContext{
-					Team: th.getTeam(data.Channel.TeamId),
-					// ChannelMember: th.getChannelMember(data.Channel.Id, cl.expectedActingUser.Id),
-					TeamMember: th.getTeamMember(data.Channel.TeamId, cl.expectedActingUser.Id),
+					Team:       th.getTeam(data.Channel.TeamId),
+					TeamMember: th.getTeamMember(data.Channel.TeamId, appclient.expectedActingUser.Id),
 				}
 				if level == apps.ExpandID {
 					ec.Channel = th.getChannel(data.Channel.Id) // data.Channel,

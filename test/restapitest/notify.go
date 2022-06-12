@@ -87,32 +87,30 @@ func testNotify(th *Helper) {
 	th.InstallAppWithCleanup(newNotifyApp(th, received))
 
 	// Will need the bot user object later, preload.
-	appBotUser, appErr := th.ServerTestHelper.App.GetUser(th.App.BotUserID)
+	appBotUser, appErr := th.ServerTestHelper.App.GetUser(th.LastInstalledApp.BotUserID)
 	require.Nil(th, appErr)
-	th.AppBotUser = appBotUser
+	th.LastInstalledBotUser = appBotUser
 
 	// Make sure the bot is a team and a channel member to be able to
 	// subscribe and be notified; the user already is, and sysadmin can see
 	// everything.
-	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, th.App.BotUserID)
+	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicTeam.Id, tm.TeamId)
-	require.Equal(th, th.App.BotUserID, tm.UserId)
+	require.Equal(th, th.LastInstalledApp.BotUserID, tm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
-	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, th.App.BotUserID)
+	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicChannel.Id, cm.ChannelId)
-	require.Equal(th, th.App.BotUserID, cm.UserId)
+	require.Equal(th, th.LastInstalledApp.BotUserID, cm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
-		"user_created": notifyUserCreated(th),
-
-		// channel_created is test in a test team, where bot is not a member, and therefore it is not possible to subscribe as Bot.
-		// TODO: <>/<> add a test case for bot can not subscribe to channel_created when not a team member.
-		"channel_created":    notifyChannelCreated(th),
 		"bot_joined_channel": notifyBotJoinedChannel(th),
+		"bot_left_channel":   notifyBotLeftChannel(th),
+		"channel_created":    notifyChannelCreated(th),
+		"user_created":       notifyUserCreated(th),
 
 		// 	"bot receives unexpanded bot_left_channel": {
 		// 		clientCombinations: []clientCombination{
@@ -350,15 +348,15 @@ func testNotify(th *Helper) {
 		// },
 	} {
 		th.Run(name, func(th *Helper) {
-			forExpandClientCombinations(th, th.AppBotUser, tc.expandCombinations, tc.appClients,
-				func(th *Helper, level apps.ExpandLevel, cl appClient) {
+			forExpandClientCombinations(th, th.LastInstalledBotUser, tc.expandCombinations, tc.appClients,
+				func(th *Helper, level apps.ExpandLevel, appclient appClient) {
 					data := apps.ExpandedContext{}
 					if tc.init != nil {
 						data = tc.init(th)
 					}
 
 					event := tc.event(th, data)
-					th.subscribeAs(cl, th.App.AppID, event, expandEverything(level))
+					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level))
 
 					data = tc.trigger(th, data)
 
@@ -368,38 +366,38 @@ func testNotify(th *Helper) {
 
 					expected := apps.Context{
 						Subject:         event.Subject,
-						ExpandedContext: tc.expected(th, level, cl, data),
+						ExpandedContext: tc.expected(th, level, appclient, data),
 					}
-					expected.ExpandedContext.App = th.App
-					expected.ExpandedContext.ActingUser = cl.expectedActingUser
+					expected.ExpandedContext.App = th.LastInstalledApp
+					expected.ExpandedContext.ActingUser = appclient.expectedActingUser
 					expected.ExpandedContext.Locale = "en"
 
-					th.verifyContext(level, th.App, cl.appActsAsSystemAdmin, expected, n.Context)
+					th.verifyContext(level, th.LastInstalledApp, appclient.appActsAsSystemAdmin, expected, n.Context)
 				})
 		})
 	}
 }
 
-func (th *Helper) subscribeAs(cl appClient, appID apps.AppID, event apps.Event, expand apps.Expand) {
-	cresp := cl.happyCall(appID, apps.CallRequest{
+func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand) {
+	cresp := appclient.happyCall(appID, apps.CallRequest{
 		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
 		Values: map[string]interface{}{
 			"sub": apps.Subscription{
 				Event: event,
 				Call:  *apps.NewCall("/notify").WithExpand(expand),
 			},
-			"as_bot": cl.appActsAsBot,
+			"as_bot": appclient.appActsAsBot,
 		},
 	})
 	require.Equal(th, `subscribed`, cresp.Text)
 	th.Cleanup(func() {
-		cresp := cl.happyCall(appID, apps.CallRequest{
+		cresp := appclient.happyCall(appID, apps.CallRequest{
 			Call: *apps.NewCall("/unsubscribe").ExpandActingUserClient(),
 			Values: map[string]interface{}{
 				"sub": apps.Subscription{
 					Event: event,
 				},
-				"as_bot": cl.appActsAsBot,
+				"as_bot": appclient.appActsAsBot,
 			},
 		})
 		require.Equal(th, `unsubscribed`, cresp.Text)

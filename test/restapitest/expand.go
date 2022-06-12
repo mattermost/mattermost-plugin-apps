@@ -46,9 +46,9 @@ func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet [
 			name = "none"
 		}
 		th.Run("expand "+name, func(th *Helper) {
-			for _, cl := range appClients {
-				th.Run(cl.name, func(th *Helper) {
-					runf(th, level, cl)
+			for _, appclient := range appClients {
+				th.Run(appclient.name, func(th *Helper) {
+					runf(th, level, appclient)
 				})
 			}
 		})

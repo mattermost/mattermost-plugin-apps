@@ -20,16 +20,17 @@ import (
 var static embed.FS
 
 func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
-	th.App = th.InstallApp(app)
-	th.Cleanup(func() { th.UninstallApp(th.App.AppID) })
+	installed := th.InstallApp(app)
+	th.LastInstalledApp = installed
+	th.Cleanup(func() { th.UninstallApp(installed.AppID) })
 
 	var appErr *model.AppError
-	th.AppBotUser, appErr = th.ServerTestHelper.App.GetUser(th.App.BotUserID)
+	th.LastInstalledBotUser, appErr = th.ServerTestHelper.App.GetUser(th.LastInstalledApp.BotUserID)
 	require.Nil(th, appErr)
 
 	th.asBot = appClient{
 		name:               "bot",
-		expectedActingUser: th.AppBotUser,
+		expectedActingUser: th.LastInstalledBotUser,
 		happyCall:          th.HappyCall,
 		call:               th.Call,
 		appActsAsBot:       true,

@@ -24,19 +24,128 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 }
 
 func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
-	p.notifyJoinLeave("", channelID, userID, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
+	p.notifyUserChannel(channelID, userID, true)
 }
 
 func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
-	p.notifyJoinLeave("", channelID, userID, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
+	p.notifyUserChannel(channelID, userID, false)
+}
+
+func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool) {
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(userID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		return
+	}
+	channel, err := mm.Channel.Get(channelID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get channel")
+		return
+	}
+
+	subject := apps.SubjectUserJoinedChannel
+	if !joined {
+		subject = apps.SubjectUserLeftChannel
+	}
+	p.notify(
+		nil,
+		apps.Event{
+			Subject:   subject,
+			ChannelID: channelID,
+		},
+		apps.UserAgentContext{
+			ChannelID: channelID,
+			TeamID:    channel.TeamId,
+			UserID:    user.Id,
+		},
+	)
+	if !user.IsBot {
+		return
+	}
+
+	// If the user is a bot, process SubjectBot...Channel; only notify the
+	// app with the matching BotUserID.
+	allApps := p.store.App.AsMap()
+	subject = apps.SubjectBotJoinedChannel
+	if !joined {
+		subject = apps.SubjectBotLeftChannel
+	}
+	p.notify(
+		func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == userID
+			}
+			return false
+		},
+		apps.Event{
+			Subject: subject,
+			TeamID:  channel.TeamId,
+		},
+		apps.UserAgentContext{
+			ChannelID: channelID,
+			TeamID:    channel.TeamId,
+			UserID:    user.Id,
+		},
+	)
 }
 
 func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
-	p.notifyJoinLeave(teamID, "", userID, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
+	p.notifyUserTeam(teamID, userID, true)
 }
 
 func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
-	p.notifyJoinLeave(teamID, "", userID, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
+	p.notifyUserTeam(teamID, userID, false)
+}
+
+func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool) {
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(userID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		return
+	}
+	subject := apps.SubjectUserJoinedTeam
+	if !joined {
+		subject = apps.SubjectUserLeftTeam
+	}
+	p.notify(
+		nil,
+		apps.Event{
+			Subject: subject,
+			TeamID:  teamID,
+		},
+		apps.UserAgentContext{
+			UserID: user.Id,
+			TeamID: teamID,
+		},
+	)
+	if !user.IsBot {
+		return
+	}
+
+	// If the user is a bot, process SubjectBot...Channel; only notify the app
+	// with the matching BotUserID.
+	allApps := p.store.App.AsMap()
+	subject = apps.SubjectBotJoinedTeam
+	if !joined {
+		subject = apps.SubjectBotLeftTeam
+	}
+	p.notify(
+		func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == userID
+			}
+			return false
+		},
+		apps.Event{
+			Subject: subject,
+		},
+		apps.UserAgentContext{
+			UserID: user.Id,
+			TeamID: teamID,
+		},
+	)
 }
 
 func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
@@ -111,40 +220,7 @@ func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Su
 	if cresp.Type == apps.CallResponseTypeError {
 		err = cresp
 	}
-}
-
-func (p *Proxy) notifyJoinLeave(teamID, channelID, userID string, subject, botSubject apps.Subject) {
-	user, err := p.conf.MattermostAPI().User.Get(userID)
-	if err != nil {
-		p.log.WithError(err).Errorf("Notify join/leave: failed to get user")
-		return
-	}
-
-	event := apps.Event{
-		Subject:   subject,
-		ChannelID: channelID,
-		TeamID:    teamID,
-	}
-	uac := apps.UserAgentContext{
-		UserID:    user.Id,
-		TeamID:    teamID,
-		ChannelID: channelID,
-	}
-
-	p.notify(nil, event, uac)
-
-	// If the user is a bot, process SubjectBotLeftChannel; only notify the app
-	// with the matching BotUserID.
-	if user.IsBot {
-		allApps := p.store.App.AsMap()
-		event.Subject = botSubject
-		p.notify(func(sub store.Subscription) bool {
-			if app, ok := allApps[sub.AppID]; ok {
-				return app.BotUserID == userID
-			}
-			return false
-		}, event, uac)
-	}
+	r.Log = r.Log.With(cresp)
 }
 
 // func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {

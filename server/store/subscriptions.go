@@ -43,8 +43,6 @@ func subsKey(e apps.Event) (string, error) {
 	idSuffix := ""
 	switch e.Subject {
 	case apps.SubjectUserCreated,
-		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
 		apps.SubjectBotJoinedTeam,
 		apps.SubjectBotLeftTeam /*, apps.SubjectBotMentioned */ :
 	// Global subscriptions, no suffix
@@ -55,6 +53,8 @@ func subsKey(e apps.Event) (string, error) {
 
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
 		apps.SubjectChannelCreated:
 		idSuffix = "." + e.TeamID
 	default:
