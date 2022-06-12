@@ -214,11 +214,11 @@ func (th *Helper) addChannelMember(channel *model.Channel, user *model.User) *mo
 }
 
 func (th *Helper) addTeamMember(team *model.Team, user *model.User) *model.TeamMember {
-	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, user.Id)
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, user.Id)
 	require.NoError(th, err)
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("added user @%s (%s) to team %s (%s)", user.Username, user.Id, team.Name, team.Id)
-	return cm
+	return tm
 }
 
 func (th *Helper) removeUserFromChannel(channel *model.Channel, user *model.User) {
