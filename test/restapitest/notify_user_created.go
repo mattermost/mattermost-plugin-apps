@@ -24,7 +24,7 @@ func notifyUserCreated(*Helper) *notifyTestCase {
 		},
 		expected: func(th *Helper, _ apps.ExpandLevel, _ appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			return apps.ExpandedContext{
-				User: th.getUser(data.User.Id),
+				User: data.User,
 			}
 		},
 	}

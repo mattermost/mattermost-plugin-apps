@@ -16,7 +16,7 @@ func notifyBotJoinedChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			team := th.createTestTeam()
-			th.addTeamMember(team, th.LastInstalledBotUser)
+			tm := th.addTeamMember(team, th.LastInstalledBotUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser2)
 
@@ -24,8 +24,9 @@ func notifyBotJoinedChannel(th *Helper) *notifyTestCase {
 			th.addChannelMember(channel, th.ServerTestHelper.BasicUser)
 
 			return apps.ExpandedContext{
-				Team:    team,
-				Channel: channel,
+				Team:       team,
+				TeamMember: tm,
+				Channel:    channel,
 			}
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
@@ -40,15 +41,15 @@ func notifyBotJoinedChannel(th *Helper) *notifyTestCase {
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			ec := apps.ExpandedContext{
-				User:       th.getUser(th.LastInstalledBotUser.Id),
-				Team:       th.getTeam(data.Team.Id),
-				TeamMember: th.getTeamMember(data.Team.Id, th.LastInstalledBotUser.Id),
+				User:       th.LastInstalledBotUser,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
 			}
 
 			switch appclient.name {
 			case "admin", "bot", "user":
-				ec.Channel = th.getChannel(data.Channel.Id)
-				ec.ChannelMember = th.getChannelMember(data.Channel.Id, th.LastInstalledBotUser.Id)
+				ec.Channel = data.Channel
+				ec.ChannelMember = data.ChannelMember
 
 			default: // user2
 				// ChannelID gets expanded at the ID level even though user2 has no access to it.

@@ -34,9 +34,8 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			return apps.ExpandedContext{
-				Channel: th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id),
-			}
+			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
+			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			// only user, user2 and admin can get here, bit wouldn't be able to
@@ -44,19 +43,19 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 			switch appclient.name {
 			case "admin":
 				return apps.ExpandedContext{
-					Channel:       th.getChannel(data.Channel.Id), // data.Channel,
+					Channel:       data.Channel,
 					ChannelMember: th.getChannelMember(data.Channel.Id, appclient.expectedActingUser.Id),
-					Team:          th.getTeam(data.Channel.TeamId),
+					Team:          data.Team,
 					TeamMember:    th.getTeamMember(data.Channel.TeamId, appclient.expectedActingUser.Id),
 				}
 
 			default: // user, user2, bot
 				ec := apps.ExpandedContext{
-					Team:       th.getTeam(data.Channel.TeamId),
+					Team:       data.Team,
 					TeamMember: th.getTeamMember(data.Channel.TeamId, appclient.expectedActingUser.Id),
 				}
 				if level == apps.ExpandID {
-					ec.Channel = th.getChannel(data.Channel.Id) // data.Channel,
+					ec.Channel = data.Channel
 				}
 				return ec
 			}
