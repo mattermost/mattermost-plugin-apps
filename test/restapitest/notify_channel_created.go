@@ -13,10 +13,8 @@ import (
 // subscribe.
 func notifyChannelCreated(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		appClients: []appClient{
-			th.asUser,
-			th.asUser2,
-			th.asAdmin,
+		except: []appClient{
+			th.asBot,
 		},
 		init: func(th *Helper) apps.ExpandedContext {
 			// create test team, and make "user" a member (but not bot, nor user2)

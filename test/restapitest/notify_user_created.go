@@ -7,9 +7,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-// Creates a test user in the Basic team. All subscribers are members of the
-// team, so get can subscribe and get notified, expanding User at the requested
-// level.
+// notifyUserCreated creates a test user in the Basic team. All subscribers are
+// members of the team, so get can subscribe and get notified, expanding User at
+// the requested level.
 func notifyUserCreated(*Helper) *notifyTestCase {
 	return &notifyTestCase{
 		event: func(*Helper, apps.ExpandedContext) apps.Event {

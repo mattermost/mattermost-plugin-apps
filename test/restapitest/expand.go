@@ -27,7 +27,7 @@ func expandEverything(level apps.ExpandLevel) apps.Expand {
 	}
 }
 
-func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet []apps.ExpandLevel, appClients []appClient, runf func(*Helper, apps.ExpandLevel, appClient)) {
+func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet []apps.ExpandLevel, except []appClient, runf func(*Helper, apps.ExpandLevel, appClient)) {
 	if len(expandSet) == 0 {
 		expandSet = []apps.ExpandLevel{
 			apps.ExpandNone,
@@ -36,8 +36,19 @@ func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet [
 			apps.ExpandAll,
 		}
 	}
-	if len(appClients) == 0 {
-		appClients = []appClient{th.asBot, th.asUser, th.asUser2, th.asAdmin}
+	var appClients []appClient
+
+	for _, appclient := range []appClient{th.asBot, th.asUser, th.asUser2, th.asAdmin} {
+		include := true
+		for _, exceptClient := range except {
+			if exceptClient.name == appclient.name {
+				include = false
+				break
+			}
+		}
+		if include {
+			appClients = append(appClients, appclient)
+		}
 	}
 
 	for _, level := range expandSet {
