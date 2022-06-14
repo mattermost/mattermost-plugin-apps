@@ -76,7 +76,7 @@ func cleanAppBindings(app *apps.App, bindings []apps.Binding, locPrefix apps.Loc
 		fql := locPrefix.Sub(clean.Location)
 		if usedLocations[clean.Location] {
 			problems = multierror.Append(problems,
-				errors.Errorf("ignored diplicate command binding for location %q", clean.Location))
+				errors.Errorf("ignored duplicate command binding for location %q", clean.Location))
 			continue
 		}
 		if fql.In(apps.LocationCommand) && usedCommandLabels[clean.Label] {
