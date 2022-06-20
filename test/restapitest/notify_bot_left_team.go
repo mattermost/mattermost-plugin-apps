@@ -41,7 +41,7 @@ func notifyBotLeftTeam(th *Helper) *notifyTestCase {
 				ec.Team = data.Team
 				ec.TeamMember = th.getTeamMember(data.Team.Id, th.LastInstalledApp.BotUserID)
 
-			default: // user2
+			default: // user2, bot
 				// TeamID gets expanded at the ID level even though user2 has no access to it.
 				if level == apps.ExpandID {
 					ec.Team = &model.Team{Id: data.Team.Id}
