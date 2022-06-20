@@ -25,7 +25,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 		r.RequireActingUser,
 		r.RequireSourceApp,
 		sub.Validate,
-		a.canSubscribe(r, sub),
+		a.hasPermissionToSubscribe(r, sub),
 	)
 	if err != nil {
 		return err
@@ -126,7 +126,7 @@ func (a *AppServices) unsubscribe(r *incoming.Request, e apps.Event) ([]store.Su
 	return all, utils.ErrNotFound
 }
 
-func (a *AppServices) canSubscribe(r *incoming.Request, sub apps.Subscription) func() error {
+func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Subscription) func() error {
 	return func() error {
 		mm := r.Config().MattermostAPI()
 		userID := r.ActingUserID()
