@@ -4,7 +4,9 @@
 package restapitest
 
 import (
+	_ "embed" // a test package, effectively
 	"encoding/json"
+	"io"
 
 	"github.com/stretchr/testify/require"
 
@@ -16,6 +18,9 @@ import (
 )
 
 const echoID = apps.AppID("echotest")
+
+//go:embed static/icon.png
+var iconPNG []byte
 
 func Echo(creq goapp.CallRequest) apps.CallResponse {
 	return apps.NewTextResponse(utils.ToJSON(creq))
@@ -92,5 +97,15 @@ func testEcho(th *Helper) {
 		require.NoError(th, err)
 		require.Equal(th, string(echoID), proxyResponse.AppMetadata.BotUsername)
 		require.NotEmpty(th, proxyResponse.AppMetadata.BotUserID)
+	})
+
+	th.Run("static icon accessiblie as user", func(th *Helper) {
+		resp, err := th.UserClientPP.DoAPIGET("/plugins/com.mattermost.apps/apps/echotest/static/icon.png", "")
+		require.NoError(th, err)
+		require.NotNil(th, resp)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(th, err)
+		resp.Body.Close()
+		require.Equal(th, iconPNG, data)
 	})
 }

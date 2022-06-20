@@ -47,7 +47,7 @@ func NewService(proxy proxy.Service, appservices appservices.Service, conf confi
 	rootHandler.router.Handle("{anything:.*}", http.NotFoundHandler())
 
 	// Set up the "gateway" endpoints (APIs and pages/files) in the app's namespace, /{appid}/...
-	h := rootHandler.PathPrefix(AppIDPath)
+	h := rootHandler.PathPrefix(path.Apps + AppIDPath)
 
 	// Static files.
 	h.HandleFunc(path.Static+"/{name}", h.Static).Methods(http.MethodGet)
