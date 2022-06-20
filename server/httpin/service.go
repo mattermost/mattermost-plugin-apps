@@ -155,7 +155,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				"stack", string(debug.Stack()),
 			)
 
-			txt := "Paniced while handling the request. "
+			txt := "Panicked while handling the request. "
 
 			if s.Config.Get().DeveloperMode {
 				txt += fmt.Sprintf("Error: %v. Stack: %v", x, stack)
