@@ -55,7 +55,7 @@ type Admin interface {
 	EnableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ *incoming.Request, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
 	UpdateAppListing(*incoming.Request, appclient.UpdateAppListingRequest) (*apps.Manifest, error)
-	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
+	UninstallApp(*incoming.Request, apps.Context, apps.AppID, bool) (string, error)
 }
 
 // API implements user-level operations, usually invoked from httpin handlers.

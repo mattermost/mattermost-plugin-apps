@@ -35,6 +35,7 @@ const (
 const (
 	fAction         = "action"
 	fAppID          = "app"
+	fForce          = "force"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
 	fConsent        = "consent"

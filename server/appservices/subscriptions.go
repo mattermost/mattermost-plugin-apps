@@ -98,6 +98,41 @@ func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscrip
 	return out, nil
 }
 
+func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) error {
+	err := r.Check(
+		r.RequireSysadminOrPlugin,
+	)
+	if err != nil {
+		return err
+	}
+
+	allStored, err := a.store.Subscription.List()
+	if err != nil {
+		return err
+	}
+
+	n := 0
+	for _, stored := range allStored {
+		modified := []store.Subscription{}
+		for _, s := range stored.Subscriptions {
+			if s.AppID == appID {
+				modified = append(modified, s)
+			} else {
+				n++
+			}
+		}
+		if len(modified) < len(stored.Subscriptions) {
+			err = a.store.Subscription.Save(stored.Event, modified)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	r.Log.Debugf("removed all (%v) subscriptions for %s", n, r.SourceAppID())
+	return err
+}
+
 func (a *AppServices) unsubscribe(r *incoming.Request, e apps.Event) ([]store.Subscription, error) {
 	all, err := a.store.Subscription.Get(e)
 	if err != nil {

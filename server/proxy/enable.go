@@ -67,9 +67,12 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return "", err
 	}
 
-	app, err := p.GetInstalledApp(appID, true)
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
+	}
+	if app.Disabled {
+		return "Already disabled", nil
 	}
 
 	// Call the app first as later it's disabled

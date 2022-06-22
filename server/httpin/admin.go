@@ -121,7 +121,7 @@ func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *
 		err = utils.NewInvalidError(err, "failed to unmarshal incoming request")
 		return
 	}
-	if _, err = s.Proxy.UninstallApp(r, apps.Context{}, input.AppID); err != nil {
+	if _, err = s.Proxy.UninstallApp(r, apps.Context{}, input.AppID, false); err != nil {
 		return
 	}
 }
