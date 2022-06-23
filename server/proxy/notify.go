@@ -12,6 +12,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
+// NotifyUserCreated handles plugin's UserHasBeenCreated callback. It emits
+// "user_created" notifications to subscribed apps.
 func (p *Proxy) NotifyUserCreated(userID string) {
 	p.notify(nil,
 		apps.Event{
@@ -23,10 +25,15 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 	)
 }
 
+// NotifyUserJoinedChannel handles plugin's UserHasJoinedChannel callback. It
+// emits "user_joined_channel" and "bot_joined_channel" notifications to
+// subscribed apps.
 func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
 	p.notifyUserChannel(channelID, userID, true)
 }
 
+// NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
+// "user_left_channel" and "bot_left_channel" notifications to subscribed apps.
 func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
 	p.notifyUserChannel(channelID, userID, false)
 }
@@ -90,10 +97,14 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool) {
 	)
 }
 
+// NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
+// "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
 func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
 	p.notifyUserTeam(teamID, userID, true)
 }
 
+// NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
+// "user_left_team" and "bot_left_team" notifications to subscribed apps.
 func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
 	p.notifyUserTeam(teamID, userID, false)
 }
@@ -148,6 +159,8 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool) {
 	)
 }
 
+// NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
+// "channel_created" notifications to subscribed apps.
 func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 	p.notify(nil,
 		apps.Event{
