@@ -104,7 +104,7 @@ func (th *Helper) Run(name string, f func(th *Helper)) bool {
 }
 
 func (th *Helper) CleanRun(name string, f func(th *Helper)) bool {
-	th.T.Run("Clean all apps before " + name, func(*testing.T) {
+	th.T.Run("Clean all apps before "+name, func(*testing.T) {
 		_ = th.HappyAdminCall(builtin.AppID, apps.CallRequest{
 			Call: *apps.NewCall(
 				builtin.PathDebugClean).
