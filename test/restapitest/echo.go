@@ -131,6 +131,11 @@ func testEcho(th *Helper) {
 		th.ServerTestHelper.App.UpdateConfig(func(cfg *model.Config) {
 			*cfg.PrivacySettings.ShowEmailAddress = false
 		})
+		th.Cleanup(func() {
+			th.ServerTestHelper.App.UpdateConfig(func(cfg *model.Config) {
+				*cfg.PrivacySettings.ShowEmailAddress = true
+			})
+		})
 
 		cresp = th.HappyCall(echoID, creq)
 		echoResp = apps.CallRequest{}
