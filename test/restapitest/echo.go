@@ -108,4 +108,35 @@ func testEcho(th *Helper) {
 		resp.Body.Close()
 		require.Equal(th, iconPNG, data)
 	})
+
+	th.Run("email expansion is controlled by server settings", func(th *Helper) {
+		creq := apps.CallRequest{
+			Context: apps.Context{
+				UserAgentContext: apps.UserAgentContext{
+					UserID: th.ServerTestHelper.BasicUser2.Id,
+				},
+			},
+			Call: *apps.NewCall("/echo").WithExpand(apps.Expand{
+				User: apps.ExpandSummary,
+			}),
+		}
+
+		cresp := th.HappyCall(echoID, creq)
+		echoResp := apps.CallRequest{}
+		err := json.Unmarshal([]byte(cresp.Text), &echoResp)
+		require.NoError(th, err)
+		require.NotNil(th, echoResp.Context.ExpandedContext.User)
+		require.Equal(th, th.ServerTestHelper.BasicUser2.Email, echoResp.Context.ExpandedContext.User.Email)
+
+		th.ServerTestHelper.App.UpdateConfig(func(cfg *model.Config) {
+			*cfg.PrivacySettings.ShowEmailAddress = false
+		})
+
+		cresp = th.HappyCall(echoID, creq)
+		echoResp = apps.CallRequest{}
+		err = json.Unmarshal([]byte(cresp.Text), &echoResp)
+		require.NoError(th, err)
+		require.NotNil(th, echoResp.Context.ExpandedContext.User)
+		require.Empty(th, echoResp.Context.ExpandedContext.User.Email)
+	})
 }

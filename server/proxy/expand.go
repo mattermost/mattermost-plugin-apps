@@ -32,10 +32,11 @@ type expander struct {
 
 // expandContext performs `expand` on a `context` of an outgoing CallRequest. It
 // ensures a fresh/correct ExpandedContext. It preserves the UserAgentContext
-// since it is used during expand, which cleans it out before returning. It
-// relies on `r` configured with correct source and destination app IDs, as well
-// as the acting user data. (destination) `app` is passed in as a shortcut since
-// it's already available in all callers.
+// since it is used during expand, which cleans it out before returning.
+//
+// The request `r` configured with correct source and destination app IDs, as
+// well as the acting user data. (destination) `app` is passed in as a shortcut
+// since it's already available in all callers.
 func (p *Proxy) expandContext(r *incoming.Request, app *apps.App, cc *apps.Context, expand *apps.Expand) (_ *apps.Context, err error) {
 	conf := r.Config().Get()
 	defer func() {

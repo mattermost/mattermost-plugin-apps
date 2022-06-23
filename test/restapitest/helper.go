@@ -229,6 +229,11 @@ func (th *Helper) requireEqualUser(level apps.ExpandLevel, expected, got *model.
 }
 
 func (th *Helper) requireEqualApp(level apps.ExpandLevel, asSystemAdmin bool, expected, got *apps.App) {
+	if expected == nil || expected.AppID == "" {
+		require.Empty(th, got, "App")
+		return
+	}
+	require.NotNil(th, got)
 	app := expected.Strip(level)
 	// Only sysadmins get the webhook secret expanded.
 	if !asSystemAdmin && app != nil {

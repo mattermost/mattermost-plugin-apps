@@ -109,8 +109,6 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 
 // callApp in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
-//
-// It returns the CallResponse to return to the client, and a separate error for the
 func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) apps.CallResponse {
 	// this may be invoked from various places in the code, and the Destination
 	// may or may not be set in the request. Since we have the app explicitly
