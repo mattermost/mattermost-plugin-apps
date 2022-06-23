@@ -9,7 +9,6 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -61,7 +60,7 @@ func subsKey(e apps.Event) (string, error) {
 		return "", errors.Errorf("Unknown subject %s", e.Subject)
 	}
 
-	return config.KVSubPrefix + string(e.Subject) + idSuffix, nil
+	return KVSubPrefix + string(e.Subject) + idSuffix, nil
 }
 
 func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
@@ -82,7 +81,7 @@ func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
 }
 
 func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
-	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, keysPerPage, pluginapi.WithPrefix(config.KVSubPrefix))
+	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, ListKeysPerPage, pluginapi.WithPrefix(KVSubPrefix))
 	if err != nil {
 		return nil, err
 	}

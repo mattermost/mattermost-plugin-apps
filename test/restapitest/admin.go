@@ -22,7 +22,10 @@ var static embed.FS
 func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
 	installed := th.InstallApp(app)
 	th.LastInstalledApp = installed
-	th.Cleanup(func() { th.UninstallApp(installed.AppID) })
+	th.Cleanup(func() {
+		_, _ = th.SystemAdminClientPP.UninstallApp(installed.AppID)
+		th.Logf("uninstalled: '%s'", installed.AppID)
+	})
 
 	var appErr *model.AppError
 	th.LastInstalledBotUser, appErr = th.ServerTestHelper.App.GetUser(th.LastInstalledApp.BotUserID)
@@ -102,7 +105,7 @@ func (th *Helper) UninstallApp(appID apps.AppID) {
 	resp, err := th.SystemAdminClientPP.UninstallApp(appID)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
-	th.Logf("uninstall: '%s'", appID)
+	th.Logf("uninstalled: '%s'", appID)
 }
 
 func (th *Helper) InstallAppsPlugin() {

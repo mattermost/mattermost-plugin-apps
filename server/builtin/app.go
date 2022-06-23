@@ -22,19 +22,20 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const (
-	AppID          = "apps"
+	AppID          = apps.AppID("apps")
 	AppDisplayName = "Mattermost Apps plugin"
 	AppDescription = "Install and manage Mattermost Apps"
 )
 
 const (
 	fAction         = "action"
-	fAppID          = "app"
+	FieldAppID      = "app"
 	fForce          = "force"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
@@ -43,7 +44,7 @@ const (
 	fDeployType     = "deploy_type"
 	fID             = "id"
 	fIncludePlugins = "include_plugins"
-	fNamespace      = "namespace"
+	FieldNamespace  = "namespace"
 	fNewValue       = "new_value"
 	fSecret         = "secret"
 	fURL            = "url"
@@ -57,9 +58,9 @@ const (
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
-	pDebugKVInfo          = "/debug/kv/info"
-	pDebugKVList          = "/debug/kv/list"
-	pDebugSessionsList    = "/debug/session/list"
+	PathDebugKVInfo       = "/debug/kv/info"
+	PathDebugKVList       = "/debug/kv/list"
+	PathDebugSessionsList = "/debug/session/list"
 	pDebugSessionsView    = "/debug/session/view"
 	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
@@ -94,6 +95,7 @@ type builtinApp struct {
 	conf           config.Service
 	proxy          proxy.Service
 	appservices    appservices.Service
+	store          store.Service
 	httpOut        httpout.Service
 	sessionService session.Service
 	router         map[string]handler
@@ -123,9 +125,9 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
 		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
-		pDebugKVInfo:          requireAdmin(a.debugKVInfo),
-		pDebugKVList:          requireAdmin(a.debugKVList),
-		pDebugSessionsList:    requireAdmin(a.debugSessionsList),
+		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
+		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
 		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
@@ -151,11 +153,18 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
-		AppID:       AppID,
-		Version:     apps.AppVersion(conf.PluginManifest.Version),
-		DisplayName: AppDisplayName,
-		Description: AppDescription,
-		Deploy:      apps.Deploy{},
+		AppID:                AppID,
+		Version:              apps.AppVersion(conf.PluginManifest.Version),
+		DisplayName:          AppDisplayName,
+		Description:          AppDescription,
+		Deploy:               apps.Deploy{},
+		RequestedPermissions: apps.Permissions{
+			// apps.PermissionActAsBot,
+			// apps.PermissionActAsUser,
+		},
+		RequestedLocations: apps.Locations{
+			apps.LocationCommand,
+		},
 		Bindings: &apps.Call{
 			Path: appspath.Bindings,
 			Expand: &apps.Expand{
@@ -167,21 +176,21 @@ func Manifest(conf config.Config) apps.Manifest {
 }
 
 func App(conf config.Config) apps.App {
+	m := Manifest(conf)
 	return apps.App{
-		Manifest:    Manifest(conf),
-		DeployType:  apps.DeployBuiltin,
-		BotUserID:   conf.BotUserID,
-		BotUsername: config.BotUsername,
-		GrantedLocations: apps.Locations{
-			apps.LocationCommand,
-		},
-		GrantedPermissions: apps.Permissions{},
+		Manifest:           m,
+		DeployType:         apps.DeployBuiltin,
+		BotUserID:          conf.BotUserID,
+		BotUsername:        config.BotUsername,
+		GrantedLocations:   m.RequestedLocations,
+		GrantedPermissions: m.RequestedPermissions,
 	}
 }
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
 	self := App(a.conf.Get())
 	r := a.proxy.NewIncomingRequest().WithCtx(ctx).WithDestination(self.AppID)
+
 	if creq.Context.ActingUser != nil {
 		r = r.WithActingUserID(creq.Context.ActingUser.Id)
 	}

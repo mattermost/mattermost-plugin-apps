@@ -35,11 +35,15 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 	message := fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	if app.OnUninstall != nil {
 		resp := p.call(r, app, *app.OnUninstall, &cc)
-		if resp.Type == apps.CallResponseTypeError {
+		switch resp.Type {
+		case apps.CallResponseTypeError:
 			if !force {
-				return "", resp
+				return "", errors.Wrap(resp, "app canceled uninstall request")
 			}
-			message = fmt.Sprintf("Force-uninstalled, despite error: %s", resp.Text)
+			message = fmt.Sprintf("Force-uninstalled %s, despite error: %s", app.DisplayName, resp.Text)
+
+		case apps.CallResponseTypeOK:
+			message = fmt.Sprintf("Uninstalled %s, with message: %s", app.DisplayName, resp.Text)
 		}
 	}
 
@@ -56,7 +60,8 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 	}
 
 	// Remove the app's KV store data.
-	err = p.store.AppKV.List(r, "", func(key string) error {
+	err = p.store.AppKV.List(r.WithSourceAppID(appID), "", func(key string) error {
+		r.Log.Debugf("<>/<> DELETE %s", key)
 		return mm.KV.Delete(key)
 	})
 	if err != nil {

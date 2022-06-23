@@ -9,7 +9,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
@@ -42,9 +41,9 @@ func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding
 }
 
 func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	base64Key := creq.GetValue(fBase64Key, "")
-	namespace := creq.GetValue(fNamespace, "")
+	namespace := creq.GetValue(FieldNamespace, "")
 	id := creq.GetValue(fID, "")
 
 	key := ""
@@ -56,7 +55,7 @@ func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) app
 		key = string(decoded)
 	} else {
 		var err error
-		key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
+		key, err = store.Hashkey(store.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}

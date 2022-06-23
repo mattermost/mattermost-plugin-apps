@@ -15,7 +15,7 @@ import (
 
 func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localizer) apps.Field {
 	return apps.Field{
-		Name: fNamespace,
+		Name: FieldNamespace,
 		Type: apps.FieldTypeDynamicSelect,
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.namespace.label",
@@ -36,17 +36,17 @@ func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localize
 }
 
 func (a *builtinApp) lookupNamespace(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	if appID == "" {
-		return apps.NewErrorResponse(errors.Errorf("please select --" + fAppID + " first"))
+		return apps.NewErrorResponse(errors.Errorf("please select --" + FieldAppID + " first"))
 	}
 
 	var options []apps.SelectOption
-	_, namespaces, err := a.debugListKeys(r, appID)
+	appInfo, err := a.appservices.KVDebugAppInfo(appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
-	for ns, c := range namespaces {
+	for ns, c := range appInfo.AppByNamespace {
 		options = append(options, apps.SelectOption{
 			Value: ns,
 			Label: fmt.Sprintf("%q (%v keys)", ns, c),

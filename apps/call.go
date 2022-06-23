@@ -76,9 +76,9 @@ func (c Call) ExpandActingUserClient() *Call {
 	if c.Expand == nil {
 		c.Expand = &Expand{}
 	}
-	c.Expand.ActingUserAccessToken = ExpandAll
+	c.Expand.ActingUserAccessToken = ExpandAll.Required()
 	if c.Expand.ActingUser == "" {
-		c.Expand.ActingUser = ExpandID
+		c.Expand.ActingUser = ExpandSummary.Required()
 	}
 	return &c
 }

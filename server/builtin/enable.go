@@ -38,7 +38,7 @@ func (a *builtinApp) enable(r *incoming.Request, creq apps.CallRequest) apps.Cal
 	out, err := a.proxy.EnableApp(
 		r,
 		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
+		apps.AppID(creq.GetValue(FieldAppID, "")))
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

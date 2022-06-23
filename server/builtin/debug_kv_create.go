@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -41,8 +40,8 @@ func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Bindi
 }
 
 func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	namespace := creq.GetValue(fNamespace, "")
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	namespace := creq.GetValue(FieldNamespace, "")
 	id := creq.GetValue(fID, "")
 
 	appservicesRequest := r.WithSourceAppID(appID)
@@ -60,7 +59,7 @@ func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) a
 	}
 
 	key := ""
-	key, err = store.Hashkey(config.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
+	key, err = store.Hashkey(store.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

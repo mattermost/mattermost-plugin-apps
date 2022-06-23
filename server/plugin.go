@@ -107,7 +107,7 @@ func (p *Plugin) OnActivate() (err error) {
 	p.log.Debugf("initialized API and persistent store")
 
 	// Initialize the app proxy.
-	mutex, err := cluster.NewMutex(p.API, config.KVClusterMutexKey)
+	mutex, err := cluster.NewMutex(p.API, store.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}

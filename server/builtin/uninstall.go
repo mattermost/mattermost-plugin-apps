@@ -48,7 +48,7 @@ func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
 }
 
 func (a *builtinApp) uninstall(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	force := creq.BoolValue(fForce)
 	out, err := a.proxy.UninstallApp(r, creq.Context, appID, force)
 	if err != nil {

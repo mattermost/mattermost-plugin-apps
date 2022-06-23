@@ -26,13 +26,13 @@ func TestCreateOAuth2State(t *testing.T) {
 
 	// CreateState
 	api.On("KVSetWithOptions", mock.Anything, mock.Anything, mock.Anything).Once().Run(func(args mock.Arguments) {
-		require.Regexp(t, config.KVOAuth2StatePrefix+stateRE, args.String(0))
+		require.Regexp(t, KVOAuth2StatePrefix+stateRE, args.String(0))
 		data, _ := args.Get(1).([]byte)
 		require.Regexp(t, stateRE, string(data))
 	}).Return(true, nil)
 	urlState, err := s.CreateState(userID)
 	require.NoError(t, err)
-	key := config.KVOAuth2StatePrefix + urlState
+	key := KVOAuth2StatePrefix + urlState
 	require.LessOrEqual(t, len(key), model.KeyValueKeyMaxRunes)
 	require.Regexp(t, stateRE, urlState)
 
@@ -47,7 +47,7 @@ func TestCreateOAuth2State(t *testing.T) {
 	require.EqualError(t, err, "forbidden")
 
 	mismatchedState := "mismatched-random." + strings.Split(urlState, ".")[1]
-	mismatchedKey := config.KVOAuth2StatePrefix + mismatchedState
+	mismatchedKey := KVOAuth2StatePrefix + mismatchedState
 	api.On("KVGet", mismatchedKey).Once().Return(nil, nil)                                          // not found
 	api.On("KVSetWithOptions", mismatchedKey, []byte(nil), mock.Anything).Once().Return(false, nil) // delete attempt
 	err = s.ValidateStateOnce(mismatchedState, userID)

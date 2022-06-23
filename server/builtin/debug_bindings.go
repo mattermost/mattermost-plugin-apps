@@ -32,7 +32,7 @@ func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Bindi
 }
 
 func (a *builtinApp) debugBindings(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	var bindings []apps.Binding
 	out := ""
 	var err error

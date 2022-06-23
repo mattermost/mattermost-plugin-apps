@@ -5,7 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -65,4 +67,21 @@ func (a *AppServices) KVList(r *incoming.Request, prefix string, processf func(k
 	}
 
 	return a.store.AppKV.List(r, prefix, processf)
+}
+
+func (a *AppServices) KVDebugInfo() (*store.KVDebugInfo, error) {
+	return a.store.GetDebugKVInfo()
+}
+
+func (a *AppServices) KVDebugAppInfo(appID apps.AppID) (*store.KVDebugAppInfo, error) {
+	info, err := a.store.GetDebugKVInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	appInfo, ok := info.Apps[appID]
+	if !ok {
+		return nil, errors.Wrap(utils.ErrNotFound, string(appID))
+	}
+	return appInfo, nil
 }

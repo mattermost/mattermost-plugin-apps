@@ -73,14 +73,14 @@ func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 		log = log.With("app_id", id)
 
 		var data []byte
-		err := mm.KV.Get(config.KVInstalledAppPrefix+key, &data)
+		err := mm.KV.Get(KVInstalledAppPrefix+key, &data)
 		if err != nil {
 			log.WithError(err).Errorw("failed to load app")
 			continue
 		}
 
 		if len(data) == 0 {
-			err = utils.NewNotFoundError(config.KVInstalledAppPrefix + key)
+			err = utils.NewNotFoundError(KVInstalledAppPrefix + key)
 			log.WithError(err).Errorw("failed to load app")
 			continue
 		}
@@ -155,7 +155,7 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	_, err = mm.KV.Set(config.KVInstalledAppPrefix+sha, app)
+	_, err = mm.KV.Set(KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 	}
 
 	if sha != prevSHA {
-		err = mm.KV.Delete(config.KVInstalledAppPrefix + prevSHA)
+		err = mm.KV.Delete(KVInstalledAppPrefix + prevSHA)
 		if err != nil {
 			r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
 		}
@@ -215,7 +215,7 @@ func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
 		return utils.ErrNotFound
 	}
 
-	err := mm.KV.Delete(config.KVInstalledAppPrefix + sha)
+	err := mm.KV.Delete(KVInstalledAppPrefix + sha)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 			Other: "[ AppID Namespace ]",
 		}),
 		Form: &apps.Form{
-			Submit: newUserCall(pDebugKVList),
+			Submit: newUserCall(PathDebugKVList),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
 				a.namespaceField(0, false, loc),
@@ -40,8 +40,8 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 }
 
 func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	namespace := creq.GetValue(fNamespace, "")
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	namespace := creq.GetValue(FieldNamespace, "")
 	encode := creq.BoolValue(fBase64)
 
 	keys := []string{}
@@ -94,5 +94,10 @@ func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) app
 		}
 		message += "```\n"
 	}
-	return apps.NewTextResponse(message)
+
+	return apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Data: keys,
+		Text: message,
+	}
 }

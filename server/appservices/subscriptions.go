@@ -129,7 +129,7 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 		}
 	}
 
-	r.Log.Debugf("removed all (%v) subscriptions for %s", n, r.SourceAppID())
+	r.Log.Debugf("removed all (%v) subscriptions for %s", n, appID)
 	return err
 }
 

@@ -5,13 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-)
-
-const (
-	keysPerPage = 1000
 )
 
 type AppKVStore interface {
@@ -31,7 +26,7 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 	if r.SourceAppID() == "" || r.ActingUserID() == "" {
 		return false, utils.NewInvalidError("source app ID or user ID missing in the request")
 	}
-	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
+	key, err := Hashkey(KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return false, err
 	}
@@ -47,7 +42,7 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 }
 
 func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error) {
-	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
+	key, err := Hashkey(KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +56,7 @@ func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error)
 }
 
 func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
-	key, err := Hashkey(config.KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
+	key, err := Hashkey(KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return err
 	}
@@ -77,17 +72,16 @@ func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
 func (s *appKVStore) List(r *incoming.Request, namespace string, processf func(key string) error) error {
 	mm := s.conf.MattermostAPI()
 	for i := 0; ; i++ {
-		keys, err := mm.KV.ListKeys(i, keysPerPage)
+		keys, err := mm.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
 
 		for _, key := range keys {
 			// all apps keys are 50 bytes
-			if !strings.HasPrefix(key, config.KVAppPrefix) || len(key) != 50 {
+			if !strings.HasPrefix(key, KVAppPrefix) || len(key) != hashKeyLength {
 				continue
 			}
-
 			_, appID, _, ns, _, err := ParseHashkey(key)
 			if err != nil {
 				r.Log.WithError(err).Debugw("failed to parse key", "key", key)
@@ -108,7 +102,7 @@ func (s *appKVStore) List(r *incoming.Request, namespace string, processf func(k
 			}
 		}
 
-		if len(keys) < keysPerPage {
+		if len(keys) < ListKeysPerPage {
 			break
 		}
 	}

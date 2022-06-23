@@ -11,29 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
-
-func (a *builtinApp) debugListKeys(r *incoming.Request, appID apps.AppID) (int, map[string]int, error) {
-	n := 0
-	namespaces := map[string]int{}
-	appservicesRequest := r.WithSourceAppID(appID)
-	err := a.appservices.KVList(appservicesRequest,
-		"", func(key string) error {
-			_, _, _, ns, _, e := store.ParseHashkey(key)
-			if e != nil {
-				return e
-			}
-			namespaces[ns]++
-			n++
-			return nil
-		})
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return n, namespaces, nil
-}
 
 func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
@@ -51,7 +29,7 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 			Other: "[ AppID ]",
 		}),
 		Form: &apps.Form{
-			Submit: newUserCall(pDebugKVInfo),
+			Submit: newUserCall(PathDebugKVInfo),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
 			},
@@ -60,8 +38,8 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 }
 
 func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	n, namespaces, err := a.debugListKeys(r, appID)
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	appInfo, err := a.appservices.KVDebugAppInfo(appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
@@ -73,12 +51,12 @@ func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) app
 			Other: "{{.Count}} total keys for `{{.AppID}}`.",
 		},
 		TemplateData: map[string]string{
-			"Count": strconv.Itoa(n),
 			"AppID": string(appID),
+			"Count": strconv.Itoa(appInfo.AppCount),
 		},
 	}) + "\n"
 
-	if len(namespaces) > 0 {
+	if len(appInfo.AppByNamespace) > 0 {
 		message += "\n" +
 			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.debug.kv.info.submit.namespaces",
@@ -86,7 +64,7 @@ func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) app
 			}) +
 			"\n"
 	}
-	for ns, c := range namespaces {
+	for ns, c := range appInfo.AppByNamespace {
 		if ns == "" {
 			ns = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.debug.kv.info.submit.none",
@@ -95,5 +73,10 @@ func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) app
 		}
 		message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
 	}
-	return apps.NewTextResponse(message)
+
+	return apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Text: message,
+		Data: appInfo,
+	}
 }
