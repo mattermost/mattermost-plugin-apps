@@ -32,7 +32,8 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 	}
 
 	// If there was a prior same-scoped subscription from the app, remove it.
-	all, err := a.unsubscribe(r, sub.Event)
+	ownerID := r.ActingUserID()
+	all, err := a.unsubscribe(r, ownerID, sub.Event)
 	if err != nil && errors.Cause(err) != utils.ErrNotFound {
 		return err
 	}
@@ -41,7 +42,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 	all = append(all, store.Subscription{
 		Call:        sub.Call,
 		AppID:       r.SourceAppID(),
-		OwnerUserID: r.ActingUserID(),
+		OwnerUserID: ownerID,
 	})
 	err = a.store.Subscription.Save(sub.Event, all)
 	if err != nil {
@@ -62,7 +63,7 @@ func (a *AppServices) Unsubscribe(r *incoming.Request, e apps.Event) error {
 		return err
 	}
 
-	modified, err := a.unsubscribe(r, e)
+	modified, err := a.unsubscribe(r, r.ActingUserID(), e)
 	if err != nil {
 		return err
 	}
@@ -133,19 +134,26 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 	return err
 }
 
-func (a *AppServices) unsubscribe(r *incoming.Request, e apps.Event) ([]store.Subscription, error) {
+func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e apps.Event) ([]store.Subscription, error) {
 	all, err := a.store.Subscription.Get(e)
 	if err != nil {
 		return nil, err
 	}
 
 	for i, s := range all {
-		if s.AppID != r.SourceAppID() || s.OwnerUserID != r.ActingUserID() {
+		if s.AppID != r.SourceAppID() || s.OwnerUserID != ownerUserID {
 			continue
 		}
 
-		// TODO: check permissions to unsubscribe. For now, all subscribe APIs
-		// are sysadmin-only, so nothing to check.
+		allowed := false
+		if s.OwnerUserID == r.ActingUserID() {
+			allowed = true
+		} else if err = r.RequireSysadminOrPlugin(); err == nil {
+			allowed = true
+		}
+		if !allowed {
+			return nil, utils.NewForbiddenError("must be the owner of the subscription, or system administrator to unsubscribe")
+		}
 
 		modified := all[:i]
 		if i < len(all) {

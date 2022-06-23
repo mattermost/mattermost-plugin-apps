@@ -99,25 +99,17 @@ func NewService(proxy proxy.Service, appservices appservices.Service, conf confi
 	return rootHandler
 }
 
-// clone creates a shallow copy of Handler, allowing clones to apply changes per
-// handler func. Don't copy the following fields as they are specific to the
-// handler func: handlerFunc, checks.
-func (s *Service) clone() *Service {
+func (s *Service) PathPrefix(prefix string) *Service {
 	clone := *s
 	clone.handlerFunc = nil
+	clone.router = clone.router.PathPrefix(prefix).Subrouter()
 	return &clone
 }
 
-func (s *Service) PathPrefix(prefix string) *Service {
-	clone := s.clone()
-	clone.router = clone.router.PathPrefix(prefix).Subrouter()
-	return clone
-}
-
 func (s *Service) HandleFunc(path string, handlerFunc handlerFunc) *mux.Route {
-	clone := s.clone()
+	clone := *s
 	clone.handlerFunc = handlerFunc
-	return clone.router.Handle(path, clone)
+	return clone.router.Handle(path, &clone)
 }
 
 // ServePluginHTTP is the interface invoked from the plugin's ServeHTTP

@@ -88,15 +88,15 @@ func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
 
 	all := []StoredSubscriptions{}
 	for _, key := range keys {
-		forKey := &StoredSubscriptions{}
+		forKey := StoredSubscriptions{}
 		err := s.conf.MattermostAPI().KV.Get(key, &forKey)
 		if err != nil {
 			return nil, err
 		}
-		if forKey == nil {
+		if forKey.Event.Subject == "" {
 			continue
 		}
-		all = append(all, *forKey)
+		all = append(all, forKey)
 	}
 	return all, nil
 }

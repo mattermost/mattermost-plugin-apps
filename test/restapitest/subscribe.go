@@ -191,6 +191,7 @@ func testSubscriptions(th *Helper) {
 		require.Equal(th, `subscribed`, cresp.Text)
 		cresp = th.HappyUser2Call(subID, subscribeChannelCreated)
 		require.Equal(th, `subscribed`, cresp.Text)
+		assertNumSubs(th, th.HappyCall, 2)
 		assertNumSubs(th, th.HappyUser2Call, 2)
 		th.Cleanup(func() {
 			_, _, _ = th.User2Call(subID, unsubscribeUserCreated)
