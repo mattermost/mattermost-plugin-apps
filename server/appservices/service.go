@@ -23,8 +23,8 @@ type Service interface {
 	KVGet(_ *incoming.Request, prefix, id string) ([]byte, error)
 	KVDelete(_ *incoming.Request, prefix, id string) error
 	KVList(_ *incoming.Request, namespace string, processf func(key string) error) error
-	KVDebugInfo() (*store.KVDebugInfo, error)
-	KVDebugAppInfo(apps.AppID) (*store.KVDebugAppInfo, error)
+	KVDebugInfo(*incoming.Request) (*store.KVDebugInfo, error)
+	KVDebugAppInfo(*incoming.Request, apps.AppID) (*store.KVDebugAppInfo, error)
 
 	// Remote (3rd party) OAuth2
 

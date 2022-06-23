@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 )
 
 // Note: run
@@ -95,6 +96,23 @@ func (th *Helper) TearDown() {
 }
 
 func (th *Helper) Run(name string, f func(th *Helper)) bool {
+	return th.T.Run(name, func(t *testing.T) {
+		h := *th
+		h.T = t
+		f(&h)
+	})
+}
+
+func (th *Helper) CleanRun(name string, f func(th *Helper)) bool {
+	th.T.Run("Clean all apps before " + name, func(*testing.T) {
+		_ = th.HappyAdminCall(builtin.AppID, apps.CallRequest{
+			Call: *apps.NewCall(
+				builtin.PathDebugClean).
+				WithExpand(
+					apps.Expand{ActingUser: apps.ExpandSummary},
+				),
+		})
+	})
 	return th.T.Run(name, func(t *testing.T) {
 		h := *th
 		h.T = t

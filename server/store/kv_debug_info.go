@@ -9,23 +9,30 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type KVDebugAppInfo struct {
-	AppCount       int
-	AppByNamespace map[string]int
-	AppByUserID    map[string]int
-	UserCount      int
-	TokenCount     int
+	AppKVCount            int
+	AppKVCountByNamespace map[string]int
+	AppKVCountByUserID    map[string]int
+	TokenCount            int
+	UserCount             int
+}
+
+func (i KVDebugAppInfo) Total() int {
+	return i.AppKVCount + i.UserCount + i.TokenCount
 }
 
 type KVDebugInfo struct {
-	AppCount          int
-	ManifestsCount    int
+	InstalledAppCount int
+	Apps              map[apps.AppID]*KVDebugAppInfo
+	AppsTotal         int
+	ManifestCount     int
 	OAuth2StateCount  int
+	Other             int
 	SubscriptionCount int
 	Total             int
-	Apps              map[apps.AppID]*KVDebugAppInfo
 }
 
 func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
@@ -34,14 +41,14 @@ func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
 		return appInfo
 	}
 	appInfo = &KVDebugAppInfo{
-		AppByNamespace: map[string]int{},
-		AppByUserID:    map[string]int{},
+		AppKVCountByNamespace: map[string]int{},
+		AppKVCountByUserID:    map[string]int{},
 	}
 	i.Apps[appID] = appInfo
 	return appInfo
 }
 
-func (s *Service) GetDebugKVInfo() (*KVDebugInfo, error) {
+func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 	info := KVDebugInfo{
 		Apps: map[apps.AppID]*KVDebugAppInfo{},
 	}
@@ -61,12 +68,14 @@ func (s *Service) GetDebugKVInfo() (*KVDebugInfo, error) {
 				isHashKey = true
 				switch gns {
 				case KVAppPrefix:
-					appInfo.AppCount++
-					appInfo.AppByNamespace[ns]++
-					appInfo.AppByUserID[userID]++
+					appInfo.AppKVCount++
+					appInfo.AppKVCountByNamespace[ns]++
+					appInfo.AppKVCountByUserID[userID]++
+					info.AppsTotal++
 
 				case KVUserPrefix:
 					appInfo.UserCount++
+					info.AppsTotal++
 
 				default:
 					isHashKey = false
@@ -86,15 +95,19 @@ func (s *Service) GetDebugKVInfo() (*KVDebugInfo, error) {
 					continue
 				}
 				info.forAppID(appID).TokenCount++
+				info.AppsTotal++
 
 			case strings.HasPrefix(key, KVOAuth2StatePrefix):
 				info.OAuth2StateCount++
 
-			case strings.HasPrefix(key, KVAppPrefix):
-				info.AppCount++
+			case strings.HasPrefix(key, KVInstalledAppPrefix):
+				info.InstalledAppCount++
 
 			case strings.HasPrefix(key, KVLocalManifestPrefix):
-				info.ManifestsCount++
+				info.ManifestCount++
+
+			case key == "mmi_botid":
+				info.Other++
 			}
 		}
 		if len(keys) < ListKeysPerPage {

@@ -116,9 +116,9 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 		modified := []store.Subscription{}
 		for _, s := range stored.Subscriptions {
 			if s.AppID == appID {
-				modified = append(modified, s)
-			} else {
 				n++
+			} else {
+				modified = append(modified, s)
 			}
 		}
 		if len(modified) < len(stored.Subscriptions) {

@@ -39,6 +39,6 @@ func TestRESTAPI(t *testing.T) {
 		"uninstall":     testUninstall,
 		"misc":          testMisc,
 	} {
-		th.Run(name, testF)
+		th.CleanRun(name, testF)
 	}
 }

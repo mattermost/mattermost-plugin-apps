@@ -61,7 +61,6 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 
 	// Remove the app's KV store data.
 	err = p.store.AppKV.List(r.WithSourceAppID(appID), "", func(key string) error {
-		r.Log.Debugf("<>/<> DELETE %s", key)
 		return mm.KV.Delete(key)
 	})
 	if err != nil {

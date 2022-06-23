@@ -22,7 +22,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -52,20 +51,20 @@ const (
 )
 
 const (
+	PathDebugClean        = "/debug/clean"
+	PathDebugKVInfo       = "/debug/kv/info"
+	PathDebugKVList       = "/debug/kv/list"
+	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
-	pDebugClean           = "/debug/clean"
 	pDebugKVClean         = "/debug/kv/clean"
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
-	PathDebugKVInfo       = "/debug/kv/info"
-	PathDebugKVList       = "/debug/kv/list"
-	PathDebugSessionsList = "/debug/session/list"
-	pDebugSessionsView    = "/debug/session/view"
-	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
-	pEnable               = "/enable"
+	pDebugSessionsRevoke  = "/debug/session/delete"
+	pDebugSessionsView    = "/debug/session/view"
 	pDisable              = "/disable"
+	pEnable               = "/enable"
 	pInfo                 = "/info"
 	pInstallConsent       = "/install-consent"
 	pInstallConsentSource = "/install-consent/form"
@@ -80,22 +79,12 @@ const (
 	pLookupNamespace = "/q/namespace"
 )
 
-/*
-type handler struct {
-	requireSysadmin bool
-	commandBinding  func(*i18n.Localizer) apps.Binding
-	lookupf         func(*incoming.Request, apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(*incoming.Request, apps.CallRequest) apps.CallResponse
-	formf           func(*incoming.Request, apps.CallRequest) (*apps.Form, error)
-}
-*/
 type handler func(*incoming.Request, apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
 	conf           config.Service
 	proxy          proxy.Service
 	appservices    appservices.Service
-	store          store.Service
 	httpOut        httpout.Service
 	sessionService session.Service
 	router         map[string]handler
@@ -121,7 +110,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 
 		// Commands that require sysadmin.
 		pDebugBindings:        requireAdmin(a.debugBindings),
-		pDebugClean:           requireAdmin(a.debugClean),
+		PathDebugClean:        requireAdmin(a.debugClean),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
 		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),

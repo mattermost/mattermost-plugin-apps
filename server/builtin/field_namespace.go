@@ -42,11 +42,11 @@ func (a *builtinApp) lookupNamespace(r *incoming.Request, creq apps.CallRequest)
 	}
 
 	var options []apps.SelectOption
-	appInfo, err := a.appservices.KVDebugAppInfo(appID)
+	appInfo, err := a.appservices.KVDebugAppInfo(r, appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
-	for ns, c := range appInfo.AppByNamespace {
+	for ns, c := range appInfo.AppKVCountByNamespace {
 		options = append(options, apps.SelectOption{
 			Value: ns,
 			Label: fmt.Sprintf("%q (%v keys)", ns, c),

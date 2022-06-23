@@ -69,12 +69,12 @@ func (a *AppServices) KVList(r *incoming.Request, prefix string, processf func(k
 	return a.store.AppKV.List(r, prefix, processf)
 }
 
-func (a *AppServices) KVDebugInfo() (*store.KVDebugInfo, error) {
-	return a.store.GetDebugKVInfo()
+func (a *AppServices) KVDebugInfo(r *incoming.Request) (*store.KVDebugInfo, error) {
+	return a.store.GetDebugKVInfo(r.Log)
 }
 
-func (a *AppServices) KVDebugAppInfo(appID apps.AppID) (*store.KVDebugAppInfo, error) {
-	info, err := a.store.GetDebugKVInfo()
+func (a *AppServices) KVDebugAppInfo(r *incoming.Request, appID apps.AppID) (*store.KVDebugAppInfo, error) {
+	info, err := a.store.GetDebugKVInfo(r.Log)
 	if err != nil {
 		return nil, err
 	}
