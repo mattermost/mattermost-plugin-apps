@@ -8,10 +8,8 @@ import (
 )
 
 func newUserCall(path string) *apps.Call {
-	call := apps.NewCall(path)
-	call.Expand = &apps.Expand{
-		ActingUser: apps.ExpandSummary,
-		//TODO(BEN): check if it can be removed ActingUserAccessToken: apps.ExpandAll,
-	}
-	return call.WithLocale()
+	return apps.NewCall(path).WithExpand(apps.Expand{
+		ActingUser: apps.ExpandSummary.Required(),
+		Locale:     apps.ExpandAll,
+	})
 }
