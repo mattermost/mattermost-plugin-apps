@@ -138,6 +138,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 				Location: "disconnect",
 				Label:    "disconnect",
 				Submit: apps.NewCall("/disconnect").WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary,
 					ActingUserAccessToken: apps.ExpandAll,
 				}),
 			},
@@ -166,6 +167,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 					},
 				},
 				Submit: apps.NewCall("/configure").WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary,
 					ActingUserAccessToken: apps.ExpandAll,
 				}),
 			},
