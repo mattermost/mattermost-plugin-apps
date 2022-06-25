@@ -5,19 +5,19 @@ import (
 	"net/http"
 	"os"
 
-	"handler/function"
-
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/hello"
 )
 
 func main() {
-	deployType := apps.DeployType(os.Getenv(function.DEPLOY_TYPE))
+	deployType := apps.DeployType(os.Getenv(hello.DEPLOY_TYPE))
 	if deployType == "" {
 		deployType = apps.DeployAWSLambda
 	}
-	function.DeployType = deployType
+	hello.DeployType = deployType
 
 	switch deployType {
 	case apps.DeployHTTP:

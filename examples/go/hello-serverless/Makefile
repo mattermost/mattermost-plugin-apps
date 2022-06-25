@@ -12,8 +12,8 @@ run:
 dist-aws: 
 	rm -rf dist/aws && mkdir -p dist/aws
 	GOOS=linux GOARCH=amd64 go build -o dist/aws/hello-serverless . 
-	cp ./function/static/manifest.json dist/aws
-	cp -r ./function/static dist/aws
+	cp ./hello/static/manifest.json dist/aws
+	cp -r ./hello/static dist/aws
 	cd dist/aws ; \
 		zip -m hello-serverless.zip hello-serverless ; \
 		zip -rm ../bundle-aws.zip hello-serverless.zip manifest.json static
@@ -24,7 +24,8 @@ dist-aws:
 dist-openfaas:
 	rm -rf dist/openfaas && mkdir -p dist/openfaas
 	cp -r function dist/openfaas
-	cp function/static/manifest.json dist/openfaas
+	cp -r hello dist/openfaas
+	cp hello/static/manifest.json dist/openfaas
 	cp openfaas.yml dist/openfaas/manifest.yml
 	cd dist/openfaas ; \
 		faas-cli template store pull golang-middleware ; \

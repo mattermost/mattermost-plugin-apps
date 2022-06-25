@@ -1,6 +1,8 @@
 package function
 
 import (
+	"net/http"
+
 	_ "github.com/mattermost/mattermost-plugin-apps/examples/go/hello-serverless/hello"
 )
 
