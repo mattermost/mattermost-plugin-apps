@@ -5,27 +5,15 @@ all: dist run
 .PHONY: run
 ## run: runs the app locally
 run: 
-	cd http ; \
-		go run . --manifest=../manifest.json --static=../static
-
-.PHONY: dist-http
-## dist-http: creates the bundle file for HTTP deployment from a bundle (manifest and static deployed to Mattermost)
-dist-http:
-	rm -rf dist/http && mkdir -p dist/http
-	cp manifest.json dist/http
-	cp -r static dist/http
-	cd dist/http ; \
-		zip -rm ../bundle-http.zip manifest.json static
-	rm -r dist/http
+	DEPLOY_TYPE=http go run .
 
 .PHONY: dist-aws
 ## dist-aws: creates the bundle file for AWS Lambda deployments
 dist-aws: 
 	rm -rf dist/aws && mkdir -p dist/aws
-	cd aws ; \
-	 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../dist/aws/hello-serverless . 
-	cp manifest.json dist/aws
-	cp -r static dist/aws
+	GOOS=linux GOARCH=amd64 go build -o dist/aws/hello-serverless . 
+	cp ./function/static/manifest.json dist/aws
+	cp -r ./function/static dist/aws
 	cd dist/aws ; \
 		zip -m hello-serverless.zip hello-serverless ; \
 		zip -rm ../bundle-aws.zip hello-serverless.zip manifest.json static
@@ -35,18 +23,17 @@ dist-aws:
 ## dist-openfaas: creates the bundle file for OpenFaaS deployments
 dist-openfaas:
 	rm -rf dist/openfaas && mkdir -p dist/openfaas
-	cp manifest.json dist/openfaas
-	cp -r static dist/openfaas
 	cp -r function dist/openfaas
-	cp openfaas/manifest.yml dist/openfaas
-	cp -r openfaas/template dist/openfaas
+	cp function/static/manifest.json dist/openfaas
+	cp openfaas.yml dist/openfaas/manifest.yml
 	cd dist/openfaas ; \
+		faas-cli template store pull golang-middleware ; \
 		zip -rq ../bundle-openfaas.zip *
 	rm -r dist/openfaas
 
 .PHONY: dist
 ## dist: creates all bundles
-dist: dist-http dist-aws dist-openfaas
+dist: dist-aws dist-openfaas
 
 .PHONY: clean
 ## clean: deletes all

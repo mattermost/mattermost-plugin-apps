@@ -23,7 +23,7 @@ import (
 // Otherwise assume it's a path to a static asset and the static path URL prepended.
 func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (string, error) {
 	if !strings.HasPrefix(icon, "http://") && !strings.HasPrefix(icon, "https://") {
-		cleanIcon, err := utils.CleanStaticPath(icon)
+		cleanIcon, err := utils.CleanStaticURL(icon)
 		if err != nil {
 			return "", errors.Wrap(err, "invalid icon path")
 		}

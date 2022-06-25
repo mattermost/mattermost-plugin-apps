@@ -17,7 +17,7 @@ func (s *Service) Static(r *incoming.Request, w http.ResponseWriter, req *http.R
 		httputils.WriteErrorIfNeeded(w, utils.NewInvalidError("invalid URL format"))
 		return
 	}
-	assetName, err := utils.CleanStaticPath(vars["name"])
+	assetName, err := utils.CleanStaticURL(vars["name"])
 	if err != nil {
 		httputils.WriteErrorIfNeeded(w, err)
 		return
