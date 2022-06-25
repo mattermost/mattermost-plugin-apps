@@ -408,7 +408,7 @@ func testBindings(th *Helper) {
 					{
 						AppID:       "bind1",
 						Location:    "baseCommandLocation",
-						Icon:        appsURL + "/bind1/static/base command icon",
+						Icon:        appsURL + "/bind1/static/base%20command%20icon",
 						Label:       "baseCommandLabel",
 						Hint:        "base command hint",
 						Description: "base command description",
@@ -425,7 +425,7 @@ func testBindings(th *Helper) {
 							{
 								AppID:       "bind1",
 								Location:    "message-modal",
-								Icon:        appsURL + "/bind1/static/message-modal command icon",
+								Icon:        appsURL + "/bind1/static/message-modal%20command%20icon",
 								Label:       "message-modal",
 								Hint:        "message-modal command hint",
 								Description: "message-modal command description",
@@ -442,7 +442,7 @@ func testBindings(th *Helper) {
 									{
 										AppID:       "bind1",
 										Location:    "subscribe",
-										Icon:        appsURL + "/bind1/static/subscribe command icon",
+										Icon:        appsURL + "/bind1/static/subscribe%20command%20icon",
 										Label:       "subscribe",
 										Hint:        "subscribe command hint",
 										Description: "subscribe command description",
@@ -451,7 +451,7 @@ func testBindings(th *Helper) {
 									{
 										AppID:       "bind1",
 										Location:    "unsubscribe",
-										Icon:        appsURL + "/bind1/static/unsubscribe command icon",
+										Icon:        appsURL + "/bind1/static/unsubscribe%20command%20icon",
 										Label:       "unsubscribe",
 										Hint:        "unsubscribe command hint",
 										Description: "unsubscribe command description",
@@ -472,7 +472,7 @@ func testBindings(th *Helper) {
 							{
 								AppID:       "bind2",
 								Location:    "connect",
-								Icon:        appsURL + "/bind2/static/connect command icon",
+								Icon:        appsURL + "/bind2/static/connect%20command%20icon",
 								Label:       "connect",
 								Hint:        "connect command hint",
 								Description: "connect command description",
