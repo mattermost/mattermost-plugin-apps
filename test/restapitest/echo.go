@@ -99,7 +99,7 @@ func testEcho(th *Helper) {
 		require.NotEmpty(th, proxyResponse.AppMetadata.BotUserID)
 	})
 
-	th.Run("static icon accessiblie as user", func(th *Helper) {
+	th.Run("static icon accessible as user", func(th *Helper) {
 		resp, err := th.UserClientPP.DoAPIGET("/plugins/com.mattermost.apps/apps/echotest/static/icon.png", "")
 		require.NoError(th, err)
 		require.NotNil(th, resp)

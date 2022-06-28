@@ -125,7 +125,7 @@ func cleanAppBinding(
 		return nil, problems
 	}
 
-	// Cleanup AppID.
+	// Ensure all bindings except the top-level have the AppID set, forcefully.
 	if !fql.IsTop() {
 		b.AppID = app.AppID
 	}
