@@ -92,7 +92,7 @@ const commandBindings = {
                 {
                     location: 'send',
                     label: 'send',
-                    form
+                    form,
                 },
             ],
         },
