@@ -49,7 +49,6 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	const payload = `
 	{
 		"context": {
-			"acting_user_id": "q45j6a851fgr98iqr3mdxx3cye",
 			"team_id": "9pu8hstcpigm5x4dboe6hz9ddw",
 			"mattermost_site_url": "https://some.test"
 		},
@@ -66,7 +65,6 @@ func TestUnmarshalCallRequest(t *testing.T) {
 	data, err := apps.CallRequestFromJSON([]byte(payload))
 
 	require.NoError(t, err)
-	require.Equal(t, "q45j6a851fgr98iqr3mdxx3cye", data.Context.ActingUserID)
 	require.Equal(t, "9pu8hstcpigm5x4dboe6hz9ddw", data.Context.TeamID)
 	require.Equal(t, "https://some.test", data.Context.MattermostSiteURL)
 	require.Equal(t, "cywc3e8nebyujrpuip98t69a3h", data.Values["secret"])

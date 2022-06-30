@@ -13,7 +13,6 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -35,7 +34,7 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	buf := make([]byte, 15)
 	_, _ = rand.Read(buf)
 	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(buf), actingUserID)
-	_, err := s.conf.MattermostAPI().KV.Set(config.KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
+	_, err := s.conf.MattermostAPI().KV.Set(KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +48,7 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 	}
 
 	storedState := ""
-	key := config.KVOAuth2StatePrefix + urlState
+	key := KVOAuth2StatePrefix + urlState
 	err := s.conf.MattermostAPI().KV.Get(key, &storedState)
 	_ = s.conf.MattermostAPI().KV.Delete(key)
 	if err != nil {
@@ -67,7 +66,7 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 		return utils.NewInvalidError("app and user IDs must be provided")
 	}
 
-	userkey, err := Hashkey(config.KVUserPrefix, appID, actingUserID, "", config.KVUserKey)
+	userkey, err := Hashkey(KVUserPrefix, appID, actingUserID, "", KVUserKey)
 	if err != nil {
 		return err
 	}
@@ -81,7 +80,7 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 		return nil, utils.NewInvalidError("app and user IDs must be provided")
 	}
 
-	userkey, err := Hashkey(config.KVUserPrefix, appID, actingUserID, "", config.KVUserKey)
+	userkey, err := Hashkey(KVUserPrefix, appID, actingUserID, "", KVUserKey)
 	if err != nil {
 		return nil, err
 	}

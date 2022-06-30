@@ -68,7 +68,7 @@ type Config struct {
 	PluginURLPath      string
 
 	// Maximum size of incoming remote webhook messages
-	MaxWebhookSize int64
+	MaxWebhookSize int
 
 	AWSRegion    string
 	AWSAccessKey string
@@ -134,13 +134,14 @@ func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *m
 
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {
-		conf.MaxWebhookSize = *mmconf.FileSettings.MaxFileSize
+		conf.MaxWebhookSize = int(*mmconf.FileSettings.MaxFileSize)
 	}
 
 	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 
 	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
+		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
 		conf.AllowHTTPApps = true
 	}
 

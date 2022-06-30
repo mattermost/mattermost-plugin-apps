@@ -38,12 +38,12 @@ func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Bindin
 }
 
 func (a *builtinApp) debugKVClean(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	r.SetAppID(appID)
-	namespace := creq.GetValue(fNamespace, "")
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	namespace := creq.GetValue(FieldNamespace, "")
 
 	n := 0
-	err := a.appservices.KVList(r, appID, creq.Context.ActingUser.Id, namespace,
+	appservicesRequest := r.WithSourceAppID(appID)
+	err := a.appservices.KVList(appservicesRequest, namespace,
 		func(key string) error {
 			n++
 			return a.conf.MattermostAPI().KV.Delete(key)

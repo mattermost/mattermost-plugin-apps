@@ -23,18 +23,6 @@ import (
 //
 // TODO: Refactor to an incoming Context and an outgoing Context.
 type Context struct {
-	// ActingUserID is primarily (or exclusively?) for calls originating from
-	// user submissions.
-	//
-	// ActingUserID is not send down to Apps.
-	ActingUserID string `json:"acting_user_id,omitempty"`
-
-	// UserID indicates the subject of the command. Once Mentions is
-	// implemented, it may be replaced by Mentions.
-	//
-	// UserID is not send down to Apps.
-	UserID string `json:"user_id,omitempty"`
-
 	// Subject is a subject of notification, if the call originated from a
 	// subscription.
 	Subject Subject `json:"subject,omitempty"`
@@ -62,6 +50,9 @@ type UserAgentContext struct {
 	PostID string `json:"post_id,omitempty"`
 	// RootPostID is not send down to Apps.
 	RootPostID string `json:"root_post_id,omitempty"`
+	// UserID indicates the subject of the call, used only for notifications on
+	// subjects like user_created and user_joined_channel.
+	UserID string `json:"user_id,omitempty"`
 
 	// AppID is used for handling CallRequest internally.
 	AppID AppID `json:"app_id"`
@@ -109,8 +100,7 @@ type ExpandedContext struct {
 	RootPost              *model.Post          `json:"root_post,omitempty"`
 
 	// TODO replace User with mentions
-	User      *model.User   `json:"user,omitempty"`
-	Mentioned []*model.User `json:"mentioned,omitempty"`
+	User *model.User `json:"user,omitempty"`
 
 	OAuth2 OAuth2Context `json:"oauth2,omitempty"`
 }
@@ -138,7 +128,11 @@ func (c Context) String() string {
 	for _, k := range keys {
 		ss = append(ss, fmt.Sprintf("%s: %s", k, display[k]))
 	}
-	return strings.Join(ss, ", ")
+	out := strings.Join(ss, ", ")
+	if out == "" {
+		out = "(none)"
+	}
+	return out
 }
 
 func (c Context) Loggable() []interface{} {
@@ -160,9 +154,6 @@ func (c Context) loggable() (map[string]string, []interface{}) {
 	add("subject", string(c.Subject))
 	add("ua", c.UserAgentContext.UserAgent)
 	add("ua_loc", string(c.UserAgentContext.Location))
-	if !c.UserAgentContext.TrackAsSubmit {
-		add("is_not_submit", "true")
-	}
 
 	if c.ExpandedContext.ActingUser != nil {
 		display["acting_user"] = c.ExpandedContext.ActingUser.GetDisplayName(model.ShowNicknameFullName)
@@ -179,7 +170,7 @@ func (c Context) loggable() (map[string]string, []interface{}) {
 	}
 	if c.ExpandedContext.Team != nil {
 		display["team"] = c.ExpandedContext.Team.Name
-		props = append(props, "team_id", c.ExpandedContext.Channel.Id)
+		props = append(props, "team_id", c.ExpandedContext.Team.Id)
 	}
 	if c.ExpandedContext.Post != nil {
 		display["post"] = utils.LastN(c.ExpandedContext.Post.Message, 32)

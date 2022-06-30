@@ -27,7 +27,7 @@ func (a *builtinApp) debugSessionsListBinding(loc *i18n.Localizer) apps.Binding 
 			Other: "List all App specific sessions.",
 		}),
 		Submit: &apps.Call{
-			Path: pDebugSessionsList,
+			Path: PathDebugSessionsList,
 			Expand: &apps.Expand{
 				ActingUser: apps.ExpandSummary,
 			},
@@ -60,5 +60,9 @@ func (a *builtinApp) debugSessionsList(r *incoming.Request, creq apps.CallReques
 			sessionID, appID, expiresAt, expiresIn, token)
 	}
 
-	return apps.NewTextResponse(txt)
+	return apps.CallResponse{
+		Type: apps.CallResponseTypeOK,
+		Text: txt,
+		Data: sessions,
+	}
 }

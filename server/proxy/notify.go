@@ -5,196 +5,298 @@ package proxy
 
 import (
 	"context"
-	"regexp"
-	"strings"
-
-	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/upstream"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-func (p *Proxy) Notify(base apps.Context, subj apps.Subject) error {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
-
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
-
-	subs, err := p.store.Subscription.Get(subj, base.TeamID, base.ChannelID)
-	if err != nil {
-		return err
-	}
-
-	return p.notify(r, base, subs)
+// NotifyUserCreated handles plugin's UserHasBeenCreated callback. It emits
+// "user_created" notifications to subscribed apps.
+func (p *Proxy) NotifyUserCreated(userID string) {
+	p.notify(nil,
+		apps.Event{
+			Subject: apps.SubjectUserCreated,
+		},
+		apps.UserAgentContext{
+			UserID: userID,
+		},
+	)
 }
 
-func (p *Proxy) notify(r *incoming.Request, base apps.Context, subs []apps.Subscription) error {
+// NotifyUserJoinedChannel handles plugin's UserHasJoinedChannel callback. It
+// emits "user_joined_channel" and "bot_joined_channel" notifications to
+// subscribed apps.
+func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
+	p.notifyUserChannel(channelID, userID, true)
+}
+
+// NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
+// "user_left_channel" and "bot_left_channel" notifications to subscribed apps.
+func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
+	p.notifyUserChannel(channelID, userID, false)
+}
+
+func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool) {
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(userID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		return
+	}
+	channel, err := mm.Channel.Get(channelID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get channel")
+		return
+	}
+
+	subject := apps.SubjectUserJoinedChannel
+	if !joined {
+		subject = apps.SubjectUserLeftChannel
+	}
+	p.notify(
+		nil,
+		apps.Event{
+			Subject:   subject,
+			ChannelID: channelID,
+		},
+		apps.UserAgentContext{
+			ChannelID: channelID,
+			TeamID:    channel.TeamId,
+			UserID:    user.Id,
+		},
+	)
+	if !user.IsBot {
+		return
+	}
+
+	// If the user is a bot, process SubjectBot...Channel; only notify the
+	// app with the matching BotUserID.
+	allApps := p.store.App.AsMap()
+	subject = apps.SubjectBotJoinedChannel
+	if !joined {
+		subject = apps.SubjectBotLeftChannel
+	}
+	p.notify(
+		func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == userID
+			}
+			return false
+		},
+		apps.Event{
+			Subject: subject,
+			TeamID:  channel.TeamId,
+		},
+		apps.UserAgentContext{
+			ChannelID: channelID,
+			TeamID:    channel.TeamId,
+			UserID:    user.Id,
+		},
+	)
+}
+
+// NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
+// "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
+func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
+	p.notifyUserTeam(teamID, userID, true)
+}
+
+// NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
+// "user_left_team" and "bot_left_team" notifications to subscribed apps.
+func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
+	p.notifyUserTeam(teamID, userID, false)
+}
+
+func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool) {
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(userID)
+	if err != nil {
+		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		return
+	}
+	subject := apps.SubjectUserJoinedTeam
+	if !joined {
+		subject = apps.SubjectUserLeftTeam
+	}
+	p.notify(
+		nil,
+		apps.Event{
+			Subject: subject,
+			TeamID:  teamID,
+		},
+		apps.UserAgentContext{
+			UserID: user.Id,
+			TeamID: teamID,
+		},
+	)
+	if !user.IsBot {
+		return
+	}
+
+	// If the user is a bot, process SubjectBot...Channel; only notify the app
+	// with the matching BotUserID.
+	allApps := p.store.App.AsMap()
+	subject = apps.SubjectBotJoinedTeam
+	if !joined {
+		subject = apps.SubjectBotLeftTeam
+	}
+	p.notify(
+		func(sub store.Subscription) bool {
+			if app, ok := allApps[sub.AppID]; ok {
+				return app.BotUserID == userID
+			}
+			return false
+		},
+		apps.Event{
+			Subject: subject,
+		},
+		apps.UserAgentContext{
+			UserID: user.Id,
+			TeamID: teamID,
+		},
+	)
+}
+
+// NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
+// "channel_created" notifications to subscribed apps.
+func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
+	p.notify(nil,
+		apps.Event{
+			Subject: apps.SubjectChannelCreated,
+			TeamID:  teamID,
+		},
+		apps.UserAgentContext{
+			TeamID:    teamID,
+			ChannelID: channelID,
+		})
+}
+
+func (p *Proxy) notify(match func(store.Subscription) bool, event apps.Event, uac apps.UserAgentContext) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+	defer cancel()
+	r := p.NewIncomingRequest().WithCtx(ctx)
+	r.Log = r.Log.With(event)
+
+	subs, err := p.store.Subscription.Get(event)
+	if err != nil {
+		r.Log.WithError(err).Errorf("notify: failed to load subscriptions")
+		return
+	}
+
 	for _, sub := range subs {
-		// TODO(Ben): Convert to use App session
-		err := appservices.CheckSubscriptionPermission(&p.conf.MattermostAPI().User, sub, base.ChannelID, base.TeamID)
-		if err != nil {
-			// Don't log the error it can be to spammy
-			continue
+		if match == nil || match(sub) {
+			go p.invokeNotify(r, event, sub, &apps.Context{
+				Subject:          event.Subject,
+				UserAgentContext: uac,
+			})
 		}
+	}
+}
 
-		r = r.Clone()
-		r.SetAppID(sub.AppID)
-		r.Log = r.Log.With("subject", sub.Subject)
+func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Subscription, contextToExpand *apps.Context) {
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		if p.conf.Get().DeveloperMode {
+			r.Log.WithError(err).Errorf("notify error")
+		} else {
+			r.Log.Debugf("notify")
+		}
+	}()
 
-		err = p.notifyForSubscription(r, &base, sub)
-		if err != nil {
-			r.Log.WithError(err).Debugf("failed to send subscription notification to app")
+	app, err := p.GetInstalledApp(sub.AppID, true)
+	if err != nil {
+		return
+	}
+
+	if contextToExpand == nil {
+		contextToExpand = &apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				TeamID:    event.TeamID,
+				ChannelID: event.ChannelID,
+			},
 		}
 	}
 
-	return nil
-}
-
-func (p *Proxy) notifyForSubscription(r *incoming.Request, base *apps.Context, sub apps.Subscription) error {
+	appRequest := r.WithDestination(sub.AppID)
+	appRequest = appRequest.WithActingUserID(sub.OwnerUserID)
 	creq := apps.CallRequest{
-		Call: sub.Call,
+		Call:    sub.Call,
+		Context: *contextToExpand,
 	}
-	app, err := p.store.App.Get(sub.AppID)
-	if err != nil {
-		return err
+	r.Log = r.Log.With(creq)
+	cresp := p.callApp(appRequest, app, creq, true)
+	if cresp.Type == apps.CallResponseTypeError {
+		err = cresp
 	}
-	if !p.appIsEnabled(*app) {
-		return errors.Errorf("%s is disabled", app.AppID)
-	}
-
-	creq.Context, err = p.expandContext(r, *app, base, sub.Call.Expand)
-	if err != nil {
-		return err
-	}
-	creq.Context.Subject = sub.Subject
-
-	up, err := p.upstreamForApp(*app)
-	if err != nil {
-		return err
-	}
-	return upstream.Notify(r.Ctx(), up, *app, creq)
+	r.Log = r.Log.With(cresp)
 }
 
-func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
+// func (p *Proxy) NotifyMessageHasBeenPosted(post *model.Post, cc apps.Context) error {
+// 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+// 	defer cancel()
 
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+// 	mm := p.conf.MattermostAPI()
+// 	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
 
-	postSubs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrap(err, "failed to get post_created subscriptions")
-	}
+// 	subs, err := p.store.Subscription.Get(apps.SubjectPostCreated, cc.TeamID, cc.ChannelID)
+// 	if err != nil && err != utils.ErrNotFound {
+// 		return errors.Wrap(err, "failed to get post_created subscriptions")
+// 	}
 
-	subs := []apps.Subscription{}
-	subs = append(subs, postSubs...)
+// 	appMentions := []string{}
+// 	allApps := p.store.App.AsMap()
+// 	for _, m := range possibleAtMentions(post.Message) {
+// 		for _, app := range allApps {
+// 			if app.BotUsername == m {
+// 				appMentions = append(appMentions, m)
+// 			}
+// 		}
+// 	}
+// 	if len(appMentions) > 0 {
+// 		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
+// 		if err != nil && err != utils.ErrNotFound {
+// 			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
+// 		}
+// 		for _, sub := range mentionSubs {
+// 			for _, mention := range appMentions {
+// 				app, ok := allApps[sub.AppID]
+// 				if ok && mention == app.BotUsername {
+// 					subs = append(subs, sub)
+// 				}
+// 			}
+// 		}
+// 	}
 
-	mentions := possibleAtMentions(post.Message)
+// 	if len(subs) == 0 {
+// 		return nil
+// 	}
 
-	if len(mentions) > 0 {
-		appsMap := p.store.App.AsMap()
-		mentionSubs, err := p.store.Subscription.Get(apps.SubjectBotMentioned, cc.TeamID, cc.ChannelID)
-		if err != nil && err != utils.ErrNotFound {
-			return errors.Wrap(err, "failed to get bot_mentioned subscriptions")
-		}
+// 	return p.notify(r, cc, subs)
+// }
 
-		for _, sub := range mentionSubs {
-			app, ok := appsMap[sub.AppID]
-			if !ok {
-				continue
-			}
-			for _, mention := range mentions {
-				if mention == app.BotUsername {
-					subs = append(subs, sub)
-				}
-			}
-		}
-	}
+// var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
 
-	if len(subs) == 0 {
-		return nil
-	}
+// // possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
+// func possibleAtMentions(message string) []string {
+// 	var names []string
 
-	return p.notify(r, cc, subs)
-}
+// 	if !strings.Contains(message, "@") {
+// 		return names
+// 	}
 
-func (p *Proxy) NotifyUserHasJoinedChannel(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedChannel, apps.SubjectBotJoinedChannel)
-}
+// 	alreadyMentioned := make(map[string]bool)
+// 	for _, match := range atMentionRegexp.FindAllString(message, -1) {
+// 		name := model.NormalizeUsername(match[1:])
+// 		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
+// 			names = append(names, name)
+// 			alreadyMentioned[name] = true
+// 		}
+// 	}
 
-func (p *Proxy) NotifyUserHasLeftChannel(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserLeftChannel, apps.SubjectBotLeftChannel)
-}
-
-func (p *Proxy) NotifyUserHasJoinedTeam(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserJoinedTeam, apps.SubjectBotJoinedTeam)
-}
-
-func (p *Proxy) NotifyUserHasLeftTeam(cc apps.Context) error {
-	return p.notifyJoinLeave(cc, apps.SubjectUserLeftTeam, apps.SubjectBotLeftTeam)
-}
-
-func (p *Proxy) notifyJoinLeave(cc apps.Context, subject, botSubject apps.Subject) error {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
-
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
-
-	userSubs, err := p.store.Subscription.Get(subject, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrapf(err, "failed to get %s subscriptions", subject)
-	}
-
-	botSubs, err := p.store.Subscription.Get(botSubject, cc.TeamID, cc.ChannelID)
-	if err != nil && err != utils.ErrNotFound {
-		return errors.Wrapf(err, "failed to get %s subscriptions", botSubject)
-	}
-
-	subs := []apps.Subscription{}
-	subs = append(subs, userSubs...)
-
-	appsMap := p.store.App.AsMap()
-	for _, sub := range botSubs {
-		app, ok := appsMap[sub.AppID]
-		if !ok {
-			continue
-		}
-
-		if app.BotUserID == cc.UserID {
-			subs = append(subs, sub)
-		}
-	}
-
-	return p.notify(r, cc, subs)
-}
-
-var atMentionRegexp = regexp.MustCompile(`\B@[[:alnum:]][[:alnum:]\.\-_:]*`)
-
-// possibleAtMentions is copied over from mattermost-server/app.possibleAtMentions
-func possibleAtMentions(message string) []string {
-	var names []string
-
-	if !strings.Contains(message, "@") {
-		return names
-	}
-
-	alreadyMentioned := make(map[string]bool)
-	for _, match := range atMentionRegexp.FindAllString(message, -1) {
-		name := model.NormalizeUsername(match[1:])
-		if !alreadyMentioned[name] && model.IsValidUsernameAllowRemote(name) {
-			names = append(names, name)
-			alreadyMentioned[name] = true
-		}
-	}
-
-	return names
-}
+// 	return names
+// }

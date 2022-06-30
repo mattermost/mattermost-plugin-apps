@@ -7,7 +7,7 @@ orbs:
 executors:
   default:
     docker:
-      - image: cimg/go:1.17.3
+      - image: cimg/go:1.18.3
 
 aliases:
 - &restore_go_cache
@@ -46,7 +46,7 @@ commands:
     parameters:
       version:
         type: string
-        default: 1.31.0
+        default: 1.46.1
       gobin:
         type: string
         default: $GOPATH/bin
@@ -163,7 +163,7 @@ jobs:
 
   test-rest-postgres11:
     docker:
-      - image: cimg/go:1.17.3
+      - image: cimg/go:1.18.3
       - image: cimg/postgres:11.13
         environment:
           POSTGRES_USER: mmuser
@@ -193,6 +193,7 @@ jobs:
           name: Running REST API tests
           command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
       - *save_go_cache
+
   e2e-cypress-tests-pinned:
     resource_class: xlarge
     docker:

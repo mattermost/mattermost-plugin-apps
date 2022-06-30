@@ -17,7 +17,7 @@ type App struct {
 	Manifest
 
 	// DeployType is the type of upstream that can be used to access the App.
-	DeployType DeployType `json:"deploy_type"`
+	DeployType DeployType `json:"deploy_type,omitempty"`
 
 	// Disabled is set to true if the app is disabled. Disabling an app does not
 	// erase any of it's data.
@@ -81,6 +81,35 @@ func DecodeCompatibleApp(data []byte) (app *App, err error) {
 		return nil, err
 	}
 	return app, nil
+}
+
+func (app *App) Strip(level ExpandLevel) *App {
+	switch level {
+	case ExpandSummary:
+		return &App{
+			Manifest: Manifest{
+				AppID:   app.AppID,
+				Version: app.Version,
+			},
+			BotUserID:   app.BotUserID,
+			BotUsername: app.BotUsername,
+		}
+
+	case ExpandAll:
+		return &App{
+			Manifest: Manifest{
+				AppID:   app.AppID,
+				Version: app.Version,
+			},
+			BotUserID:     app.BotUserID,
+			BotUsername:   app.BotUsername,
+			DeployType:    app.DeployType,
+			WebhookSecret: app.WebhookSecret,
+		}
+
+	default:
+		return nil
+	}
 }
 
 // OAuth2App contains the setored settings for an "OAuth2 app" used by the App.

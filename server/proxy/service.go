@@ -4,13 +4,13 @@
 package proxy
 
 import (
+	"context"
 	"io"
 	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -43,48 +43,61 @@ type Proxy struct {
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
+
+	log utils.Logger
 }
 
-// Admin defines the REST API methods to manipulate Apps.
+// Admin defines the REST API methods to manipulate Apps. Since they operate in
+// "admin" space, they accept a separate appID parameter rather than expecting a
+// ToApp too be set in the request.
 type Admin interface {
 	DisableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	EnableApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
 	InstallApp(_ *incoming.Request, _ apps.Context, _ apps.AppID, _ apps.DeployType, trustedApp bool, secret string) (*apps.App, string, error)
 	UpdateAppListing(*incoming.Request, appclient.UpdateAppListingRequest) (*apps.Manifest, error)
-	UninstallApp(*incoming.Request, apps.Context, apps.AppID) (string, error)
+	UninstallApp(*incoming.Request, apps.Context, apps.AppID, bool) (string, error)
 }
 
-// Invoker implements operations that invoke the Apps.
-type Invoker interface {
+// API implements user-level operations, usually invoked from httpin handlers.
+// These methods expect the acting user, to and from apps to be set in the
+// request.
+type API interface {
 	// REST API methods used by user agents (mobile, desktop, web).
-	Call(*incoming.Request, apps.CallRequest) CallResponse
-	CompleteRemoteOAuth2(_ *incoming.Request, _ apps.AppID, urlValues map[string]interface{}) error
+	GetApp(*incoming.Request) (*apps.App, error)
 	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
-	GetRemoteOAuth2ConnectURL(*incoming.Request, apps.AppID) (string, error)
-	GetStatic(_ *incoming.Request, _ apps.AppID, path string) (io.ReadCloser, int, error)
+	InvokeCall(*incoming.Request, apps.CallRequest) CallResponse
+	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]interface{}) error
+	InvokeGetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
+	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
+	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)
+	InvokeRemoteWebhook(*incoming.Request, apps.HTTPCallRequest) error
 }
 
-// Notifier implements user-less notification sinks.
+// Notifier implements subscription notifications, each one may be going out to
+// multiple apps. Notify functions create their own app requests.
 type Notifier interface {
-	Notify(apps.Context, apps.Subject) error
-	NotifyRemoteWebhook(*incoming.Request, apps.AppID, apps.HTTPCallRequest) error
-	NotifyMessageHasBeenPosted(*model.Post, apps.Context) error
-	NotifyUserHasJoinedChannel(apps.Context) error
-	NotifyUserHasLeftChannel(apps.Context) error
-	NotifyUserHasJoinedTeam(apps.Context) error
-	NotifyUserHasLeftTeam(apps.Context) error
+	NotifyUserCreated(userID string)
+	NotifyUserJoinedChannel(channelID, userID string)
+	NotifyUserLeftChannel(channelID, userID string)
+	NotifyUserJoinedTeam(teamID, userID string)
+	NotifyUserLeftTeam(teamID, userID string)
+	NotifyChannelCreated(teamID, channelID string)
 }
 
-// Internal implements go API used by other packages.
+// Internal implements go API used by other plugin-apps packages. When relevant,
+// they rely on the ActingUser set in the request, but usually have the app id
+// parameters passed in explicitly, using request for logging.
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(apps.DeployType) (allowed, usable bool)
-	GetAppBindings(*incoming.Request, apps.Context, apps.App) ([]apps.Binding, error)
-	GetInstalledApp(*incoming.Request, apps.AppID) (*apps.App, error)
-	GetInstalledApps(_ *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool)
-	GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp
-	GetManifest(*incoming.Request, apps.AppID) (*apps.Manifest, error)
+	NewIncomingRequest() *incoming.Request
 	SynchronizeInstalledApps() error
+
+	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
+	GetInstalledApps() []apps.App
+	PingInstalledApps(context.Context) (installed []apps.App, reachable map[apps.AppID]bool)
+	GetListedApps(filter string, includePluginApps bool) []apps.ListedApp
+	GetManifest(apps.AppID) (*apps.Manifest, error)
 }
 
 type Service interface {
@@ -93,13 +106,13 @@ type Service interface {
 
 	Admin
 	Internal
-	Invoker
+	API
 	Notifier
 }
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service, log utils.Logger) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
@@ -108,6 +121,7 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
 		appservices:      appservices,
+		log:              log,
 	}
 }
 
@@ -182,7 +196,7 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 	p.store.App.InitBuiltin()
 }
 
-func (p *Proxy) upstreamForApp(app apps.App) (upstream.Upstream, error) {
+func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
 	if app.DeployType == apps.DeployBuiltin {
 		u, ok := p.builtinUpstreams[app.AppID]
 		if !ok {
@@ -223,4 +237,12 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 		p.upstreams.Delete(typ)
 		log.Debugf("Deploy type %s is not supported on this Mattermost server", typ)
 	}
+}
+
+func (p *Proxy) NewIncomingRequest() *incoming.Request {
+	return incoming.NewRequest(p.conf, p.log, p.sessionService)
+}
+
+func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {
+	return p.GetInstalledApp(r.Destination(), true)
 }

@@ -202,7 +202,6 @@ func (a *builtinApp) stateAsManifest(r *incoming.Request, creq apps.CallRequest)
 		return nil, errors.New("no app ID in State, don't know what to install")
 	}
 	appID := apps.AppID(id)
-	r.SetAppID(appID)
 
-	return a.proxy.GetManifest(r, appID)
+	return a.proxy.GetManifest(appID)
 }

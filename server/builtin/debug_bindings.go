@@ -32,29 +32,19 @@ func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Bindi
 }
 
 func (a *builtinApp) debugBindings(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	var bindings []apps.Binding
 	out := ""
+	var err error
 	if appID == "" {
-		var err error
 		bindings, err = a.proxy.GetBindings(r, creq.Context)
-		if err != nil {
-			return apps.NewErrorResponse(err)
-		}
 	} else {
-		r.SetAppID(appID)
-
-		app, err := a.proxy.GetInstalledApp(r, appID)
-		if err != nil {
-			return apps.NewErrorResponse(err)
-		}
-		bindings, err = a.proxy.GetAppBindings(r, creq.Context, *app)
-		if err != nil {
-			out += "\n\n### PROBLEMS:\n" + err.Error()
-		}
-		out += "\n\n"
+		appRequest := r.WithDestination(appID)
+		bindings, err = a.proxy.InvokeGetBindings(appRequest, creq.Context)
 	}
-
+	if err != nil {
+		out += "### PROBLEMS:\n" + err.Error() + "\n\n"
+	}
 	out += utils.JSONBlock(bindings)
 	return apps.NewTextResponse(out)
 }

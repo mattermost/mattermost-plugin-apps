@@ -42,7 +42,7 @@ func CleanPath(p string) (string, error) {
 	return cleanPath, nil
 }
 
-func CleanURLPath(got string) (unescaped string, err error) {
+func cleanURLPath(got string) (unescaped string, err error) {
 	if got == "" {
 		return "", NewInvalidError("empty path")
 	}
@@ -63,15 +63,19 @@ func CleanURLPath(got string) (unescaped string, err error) {
 	return cleanPath, nil
 }
 
-func CleanStaticPath(got string) (unescaped string, err error) {
-	cleanPath, err := CleanURLPath(got)
+func CleanStaticURL(got string) (unescaped string, err error) {
+	u, err := url.Parse(got)
 	if err != nil {
 		return "", err
 	}
-	if cleanPath[0] == '/' {
-		return "", NewInvalidError("asset names may not start with a '/'")
+	u.Path, err = cleanURLPath(u.Path)
+	if err != nil {
+		return "", err
 	}
-	return cleanPath, nil
+	if u.Scheme == "" && u.Path[0] == '/' {
+		u.Path = "." + u.Path
+	}
+	return u.String(), nil
 }
 
 func CleanURL(got string) (string, error) {
@@ -79,7 +83,7 @@ func CleanURL(got string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	u.Path, err = CleanURLPath(u.Path)
+	u.Path, err = cleanURLPath(u.Path)
 	if err != nil {
 		return "", err
 	}

@@ -13,7 +13,7 @@ func CodeBlock(in string) string {
 }
 
 func JSONBlock(in interface{}) string {
-	return CodeBlock(Pretty(in))
+	return "\n```json\n" + Pretty(in) + "\n```\n"
 }
 
 func LoadSession(mm *pluginapi.Client, sessionID, actingUserID string) (*model.Session, error) {
