@@ -76,7 +76,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	if !p.pingApp(r.Ctx(), app) {
+	if err = p.pingApp(r.Ctx(), app); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 

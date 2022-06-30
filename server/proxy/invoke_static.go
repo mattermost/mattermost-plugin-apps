@@ -59,17 +59,20 @@ func (p *Proxy) getStatic(r *incoming.Request, app *apps.App, path string) (io.R
 // pingApp checks if the app is accessible. Call its ping path with nothing
 // expanded, ignore 404 errors coming back and consider everything else a
 // "success".
-func (p *Proxy) pingApp(ctx context.Context, app *apps.App) (reachable bool) {
+func (p *Proxy) pingApp(ctx context.Context, app *apps.App) error {
 	ctx, cancel := context.WithTimeout(ctx, pingAppTimeout)
 	defer cancel()
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return false
+		return err
 	}
 
 	_, err = upstream.Call(ctx, up, *app, apps.CallRequest{
 		Call: apps.DefaultPing,
 	})
-	return err == nil || errors.Cause(err) == utils.ErrNotFound
+	if errors.Cause(err) == utils.ErrNotFound {
+		return nil
+	}
+	return err
 }

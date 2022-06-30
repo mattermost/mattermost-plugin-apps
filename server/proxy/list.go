@@ -68,7 +68,7 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 		go func(a apps.App) {
 			var response apps.AppID
 			if !a.Disabled {
-				if p.pingApp(ctx, &a) {
+				if err := p.pingApp(ctx, &a); err == nil {
 					response = a.AppID
 				}
 			}
