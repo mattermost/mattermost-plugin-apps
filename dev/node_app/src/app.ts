@@ -37,6 +37,7 @@ app.use((req, res, next) => {
 const manifest = {
     app_id: 'node-example',
     display_name: "I'm an App!",
+    description: "Example app written with Node.js",
     homepage_url: 'https://github.com/mattermost/mattermost-plugin-apps',
     app_type: 'http',
     icon: 'icon.png',
@@ -62,7 +63,7 @@ const form: AppForm = {
         },
     ],
     submit: {
-        path: '/send/submit',
+        path: '/submit',
     },
 };
 
@@ -73,9 +74,7 @@ const channelHeaderBindings = {
             location: 'send-button',
             icon: 'icon.png',
             label: 'send hello message',
-            submit: {
-                path: '/send',
-            },
+            form,
         },
     ],
 } as AppBinding;
@@ -86,7 +85,7 @@ const commandBindings = {
         {
             icon: 'icon.png',
             label: 'node-example',
-            description: 'Example app written with Node.js',
+            description: manifest.description,
             hint: '[send]',
             bindings: [
                 {
@@ -122,27 +121,7 @@ type FormValues = {
     message: string;
 }
 
-app.post('/send', (req, res) => {
-    res.json({
-        type: 'form',
-        form: {
-            title: 'Hello, world!',
-            icon: 'icon.png',
-            fields: [
-                {
-                    type: 'text',
-                    name: 'message',
-                    label: 'message',
-                },
-            ],
-            submit: {
-                path: '/send/submit',
-            },
-        },
-    });
-});
-
-app.post('/send/submit', async (req, res) => {
+app.post('/submit', async (req, res) => {
     const call = req.body as AppCallRequest;
 
     const botClient = new Client4();
