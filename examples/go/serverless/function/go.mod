@@ -2,7 +2,7 @@ module handler/function
 
 go 1.18
 
-require github.com/mattermost/mattermost-plugin-apps v1.1.1-0.20220625025050-0b93748180f4
+require github.com/mattermost/mattermost-plugin-apps v1.1.1-0.20220701224449-3c7fe72a12f8
 
 require (
 	cloud.google.com/go v0.99.0 // indirect

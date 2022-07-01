@@ -11,7 +11,7 @@ run:
 ## dist-aws: creates the bundle file for AWS Lambda deployments
 dist-aws: 
 	rm -rf dist/aws && mkdir -p dist/aws
-	GOOS=linux GOARCH=amd64 go build -o dist/aws/hello-serverless . 
+	GOOS=linux GOARCH=amd64 go build -o dist/aws/example-serverless . 
 	cp ./hello/static/manifest.json dist/aws
 	cp -r ./hello/static dist/aws
 	cd dist/aws ; \
