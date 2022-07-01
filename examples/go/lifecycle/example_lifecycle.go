@@ -27,12 +27,9 @@ func main() {
 	http.HandleFunc("/bindings", httputils.DoHandleJSONData([]byte("{}")))
 
 	http.HandleFunc("/install", respondWithMessage("Thanks for installing me! Try `/apps disable|enable|uninstall hello-lifecycle`"))
-
-	http.HandleFunc("/uninstall", respondWithMessage("No, don't uninstall me!"))
-
-	http.HandleFunc("/enable", respondWithMessage("I'm back up again"))
-
-	http.HandleFunc("/disable", respondWithMessage("Taking a little nap"))
+	http.HandleFunc("/uninstall", respondWithMessage("I am about to be removed!"))
+	http.HandleFunc("/enable", respondWithMessage("I'm back up again!"))
+	http.HandleFunc("/disable", respondWithMessage("Taking a little nap..."))
 
 	addr := fmt.Sprintf(":%v", port)
 	rootURL := fmt.Sprintf("http://%v:%v", host, port)

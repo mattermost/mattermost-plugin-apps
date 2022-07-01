@@ -16,7 +16,7 @@ func notifyBotJoinedChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			team := th.createTestTeam()
-			tm := th.addTeamMember(team, th.LastInstalledBotUser)
+			tm := th.addTeamMember(team, th.InstalledBotUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser2)
 
@@ -36,12 +36,12 @@ func notifyBotJoinedChannel(th *Helper) *notifyTestCase {
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.ChannelMember = th.addChannelMember(data.Channel, th.LastInstalledBotUser)
+			data.ChannelMember = th.addChannelMember(data.Channel, th.InstalledBotUser)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			ec := apps.ExpandedContext{
-				User:       th.LastInstalledBotUser,
+				User:       th.InstalledBotUser,
 				Team:       data.Team,
 				TeamMember: data.TeamMember,
 			}

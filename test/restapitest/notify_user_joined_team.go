@@ -23,7 +23,7 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 				User: th.ServerTestHelper.BasicUser,
 				Team: th.createTestTeam(),
 			}
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
+			th.addTeamMember(data.Team, th.InstalledBotUser)
 			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {

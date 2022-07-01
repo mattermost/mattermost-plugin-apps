@@ -36,7 +36,7 @@ func TestRESTAPI(t *testing.T) {
 		"OAuth2":        testOAuth2,
 		"subscriptions": testSubscriptions,
 		"notify":        testNotify,
-		"uninstall":     testUninstall,
+		"lifecycle":     testLifecycle,
 		"misc":          testMisc,
 	} {
 		th.CleanRun(name, testF)

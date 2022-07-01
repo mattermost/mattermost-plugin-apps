@@ -194,10 +194,8 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
-	r.Log.Debugf("<>/<> ensureBot 1: username: %q", bot.Username)
 	user, _ := mm.User.GetByUsername(bot.Username)
 	if user == nil {
-		r.Log.Debugf("<>/<> ensureBot 2: no such user: %q", bot.Username)
 		err := p.createAndValidateBot(r, bot)
 		if err != nil {
 			return err
@@ -207,7 +205,6 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 			return errors.New("a user already owns the bot username")
 		}
 
-		r.Log.Debugf("<>/<> ensureBot 3: user already exists, deleted?: %v", user.DeleteAt)
 		// Check if disabled
 		if user.DeleteAt != 0 {
 			var err error

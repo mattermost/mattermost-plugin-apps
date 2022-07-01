@@ -26,12 +26,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
 	}
 
-	// Disable the app and clean out all of its sessions.
-	_, err = p.DisableApp(r, cc, appID)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to disable app")
-	}
-
+	// Call the app's OnInstall if provided.
 	message := fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	if app.OnUninstall != nil {
 		resp := p.call(r, app, *app.OnUninstall, &cc)
@@ -45,6 +40,12 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		case apps.CallResponseTypeOK:
 			message = fmt.Sprintf("Uninstalled %s, with message: %s", app.DisplayName, resp.Text)
 		}
+	}
+
+	// Disable the app and clean out all of its sessions.
+	_, err = p.DisableApp(r, cc, appID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to disable app")
 	}
 
 	// Delete OAuth app.

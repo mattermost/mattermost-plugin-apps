@@ -78,6 +78,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
+		r.Log.Debugf("<>/<> DisableApp: call %s", app.OnDisable.String())
 		resp := p.call(r, app, *app.OnDisable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			r.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")

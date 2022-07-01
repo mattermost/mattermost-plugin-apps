@@ -27,8 +27,8 @@ type Helper struct {
 	*testing.T
 	ServerTestHelper *api4.TestHelper
 
-	LastInstalledBotUser *model.User
-	LastInstalledApp     *apps.App
+	InstalledBotUser *model.User
+	InstalledApp     *apps.App
 
 	UserClientPP        *appclient.ClientPP
 	User2ClientPP       *appclient.ClientPP
@@ -127,20 +127,20 @@ func respond(text string, err error) apps.CallResponse {
 	return apps.NewTextResponse(text)
 }
 
-func (th *Helper) verifyContext(level apps.ExpandLevel, app *apps.App, asSystemAdmin bool, expected, got apps.Context) {
-	th.verifyExpandedContext(level, app, asSystemAdmin, expected.ExpandedContext, got.ExpandedContext)
+func (th *Helper) verifyContext(level apps.ExpandLevel, asSystemAdmin bool, expected, got apps.Context) {
+	th.verifyExpandedContext(level, asSystemAdmin, expected.ExpandedContext, got.ExpandedContext)
 
 	expected.ExpandedContext = apps.ExpandedContext{}
 	got.ExpandedContext = apps.ExpandedContext{}
 	require.EqualValues(th, expected, got)
 }
 
-func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, asSystemAdmin bool, expected, got apps.ExpandedContext) {
+func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, asSystemAdmin bool, expected, got apps.ExpandedContext) {
 	siteURL := *th.ServerTestHelper.Server.Config().ServiceSettings.SiteURL
-	appPath := "/plugins/com.mattermost.apps/apps/" + string(app.AppID)
+	appPath := "/plugins/com.mattermost.apps/apps/" + string(th.InstalledApp.AppID)
 	require.Equal(th, siteURL, got.MattermostSiteURL)
 	require.Equal(th, appPath, got.AppPath)
-	require.Equal(th, app.BotUserID, got.BotUserID)
+	require.Equal(th, th.InstalledApp.BotUserID, got.BotUserID)
 
 	// The dev mode is always set in the test.
 	require.Equal(th, true, got.DeveloperMode)
@@ -159,15 +159,16 @@ func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, a
 		require.EqualValues(th, apps.ExpandedContext{
 			MattermostSiteURL: siteURL,
 			AppPath:           appPath,
-			BotUserID:         app.BotUserID,
+			BotUserID:         th.InstalledApp.BotUserID,
 			DeveloperMode:     true,
 		}, got)
 		return
 	}
 
+	th.requireEqualApp(level, asSystemAdmin, th.InstalledApp.Strip(level), got.App)
+
 	require.Equal(th, expected.Locale, got.Locale)
 	require.EqualValues(th, expected.OAuth2, got.OAuth2)
-	th.requireEqualApp(level, asSystemAdmin, expected.App, got.App)
 	th.requireEqualUser(level, expected.ActingUser, got.ActingUser)
 	th.requireEqualChannel(level, expected.Channel, got.Channel)
 	th.requireEqualChannelMember(level, expected.ChannelMember, got.ChannelMember)

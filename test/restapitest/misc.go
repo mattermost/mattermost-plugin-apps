@@ -19,7 +19,7 @@ func testMisc(th *Helper) {
 				ActingUser: apps.ExpandSummary,
 			}),
 			Values: map[string]interface{}{
-				builtin.FieldAppID: uninstallID,
+				builtin.FieldAppID: echoID,
 			},
 		}
 

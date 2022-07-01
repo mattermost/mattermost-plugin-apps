@@ -19,11 +19,11 @@ func notifyUserLeftChannel(th *Helper) *notifyTestCase {
 				Team: th.createTestTeam(),
 				User: th.ServerTestHelper.BasicUser2,
 			}
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
+			th.addTeamMember(data.Team, th.InstalledBotUser)
 			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
 			data.TeamMember = th.addTeamMember(data.Team, data.User)
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
-			th.addChannelMember(data.Channel, th.LastInstalledBotUser)
+			th.addChannelMember(data.Channel, th.InstalledBotUser)
 			th.addChannelMember(data.Channel, th.ServerTestHelper.BasicUser)
 			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
 			return data

@@ -26,12 +26,12 @@ func notifyBotJoinedTeam(th *Helper) *notifyTestCase {
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.TeamMember = th.addTeamMember(data.Team, th.LastInstalledBotUser)
+			data.TeamMember = th.addTeamMember(data.Team, th.InstalledBotUser)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			ec := apps.ExpandedContext{
-				User: th.LastInstalledBotUser,
+				User: th.InstalledBotUser,
 			}
 
 			switch appclient.name {
