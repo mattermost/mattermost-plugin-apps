@@ -60,8 +60,8 @@ var Bindings = []apps.Binding{
 		Bindings: []apps.Binding{
 			{
 				Icon:        "icon.png",
-				Label:       "hello-serverless",
-				Description: "Hello Serverless app",
+				Label:       "example-serverless",
+				Description: "Example serverless app",
 				Hint:        "[send]",
 				Bindings: []apps.Binding{
 					{

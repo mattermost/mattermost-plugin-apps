@@ -3,17 +3,9 @@ provider:
   name: openfaas
   gateway: http://192.168.64.3:8080
 functions:
-<<<<<<<< HEAD:examples/go/serverless/openfaas/manifest.yml
-  example:
-========
   function:
->>>>>>>> 60e221ddf150ce60dd1d2aef2cdfd9d0f5878701:examples/go/serverless/openfaas.yml
     lang: golang-middleware
     handler: ./function
-<<<<<<<< HEAD:examples/go/serverless/openfaas/manifest.yml
-    image: example-openfaas
-========
-    image: hello-serverless:latest
+    image: example-openfaas:latest
     environment:
       DEPLOY_TYPE: openfaas
->>>>>>>> 60e221ddf150ce60dd1d2aef2cdfd9d0f5878701:examples/go/serverless/openfaas.yml
