@@ -16,13 +16,13 @@ func notifyBotLeftChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			team := th.createTestTeam()
-			tm := th.addTeamMember(team, th.InstalledBotUser)
+			tm := th.addTeamMember(team, th.LastInstalledBotUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser2)
 
 			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
 			th.addChannelMember(channel, th.ServerTestHelper.BasicUser)
-			th.addChannelMember(channel, th.InstalledBotUser)
+			th.addChannelMember(channel, th.LastInstalledBotUser)
 
 			return apps.ExpandedContext{
 				Team:       team,
@@ -37,12 +37,12 @@ func notifyBotLeftChannel(th *Helper) *notifyTestCase {
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			th.removeUserFromChannel(data.Channel, th.InstalledBotUser)
+			th.removeUserFromChannel(data.Channel, th.LastInstalledBotUser)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			ec := apps.ExpandedContext{
-				User:       th.InstalledBotUser,
+				User:       th.LastInstalledBotUser,
 				Team:       data.Team,
 				TeamMember: data.TeamMember,
 			}

@@ -21,19 +21,19 @@ var static embed.FS
 
 func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
 	installed := th.InstallApp(app)
-	th.InstalledApp = installed
+	th.LastInstalledApp = installed
 	th.Cleanup(func() {
 		_, _ = th.SystemAdminClientPP.UninstallApp(installed.AppID)
 		th.Logf("uninstalled: '%s'", installed.AppID)
 	})
 
 	var appErr *model.AppError
-	th.InstalledBotUser, appErr = th.ServerTestHelper.App.GetUser(th.InstalledApp.BotUserID)
+	th.LastInstalledBotUser, appErr = th.ServerTestHelper.App.GetUser(th.LastInstalledApp.BotUserID)
 	require.Nil(th, appErr)
 
 	th.asBot = appClient{
 		name:               "bot",
-		expectedActingUser: th.InstalledBotUser,
+		expectedActingUser: th.LastInstalledBotUser,
 		happyCall:          th.HappyCall,
 		call:               th.Call,
 		appActsAsBot:       true,

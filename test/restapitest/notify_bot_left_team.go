@@ -16,7 +16,7 @@ func notifyBotLeftTeam(th *Helper) *notifyTestCase {
 		init: func(th *Helper) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
-				User: th.InstalledBotUser,
+				User: th.LastInstalledBotUser,
 			}
 			data.TeamMember = th.addTeamMember(data.Team, data.User)
 			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
@@ -39,7 +39,7 @@ func notifyBotLeftTeam(th *Helper) *notifyTestCase {
 			switch appclient.name {
 			case "admin", "user":
 				ec.Team = data.Team
-				ec.TeamMember = th.getTeamMember(data.Team.Id, th.InstalledApp.BotUserID)
+				ec.TeamMember = th.getTeamMember(data.Team.Id, th.LastInstalledApp.BotUserID)
 
 			default: // user2, bot
 				// TeamID gets expanded at the ID level even though user2 has no access to it.

@@ -190,7 +190,7 @@ func testLifecycle(th *Helper) {
 			},
 		}, info)
 
-		th.UninstallApp(th.InstalledApp.AppID)
+		th.UninstallApp(th.LastInstalledApp.AppID)
 		th.Run("uninstall clears KV data", func(th *Helper) {
 			cresp := th.HappyAdminCall(builtin.AppID, infoRequest)
 			require.Equal(th, apps.CallResponseTypeOK, cresp.Type)

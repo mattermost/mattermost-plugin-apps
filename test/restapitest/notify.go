@@ -87,23 +87,23 @@ func testNotify(th *Helper) {
 	th.InstallAppWithCleanup(newNotifyApp(th, received))
 
 	// Will need the bot user object later, preload.
-	appBotUser, appErr := th.ServerTestHelper.App.GetUser(th.InstalledApp.BotUserID)
+	appBotUser, appErr := th.ServerTestHelper.App.GetUser(th.LastInstalledApp.BotUserID)
 	require.Nil(th, appErr)
-	th.InstalledBotUser = appBotUser
+	th.LastInstalledBotUser = appBotUser
 
 	// Make sure the bot is a team and a channel member to be able to
 	// subscribe and be notified; the user already is, and sysadmin can see
 	// everything.
-	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, th.InstalledApp.BotUserID)
+	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicTeam.Id, tm.TeamId)
-	require.Equal(th, th.InstalledApp.BotUserID, tm.UserId)
+	require.Equal(th, th.LastInstalledApp.BotUserID, tm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
-	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, th.InstalledApp.BotUserID)
+	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicChannel.Id, cm.ChannelId)
-	require.Equal(th, th.InstalledApp.BotUserID, cm.UserId)
+	require.Equal(th, th.LastInstalledApp.BotUserID, cm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
@@ -119,7 +119,7 @@ func testNotify(th *Helper) {
 		"user_created":        notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
-			forExpandClientCombinations(th, th.InstalledBotUser, tc.expandCombinations, tc.except,
+			forExpandClientCombinations(th, th.LastInstalledBotUser, tc.expandCombinations, tc.except,
 				func(th *Helper, level apps.ExpandLevel, appclient appClient) {
 					data := apps.ExpandedContext{}
 					if tc.init != nil {
@@ -127,7 +127,7 @@ func testNotify(th *Helper) {
 					}
 
 					event := tc.event(th, data)
-					th.subscribeAs(appclient, th.InstalledApp.AppID, event, expandEverything(level))
+					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level))
 
 					data = tc.trigger(th, data)
 

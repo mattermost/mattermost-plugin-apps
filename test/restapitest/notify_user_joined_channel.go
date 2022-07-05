@@ -25,12 +25,12 @@ func notifyUserJoinedChannel(th *Helper) *notifyTestCase {
 				Team: th.createTestTeam(),
 				User: th.ServerTestHelper.BasicUser,
 			}
-			th.addTeamMember(data.Team, th.InstalledBotUser)
+			th.addTeamMember(data.Team, th.LastInstalledBotUser)
 			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
 			data.TeamMember = th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
 
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
-			th.addChannelMember(data.Channel, th.InstalledBotUser)
+			th.addChannelMember(data.Channel, th.LastInstalledBotUser)
 			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {

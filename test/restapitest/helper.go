@@ -27,8 +27,8 @@ type Helper struct {
 	*testing.T
 	ServerTestHelper *api4.TestHelper
 
-	InstalledBotUser *model.User
-	InstalledApp     *apps.App
+	LastInstalledBotUser *model.User
+	LastInstalledApp     *apps.App
 
 	UserClientPP        *appclient.ClientPP
 	User2ClientPP       *appclient.ClientPP
@@ -137,10 +137,10 @@ func (th *Helper) verifyContext(level apps.ExpandLevel, asSystemAdmin bool, expe
 
 func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, asSystemAdmin bool, expected, got apps.ExpandedContext) {
 	siteURL := *th.ServerTestHelper.Server.Config().ServiceSettings.SiteURL
-	appPath := "/plugins/com.mattermost.apps/apps/" + string(th.InstalledApp.AppID)
+	appPath := "/plugins/com.mattermost.apps/apps/" + string(th.LastInstalledApp.AppID)
 	require.Equal(th, siteURL, got.MattermostSiteURL)
 	require.Equal(th, appPath, got.AppPath)
-	require.Equal(th, th.InstalledApp.BotUserID, got.BotUserID)
+	require.Equal(th, th.LastInstalledApp.BotUserID, got.BotUserID)
 
 	// The dev mode is always set in the test.
 	require.Equal(th, true, got.DeveloperMode)
@@ -159,13 +159,13 @@ func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, asSystemAdmin bo
 		require.EqualValues(th, apps.ExpandedContext{
 			MattermostSiteURL: siteURL,
 			AppPath:           appPath,
-			BotUserID:         th.InstalledApp.BotUserID,
+			BotUserID:         th.LastInstalledApp.BotUserID,
 			DeveloperMode:     true,
 		}, got)
 		return
 	}
 
-	th.requireEqualApp(level, asSystemAdmin, th.InstalledApp.Strip(level), got.App)
+	th.requireEqualApp(level, asSystemAdmin, th.LastInstalledApp.Strip(level), got.App)
 
 	require.Equal(th, expected.Locale, got.Locale)
 	require.EqualValues(th, expected.OAuth2, got.OAuth2)
