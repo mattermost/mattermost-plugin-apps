@@ -29,7 +29,6 @@ func main() {
 		goapp.WithStatic(static),
 		goapp.WithCommand(
 			userAction(),
-			// notify(),
 		),
 		goapp.WithChannelHeader(userAction()),
 		goapp.WithPostMenu(userAction()),
