@@ -19,7 +19,6 @@ func TestLoggable(t *testing.T) {
 	var _ utils.HasLoggable = Context{}
 
 	var simpleContext = Context{
-		ActingUserID: "id_of_acting_user",
 		ExpandedContext: ExpandedContext{
 			BotUserID:      "id_of_bot_user",
 			BotAccessToken: "bot_user_access_tokenXYZ",
@@ -117,23 +116,23 @@ func TestLoggable(t *testing.T) {
 		},
 		"CallResponse JSON data": {
 			In:             NewDataResponse(testData),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type map[string]interface {}, value: map[A:test B:99]",
 		},
 		"CallResponse byte data": {
 			In:             NewDataResponse([]byte("12345")),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type []uint8, value: [49 50 51 52 53]",
 		},
 		"CallResponse text data": {
 			In:             NewDataResponse("12345"),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "not shown"},
+			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type string, value: 12345",
 		},
 		"CallResponse form": {
 			In:             NewFormResponse(testForm),
-			ExpectedProps:  []interface{}{"response_type", "form", "response_form", testForm},
-			ExpectedString: `Form: {"title":"name","submit":{"path":"/some-path"},"fields":[{"name":"f1","type":""},{"name":"f2","type":""}]}`,
+			ExpectedProps:  []interface{}{"response_type", "form", "response_form", "omitted for logging"},
+			ExpectedString: `Form: omitted for logging`,
 		},
 		"CallResponse navigate": {
 			In: CallResponse{

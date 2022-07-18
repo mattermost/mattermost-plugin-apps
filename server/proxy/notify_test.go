@@ -57,134 +57,134 @@ var app2 = apps.App{
 	},
 }
 
-func TestNotifyMessageHasBeenPosted(t *testing.T) {
-	for _, tc := range []notifyTestcase{
-		{
-			name: "post_created no subscriptions",
-			subs: map[string][]apps.Subscription{
-				"sub.bot_mentioned":                {},
-				"sub.post_created.some_channel_id": {},
-			},
-			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				message := "Hey @bot2username!"
-				post := &model.Post{
-					Message: message,
-				}
-				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-					},
-				})
-				require.NoError(t, err)
-			},
-		},
-		{
-			name: "post_created",
-			subs: map[string][]apps.Subscription{
-				"sub.bot_mentioned": {},
-				"sub.post_created.some_channel_id": {
-					{
-						AppID:     app1.AppID,
-						UserID:    "some_user_id",
-						Subject:   apps.SubjectPostCreated,
-						ChannelID: "some_channel_id",
-						Call:      *apps.NewCall("/notify/post_created"),
-					},
-				},
-			},
-			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				sendCallResponse(t, "/notify/post_created", apps.NewDataResponse(nil), up[app1.AppID])
+// func TestNotifyMessageHasBeenPosted(t *testing.T) {
+// 	for _, tc := range []notifyTestcase{
+// 		{
+// 			name: "post_created no subscriptions",
+// 			subs: map[string][]apps.Subscription{
+// 				"sub.bot_mentioned":                {},
+// 				"sub.post_created.some_channel_id": {},
+// 			},
+// 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
+// 				message := "Hey @bot2username!"
+// 				post := &model.Post{
+// 					Message: message,
+// 				}
+// 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
+// 					UserAgentContext: apps.UserAgentContext{
+// 						ChannelID: "some_channel_id",
+// 					},
+// 				})
+// 				require.NoError(t, err)
+// 			},
+// 		},
+// 		{
+// 			name: "post_created",
+// 			subs: map[string][]apps.Subscription{
+// 				"sub.bot_mentioned": {},
+// 				"sub.post_created.some_channel_id": {
+// 					{
+// 						AppID:     app1.AppID,
+// 						UserID:    "some_user_id",
+// 						Subject:   apps.SubjectPostCreated,
+// 						ChannelID: "some_channel_id",
+// 						Call:      *apps.NewCall("/notify/post_created"),
+// 					},
+// 				},
+// 			},
+// 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
+// 				sendCallResponse(t, "/notify/post_created", apps.NewDataResponse(nil), up[app1.AppID])
 
-				message := "Hey @bot2username!"
-				post := &model.Post{
-					Message: message,
-				}
-				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
+// 				message := "Hey @bot2username!"
+// 				post := &model.Post{
+// 					Message: message,
+// 				}
+// 				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
 
-				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-					},
-				})
-				require.NoError(t, err)
-			},
-		},
-		{
-			name: "bot_mentioned, member of channel",
-			subs: map[string][]apps.Subscription{
-				"sub.post_created.some_channel_id": {},
-				"sub.bot_mentioned": {
-					{
-						AppID:   app1.AppID,
-						UserID:  "some_user_id",
-						Subject: apps.SubjectBotMentioned,
-						Call:    *apps.NewCall("/notify/bot_mention1"),
-					},
-					{
-						AppID:   app2.AppID,
-						UserID:  "some_user_id",
-						Subject: apps.SubjectBotMentioned,
-						Call:    *apps.NewCall("/notify/bot_mention2"),
-					},
-				},
-			},
-			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				sendCallResponse(t, "/notify/bot_mention2", apps.NewDataResponse(nil), up[app2.AppID])
+// 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
+// 					UserAgentContext: apps.UserAgentContext{
+// 						ChannelID: "some_channel_id",
+// 					},
+// 				})
+// 				require.NoError(t, err)
+// 			},
+// 		},
+// 		{
+// 			name: "bot_mentioned, member of channel",
+// 			subs: map[string][]apps.Subscription{
+// 				"sub.post_created.some_channel_id": {},
+// 				"sub.bot_mentioned": {
+// 					{
+// 						AppID:   app1.AppID,
+// 						UserID:  "some_user_id",
+// 						Subject: apps.SubjectBotMentioned,
+// 						Call:    *apps.NewCall("/notify/bot_mention1"),
+// 					},
+// 					{
+// 						AppID:   app2.AppID,
+// 						UserID:  "some_user_id",
+// 						Subject: apps.SubjectBotMentioned,
+// 						Call:    *apps.NewCall("/notify/bot_mention2"),
+// 					},
+// 				},
+// 			},
+// 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
+// 				sendCallResponse(t, "/notify/bot_mention2", apps.NewDataResponse(nil), up[app2.AppID])
 
-				message := "Hey @bot2username!"
-				post := &model.Post{
-					Message: message,
-				}
-				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
-				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-					},
-				})
-				require.NoError(t, err)
-			},
-		},
-		{
-			name: "bot_mentioned, member of channel",
-			subs: map[string][]apps.Subscription{
-				"sub.post_created.some_channel_id": {},
-				"sub.bot_mentioned": {
-					{
-						AppID:   app1.AppID,
-						UserID:  "some_user_id",
-						Subject: apps.SubjectBotMentioned,
-						Call:    *apps.NewCall("/notify/bot_mention1"),
-					},
-					{
-						AppID:   app2.AppID,
-						UserID:  "some_user_id",
-						Subject: apps.SubjectBotMentioned,
-						Call:    *apps.NewCall("/notify/bot_mention2"),
-					},
-				},
-			},
-			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
-				message := "Hey @bot2username!"
-				post := &model.Post{
-					Message: message,
-				}
+// 				message := "Hey @bot2username!"
+// 				post := &model.Post{
+// 					Message: message,
+// 				}
+// 				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(true)
+// 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
+// 					UserAgentContext: apps.UserAgentContext{
+// 						ChannelID: "some_channel_id",
+// 					},
+// 				})
+// 				require.NoError(t, err)
+// 			},
+// 		},
+// 		{
+// 			name: "bot_mentioned, member of channel",
+// 			subs: map[string][]apps.Subscription{
+// 				"sub.post_created.some_channel_id": {},
+// 				"sub.bot_mentioned": {
+// 					{
+// 						AppID:   app1.AppID,
+// 						UserID:  "some_user_id",
+// 						Subject: apps.SubjectBotMentioned,
+// 						Call:    *apps.NewCall("/notify/bot_mention1"),
+// 					},
+// 					{
+// 						AppID:   app2.AppID,
+// 						UserID:  "some_user_id",
+// 						Subject: apps.SubjectBotMentioned,
+// 						Call:    *apps.NewCall("/notify/bot_mention2"),
+// 					},
+// 				},
+// 			},
+// 			run: func(p *Proxy, up map[apps.AppID]*mock_upstream.MockUpstream, testAPI *plugintest.API) {
+// 				message := "Hey @bot2username!"
+// 				post := &model.Post{
+// 					Message: message,
+// 				}
 
-				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(false)
+// 				testAPI.On("HasPermissionToChannel", "some_user_id", "some_channel_id", model.PermissionReadChannel).Return(false)
 
-				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
-					UserAgentContext: apps.UserAgentContext{
-						ChannelID: "some_channel_id",
-					},
-				})
-				require.NoError(t, err)
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			runNotifyTest(t, []apps.App{app1, app2}, tc)
-		})
-	}
-}
+// 				err := p.NotifyMessageHasBeenPosted(post, apps.Context{
+// 					UserAgentContext: apps.UserAgentContext{
+// 						ChannelID: "some_channel_id",
+// 					},
+// 				})
+// 				require.NoError(t, err)
+// 			},
+// 		},
+// 	} {
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			runNotifyTest(t, []apps.App{app1, app2}, tc)
+// 		})
+// 	}
+// }
 
 func TestUserHasJoinedChannel(t *testing.T) {
 	for _, tc := range []notifyTestcase{

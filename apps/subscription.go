@@ -4,8 +4,6 @@
 package apps
 
 import (
-	"encoding/json"
-
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -52,15 +50,18 @@ const (
 	// used to expand other entities.
 	SubjectChannelCreated Subject = "channel_created"
 
+	// TODO: re-enable post_created and bot_mentioned once perf issues are
+	// resolved, see https://mattermost.atlassian.net/browse/MM-44388
+
 	// SubjectPostCreated subscribes to MessageHasBeenPosted plugin events, for
 	// the specified channel. By default notifications include UserID (author), PostID,
 	// RootPostID, ChannelID, but only Post is fully expanded. Expand can be
 	// used to expand other entities.
-	SubjectPostCreated Subject = "post_created"
+	// SubjectPostCreated Subject = "post_created"
 
 	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
 	// when the App's bot is mentioned in the post.
-	SubjectBotMentioned Subject = "bot_mentioned"
+	// SubjectBotMentioned Subject = "bot_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
@@ -83,7 +84,7 @@ type Subscription struct {
 	TeamID    string `json:"team_id,omitempty"`
 
 	// Call is the (one-way) call to make upon the event.
-	Call Call
+	Call Call `json:"call"`
 }
 
 func (sub Subscription) Validate() error {
@@ -102,8 +103,7 @@ func (sub Subscription) Validate() error {
 		SubjectBotJoinedChannel,
 		SubjectBotLeftChannel,
 		SubjectBotJoinedTeam,
-		SubjectBotLeftTeam,
-		SubjectBotMentioned:
+		SubjectBotLeftTeam /*, SubjectBotMentioned*/ :
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
@@ -112,8 +112,7 @@ func (sub Subscription) Validate() error {
 		}
 
 	case SubjectUserJoinedChannel,
-		SubjectUserLeftChannel,
-		SubjectPostCreated:
+		SubjectUserLeftChannel /*, SubjectPostCreated */ :
 		if sub.TeamID != "" {
 			result = multierror.Append(result, utils.NewInvalidError("teamID must be empty"))
 		}
@@ -144,7 +143,13 @@ func (sub Subscription) EqualScope(s2 Subscription) bool {
 	return sub == s2
 }
 
-func (sub *Subscription) ToJSON() string {
-	b, _ := json.Marshal(sub)
-	return string(b)
+func (sub Subscription) Loggable() []interface{} {
+	props := []interface{}{"app_id", sub.AppID, "subject", sub.Subject}
+	if len(sub.ChannelID) > 0 {
+		props = append(props, "channel_id", sub.ChannelID)
+	}
+	if len(sub.TeamID) > 0 {
+		props = append(props, "team_id", sub.TeamID)
+	}
+	return props
 }

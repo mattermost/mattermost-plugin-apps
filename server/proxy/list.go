@@ -28,31 +28,34 @@ func (p *Proxy) GetInstalledApp(_ *incoming.Request, appID apps.AppID) (*apps.Ap
 func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool) {
 	all := p.store.App.AsMap()
 
-	// all ping requests must respond, unreachable respond with "".
-	reachableCh := make(chan apps.AppID)
-	for _, app := range all {
-		var cancel context.CancelFunc
-		pingReq := r.Clone(incoming.WithTimeout(pingAppTimeout, &cancel))
-		go func(a apps.App) {
-			var response apps.AppID
-			if !a.Disabled {
-				if p.pingApp(pingReq, a) {
-					response = a.AppID
+	if ping && len(all) > 0 {
+		// all ping requests must respond, unreachable respond with "".
+		reachableCh := make(chan apps.AppID)
+		defer close(reachableCh)
+		for _, app := range all {
+			var cancel context.CancelFunc
+			pingReq := r.Clone(incoming.WithTimeout(pingAppTimeout, &cancel))
+			go func(a apps.App) {
+				var response apps.AppID
+				if !a.Disabled {
+					if p.pingApp(pingReq, a) {
+						response = a.AppID
+					}
 				}
-			}
-			reachableCh <- response
-			cancel()
-		}(app)
-	}
+				reachableCh <- response
+				cancel()
+			}(app)
+		}
 
-	for _, app := range all {
-		installed = append(installed, app)
-		appID := <-reachableCh
-		if appID != "" {
-			if reachable == nil {
-				reachable = map[apps.AppID]bool{}
+		for _, app := range all {
+			installed = append(installed, app)
+			appID := <-reachableCh
+			if appID != "" {
+				if reachable == nil {
+					reachable = map[apps.AppID]bool{}
+				}
+				reachable[appID] = true
 			}
-			reachable[appID] = true
 		}
 	}
 
@@ -89,11 +92,6 @@ func (p *Proxy) GetListedApps(_ *incoming.Request, filter string, includePluginA
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled
-			marketApp.Labels = []model.MarketplaceLabel{{
-				Name:        "Experimental",
-				Description: "Apps are marked as experimental and not meant for production use. Please use with caution.",
-				URL:         "",
-			}}
 
 			if !marketApp.Enabled {
 				marketApp.Labels = append(marketApp.Labels, model.MarketplaceLabel{

@@ -5,8 +5,6 @@ package apps
 
 import (
 	"fmt"
-
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type CallResponseType string
@@ -130,7 +128,7 @@ func (cresp CallResponse) String() string {
 		}
 
 	case CallResponseTypeForm:
-		return fmt.Sprintf("Form: %v", utils.ToJSON(cresp.Form))
+		return fmt.Sprintf("Form: %v", "omitted for logging")
 
 	case CallResponseTypeCall:
 		return fmt.Sprintf("Call: %v", cresp.Call)
@@ -163,12 +161,12 @@ func (cresp CallResponse) Loggable() []interface{} {
 			props = append(props, "response_text", text)
 		}
 		if cresp.Data != nil {
-			props = append(props, "response_data", "not shown")
+			props = append(props, "response_data", "omitted for logging")
 		}
 
 	case CallResponseTypeForm:
 		if cresp.Form != nil {
-			props = append(props, "response_form", *cresp.Form)
+			props = append(props, "response_form", "omitted for logging")
 		}
 
 	case CallResponseTypeCall:

@@ -34,11 +34,11 @@ linters:
     - misspell
     - nakedret
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unused
+    - unparam
     - varcheck
     - whitespace
 
