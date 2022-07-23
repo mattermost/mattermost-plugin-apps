@@ -1,6 +1,6 @@
 import logging
 import os
-import json
+from posixpath import join
 
 import requests
 from flask import Flask, request
@@ -51,7 +51,7 @@ def manifest() -> dict:
             '/channel_header',
             '/command'
         ],
-        'root_url': os.environ.get('root_url', DEFAULT_ROOT_URL),
+        'root_url': os.environ.get('ROOT_URL', DEFAULT_ROOT_URL),
     }
 
 
@@ -89,14 +89,8 @@ def on_bindings() -> dict:
                                 # 'channel': 'all',
                             },
                         },
-                    }
-                ],
-            },
-            {
-                # binding for a command, command with embedded form
-                'location': '/command',
-                'bindings': [
-                    {
+                    },
+                    {   # command with embedded form
                         'description': 'test command',
                         'hint': '[This is testing command]',
                         # this will be the command displayed to user as /second-command
@@ -176,7 +170,7 @@ def on_bot_joined_team() -> dict:
 def _subscribe_team_join(context: dict) -> None:
     site_url = context['mattermost_site_url']
     bot_access_token = context['bot_access_token']
-    url = site_url + 'plugins/com.mattermost.apps/api/v1/subscribe'
+    url = join(site_url, 'plugins/com.mattermost.apps/api/v1/subscribe')
     logging.info(f'Subscribing to team_join for {site_url}')
     headers = {'Authorization': f'BEARER {bot_access_token}'}
     body = {
@@ -197,16 +191,9 @@ def _subscribe_team_join(context: dict) -> None:
 
 
 if __name__ == '__main__':
-    # load settings
-    root_dir = os.path.dirname(os.path.dirname(__file__))
-    with open(f'{root_dir}/settings.json') as config_file:
-        settings = json.load(config_file)
-        for env_name, env_value in settings.items():
-            os.environ[env_name] = env_value
-
     app.run(
         debug=True,
-        host=os.environ.get('host', DEFAULT_APP_HOST),
-        port=int(os.environ.get('port', DEFAULT_APP_PORT)),
+        host=os.environ.get('APP_HOST', DEFAULT_APP_HOST),
+        port=int(os.environ.get('APP_PORT', DEFAULT_APP_PORT)),
         use_reloader=False,
     )
