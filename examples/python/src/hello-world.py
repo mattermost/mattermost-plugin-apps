@@ -176,7 +176,7 @@ def on_bot_joined_team() -> dict:
 def _subscribe_team_join(context: dict) -> None:
     site_url = context['mattermost_site_url']
     bot_access_token = context['bot_access_token']
-    url = os.path.join(site_url, 'plugins/com.mattermost.apps/api/v1/subscribe')
+    url = site_url + 'plugins/com.mattermost.apps/api/v1/subscribe'
     logging.info(f'Subscribing to team_join for {site_url}')
     headers = {'Authorization': f'BEARER {bot_access_token}'}
     body = {
