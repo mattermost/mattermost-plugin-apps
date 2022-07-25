@@ -9,10 +9,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, static_url_path='/static', static_folder='./static')
 
-DEFAULT_APP_PORT = 8080
-DEFAULT_APP_HOST = 'localhost'
-DEFAULT_ROOT_URL = 'http://localhost:8080'
-FORM = {
+default_port = 8080
+default_host = 'localhost'
+default_root_url = 'http://localhost:8080'
+form = {
     'title': 'I am a form!',
     'icon': 'icon.png',
     'fields': [
@@ -51,7 +51,7 @@ def manifest() -> dict:
             '/channel_header',
             '/command'
         ],
-        'root_url': os.environ.get('ROOT_URL', DEFAULT_ROOT_URL),
+        'root_url': os.environ.get('ROOT_URL', default_root_url),
     }
 
 
@@ -100,7 +100,7 @@ def on_bindings() -> dict:
                             {
                                 'location': 'send',
                                 'label': 'send',
-                                'form': FORM
+                                'form': form
                             },
                         ],
                     }
@@ -113,7 +113,7 @@ def on_bindings() -> dict:
                         'location': 'send-button',
                         'icon': 'icon.png',
                         'label': 'send hello message',
-                        'form': FORM,
+                        'form': form,
                     },
                 ],
             },
@@ -193,7 +193,7 @@ def _subscribe_team_join(context: dict) -> None:
 if __name__ == '__main__':
     app.run(
         debug=True,
-        host=os.environ.get('APP_HOST', DEFAULT_APP_HOST),
-        port=int(os.environ.get('APP_PORT', DEFAULT_APP_PORT)),
+        host=os.environ.get('HOST', default_host),
+        port=int(os.environ.get('PORT', default_port)),
         use_reloader=False,
     )

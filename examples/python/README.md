@@ -3,9 +3,9 @@
 - Install the requirements mentioned in the `requirement.txt` with `pip3 install -r requirements.txt`
 - Configure the following environment variables to run the app on custom port/url
   ```
-  export APP_PORT=8080
+  export PORT=8080
   export ROOT_URL=http://localhost:8080
-  export APP_HOST=localhost
+  export HOST=0.0.0.0
   ```
 - To run with `ngrok`
   1. Start the ngrok server on 8080 port, `ngrok http 8080`
