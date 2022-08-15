@@ -127,11 +127,13 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 
 	switch subject {
 	case apps.SubjectUserJoinedChannel,
-		apps.SubjectBotLeftChannel /*, apps.SubjectPostCreated*/ :
+		apps.SubjectUserLeftChannel:
 		sub.ChannelID = creq.Context.Channel.Id
 
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
 		apps.SubjectChannelCreated:
 		sub.TeamID = creq.Context.Team.Id
 	}
