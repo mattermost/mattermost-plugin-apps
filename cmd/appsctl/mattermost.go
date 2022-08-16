@@ -20,7 +20,7 @@ func getMattermostClient() (*appclient.Client, error) {
 		return nil, errors.New("MM_SERVICESETTINGS_SITEURL and MM_ADMIN_TOKEN must be set")
 	}
 
-	return appclient.NewClient("", adminToken, siteURL), nil
+	return appclient.NewClient(adminToken, siteURL), nil
 }
 
 func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bool) error {
