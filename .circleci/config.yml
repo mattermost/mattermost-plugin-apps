@@ -12,10 +12,10 @@ executors:
 aliases:
   - &restore_go_cache
     restore_cache:
-      key: go-mod-v3-{{ checksum "go.sum" }}
+      key: go-mod-
   - &save_go_cache
     save_cache:
-      key: go-mod-v3-{{ checksum "go.sum" }}
+      key: go-mod-v4-{{ checksum "go.sum" }}
       paths:
         - "~/go/pkg/mod"
   - &restore_cypress_cache
@@ -97,6 +97,7 @@ jobs:
       name: default
     steps:
       - checkout
+      - *restore_go_cache
       - run:
           name: Building Plugin Bundle
           command: make dist
@@ -155,7 +156,7 @@ jobs:
   e2e-cypress-tests-pinned:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.17.3-browsers
+      - image: cimg/go:1.18.3
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -205,7 +206,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: release-7.1
+      MM_DOCKER_IMAGE_TAG: release-7.2
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true
