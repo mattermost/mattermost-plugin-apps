@@ -28,6 +28,7 @@ func (s *Service) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Re
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(data)
 }
 
