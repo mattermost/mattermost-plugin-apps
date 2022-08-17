@@ -12,7 +12,7 @@ executors:
 aliases:
   - &restore_go_cache
     restore_cache:
-      key: go-mod-
+      key: go-mod-v4-{{ checksum "go.sum" }}
   - &save_go_cache
     save_cache:
       key: go-mod-v4-{{ checksum "go.sum" }}
