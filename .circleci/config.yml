@@ -156,7 +156,7 @@ jobs:
   e2e-cypress-tests-pinned:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.18.3
+      - image: cimg/go:1.18.3-node
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -410,10 +410,10 @@ workflows:
             - test
       - e2e-cypress-tests-pinned:
           requires:
-            - dist
+            - test
       - e2e-cypress-tests-master:
           requires:
-            - dist
+            - test
       - test-rest-postgres11:
           requires:
             - test
@@ -438,7 +438,7 @@ workflows:
               only: /^v.*/
       - e2e-cypress-tests-pinned:
           requires:
-            - dist
+            - test
           filters:
             tags:
               only: /^v.*/
@@ -447,7 +447,7 @@ workflows:
             branches:
               only: master
           requires:
-            - dist
+            - test
       - test-rest-postgres11:
           requires:
             - test
