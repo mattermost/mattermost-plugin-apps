@@ -41,35 +41,6 @@ commands:
           to: << parameters.bucket >>
           arguments: "--acl public-read --cache-control no-cache"
 
-  # install-golangci-lint:
-  #   description: Install golangci-lint
-  #   parameters:
-  #     version:
-  #       type: string
-  #       default: 1.46.1
-  #     gobin:
-  #       type: string
-  #       default: $GOPATH/bin
-  #     prefix:
-  #       type: string
-  #       default: v2
-  #       description: Prefix for cache key to store the binary.
-  #   steps:
-  #     - restore_cache:
-  #         name: Restore golangci-lint cache
-  #         keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
-  #     - run:
-  #         name: Install golangci-lint
-  #         command: |
-  #           mkdir -p << parameters.gobin >>
-  #           command -v << parameters.gobin >>/golangci-lint && exit
-  #           download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-  #           wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
-  #     - save_cache:
-  #         name: Save golangci-lint cache
-  #         key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
-  #         paths: [<< parameters.gobin >>/golangci-lint]
-
 jobs:
   lint:
     executor:
@@ -169,14 +140,16 @@ jobs:
       - checkout
       - run:
           name: Cloning mattermost-server
-          # Keep the commit in sync with go.mod
+          # Keep the commit in sync with mattermost-server in go.mod
           command: |
+            ls -lsa ..
+            cd ..
             git clone -n https://github.com/mattermost/mattermost-server.git
             cd mattermost-server && git checkout v7.2.0
       - *restore_go_cache
       - run:
           name: Running REST API tests
-          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
+          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/../mattermost-server make test-rest-api
       - *save_go_cache
 
   e2e-cypress-tests-pinned:
