@@ -156,7 +156,7 @@ jobs:
   e2e-cypress-tests-pinned:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.18.3-node
+      - image: cimg/go:1.18.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -263,7 +263,7 @@ jobs:
   e2e-cypress-tests-master:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.17.3-browsers
+      - image: cimg/go:1.18.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -407,16 +407,16 @@ workflows:
             - lint
       - dist:
           requires:
-            - test
+            - lint
       - e2e-cypress-tests-pinned:
           requires:
-            - test
+            - lint
       - e2e-cypress-tests-master:
           requires:
-            - test
+            - lint
       - test-rest-postgres11:
           requires:
-            - test
+            - lint
 
   ci:
     jobs:
@@ -432,13 +432,13 @@ workflows:
               only: /^v.*/
       - dist:
           requires:
-            - test
+            - lint
           filters:
             tags:
               only: /^v.*/
       - e2e-cypress-tests-pinned:
           requires:
-            - test
+            - lint
           filters:
             tags:
               only: /^v.*/
@@ -447,16 +447,16 @@ workflows:
             branches:
               only: master
           requires:
-            - test
+            - lint
       - test-rest-postgres11:
           requires:
-            - test
+            - lint
           filters:
             tags:
               only: /^v.*/
       - coverage:
           requires:
-            - test
+            - lint
           filters:
             tags:
               only: /^v.*/
