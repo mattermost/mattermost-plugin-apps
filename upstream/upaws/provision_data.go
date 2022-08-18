@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -70,8 +71,9 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 
 	// Read all the files from zip archive
 	for _, file := range bundleReader.File {
+		extension := filepath.Ext(file.Name)
 		switch {
-		case strings.HasSuffix(file.Name, "manifest.json"):
+		case file.Name == "manifest.json":
 			manifestFile, err := file.Open()
 			if err != nil {
 				return nil, errors.Wrap(err, "can't open manifest.json file")
@@ -88,14 +90,14 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			}
 			log.Infow("found manifest", "file", file.Name)
 
-		case strings.HasSuffix(file.Name, ".zip"):
+		case extension == ".zip" || extension == ".jar":
 			lambdaFunctionFile, err := file.Open()
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
 			defer lambdaFunctionFile.Close()
 			bundleFunctions = append(bundleFunctions, FunctionData{
-				Name:   strings.TrimSuffix(file.Name, ".zip"),
+				Name:   strings.TrimSuffix(file.Name, extension),
 				Bundle: lambdaFunctionFile,
 			})
 			log.Infow("found lambda function bundle", "file", file.Name)

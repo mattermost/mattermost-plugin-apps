@@ -40,14 +40,14 @@ func (c *client) InvokeLambda(ctx context.Context, name, invocationType string, 
 }
 
 // CreateLambda method creates lambda function
-func (c *client) CreateLambda(zipFile io.Reader, name, handler, runtime string, roleARN ARN) (ARN, error) {
-	if zipFile == nil || name == "" || handler == "" || roleARN == "" || runtime == "" {
-		return "", errors.Errorf("you must supply a zip file, function name, handler, role ARN and runtime - %p %q %q %q %q", zipFile, name, handler, roleARN, runtime)
+func (c *client) CreateLambda(archive io.Reader, name, handler, runtime string, roleARN ARN) (ARN, error) {
+	if archive == nil || name == "" || handler == "" || roleARN == "" || runtime == "" {
+		return "", errors.Errorf("you must supply an archive (.zip or .jar) file, function name, handler, role ARN and runtime - %p %q %q %q %q", archive, name, handler, roleARN, runtime)
 	}
 
-	contents, err := io.ReadAll(zipFile)
+	contents, err := io.ReadAll(archive)
 	if err != nil {
-		return "", errors.Wrap(err, "could not read zip file")
+		return "", errors.Wrap(err, "could not read archive file")
 	}
 
 	createCode := &lambda.FunctionCode{
