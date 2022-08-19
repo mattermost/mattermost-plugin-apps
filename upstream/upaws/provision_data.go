@@ -78,6 +78,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "can't open manifest.json file")
 			}
+			// The uploaded manifest will be generated, so we can close the source file now.
 			defer manifestFile.Close()
 
 			data, err := io.ReadAll(manifestFile)
@@ -95,7 +96,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
-			defer lambdaFunctionFile.Close()
+			// lambdaFunctionFile will be closed when the function is deployed.
 			bundleFunctions = append(bundleFunctions, FunctionData{
 				Name:   strings.TrimSuffix(file.Name, extension),
 				Bundle: lambdaFunctionFile,
@@ -111,6 +112,7 @@ func getDeployData(b []byte, log utils.Logger) (*DeployData, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "can't open file %s", file.Name)
 			}
+			// assetFile will be closed when the function is deployed.
 			assets = append(assets, AssetData{
 				Key:  assetName,
 				File: assetFile,
