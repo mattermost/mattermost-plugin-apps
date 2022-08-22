@@ -12,7 +12,7 @@ app = Flask(__name__, static_url_path='/static', static_folder='./static')
 default_port = 8080
 default_host = 'localhost'
 default_root_url = 'http://localhost:8080'
-form = {
+SHARED_FORM = {
     'title': 'I am a form!',
     'icon': 'icon.png',
     'fields': [
@@ -98,9 +98,11 @@ def on_bindings() -> dict:
                         'icon': 'icon.png',
                         'bindings': [
                             {
+                                # sub-command `send` to send an embedded form here as input to the command.
+                                # E.g. /second-command send "hello-form"
                                 'location': 'send',
                                 'label': 'send',
-                                'form': form
+                                'form': SHARED_FORM
                             },
                         ],
                     }
@@ -113,7 +115,7 @@ def on_bindings() -> dict:
                         'location': 'send-button',
                         'icon': 'icon.png',
                         'label': 'send hello message',
-                        'form': form,
+                        'form': SHARED_FORM,
                     },
                 ],
             },
