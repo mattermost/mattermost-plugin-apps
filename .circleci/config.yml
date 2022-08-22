@@ -10,23 +10,23 @@ executors:
       - image: cimg/go:1.18.3
 
 aliases:
-- &restore_go_cache
-  restore_cache:
-    key: go-mod-v2-{{ checksum "go.sum" }}
-- &save_go_cache
-  save_cache:
-    key: go-mod-v2-{{ checksum "go.sum" }}
-    paths:
-    - "/go/pkg/mod"
-- &restore_cypress_cache
-  restore_cache:
-    key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
-- &save_cypress_cache
-  save_cache:
-    key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
-    paths:
-      - ./test/e2e/node_modules
-      - /home/circleci/.cache/Cypress
+  - &restore_go_cache
+    restore_cache:
+      key: go-mod-v4-{{ checksum "go.sum" }}
+  - &save_go_cache
+    save_cache:
+      key: go-mod-v4-{{ checksum "go.sum" }}
+      paths:
+        - "~/go/pkg/mod"
+  - &restore_cypress_cache
+    restore_cache:
+      key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
+  - &save_cypress_cache
+    save_cache:
+      key: cypress-cache-{{ checksum "test/e2e/package-lock.json" }}
+      paths:
+        - ./test/e2e/node_modules
+        - /home/circleci/.cache/Cypress
 
 commands:
   deploy:
@@ -39,63 +39,9 @@ commands:
       - aws-s3/copy:
           from: << parameters.filename >>
           to: << parameters.bucket >>
-          arguments: '--acl public-read --cache-control no-cache'
-
-  install-golangci-lint:
-    description: Install golangci-lint
-    parameters:
-      version:
-        type: string
-        default: 1.46.1
-      gobin:
-        type: string
-        default: $GOPATH/bin
-      prefix:
-        type: string
-        default: v2
-        description: Prefix for cache key to store the binary.
-    steps:
-      - restore_cache:
-          name: Restore golangci-lint cache
-          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
-      - run:
-          name: Install golangci-lint
-          command: |
-            mkdir -p << parameters.gobin >>
-            command -v << parameters.gobin >>/golangci-lint && exit
-            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
-      - save_cache:
-          name: Save golangci-lint cache
-          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
-          paths: [<< parameters.gobin >>/golangci-lint]
+          arguments: "--acl public-read --cache-control no-cache"
 
 jobs:
-  check-mocks:
-    executor:
-      name: default
-    steps:
-      - checkout
-      - *restore_go_cache
-      - run:
-          name: Checking if generated mocks are up to date
-          command: |
-            make mock
-            git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
-      - *save_go_cache
-
-  check-i18n:
-    executor:
-      name: default
-    steps:
-      - checkout
-      - run:
-          name: Checking if extracted i18n files are up to date
-          command: |
-            go install github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.0
-            make i18n-extract-server
-            git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
-
   lint:
     executor:
       name: default
@@ -103,15 +49,25 @@ jobs:
     steps:
       - checkout
       - *restore_go_cache
-      - install-golangci-lint
       - run:
           name: Checking code style
           command: make check-style
-      - run: go mod tidy -v
       - run:
           name: Checking diff of go mod files
           command: |
+            go mod tidy -v
             git --no-pager diff --exit-code go.mod go.sum || (echo "Please run \"go mod tidy\" and commit the changes in go.mod and go.sum." && exit 1)
+      - run:
+          name: Checking if generated mocks are up to date
+          command: |
+            make mock
+            git --no-pager diff --exit-code server/mocks* || (echo "Please run \"make mock\" and commit the changes in the generated files." && exit 1)
+      - run:
+          name: Checking if extracted i18n files are up to date
+          command: |
+            go install github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.0
+            make i18n-extract-server
+            git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
       - *save_go_cache
 
   test:
@@ -134,13 +90,14 @@ jobs:
           command: make coverage
       - *save_go_cache
       - codecov/upload:
-        file: server/coverage.txt
+          file: server/coverage.txt
 
-  build:
+  dist:
     executor:
       name: default
     steps:
       - checkout
+      - *restore_go_cache
       - run:
           name: Building Plugin Bundle
           command: make dist
@@ -184,20 +141,22 @@ jobs:
       - checkout
       - run:
           name: Cloning mattermost-server
-          # Keep the commit in sync with go.mod
+          # Keep the commit in sync with mattermost-server in go.mod
           command: |
+            ls -lsa ..
+            cd ..
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout v6.6.0
+            cd mattermost-server && git checkout v7.2.0
       - *restore_go_cache
       - run:
           name: Running REST API tests
-          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/mattermost-server make test-rest-api
+          command: MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_SERVER_PATH=$(pwd)/../mattermost-server make test-rest-api
       - *save_go_cache
 
   e2e-cypress-tests-pinned:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.17.3-browsers
+      - image: cimg/go:1.18.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -247,7 +206,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: release-6.6
+      MM_DOCKER_IMAGE_TAG: release-7.2
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true
@@ -304,7 +263,7 @@ jobs:
   e2e-cypress-tests-master:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.17.3-browsers
+      - image: cimg/go:1.18.3-browsers
         environment:
           TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -415,7 +374,7 @@ jobs:
     steps:
       - attach_workspace:
           at: dist
-      - run: 'mv dist/*.tar.gz dist/$CIRCLE_PROJECT_REPONAME-ci.tar.gz'
+      - run: "mv dist/*.tar.gz dist/$CIRCLE_PROJECT_REPONAME-ci.tar.gz"
       - deploy:
           filename: "dist/*.tar.gz"
           bucket: "s3://mattermost-plugins-ci/ci/"
@@ -442,42 +401,62 @@ workflows:
               only:
                 - master
     jobs:
-      - check-mocks
-      - check-i18n
       - lint
-      - test
-      - build
-      - e2e-cypress-tests-pinned
-      - e2e-cypress-tests-master
-      - test-rest-postgres11
+      - test:
+          requires:
+            - lint
+      - dist:
+          requires:
+            - lint
+      - e2e-cypress-tests-pinned:
+          requires:
+            - lint
+      - e2e-cypress-tests-master:
+          requires:
+            - lint
+      - test-rest-postgres11:
+          requires:
+            - lint
+
   ci:
     jobs:
-      - check-mocks:
-          filters:
-            tags:
-              only: /^v.*/
-      - check-i18n:
-          filters:
-            tags:
-              only: /^v.*/
       - lint:
           filters:
             tags:
               only: /^v.*/
-      - coverage:
+      - test:
+          requires:
+            - lint
           filters:
             tags:
               only: /^v.*/
-      - test-rest-postgres11:
+      - dist:
+          requires:
+            - lint
           filters:
             tags:
               only: /^v.*/
-      - e2e-cypress-tests-pinned
+      - e2e-cypress-tests-pinned:
+          requires:
+            - lint
+          filters:
+            tags:
+              only: /^v.*/
       - e2e-cypress-tests-master:
           filters:
             branches:
               only: master
-      - build:
+          requires:
+            - lint
+      - test-rest-postgres11:
+          requires:
+            - lint
+          filters:
+            tags:
+              only: /^v.*/
+      - coverage:
+          requires:
+            - lint
           filters:
             tags:
               only: /^v.*/
@@ -487,14 +466,12 @@ workflows:
               only: master
           context: plugin-ci
           requires:
-            - check-mocks
-            - check-i18n
-            - lint
+            - test
             - coverage
             - test-rest-postgres11
             - e2e-cypress-tests-pinned
             - e2e-cypress-tests-master
-            - build
+            - dist
       - deploy-release-github:
           filters:
             tags:
@@ -503,9 +480,9 @@ workflows:
               ignore: /.*/
           context: matterbuild-github-token
           requires:
-            - check-mocks
-            - check-i18n
-            - lint
+            - test
             - coverage
             - test-rest-postgres11
-            - build
+            - e2e-cypress-tests-pinned
+            - e2e-cypress-tests-master
+            - dist
