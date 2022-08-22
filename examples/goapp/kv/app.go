@@ -78,7 +78,7 @@ var set = goapp.MakeBindableFormOrPanic("set",
 		if err != nil {
 			return apps.NewTextResponse("Error: %v", err)
 		}
-		return apps.NewTextResponse("Stored a value in the KV store: prefix: %q, id: %q, value: %q, changed: %v", prefix, key, value, changed)
+		return apps.NewTextResponse("Stored a value in the KV store: prefix: %q, key: %q, value: %q, changed: %v", prefix, key, value, changed)
 	},
 )
 
@@ -93,7 +93,7 @@ var get = goapp.MakeBindableFormOrPanic("get",
 				TextMaxLength: 2,
 			},
 			{
-				Name:          "id",
+				Name:          "key",
 				Description:   "The key (id) to use",
 				TextMaxLength: 28,
 			},
@@ -105,7 +105,8 @@ var get = goapp.MakeBindableFormOrPanic("get",
 		},
 		Submit: &apps.Call{
 			Expand: &apps.Expand{
-				ActingUser: apps.ExpandID.Required(),
+				ActingUser:            apps.ExpandID.Required(),
+				ActingUserAccessToken: apps.ExpandAll.Required(),
 			},
 		},
 	},
@@ -119,11 +120,11 @@ var get = goapp.MakeBindableFormOrPanic("get",
 			client = creq.AsActingUser()
 		}
 
-		value := ""
+		var value interface{}
 		err := client.KVGet(prefix, key, &value)
 		if err != nil {
 			return apps.NewTextResponse("Error: %v", err)
 		}
-		return apps.NewTextResponse("Read a value from the KV store: prefix: %q, id: %q, value: %q", prefix, key, value)
+		return apps.NewTextResponse("Read a value from the KV store: prefix: %q, key: %q, value: %#v", prefix, key, value)
 	},
 )
