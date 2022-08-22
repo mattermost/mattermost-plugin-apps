@@ -25,6 +25,7 @@ var (
 	shouldCreateAccessKey bool
 	shouldUpdate          bool
 	userName              string
+	environment           map[string]string
 )
 
 func init() {
