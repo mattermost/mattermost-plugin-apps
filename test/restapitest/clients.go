@@ -157,6 +157,7 @@ func (th *Helper) createTestUser() *model.User {
 	u, resp, err := th.ServerTestHelper.SystemAdminClient.CreateUser(&model.User{
 		Username: testUsername,
 		Email:    testEmail,
+		Password: "Pa$$word11",
 	})
 	require.NoError(th, err)
 	api4.CheckCreatedStatus(th, resp)

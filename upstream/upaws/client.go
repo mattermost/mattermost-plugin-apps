@@ -6,6 +6,7 @@ package upaws
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -52,6 +53,7 @@ type Client interface {
 	CreateGroup(name Name) (ARN, error)
 	CreateLambda(zipFile io.Reader, function, handler, runtime string, role ARN) (ARN, error)
 	CreateOrUpdateLambda(zipFile io.Reader, function, handler, runtime string, role ARN) (ARN, error)
+	SetLambdaEnvironmentVariables(arn string, started time.Time, vars map[string]*string) error
 	CreatePolicy(name Name, data string) (ARN, error)
 	CreateRole(name Name) (ARN, error)
 	CreateS3Bucket(bucket string) error

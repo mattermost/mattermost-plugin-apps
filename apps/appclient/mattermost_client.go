@@ -16,21 +16,26 @@ type Client struct {
 	userID string
 }
 
-func as(id, token string, cc apps.Context) *Client {
-	return NewClient(id, token, cc.MattermostSiteURL)
+func as(token string, cc apps.Context) *Client {
+	return NewClient(token, cc.MattermostSiteURL)
 }
 
 func AsBot(cc apps.Context) *Client {
-	return as(cc.BotUserID, cc.BotAccessToken, cc)
+	client := as(cc.BotAccessToken, cc)
+	client.userID = cc.BotUserID
+	return client
 }
 
 func AsActingUser(cc apps.Context) *Client {
-	return as(cc.ActingUser.Id, cc.ActingUserAccessToken, cc)
+	client := as(cc.ActingUserAccessToken, cc)
+	if cc.ActingUser != nil {
+		client.userID = cc.ActingUser.Id
+	}
+	return client
 }
 
-func NewClient(userID, token, mattermostSiteURL string) *Client {
+func NewClient(token, mattermostSiteURL string) *Client {
 	c := Client{
-		userID:   userID,
 		ClientPP: NewAppsPluginAPIClient(mattermostSiteURL),
 		Client4:  model.NewAPIv4Client(mattermostSiteURL),
 	}
@@ -170,8 +175,6 @@ func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
 }
 
 func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
-	post.UserId = c.userID
-
 	createdPost, res, err := c.Client4.CreatePost(post)
 	if res.StatusCode != http.StatusCreated {
 		if err != nil {
@@ -185,37 +188,23 @@ func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
 }
 
 func (c *Client) DM(userID string, format string, args ...interface{}) (*model.Post, error) {
-	channel, err := c.getDirectChannelWith(userID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get direct channel to post DM")
-	}
-
-	post := &model.Post{
-		ChannelId: channel.Id,
-		Message:   fmt.Sprintf(format, args...),
-	}
-	return c.CreatePost(post)
+	return c.DMPost(userID, &model.Post{
+		Message: fmt.Sprintf(format, args...),
+	})
 }
 
 func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
-	channel, err := c.getDirectChannelWith(userID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get direct channel")
+	if c.userID == "" {
+		return nil, errors.New("empty sender user_id, perhaps Call does not expand acting_user")
 	}
 
-	post.ChannelId = channel.Id
-	return c.CreatePost(post)
-}
-
-func (c *Client) getDirectChannelWith(userID string) (*model.Channel, error) {
 	channel, res, err := c.CreateDirectChannel(c.userID, userID)
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return nil, err
+		if err == nil {
+			err = errors.Errorf("API returned status %d", res.StatusCode)
 		}
-
-		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+		return nil, errors.Wrap(err, "failed to get direct channel")
 	}
-
-	return channel, nil
+	post.ChannelId = channel.Id
+	return c.CreatePost(post)
 }

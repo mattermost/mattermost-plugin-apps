@@ -33,6 +33,7 @@ func init() {
 	awsDeployCmd.Flags().BoolVar(&shouldUpdate, "update", false, "Update functions if they already exist. Use with caution in production.")
 	awsDeployCmd.Flags().StringVar(&invokePolicyName, "policy", upaws.DefaultPolicyName, "name of the policy used to invoke Apps on AWS.")
 	awsDeployCmd.Flags().StringVar(&executeRoleName, "execute-role", upaws.DefaultExecuteRoleName, "name of the role to be assumed by running Lambdas.")
+	awsDeployCmd.Flags().StringToStringVar(&environment, "env", nil, "environment variables to pass to the App")
 
 	// clean
 	awsCmd.AddCommand(awsCleanCmd)
@@ -123,6 +124,7 @@ var awsDeployCmd = &cobra.Command{
 			InvokePolicyName: upaws.Name(invokePolicyName),
 			ExecuteRoleName:  upaws.Name(executeRoleName),
 			ShouldUpdate:     shouldUpdate,
+			Environment:      environment,
 		})
 		if err != nil {
 			return err

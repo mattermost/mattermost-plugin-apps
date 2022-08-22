@@ -7,7 +7,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -19,6 +21,7 @@ type DeployAppParams struct {
 	InvokePolicyName Name
 	ExecuteRoleName  Name
 	ShouldUpdate     bool
+	Environment      map[string]string
 }
 
 type DeployAppResult struct {
@@ -131,6 +134,20 @@ func deployLambdaFunctions(c Client, log utils.Logger, pd *DeployData, params De
 	newDoc, err := c.AddResourcesToPolicyDocument(invokePolicy, createdARNs)
 	if err != nil {
 		return err
+	}
+
+	if len(params.Environment) > 0 {
+		started := time.Now()
+		awsVars := map[string]*string{}
+		for k, v := range params.Environment {
+			awsVars[k] = aws.String(v)
+		}
+		for _, arn := range createdARNs {
+			err = c.SetLambdaEnvironmentVariables(string(arn), started, awsVars)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	out.LambdaARNs = createdARNs
