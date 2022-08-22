@@ -34,6 +34,7 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
 				a.namespaceField(0, false, loc),
+				a.debugBase64Field(loc),
 			},
 		},
 	}
