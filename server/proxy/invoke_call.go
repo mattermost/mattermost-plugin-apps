@@ -112,5 +112,10 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 		}
 		cresp.Form = &clean
 	}
+
+	if cresp.Type != apps.CallResponseTypeError && cresp.RefreshBindings && creq.Context.ActingUser != nil {
+		p.dispatchRefreshBindingsEvent(creq.Context.ActingUser.Id)
+	}
+
 	return cresp
 }
