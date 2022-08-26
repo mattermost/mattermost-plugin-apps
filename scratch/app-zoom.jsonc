@@ -1,0 +1,73 @@
+{
+  "type": "view",
+  "bindings": [
+    {
+      "type": "view",
+      "bindings": [
+        {
+          "type": "markdown",
+          "label": "##### Your Personal Meeting ID\n440 287 4306\nhttps://mattermost.zoom.us/my/matt.birtch"
+        },
+        {
+          "type": "button",
+          "label": "Start a Meeting",
+          "icon": "icons/zoom-icon-small.png",
+          "submit": {
+            "path": "actions/start_meeting",
+            "state": {
+              "meeting_id": "4402874306"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "markdown",
+      "label": "Upcoming Zoom Meetings"
+    },
+    {
+      "type": "view",
+      "bindings": [
+        {
+          "type": "markdown",
+          "label": "Customer Obsession Meeting\n11:00AM - 12:00PM\nHappening right now"
+        },
+        {
+          "type": "button",
+          "label": "Join Meeting",
+          "submit": {
+            "path": "actions/join_meeting",
+            "state": {
+              "meeting_id": "22222"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "view",
+      "bindings": [
+        {
+          "type": "markdown",
+          "label": "Design Crit\n2:00PM - 3:00PM"
+        },
+        {
+          "type": "button",
+          "label": "Join Meeting",
+          "submit": {
+            "path": "actions/join_meeting",
+            "state": {
+              "meeting_id": "33333"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

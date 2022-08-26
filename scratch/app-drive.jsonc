@@ -1,0 +1,72 @@
+[ // only using array here to have valid in the file. In reality, only the first object here would be returned. Then then the second one would be returned upon fetching from `source`
+
+    {
+        "type": "view",
+        "source": "views/file-list"
+    },
+
+    // Response
+    {
+        "type": "view",
+        "bindings": [
+            {
+                "type": "select",
+                "source": "lookup/available-drives"
+            },
+
+            // Response of lookup, or alternatively embedded right here instead of using a lookup
+            {
+                "type": "select",
+                "bindings": [
+                    {
+                        "label": "My Drive",
+                        "submit": {
+                            "path": "views/file-list/refresh",
+                            "state": {
+                                "drive-id": "my-drive-11111"
+                            }
+                        }
+                    },
+                    {
+                        "label": "Shared Drive - R&D",
+                        "submit": {
+                            "path": "views/file-list/refresh",
+                            "state": {
+                                "drive-id": "some-id-00110"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "list",
+                "bindings": [
+                    {
+                        "type": "list_item",
+                        "label": "App Bar User Interactions",
+                        "description": "4:30PM * Opened by me",
+                        "icon": "icons/document.png",
+                        "submit": {
+                            "path": "actions/open-file",
+                            "state": {
+                                "file-id": "some-id-11111"
+                            }
+                        }
+                    },
+                    {
+                        "type": "list_item",
+                        "label": "Product Design",
+                        "description": "4:30PM * Opened by me",
+                        "icon": "icons/folder.png",
+                        "submit": {
+                            "path": "actions/open-file",
+                            "state": {
+                                "file-id": "some-id-22222"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]
