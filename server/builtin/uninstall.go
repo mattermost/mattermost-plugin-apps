@@ -30,16 +30,27 @@ func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
 			Submit: newUserCall(pUninstall),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 1, true, loc),
+				{
+					Name: fForce,
+					Type: apps.FieldTypeBool,
+					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "field.force.description",
+						Other: "Forcefully uninstall the app, even if there is an error",
+					}),
+					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						ID:    "field.foce.label",
+						Other: "force",
+					}),
+				},
 			},
 		},
 	}
 }
 
 func (a *builtinApp) uninstall(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	out, err := a.proxy.UninstallApp(
-		r,
-		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	force := creq.BoolValue(fForce)
+	out, err := a.proxy.UninstallApp(r, creq.Context, appID, force)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

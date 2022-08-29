@@ -188,7 +188,7 @@ func (m Manifest) Validate() error {
 	}
 
 	if m.Icon != "" {
-		_, err := utils.CleanStaticPath(m.Icon)
+		_, err := utils.CleanStaticURL(m.Icon)
 		if err != nil {
 			result = multierror.Append(result, err)
 		}

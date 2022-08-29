@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -142,25 +141,18 @@ func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ..
 	return nil
 }
 
-func (s *service) StoreConfig(stored StoredConfig, log utils.Logger) error {
+func (s *service) StoreConfig(c StoredConfig, log utils.Logger) error {
 	log.Debugf("Storing configuration, %v installed , %v listed apps",
-		len(stored.InstalledApps), len(stored.LocalManifests))
+		len(c.InstalledApps), len(c.LocalManifests))
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(stored, log)
+	err := s.Reconfigure(c, utils.NilLogger{})
 	if err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(stored)
-	if err != nil {
-		return err
-	}
 	out := map[string]interface{}{}
-	err = json.Unmarshal(data, &out)
-	if err != nil {
-		return err
-	}
+	utils.Remarshal(&out, c)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)

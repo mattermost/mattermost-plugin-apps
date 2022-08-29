@@ -10,10 +10,17 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	app, err := p.GetInstalledApp(r, appID)
+	if err := r.Check(
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return "", err
+	}
+
+	app, err := p.GetInstalledApp(appID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -35,7 +42,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	var message string
 	if app.OnEnable != nil {
-		resp := p.call(r, *app, *app.OnEnable, &cc)
+		resp := p.call(r, app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			r.Log.WithError(err).Warnf("OnEnable failed, enabling app anyway")
 		} else {
@@ -45,7 +52,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	r.Log.Infof("Enabled app")
 
-	p.dispatchRefreshBindingsEvent(cc.ActingUserID)
+	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	if message == "" {
 		message = fmt.Sprintf("Enabled %s", app.DisplayName)
@@ -54,19 +61,24 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 }
 
 func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	app, err := p.GetInstalledApp(r, appID)
+	if err := r.Check(
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return "", err
+	}
+
+	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
-
 	if app.Disabled {
-		return fmt.Sprintf("%s is already disabled", app.DisplayName), nil
+		return "Already disabled", nil
 	}
 
 	// Call the app first as later it's disabled
 	var message string
 	if app.OnDisable != nil {
-		resp := p.call(r, *app, *app.OnDisable, &cc)
+		resp := p.call(r, app, *app.OnDisable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
 			r.Log.WithError(err).Warnf("OnDisable failed, disabling app anyway")
 		} else {
@@ -101,15 +113,16 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	return message, nil
 }
 
-func (p *Proxy) appIsEnabled(app apps.App) bool {
+func (p *Proxy) ensureEnabled(app *apps.App) error {
 	if app.DeployType == apps.DeployBuiltin {
-		return true
+		// builtins can not be disabled ATM, or catch-22 with `apps`
+		return nil
 	}
 	if app.Disabled {
-		return false
+		return utils.NewForbiddenError("app is disabled by the administrator: %s", app.AppID)
 	}
 	if m, _ := p.store.Manifest.Get(app.AppID); m == nil {
-		return false
+		return utils.NewForbiddenError("app is no longer listed: %s", app.AppID)
 	}
-	return true
+	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -34,7 +33,7 @@ func sessionKey(appID apps.AppID, userID string) string {
 }
 
 func appKey(appID apps.AppID) string {
-	return config.KVTokenPrefix + "_" + string(appID)
+	return KVTokenPrefix + "_" + string(appID)
 }
 
 func parseKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
@@ -43,7 +42,7 @@ func parseKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
 		return "", "", errors.New("invalid key pattern")
 	}
 
-	if s[0] != config.KVTokenPrefix {
+	if s[0] != KVTokenPrefix {
 		return "", "", errors.New("invalid key prefix")
 	}
 
@@ -81,14 +80,14 @@ func (s sessionStore) listKeysForApp(appID apps.AppID) ([]string, error) {
 	ret := make([]string, 0)
 
 	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage, pluginapi.WithPrefix(appKey(appID)))
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage, pluginapi.WithPrefix(appKey(appID)))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
 
 		ret = append(ret, keys...)
 
-		if len(keys) < keysPerPage {
+		if len(keys) < ListKeysPerPage {
 			break
 		}
 	}
@@ -100,7 +99,7 @@ func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
 	ret := make([]string, 0)
 
 	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage)
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
@@ -118,7 +117,7 @@ func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
 			ret = append(ret, key)
 		}
 
-		if len(keys) < keysPerPage {
+		if len(keys) < ListKeysPerPage {
 			break
 		}
 	}
@@ -150,7 +149,7 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 	ret := make([]*model.Session, 0)
 
 	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, keysPerPage)
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
@@ -174,7 +173,7 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 			ret = append(ret, session)
 		}
 
-		if len(keys) < keysPerPage {
+		if len(keys) < ListKeysPerPage {
 			break
 		}
 	}

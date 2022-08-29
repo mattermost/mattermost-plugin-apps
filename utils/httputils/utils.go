@@ -48,9 +48,9 @@ func NormalizeRemoteBaseURL(mattermostSiteURL, remoteURL string) (string, error)
 	return remoteURL, nil
 }
 
-func WriteError(w http.ResponseWriter, err error) {
+func WriteErrorIfNeeded(w http.ResponseWriter, err error) {
 	if err == nil {
-		http.Error(w, "invalid (unknown?) error", http.StatusInternalServerError)
+		// do nothing
 		return
 	}
 
@@ -115,11 +115,18 @@ func ReadAndClose(in io.ReadCloser) ([]byte, error) {
 	return LimitReadAll(in, InLimit)
 }
 
-func LimitReadAll(in io.Reader, limit int64) ([]byte, error) {
+func LimitReadAll(in io.Reader, limit int) ([]byte, error) {
 	if in == nil {
 		return []byte{}, nil
 	}
-	return io.ReadAll(&io.LimitedReader{R: in, N: limit})
+	data, err := io.ReadAll(&io.LimitedReader{R: in, N: int64(limit + 1)})
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > limit {
+		return nil, errors.Errorf("size limit of %vKb exceeded", (limit+512)/1024)
+	}
+	return data, nil
 }
 
 func ProcessResponseError(w http.ResponseWriter, resp *http.Response, err error) bool {

@@ -25,14 +25,7 @@ mock:
 ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -destination server/mocks/mock_mmclient/mock_mmclient.go github.com/mattermost/mattermost-plugin-apps/server/mmclient Client
-	mockgen -destination server/mocks/mock_appservices/mock_appservices.go github.com/mattermost/mattermost-plugin-apps/server/appservices Service
-	mockgen -destination server/mocks/mock_proxy/mock_proxy.go github.com/mattermost/mattermost-plugin-apps/server/proxy Service
-	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/upstream Upstream
-	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store AppStore
-	mockgen -destination server/mocks/mock_store/mock_appkv.go github.com/mattermost/mattermost-plugin-apps/server/store AppKVStore
 	mockgen -destination server/mocks/mock_store/mock_session.go github.com/mattermost/mattermost-plugin-apps/server/store SessionStore
-	mockgen -destination server/mocks/mock_config/mock_config.go github.com/mattermost/mattermost-plugin-apps/server/config Service
-	mockgen -destination server/mocks/mock_session/mock_session.go github.com/mattermost/mattermost-plugin-apps/server/session Service
 endif
 
 ## Generates mock golang interfaces for testing
@@ -46,7 +39,12 @@ endif
 .PHONY: test-rest-api
 test-rest-api: dist
 	@echo Running REST API tests
+ifneq ($(RUN),)
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest --run $(RUN)
+else
 	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest
+endif
+
 
 ## Extract new translation messages
 .PHONY: i18n-extract-server

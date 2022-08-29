@@ -4,8 +4,10 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -42,9 +44,6 @@ var manifest = apps.Manifest{
 		},
 	},
 	RemoteWebhookAuthType: apps.SecretAuth,
-	OnInstall: apps.NewCall("/install").WithExpand(apps.Expand{
-		ActingUserAccessToken: apps.ExpandAll,
-	}),
 }
 
 var bindings = []apps.Binding{
@@ -55,28 +54,31 @@ var bindings = []apps.Binding{
 				Icon:        "icon.png",
 				Label:       "hello-webhooks",
 				Description: "Hello Webhooks App",
-				Hint:        "[ send ]",
+				Hint:        "[ subscribe | trigger ]",
 				Bindings: []apps.Binding{
 					{
-						Label: "send",
-						Form: &apps.Form{
-							Title:  "Send a test webhook message",
-							Icon:   "icon.png",
-							Submit: apps.NewCall("/send"),
-							Fields: []apps.Field{
-								{
-									Name:                 "url",
-									Type:                 "text",
-									IsRequired:           true,
-									AutocompletePosition: 1,
-								},
-							},
-						},
+						Label:       "subscribe",
+						Description: "Subscribes the current channel to the demo webhooks.",
+						Submit: apps.NewCall("/subscribe").WithExpand(apps.Expand{
+							// Need App to get the app URL and the webhook secret.
+							App: apps.ExpandAll.Required(),
+
+							// Need to check the user roles, and act as the user.
+							ActingUser:            apps.ExpandAll.Required(),
+							ActingUserAccessToken: apps.ExpandAll.Required(),
+
+							// What channel to post webhook to.
+							Channel: apps.ExpandAll.Required(),
+						}),
 					},
 					{
-						Label: "info",
-						Submit: apps.NewCall("/info").WithExpand(apps.Expand{
-							App: apps.ExpandAll,
+						Label:       "trigger",
+						Description: "Triggers a demo webhook to the subscribed channel. Make sure you subscribe first.",
+						Submit: apps.NewCall("/trigger").WithExpand(apps.Expand{
+							// Need App to get the app URL and the webhook secret.
+							App: apps.ExpandAll.Required(),
+							// Need to check the user roles.
+							ActingUser: apps.ExpandAll.Required(),
 						}),
 					},
 				},
@@ -90,46 +92,78 @@ func main() {
 	http.HandleFunc("/bindings", httputils.DoHandleJSON(apps.NewDataResponse(bindings)))
 	http.HandleFunc("/static/icon.png", httputils.DoHandleData("image/png", iconData))
 
-	// install handler - uses the admin token to allow the bot to post to
-	// current channel.
-	http.HandleFunc("/install", install)
+	// `subscribe` command.
+	http.HandleFunc("/subscribe", subscribe)
+
+	// `trigger` command.
+	http.HandleFunc("/trigger", trigger)
 
 	// Webhook handler
 	http.HandleFunc("/webhook/", webhookReceived)
-
-	// `info` command - displays the webhook URL.
-	http.HandleFunc("/info", info)
-
-	// `send` command - send a Hello webhook message.
-	http.HandleFunc("/send", send)
 
 	fmt.Printf("hello-webhooks app listening on %q \n", listenAddr)
 	fmt.Printf("Install via /apps install http %s/manifest.json \n", rootURL)
 	panic(http.ListenAndServe(listenAddr, nil))
 }
 
-func install(w http.ResponseWriter, req *http.Request) {
+func webhookURL(cc apps.Context) string {
+	u := cc.MattermostSiteURL + cc.AppPath + path.Webhook + "/hello?"
+	q := url.Values{}
+	q.Set("secret", cc.App.WebhookSecret)
+	return u + q.Encode()
+}
+
+func subscribe(w http.ResponseWriter, req *http.Request) {
 	creq := apps.CallRequest{}
 	json.NewDecoder(req.Body).Decode(&creq)
+	if !creq.Context.ActingUser.IsSystemAdmin() {
+		httputils.WriteJSON(w, apps.NewErrorResponse(errors.New("you need to be a system administrator to access the app's webhook secret")))
+		return
+	}
 
-	teamID := creq.Context.TeamID
-	channelID := creq.Context.ChannelID
-
-	// Add the Bot user to the team and the channel.
+	// Add the Bot user to the team (if applicable) and the channel.
 	asAdmin := appclient.AsActingUser(creq.Context)
-	asAdmin.AddTeamMember(teamID, creq.Context.BotUserID)
-	asAdmin.AddChannelMember(channelID, creq.Context.BotUserID)
+	if creq.Context.Channel.TeamId != "" {
+		if _, _, err := asAdmin.AddTeamMember(creq.Context.Channel.TeamId, creq.Context.BotUserID); err != nil {
+			httputils.WriteJSON(w, apps.NewErrorResponse(err))
+			return
+		}
+	}
+	if _, _, err := asAdmin.AddChannelMember(creq.Context.Channel.Id, creq.Context.BotUserID); err != nil {
+		httputils.WriteJSON(w, apps.NewErrorResponse(err))
+		return
+	}
 
+	// Store the channel ID for future use: do it as the Bot user, since it's
+	// the Bot user that receives webhooks.
 	asBot := appclient.AsBot(creq.Context)
-	// store the channel ID for future use
-	asBot.KVSet("channel_id", "", channelID)
+	asBot.KVSet("", "channel_id", creq.Context.Channel.Id)
 
 	asBot.CreatePost(&model.Post{
-		ChannelId: channelID,
-		Message:   "@hello-webhooks is installed into this channel, try /hello-webhooks send",
+		ChannelId: creq.Context.Channel.Id,
+		Message: fmt.Sprintf(
+			"@%s installed me into this channel, I will handle webhooks. "+
+				"Try `/hello-webhooks trigger` from anywhere in Mattermost, or POST some data to `%s` to trigger",
+			creq.Context.ActingUser.Username, webhookURL(creq.Context)),
 	})
 
 	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
+}
+
+func trigger(w http.ResponseWriter, req *http.Request) {
+	creq := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&creq)
+	if !creq.Context.ActingUser.IsSystemAdmin() {
+		httputils.WriteJSON(w, apps.NewErrorResponse(errors.New("you need to be a system administrator to access the app's webhook secret")))
+		return
+	}
+
+	http.Post(webhookURL(creq.Context),
+		"application/json",
+		bytes.NewReader([]byte(`"Hello from the trigger command!"`)))
+
+	httputils.WriteJSON(w,
+		apps.NewTextResponse("posted a Hello webhook message in the subscribed channel"))
 }
 
 func webhookReceived(w http.ResponseWriter, req *http.Request) {
@@ -138,7 +172,7 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 
 	asBot := appclient.AsBot(creq.Context)
 	channelID := ""
-	asBot.KVGet("channel_id", "", &channelID)
+	asBot.KVGet("", "channel_id", &channelID)
 
 	asBot.CreatePost(&model.Post{
 		ChannelId: channelID,
@@ -146,28 +180,4 @@ func webhookReceived(w http.ResponseWriter, req *http.Request) {
 	})
 
 	httputils.WriteJSON(w, apps.NewTextResponse("OK"))
-}
-
-func info(w http.ResponseWriter, req *http.Request) {
-	creq := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&creq)
-
-	httputils.WriteJSON(w,
-		apps.NewTextResponse("Try `/hello-webhooks send %s/hello?secret=%s`",
-			creq.Context.MattermostSiteURL+creq.Context.AppPath+path.Webhook,
-			creq.Context.App.WebhookSecret))
-}
-
-func send(w http.ResponseWriter, req *http.Request) {
-	creq := apps.CallRequest{}
-	json.NewDecoder(req.Body).Decode(&creq)
-	url, _ := creq.Values["url"].(string)
-
-	http.Post(
-		url,
-		"application/json",
-		bytes.NewReader([]byte(`"Hello from a webhook!"`)))
-
-	httputils.WriteJSON(w,
-		apps.NewTextResponse("posted a Hello webhook message"))
 }

@@ -202,23 +202,28 @@ type UpdateAppListingRequest struct {
 }
 
 // UpdateAppListing adds a specified App manifest to the local store.
-func (c *ClientPP) UpdateAppListing(req UpdateAppListingRequest) (*model.Response, error) {
+func (c *ClientPP) UpdateAppListing(req UpdateAppListingRequest) (*apps.Manifest, *model.Response, error) {
 	b, err := json.Marshal(&req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	r, err := c.DoAPIPOST(c.apipath(appspath.UpdateAppListing), string(b)) // nolint:bodyclose
 	if err != nil {
-		return model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	return model.BuildResponse(r), nil
+	var updated apps.Manifest
+	err = json.NewDecoder(r.Body).Decode(&updated)
+	if err != nil {
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
+	}
+	return &updated, model.BuildResponse(r), nil
 }
 
 // InstallApp installs a app using a given manfest.
-func (c *ClientPP) InstallApp(appID apps.AppID, deployType apps.DeployType) (*model.Response, error) {
+func (c *ClientPP) InstallApp(appID apps.AppID, deployType apps.DeployType) (*apps.App, *model.Response, error) {
 	b, err := json.Marshal(apps.App{
 		Manifest: apps.Manifest{
 			AppID: appID,
@@ -226,15 +231,20 @@ func (c *ClientPP) InstallApp(appID apps.AppID, deployType apps.DeployType) (*mo
 		DeployType: deployType,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
-		return model.BuildResponse(r), err
+		return nil, model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	return model.BuildResponse(r), nil
+	var app apps.App
+	err = json.NewDecoder(r.Body).Decode(&app)
+	if err != nil {
+		return nil, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
+	}
+	return &app, model.BuildResponse(r), nil
 }
 
 func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
@@ -244,7 +254,7 @@ func (c *ClientPP) UninstallApp(appID apps.AppID) (*model.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := c.DoAPIPOST(c.apipath(appspath.InstallApp), string(b)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.UninstallApp), string(b)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}

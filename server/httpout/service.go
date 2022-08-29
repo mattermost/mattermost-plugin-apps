@@ -17,7 +17,7 @@ type Service interface {
 	config.Configurable
 	httpservice.HTTPService
 
-	GetFromURL(url string, trusted bool, limit int64) ([]byte, error)
+	GetFromURL(url string, trusted bool, limit int) ([]byte, error)
 }
 
 type service struct {
@@ -41,7 +41,7 @@ func (s *service) Configure(_ config.Config, _ utils.Logger) error {
 	return nil
 }
 
-func (s *service) GetFromURL(url string, trusted bool, limit int64) ([]byte, error) {
+func (s *service) GetFromURL(url string, trusted bool, limit int) ([]byte, error) {
 	client := s.MakeClient(trusted)
 	resp, err := client.Get(url)
 	if err != nil {

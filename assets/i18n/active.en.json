@@ -86,6 +86,8 @@
   "field.deploy_type.description": "Select how the App will be accessed.",
   "field.deploy_type.label": "deploy-type",
   "field.deploy_type.modal_label": "Deployment method",
+  "field.foce.label": "force",
+  "field.force.description": "Forcefully uninstall the app, even if there is an error",
   "field.include_plugins.description": "include compatible Mattermost plugins in the output.",
   "field.include_plugins.label": "include-plugins",
   "field.kv.action.modal_label": "Action to take",
