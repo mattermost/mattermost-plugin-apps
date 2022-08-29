@@ -38,7 +38,7 @@ func handleCreateEmbedded(creq *apps.CallRequest) apps.CallResponse {
 	p.AddProp(apps.PropAppBindings, []apps.Binding{
 		{
 			Location:    "embedded",
-			AppID:       creq.Context.AppID,
+			AppID:       AppManifest.AppID,
 			Description: "Please fill out this form so we can get it fixed  :hammer_and_wrench:",
 			Bindings: []apps.Binding{
 				{
