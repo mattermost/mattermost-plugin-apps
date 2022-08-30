@@ -22,7 +22,7 @@ func (a *builtinApp) debugCleanCommandBinding(loc *i18n.Localizer) apps.Binding 
 			ID:    "command.debug.clean.description",
 			Other: "Remove all Apps and reset the persistent store",
 		}),
-		Submit: newUserCall(pDebugClean),
+		Submit: newUserCall(PathDebugClean),
 	}
 }
 

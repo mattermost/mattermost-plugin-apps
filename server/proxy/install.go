@@ -24,6 +24,13 @@ import (
 // InstallApp installs an App.
 //  - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
+	if err := r.Check(
+		r.RequireActingUser,
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return nil, "", err
+	}
+
 	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
@@ -61,7 +68,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		app.WebhookSecret = model.NewId()
 	}
 
-	icon, err := p.getAppIcon(r, *app)
+	icon, err := p.getAppIcon(r, app)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get bot icon")
 	}
@@ -69,7 +76,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		defer icon.Close()
 	}
 
-	if !p.pingApp(r, *app) {
+	if !p.pingApp(r.Ctx(), app) {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 
@@ -88,23 +95,23 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
-	message := fmt.Sprintf("Installed %s.", app.DisplayName)
+	message := fmt.Sprintf("Installed app `%s`: %s.", app.AppID, app.DisplayName)
 	if app.OnInstall != nil {
-		cresp := p.call(r, *app, *app.OnInstall, &cc)
+		cresp := p.call(r, app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			r.Log.WithError(cresp).Warnf("Installed %s, despite on_install failure.", app.AppID)
-			message = fmt.Sprintf("Installed %s, despite on_install failure: %s", app.AppID, cresp.Error())
+			r.Log.WithError(cresp).Warnf("%s, despite on_install failure.", message)
+			message += fmt.Sprintf(", despite on_install failure: %s", cresp.Error())
 		} else if cresp.Text != "" {
 			message += "\n\n" + cresp.Text
 		}
 	} else if len(app.GrantedLocations) > 0 {
 		// Make sure the app's binding call is accessible.
-		cresp := p.call(r, *app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
+		cresp := p.call(r, app, app.Bindings.WithDefault(apps.DefaultBindings), &cc)
 		if cresp.Type == apps.CallResponseTypeError {
 			// TODO: should fail and roll back.
-			r.Log.WithError(cresp).Warnf("Installed %s, despite bindings failure.", app.AppID)
-			message = fmt.Sprintf("Installed %s despite bindings failure: %s", app.AppID, cresp.Error())
+			r.Log.WithError(cresp).Warnf("%s, despite bindings failure.", message)
+			message += fmt.Sprintf(", despite bindings failure: %s", cresp.Error())
 		}
 	}
 
@@ -235,7 +242,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 // getAppIcon gets the icon of a given app.
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
-func (p *Proxy) getAppIcon(r *incoming.Request, app apps.App) (io.ReadCloser, error) {
+func (p *Proxy) getAppIcon(r *incoming.Request, app *apps.App) (io.ReadCloser, error) {
 	iconPath := app.Manifest.Icon
 	if iconPath == "" {
 		return nil, nil

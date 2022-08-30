@@ -119,18 +119,21 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 	client := appclient.AsActingUser(creq.Context)
 
 	sub := &apps.Subscription{
-		Subject: subject,
-		AppID:   creq.Context.AppID,
-		Call:    *apps.NewCall(NotifyPath).WithExpand(allSubjects[subject]),
+		Event: apps.Event{
+			Subject: subject,
+		},
+		Call: *apps.NewCall(NotifyPath).WithExpand(allSubjects[subject]),
 	}
 
 	switch subject {
 	case apps.SubjectUserJoinedChannel,
-		apps.SubjectBotLeftChannel /*, apps.SubjectPostCreated*/ :
+		apps.SubjectUserLeftChannel:
 		sub.ChannelID = creq.Context.Channel.Id
 
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
+		apps.SubjectBotJoinedChannel,
+		apps.SubjectBotLeftChannel,
 		apps.SubjectChannelCreated:
 		sub.TeamID = creq.Context.Team.Id
 	}
@@ -210,20 +213,18 @@ func ensureNotifyChannel(creq *apps.CallRequest) error {
 	return nil
 }
 
+const testTeamName = "ad-1"
+const testChannelName = "test-app-notifications"
+
 func handleNotify(creq *apps.CallRequest) apps.CallResponse {
 	client := appclient.AsBot(creq.Context)
 
-	teamID := ""
-
-	switch {
-	case creq.Context.Team != nil:
-		teamID = creq.Context.Team.Id
-
-	case creq.Context.Channel != nil:
-		teamID = creq.Context.Channel.TeamId
+	team, _, err := client.GetTeamByName(testTeamName, "")
+	if err != nil {
+		Log.Debugf("failed to look up team %s", testTeamName, err)
 	}
 
-	channel, _, err := client.GetChannelByName("test-app-notifications", teamID, "")
+	channel, _, err := client.GetChannelByName(testChannelName, team.Id, "")
 	if err != nil {
 		Log.Debugf("failed to look up notification channel: %v", err)
 	}

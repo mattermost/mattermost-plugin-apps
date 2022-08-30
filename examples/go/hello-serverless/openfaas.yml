@@ -1,0 +1,11 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://192.168.64.3:8080
+functions:
+  function:
+    lang: golang-middleware
+    handler: ./function
+    image: hello-serverless:latest
+    environment:
+      DEPLOY_TYPE: openfaas

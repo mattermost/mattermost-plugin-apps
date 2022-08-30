@@ -27,12 +27,16 @@ func main() {
 			},
 		},
 		goapp.WithStatic(static),
-		goapp.WithCommand(userAction),
-		goapp.WithChannelHeader(userAction),
-		goapp.WithPostMenu(userAction),
+		goapp.WithCommand(
+			userAction(),
+			// notify(),
+		),
+		goapp.WithChannelHeader(userAction()),
+		goapp.WithPostMenu(userAction()),
 	)
 
 	app.HandleCall("/echo", handleEcho)
+	// app.HandleCall("/event", handleEvent)
 
 	app.RunHTTP()
 }

@@ -19,7 +19,7 @@ import (
 )
 
 func TestExpand(t *testing.T) {
-	app := apps.App{
+	app := &apps.App{
 		BotUserID:   "botid",
 		BotUsername: "botusername",
 		DeployType:  apps.DeployBuiltin,
@@ -33,21 +33,66 @@ func TestExpand(t *testing.T) {
 	channelID := "channel7890123456789012345"
 	teamID := "team4567890123456789012345"
 	userChannelRoles := "user_channel_roles"
-	channelMember := &model.ChannelMember{
+
+	channelMemberIDOnly := model.ChannelMember{
 		UserId:    userID,
 		ChannelId: channelID,
-		Roles:     userChannelRoles,
 	}
-	teamMember := &model.TeamMember{
+
+	channelMember := channelMemberIDOnly
+	channelMember.Roles = userChannelRoles
+
+	teamMemberIDOnly := model.TeamMember{
 		UserId: userID,
 		TeamId: teamID,
-		Roles:  userChannelRoles,
+	}
+
+	teamMember := teamMemberIDOnly
+	teamMember.Roles = userChannelRoles
+
+	actingUserIDOnly := &model.User{
+		Id: userID,
+	}
+
+	actingUserSummary := &model.User{
+		BotDescription: "test bot",
+		DeleteAt:       2000,
+		Email:          "test@test.test",
+		FirstName:      "test first name",
+		Id:             userID,
+		IsBot:          true,
+		LastName:       "test last name",
+		Locale:         "test locale",
+		Nickname:       "test nickname",
+		Roles:          "test roles",
+		Username:       "test_username",
+	}
+
+	// fields that are only expanded for "all"
+	actingUser := func() *model.User {
+		u := *actingUserSummary
+		u.UpdateAt = 1000
+		u.CreateAt = 1000
+		u.LastActivityAt = 1500
+		u.Props = model.StringMap{
+			"test_prop": "test value",
+		}
+		return &u
 	}
 
 	type TC struct {
 		base              apps.Context
+		noActingUser      bool
 		expectClientCalls func(*mock_mmclient.MockClient)
-		expect            map[apps.ExpandLevel]interface{} // string for err.Error, or apps.ExpandedContext for success
+		expect            map[string]interface{} // string for err.Error, or apps.ExpandedContext for success
+	}
+
+	expected := func(ec apps.ExpandedContext) apps.ExpandedContext {
+		ec.MattermostSiteURL = "https://test.mattermost.test"
+		ec.DeveloperMode = true
+		ec.AppPath = "/apps/app1"
+		ec.BotUserID = "botid"
+		return ec
 	}
 
 	for _, field := range []struct {
@@ -55,60 +100,101 @@ func TestExpand(t *testing.T) {
 		tcs  map[string]TC
 	}{
 		{
+			name: "acting_user",
+			tcs: map[string]TC{
+				"happy with API GetUser": {
+					expectClientCalls: func(client *mock_mmclient.MockClient) {
+						client.EXPECT().GetUser(userID).Times(1).Return(actingUser(), nil)
+					},
+					expect: map[string]interface{}{
+						"all":      expected(apps.ExpandedContext{ActingUser: actingUser()}),
+						"summary":  expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
+						"+all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
+						"+summary": expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
+						"id":       expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
+						"+id":      expected(apps.ExpandedContext{ActingUser: actingUserIDOnly}),
+					},
+				},
+				"happy no API": {
+					expect: map[string]interface{}{
+						"": expected(apps.ExpandedContext{}),
+					},
+				},
+				"error GetUser fail": {
+					expectClientCalls: func(client *mock_mmclient.MockClient) {
+						client.EXPECT().GetUser(userID).Times(1).Return(nil, utils.ErrForbidden)
+					},
+					expect: map[string]interface{}{
+						"+all":     "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
+						"+summary": "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
+						"all":      expected(apps.ExpandedContext{}),
+						"summary":  expected(apps.ExpandedContext{}),
+					},
+				},
+				"error invalid": {
+					expect: map[string]interface{}{
+						"garbage":  `"garbage" is not a known expand level`,
+						"+garbage": `"garbage" is not a known expand level`,
+					},
+				},
+				"error no ID": {
+					noActingUser: true,
+					expect: map[string]interface{}{
+						"+id":  `failed to expand required acting_user: no user ID to expand`,
+						"+all": `failed to expand required acting_user: no user ID to expand`,
+					},
+				},
+			},
+		},
+		{
 			name: "channel_member",
 			tcs: map[string]TC{
-				"happy": {
+				// <>/<> TODO: add:GetChannelMember should work for ActingUserID and UserID, with the latter overriding
+				"happy with API GetChannelMemner": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
-						client.EXPECT().GetChannelMember(channelID, userID).Times(2).Return(channelMember, nil)
+						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(&channelMember, nil)
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{
-							AppPath:       "/apps/app1",
-							BotUserID:     "botid",
-							ActingUser:    &model.User{Id: userID},
-							ChannelMember: channelMember,
-						},
-						apps.ExpandSummary: apps.ExpandedContext{
-							AppPath:       "/apps/app1",
-							BotUserID:     "botid",
-							ActingUser:    &model.User{Id: userID},
-							ChannelMember: channelMember,
-						},
-						apps.ExpandDefault:            apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
-						apps.ExpandNone:               apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
-						apps.ExpandLevel("jibberish"): "failed to expand channel membership: unknown expand type \"jibberish\"",
+					expect: map[string]interface{}{
+						"+id":     expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
+						"summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
+						"+all":    expected(apps.ExpandedContext{ChannelMember: &channelMember}),
 					},
 				},
-				"no user ID": {
+				"happy no API": {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid"},
+					expect: map[string]interface{}{
+						"": expected(apps.ExpandedContext{}),
 					},
 				},
-				"no channel ID": {
+				"error no user ID": {
 					base: apps.Context{
-						ActingUserID: userID,
+						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+					noActingUser: true,
+					expect: map[string]interface{}{
+						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
 					},
 				},
-				"API error": {
+				"error no channel ID": {
+					expect: map[string]interface{}{
+						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
+					},
+				},
+				"error API": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: "failed to expand channel membership: failed to get channel membership: ERROR",
+					expect: map[string]interface{}{
+						"+all": "failed to expand required channel_member: failed to get channel membership: ERROR",
 					},
 				},
 			},
@@ -116,57 +202,52 @@ func TestExpand(t *testing.T) {
 		{
 			name: "team_member",
 			tcs: map[string]TC{
-				"happy": {
+				// <>/<> TODO: add:GetTeamMember should work for ActingUserID and UserID, with the latter overriding
+				"happy with API GetTeamMember": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
-						client.EXPECT().GetTeamMember(teamID, userID).Times(2).Return(teamMember, nil)
+						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(&teamMember, nil)
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{
-							AppPath:    "/apps/app1",
-							BotUserID:  "botid",
-							ActingUser: &model.User{Id: userID},
-							TeamMember: teamMember,
-						},
-						apps.ExpandSummary: apps.ExpandedContext{AppPath: "/apps/app1",
-							BotUserID:  "botid",
-							ActingUser: &model.User{Id: userID},
-							TeamMember: teamMember,
-						},
-						apps.ExpandDefault:            apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
-						apps.ExpandNone:               apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
-						apps.ExpandLevel("jibberish"): "failed to expand team membership: unknown expand type \"jibberish\"",
+					expect: map[string]interface{}{
+						"+id":     expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
+						"id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
+						"+all":    expected(apps.ExpandedContext{TeamMember: &teamMember}),
+						"summary": expected(apps.ExpandedContext{TeamMember: &teamMember}),
+					},
+				},
+				"happy with no API": {
+					base: apps.Context{
+						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
+					},
+					expect: map[string]interface{}{
+						"": expected(apps.ExpandedContext{}),
 					},
 				},
 				"no user ID": {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid"},
+					noActingUser: true,
+					expect: map[string]interface{}{
+						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
 				"no team ID": {
-					base: apps.Context{
-						ActingUserID: userID,
-					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: apps.ExpandedContext{AppPath: "/apps/app1", BotUserID: "botid", ActingUser: &model.User{Id: userID}},
+					expect: map[string]interface{}{
+						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
 				"API error": {
 					base: apps.Context{
-						ActingUserID:     userID,
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_mmclient.MockClient) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
-					expect: map[apps.ExpandLevel]interface{}{
-						apps.ExpandAll: "failed to expand team membership: failed to get team membership team4567890123456789012345: ERROR",
+					expect: map[string]interface{}{
+						"+all": "failed to expand required team_member: failed to get team membership: ERROR",
 					},
 				},
 			},
@@ -175,36 +256,43 @@ func TestExpand(t *testing.T) {
 		t.Run(field.name, func(t *testing.T) {
 			for name, tc := range field.tcs {
 				t.Run(name, func(t *testing.T) {
-					conf := config.NewTestConfigService(nil).WithMattermostConfig(model.Config{
+					conf := config.NewTestConfigService(&config.Config{
+						MattermostSiteURL: "https://test.mattermost.test",
+						DeveloperMode:     true,
+					}).WithMattermostConfig(model.Config{
 						ServiceSettings: model.ServiceSettings{
-							SiteURL: model.NewString("test.mattermost.com"),
+							SiteURL: model.NewString("https://test.mattermost.test"),
 						},
 					})
-					ctrl := gomock.NewController(t)
-					client := mock_mmclient.NewMockClient(ctrl)
-					if tc.expectClientCalls != nil {
-						tc.expectClientCalls(client)
-					}
-					p := &Proxy{
-						conf:                 conf,
-						expandClientOverride: client,
-					}
-
 					for level, expected := range tc.expect {
-						t.Run(string(level), func(t *testing.T) {
-							clone := tc.base
+						t.Run(level, func(t *testing.T) {
+							ctrl := gomock.NewController(t)
+							client := mock_mmclient.NewMockClient(ctrl)
+							if tc.expectClientCalls != nil {
+								tc.expectClientCalls(client)
+							}
+							p := &Proxy{
+								conf:                 conf,
+								expandClientOverride: client,
+							}
+
 							expandData := fmt.Sprintf(`{"%s":"%s"}`, field.name, level)
 							e := apps.Expand{}
 							err := json.Unmarshal([]byte(expandData), &e)
 							require.NoError(t, err)
 
-							r := incoming.NewRequest(conf.MattermostAPI(), conf, utils.NewTestLogger(), nil)
-							cc, err := p.expandContext(r, app, &clone, &e)
+							r := incoming.NewRequest(conf, utils.NewTestLogger(), nil).WithDestination(app.AppID)
+							if !tc.noActingUser {
+								r = r.WithActingUserID(userID)
+							}
+							prev := tc.base
+							cc, err := p.expandContext(r, app, &prev, &e)
 							if err != nil {
 								require.EqualValues(t, expected, err.Error())
 							} else {
 								require.EqualValues(t, expected, cc.ExpandedContext)
 							}
+							require.EqualValues(t, prev, tc.base)
 						})
 					}
 				})

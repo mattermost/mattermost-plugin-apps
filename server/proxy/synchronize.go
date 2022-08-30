@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -24,7 +25,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	defer cancel()
 
 	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(mm, p.conf, utils.NewPluginLogger(mm), p.sessionService, incoming.WithCtx(ctx))
+	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
 
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
@@ -42,9 +43,6 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	}
 
 	for id := range diff {
-		r = r.Clone()
-		r.SetAppID(id)
-
 		app := diff[id]
 		m := listed[app.AppID]
 
@@ -58,7 +56,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 		// Call OnVersionChanged the function of the app. It should be called only once
 		if app.OnVersionChanged != nil {
 			err := p.callOnce(func() error {
-				resp := p.call(r, app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
+				resp := p.call(r, &app, *app.OnVersionChanged, nil, PrevVersion, app.Version)
 				if resp.Type == apps.CallResponseTypeError {
 					return errors.Wrapf(resp, "call %s failed", app.OnVersionChanged.Path)
 				}
@@ -77,7 +75,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 func (p *Proxy) callOnce(f func() error) error {
 	mm := p.conf.MattermostAPI()
 	// Delete previous job
-	if err := mm.KV.Delete(config.KVCallOnceKey); err != nil {
+	if err := mm.KV.Delete(store.KVCallOnceKey); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
@@ -86,7 +84,7 @@ func (p *Proxy) callOnce(f func() error) error {
 	p.callOnceMutex.Lock()
 	defer p.callOnceMutex.Unlock()
 	value := 0
-	if err := mm.KV.Get(config.KVCallOnceKey, &value); err != nil {
+	if err := mm.KV.Get(store.KVCallOnceKey, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -99,12 +97,12 @@ func (p *Proxy) callOnce(f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := mm.KV.Set(config.KVCallOnceKey, value)
+	ok, err := mm.KV.Set(store.KVCallOnceKey, value)
 	if err != nil {
-		return errors.Wrapf(err, "can't set key %s to %d", config.KVCallOnceKey, value)
+		return errors.Wrapf(err, "can't set key %s to %d", store.KVCallOnceKey, value)
 	}
 	if !ok {
-		return errors.Errorf("can't set key %s to %d", config.KVCallOnceKey, value)
+		return errors.Errorf("can't set key %s to %d", store.KVCallOnceKey, value)
 	}
 	return nil
 }

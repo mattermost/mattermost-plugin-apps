@@ -55,6 +55,9 @@ var bindings = []apps.Binding{
 						Label:    "send",
 						Submit: &apps.Call{
 							Path: "/send",
+							Expand: &apps.Expand{
+								ActingUser: apps.ExpandID.Required(),
+							},
 						},
 					},
 				},

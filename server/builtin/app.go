@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	AppID          = "apps"
+	AppID          = apps.AppID("apps")
 	AppDisplayName = "Mattermost Apps plugin"
 	AppDescription = "Install and manage Mattermost Apps"
 
@@ -37,7 +37,8 @@ const (
 
 const (
 	fAction         = "action"
-	fAppID          = "app"
+	FieldAppID      = "app"
+	fForce          = "force"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
 	fConsent        = "consent"
@@ -45,7 +46,7 @@ const (
 	fDeployType     = "deploy_type"
 	fID             = "id"
 	fIncludePlugins = "include_plugins"
-	fNamespace      = "namespace"
+	FieldNamespace  = "namespace"
 	fNewValue       = "new_value"
 	fSecret         = "secret"
 	fURL            = "url"
@@ -53,20 +54,20 @@ const (
 )
 
 const (
+	PathDebugClean        = "/debug/clean"
+	PathDebugKVInfo       = "/debug/kv/info"
+	PathDebugKVList       = "/debug/kv/list"
+	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
-	pDebugClean           = "/debug/clean"
 	pDebugKVClean         = "/debug/kv/clean"
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
-	pDebugKVInfo          = "/debug/kv/info"
-	pDebugKVList          = "/debug/kv/list"
-	pDebugSessionsList    = "/debug/session/list"
-	pDebugSessionsView    = "/debug/session/view"
-	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
-	pEnable               = "/enable"
+	pDebugSessionsRevoke  = "/debug/session/delete"
+	pDebugSessionsView    = "/debug/session/view"
 	pDisable              = "/disable"
+	pEnable               = "/enable"
 	pInfo                 = "/info"
 	pInstallConsent       = "/install-consent"
 	pInstallConsentSource = "/install-consent/form"
@@ -81,15 +82,6 @@ const (
 	pLookupNamespace = "/q/namespace"
 )
 
-/*
-type handler struct {
-	requireSysadmin bool
-	commandBinding  func(*i18n.Localizer) apps.Binding
-	lookupf         func(*incoming.Request, apps.CallRequest) ([]apps.SelectOption, error)
-	submitf         func(*incoming.Request, apps.CallRequest) apps.CallResponse
-	formf           func(*incoming.Request, apps.CallRequest) (*apps.Form, error)
-}
-*/
 type handler func(*incoming.Request, apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
@@ -121,13 +113,13 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 
 		// Commands that require sysadmin.
 		pDebugBindings:        requireAdmin(a.debugBindings),
-		pDebugClean:           requireAdmin(a.debugClean),
+		PathDebugClean:        requireAdmin(a.debugClean),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
 		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
-		pDebugKVInfo:          requireAdmin(a.debugKVInfo),
-		pDebugKVList:          requireAdmin(a.debugKVList),
-		pDebugSessionsList:    requireAdmin(a.debugSessionsList),
+		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
+		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
 		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
@@ -153,11 +145,18 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
-		AppID:       AppID,
-		Version:     apps.AppVersion(conf.PluginManifest.Version),
-		DisplayName: AppDisplayName,
-		Description: AppDescription,
-		Deploy:      apps.Deploy{},
+		AppID:                AppID,
+		Version:              apps.AppVersion(conf.PluginManifest.Version),
+		DisplayName:          AppDisplayName,
+		Description:          AppDescription,
+		Deploy:               apps.Deploy{},
+		RequestedPermissions: apps.Permissions{
+			// apps.PermissionActAsBot,
+			// apps.PermissionActAsUser,
+		},
+		RequestedLocations: apps.Locations{
+			apps.LocationCommand,
+		},
 		Bindings: &apps.Call{
 			Path: appspath.Bindings,
 			Expand: &apps.Expand{
@@ -169,20 +168,24 @@ func Manifest(conf config.Config) apps.Manifest {
 }
 
 func App(conf config.Config) apps.App {
+	m := Manifest(conf)
 	return apps.App{
-		Manifest:    Manifest(conf),
-		DeployType:  apps.DeployBuiltin,
-		BotUserID:   conf.BotUserID,
-		BotUsername: config.BotUsername,
-		GrantedLocations: apps.Locations{
-			apps.LocationCommand,
-		},
-		GrantedPermissions: apps.Permissions{},
+		Manifest:           m,
+		DeployType:         apps.DeployBuiltin,
+		BotUserID:          conf.BotUserID,
+		BotUsername:        config.BotUsername,
+		GrantedLocations:   m.RequestedLocations,
+		GrantedPermissions: m.RequestedPermissions,
 	}
 }
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
-	r := incoming.NewRequest(a.conf.MattermostAPI(), a.conf, utils.NewPluginLogger(a.conf.MattermostAPI()), a.sessionService, incoming.WithCtx(ctx), incoming.WithAppContext(creq.Context))
+	self := App(a.conf.Get())
+	r := a.proxy.NewIncomingRequest().WithCtx(ctx).WithDestination(self.AppID)
+
+	if creq.Context.ActingUser != nil {
+		r = r.WithActingUserID(creq.Context.ActingUser.Id)
+	}
 
 	defer func(log utils.Logger) {
 		if x := recover(); x != nil {

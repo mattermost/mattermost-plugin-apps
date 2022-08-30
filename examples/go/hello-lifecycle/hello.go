@@ -26,7 +26,7 @@ func main() {
 	// Returns the Channel Header and Command bindings for the app.
 	http.HandleFunc("/bindings", httputils.DoHandleJSONData([]byte("{}")))
 
-	http.HandleFunc("/install", respondWithMessage("Thanks for installing me!"))
+	http.HandleFunc("/install", respondWithMessage("Thanks for installing me! Try `/apps disable|enable|uninstall hello-lifecycle`"))
 
 	http.HandleFunc("/uninstall", respondWithMessage("No, don't uninstall me!"))
 

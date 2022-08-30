@@ -36,10 +36,12 @@ var manifest = apps.Manifest{
 	RequestedLocations: []apps.Location{
 		apps.LocationCommand,
 	},
-	Bindings: apps.NewCall("/bindings").WithExpand(apps.Expand{
-		ActingUser: apps.ExpandAll,
-		OAuth2User: apps.ExpandAll,
-	}),
+	Bindings: apps.NewCall("/bindings").WithExpand(
+		apps.Expand{
+			ActingUser: apps.ExpandSummary.Required(),
+			OAuth2User: apps.ExpandAll.Required(),
+		},
+	),
 	Deploy: apps.Deploy{
 		HTTP: &apps.HTTP{
 			RootURL: "http://localhost:8082",
@@ -136,6 +138,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 				Location: "disconnect",
 				Label:    "disconnect",
 				Submit: apps.NewCall("/disconnect").WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary,
 					ActingUserAccessToken: apps.ExpandAll,
 				}),
 			},
@@ -164,6 +167,7 @@ func bindings(w http.ResponseWriter, req *http.Request) {
 					},
 				},
 				Submit: apps.NewCall("/configure").WithExpand(apps.Expand{
+					ActingUser:            apps.ExpandSummary,
 					ActingUserAccessToken: apps.ExpandAll,
 				}),
 			},

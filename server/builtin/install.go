@@ -119,9 +119,8 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 
 func (a *builtinApp) installListed(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	appID := apps.AppID(creq.GetValue(fAppID, ""))
-	r.SetAppID(appID)
-	m, err := a.proxy.GetManifest(r, appID)
+	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
+	m, err := a.proxy.GetManifest(appID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

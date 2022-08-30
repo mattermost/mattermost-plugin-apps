@@ -158,14 +158,14 @@ func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
 		log = log.With("app_id", id)
 
 		var data []byte
-		err := mm.KV.Get(config.KVLocalManifestPrefix+key, &data)
+		err := mm.KV.Get(KVLocalManifestPrefix+key, &data)
 		if err != nil {
 			log.WithError(err).Errorw("Failed to get local manifest from KV")
 			continue
 		}
 
 		if len(data) == 0 {
-			err = utils.NewNotFoundError(config.KVLocalManifestPrefix + key)
+			err = utils.NewNotFoundError(KVLocalManifestPrefix + key)
 			log.WithError(err).Errorw("Failed to load local manifest")
 			continue
 		}
@@ -228,7 +228,7 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	_, err = mm.KV.Set(config.KVLocalManifestPrefix+sha, m)
+	_, err = mm.KV.Set(KVLocalManifestPrefix+sha, m)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 	}
 
 	if sha != prevSHA {
-		err = mm.KV.Delete(config.KVLocalManifestPrefix + prevSHA)
+		err = mm.KV.Delete(KVLocalManifestPrefix + prevSHA)
 		if err != nil {
 			r.Log.WithError(err).Warnf("Failed to delete previous Manifest KV value")
 		}
@@ -273,7 +273,7 @@ func (s *manifestStore) DeleteLocal(r *incoming.Request, appID apps.AppID) error
 	mm := s.conf.MattermostAPI()
 	sha := conf.LocalManifests[string(appID)]
 
-	err := mm.KV.Delete(config.KVLocalManifestPrefix + sha)
+	err := mm.KV.Delete(KVLocalManifestPrefix + sha)
 	if err != nil {
 		return err
 	}

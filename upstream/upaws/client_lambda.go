@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -40,14 +41,14 @@ func (c *client) InvokeLambda(ctx context.Context, name, invocationType string, 
 }
 
 // CreateLambda method creates lambda function
-func (c *client) CreateLambda(zipFile io.Reader, name, handler, runtime string, roleARN ARN) (ARN, error) {
-	if zipFile == nil || name == "" || handler == "" || roleARN == "" || runtime == "" {
-		return "", errors.Errorf("you must supply a zip file, function name, handler, role ARN and runtime - %p %q %q %q %q", zipFile, name, handler, roleARN, runtime)
+func (c *client) CreateLambda(archive io.Reader, name, handler, runtime string, roleARN ARN) (ARN, error) {
+	if archive == nil || name == "" || handler == "" || roleARN == "" || runtime == "" {
+		return "", errors.Errorf("you must supply an archive (.zip or .jar) file, function name, handler, role ARN and runtime - %p %q %q %q %q", archive, name, handler, roleARN, runtime)
 	}
 
-	contents, err := io.ReadAll(zipFile)
+	contents, err := io.ReadAll(archive)
 	if err != nil {
-		return "", errors.Wrap(err, "could not read zip file")
+		return "", errors.Wrap(err, "could not read archive file")
 	}
 
 	createCode := &lambda.FunctionCode{
@@ -96,6 +97,50 @@ func (c *client) CreateOrUpdateLambda(zipFile io.Reader, function, handler, runt
 	}
 	c.log.Infow("updated function", "ARN", *fc.Configuration.FunctionArn)
 	return ARN(*fc.Configuration.FunctionArn), nil
+}
+
+const updateWaitTime = 2 * time.Minute
+
+// SetLambdaEnvironmentVariables sets environment variables for a lambda
+// function. It waits until an function code deployment succeeds before updating
+// the configuration.
+func (c *client) SetLambdaEnvironmentVariables(arn string, started time.Time, vars map[string]*string) error {
+	deadline := started.Add(updateWaitTime)
+	retry := 5 * time.Second
+
+RETRY:
+	for time.Now().Before(deadline) {
+		fc, err := c.lambda.GetFunctionConfiguration(&lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(arn),
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to get function configuration for %s", arn)
+		}
+
+		switch *fc.LastUpdateStatus {
+		case "Successful":
+			break RETRY
+		case "Failed":
+			return errors.New("can't set environment variables after a failed deployment")
+		default:
+			c.log.Infof("function deployment %s, will wait %v", *fc.LastUpdateStatus, retry)
+			time.Sleep(retry)
+			retry *= 2
+		}
+	}
+
+	_, err := c.lambda.UpdateFunctionConfiguration(&lambda.UpdateFunctionConfigurationInput{
+		FunctionName: aws.String(arn),
+		Environment: &lambda.Environment{
+			Variables: vars,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to update function configuration for %s", arn)
+	}
+
+	c.log.Infof("set %v environment variables on %s", len(vars), arn)
+	return nil
 }
 
 // LambdaName generates function name for a specific app, name can be 64

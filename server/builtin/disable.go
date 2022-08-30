@@ -38,7 +38,7 @@ func (a *builtinApp) disable(r *incoming.Request, creq apps.CallRequest) apps.Ca
 	out, err := a.proxy.DisableApp(
 		r,
 		creq.Context,
-		apps.AppID(creq.GetValue(fAppID, "")))
+		apps.AppID(creq.GetValue(FieldAppID, "")))
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

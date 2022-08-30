@@ -17,45 +17,73 @@ import (
 
 const pingAppTimeout = 1 * time.Second
 
-func (p *Proxy) GetManifest(_ *incoming.Request, appID apps.AppID) (*apps.Manifest, error) {
+func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
 }
 
-func (p *Proxy) GetInstalledApp(_ *incoming.Request, appID apps.AppID) (*apps.App, error) {
-	return p.store.App.Get(appID)
+func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
+	if err := r.Check(
+		r.RequireActingUser,
+	); err != nil {
+		return nil, err
+	}
+
+	app, err := p.store.App.Get(r.Destination())
+	if err != nil {
+		return nil, err
+	}
+
+	if err = r.RequireSysadminOrPlugin(); err != nil {
+		// Sanitize for non-sysadmins.
+		app.WebhookSecret = ""
+		app.MattermostOAuth2 = nil
+		app.RemoteOAuth2 = apps.OAuth2App{}
+	}
+	return app, nil
 }
 
-func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []apps.App, reachable map[apps.AppID]bool) {
-	all := p.store.App.AsMap()
-
-	if ping && len(all) > 0 {
-		// all ping requests must respond, unreachable respond with "".
-		reachableCh := make(chan apps.AppID)
-		defer close(reachableCh)
-		for _, app := range all {
-			var cancel context.CancelFunc
-			pingReq := r.Clone(incoming.WithTimeout(pingAppTimeout, &cancel))
-			go func(a apps.App) {
-				var response apps.AppID
-				if !a.Disabled {
-					if p.pingApp(pingReq, a) {
-						response = a.AppID
-					}
-				}
-				reachableCh <- response
-				cancel()
-			}(app)
+func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App, error) {
+	app, err := p.store.App.Get(appID)
+	if err != nil {
+		return nil, err
+	}
+	if checkEnabled {
+		if err = p.ensureEnabled(app); err != nil {
+			return nil, err
 		}
+	}
+	return app, nil
+}
 
-		for _, app := range all {
-			installed = append(installed, app)
-			appID := <-reachableCh
-			if appID != "" {
-				if reachable == nil {
-					reachable = map[apps.AppID]bool{}
+func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, reachable map[apps.AppID]bool) {
+	all := p.store.App.AsMap()
+	if len(all) == 0 {
+		return nil, nil
+	}
+
+	// all ping requests must respond, unreachable respond with "".
+	reachableCh := make(chan apps.AppID)
+	defer close(reachableCh)
+	for _, app := range all {
+		go func(a apps.App) {
+			var response apps.AppID
+			if !a.Disabled {
+				if p.pingApp(ctx, &a) {
+					response = a.AppID
 				}
-				reachable[appID] = true
 			}
+			reachableCh <- response
+		}(app)
+	}
+
+	for _, app := range all {
+		installed = append(installed, app)
+		appID := <-reachableCh
+		if appID != "" {
+			if reachable == nil {
+				reachable = map[apps.AppID]bool{}
+			}
+			reachable[appID] = true
 		}
 	}
 
@@ -67,7 +95,20 @@ func (p *Proxy) GetInstalledApps(r *incoming.Request, ping bool) (installed []ap
 	return installed, reachable
 }
 
-func (p *Proxy) GetListedApps(_ *incoming.Request, filter string, includePluginApps bool) []apps.ListedApp {
+func (p *Proxy) GetInstalledApps() []apps.App {
+	all := p.store.App.AsMap()
+	installed := []apps.App{}
+	for _, app := range all {
+		installed = append(installed, app)
+	}
+	// Sort result alphabetically, by display name.
+	sort.SliceStable(installed, func(i, j int) bool {
+		return strings.ToLower(installed[i].DisplayName) < strings.ToLower(installed[j].DisplayName)
+	})
+	return installed
+}
+
+func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
 	conf := p.conf.Get()
 	out := []apps.ListedApp{}
 

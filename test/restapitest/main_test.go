@@ -26,15 +26,19 @@ func TestMain(m *testing.M) {
 	mainHelper.Main(m)
 }
 
-func TestSingleServer(t *testing.T) {
+func TestRESTAPI(t *testing.T) {
 	th := NewHelper(t)
 
 	for name, testF := range map[string]func(*Helper){
+		"bindings":      testBindings,
 		"echo":          testEcho,
 		"KV":            testKV,
 		"OAuth2":        testOAuth2,
-		"Subscriptions": testSubscriptions,
+		"subscriptions": testSubscriptions,
+		"notify":        testNotify,
+		"uninstall":     testUninstall,
+		"misc":          testMisc,
 	} {
-		th.Run(name, testF)
+		th.CleanRun(name, testF)
 	}
 }
