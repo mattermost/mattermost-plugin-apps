@@ -12,9 +12,7 @@ Join the [Mattermost Apps channel](https://community.mattermost.com/core/channel
 
 ## Getting Started
 
-Use the [Apps Framework development environment](dev/README.md) to get up and running quickly. Running the command `make dev_server` spins up a test Mattermost instance with all of the settings configured to develop apps.
-
-Learn more about developing apps by reading the [app developer documentation](https://developers.mattermost.com/integrate/apps/).
+Refer to the [Mattermost Apps Quick Start Guide](https://developers.mattermost.com/integrate/apps/quickstart/) for instructions on how to use the development environment and examples in the [mattermost/mattermost-app-examples repository](https://github.com/mattermost/mattermost-app-examples) repository.
 
 ## Running the tests
 
