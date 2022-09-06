@@ -32,7 +32,7 @@ type Service interface {
 	StoreOAuth2User(_ *incoming.Request, data []byte) error
 	GetOAuth2User(_ *incoming.Request) ([]byte, error)
 
-	// Development
+	// Developer
 
 	RefreshBindings(_ *incoming.Request, userID string) error
 }

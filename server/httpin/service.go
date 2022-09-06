@@ -87,7 +87,7 @@ func NewService(proxy proxy.Service, appservices appservices.Service, conf confi
 	h.HandleFunc(path.Subscribe, h.Subscribe).Methods(http.MethodPost)
 	h.HandleFunc(path.Unsubscribe, h.Unsubscribe).Methods(http.MethodPost)
 
-	// Development routes, intended to be used by Apps. `EnableDeveloper` must be enabled to use these.
+	// Developer routes, intended to be used by Apps in development cycle. `EnableDeveloper` must be enabled to use these routes.
 
 	h.HandleFunc(path.RefreshBindings, h.RefreshBindings).Methods(http.MethodPost)
 
