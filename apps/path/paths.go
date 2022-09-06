@@ -16,6 +16,7 @@ const (
 	OAuth2User        = "/oauth2/user"
 	Subscribe         = "/subscribe"
 	Unsubscribe       = "/unsubscribe"
+	RefreshBindings   = "/refresh_bindings"
 
 	// Invoke.
 	Call = "/call"
