@@ -12,10 +12,6 @@ type Permissions []Permission
 type Permission string
 
 const (
-	// PermissionUserJoinedChannelNotification means that the app is allowed to
-	// receive user_joined_channel notifications
-	PermissionUserJoinedChannelNotification Permission = "user_joined_channel_notification"
-
 	// PermissionActAsBot means that a Bot User will be created when the App is
 	// installed. Call requests will then include the Bot access token, the app
 	// can use them with the Mattermost REST API. The bot will not automatically
@@ -47,12 +43,10 @@ func (p Permissions) Contains(permission Permission) bool {
 func (p Permission) String() string {
 	m := ""
 	switch p {
-	case PermissionUserJoinedChannelNotification:
-		m = "be notified when users join channels"
 	case PermissionActAsUser:
-		m = "use Mattermost REST API as connected users"
+		m = "Use Mattermost REST API as the connected user"
 	case PermissionActAsBot:
-		m = "use Mattermost REST API as the app's bot user"
+		m = "Use Mattermost REST API as the app's bot user"
 	case PermissionRemoteOAuth2:
 		m = "use a remote (3rd party) OAuth2 and store secrets"
 	case PermissionRemoteWebhooks:
@@ -72,7 +66,6 @@ func (p Permissions) Validate() error {
 	for _, pp := range []Permissions{
 		{PermissionRemoteWebhooks, PermissionActAsBot},
 		{PermissionRemoteOAuth2, PermissionActAsUser},
-		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
 	} {
 		if len(pp) == 0 || !p.Contains(pp[0]) {
 			continue

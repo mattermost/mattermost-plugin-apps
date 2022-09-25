@@ -142,15 +142,10 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 
 func Manifest(conf config.Config) apps.Manifest {
 	return apps.Manifest{
-		AppID:                AppID,
-		Version:              apps.AppVersion(conf.PluginManifest.Version),
-		DisplayName:          AppDisplayName,
-		Description:          AppDescription,
-		Deploy:               apps.Deploy{},
-		RequestedPermissions: apps.Permissions{
-			// apps.PermissionActAsBot,
-			// apps.PermissionActAsUser,
-		},
+		AppID:       AppID,
+		Version:     apps.AppVersion(conf.PluginManifest.Version),
+		DisplayName: AppDisplayName,
+		Description: AppDescription,
 		RequestedLocations: apps.Locations{
 			apps.LocationCommand,
 		},
@@ -173,6 +168,7 @@ func App(conf config.Config) apps.App {
 		BotUsername:        config.BotUsername,
 		GrantedLocations:   m.RequestedLocations,
 		GrantedPermissions: m.RequestedPermissions,
+		GrantedScopes:      m.RequestedScopes,
 	}
 }
 

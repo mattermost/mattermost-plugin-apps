@@ -48,6 +48,10 @@ type App struct {
 	// upon the sysadmin's consent, during installing the App.
 	GrantedPermissions Permissions `json:"granted_permissions,omitempty"`
 
+	// GrantedScopes are the Mattermost OAuth2 scopes granted to the App upon
+	// its installation/consent.
+	GrantedScopes model.AppScopes `json:"granted_scopes,omitempty"`
+
 	// GrantedLocations contains the list of top locations that the application
 	// is allowed to bind to.
 	//
@@ -105,6 +109,7 @@ func (app *App) Strip(level ExpandLevel) *App {
 			BotUsername:   app.BotUsername,
 			DeployType:    app.DeployType,
 			WebhookSecret: app.WebhookSecret,
+			GrantedScopes: app.GrantedScopes,
 		}
 
 	default:

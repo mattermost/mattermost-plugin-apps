@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
@@ -117,7 +119,12 @@ type Manifest struct {
 	// is passed to the call serialized as HTTPCallRequest (JSON).
 	OnRemoteWebhook *Call `json:"on_remote_webhook,omitempty"`
 
+	// RequestedScopes is the list of OAuth2 scopes requested by the app.
+	// TODO: link to model/scopes.go
+	RequestedScopes model.AppScopes `json:"requested_scopes,omitempty"`
+
 	// Requested Access
+	// TODO: replace permissions with scopes?
 	RequestedPermissions Permissions `json:"requested_permissions,omitempty"`
 
 	// RemoteWebhookAuthType specifies how incoming webhook messages from remote
@@ -198,6 +205,7 @@ func (m Manifest) Validate() error {
 		m.AppID,
 		m.Version,
 		m.RequestedPermissions,
+		m.RequestedScopes,
 		m.Deploy,
 	} {
 		if v != nil {

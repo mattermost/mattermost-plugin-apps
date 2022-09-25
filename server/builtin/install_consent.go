@@ -100,27 +100,40 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	// Consent
 	h := ""
 	if len(m.RequestedLocations) > 0 {
-		h += "\n" +
-			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "modal.install_consent.header.locations",
-				Other: "- Add the following elements to the **Mattermost User Interface**:",
-			}) +
+		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "modal.install_consent.header.locations",
+			Other: "- Add the following elements to the **Mattermost User Interface**:",
+		}) +
 			"\n"
 		// (Mattermost) locations themselves are not localized
 		for _, l := range m.RequestedLocations {
 			h += fmt.Sprintf("  - %s\n", l.Markdown())
 		}
 	}
-	if len(m.RequestedPermissions) > 0 {
+
+	if m.RequestedScopes.IsUnrestricted() {
 		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "modal.install_consent.header.permissions",
-			Other: "- Access **Mattermost API** with the following permissions:",
-		}) + "\n"
-		// Permissions are not localized
-		for _, permission := range m.RequestedPermissions {
-			h += fmt.Sprintf("  - %s\n", permission.String())
+				ID:    "modal.install_consent.header.scopes.any",
+				Other: "- Access all available Mattermost REST APIs",
+			}) + "\n"
+	} else {
+		h += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "modal.install_consent.header.scopes.specific",
+				Other: "- Use Mattermost REST APIs to:",
+			}) + "\n"
+		// TODO: use localized scope names
+		for _, s := range m.RequestedScopes {
+			h += fmt.Sprintf("  - %s\n", s)
 		}
 	}
+
+	if len(m.RequestedPermissions) > 0 {
+		// Permissions are not localized
+		for _, permission := range m.RequestedPermissions {
+			h += fmt.Sprintf("- %s\n", permission.String())
+		}
+	}
+
 	if h != "" {
 		header := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{

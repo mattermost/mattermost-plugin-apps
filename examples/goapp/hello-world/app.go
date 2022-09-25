@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // static is preloaded with the contents of the ./static directory.
@@ -22,6 +23,11 @@ func main() {
 			DisplayName: "Hello, world! as a goapp",
 			Icon:        "icon.png",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/goapp",
+			RequestedScopes: model.AppScopes{
+				model.ScopeUsersRead,
+				model.ScopePostsCreate,
+				model.ScopeChannelsCreate,
+			},
 		},
 		goapp.WithStatic(static),
 		goapp.WithCommand(send),
