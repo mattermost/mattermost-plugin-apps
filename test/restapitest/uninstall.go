@@ -90,7 +90,7 @@ func testUninstall(th *Helper) {
 			InstalledAppCount: 1,
 			ManifestCount:     1,
 			OAuth2StateCount:  0,
-			Other:             0, // debug clean before the test clears out the special bot ke; was: 1
+			Other:             0, // debug clean before the test clears out the special bot key; was: 1
 			SubscriptionCount: 3,
 			Apps: map[apps.AppID]*store.KVDebugAppInfo{
 				"uninstalltest": {
@@ -111,7 +111,7 @@ func testUninstall(th *Helper) {
 		require.EqualValues(th, store.KVDebugInfo{
 			Total:         1,
 			ManifestCount: 1,
-			Other:         0, // debug clean before the test clears out the special bot ke; was: 1
+			Other:         0, // debug clean before the test clears out the special bot key; was: 1
 			Apps:          map[apps.AppID]*store.KVDebugAppInfo{},
 		}, info)
 	})
