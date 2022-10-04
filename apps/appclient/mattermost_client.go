@@ -46,12 +46,11 @@ func NewClient(token, mattermostSiteURL string) *Client {
 
 func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
 	changed, res, err := c.ClientPP.KVSet(prefix, id, in)
+	if err != nil {
+		return false, err
+	}
 
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return false, err
-		}
-
 		return false, errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -60,11 +59,11 @@ func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
 
 func (c *Client) KVGet(prefix, id string, ref interface{}) error {
 	res, err := c.ClientPP.KVGet(prefix, id, ref)
-	if res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -73,11 +72,11 @@ func (c *Client) KVGet(prefix, id string, ref interface{}) error {
 
 func (c *Client) KVDelete(prefix, id string) error {
 	res, err := c.ClientPP.KVDelete(prefix, id)
-	if res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -86,11 +85,11 @@ func (c *Client) KVDelete(prefix, id string) error {
 
 func (c *Client) Subscribe(sub *apps.Subscription) error {
 	res, err := c.ClientPP.Subscribe(sub)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -99,11 +98,11 @@ func (c *Client) Subscribe(sub *apps.Subscription) error {
 
 func (c *Client) GetSubscriptions() ([]apps.Subscription, error) {
 	subs, res, err := c.ClientPP.GetSubscriptions()
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -112,11 +111,11 @@ func (c *Client) GetSubscriptions() ([]apps.Subscription, error) {
 
 func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	res, err := c.ClientPP.Unsubscribe(sub)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -125,11 +124,11 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 
 func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
 	res, err := c.ClientPP.StoreOAuth2App(oauth2App)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -138,10 +137,11 @@ func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
 
 func (c *Client) StoreOAuth2User(ref interface{}) error {
 	res, err := c.ClientPP.StoreOAuth2User(ref)
+	if err != nil {
+		return err
+	}
+
 	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -150,11 +150,11 @@ func (c *Client) StoreOAuth2User(ref interface{}) error {
 
 func (c *Client) GetOAuth2User(ref interface{}) error {
 	res, err := c.ClientPP.GetOAuth2User(ref)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -163,11 +163,11 @@ func (c *Client) GetOAuth2User(ref interface{}) error {
 
 func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
 	cresp, res, err := c.ClientPP.Call(creq)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -176,11 +176,11 @@ func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
 
 func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	createdPost, res, err := c.Client4.CreatePost(post)
-	if res.StatusCode != http.StatusCreated {
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
+	if res.StatusCode != http.StatusCreated {
 		return nil, errors.Errorf("returned with status %d", res.StatusCode)
 	}
 
@@ -199,12 +199,14 @@ func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
 	}
 
 	channel, res, err := c.CreateDirectChannel(c.userID, userID)
-	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
-		if err == nil {
-			err = errors.Errorf("API returned status %d", res.StatusCode)
-		}
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to get direct channel")
 	}
+
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
 	post.ChannelId = channel.Id
 	return c.CreatePost(post)
 }
