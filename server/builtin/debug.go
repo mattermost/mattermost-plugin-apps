@@ -106,6 +106,21 @@ func (a *builtinApp) debugBase64KeyField(loc *i18n.Localizer) apps.Field {
 			ID:    "field.kv.base64key.hint",
 			Other: "[ base64-encoded key ]",
 		}),
+	}
+}
+
+func (a *builtinApp) debugBase64Field(loc *i18n.Localizer) apps.Field {
+	return apps.Field{
+		Name: fBase64,
+		Type: apps.FieldTypeBool,
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.kv.base64.label",
+			Other: "base64",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.kv.base64.description",
+			Other: "base64 encoded keys to use in other `debug kv` commands.",
+		}),
 		Value: true,
 	}
 }
