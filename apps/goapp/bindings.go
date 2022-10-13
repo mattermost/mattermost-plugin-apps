@@ -25,6 +25,12 @@ func (app *App) Bindings(creq CallRequest) []apps.Binding {
 			Bindings: bindings,
 		})
 	}
+	if bindings := MakeBindings(creq, app.appBar); len(bindings) > 0 {
+		out = append(out, apps.Binding{
+			Location: apps.LocationAppBar,
+			Bindings: bindings,
+		})
+	}
 	if bindings := MakeBindings(creq, app.postMenu); len(bindings) > 0 {
 		out = append(out, apps.Binding{
 			Location: apps.LocationPostMenu,

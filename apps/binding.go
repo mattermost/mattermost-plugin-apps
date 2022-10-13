@@ -156,6 +156,8 @@ type Binding struct {
 	// For internal use by Mattermost, Apps do not need to set.
 	AppID AppID `json:"app_id,omitempty"`
 
+	Type BindingType `json:"type,omitempty"`
+
 	// Location allows the App to identify where in the UX the Call request
 	// comes from. It is optional. For /command bindings, Location is
 	// defaulted to Label.

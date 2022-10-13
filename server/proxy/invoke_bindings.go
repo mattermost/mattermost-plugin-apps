@@ -166,6 +166,14 @@ func cleanAppBinding(
 		}
 	}
 
+	if fql == apps.LocationAppBar.Sub(b.Location) {
+		// An App Bar binding must have an icon
+		if b.Icon == "" {
+			problems = multierror.Append(problems, errors.Errorf("%s: no icon in App Bar binding", fql))
+			return nil, problems
+		}
+	}
+
 	// A binding can have sub-bindings, a direct submit, or a form.
 	hasBindings := len(b.Bindings) > 0
 	hasForm := b.Form != nil

@@ -23,7 +23,7 @@ var IconData []byte
 //   - Add a /-command with a callback.
 var Manifest = apps.Manifest{
 	// App ID must be unique across all Mattermost Apps.
-	AppID: "hello-world",
+	AppID: "hello-world-app-bar",
 
 	// App's release/version.
 	Version: "v1.1.0",
@@ -46,7 +46,7 @@ var Manifest = apps.Manifest{
 
 	// Add UI elements: a /-command, and a App Bar icon.
 	RequestedLocations: []apps.Location{
-		apps.LocationAppBar,
+		apps.LocationChannelHeader,
 		apps.LocationCommand,
 	},
 
@@ -62,13 +62,15 @@ var Manifest = apps.Manifest{
 // The details for the App UI bindings
 var Bindings = []apps.Binding{
 	{
-		Location: apps.LocationAppBar,
+		Location: apps.LocationChannelHeader,
 		Bindings: []apps.Binding{
 			{
 				Location: "send-button",        // an app-chosen string.
 				Icon:     "icon.png",           // reuse the App icon for the channel header.
 				Label:    "send hello message", // appearance in the "more..." menu.
-				Form:     &SendForm,            // the form to display.
+				Submit: &apps.Call{
+					Path: "/views/app-bar-main",
+				},
 			},
 		},
 	},
@@ -126,6 +128,8 @@ func main() {
 	// The main handler for sending a Hello message.
 	http.HandleFunc("/send", Send)
 
+	http.HandleFunc("/views/app-bar-main", HandleAppBarView)
+
 	addr := ":4000" // matches manifest.json
 	fmt.Println("Listening on", addr)
 	fmt.Println("Use '/apps install http http://localhost" + addr + "/manifest.json' to install the app") // matches manifest.json
@@ -148,4 +152,19 @@ func Send(w http.ResponseWriter, req *http.Request) {
 
 	httputils.WriteJSON(w,
 		apps.NewTextResponse("Created a post in your DM channel."))
+}
+
+// Send sends a DM back to the user.
+func HandleAppBarView(w http.ResponseWriter, req *http.Request) {
+	c := apps.CallRequest{}
+	json.NewDecoder(req.Body).Decode(&c)
+
+	httputils.WriteJSON(w, &apps.CallResponse{
+		Type:      "view",
+		DisplayAs: "rhs",
+		Data: apps.Binding{
+			Bindings: []apps.Binding{
+			},
+		},
+	})
 }

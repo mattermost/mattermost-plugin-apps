@@ -11,6 +11,7 @@ import (
 const (
 	LocationPostMenu      Location = "/post_menu"
 	LocationChannelHeader Location = "/channel_header"
+	LocationAppBar        Location = "/app_bar"
 	LocationCommand       Location = "/command"
 	LocationInPost        Location = "/in_post"
 )
@@ -22,6 +23,7 @@ type Locations []Location
 func (l Location) IsTop() bool {
 	switch l {
 	case LocationChannelHeader,
+		LocationAppBar,
 		LocationCommand,
 		LocationPostMenu:
 		return true
@@ -59,6 +61,8 @@ func (l Location) Markdown() string {
 		return "Post Menu items"
 	case LocationChannelHeader:
 		return "Channel Header buttons"
+	case LocationAppBar:
+		return "App Bar icons"
 	case LocationCommand:
 		if len(tokens) < 2 {
 			return "Slash commands"

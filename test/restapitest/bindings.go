@@ -202,6 +202,18 @@ func testBindings(th *Helper) {
 			},
 		}
 
+		expectedAppBarBinding := apps.Binding{
+			Location: apps.LocationAppBar,
+			Bindings: []apps.Binding{
+				{
+					AppID:    appID,
+					Label:    "lab-test",
+					Location: "loc-test",
+					Submit:   apps.NewCall("/does-not-matter"),
+				},
+			},
+		}
+
 		expectedPostMenuBinding := apps.Binding{
 			Location: apps.LocationPostMenu,
 			Bindings: []apps.Binding{
@@ -220,9 +232,9 @@ func testBindings(th *Helper) {
 			expectedError      string
 		}{
 			"all locations": {
-				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu},
+				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu, apps.LocationAppBar},
 				// Top-level bindings are sorted by Location.
-				expectedBindings: []apps.Binding{expectedChannelHeaderBinding, expectedCommandBinding, expectedPostMenuBinding},
+				expectedBindings: []apps.Binding{expectedChannelHeaderBinding, expectedCommandBinding, expectedAppBarBinding, expectedPostMenuBinding},
 			},
 			"no locations": {
 				requestedLocations: apps.Locations{},
@@ -232,22 +244,27 @@ func testBindings(th *Helper) {
 			"command only": {
 				requestedLocations: apps.Locations{apps.LocationCommand},
 				expectedBindings:   []apps.Binding{expectedCommandBinding},
-				expectedError:      "2 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
+				expectedError:      "3 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
 			},
 			"channel header only": {
 				requestedLocations: apps.Locations{apps.LocationChannelHeader},
 				expectedBindings:   []apps.Binding{expectedChannelHeaderBinding},
-				expectedError:      "2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
+				expectedError:      "3 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
+			},
+			"app bar only": {
+				requestedLocations: apps.Locations{apps.LocationAppBar},
+				expectedBindings:   []apps.Binding{expectedAppBarBinding},
+				expectedError:      "3 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /post_menu: location is not granted: forbidden\n\n",
 			},
 			"post menu only": {
 				requestedLocations: apps.Locations{apps.LocationPostMenu},
 				expectedBindings:   []apps.Binding{expectedPostMenuBinding},
-				expectedError:      "2 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /channel_header: location is not granted: forbidden\n\n",
+				expectedError:      "3 errors occurred:\n\t* /command: location is not granted: forbidden\n\t* /channel_header: location is not granted: forbidden\n\n",
 			},
 			"command and post menu": {
 				requestedLocations: apps.Locations{apps.LocationCommand, apps.LocationPostMenu},
 				expectedBindings:   []apps.Binding{expectedCommandBinding, expectedPostMenuBinding},
-				expectedError:      "1 error occurred:\n\t* /channel_header: location is not granted: forbidden\n\n",
+				expectedError:      "2 errors occurred:\n\t* /channel_header: location is not granted: forbidden\n\n",
 			},
 		} {
 			th.Run(name, func(th *Helper) {
@@ -255,6 +272,7 @@ func testBindings(th *Helper) {
 					[]apps.Binding{
 						{Location: apps.LocationCommand, Bindings: appBindings},
 						{Location: apps.LocationChannelHeader, Bindings: appBindings},
+						{Location: apps.LocationAppBar, Bindings: appBindings},
 						{Location: apps.LocationPostMenu, Bindings: appBindings},
 					}).
 					WithLocations(tc.requestedLocations).
@@ -291,6 +309,7 @@ func testBindings(th *Helper) {
 			[]apps.Binding{
 				{Location: apps.LocationCommand, Bindings: appBindings},
 				{Location: apps.LocationChannelHeader, Bindings: appBindings},
+				{Location: apps.LocationAppBar, Bindings: appBindings},
 				{Location: apps.LocationPostMenu, Bindings: appBindings},
 			}).
 			WithLocations(apps.Locations{apps.LocationCommand, apps.LocationChannelHeader, apps.LocationPostMenu}).

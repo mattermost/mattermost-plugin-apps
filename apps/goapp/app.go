@@ -30,6 +30,7 @@ type App struct {
 	command       *BindableMulti
 	postMenu      []Bindable
 	channelHeader []Bindable
+	appBar        []Bindable
 }
 
 type AppOption func(app *App) error
@@ -152,6 +153,21 @@ func WithChannelHeader(items ...Bindable) AppOption {
 
 		if !app.Manifest.RequestedLocations.Contains(apps.LocationChannelHeader) {
 			app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationChannelHeader)
+		}
+		return nil
+	}
+}
+
+func WithAppBar(items ...Bindable) AppOption {
+	return func(app *App) error {
+		app.appBar = items
+		err := runInitializers(app.appBar, app)
+		if err != nil {
+			return err
+		}
+
+		if !app.Manifest.RequestedLocations.Contains(apps.LocationAppBar) {
+			app.Manifest.RequestedLocations = append(app.Manifest.RequestedLocations, apps.LocationAppBar)
 		}
 		return nil
 	}
