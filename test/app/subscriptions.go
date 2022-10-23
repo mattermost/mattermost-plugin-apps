@@ -219,18 +219,18 @@ const testChannelName = "test-app-notifications"
 func handleNotify(creq *apps.CallRequest) apps.CallResponse {
 	client := appclient.AsBot(creq.Context)
 
+	post := &model.Post{
+		Message: fmt.Sprintf("Received notification, `Context`:\n```json\n%s\n```\n", utils.Pretty(creq.Context)),
+	}
+
 	team, _, err := client.GetTeamByName(testTeamName, "")
 	if err != nil {
-		Log.Debugf("failed to look up team %s", testTeamName, err)
+		Log.Debugf("failed to look up team %s: %v", testTeamName, err)
 	}
 
 	channel, _, err := client.GetChannelByName(testChannelName, team.Id, "")
 	if err != nil {
 		Log.Debugf("failed to look up notification channel: %v", err)
-	}
-
-	post := &model.Post{
-		Message: fmt.Sprintf("received notification:\n```\n%s\n```\n", utils.Pretty(creq.Context)),
 	}
 	// Post the notification to the global notification channel
 	if channel != nil {

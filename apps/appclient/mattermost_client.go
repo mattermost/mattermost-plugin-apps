@@ -122,6 +122,19 @@ func (c *Client) Unsubscribe(sub *apps.Subscription) error {
 	return nil
 }
 
+func (c *Client) CreateTimer(t *apps.Timer) error {
+	res, err := c.ClientPP.CreateTimer(t)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		return errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return nil
+}
+
 func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
 	res, err := c.ClientPP.StoreOAuth2App(oauth2App)
 	if err != nil {

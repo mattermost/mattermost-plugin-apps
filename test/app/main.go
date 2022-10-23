@@ -74,6 +74,7 @@ func main() {
 	initHTTPNavigate(r)
 	initHTTPOK(r)
 	initHTTPSubscriptions(r)
+	initHTTPTimer(r)
 
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := errors.Errorf("path not found: %s", r.URL.Path)

@@ -86,6 +86,7 @@ func NewService(proxy proxy.Service, appservices appservices.Service, conf confi
 	h.HandleFunc(path.Subscribe, h.GetSubscriptions).Methods(http.MethodGet)
 	h.HandleFunc(path.Subscribe, h.Subscribe).Methods(http.MethodPost)
 	h.HandleFunc(path.Unsubscribe, h.Unsubscribe).Methods(http.MethodPost)
+	h.HandleFunc(path.TimerCreate, h.CreateTimer).Methods(http.MethodPost)
 
 	// Admin API, can be used by plugins, external services, or the user agent.
 	h.HandleFunc(path.DisableApp, h.DisableApp).Methods(http.MethodPost)

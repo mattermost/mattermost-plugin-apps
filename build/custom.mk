@@ -26,6 +26,7 @@ ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -destination server/mocks/mock_mmclient/mock_mmclient.go github.com/mattermost/mattermost-plugin-apps/server/mmclient Client
 	mockgen -destination server/mocks/mock_store/mock_session.go github.com/mattermost/mattermost-plugin-apps/server/store SessionStore
+	mockgen -destination server/mocks/mock_store/mock_app.go github.com/mattermost/mattermost-plugin-apps/server/store AppStore
 endif
 
 ## Generates mock golang interfaces for testing

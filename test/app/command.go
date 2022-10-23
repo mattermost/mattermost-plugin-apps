@@ -13,6 +13,7 @@ func commandBindings(cc apps.Context) []apps.Binding {
 			formCommandBinding(cc),
 			subscriptionCommandBinding("subscribe", Subscribe),
 			subscriptionCommandBinding("unsubscribe", Unsubscribe),
+			timerCommandBinding("timer-create", CreateTimer),
 
 			testCommandBinding(cc),
 		},

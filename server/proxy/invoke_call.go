@@ -12,71 +12,34 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// CallResponse contains everything the CallResponse struct contains, plus some additional
-// data for the client, such as information about the App's bot account.
-//
-// Apps will use the CallResponse struct to respond to a CallRequest, and the proxy will
-// decorate the response using the CallResponse to provide additional information.
-type CallResponse struct {
-	apps.CallResponse
-
-	// Used to provide info about the App to client, e.g. the bot user id
-	AppMetadata AppMetadataForClient `json:"app_metadata"`
-}
-
-type AppMetadataForClient struct {
-	BotUserID   string `json:"bot_user_id,omitempty"`
-	BotUsername string `json:"bot_username,omitempty"`
-}
-
-func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) CallResponse {
-	var app *apps.App
-	respondErr := func(err error) CallResponse {
-		out := CallResponse{
-			CallResponse: apps.NewErrorResponse(err),
-		}
-		if app != nil {
-			out.AppMetadata = AppMetadataForClient{
-				BotUserID:   app.BotUserID,
-				BotUsername: app.BotUsername,
-			}
-		}
-		return out
-	}
-
+func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.App, apps.CallResponse) {
 	if err := r.Check(
 		r.RequireActingUser,
 	); err != nil {
-		return respondErr(err)
+		return nil, apps.NewErrorResponse(err)
 	}
 
 	app, err := p.getEnabledDestination(r)
 	if err != nil {
-		return respondErr(err)
+		return nil, apps.NewErrorResponse(err)
 	}
 	if creq.Context.AppID != app.AppID {
-		return respondErr(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
+		return app, apps.NewErrorResponse(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
 	}
 
 	if creq.Path[0] != '/' {
-		return respondErr(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
+		return app, apps.NewErrorResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
-		return respondErr(errors.Wrap(err, "failed to clean call path"))
+		return app, apps.NewErrorResponse(errors.Wrap(err, "failed to clean call path"))
 	}
 	creq.Path = cleanPath
 
 	appRequest := r.WithDestination(app.AppID)
 	cresp := p.callApp(appRequest, app, creq, false)
 
-	return CallResponse{
-		CallResponse: cresp,
-		AppMetadata: AppMetadataForClient{
-			BotUserID:   app.BotUserID,
-			BotUsername: app.BotUsername,
-		},
-	}
+	return app, cresp
 }
 
 // <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?

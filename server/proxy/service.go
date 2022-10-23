@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
+
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
@@ -65,7 +66,7 @@ type API interface {
 	// REST API methods used by user agents (mobile, desktop, web).
 	GetApp(*incoming.Request) (*apps.App, error)
 	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
-	InvokeCall(*incoming.Request, apps.CallRequest) CallResponse
+	InvokeCall(*incoming.Request, apps.CallRequest) (*apps.App, apps.CallResponse)
 	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]interface{}) error
 	InvokeGetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)

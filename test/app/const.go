@@ -11,6 +11,8 @@ const (
 	CreateEmbedded = "/create-embedded"
 	Subscribe      = "/subscribe"
 	Unsubscribe    = "/unsubscribe"
+	CreateTimer    = "/timer/create"
+	ExecuteTimer   = "/timer/execute"
 
 	// Submit responses
 	OK               = "/ok"

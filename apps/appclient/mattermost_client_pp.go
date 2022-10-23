@@ -148,6 +148,20 @@ func (c *ClientPP) Unsubscribe(sub *apps.Subscription) (*model.Response, error) 
 	return model.BuildResponse(r), nil
 }
 
+func (c *ClientPP) CreateTimer(t *apps.Timer) (*model.Response, error) {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.TimerCreate), string(data)) // nolint:bodyclose
+	if err != nil {
+		return model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r), nil
+}
+
 func (c *ClientPP) StoreOAuth2App(oauth2App apps.OAuth2App) (*model.Response, error) {
 	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2App), utils.ToJSON(oauth2App)) // nolint:bodyclose
 	if err != nil {
