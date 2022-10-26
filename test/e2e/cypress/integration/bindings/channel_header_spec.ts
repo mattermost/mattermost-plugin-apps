@@ -80,6 +80,7 @@ const runCommand = (command: string) => {
 };
 
 const installHTTPHello = () => {
+    runCommand('/apps info');
     runCommand(installAppCommand);
     cy.get('#consent').click();
     cy.get('#appsModalSubmit').click();
