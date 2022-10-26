@@ -81,14 +81,13 @@ func (p *Plugin) OnActivate() (err error) {
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, p.log)
+	confService, err := config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle, p.log)
 	if err != nil {
 		p.log.WithError(err).Infof("failed to configure")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
+	p.conf = confService
+
 	conf := p.conf.Get()
 	p.log.With(conf).Debugf("configured")
 

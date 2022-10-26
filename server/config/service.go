@@ -44,8 +44,8 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
-	return &service{
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
+	s := &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
 		mm:             mm,
@@ -53,6 +53,25 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 		i18n:           i18nBundle,
 		telemetry:      telemetry,
 	}
+
+	mmconf := s.reloadMattermostConfig()
+	conf := s.Get()
+	license := s.getMattermostLicense(log)
+
+	err := conf.update(mmconf, license, log)
+	if err != nil {
+		return nil, err
+	}
+
+	cm := s.mm.Configuration.GetPluginConfig()
+	sc := unmarshalPluginConfig(cm, mmconf, conf.MattermostCloudMode)
+	conf.StoredConfig = sc
+
+	s.lock.Lock()
+	s.conf = &conf
+	s.lock.Unlock()
+
+	return s, nil
 }
 
 func (s *service) Get() Config {
@@ -107,10 +126,7 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ...Configurable) error {
-	mmconf := s.reloadMattermostConfig()
-	newConfig := s.Get()
-
+func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
 	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
@@ -122,10 +138,19 @@ func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ..
 		}
 	}
 
-	err := newConfig.update(stored, mmconf, license, log)
+	return license
+}
+
+func (s *service) Reconfigure(sc StoredConfig, log utils.Logger, services ...Configurable) error {
+	mmconf := s.reloadMattermostConfig()
+	newConfig := s.Get()
+	license := s.getMattermostLicense(log)
+
+	err := newConfig.update(mmconf, license, log)
 	if err != nil {
 		return err
 	}
+	newConfig.StoredConfig = sc
 
 	s.lock.Lock()
 	s.conf = &newConfig
@@ -141,18 +166,18 @@ func (s *service) Reconfigure(stored StoredConfig, log utils.Logger, services ..
 	return nil
 }
 
-func (s *service) StoreConfig(c StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration, %v installed , %v listed apps",
-		len(c.InstalledApps), len(c.LocalManifests))
+func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
+	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
+		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperMode, sc.AllowHTTPApps)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(c, utils.NilLogger{})
+	err := s.Reconfigure(sc, log)
 	if err != nil {
 		return err
 	}
 
 	out := map[string]interface{}{}
-	utils.Remarshal(&out, c)
+	utils.Remarshal(&out, sc)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)

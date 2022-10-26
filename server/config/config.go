@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -39,6 +38,24 @@ type StoredConfig struct {
 	// added, and the Manifest struct is stored in KV under
 	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
+
+	DeveloperMode bool `json:"developer_mode"`
+	AllowHTTPApps bool `json:"allow_http_apps"`
+}
+
+func unmarshalPluginConfig(pluginConfig map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {
+	sc := StoredConfig{}
+	utils.Remarshal(sc, pluginConfig)
+
+	if _, ok := pluginConfig["developer_mode"]; !ok {
+		sc.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
+	}
+
+	if _, ok := pluginConfig["allow_http_apps"]; !ok {
+		sc.AllowHTTPApps = sc.DeveloperMode || !mattermostCloudMode
+	}
+
+	return sc
 }
 
 var BuildDate string
@@ -57,8 +74,6 @@ type Config struct {
 	BuildHash      string
 	BuildHashShort string
 
-	DeveloperMode       bool
-	AllowHTTPApps       bool
 	MattermostCloudMode bool
 
 	BotUserID          string
@@ -85,15 +100,8 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
-// allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
-// forced on.
-var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
-	`.*\.test\.mattermost\.cloud`,
-	`community\.mattermost\.com`,
-	`community-[a-z]+\.mattermost\.com`,
-}, "|") + "$")
-
-func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
+// update computes derived configuration values from a mattermost config and license.
+func (conf *Config) update(mmconf *model.Config, license *model.License, log utils.Logger) error {
 	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
 		return errors.New("plugin requires Mattermost Site URL to be set")
@@ -125,8 +133,6 @@ func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *m
 		localURL = "http://" + host + ":" + port + u.Path
 	}
 
-	conf.StoredConfig = stored
-
 	conf.MattermostSiteURL = u.String()
 	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
@@ -135,14 +141,6 @@ func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *m
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if mmconf.FileSettings.MaxFileSize != nil {
 		conf.MaxWebhookSize = int(*mmconf.FileSettings.MaxFileSize)
-	}
-
-	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-
-	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
-	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
-		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
-		conf.AllowHTTPApps = true
 	}
 
 	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
