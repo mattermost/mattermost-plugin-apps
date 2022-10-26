@@ -114,9 +114,9 @@ func testNotify(th *Helper) {
 		"user_joined_channel": notifyUserJoinedChannel(th),
 		"user_joined_team":    notifyUserJoinedTeam(th),
 		"user_left_channel":   notifyUserLeftChannel(th),
-		"user_left_team":      notifyUserLeftTeam(th),
-		"channel_created":     notifyChannelCreated(th),
-		"user_created":        notifyUserCreated(th),
+		// "user_left_team":      notifyUserLeftTeam(th), https://mattermost.atlassian.net/browse/MM-47962
+		"channel_created": notifyChannelCreated(th),
+		"user_created":    notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, th.LastInstalledBotUser, tc.expandCombinations, tc.except,
