@@ -445,7 +445,7 @@ workflows:
       - e2e-cypress-tests-master:
           filters:
             branches:
-              only: master
+              only: /^v.*/
           requires:
             - lint
       - test-rest-postgres11:
