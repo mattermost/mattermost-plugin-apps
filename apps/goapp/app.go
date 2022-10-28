@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime/debug"
 	"testing"
+	"time"
 	"unicode"
 
 	"github.com/gorilla/mux"
@@ -189,11 +190,16 @@ func (app *App) RunHTTP() {
 		app.Manifest.Deploy.HTTP.RootURL = "http://localhost:" + portStr
 	}
 
-	http.Handle("/", app.Router)
-
 	listen := ":" + portStr
+	server := &http.Server{
+		Addr:              listen,
+		ReadHeaderTimeout: 3 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		Handler:           app.Router,
+	}
+
 	app.log.Infof("%s started, listening on port %s, manifest at `%s/manifest.json`; use environment variables PORT and ROOT_URL to customize.", app.Manifest.AppID, portStr, app.Manifest.Deploy.HTTP.RootURL)
-	panic(http.ListenAndServe(listen, nil))
+	panic(server.ListenAndServe())
 }
 
 func pathFromName(name string) string {

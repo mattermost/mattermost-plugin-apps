@@ -2,7 +2,6 @@ package incoming
 
 import (
 	"context"
-	"time"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -64,19 +63,6 @@ func (r *Request) Ctx() context.Context {
 func (r *Request) WithCtx(ctx context.Context) *Request {
 	r = r.Clone()
 	r.ctx = ctx
-	return r
-}
-
-func (r *Request) WithTimeout(timeout time.Duration, cancelFunc *context.CancelFunc) *Request {
-	if timeout == 0 {
-		return r
-	}
-	r = r.Clone()
-	ctx, f := context.WithTimeout(r.Ctx(), timeout)
-	r.ctx = ctx
-	if cancelFunc != nil {
-		*cancelFunc = f
-	}
 	return r
 }
 
