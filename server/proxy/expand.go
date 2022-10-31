@@ -249,7 +249,6 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 func (e *expander) expandApp(level apps.ExpandLevel) error {
 	e.ExpandedContext.App = e.app.Strip(level)
 
-	e.ExpandedContext.App.WebhookSecret = ""
 	if level == apps.ExpandAll && e.r.RequireSysadminOrPlugin() == nil {
 		e.ExpandedContext.App.WebhookSecret = e.app.WebhookSecret
 	}
