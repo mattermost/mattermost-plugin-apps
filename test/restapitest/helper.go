@@ -236,11 +236,12 @@ func (th *Helper) requireEqualApp(level apps.ExpandLevel, asSystemAdmin bool, ex
 	}
 	require.NotNil(th, got, "expected: %+v", expected)
 
-	// Only sysadmins and expansion `all` for app get the webhook secret expanded.
-	if !asSystemAdmin || level != apps.ExpandAll {
+	expected = expected.Strip(level)
+	got = got.Strip(level)
+
+	// Only sysadmins get the webhook secret expanded.
+	if !asSystemAdmin {
 		expected.WebhookSecret = ""
-	} else {
-		require.NotNil(th, expected.WebhookSecret)
 	}
 	require.EqualValues(th, expected, got)
 }
