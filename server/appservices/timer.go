@@ -65,7 +65,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 	return nil
 }
 
-func (a *AppServices) ExecuteTimer(key string, props any) {
+func (a *AppServices) ExecuteTimer(key string, props interface{}) {
 	t, ok := props.(timer)
 	if !ok {
 		a.log.Debugw("Timer contained unknown props. Inoring the timer.", "key", key, "props", props)
