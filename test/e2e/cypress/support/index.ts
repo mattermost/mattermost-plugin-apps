@@ -6,3 +6,7 @@
 // ***********************************************************
 
 import 'mattermost-webapp/e2e/cypress/tests/support';
+
+before(() => {
+    localStorage.setItem('__landingPageSeen__', String(true));
+});
