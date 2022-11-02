@@ -31,8 +31,6 @@ const (
 	AppID          = apps.AppID("apps")
 	AppDisplayName = "Mattermost Apps plugin"
 	AppDescription = "Install and manage Mattermost Apps"
-
-	oauthConfigErrorMessage = "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to %s/admin_console/integrations/integration_management and enable it."
 )
 
 const (
