@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -113,7 +114,11 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 		cresp.Form = &clean
 	}
 
-	if cresp.Type != apps.CallResponseTypeError && cresp.RefreshBindings && creq.Context.ActingUser != nil {
+	allowRefreshBindings := (creq.Call.Path != path.Bindings &&
+		cresp.RefreshBindings &&
+		creq.Context.ActingUser != nil)
+
+	if cresp.Type != apps.CallResponseTypeError && allowRefreshBindings {
 		p.dispatchRefreshBindingsEvent(creq.Context.ActingUser.Id)
 	}
 

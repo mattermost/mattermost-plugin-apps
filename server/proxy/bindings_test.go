@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
@@ -516,6 +517,11 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 		checkExpectation func(api *plugintest.API)
 	}
 
+	makeBindingRequest := func(req apps.CallRequest) apps.CallRequest {
+		req.Call.Path = path.Bindings
+		return req
+	}
+
 	for _, tc := range []TC{
 		{
 			name:         "refresh bindings when flag is set and OK response",
@@ -550,6 +556,20 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 			callResponse: apps.CallResponse{
 				Type:            apps.CallResponseTypeOK,
 				RefreshBindings: false,
+			},
+			checkExpectation: func(testApi *plugintest.API) {
+				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Run(func(args mock.Arguments) {
+					t.Fatal("shouldn`t called")
+				})
+			},
+		},
+		{
+			name:         "don't refresh when binding response is handled",
+			applications: tApps,
+			callRequest:  makeBindingRequest(creq),
+			callResponse: apps.CallResponse{
+				Type:            apps.CallResponseTypeOK,
+				RefreshBindings: true,
 			},
 			checkExpectation: func(testApi *plugintest.API) {
 				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Run(func(args mock.Arguments) {
