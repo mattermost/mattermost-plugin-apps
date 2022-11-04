@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
@@ -505,6 +504,10 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 			},
 		},
 		Call: apps.Call{
+			Expand: &apps.Expand{
+				App:        apps.ExpandNone,
+				ActingUser: apps.ExpandNone,
+			},
 			Path: "/",
 		},
 	}
@@ -544,9 +547,6 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				RefreshBindings: true,
 			},
 			checkExpectation: func(testApi *plugintest.API) {
-				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Run(func(args mock.Arguments) {
-					t.Fatal("shouldn`t called")
-				})
 			},
 		},
 		{
@@ -558,9 +558,6 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				RefreshBindings: false,
 			},
 			checkExpectation: func(testApi *plugintest.API) {
-				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Run(func(args mock.Arguments) {
-					t.Fatal("shouldn`t called")
-				})
 			},
 		},
 		{
@@ -572,9 +569,6 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				RefreshBindings: true,
 			},
 			checkExpectation: func(testApi *plugintest.API) {
-				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Run(func(args mock.Arguments) {
-					t.Fatal("shouldn`t called")
-				})
 			},
 		},
 	} {
@@ -626,6 +620,8 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 			resp := proxy.InvokeCall(r, tc.callRequest)
 
 			require.Equal(t, tc.callResponse.RefreshBindings, resp.RefreshBindings)
+
+			testAPI.AssertExpectations(t)
 		})
 	}
 }
