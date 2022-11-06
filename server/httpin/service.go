@@ -128,9 +128,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if s, ok := mux.Vars(req)[AppIDVar]; ok {
 		r = r.WithDestination(apps.AppID(s))
 	}
-	var cancel context.CancelFunc
-	r = r.WithTimeout(config.RequestTimeout, &cancel)
+
+	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
+	r = r.WithCtx(ctx)
+
 	r.Log = r.Log.With(
 		"path", req.URL.Path,
 	)
