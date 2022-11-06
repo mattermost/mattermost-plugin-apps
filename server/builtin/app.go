@@ -34,26 +34,31 @@ const (
 
 const (
 	fAction         = "action"
-	FieldAppID      = "app"
-	fForce          = "force"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
 	fConsent        = "consent"
+	fCount          = "count"
 	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fForce          = "force"
+	fHashkeys       = "hashkeys"
 	fID             = "id"
+	FieldAppID      = "app"
 	fIncludePlugins = "include_plugins"
-	FieldNamespace  = "namespace"
+	fNamespace      = "namespace"
 	fNewValue       = "new_value"
+	fPage           = "page"
 	fSecret         = "secret"
-	fURL            = "url"
 	fSessionID      = "session_id"
+	fURL            = "url"
 )
 
 const (
 	PathDebugClean        = "/debug/clean"
 	PathDebugKVInfo       = "/debug/kv/info"
 	PathDebugKVList       = "/debug/kv/list"
+	PathDebugStoreList    = "/debug/store/list"
+	PathDebugStorePollute = "/debug/store/pollute"
 	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
 	pDebugKVClean         = "/debug/kv/clean"
@@ -116,6 +121,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
 		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),

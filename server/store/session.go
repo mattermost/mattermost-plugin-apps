@@ -3,7 +3,6 @@ package store
 import (
 	"strings"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
@@ -36,7 +35,7 @@ func appKey(appID apps.AppID) string {
 	return KVTokenPrefix + "_" + string(appID)
 }
 
-func parseKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
+func parseSessionKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
 	s := strings.Split(key, "_")
 	if len(s) != 3 {
 		return "", "", errors.New("invalid key pattern")
@@ -80,15 +79,17 @@ func (s sessionStore) listKeysForApp(appID apps.AppID) ([]string, error) {
 	ret := make([]string, 0)
 
 	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage, pluginapi.WithPrefix(appKey(appID)))
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
-
-		ret = append(ret, keys...)
-
-		if len(keys) < ListKeysPerPage {
+		if len(keys) == 0 {
 			break
+		}
+		for _, key := range keys {
+			if strings.HasPrefix(key, appKey(appID)) {
+				ret = append(ret, key)
+			}
 		}
 	}
 
@@ -103,22 +104,18 @@ func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
+		if len(keys) == 0 {
+			break
+		}
 
 		for _, key := range keys {
-			_, keyUserID, err := parseKey(key)
+			_, keyUserID, err := parseSessionKey(key)
 			if err != nil {
 				continue
 			}
-
-			if keyUserID != userID {
-				continue
+			if keyUserID == userID {
+				ret = append(ret, key)
 			}
-
-			ret = append(ret, key)
-		}
-
-		if len(keys) < ListKeysPerPage {
-			break
 		}
 	}
 
@@ -153,9 +150,12 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
+		if len(keys) == 0 {
+			break
+		}
 
 		for _, key := range keys {
-			_, keyUserID, err := parseKey(key)
+			_, keyUserID, err := parseSessionKey(key)
 			if err != nil {
 				continue
 			}
@@ -171,10 +171,6 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 			}
 
 			ret = append(ret, session)
-		}
-
-		if len(keys) < ListKeysPerPage {
-			break
 		}
 	}
 

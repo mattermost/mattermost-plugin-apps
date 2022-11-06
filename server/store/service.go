@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -58,6 +59,8 @@ const (
 	KVLocalManifestPrefix = "man."
 
 	KVTokenPrefix = ".t"
+
+	KVDebugPrefix = ".debug."
 
 	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
 	// usually upon a Mattermost instance startup.
@@ -178,4 +181,67 @@ func ParseHashkey(key string) (globalNamespace string, appID apps.AppID, userID,
 	h := k[62:82]
 
 	return string(gns), apps.AppID(strings.TrimSpace(string(a))), string(u), strings.TrimSpace(string(ns)), string(h), nil
+}
+
+func (s *Service) ListHashKeys(
+	r *incoming.Request,
+	processf func(key string) error,
+	matchf ...func(prefix string, _ apps.AppID, userID, namespace, idhash string) bool,
+) error {
+	mm := s.conf.MattermostAPI()
+	for pageNumber := 0; ; pageNumber++ {
+		keys, err := mm.KV.ListKeys(pageNumber, ListKeysPerPage)
+		if err != nil {
+			return errors.Wrapf(err, "failed to list keys - page, %d", pageNumber)
+		}
+		if len(keys) == 0 {
+			return nil
+		}
+
+		for _, key := range keys {
+			if len(key) != hashKeyLength {
+				continue
+			}
+
+			allMatch := true
+			for _, f := range matchf {
+				prefix, appID, userID, namespace, idhash, _ := ParseHashkey(key)
+				if !f(prefix, appID, userID, namespace, idhash) {
+					allMatch = false
+					break
+				}
+			}
+			if len(matchf) > 0 && !allMatch {
+				continue
+			}
+
+			err = processf(key)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func WithPrefix(prefix string) func(string, apps.AppID, string, string, string) bool {
+	return func(p string, _ apps.AppID, _, _, _ string) bool {
+		return prefix == "" || p == prefix
+	}
+}
+
+func WithAppID(appID apps.AppID) func(string, apps.AppID, string, string, string) bool {
+	return func(_ string, a apps.AppID, _, _, _ string) bool {
+		return appID == "" || a == appID
+	}
+}
+
+func WithUserID(userID string) func(string, apps.AppID, string, string, string) bool {
+	return func(_ string, _ apps.AppID, u, _, _ string) bool {
+		return userID == "" || u == userID
+	}
+}
+func WithNamespace(namespace string) func(string, apps.AppID, string, string, string) bool {
+	return func(_ string, _ apps.AppID, _, ns, _ string) bool {
+		return namespace == "" || ns == namespace
+	}
 }

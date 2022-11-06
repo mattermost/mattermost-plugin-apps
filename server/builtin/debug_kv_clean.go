@@ -39,7 +39,7 @@ func (a *builtinApp) debugKVCleanCommandBinding(loc *i18n.Localizer) apps.Bindin
 
 func (a *builtinApp) debugKVClean(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
-	namespace := creq.GetValue(FieldNamespace, "")
+	namespace := creq.GetValue(fNamespace, "")
 
 	n := 0
 	appservicesRequest := r.WithSourceAppID(appID)

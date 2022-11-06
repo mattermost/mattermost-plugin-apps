@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, force bool) (string, error) {
@@ -26,12 +27,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
 	}
 
-	// Disable the app and clean out all of its sessions.
-	_, err = p.DisableApp(r, cc, appID)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to disable app")
-	}
-
+	// Notify the App that it is being uninstalled.
 	message := fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	if app.OnUninstall != nil {
 		resp := p.call(r, app, *app.OnUninstall, &cc)
@@ -47,6 +43,12 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		}
 	}
 
+	// Disable the app and clean out all of its sessions.
+	_, err = p.DisableApp(r, cc, appID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to disable app")
+	}
+
 	// Delete OAuth app.
 	if app.MattermostOAuth2 != nil {
 		if err = mm.OAuth.Delete(app.MattermostOAuth2.Id); err != nil {
@@ -59,15 +61,24 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to disable bot account for %s, the app is left disabled", appID)
 	}
 
-	// Remove the app's KV store data.
-	err = p.store.AppKV.List(r.WithSourceAppID(appID), "", func(key string) error {
+	// Remove the app's KV store and OAuth user data.
+	deleteKey := func(key string) error {
 		return mm.KV.Delete(key)
-	})
+	}
+
+	err = p.store.ListHashKeys(r, deleteKey,
+		store.WithAppID(appID),
+		store.WithPrefix(store.KVAppPrefix))
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to clear KV data for %s, the app is left disabled", appID)
 	}
 
-	// TODO: delete OAuth2 user objects
+	err = p.store.ListHashKeys(r, deleteKey,
+		store.WithAppID(appID),
+		store.WithPrefix(store.KVUserPrefix))
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to clear OAuth2 user data for %s, the app is left disabled", appID)
+	}
 
 	if err = p.appservices.UnsubscribeApp(r, appID); err != nil {
 		return "", errors.Wrapf(err, "failed to clear subscriptions for %s, the app is left disabled", appID)

@@ -43,7 +43,7 @@ func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding
 func (a *builtinApp) debugKVEdit(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
 	base64Key := creq.GetValue(fBase64Key, "")
-	namespace := creq.GetValue(FieldNamespace, "")
+	namespace := creq.GetValue(fNamespace, "")
 	id := creq.GetValue(fID, "")
 
 	key := ""

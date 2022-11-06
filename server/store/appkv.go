@@ -1,10 +1,6 @@
 package store
 
 import (
-	"strings"
-
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -70,41 +66,9 @@ func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
 }
 
 func (s *appKVStore) List(r *incoming.Request, namespace string, processf func(key string) error) error {
-	mm := s.conf.MattermostAPI()
-	for i := 0; ; i++ {
-		keys, err := mm.KV.ListKeys(i, ListKeysPerPage)
-		if err != nil {
-			return errors.Wrapf(err, "failed to list keys - page, %d", i)
-		}
-
-		for _, key := range keys {
-			// all apps keys are 50 bytes
-			if !strings.HasPrefix(key, KVAppPrefix) || len(key) != hashKeyLength {
-				continue
-			}
-			_, appID, _, ns, _, err := ParseHashkey(key)
-			if err != nil {
-				r.Log.WithError(err).Debugw("failed to parse key", "key", key)
-				continue
-			}
-			if appID != r.SourceAppID() {
-				// Key not belong to the requesting app.
-				continue
-			}
-			if namespace != "" && ns != namespace {
-				// Namespace did not match the query.
-				continue
-			}
-
-			err = processf(key)
-			if err != nil {
-				return err
-			}
-		}
-
-		if len(keys) < ListKeysPerPage {
-			break
-		}
-	}
-	return nil
+	return s.ListHashKeys(r, processf,
+		WithPrefix(KVAppPrefix),
+		WithAppID(r.SourceAppID()),
+		WithUserID(r.ActingUserID()),
+		WithNamespace(namespace))
 }

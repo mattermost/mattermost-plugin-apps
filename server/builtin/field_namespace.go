@@ -15,7 +15,7 @@ import (
 
 func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localizer) apps.Field {
 	return apps.Field{
-		Name: FieldNamespace,
+		Name: fNamespace,
 		Type: apps.FieldTypeDynamicSelect,
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.namespace.label",
