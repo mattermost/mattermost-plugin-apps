@@ -146,13 +146,13 @@ func (th *Helper) verifyExpandedContext(level apps.ExpandLevel, app *apps.App, a
 	require.Equal(th, true, got.DeveloperMode)
 
 	require.NotEmpty(th, got.BotAccessToken)
-	expected.BotAccessToken, got.BotAccessToken = "", ""
+	got.BotAccessToken = ""
 	if level != apps.ExpandAll {
 		require.Empty(th, got.ActingUserAccessToken)
 	} else {
 		require.NotEmpty(th, got.ActingUserAccessToken)
 	}
-	expected.ActingUserAccessToken, got.ActingUserAccessToken = "", ""
+	got.ActingUserAccessToken = ""
 
 	if level == apps.ExpandNone {
 		// make sure nothing else is set.

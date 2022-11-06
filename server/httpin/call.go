@@ -12,10 +12,11 @@ import (
 )
 
 // Call handles a call request for an App.
-//   Path: /api/v1/call
-//   Method: POST
-//   Input: CallRequest
-//   Output: CallResponse
+//
+//	Path: /api/v1/call
+//	Method: POST
+//	Input: CallRequest
+//	Output: CallResponse
 func (s *Service) Call(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	creq, err := apps.CallRequestFromJSONReader(req.Body)
 	if err != nil {
