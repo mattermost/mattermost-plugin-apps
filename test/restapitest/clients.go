@@ -85,7 +85,7 @@ func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (
 	}
 
 	resp, err := th.UserClientPP.DoAPIPOST(
-		th.UserClientPP.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.Call, string(b)) // nolint:bodyclose
+		th.UserClientPP.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.Call, string(b))
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}

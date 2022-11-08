@@ -65,7 +65,7 @@ func (c *client) CreateLambda(archive io.Reader, name, handler, runtime string, 
 
 	fc, err := c.lambda.CreateFunction(createArgs)
 	if err != nil {
-		return "", errors.Wrapf(err, "can't create function, %+v\n", fc)
+		return "", errors.Wrapf(err, "can't create function, %+v", fc)
 	}
 	c.log.Infow("created function", "ARN", *fc.FunctionArn)
 	return ARN(*fc.FunctionArn), nil

@@ -119,7 +119,7 @@ func testNotify(th *Helper) {
 		"user_created":        notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
-			forExpandClientCombinations(th, th.LastInstalledBotUser, tc.expandCombinations, tc.except,
+			forExpandClientCombinations(th, tc.expandCombinations, tc.except,
 				func(th *Helper, level apps.ExpandLevel, appclient appClient) {
 					data := apps.ExpandedContext{}
 					if tc.init != nil {

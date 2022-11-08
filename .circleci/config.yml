@@ -40,6 +40,34 @@ commands:
           from: << parameters.filename >>
           to: << parameters.bucket >>
           arguments: "--acl public-read --cache-control no-cache"
+  install-golangci-lint:
+    description: Install golangci-lint
+    parameters:
+      version:
+        type: string
+        default: 1.49.0
+      gobin:
+        type: string
+        default: $GOPATH/bin
+      prefix:
+        type: string
+        default: v2
+        description: Prefix for cache key to store the binary.
+    steps:
+      - restore_cache:
+          name: Restore golangci-lint cache
+          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
+      - run:
+          name: Install golangci-lint
+          command: |
+            mkdir -p << parameters.gobin >>
+            command -v << parameters.gobin >>/golangci-lint && exit
+            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
+      - save_cache:
+          name: Save golangci-lint cache
+          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
+          paths: [<< parameters.gobin >>/golangci-lint]
 
 jobs:
   lint:
@@ -49,6 +77,7 @@ jobs:
     steps:
       - checkout
       - *restore_go_cache
+      - install-golangci-lint
       - run:
           name: Checking code style
           command: make check-style
