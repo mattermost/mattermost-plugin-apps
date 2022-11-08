@@ -8,10 +8,11 @@ import (
 )
 
 // GetBotIDs returns the list of all Apps' bot user IDs.
-//   Path: /api/v1/bot-ids
-//   Method: GET
-//   Input: none
-//   Output: []string - the list of Bot user IDs for all installed Apps.
+//
+//	Path: /api/v1/bot-ids
+//	Method: GET
+//	Input: none
+//	Output: []string - the list of Bot user IDs for all installed Apps.
 func (s *Service) GetBotIDs(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	apps := s.Proxy.GetInstalledApps()
 	ids := []string{}
@@ -25,10 +26,11 @@ func (s *Service) GetBotIDs(r *incoming.Request, w http.ResponseWriter, req *htt
 }
 
 // GetBindings returns combined bindings for all Apps.
-//   Path: /api/v1/get-oauth-app-ids
-//   Method: GET
-//   Input: none
-//   Output: []string - the list of OAuth ClientIDs for all installed Apps.
+//
+//	Path: /api/v1/get-oauth-app-ids
+//	Method: GET
+//	Input: none
+//	Output: []string - the list of OAuth ClientIDs for all installed Apps.
 func (s *Service) GetOAuthAppIDs(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	apps := s.Proxy.GetInstalledApps()
 	ids := []string{}

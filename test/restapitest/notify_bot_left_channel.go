@@ -12,7 +12,7 @@ import (
 // notifyBotJoinsChannel creates a test channel in a new test team. Bot, User
 // and user2 are added as members of the team, Bot, User are added as a member
 // of the channel. Bot is then removed from the channel to trigger.
-func notifyBotLeftChannel(th *Helper) *notifyTestCase {
+func notifyBotLeftChannel(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			team := th.createTestTeam()

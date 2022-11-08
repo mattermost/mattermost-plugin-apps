@@ -141,9 +141,9 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	app.HandleCall("/err-app-not-json",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, _ := params(creq)
-			_, err := client.DoAPIPOST(
+			_, err := client.DoAPIPOST( // nolint:bodyclose
 				client.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.OAuth2App,
-				"test") // nolint:bodyclose
+				"test")
 			return respond("impossible", err)
 		})
 

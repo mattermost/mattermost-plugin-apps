@@ -11,7 +11,7 @@ import (
 
 // notifyBotLeftTeam creates a new test team. User and Bot are added as members of the
 // team. Bot is then removed from the team to trigger.
-func notifyBotLeftTeam(th *Helper) *notifyTestCase {
+func notifyBotLeftTeam(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			data := apps.ExpandedContext{

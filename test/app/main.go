@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -79,10 +80,16 @@ func main() {
 		err := errors.Errorf("path not found: %s", r.URL.Path)
 		_ = httputils.WriteJSON(w, apps.NewErrorResponse(err))
 	})
-	http.Handle("/", r)
+
+	server := &http.Server{
+		Addr:              listen,
+		ReadHeaderTimeout: 3 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		Handler:           r,
+	}
 
 	Log.Infof("test app started, listening on port %s, manifest at %s/manifest.json", portStr, AppManifest.Deploy.HTTP.RootURL)
-	panic(http.ListenAndServe(listen, nil))
+	panic(server.ListenAndServe())
 }
 
 func handle(f callHandler) http.HandlerFunc {

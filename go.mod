@@ -21,10 +21,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
-	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
-	google.golang.org/api v0.94.0
+	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -195,6 +194,7 @@ require (
 	golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	google.golang.org/api v0.88.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220817144833-d7fd3f11b9b1 // indirect
 	google.golang.org/grpc v1.48.0 // indirect

@@ -3,12 +3,16 @@ package main
 import (
 	"embed"
 
+	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
-	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // static is preloaded with the contents of the ./static directory.
+//
 //go:embed static
 var static embed.FS
 
@@ -55,7 +59,11 @@ var send = goapp.MakeBindableFormOrPanic("send",
 			message += " ...and " + custom + "!"
 		}
 
-		creq.AsBot().DM(creq.Context.ActingUser.Id, message)
+		_, err := creq.AsBot().DM(creq.Context.ActingUser.Id, message)
+		if err != nil {
+			return apps.NewErrorResponse(errors.Wrap(err, "failed to send DM to user"))
+		}
+
 		return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
 	},
 )

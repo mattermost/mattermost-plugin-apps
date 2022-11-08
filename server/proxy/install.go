@@ -22,7 +22,7 @@ import (
 )
 
 // InstallApp installs an App.
-//  - cc is the Context that will be passed down to the App's OnInstall callback.
+//   - cc is the Context that will be passed down to the App's OnInstall callback.
 func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
 	if err := r.Check(
 		r.RequireActingUser,

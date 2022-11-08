@@ -91,6 +91,8 @@
   "field.include_plugins.description": "include compatible Mattermost plugins in the output.",
   "field.include_plugins.label": "include-plugins",
   "field.kv.action.modal_label": "Action to take",
+  "field.kv.base64.description": "base64 encoded keys to use in other `debug kv` commands.",
+  "field.kv.base64.label": "base64",
   "field.kv.base64key.description": "base64-encoded key, see output of `debug kv list`.",
   "field.kv.base64key.hint": "[ base64-encoded key ]",
   "field.kv.base64key.label": "base64_key",
