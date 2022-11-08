@@ -85,13 +85,11 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 				ID:    "command.list.submit.status.disabled",
 				Other: "Installed, Disabled",
 			})
-		} else {
-			if !reachable[app.AppID] {
-				status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.list.submit.status.unreachable",
-					Other: "Installed, **Unreachable**",
-				})
-			}
+		} else if !reachable[app.AppID] {
+			status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.list.submit.status.unreachable",
+				Other: "Installed, **Unreachable**",
+			})
 		}
 
 		version := string(app.Version)

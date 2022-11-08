@@ -8,10 +8,12 @@ import (
 )
 
 // appManifestData is preloaded with the Mattermost App manifest.
+//
 //go:embed manifest.json
 var appManifestData []byte
 
 // StaticFS is preloaded with the contents of the ./static directory.
+//
 //go:embed static
 var StaticFS embed.FS
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime/debug"
 
@@ -215,7 +214,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 				return
 			}
 			err = nil
-			out = ioutil.NopCloser(bytes.NewReader(data))
+			out = io.NopCloser(bytes.NewReader(data))
 		}
 	}(r.Log)
 
@@ -224,7 +223,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		if err != nil {
 			return nil, err
 		}
-		return ioutil.NopCloser(bytes.NewReader(data)), nil
+		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
 	loc := a.newLocalizer(creq)
