@@ -5,10 +5,11 @@ package apps
 
 import (
 	"github.com/hashicorp/go-multierror"
+
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// Timer TOOD
+// Timer TODO
 type Timer struct {
 	// At is the unix time in milliseconds when the timer should be executed
 	At int64 `json:"at"`
