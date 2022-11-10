@@ -57,7 +57,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 		TeamID:    t.TeamID,
 	}
 
-	_, err = a.scheduler.ScheduleOnce(storedTimer.Key(r.SourceAppID(), t.At), storedTimer, time.UnixMilli(t.At))
+	_, err = a.scheduler.ScheduleOnce(storedTimer.Key(r.SourceAppID(), t.At), time.UnixMilli(t.At), storedTimer)
 	if err != nil {
 		return errors.Wrap(err, "faild to schedule timer job")
 	}
