@@ -15,10 +15,11 @@ const (
 )
 
 // KVGet returns a value stored by the App in the KV store.
-//   Path: /api/v1/kv/[{prefix}/]{key}
-//   Method: GET
-//   Input: none
-//   Output: a JSON object
+//
+//	Path: /api/v1/kv/[{prefix}/]{key}
+//	Method: GET
+//	Input: none
+//	Output: a JSON object
 func (s *Service) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
@@ -33,11 +34,12 @@ func (s *Service) KVGet(r *incoming.Request, w http.ResponseWriter, req *http.Re
 }
 
 // KVPut stores an App-provided JSON document in the KV store.
-//   Path: /api/v1/kv/[{prefix}/]{key}
-//   Methods: POST, PUT
-//   Output: a JSON object
-//   Output:
-//     changed: set to true if the key value was changed.
+//
+//	Path: /api/v1/kv/[{prefix}/]{key}
+//	Methods: POST, PUT
+//	Output: a JSON object
+//	Output:
+//	  changed: set to true if the key value was changed.
 func (s *Service) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]
@@ -58,10 +60,11 @@ func (s *Service) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 }
 
 // KVDelete removes a (App-specific) value from the KV store.
-//   Path: /api/v1/kv/[{prefix}/]{key}
-//   Methods: DELETE
-//   Input: none
-//   Output: none
+//
+//	Path: /api/v1/kv/[{prefix}/]{key}
+//	Methods: DELETE
+//	Input: none
+//	Output: none
 func (s *Service) KVDelete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["key"]
 	prefix := mux.Vars(req)["prefix"]

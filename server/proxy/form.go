@@ -27,7 +27,7 @@ func cleanForm(in apps.Form, conf config.Config, appID apps.AppID) (apps.Form, e
 	if in.Icon != "" {
 		icon, err := normalizeStaticPath(conf, appID, in.Icon)
 		if err != nil {
-			problems = multierror.Append(problems, errors.Wrap(err, "invalid icon path in form."))
+			problems = multierror.Append(problems, errors.Wrap(err, "invalid icon path in form"))
 			out.Icon = ""
 		} else {
 			out.Icon = icon

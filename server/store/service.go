@@ -24,11 +24,11 @@ import (
 // format. Hashkeys have the following format (see service_test.go#TestHashkey
 // for examples):
 //
-//  - global prefix of ".X" where X is exactly 1 byte (2 bytes)
-//  - bot user ID (26 bytes)
-//  - app-specific prefix, limited to 2 non-space ASCII characters, right-filled
-//   with ' ' to 2 bytes.
-//  - app-specific key hash: 16 bytes, ascii85 (20 bytes)
+//   - global prefix of ".X" where X is exactly 1 byte (2 bytes)
+//   - bot user ID (26 bytes)
+//   - app-specific prefix, limited to 2 non-space ASCII characters, right-filled
+//     with ' ' to 2 bytes.
+//   - app-specific key hash: 16 bytes, ascii85 (20 bytes)
 //
 // All other keys must start with an ASCII letter. '.' is usually used as the
 // terminator since it is not used in the base64 representation.

@@ -4,8 +4,6 @@
 package restapitest
 
 import (
-	"github.com/mattermost/mattermost-server/v6/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -27,7 +25,7 @@ func expandEverything(level apps.ExpandLevel) apps.Expand {
 	}
 }
 
-func forExpandClientCombinations(th *Helper, appBotUser *model.User, expandSet []apps.ExpandLevel, except []appClient, runf func(*Helper, apps.ExpandLevel, appClient)) {
+func forExpandClientCombinations(th *Helper, expandSet []apps.ExpandLevel, except []appClient, runf func(*Helper, apps.ExpandLevel, appClient)) {
 	if len(expandSet) == 0 {
 		expandSet = []apps.ExpandLevel{
 			apps.ExpandNone,

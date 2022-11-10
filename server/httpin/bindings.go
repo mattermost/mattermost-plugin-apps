@@ -10,10 +10,11 @@ import (
 )
 
 // GetBindings returns combined bindings for all Apps.
-//   Path: /api/v1/bindings
-//   Method: GET
-//   Input: none
-//   Output: []Binding
+//
+//	Path: /api/v1/bindings
+//	Method: GET
+//	Input: none
+//	Output: []Binding
 func (s *Service) GetBindings(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
 	bindings, err := s.Proxy.GetBindings(r, apps.Context{

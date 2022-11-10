@@ -19,7 +19,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
+	"github.com/mattermost/mattermost-plugin-apps/server/httpin"
 )
 
 type TestClientPP struct {
@@ -75,7 +75,7 @@ func (th *Helper) Call(appID apps.AppID, creq apps.CallRequest) (*apps.CallRespo
 	return th.UserClientPP.Call(creq)
 }
 
-func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (*proxy.CallResponse, *model.Response, error) {
+func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (*httpin.CallResponse, *model.Response, error) {
 	creq.Context.UserAgentContext.AppID = appID
 	creq.Context.UserAgentContext.UserAgent = "test"
 	creq.Context.UserAgentContext.ChannelID = th.ServerTestHelper.BasicChannel.Id
@@ -85,7 +85,7 @@ func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (
 	}
 
 	resp, err := th.UserClientPP.DoAPIPOST(
-		th.UserClientPP.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.Call, string(b)) // nolint:bodyclose
+		th.UserClientPP.GetPluginRoute(appclient.AppsPluginName)+appspath.API+appspath.Call, string(b))
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
@@ -93,7 +93,7 @@ func (th *Helper) CallWithAppMetadata(appID apps.AppID, creq apps.CallRequest) (
 		return nil, model.BuildResponse(resp), err
 	}
 
-	var cresp proxy.CallResponse
+	var cresp httpin.CallResponse
 	err = json.NewDecoder(resp.Body).Decode(&cresp)
 	if err != nil {
 		return nil, model.BuildResponse(resp), errors.Wrap(err, "failed to decode response")

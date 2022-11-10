@@ -16,6 +16,7 @@ import (
 )
 
 // static is preloaded with the contents of the ./static directory.
+//
 //go:embed static
 var static embed.FS
 
