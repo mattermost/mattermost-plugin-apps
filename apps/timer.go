@@ -4,6 +4,8 @@
 package apps
 
 import (
+	"time"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -11,7 +13,7 @@ import (
 
 // Timer TODO
 type Timer struct {
-	// At is the unix time in milliseconds when the timer should be executed
+	// At is the unix time in milliseconds when the timer should be executed.
 	At int64 `json:"at"`
 
 	// Call is the (one-way) call to make upon the timers execution.
@@ -32,6 +34,10 @@ func (t Timer) Validate() error {
 
 	if t.At <= 0 {
 		result = multierror.Append(result, utils.NewInvalidError("at must be positive"))
+	}
+
+	if time.Until(time.UnixMilli(t.At)) < 1*time.Second {
+		result = multierror.Append(result, utils.NewInvalidError("at most be at least 1 second in the future"))
 	}
 
 	return result
