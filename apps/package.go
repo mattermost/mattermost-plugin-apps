@@ -6,14 +6,14 @@
 //
 // Main documentation: https://developers.mattermost.com/integrate/apps/
 //
-// Function
+// # Function
 //
 // Functions are invoked in response to a user or a notification event. A
 // Function to invoke is described by a Call, and is passed a CallRequest when
 // invoked. For user-invoked functions, the inputs can be collected from the
 // user with a Form, either as a modal, or as a /command with autocomplete.
 //
-// Call
+// # Call
 //
 // A Call is a general request to an App server. Calls are used to fetch App's
 // bindings, and to process user input, webhook events, and dynamic data
@@ -23,7 +23,7 @@
 // originating Call, and adds user-input values, Context, etc. CallResponse is
 // the result of a call.
 //
-// Context and Expand
+// # Context and Expand
 //
 // Context of a CallRequest sent to the App includes the IDs of relevant
 // Mattermost entities, such as the Location the call originated from, acting
@@ -42,9 +42,9 @@
 //
 // Special Notes
 //
-//  - TODO Use of router packages in Apps - Go (gorilla mux) - JavaScript
+//   - TODO Use of router packages in Apps - Go (gorilla mux) - JavaScript
 //
-//  - TODO Call vs Notification
+//   - TODO Call vs Notification
 //
-//  - TODO AWS Lambda packaging
+//   - TODO AWS Lambda packaging
 package apps

@@ -11,7 +11,7 @@ import (
 
 // notifyUserLeftTeam creates a new test team. User, user2 and bot are added as members of the
 // team. User2 is then removed from the team to trigger.
-func notifyUserLeftTeam(th *Helper) *notifyTestCase {
+func notifyUserLeftTeam(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
 			th.Skip(" https://mattermost.atlassian.net/browse/MM-47962")

@@ -45,20 +45,21 @@ func DeployAppFromFile(c Client, path string, log utils.Logger, params DeployApp
 
 // deployApp gets a release URL parses the release and creates an App in AWS
 // releaseURL should contain a zip with lambda functions' zip files and a `manifest.json`
-//  ~/my_app.zip
-//   |-- manifest.json
-//   |-- static
-//		|-- icon.png
-//		|-- coolFile.txt
-//   |-- my_nodejs_function.zip
-//      |-- index.js
-//      |-- node-modules
-//          |-- async
-//          |-- aws-sdk
-//   |-- my_python_function.zip
-//      |-- lambda_function.py
-//      |-- __pycache__
-//      |-- certifi/
+//
+//	 ~/my_app.zip
+//	  |-- manifest.json
+//	  |-- static
+//			|-- icon.png
+//			|-- coolFile.txt
+//	  |-- my_nodejs_function.zip
+//	     |-- index.js
+//	     |-- node-modules
+//	         |-- async
+//	         |-- aws-sdk
+//	  |-- my_python_function.zip
+//	     |-- lambda_function.py
+//	     |-- __pycache__
+//	     |-- certifi/
 func deployApp(c Client, log utils.Logger, pd *DeployData, params DeployAppParams) (*DeployAppResult, error) {
 	out := DeployAppResult{
 		Manifest: *pd.Manifest,

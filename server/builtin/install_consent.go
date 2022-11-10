@@ -196,7 +196,7 @@ func (a *builtinApp) newInstallConsentForm(m apps.Manifest, creq apps.CallReques
 	}
 }
 
-func (a *builtinApp) stateAsManifest(r *incoming.Request, creq apps.CallRequest) (*apps.Manifest, error) {
+func (a *builtinApp) stateAsManifest(_ *incoming.Request, creq apps.CallRequest) (*apps.Manifest, error) {
 	id, ok := creq.State.(string)
 	if !ok {
 		return nil, errors.New("no app ID in State, don't know what to install")

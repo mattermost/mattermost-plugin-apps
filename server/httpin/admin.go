@@ -15,17 +15,22 @@ import (
 // manifest store, making the App installable. The resulting listed manifest
 // will combine the deployment information from the prior listing, and the new
 // manifests as follows:
-//   1. The "core" manifest (except Deploy) is updated to the new values.
-//   2. Deploy types from the previously listed manifest are updated from the new manifest, or preserved.
-//   3. Deploy types specified in "add_deploys" are copied from the new manifest.
-//   4. "remove"
-//   Path: /api/v1/add-listed-app
-//   Method: POST
-//   Input: JSON{
-//      Manifest...
-//      "add_deploys": []string e.g. ["aws_lambda","http"]
-//      "remove_deploys": []string e.g. ["aws_lambda","http"]
-//   Output: The updated listing manifest
+//
+//  1. The "core" manifest (except Deploy) is updated to the new values.
+//  2. Deploy types from the previously listed manifest are updated from the new manifest, or preserved.
+//  3. Deploy types specified in "add_deploys" are copied from the new manifest.
+//  4. "remove"
+//
+// _
+//
+//	Path: /api/v1/add-listed-app
+//	Method: POST
+//	Input: JSON{
+//		Manifest...
+//		"add_deploys": []string e.g. ["aws_lambda","http"]
+//		"remove_deploys": []string e.g. ["aws_lambda","http"]
+//	}
+//	Output: The updated listing manifest
 func (s *Service) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -45,10 +50,11 @@ func (s *Service) UpdateAppListing(r *incoming.Request, w http.ResponseWriter, r
 
 // InstallApp installs an App that is already deployed, either locally or in the
 // Marketplace (if applicable).
-//   Path: /api/v1/install-app
-//   Method: POST
-//   Input: JSON {app_id, deploy_type}
-//   Output: JSON, unsanitized App record
+//
+//	Path: /api/v1/install-app
+//	Method: POST
+//	Input: JSON {app_id, deploy_type}
+//	Output: JSON, unsanitized App record
 func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -66,10 +72,11 @@ func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *ht
 }
 
 // EnableApp enables an App .
-//   Path: /api/v1/enable-app
-//   Method: POST
-//   Input: JSON {app_id}
-//   Output: none
+//
+//	Path: /api/v1/enable-app
+//	Method: POST
+//	Input: JSON {app_id}
+//	Output: none
 func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -87,10 +94,11 @@ func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *htt
 }
 
 // DisableApp disables an App .
-//   Path: /api/v1/disable-app
-//   Method: POST
-//   Input: JSON {app_id}
-//   Output: JSON, unsanitized App record
+//
+//	Path: /api/v1/disable-app
+//	Method: POST
+//	Input: JSON {app_id}
+//	Output: JSON, unsanitized App record
 func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -108,10 +116,11 @@ func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *ht
 }
 
 // UninstallApp uninstalls an App .
-//   Path: /api/v1/uninstall-app
-//   Method: POST
-//   Input: JSON {app_id}
-//   Output: None
+//
+//	Path: /api/v1/uninstall-app
+//	Method: POST
+//	Input: JSON {app_id}
+//	Output: None
 func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -128,10 +137,11 @@ func (s *Service) UninstallApp(r *incoming.Request, w http.ResponseWriter, req *
 
 // GetApp returns the App's record. If requestor is a system administrator, the
 // raw record with secrets is returned, otherwise the output is sanitized.
-//   Path: /apps/{AppID}
-//   Method: GET
-//   Input: none
-//   Output: App
+//
+//	Path: /apps/{AppID}
+//	Method: GET
+//	Input: none
+//	Output: App
 func (s *Service) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()

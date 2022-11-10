@@ -24,7 +24,7 @@ type bindingsApp struct {
 	cresp apps.CallResponse
 }
 
-func newBindingsApp(th *Helper, appID apps.AppID, bindExpand *apps.Expand, bindings []apps.Binding) *bindingsApp {
+func newBindingsApp(_ *Helper, appID apps.AppID, bindExpand *apps.Expand, bindings []apps.Binding) *bindingsApp {
 	app := bindingsApp{}
 	app.App = goapp.MakeAppOrPanic(
 		apps.Manifest{

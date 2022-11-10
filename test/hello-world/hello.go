@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -131,9 +131,15 @@ func main() {
 	http.HandleFunc("/send", Send)
 
 	addr := ":4000" // matches manifest.json
+	server := &http.Server{
+		Addr:              addr,
+		ReadHeaderTimeout: 3 * time.Second,
+		WriteTimeout:      5 * time.Second,
+	}
+
 	fmt.Println("Listening on", addr)
 	fmt.Println("Use '/apps install http http://localhost" + addr + "/manifest.json' to install the app") // matches manifest.json
-	log.Fatal(http.ListenAndServe(addr, nil))
+	panic(server.ListenAndServe())
 }
 
 // Send sends a DM back to the user.
@@ -148,13 +154,13 @@ func Send(w http.ResponseWriter, req *http.Request) {
 	}
 	_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
 	if err != nil {
-		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to send bot DM.")))
+		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to send bot DM")))
 		return
 	}
 
 	_, err = appclient.AsActingUser(c.Context).DM(c.Context.BotUserID, "Hello, bot!")
 	if err != nil {
-		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to respond to bot.")))
+		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to respond to bot")))
 		return
 	}
 
