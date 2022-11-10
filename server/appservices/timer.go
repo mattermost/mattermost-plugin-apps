@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-type timer struct {
+type storedTimer struct {
 	Call      apps.Call  `json:"call"`
 	AppID     apps.AppID `json:"app_id"`
 	UserID    string     `json:"user_id"`
@@ -23,11 +23,11 @@ type timer struct {
 	TeamID    string     `json:"team_id,omitempty"`
 }
 
-func (t timer) Key(appID apps.AppID, at int64) string {
+func (t storedTimer) Key(appID apps.AppID, at int64) string {
 	return string(appID) + t.UserID + strconv.FormatInt(at, 10)
 }
 
-func (t timer) Loggable() []interface{} {
+func (t storedTimer) Loggable() []interface{} {
 	props := []interface{}{"user_id", t.UserID}
 	props = append(props, "app_id", t.AppID)
 	if t.ChannelID != "" {
@@ -49,7 +49,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 		return err
 	}
 
-	storedTimer := timer{
+	st := storedTimer{
 		Call:      t.Call,
 		AppID:     r.SourceAppID(),
 		UserID:    r.ActingUserID(),
@@ -57,7 +57,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 		TeamID:    t.TeamID,
 	}
 
-	_, err = a.scheduler.ScheduleOnce(storedTimer.Key(r.SourceAppID(), t.At), time.UnixMilli(t.At), storedTimer)
+	_, err = a.scheduler.ScheduleOnce(st.Key(r.SourceAppID(), t.At), time.UnixMilli(t.At), st)
 	if err != nil {
 		return errors.Wrap(err, "faild to schedule timer job")
 	}
@@ -66,7 +66,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 }
 
 func (a *AppServices) ExecuteTimer(key string, props interface{}) {
-	t, ok := props.(timer)
+	t, ok := props.(storedTimer)
 	if !ok {
 		a.log.Debugw("Timer contained unknown props. Inoring the timer.", "key", key, "props", props)
 		return
@@ -74,7 +74,7 @@ func (a *AppServices) ExecuteTimer(key string, props interface{}) {
 
 	r := a.caller.NewIncomingRequest()
 
-	r.Log = r.Log.With(t) // TODO: Maybe remove
+	r.Log = r.Log.With(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()

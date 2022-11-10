@@ -12,12 +12,12 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 )
 
-// CreateTimer TODO
+// CreateTimer create or updates a new statefull timer.
 //
 //	Path: /api/v1/timer
 //	Method: POST
 //	Input: JSON {at, call, state}
-//	Output: JSON, unsanitized App record
+//	Output: None
 func (s *Service) CreateTimer(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var t apps.Timer
 

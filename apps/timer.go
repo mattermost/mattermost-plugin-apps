@@ -11,7 +11,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// Timer TODO
+// Timer s submitted by an app to the Timer API. It determines when
+// the app would like to be notified, and how these notifications
+// should be invoked.
 type Timer struct {
 	// At is the unix time in milliseconds when the timer should be executed.
 	At int64 `json:"at"`
