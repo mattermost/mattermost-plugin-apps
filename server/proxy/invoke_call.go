@@ -24,7 +24,7 @@ func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.Ap
 		return nil, apps.NewErrorResponse(err)
 	}
 	if creq.Context.AppID != app.AppID {
-		return app, apps.NewErrorResponse(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
+		return nil, apps.NewErrorResponse(utils.NewInvalidError("incoming.Request validation error: app_id mismatch"))
 	}
 
 	if creq.Path[0] != '/' {
