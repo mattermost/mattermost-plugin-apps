@@ -35,6 +35,8 @@ type Helper struct {
 	SystemAdminClientPP *appclient.ClientPP
 	LocalClientPP       *appclient.ClientPP
 
+	UserClientApp *appclient.Client
+
 	asBot   appClient
 	asUser  appClient
 	asUser2 appClient
