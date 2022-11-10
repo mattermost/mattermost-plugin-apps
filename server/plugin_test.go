@@ -20,22 +20,14 @@ func TestOnActivate(t *testing.T) {
 	p.API = testAPI
 
 	testAPI.On("GetServerVersion").Return("5.30.1")
-	testAPI.On("KVGet", "mmi_botid").Return([]byte("the_bot_id"), nil)
-
-	username := "appsbot"
-	displayName := "Mattermost Apps"
-	description := "Mattermost Apps Registry and API proxy."
-	testAPI.On("PatchBot", "the_bot_id", &model.BotPatch{
-		Username:    &username,
-		DisplayName: &displayName,
-		Description: &description,
-	}).Return(nil, nil)
 
 	testAPI.On("KVSetWithOptions", "mutex_mmi_bot_ensure", []byte{0x1}, model.PluginKVSetOptions{Atomic: true, OldValue: nil, ExpireInSeconds: 15}).Return(true, nil)
 	testAPI.On("KVSetWithOptions", "mutex_mmi_bot_ensure", []byte(nil), model.PluginKVSetOptions{Atomic: false, OldValue: nil, ExpireInSeconds: 0}).Return(true, nil)
 
-	testAPI.On("GetBundlePath").Return("../", nil)
+	testAPI.On("KVList", mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(nil, nil)
 
+	testAPI.On("EnsureBotUser", mock.AnythingOfType("*model.Bot")).Return("the_bot_id", nil)
+	testAPI.On("GetBundlePath").Return("../", nil)
 	testAPI.On("SetProfileImage", "the_bot_id", mock.AnythingOfType("[]uint8")).Return(nil)
 
 	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)

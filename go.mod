@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.5
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattermost/mattermost-plugin-api v0.0.31-0.20221109102037-329735da87c7
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20221012175353-8cb6718a9bcc
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20221103053138-a4103f8c779d
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/openfaas/faas-cli v0.0.0-20210705110531-a230119be00f
 	github.com/pkg/errors v0.9.1
