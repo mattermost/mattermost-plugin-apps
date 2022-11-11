@@ -617,7 +617,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 					ExpandedContext: apps.ExpandedContext{ActingUser: &model.User{Id: "userid"}},
 				})
 			r.Log = utils.NewTestLogger()
-			resp := proxy.InvokeCall(r, tc.callRequest)
+			_, resp := proxy.InvokeCall(r, tc.callRequest)
 
 			require.Equal(t, tc.callResponse.RefreshBindings, resp.RefreshBindings)
 

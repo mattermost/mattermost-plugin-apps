@@ -7,11 +7,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+func isBindingPath(app *apps.App, pathForCheck string) bool {
+	if app.Bindings != nil {
+		return pathForCheck == app.Bindings.Path
+	}
+	return pathForCheck == apps.DefaultBindings.Path
+}
 
 func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.App, apps.CallResponse) {
 	if err := r.Check(
@@ -115,7 +121,7 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 	}
 
 	if cresp.Type != apps.CallResponseTypeError &&
-		creq.Call.Path != path.Bindings &&
+		!isBindingPath(app, creq.Call.Path) &&
 		cresp.RefreshBindings && r.ActingUserID() != "" {
 		p.dispatchRefreshBindingsEvent(r.ActingUserID())
 	}
