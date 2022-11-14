@@ -32,21 +32,22 @@ const (
 )
 
 const (
-	fAction         = "action"
-	FieldAppID      = "app"
-	fForce          = "force"
-	fBase64         = "base64"
-	fBase64Key      = "base64_key"
-	fConsent        = "consent"
-	fCurrentValue   = "current_value"
-	fDeployType     = "deploy_type"
-	fID             = "id"
-	fIncludePlugins = "include_plugins"
-	FieldNamespace  = "namespace"
-	fNewValue       = "new_value"
-	fSecret         = "secret"
-	fURL            = "url"
-	fSessionID      = "session_id"
+	fAction              = "action"
+	fBase64              = "base64"
+	fBase64Key           = "base64_key"
+	fConsent             = "consent"
+	fCurrentValue        = "current_value"
+	fDeployType          = "deploy_type"
+	fForce               = "force"
+	fID                  = "id"
+	FieldAppID           = "app"
+	FieldCachedStoreName = "cached_store"
+	FieldNamespace       = "namespace"
+	fIncludePlugins      = "include_plugins"
+	fNewValue            = "new_value"
+	fSecret              = "secret"
+	fSessionID           = "session_id"
+	fURL                 = "url"
 )
 
 const (
@@ -74,8 +75,9 @@ const (
 )
 
 const (
-	pLookupAppID     = "/q/app_id"
-	pLookupNamespace = "/q/namespace"
+	pLookupAppID           = "/q/app_id"
+	pLookupCachedStoreName = "/q/cached_store_name"
+	pLookupNamespace       = "/q/namespace"
 )
 
 type handler func(*incoming.Request, apps.CallRequest) apps.CallResponse
@@ -132,8 +134,9 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInstallConsentSource: requireAdmin(a.installConsentForm),
 
 		// Lookups.
-		pLookupAppID:     requireAdmin(a.lookupAppID),
-		pLookupNamespace: requireAdmin(a.lookupNamespace),
+		pLookupAppID:           requireAdmin(a.lookupAppID),
+		pLookupNamespace:       requireAdmin(a.lookupNamespace),
+		pLookupCachedStoreName: requireAdmin(a.lookupCachedStoreName),
 	}
 
 	return a

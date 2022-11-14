@@ -36,7 +36,7 @@ func appKey(appID apps.AppID) string {
 	return KVTokenPrefix + "_" + string(appID)
 }
 
-func parseKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
+func parseTokenKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
 	s := strings.Split(key, "_")
 	if len(s) != 3 {
 		return "", "", errors.New("invalid key pattern")
@@ -105,7 +105,7 @@ func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
 		}
 
 		for _, key := range keys {
-			_, keyUserID, err := parseKey(key)
+			_, keyUserID, err := parseTokenKey(key)
 			if err != nil {
 				continue
 			}
@@ -155,7 +155,7 @@ func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.
 		}
 
 		for _, key := range keys {
-			_, keyUserID, err := parseKey(key)
+			_, keyUserID, err := parseTokenKey(key)
 			if err != nil {
 				continue
 			}

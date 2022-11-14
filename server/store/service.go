@@ -40,6 +40,10 @@ const (
 	// records.
 	KVUserPrefix = ".u"
 
+	// KVCachedPrefix is the global namespace for storing synchronized cached
+	// lists of records like apps and subscriptions.
+	KVCachedPrefix = ".cached"
+
 	// KVUserPrefix is the key to store OAuth2 user
 	// records.
 	KVUserKey = "oauth2_user"

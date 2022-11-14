@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -31,7 +32,8 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 		Form: &apps.Form{
 			Submit: newUserCall(PathDebugKVInfo),
 			Fields: []apps.Field{
-				a.appIDField(LookupInstalledApps, 1, false, loc),
+				a.appIDField(LookupInstalledApps, 0, false, loc),
+				// a.cachedStoreNameField(loc),
 			},
 		},
 	}
@@ -39,10 +41,22 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 
 func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
-	if appID != "" {
+	cachedStoreName := creq.GetValue(FieldCachedStoreName, "")
+	switch {
+	case appID == "" && cachedStoreName == "":
+		return a.debugKVInfoForAll(r, creq)
+	case appID != "":
 		return a.debugKVInfoForApp(r, creq, appID)
+	case cachedStoreName != "":
+		// return a.debugKVInfoForCachedStore(r, creq, cachedStoreName)
+		return apps.NewErrorResponse(errors.New("not implemented"))
+	default:
+		loc := a.newLocalizer(creq)
+		return apps.NewErrorResponse(errors.New(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.debug.kv.info.invalidflags",
+			Other: "--app and --cached-store are mutually exclusive",
+		})))
 	}
-	return a.debugKVInfoForAll(r, creq)
 }
 
 func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
@@ -56,29 +70,26 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 		DefaultMessage: &i18n.Message{
 			ID: "command.debug.kv.info.submit.message",
 			Other: `{{.Total}} total keys:
-- Manifest records: {{.Manifests}}
-- App records: {{.Apps}}
-- Subscription records: {{.Subscriptions}}
-- OAuth2 temporary state records: {{.OAuth2State}}
+- Special cached keys: {{.CachedStoreCount}}
+{{range $name, $count := .CachedStoreCountByName}}
+  - ` + "`{{$name}}`" + `: {{$count}}
+{{end}}
+- Known manifest records: {{.ManifestCount}}
+- Installed app records: {{.InstalledAppCount}}
+- Subscription records: {{.SubscriptionCount}}
+- OAuth2 temporary state records: {{.OAuth2StateCount}}
 - Other internal records: {{.Other}}
-- Apps' own records: {{.AppsTotal}}
+
+- Apps' KV records: {{.AppsTotal}}
 `},
-		TemplateData: map[string]string{
-			"Total":         strconv.Itoa(info.Total),
-			"Manifests":     strconv.Itoa(info.ManifestCount),
-			"Apps":          strconv.Itoa(info.InstalledAppCount),
-			"Subscriptions": strconv.Itoa(info.SubscriptionCount),
-			"OAuth2State":   strconv.Itoa(info.OAuth2StateCount),
-			"Other":         strconv.Itoa(info.Other),
-			"AppsTotal":     strconv.Itoa(info.AppsTotal),
-		},
+		TemplateData: *info,
 	})
 
 	for appID, appInfo := range info.Apps {
 		message += fmt.Sprintf("  - `%s`: %v (%v kv, %v users, %v tokens)\n", appID, appInfo.Total(), appInfo.AppKVCount, appInfo.UserCount, appInfo.TokenCount)
 	}
 
-	totalKnown := info.ManifestCount + info.InstalledAppCount + info.SubscriptionCount + info.OAuth2StateCount + info.AppsTotal + info.Other
+	totalKnown := info.ManifestCount + info.InstalledAppCount + info.SubscriptionCount + info.OAuth2StateCount + info.AppsTotal + info.Other + info.CachedStoreCount
 	if totalKnown != info.Total {
 		message += fmt.Sprintf("- **UNKNOWN**: %v\n", info.Total-totalKnown)
 	}
@@ -132,3 +143,46 @@ func (a *builtinApp) debugKVInfoForApp(r *incoming.Request, creq apps.CallReques
 		Data: appInfo,
 	}
 }
+
+// func (a *builtinApp) debugKVInfoForCachedStore(r *incoming.Request, creq apps.CallRequest, name string) apps.CallResponse {
+// 	info, err := a.appservices.KVDebugInfo(r)
+// 	if err != nil {
+// 		return apps.NewErrorResponse(err)
+// 	}
+// 	loc := a.newLocalizer(creq)
+
+// 	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+// 		DefaultMessage: &i18n.Message{
+// 			ID:    "command.debug.kv.info.submit.message",
+// 			Other: "{{.Count}} total keys for `{{.AppID}}`.",
+// 		},
+// 		TemplateData: map[string]string{
+// 			"AppID": string(appID),
+// 			"Count": strconv.Itoa(appInfo.AppKVCount),
+// 		},
+// 	}) + "\n"
+
+// 	if len(appInfo.AppKVCountByNamespace) > 0 {
+// 		message += "\n" +
+// 			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+// 				ID:    "command.debug.kv.info.submit.namespaces",
+// 				Other: "Namespaces:",
+// 			}) +
+// 			"\n"
+// 	}
+// 	for ns, c := range appInfo.AppKVCountByNamespace {
+// 		if ns == "" {
+// 			ns = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+// 				ID:    "command.debug.kv.info.submit.none",
+// 				Other: "(none)",
+// 			})
+// 		}
+// 		message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
+// 	}
+
+// 	return apps.CallResponse{
+// 		Type: apps.CallResponseTypeOK,
+// 		Text: message,
+// 		Data: appInfo,
+// 	}
+// }

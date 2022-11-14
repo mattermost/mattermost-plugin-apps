@@ -25,14 +25,16 @@ func (i KVDebugAppInfo) Total() int {
 }
 
 type KVDebugInfo struct {
-	InstalledAppCount int
-	Apps              map[apps.AppID]*KVDebugAppInfo
-	AppsTotal         int
-	ManifestCount     int
-	OAuth2StateCount  int
-	Other             int
-	SubscriptionCount int
-	Total             int
+	InstalledAppCount      int
+	Apps                   map[apps.AppID]*KVDebugAppInfo
+	AppsTotal              int
+	ManifestCount          int
+	OAuth2StateCount       int
+	Other                  int
+	SubscriptionCount      int
+	CachedStoreCount       int
+	CachedStoreCountByName map[string]int
+	Total                  int
 }
 
 func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
@@ -90,7 +92,7 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 				info.SubscriptionCount++
 
 			case strings.HasPrefix(key, KVTokenPrefix):
-				appID, _, err := parseKey(key)
+				appID, _, err := parseTokenKey(key)
 				if err != nil {
 					continue
 				}
@@ -105,6 +107,13 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 
 			case strings.HasPrefix(key, KVLocalManifestPrefix):
 				info.ManifestCount++
+
+			case strings.HasPrefix(key, KVCachedPrefix):
+				name, _, _ := parseCachedStoreKey(key)
+				if name != "" {
+					info.CachedStoreCountByName[name]++
+				}
+				info.CachedStoreCount++
 
 			case key == "mmi_botid":
 				info.Other++

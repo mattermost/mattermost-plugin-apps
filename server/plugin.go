@@ -181,6 +181,15 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	return nil
 }
 
+func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
+	p.API.LogDebug("<>/<> OnClusterLeaderChanged", "isLeader", isLeader)
+	return nil
+}
+
+func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
+	p.API.LogDebug("<>/<> OnPluginClusterEvent", "ev", ev)
+}
+
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
 	p.httpIn.ServePluginHTTP(c, w, req)
 }

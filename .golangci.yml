@@ -40,6 +40,9 @@ linters:
 
 issues:
   exclude-rules:
+    - path: server/store/cached_store.go
+      linters: 
+        - revive
     - path: server/incoming/request.go
       linters: 
         - govet
