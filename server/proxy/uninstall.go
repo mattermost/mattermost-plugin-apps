@@ -26,12 +26,6 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
 	}
 
-	// Disable the app and clean out all of its sessions.
-	_, err = p.DisableApp(r, cc, appID)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to disable app")
-	}
-
 	message := fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	if app.OnUninstall != nil {
 		resp := p.call(r, app, *app.OnUninstall, &cc)
@@ -45,6 +39,11 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		case apps.CallResponseTypeOK:
 			message = fmt.Sprintf("Uninstalled %s, with message: %s", app.DisplayName, resp.Text)
 		}
+	}
+
+	// Only clear the session store. Existing session are revoked when the OAuth app gets deleted.
+	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 	}
 
 	// Delete OAuth app.
@@ -69,6 +68,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 
 	// TODO: delete OAuth2 user objects
 
+	// Remove all subscriptions
 	if err = p.appservices.UnsubscribeApp(r, appID); err != nil {
 		return "", errors.Wrapf(err, "failed to clear subscriptions for %s, the app is left disabled", appID)
 	}
