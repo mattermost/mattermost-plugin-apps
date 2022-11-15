@@ -4,8 +4,8 @@
     "description": "This plugin powers the Mattermost Apps Framework and is required for any Apps to run",
     "homepage_url": "https://mattermost.com/marketplace/app-framework",
     "support_url": "https://github.com/mattermost/mattermost-plugin-apps/issues",
-    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v1.0.1",
-    "version": "1.1.0",
+    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-apps/releases/tag/v1.1.1",
+    "version": "1.1.1",
     "min_server_version": "6.6.0",
     "server": {
         "executables": {
