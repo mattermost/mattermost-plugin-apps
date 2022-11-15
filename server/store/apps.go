@@ -38,7 +38,7 @@ type appStore struct {
 var _ AppStore = (*appStore)(nil)
 
 func makeAppStore(conf config.Service, api plugin.API, logger utils.Logger) (*appStore, error) {
-	s, err := MakeCachedStore[apps.App]("apps", api, conf.MattermostAPI(), logger)
+	s, err := MakeCachedStore[apps.App](AppStoreName, api, conf.MattermostAPI(), logger)
 	if err != nil {
 		return nil, err
 	}

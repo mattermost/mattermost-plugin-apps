@@ -25,21 +25,18 @@ import (
 )
 
 const (
-	CachedStoreEvent        = "cached_store"
+	CachedStoreEventID      = "cached_store"
 	CachedStorePutMethod    = "put"
 	CachedStoreDeleteMethod = "delete"
 )
 
-type cachedStoreEvent struct {
-	Method string    `json:"method"`
-	Name   string    `json:"name"`
-	Key    string    `json:"key"`
-	SentAt time.Time `json:"sent_at"`
-}
+type cachedStoreEvent[T any] struct {
+	Key       string    `json:"key"`
+	Method    string    `json:"method"`
+	SentAt    time.Time `json:"sent_at"`
+	StoreName string    `json:"name"`
 
-type cachedStorePutEvent[T any] struct {
-	cachedStoreEvent
-	Data T `json:"data"`
+	Data T `json:"data,omitempty"`
 }
 
 type IndexEntry[T any] struct {
@@ -137,11 +134,7 @@ func (s *CachedStore[T]) withRollbacks(r *incoming.Request, updatef func(prevInd
 
 func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err error) {
 	return s.withRollbacks(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
-		data, err := json.Marshal(value)
-		if err != nil {
-			return rollbacks, err
-		}
-		hash := fmt.Sprintf("%x", sha256.Sum256(data))
+		hash := jsonHash(value)
 		prevEntry, ok := s.get(key)
 		if ok && prevEntry.ValueHash == hash {
 			return rollbacks, nil
@@ -217,39 +210,56 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 }
 
 func (s *CachedStore[T]) notifyPut(key string, data T) error {
-	event := cachedStorePutEvent[T]{
-		cachedStoreEvent: s.newEvent(CachedStorePutMethod, key),
-		Data:             data,
-	}
+	event := s.newEvent(CachedStorePutMethod, key, data)
 	bb, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: CachedStoreEvent, Data: bb},
+		model.PluginClusterEvent{Id: CachedStoreEventID, Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
 func (s *CachedStore[T]) notifyDelete(key string) error {
-	bb, err := json.Marshal(s.newEvent(CachedStoreDeleteMethod, key))
+	var data T
+	bb, err := json.Marshal(s.newEvent(CachedStoreDeleteMethod, key, data))
 	if err != nil {
 		return err
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: CachedStoreEvent, Data: bb},
+		model.PluginClusterEvent{Id: CachedStoreEventID, Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
-func (s *CachedStore[T]) newEvent(method, key string) cachedStoreEvent {
-	return cachedStoreEvent{
-		Method: method,
-		Name:   s.name,
-		Key:    key,
-		SentAt: time.Now(),
+func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
+	s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
+
+	switch event.Method {
+	case CachedStorePutMethod:
+		s.cache.Store(event.Key, &IndexEntry[T]{
+			Key:       event.Key,
+			ValueHash: jsonHash(event.Data),
+			data:      event.Data,
+		})
+
+	case CachedStoreDeleteMethod:
+		s.cache.Delete(event.Key)
+	}
+
+	return nil
+}
+
+func (s *CachedStore[T]) newEvent(method, key string, data T) cachedStoreEvent[T] {
+	return cachedStoreEvent[T]{
+		Method:    method,
+		StoreName: s.name,
+		Key:       key,
+		SentAt:    time.Now(),
+		Data:      data,
 	}
 }
 
@@ -270,6 +280,7 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 		}
 
 		for _, entry := range remove {
+			s.logger.Debugf("CachedStore.synchFromKV %s: key %s in cache but no longer in index, deleting", s.name, entry.Key)
 			s.cache.Delete(entry.Key)
 		}
 		for _, entry := range append(add, change...) {
@@ -278,6 +289,7 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 				return nilIndex, err
 			}
 			storableClone := entry
+			s.logger.Debugf("CachedStore.synchFromKV %s: loaded missing or stale key %s", s.name, entry.Key)
 			s.cache.Store(entry.Key, &storableClone)
 		}
 	}
@@ -388,7 +400,6 @@ func (index Index[T]) Clone() Index[T] {
 
 func parseCachedStoreKey(key string) (name, id string, err error) {
 	parts := strings.SplitN(key, "-", 3)
-	fmt.Printf("<>/<> 1 !!!!!!!!! %v parts:%v\n", len(parts), parts)
 	if len(parts) != 3 {
 		return "", "", errors.Wrap(utils.ErrInvalid, "cached store item key: "+key)
 	}
@@ -400,6 +411,10 @@ func parseCachedStoreKey(key string) (name, id string, err error) {
 	}
 	name = parts[2]
 
-	fmt.Printf("<>/<> 3 !!!!!!!!! name:%v id:%v\n", name, id)
 	return name, id, nil
+}
+
+func jsonHash(value any) string {
+	data, _ := json.Marshal(value)
+	return fmt.Sprintf("%x", sha256.Sum256(data))
 }

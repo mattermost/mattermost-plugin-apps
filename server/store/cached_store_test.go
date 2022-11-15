@@ -52,15 +52,15 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, CachedStoreEvent, e.Id)
+					require.Equal(t, CachedStoreEventID, e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event cachedStorePutEvent[Test]
+					var event cachedStoreEvent[Test]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 
 					require.Equal(t, CachedStorePutMethod, event.Method)
-					require.Equal(t, "test", event.Name)
+					require.Equal(t, "test", event.StoreName)
 					require.Equal(t, id, event.Key)
 					require.Equal(t, data, event.Data)
 					require.NotEmpty(t, event.SentAt)
@@ -101,15 +101,15 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, CachedStoreEvent, e.Id)
+					require.Equal(t, CachedStoreEventID, e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event cachedStoreEvent
+					var event cachedStoreEvent[Test]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 
 					require.Equal(t, CachedStoreDeleteMethod, event.Method)
-					require.Equal(t, "test", event.Name)
+					require.Equal(t, "test", event.StoreName)
 					require.Equal(t, id, event.Key)
 					require.NotEmpty(t, event.SentAt)
 

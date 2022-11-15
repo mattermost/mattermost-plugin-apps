@@ -182,12 +182,14 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 }
 
 func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
-	p.API.LogDebug("<>/<> OnClusterLeaderChanged", "isLeader", isLeader)
 	return nil
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	p.API.LogDebug("<>/<> OnPluginClusterEvent", "ev", ev)
+	err := p.store.OnPluginClusterEvent(c, ev)
+	if err != nil {
+		p.API.LogError("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
+	}
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {

@@ -5,6 +5,7 @@ package store
 
 import (
 	"encoding/ascii85"
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -71,6 +72,10 @@ const (
 )
 
 const (
+	AppStoreName = "apps"
+)
+
+const (
 	ListKeysPerPage = 1000
 )
 
@@ -81,6 +86,8 @@ type Service struct {
 	AppKV        AppKVStore
 	OAuth2       OAuth2Store
 	Session      SessionStore
+
+	appStore *appStore
 
 	conf    config.Service
 	httpOut httpout.Service
@@ -98,16 +105,34 @@ func MakeService(log utils.Logger, confService config.Service, api plugin.API, h
 
 	conf := confService.Get()
 	var err error
-	s.App, err = makeAppStore(confService, api, log)
+	s.appStore, err = makeAppStore(confService, api, log)
 	if err != nil {
 		return nil, err
 	}
+	s.App = s.appStore
 
 	s.Manifest, err = makeManifestStore(s, conf, log)
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
+}
+
+func (s *Service) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) error {
+	if ev.Id != CachedStoreEventID {
+		return nil
+	}
+
+	event := cachedStoreEvent[apps.App]{}
+	err := json.Unmarshal(ev.Data, &event)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
+	}
+
+	if event.StoreName == AppStoreName {
+		return s.appStore.cache.processClusterEvent(event)
+	}
+	return nil
 }
 
 const (
