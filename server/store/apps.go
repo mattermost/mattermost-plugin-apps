@@ -4,8 +4,6 @@
 package store
 
 import (
-	// nolint:gosec
-
 	"sort"
 
 	"github.com/mattermost/mattermost-server/v6/plugin"

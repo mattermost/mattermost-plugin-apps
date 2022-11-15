@@ -2,7 +2,7 @@ module github.com/mattermost/mattermost-plugin-apps
 
 go 1.18
 
-replace github.com/mattermost/mattermost-server/v6 => ../mattermost-server
+// replace github.com/mattermost/mattermost-server/v6 => ../mattermost-server
 
 require (
 	github.com/aws/aws-lambda-go v1.19.1
@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.5
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattermost/mattermost-plugin-api v0.0.22-0.20211210183909-beb4761e4bd3
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20220811191350-87cbeafd3635
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20221111213422-593fd223a95c
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/openfaas/faas-cli v0.0.0-20210705110531-a230119be00f
 	github.com/pkg/errors v0.9.1
