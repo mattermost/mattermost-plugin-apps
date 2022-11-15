@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -85,7 +86,7 @@ type Service struct {
 	httpOut httpout.Service
 }
 
-func MakeService(log utils.Logger, confService config.Service, httpOut httpout.Service) (*Service, error) {
+func MakeService(log utils.Logger, confService config.Service, api plugin.API, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
 		conf:    confService,
 		httpOut: httpOut,
@@ -97,7 +98,7 @@ func MakeService(log utils.Logger, confService config.Service, httpOut httpout.S
 
 	conf := confService.Get()
 	var err error
-	s.App, err = makeAppStore(s, conf, log)
+	s.App, err = makeAppStore(confService, api, log)
 	if err != nil {
 		return nil, err
 	}

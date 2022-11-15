@@ -20,6 +20,7 @@ func TestOnActivate(t *testing.T) {
 	p.API = testAPI
 
 	testAPI.On("GetServerVersion").Return("5.30.1")
+	testAPI.On("KVGet", ".cached.apps-index").Return([]byte("{}"), nil)
 	testAPI.On("KVGet", "mmi_botid").Return([]byte("the_bot_id"), nil)
 
 	username := "appsbot"

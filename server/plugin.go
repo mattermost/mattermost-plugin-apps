@@ -97,7 +97,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	// Initialize persistent storage. Also initialize the app API and the
 	// session services, both need the persisitent store.
-	p.store, err = store.MakeService(p.log, p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.log, p.conf, p.API, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
@@ -173,7 +173,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.log.WithError(err).Infof("failed to reconfigure")
 		return err

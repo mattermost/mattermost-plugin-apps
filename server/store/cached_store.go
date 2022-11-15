@@ -277,7 +277,8 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 			if err != nil {
 				return nilIndex, err
 			}
-			s.cache.Store(entry.Key, entry.data)
+			storableClone := entry
+			s.cache.Store(entry.Key, &storableClone)
 		}
 	}
 
@@ -387,16 +388,18 @@ func (index Index[T]) Clone() Index[T] {
 
 func parseCachedStoreKey(key string) (name, id string, err error) {
 	parts := strings.SplitN(key, "-", 3)
+	fmt.Printf("<>/<> 1 !!!!!!!!! %v parts:%v\n", len(parts), parts)
 	if len(parts) != 3 {
 		return "", "", errors.Wrap(utils.ErrInvalid, "cached store item key: "+key)
 	}
 
 	id = parts[2]
 	parts = strings.Split(parts[0], ".")
-	if len(parts) != 2 || parts[0] != KVCachedPrefix {
+	if len(parts) != 3 || parts[0] != "" || "."+parts[1] != KVCachedPrefix {
 		return "", "", errors.Wrap(utils.ErrInvalid, "cached store item key: "+key)
 	}
-	name = parts[1]
+	name = parts[2]
 
+	fmt.Printf("<>/<> 3 !!!!!!!!! name:%v id:%v\n", name, id)
 	return name, id, nil
 }

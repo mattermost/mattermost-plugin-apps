@@ -8,10 +8,10 @@ import (
 	"strconv"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding {
@@ -33,7 +33,6 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 			Submit: newUserCall(PathDebugKVInfo),
 			Fields: []apps.Field{
 				a.appIDField(LookupInstalledApps, 0, false, loc),
-				// a.cachedStoreNameField(loc),
 			},
 		},
 	}
@@ -41,22 +40,10 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 
 func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
-	cachedStoreName := creq.GetValue(FieldCachedStoreName, "")
-	switch {
-	case appID == "" && cachedStoreName == "":
+	if appID == "" {
 		return a.debugKVInfoForAll(r, creq)
-	case appID != "":
-		return a.debugKVInfoForApp(r, creq, appID)
-	case cachedStoreName != "":
-		// return a.debugKVInfoForCachedStore(r, creq, cachedStoreName)
-		return apps.NewErrorResponse(errors.New("not implemented"))
-	default:
-		loc := a.newLocalizer(creq)
-		return apps.NewErrorResponse(errors.New(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.debug.kv.info.invalidflags",
-			Other: "--app and --cached-store are mutually exclusive",
-		})))
 	}
+	return a.debugKVInfoForApp(r, creq, appID)
 }
 
 func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
@@ -80,7 +67,8 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 - OAuth2 temporary state records: {{.OAuth2StateCount}}
 - Other internal records: {{.Other}}
 
-- Apps' KV records: {{.AppsTotal}}
+
+- Apps' proprietary KV records: {{.AppsTotal}}
 `},
 		TemplateData: *info,
 	})
@@ -96,7 +84,7 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 
 	return apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
-		Text: message,
+		Text: message + "\n\n" + utils.JSONBlock(info),
 		Data: info,
 	}
 }
@@ -143,46 +131,3 @@ func (a *builtinApp) debugKVInfoForApp(r *incoming.Request, creq apps.CallReques
 		Data: appInfo,
 	}
 }
-
-// func (a *builtinApp) debugKVInfoForCachedStore(r *incoming.Request, creq apps.CallRequest, name string) apps.CallResponse {
-// 	info, err := a.appservices.KVDebugInfo(r)
-// 	if err != nil {
-// 		return apps.NewErrorResponse(err)
-// 	}
-// 	loc := a.newLocalizer(creq)
-
-// 	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-// 		DefaultMessage: &i18n.Message{
-// 			ID:    "command.debug.kv.info.submit.message",
-// 			Other: "{{.Count}} total keys for `{{.AppID}}`.",
-// 		},
-// 		TemplateData: map[string]string{
-// 			"AppID": string(appID),
-// 			"Count": strconv.Itoa(appInfo.AppKVCount),
-// 		},
-// 	}) + "\n"
-
-// 	if len(appInfo.AppKVCountByNamespace) > 0 {
-// 		message += "\n" +
-// 			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-// 				ID:    "command.debug.kv.info.submit.namespaces",
-// 				Other: "Namespaces:",
-// 			}) +
-// 			"\n"
-// 	}
-// 	for ns, c := range appInfo.AppKVCountByNamespace {
-// 		if ns == "" {
-// 			ns = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-// 				ID:    "command.debug.kv.info.submit.none",
-// 				Other: "(none)",
-// 			})
-// 		}
-// 		message += fmt.Sprintf("  - `%s`: %v\n", ns, c)
-// 	}
-
-// 	return apps.CallResponse{
-// 		Type: apps.CallResponseTypeOK,
-// 		Text: message,
-// 		Data: appInfo,
-// 	}
-// }

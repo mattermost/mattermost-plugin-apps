@@ -52,7 +52,8 @@ func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
 
 func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 	info := KVDebugInfo{
-		Apps: map[apps.AppID]*KVDebugAppInfo{},
+		Apps:                   map[apps.AppID]*KVDebugAppInfo{},
+		CachedStoreCountByName: map[string]int{},
 	}
 	mm := s.conf.MattermostAPI()
 	for i := 0; ; i++ {
