@@ -85,13 +85,11 @@ func testUninstall(th *Helper) {
 		require.Len(th, info.Apps, 1)
 		info.Apps[uninstallID].AppKVCountByUserID = nil
 		require.EqualValues(th, store.KVDebugInfo{
-			Total:             11,
-			AppsTotal:         6,
-			InstalledAppCount: 1,
+			Total:             12,
 			ManifestCount:     1,
 			OAuth2StateCount:  0,
-			Other:             0, // debug clean before the test clears out the special bot key; was: 1
 			SubscriptionCount: 3,
+			AppsTotal:         6,
 			Apps: map[apps.AppID]*store.KVDebugAppInfo{
 				"uninstalltest": {
 					AppKVCount:            4,
@@ -99,6 +97,11 @@ func testUninstall(th *Helper) {
 					TokenCount:            2,
 				},
 			},
+			CachedStoreCount: 2,
+			CachedStoreCountByName: map[string]int{
+				"apps": 1,
+			},
+			Other: 0, // debug clean before the test clears out the special bot key; was: 1
 		}, info)
 	})
 
@@ -109,10 +112,12 @@ func testUninstall(th *Helper) {
 		info := store.KVDebugInfo{}
 		utils.Remarshal(&info, cresp.Data)
 		require.EqualValues(th, store.KVDebugInfo{
-			Total:         1,
-			ManifestCount: 1,
-			Other:         0, // debug clean before the test clears out the special bot key; was: 1
-			Apps:          map[apps.AppID]*store.KVDebugAppInfo{},
+			Total:                  2,
+			CachedStoreCount:       1, // TODO: the mutex or index key remain? should it be cleared?
+			CachedStoreCountByName: map[string]int{},
+			ManifestCount:          1,
+			Other:                  0, // was: 1 for the special bot key; `debug clean`` before the test clears it out.
+			Apps:                   map[apps.AppID]*store.KVDebugAppInfo{},
 		}, info)
 	})
 
