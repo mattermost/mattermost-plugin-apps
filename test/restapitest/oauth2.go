@@ -251,6 +251,7 @@ func testOAuth2(th *Helper) {
 			// cresp := oauth2Call(th, "/store-user", testOAuth2User)
 			// require.Equal(th, `stored`, cresp.Text)
 			th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! START verifying 50 times %v", i)
+			wg = sync.WaitGroup{}
 			for j := 0; j < 50; j++ {
 				wg.Add(1)
 				go func(c int) {
