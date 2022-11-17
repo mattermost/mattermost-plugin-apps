@@ -30,14 +30,14 @@ func TestRESTAPI(t *testing.T) {
 	th := NewHelper(t)
 
 	for name, testF := range map[string]func(*Helper){
-		"bindings":      testBindings,
-		"echo":          testEcho,
-		"KV":            testKV,
+		// "bindings":      testBindings,
+		// "echo":          testEcho,
+		// "KV":            testKV,
 		"OAuth2":        testOAuth2,
-		"subscriptions": testSubscriptions,
-		"notify":        testNotify,
-		"uninstall":     testUninstall,
-		"misc":          testMisc,
+		// "subscriptions": testSubscriptions,
+		// "notify":        testNotify,
+		// "uninstall":     testUninstall,
+		// "misc":          testMisc,
 	} {
 		th.CleanRun(name, testF)
 	}
