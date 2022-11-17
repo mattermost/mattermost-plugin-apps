@@ -33,7 +33,7 @@ func TestRESTAPI(t *testing.T) {
 		// "bindings":      testBindings,
 		// "echo":          testEcho,
 		// "KV":            testKV,
-		"OAuth2":        testOAuth2,
+		"OAuth2": testOAuth2,
 		// "subscriptions": testSubscriptions,
 		// "notify":        testNotify,
 		// "uninstall":     testUninstall,
