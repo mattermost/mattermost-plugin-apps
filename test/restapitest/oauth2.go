@@ -6,6 +6,7 @@ package restapitest
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,9 @@ func newOAuth2App(t *testing.T) *goapp.App {
 			}
 			oapp := apps.OAuth2App{}
 			utils.Remarshal(&oapp, value)
+			creq.Log.Debugf("<>/<> Storing OAuth2App: %v", oapp)
 			err := client.StoreOAuth2App(oapp)
+			creq.Log.Debugf("<>/<> Stored OAuth2App: %v", oapp)
 			return respond("stored", err)
 		})
 
@@ -197,13 +200,13 @@ func testOAuth2(th *Helper) {
 		}
 	}
 
-	cleanupOAuth2User := func(th *Helper) func() {
-		return func() {
-			_ = oauth2Call(th, "/store-user", struct{}{})
-			cresp := oauth2Call(th, "/get-user", nil)
-			require.Equal(th, `{}`, cresp.Text)
-		}
-	}
+	// cleanupOAuth2User := func(th *Helper) func() {
+	// 	return func() {
+	// 		_ = oauth2Call(th, "/store-user", struct{}{})
+	// 		cresp := oauth2Call(th, "/get-user", nil)
+	// 		require.Equal(th, `{}`, cresp.Text)
+	// 	}
+	// }
 
 	// th.Run("users can store and get OAuth2User via REST API", func(th *Helper) {
 	// 	th.Cleanup(cleanupOAuth2User(th))
@@ -220,28 +223,50 @@ func testOAuth2(th *Helper) {
 	// 	storeOAuth2App(th, testOAuth2App)
 	// })
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 100; i++ {
 		th.Run(fmt.Sprintf("User and bot calls can expand OAuth2App %v", i), func(th *Helper) {
 			th.Logf("<>/<> starting test: %v", i)
 			// th.Skip("https://mattermost.atlassian.net/browse/MM-48448")
 			th.Cleanup(func() {
+				th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! START cleanup %v", i)
 				cleanupOAuth2App(th)()
-				cleanupOAuth2User(th)()
+				th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! DONE cleanup %v", i)
+				// cleanupOAuth2User(th)()
 			})
 
 			// Store the app and the user.
-			storeOAuth2App(th, testOAuth2App)
-			cresp := oauth2Call(th, "/store-user", testOAuth2User)
-			require.Equal(th, `stored`, cresp.Text)
-
-			// Call echo and verify the expand result.
-			cresp = oauth2Call(th, "/echo", nil)
-			creq := apps.CallRequest{}
-			require.Equal(th, apps.CallResponseTypeOK, cresp.Type)
-			err := json.Unmarshal([]byte(cresp.Text), &creq)
-			require.NoError(th, err)
-			require.EqualValues(th, &testOAuth2App, &creq.Context.ExpandedContext.OAuth2.OAuth2App)
-			require.EqualValues(th, map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
+			th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! START storing 50 times %v", i)
+			var wg sync.WaitGroup
+			for j := 0; j < 50; j++ {
+				wg.Add(1)
+				go func(c int) {
+					th.Logf("<>/<> request: %v", c)
+					storeOAuth2App(th, testOAuth2App)
+					th.Logf("<>/<> stored: %v", c)
+					wg.Done()
+				}(j)
+			}
+			wg.Wait()
+			th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! DONE storing %v", i)
+			// cresp := oauth2Call(th, "/store-user", testOAuth2User)
+			// require.Equal(th, `stored`, cresp.Text)
+			th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! START verifying 50 times %v", i)
+			for j := 0; j < 50; j++ {
+				wg.Add(1)
+				go func(c int) {
+					// Call echo and verify the expand result.
+					cresp := oauth2Call(th, "/echo", nil)
+					creq := apps.CallRequest{}
+					require.Equal(th, apps.CallResponseTypeOK, cresp.Type)
+					err := json.Unmarshal([]byte(cresp.Text), &creq)
+					require.NoError(th, err)
+					require.EqualValues(th, &testOAuth2App, &creq.Context.ExpandedContext.OAuth2.OAuth2App)
+					// require.EqualValues(th, map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
+					wg.Done()
+				}(j)
+				wg.Wait()
+				th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! DONE verifying %v", i)
+			}
 		})
 	}
 
