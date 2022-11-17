@@ -75,13 +75,13 @@ func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client
 
 	mutex, err := cluster.NewMutex(api, s.mutexKey())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to make a new cached store %s", s.name)
 	}
 	s.persistMutex = mutex
 
 	_, err = s.syncFromKV(false)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to sync a new cached store %s from KV", s.name)
 	}
 
 	return s, nil
@@ -120,13 +120,13 @@ func (s *CachedStore[T]) withRollbacks(r *incoming.Request, updatef func(prevInd
 
 	prevIndex, err := s.syncFromKV(true)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to sync cached store %s", s.name)
 	}
 
 	rollbacks, err := updatef(prevIndex)
 	if err != nil {
-		for _, rollback := range rollbacks {
-			rollback()
+		for i := len(rollbacks) - 1; i >= 0; i-- {
+			rollbacks[i]()
 		}
 	}
 	return err
@@ -142,7 +142,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 
 		err = s.persistItem(key, value)
 		if err != nil {
-			return rollbacks, err
+			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store item %s to %s", key, s.name)
 		}
 		rollbacks = append(rollbacks, func() {
 			if prevEntry != nil {
@@ -162,13 +162,13 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 
 		if err = s.persistIndex(newIndex.Stored()); err != nil {
 			r.Log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
-			return rollbacks, err
+			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store index to %s", s.name)
 		}
 		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevIndex) })
 
 		if err = s.notifyPut(key, value); err != nil {
 			r.Log.WithError(err).Warnf("CachedStore.Put: failed to send cluster message, rolling back to previous state")
-			return rollbacks, err
+			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
 		s.cache.Store(key, &newEntry)
@@ -180,7 +180,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 	return s.withRollbacks(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		prevEntry, ok := s.get(key)
 		if !ok {
-			return rollbacks, utils.ErrNotFound
+			return rollbacks, errors.Wrap(utils.ErrNotFound, key)
 		}
 
 		newIndex := s.Index()
@@ -193,7 +193,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 		err = s.deleteItem(key)
 		if err != nil {
 			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to remove the item from KV, rolling back to previous state")
-			return rollbacks, err
+			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to store index to %s", s.name)
 		}
 		if prevEntry != nil {
 			rollbacks = append(rollbacks, func() { _ = s.persistItem(key, prevEntry.data) })
@@ -201,7 +201,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 
 		if err = s.notifyDelete(key); err != nil {
 			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to send cluster message, rolling back to previous state")
-			return rollbacks, err
+			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
 		s.cache.Delete(key)
