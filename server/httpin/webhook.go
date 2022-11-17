@@ -18,6 +18,10 @@ func (s *Service) Webhook(r *incoming.Request, w http.ResponseWriter, req *http.
 	}
 }
 
+func (s *Service) WebhookValidate(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *Service) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, req *http.Request) error {
 	sreq, err := newHTTPCallRequest(req, s.Config.Get().MaxWebhookSize)
 	if err != nil {
