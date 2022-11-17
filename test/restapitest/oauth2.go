@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -206,26 +205,24 @@ func testOAuth2(th *Helper) {
 		}
 	}
 
-	th.Run("users can store and get OAuth2User via REST API", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2User(th))
+	// th.Run("users can store and get OAuth2User via REST API", func(th *Helper) {
+	// 	th.Cleanup(cleanupOAuth2User(th))
 
-		cresp := oauth2Call(th, "/store-user", testOAuth2User)
-		require.Equal(th, `stored`, cresp.Text)
+	// 	cresp := oauth2Call(th, "/store-user", testOAuth2User)
+	// 	require.Equal(th, `stored`, cresp.Text)
 
-		cresp = oauth2Call(th, "/get-user", nil)
-		require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
-	})
+	// 	cresp = oauth2Call(th, "/get-user", nil)
+	// 	require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
+	// })
 
-	th.Run("System administrators can store OAuth2App", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2App(th))
-		storeOAuth2App(th, testOAuth2App)
-	})
+	// th.Run("System administrators can store OAuth2App", func(th *Helper) {
+	// 	th.Cleanup(cleanupOAuth2App(th))
+	// 	storeOAuth2App(th, testOAuth2App)
+	// })
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 500; i++ {
 		th.Run(fmt.Sprintf("User and bot calls can expand OAuth2App %v", i), func(th *Helper) {
-			// th.Logf("<>/<> starting %v", i)
+			th.Logf("<>/<> starting test: %v", i)
 			// th.Skip("https://mattermost.atlassian.net/browse/MM-48448")
 			th.Cleanup(func() {
 				cleanupOAuth2App(th)()
@@ -248,178 +245,178 @@ func testOAuth2(th *Helper) {
 		})
 	}
 
-	th.Run("Error unauthenticated requests are rejected", func(th *Helper) {
-		th.Skip("<>/<>")
-		client := th.CreateUnauthenticatedClientPP()
+	// th.Run("Error unauthenticated requests are rejected", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	client := th.CreateUnauthenticatedClientPP()
 
-		in := map[string]interface{}{
-			"test_bool":   true,
-			"test_string": "test",
-		}
-		resp, err := client.StoreOAuth2User(in)
-		require.Error(th, err)
-		api4.CheckUnauthorizedStatus(th, resp)
+	// 	in := map[string]interface{}{
+	// 		"test_bool":   true,
+	// 		"test_string": "test",
+	// 	}
+	// 	resp, err := client.StoreOAuth2User(in)
+	// 	require.Error(th, err)
+	// 	api4.CheckUnauthorizedStatus(th, resp)
 
-		var out map[string]interface{}
-		resp, err = client.GetOAuth2User(&out)
-		require.Error(th, err)
-		api4.CheckUnauthorizedStatus(th, resp)
+	// 	var out map[string]interface{}
+	// 	resp, err = client.GetOAuth2User(&out)
+	// 	require.Error(th, err)
+	// 	api4.CheckUnauthorizedStatus(th, resp)
 
-		resp, err = client.StoreOAuth2App(testOAuth2App)
-		require.Error(th, err)
-		api4.CheckUnauthorizedStatus(th, resp)
-	})
+	// 	resp, err = client.StoreOAuth2App(testOAuth2App)
+	// 	require.Error(th, err)
+	// 	api4.CheckUnauthorizedStatus(th, resp)
+	// })
 
-	th.Run("Error StoreOAuth2User is size limited", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2User(th))
+	// th.Run("Error StoreOAuth2User is size limited", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	th.Cleanup(cleanupOAuth2User(th))
 
-		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
-			"test_bool":   true,
-			"test_string": "test",
-		})
-		require.Equal(th, `stored`, cresp.Text)
+	// 	// set a "previous" value.
+	// 	cresp := oauth2Call(th, "/store-user", map[string]interface{}{
+	// 		"test_bool":   true,
+	// 		"test_string": "test",
+	// 	})
+	// 	require.Equal(th, `stored`, cresp.Text)
 
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/err-user-too-large").
-				WithExpand(apps.Expand{
-					ActingUser:            apps.ExpandSummary.Required(),
-					ActingUserAccessToken: apps.ExpandAll.Required(),
-				}),
-		}
-		cresp, resp, err := th.Call(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		require.Equal(th, `size limit of 8Kb exceeded`, cresp.Text)
-		api4.CheckOKStatus(th, resp)
+	// 	creq := apps.CallRequest{
+	// 		Call: *apps.NewCall("/err-user-too-large").
+	// 			WithExpand(apps.Expand{
+	// 				ActingUser:            apps.ExpandSummary.Required(),
+	// 				ActingUserAccessToken: apps.ExpandAll.Required(),
+	// 			}),
+	// 	}
+	// 	cresp, resp, err := th.Call(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	require.Equal(th, `size limit of 8Kb exceeded`, cresp.Text)
+	// 	api4.CheckOKStatus(th, resp)
 
-		// verify "previous" value unchanged.
-		cresp = oauth2Call(th, "/get-user", nil)
-		require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
-	})
+	// 	// verify "previous" value unchanged.
+	// 	cresp = oauth2Call(th, "/get-user", nil)
+	// 	require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
+	// })
 
-	th.Run("Error StoreOAuth2User requires JSON", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2User(th))
+	// th.Run("Error StoreOAuth2User requires JSON", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	th.Cleanup(cleanupOAuth2User(th))
 
-		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
-			"test_bool":   true,
-			"test_string": "test",
-		})
+	// 	// set a "previous" value.
+	// 	cresp := oauth2Call(th, "/store-user", map[string]interface{}{
+	// 		"test_bool":   true,
+	// 		"test_string": "test",
+	// 	})
 
-		require.Equal(th, `stored`, cresp.Text)
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/err-user-not-json").
-				WithExpand(apps.Expand{
-					ActingUser:            apps.ExpandSummary.Required(),
-					ActingUserAccessToken: apps.ExpandAll.Required(),
-				}),
-		}
-		cresp, resp, err := th.Call(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, `payload is not valid JSON: invalid input`, cresp.Text)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		api4.CheckOKStatus(th, resp)
+	// 	require.Equal(th, `stored`, cresp.Text)
+	// 	creq := apps.CallRequest{
+	// 		Call: *apps.NewCall("/err-user-not-json").
+	// 			WithExpand(apps.Expand{
+	// 				ActingUser:            apps.ExpandSummary.Required(),
+	// 				ActingUserAccessToken: apps.ExpandAll.Required(),
+	// 			}),
+	// 	}
+	// 	cresp, resp, err := th.Call(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, `payload is not valid JSON: invalid input`, cresp.Text)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	api4.CheckOKStatus(th, resp)
 
-		// verify "previous" value unchanged.
-		cresp = oauth2Call(th, "/get-user", nil)
-		require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
-	})
+	// 	// verify "previous" value unchanged.
+	// 	cresp = oauth2Call(th, "/get-user", nil)
+	// 	require.Equal(th, `{"test_bool":true,"test_string":"test"}`, cresp.Text)
+	// })
 
-	th.Run("Error StoreOAuth2App is size limited", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2App(th))
+	// th.Run("Error StoreOAuth2App is size limited", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	th.Cleanup(cleanupOAuth2App(th))
 
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/err-app-too-large").
-				WithExpand(apps.Expand{
-					ActingUser:            apps.ExpandSummary.Required(),
-					ActingUserAccessToken: apps.ExpandAll.Required(),
-				}),
-		}
-		cresp, resp, err := th.AdminCall(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		require.Equal(th, `size limit of 8Kb exceeded`, cresp.Text)
-		api4.CheckOKStatus(th, resp)
-	})
+	// 	creq := apps.CallRequest{
+	// 		Call: *apps.NewCall("/err-app-too-large").
+	// 			WithExpand(apps.Expand{
+	// 				ActingUser:            apps.ExpandSummary.Required(),
+	// 				ActingUserAccessToken: apps.ExpandAll.Required(),
+	// 			}),
+	// 	}
+	// 	cresp, resp, err := th.AdminCall(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	require.Equal(th, `size limit of 8Kb exceeded`, cresp.Text)
+	// 	api4.CheckOKStatus(th, resp)
+	// })
 
-	th.Run("Error StoreOAuth2App requires JSON", func(th *Helper) {
-		th.Skip("<>/<>")
-		th.Cleanup(cleanupOAuth2App(th))
+	// th.Run("Error StoreOAuth2App requires JSON", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	th.Cleanup(cleanupOAuth2App(th))
 
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/err-app-not-json").
-				WithExpand(apps.Expand{
-					ActingUser:            apps.ExpandSummary.Required(),
-					ActingUserAccessToken: apps.ExpandAll.Required(),
-				}),
-		}
-		cresp, resp, err := th.AdminCall(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, `OAuth2App is not valid JSON: invalid character 'e' in literal true (expecting 'r'): invalid input`, cresp.Text)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		api4.CheckOKStatus(th, resp)
-	})
+	// 	creq := apps.CallRequest{
+	// 		Call: *apps.NewCall("/err-app-not-json").
+	// 			WithExpand(apps.Expand{
+	// 				ActingUser:            apps.ExpandSummary.Required(),
+	// 				ActingUserAccessToken: apps.ExpandAll.Required(),
+	// 			}),
+	// 	}
+	// 	cresp, resp, err := th.AdminCall(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, `OAuth2App is not valid JSON: invalid character 'e' in literal true (expecting 'r'): invalid input`, cresp.Text)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	api4.CheckOKStatus(th, resp)
+	// })
 
-	th.Run("Error Bots have no access to OAuth2User via REST API", func(th *Helper) {
-		th.Skip("<>/<>")
-		// try to get.
-		creq := apps.CallRequest{
-			Call: *apps.NewCall("/get-user"),
-			Values: model.StringInterface{
-				"as_bot": true,
-			},
-		}
-		cresp, resp, err := th.Call(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		require.Equal(th, `@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
-		// TODO: should be a 403!
-		api4.CheckOKStatus(th, resp)
+	// th.Run("Error Bots have no access to OAuth2User via REST API", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	// try to get.
+	// 	creq := apps.CallRequest{
+	// 		Call: *apps.NewCall("/get-user"),
+	// 		Values: model.StringInterface{
+	// 			"as_bot": true,
+	// 		},
+	// 	}
+	// 	cresp, resp, err := th.Call(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	require.Equal(th, `@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
+	// 	// TODO: should be a 403!
+	// 	api4.CheckOKStatus(th, resp)
 
-		// try to store.
-		creq.Call = *apps.NewCall("/store-user")
-		creq.Values["value"] = map[string]interface{}{
-			"test_bool":   true,
-			"test_string": "test",
-		}
-		cresp, resp, err = th.Call(oauth2ID, creq)
-		require.NoError(th, err)
-		require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-		require.Equal(th, `@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
-		require.NotNil(th, resp)
-		// TODO: should be a 403!
-		require.Equal(th, resp.StatusCode, 200)
-	})
+	// 	// try to store.
+	// 	creq.Call = *apps.NewCall("/store-user")
+	// 	creq.Values["value"] = map[string]interface{}{
+	// 		"test_bool":   true,
+	// 		"test_string": "test",
+	// 	}
+	// 	cresp, resp, err = th.Call(oauth2ID, creq)
+	// 	require.NoError(th, err)
+	// 	require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 	require.Equal(th, `@oauth2test (tests App's OAuth2 APIs): is a bot: unauthorized`, cresp.Text)
+	// 	require.NotNil(th, resp)
+	// 	// TODO: should be a 403!
+	// 	require.Equal(th, resp.StatusCode, 200)
+	// })
 
-	th.Run("Error Users and bots can not store OAuth2App", func(th *Helper) {
-		th.Skip("<>/<>")
-		for _, asBot := range []bool{true, false} {
-			name := "as acting user"
-			if asBot {
-				name = "as bot"
-			}
-			th.Run(name, func(th *Helper) {
-				cresp, resp, err := th.Call(oauth2ID, apps.CallRequest{
-					Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{
-						ActingUser:            apps.ExpandAll,
-						ActingUserAccessToken: apps.ExpandAll,
-					}),
-					Values: model.StringInterface{
-						"as_bot": asBot,
-						"value":  testOAuth2App,
-					},
-				})
-				require.NoError(th, err)
-				require.Equal(th, apps.CallResponseTypeError, cresp.Type)
-				require.Equal(th, `access to this operation is limited to users with permission: manage_system: unauthorized`, cresp.Text)
-				require.NotNil(th, resp)
-				// TODO: should be a 403!
-				require.Equal(th, resp.StatusCode, 200)
-			})
-		}
-	})
+	// th.Run("Error Users and bots can not store OAuth2App", func(th *Helper) {
+	// 	th.Skip("<>/<>")
+	// 	for _, asBot := range []bool{true, false} {
+	// 		name := "as acting user"
+	// 		if asBot {
+	// 			name = "as bot"
+	// 		}
+	// 		th.Run(name, func(th *Helper) {
+	// 			cresp, resp, err := th.Call(oauth2ID, apps.CallRequest{
+	// 				Call: *apps.NewCall("/store-app").WithExpand(apps.Expand{
+	// 					ActingUser:            apps.ExpandAll,
+	// 					ActingUserAccessToken: apps.ExpandAll,
+	// 				}),
+	// 				Values: model.StringInterface{
+	// 					"as_bot": asBot,
+	// 					"value":  testOAuth2App,
+	// 				},
+	// 			})
+	// 			require.NoError(th, err)
+	// 			require.Equal(th, apps.CallResponseTypeError, cresp.Type)
+	// 			require.Equal(th, `access to this operation is limited to users with permission: manage_system: unauthorized`, cresp.Text)
+	// 			require.NotNil(th, resp)
+	// 			// TODO: should be a 403!
+	// 			require.Equal(th, resp.StatusCode, 200)
+	// 		})
+	// 	}
+	// })
 }

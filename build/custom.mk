@@ -40,9 +40,9 @@ endif
 test-rest-api: dist
 	@echo Running REST API tests
 ifneq ($(RUN),)
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest --run $(RUN)
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest --run $(RUN) 2>&1
 else
-	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest
+	PLUGIN_BUNDLE=$(shell pwd)/dist/$(BUNDLE_NAME) $(GO) test -v $(GO_TEST_FLAGS) ./test/restapitest 2>&1
 endif
 
 
