@@ -265,9 +265,9 @@ func testOAuth2(th *Helper) {
 					// require.EqualValues(th, map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
 					wg.Done()
 				}(j)
-				wg.Wait()
-				th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! DONE verifying %v", i)
 			}
+			wg.Wait()
+			th.Logf("<>/<> !!!!!!!!!!!!!!!!!!!!!!!!!!! DONE verifying %v", i)
 		})
 	}
 
