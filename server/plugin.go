@@ -188,7 +188,7 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
 	err := p.store.OnPluginClusterEvent(c, ev)
 	if err != nil {
-		p.API.LogError("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
+		p.API.LogWarn("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
 	}
 }
 
