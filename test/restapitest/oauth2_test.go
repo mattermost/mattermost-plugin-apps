@@ -187,6 +187,7 @@ func testOAuth2(th *Helper) {
 	})
 
 	th.Run("Users and bots can not store OAuth2App", func(th *Helper) {
+		th.Skip("https://mattermost.atlassian.net/browse/MM-48448")
 		for _, asBot := range []bool{true, false} {
 			name := "as acting user"
 			if asBot {
