@@ -14,6 +14,7 @@ import (
 func notifyBotLeftTeam(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		init: func(th *Helper) apps.ExpandedContext {
+			th.Skip("https://mattermost.atlassian.net/browse/MM-48497")
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
 				User: th.LastInstalledBotUser,
