@@ -26,10 +26,10 @@ func (a *builtinApp) debugLogsCommandBinding(loc *i18n.Localizer) apps.Binding {
 			Other: "Stream the logs of the apps plugin to the selected channel.",
 		}),
 		Form: &apps.Form{
-			Submit: newUserCall(pDebugLogs).WithExpand(apps.Expand{
-				Team:       apps.ExpandID,
-				ActingUser: apps.ExpandSummary,
-				// ActingUserAccessToken: apps.ExpandAll,
+			Submit: apps.NewCall(pDebugLogs).WithExpand(apps.Expand{
+				Team:       apps.ExpandID.Required(),
+				ActingUser: apps.ExpandSummary.Required(),
+				Locale:     apps.ExpandAll,
 			}),
 			Fields: []apps.Field{
 				{
@@ -137,18 +137,28 @@ func (a *builtinApp) debugLogs(r *incoming.Request, creq apps.CallRequest) apps.
 		return apps.NewErrorResponse(errors.New("cannot specify both --channel and --create-channel"))
 
 	case create && channel == nil:
-		ch := model.Channel{
-			Name: "apps-plugin-logs",
-			DisplayName: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.debug.logs.channel.displayname",
-				Other: "DEBUG: Apps Plugin Logs",
-			}),
-			Type:   model.ChannelTypePrivate,
-			TeamId: creq.Context.Team.Id,
+		name := "apps-plugin-logs"
+
+		ch, _ := a.conf.MattermostAPI().Channel.GetByName(creq.Context.Team.Id, name, false)
+		if ch == nil {
+			ch = &model.Channel{
+				Name: name,
+				DisplayName: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.logs.channel.displayname",
+					Other: "DEBUG: Apps Plugin Logs",
+				}),
+				Type:   model.ChannelTypePrivate,
+				TeamId: creq.Context.Team.Id,
+			}
+
+			if err := a.conf.MattermostAPI().Channel.Create(ch); err != nil {
+				return apps.NewErrorResponse(errors.Wrap(err, "failed to create channel"))
+			}
 		}
-		err := a.conf.MattermostAPI().Channel.Create(&ch)
+
+		_, err := a.conf.MattermostAPI().Channel.AddMember(ch.Id, creq.Context.ActingUser.Id)
 		if err != nil {
-			return apps.NewErrorResponse(errors.Wrap(err, "failed to create channel"))
+			return apps.NewErrorResponse(errors.Wrap(err, "failed to add user to channel"))
 		}
 		channelID = ch.Id
 		channelLabel = ch.DisplayName

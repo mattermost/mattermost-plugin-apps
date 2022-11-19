@@ -247,7 +247,7 @@ func requireAdmin(h handler) handler {
 	return func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 		if creq.Context.ActingUser == nil {
 			return apps.NewErrorResponse(utils.NewInvalidError(
-				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+				"no or invalid ActingUser in the context for %s, please make sure Expand.ActingUser is set", creq.Path))
 		}
 		if !creq.Context.ActingUser.IsSystemAdmin() {
 			return apps.NewErrorResponse(utils.NewUnauthorizedError(

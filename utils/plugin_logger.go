@@ -14,11 +14,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-// TODO <>/<>
-// - move the package to utils
-// - --json to trigger JSON output
-// - make config a struct and interface
-
 type LogConfig struct {
 	ChannelID   string
 	Level       zapcore.Level
