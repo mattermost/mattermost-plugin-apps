@@ -16,7 +16,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const AppIDVar = "appid"
@@ -27,7 +26,6 @@ type Service struct {
 	Config      config.Service
 	Proxy       proxy.Service
 
-	baseLog     utils.Logger
 	router      *mux.Router
 	handlerFunc handlerFunc
 }
@@ -36,12 +34,11 @@ var _ http.Handler = (*Service)(nil)
 
 type handlerFunc func(*incoming.Request, http.ResponseWriter, *http.Request)
 
-func NewService(proxy proxy.Service, appservices appservices.Service, conf config.Service, log utils.Logger) *Service {
+func NewService(proxy proxy.Service, appservices appservices.Service, conf config.Service) *Service {
 	rootHandler := &Service{
 		AppServices: appservices,
 		Config:      conf,
 		Proxy:       proxy,
-		baseLog:     log,
 		router:      mux.NewRouter(),
 	}
 	rootHandler.router.Handle("{anything:.*}", http.NotFoundHandler())

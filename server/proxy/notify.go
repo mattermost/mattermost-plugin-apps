@@ -29,25 +29,26 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 // emits "user_joined_channel" and "bot_joined_channel" notifications to
 // subscribed apps.
 func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
-	p.notifyUserChannel(channelID, userID, true)
+	p.notifyUserChannel(channelID, userID, true, "NotifyUserJoinedChannel")
 }
 
 // NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
 // "user_left_channel" and "bot_left_channel" notifications to subscribed apps.
 func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
-	p.notifyUserChannel(channelID, userID, false)
+	p.notifyUserChannel(channelID, userID, false, "NotifyUserLeftChannel")
 }
 
-func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool) {
+func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method string) {
 	mm := p.conf.MattermostAPI()
+	log := p.conf.NewBaseLogger().With("method", method)
 	user, err := mm.User.Get(userID)
 	if err != nil {
-		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		log.WithError(err).Debugf("failed to get user")
 		return
 	}
 	channel, err := mm.Channel.Get(channelID)
 	if err != nil {
-		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get channel")
+		log.WithError(err).Debugf("%s: failed to get channel", method)
 		return
 	}
 
@@ -100,20 +101,21 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool) {
 // NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
 // "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
 func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
-	p.notifyUserTeam(teamID, userID, true)
+	p.notifyUserTeam(teamID, userID, true, "NotifyUserJoinedTeam")
 }
 
 // NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
 // "user_left_team" and "bot_left_team" notifications to subscribed apps.
 func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
-	p.notifyUserTeam(teamID, userID, false)
+	p.notifyUserTeam(teamID, userID, false, "NotifyUserLeftTeam")
 }
 
-func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool) {
+func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string) {
 	mm := p.conf.MattermostAPI()
+	log := p.conf.NewBaseLogger().With("method", method)
 	user, err := mm.User.Get(userID)
 	if err != nil {
-		p.log.WithError(err).Debugf("NotifyUserJoinedChannel: failed to get user")
+		log.WithError(err).Debugf("%s: failed to get user", method)
 		return
 	}
 	subject := apps.SubjectUserJoinedTeam

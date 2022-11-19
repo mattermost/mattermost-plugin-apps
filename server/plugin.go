@@ -25,7 +25,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -33,7 +32,6 @@ type Plugin struct {
 	manifest model.Manifest
 
 	conf config.Service
-	log  utils.Logger
 
 	store          *store.Service
 	appservices    appservices.Service
@@ -55,7 +53,6 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.log = utils.NewPluginLogger(mm)
 
 	// Make sure we have the Bot.
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
@@ -66,17 +63,17 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
-	p.log.Debugw("ensured bot", "id", botUserID, "username", config.BotUsername)
+	mm.Log.Debug("ensured bot", "id", botUserID, "username", config.BotUsername)
 
 	// Initialize internalization and telemetrty.
 	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to load localization files")
 	}
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		p.API.LogWarn("telemetry client not started", "error", err.Error())
+		mm.Log.Warn("failed to start telemetry client.", "error", err.Error())
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
@@ -84,35 +81,37 @@ func (p *Plugin) OnActivate() (err error) {
 	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, p.log)
+	err = p.conf.Reconfigure(stored, false)
 	if err != nil {
-		p.log.WithError(err).Infof("failed to configure")
+		mm.Log.Info("failed to load initial configuration", "error", err.Error())
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
+
 	conf := p.conf.Get()
-	p.log.With(conf).Debugf("configured")
+	log := p.conf.NewBaseLogger()
+	log.With(conf).Debugw("configured the plugin.")
 
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
 	// Initialize persistent storage. Also initialize the app API and the
 	// session services, both need the persisitent store.
-	p.store, err = store.MakeService(p.log, p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
 	p.store.App.InitBuiltin(builtin.App(conf))
 	p.appservices = appservices.NewService(p.store)
 	p.sessionService = session.NewService(mm, p.store)
-	p.log.Debugf("initialized API and persistent store")
+	log.Debugf("initialized API and persistent store")
 
 	// Initialize the app proxy.
 	mutex, err := cluster.NewMutex(p.API, store.KVClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices, p.log)
-	err = p.proxy.Configure(conf, p.log)
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
+	err = p.proxy.Configure(conf, log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy")
 	}
@@ -120,20 +119,20 @@ func (p *Plugin) OnActivate() (err error) {
 		builtin.AppID,
 		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut, p.sessionService),
 	)
-	p.log.Debugf("initialized the app proxy")
+	log.Debugf("initialized the app proxy")
 
-	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf, p.log)
-	p.log.Debugf("initialized incoming HTTP")
+	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf)
+	log.Debugf("initialized incoming HTTP")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.log.WithError(err).Errorf("failed to synchronize apps metadata")
+			log.WithError(err).Errorf("failed to synchronize apps metadata")
 		} else {
-			p.log.Debugf("Synchronized the installed apps metadata")
+			log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
-	p.log.Infof("activated")
+	log.Infof("activated")
 
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
@@ -173,9 +172,9 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(stored, true, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
-		p.log.WithError(err).Infof("failed to reconfigure")
+		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err
 	}
 	return nil

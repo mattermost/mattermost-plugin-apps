@@ -2,21 +2,14 @@ package config
 
 import (
 	"fmt"
-	"net"
-	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"strings"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
@@ -39,6 +32,10 @@ type StoredConfig struct {
 	// added, and the Manifest struct is stored in KV under
 	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
+
+	LogChannelID    string `json:"log_channel_id,omitempty"`
+	LogChannelLevel int    `json:"log_channel_level,omitempty"`
+	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
 }
 
 var BuildDate string
@@ -92,93 +89,6 @@ var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
 	`community\.mattermost\.com`,
 	`community-[a-z]+\.mattermost\.com`,
 }, "|") + "$")
-
-func (conf *Config) update(stored StoredConfig, mmconf *model.Config, license *model.License, log utils.Logger) error {
-	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
-	if mattermostSiteURL == nil {
-		return errors.New("plugin requires Mattermost Site URL to be set")
-	}
-	u, err := url.Parse(*mattermostSiteURL)
-	if err != nil {
-		return err
-	}
-
-	var localURL string
-	if mmconf.ServiceSettings.ConnectionSecurity != nil && *mmconf.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
-		// If there is no reverse proxy use the server URL
-		localURL = u.String()
-	} else {
-		// Avoid the reverse proxy by using the local port
-		listenAddress := mmconf.ServiceSettings.ListenAddress
-		if listenAddress == nil {
-			return errors.New("plugin requires Mattermost Listen Address to be set")
-		}
-		host, port, err := net.SplitHostPort(*listenAddress)
-		if err != nil {
-			return err
-		}
-
-		if host == "" {
-			host = "127.0.0.1"
-		}
-
-		localURL = "http://" + host + ":" + port + u.Path
-	}
-
-	conf.StoredConfig = stored
-
-	conf.MattermostSiteURL = u.String()
-	conf.MattermostLocalURL = localURL
-	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
-	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
-
-	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
-	if mmconf.FileSettings.MaxFileSize != nil {
-		conf.MaxWebhookSize = int(*mmconf.FileSettings.MaxFileSize)
-	}
-
-	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
-
-	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
-	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
-		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
-		conf.AllowHTTPApps = true
-	}
-
-	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
-	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
-	conf.AWSRegion = upaws.Region()
-	conf.AWSS3Bucket = upaws.S3BucketName()
-
-	conf.MattermostCloudMode = license != nil &&
-		license.Features != nil &&
-		license.Features.Cloud != nil &&
-		*license.Features.Cloud
-	if conf.MattermostCloudMode {
-		log.Debugf("Detected Mattermost Cloud mode based on the license")
-	}
-
-	// On community.mattermost.com license is not suitable for checking, resort
-	// to the presence of legacy environment variable to trigger it.
-	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
-	if legacyAccessKey != "" {
-		conf.MattermostCloudMode = true
-		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
-		conf.AWSAccessKey = legacyAccessKey
-	}
-
-	if conf.MattermostCloudMode {
-		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
-		if legacySecretKey != "" {
-			conf.AWSSecretKey = legacySecretKey
-		}
-		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
-			return errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
-		}
-	}
-
-	return nil
-}
 
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{

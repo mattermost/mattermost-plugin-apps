@@ -32,21 +32,26 @@ const (
 )
 
 const (
+	FieldAppID     = "app"
+	FieldNamespace = "namespace"
+
 	fAction         = "action"
-	FieldAppID      = "app"
-	fForce          = "force"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
+	fChannel        = "channel"
 	fConsent        = "consent"
+	fCreate         = "create"
 	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fForce          = "force"
 	fID             = "id"
 	fIncludePlugins = "include_plugins"
-	FieldNamespace  = "namespace"
+	fJSON           = "json"
+	fLevel          = "level"
 	fNewValue       = "new_value"
 	fSecret         = "secret"
-	fURL            = "url"
 	fSessionID      = "session_id"
+	fURL            = "url"
 )
 
 const (
@@ -59,6 +64,7 @@ const (
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugLogs            = "/debug/logs"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
 	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugSessionsView    = "/debug/session/view"
@@ -108,6 +114,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInfo: a.info,
 
 		// Commands that require sysadmin.
+		pDebugLogs:            requireAdmin(a.debugLogs),
 		pDebugBindings:        requireAdmin(a.debugBindings),
 		PathDebugClean:        requireAdmin(a.debugClean),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),

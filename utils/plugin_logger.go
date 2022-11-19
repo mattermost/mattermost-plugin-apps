@@ -4,27 +4,48 @@
 package utils
 
 import (
+	"fmt"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
+
+// TODO <>/<>
+// - move the package to utils
+// - --json to trigger JSON output
+// - make config a struct and interface
+
+type LogConfig struct {
+	ChannelID   string
+	Level       zapcore.Level
+	BotUserID   string
+	IncludeJSON bool
+}
+
+type LogConfigGetter interface {
+	GetLogConfig() LogConfig
+}
 
 // plugin implements zapcore.Core interface to serve as a logging "backend" for
 // SugaredLogger, using the plugin API log methods.
 type plugin struct {
 	zapcore.LevelEnabler
-	plog   pluginapi.LogService
-	fields map[string]zapcore.Field
+	mm         *pluginapi.Client
+	confGetter LogConfigGetter
+	fields     map[string]zapcore.Field
 }
 
-func NewPluginLogger(client *pluginapi.Client) Logger {
-	pc := &plugin{
-		LevelEnabler: zapcore.DebugLevel,
-		plog:         client.Log,
-	}
+func NewPluginLogger(mmapi *pluginapi.Client, confGetter LogConfigGetter) Logger {
 	return &logger{
-		SugaredLogger: zap.New(pc).Sugar(),
+		SugaredLogger: zap.New(&plugin{
+			mm:           mmapi,
+			LevelEnabler: zapcore.DebugLevel,
+			confGetter:   confGetter,
+		}).Sugar(),
 	}
 }
 
@@ -55,14 +76,14 @@ func (p *plugin) Sync() error {
 
 func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 	p = p.with(fields)
-	w := p.plog.Error
+	w := p.mm.Log.Error
 	switch e.Level {
 	case zapcore.DebugLevel:
-		w = p.plog.Debug
+		w = p.mm.Log.Debug
 	case zapcore.InfoLevel:
-		w = p.plog.Info
+		w = p.mm.Log.Info
 	case zapcore.WarnLevel:
-		w = p.plog.Warn
+		w = p.mm.Log.Warn
 	}
 
 	pairs := []interface{}{}
@@ -77,5 +98,36 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		}
 	}
 	w(e.Message, pairs...)
+
+	if p.confGetter == nil {
+		return nil
+	}
+	logconf := p.confGetter.GetLogConfig()
+
+	if logconf.ChannelID == "" || !logconf.Level.Enabled(e.Level) {
+		return nil
+	}
+
+	message := fmt.Sprintf("%s %s: %s", e.Time.Format(time.StampMilli), e.Level.CapitalString(), e.Message)
+
+	if logconf.IncludeJSON {
+		ccJSON := map[string]any{}
+		for i := 0; i < len(pairs); i += 2 {
+			ccJSON[pairs[i].(string)] = pairs[i+1]
+		}
+		if len(ccJSON) > 0 {
+			message += JSONBlock(ccJSON)
+		}
+	}
+
+	logPost := &model.Post{
+		ChannelId: logconf.ChannelID,
+		UserId:    logconf.BotUserID,
+		Message:   message,
+	}
+	if err := p.mm.Post.CreatePost(logPost); err != nil {
+		p.mm.Log.Error("failed to post log message", "err", err.Error())
+	}
+
 	return nil
 }

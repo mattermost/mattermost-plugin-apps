@@ -37,14 +37,14 @@ type Request struct {
 	actingUser            *model.User
 }
 
-func NewRequest(config config.Service, log utils.Logger, session SessionService) *Request {
+func NewRequest(config config.Service, session SessionService) *Request {
 	// TODO <>/<>: is the incoming Mattermost request ID available, and should it be used?
 	requestID := model.NewId()
 	return &Request{
 		ctx:            context.Background(),
 		mm:             config.MattermostAPI(),
 		config:         config,
-		Log:            log.With("request_id", requestID),
+		Log:            config.NewBaseLogger().With("request_id", requestID),
 		sessionService: session,
 		requestID:      requestID,
 	}
