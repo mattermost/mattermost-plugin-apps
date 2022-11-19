@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // KV namespace
@@ -93,7 +92,7 @@ type Service struct {
 	httpOut httpout.Service
 }
 
-func MakeService(log utils.Logger, confService config.Service, api plugin.API, httpOut httpout.Service) (*Service, error) {
+func MakeService(api plugin.API, confService config.Service, httpOut httpout.Service) (*Service, error) {
 	s := &Service{
 		conf:    confService,
 		httpOut: httpOut,
@@ -105,13 +104,13 @@ func MakeService(log utils.Logger, confService config.Service, api plugin.API, h
 
 	conf := confService.Get()
 	var err error
-	s.appStore, err = makeAppStore(confService, api, log)
+	s.appStore, err = s.makeAppStore(api)
 	if err != nil {
 		return nil, err
 	}
 	s.App = s.appStore
 
-	s.Manifest, err = makeManifestStore(s, conf, log)
+	s.Manifest, err = s.makeManifestStore(conf)
 	if err != nil {
 		return nil, err
 	}

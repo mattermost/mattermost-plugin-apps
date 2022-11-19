@@ -9,7 +9,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -35,14 +34,14 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
-func makeAppStore(conf config.Service, api plugin.API, logger utils.Logger) (*appStore, error) {
-	s, err := MakeCachedStore[apps.App](AppStoreName, api, conf.MattermostAPI(), logger)
+func (s *Service) makeAppStore(api plugin.API) (*appStore, error) {
+	store, err := MakeCachedStore[apps.App](AppStoreName, api, s.conf.MattermostAPI(), s.conf.NewBaseLogger())
 	if err != nil {
 		return nil, err
 	}
 	return &appStore{
-		cache:         s,
-		schemaVersion: conf.Get().PluginManifest.Version,
+		cache:         store,
+		schemaVersion: s.conf.Get().PluginManifest.Version,
 	}, nil
 }
 

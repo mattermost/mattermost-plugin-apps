@@ -26,10 +26,10 @@ func TestCachedStore(t *testing.T) {
 
 	api.On("KVGet", ".cached.test-index").Once().
 		Return([]byte(nil), (*model.AppError)(nil))
-	s, err := MakeCachedStore[Test]("test", api, conf.MattermostAPI(), conf.Logger())
+	s, err := MakeCachedStore[Test]("test", api, conf.MattermostAPI(), utils.NewTestLogger())
 	require.NoError(t, err)
 
-	r := incoming.NewRequest(conf, conf.Logger(), nil)
+	r := incoming.NewRequest(conf, nil)
 	put := func(id string, data Test, indexBefore, indexAfter string) {
 		api.On("KVSetWithOptions", "mutex_.cached.test-mutex", []byte{0x1}, mock.Anything).Once().
 			Return(true, nil)
