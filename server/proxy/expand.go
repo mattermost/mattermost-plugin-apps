@@ -93,14 +93,12 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 		f              expandFunc
 		requestedLevel apps.ExpandLevel
 		expandableAs   []apps.ExpandLevel
-		err            error
 	}{
 		{
 			name:           "acting_user_access_token",
 			requestedLevel: expand.ActingUserAccessToken,
 			f:              e.expandActingUserAccessToken,
-			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			err:            utils.NewInvalidError(`invalid expand: "acting_user_access_token" must be "all" or empty`),
+			expandableAs:   []apps.ExpandLevel{apps.ExpandAll, apps.ExpandSummary},
 		}, {
 			name:           "acting_user",
 			requestedLevel: expand.ActingUser,
@@ -131,14 +129,12 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 			name:           "oauth2_app",
 			requestedLevel: expand.OAuth2App,
 			f:              e.expandOAuth2App,
-			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			err:            utils.NewInvalidError(`invalid expand: "oauth2_app" must be "all" or empty`),
+			expandableAs:   []apps.ExpandLevel{apps.ExpandSummary, apps.ExpandAll},
 		}, {
 			name:           "oauth2_user",
 			requestedLevel: expand.OAuth2User,
 			f:              e.expandOAuth2User,
-			expandableAs:   []apps.ExpandLevel{apps.ExpandAll},
-			err:            utils.NewInvalidError(`invalid expand: "oauth2_user" must be "all" or empty`),
+			expandableAs:   []apps.ExpandLevel{apps.ExpandSummary apps.ExpandAll},
 		}, {
 			name:           "post",
 			requestedLevel: expand.Post,
