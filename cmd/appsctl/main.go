@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
 
+	root "github.com/mattermost/mattermost-plugin-apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -38,8 +39,9 @@ func main() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "appsctl",
-	Short: "A tool to manage Mattermost Apps.",
+	Use:     "appsctl",
+	Short:   "A tool to manage Mattermost Apps.",
+	Version: root.Manifest.Version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if verbose {
 			log = utils.MustMakeCommandLogger(zapcore.DebugLevel)
