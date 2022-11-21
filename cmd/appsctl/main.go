@@ -34,9 +34,7 @@ func init() {
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		log.WithError(err).Fatalf("command failed")
-	}
+	_ = rootCmd.Execute()
 }
 
 var rootCmd = &cobra.Command{
