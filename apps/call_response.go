@@ -31,6 +31,8 @@ const (
 	// navigated to a URL, which may be a channel in Mattermost. NavigateToURL
 	// and UseExternalBrowser are expected to be returned.
 	CallResponseTypeNavigate CallResponseType = "navigate"
+
+	CallResponseTypeView CallResponseType = "view"
 )
 
 // CallResponse is general envelope for all Call responses.
@@ -49,6 +51,8 @@ const (
 // contains the overall error text. Data contains optional, field-level errors.
 type CallResponse struct {
 	Type CallResponseType `json:"type"`
+
+	DisplayAs string `json:"display_as,omitempty"`
 
 	// Text is used for OK and Error response, and will show the text in the
 	// proper output.
@@ -139,6 +143,8 @@ func (cresp CallResponse) String() string {
 			s += ", using external browser"
 		}
 		return s
+	case CallResponseTypeView:
+		return fmt.Sprintf("View: %v", cresp.Data)
 
 	default:
 		return fmt.Sprintf("?? unknown response type %q", cresp.Type)
@@ -179,6 +185,9 @@ func (cresp CallResponse) Loggable() []interface{} {
 		if cresp.UseExternalBrowser {
 			props = append(props, "use_external_browser", true)
 		}
+
+	case CallResponseTypeView:
+		props = append(props, "view", cresp.Data)
 	}
 
 	return props

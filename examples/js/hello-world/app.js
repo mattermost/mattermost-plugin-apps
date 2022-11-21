@@ -21,7 +21,7 @@ app.get('/manifest.json', (req, res) => {
             'act_as_bot',
         ],
         requested_locations: [
-            '/channel_header',
+            '/app_bar',
             '/command',
         ],
     });
@@ -32,15 +32,13 @@ app.post('/bindings', (req, res) => {
         type: 'ok',
         data: [
             {
-                location: '/channel_header',
+                location: '/app_bar',
                 bindings: [
                     {
                         location: 'send-button',
                         icon: 'icon.png',
                         label: 'send hello message',
-                        call: {
-                            path: '/send-modal',
-                        },
+                        submit: '/send-modal',
                     },
                 ],
             },
@@ -56,9 +54,7 @@ app.post('/bindings', (req, res) => {
                             {
                                 location: 'send',
                                 label: 'send',
-                                call: {
-                                    path: '/send',
-                                },
+                                submit: '/send',
                             },
                         ],
                     },
@@ -68,7 +64,7 @@ app.post('/bindings', (req, res) => {
     });
 });
 
-app.post(['/send/form', '/send-modal/submit'], (req, res) => {
+app.post(['/send/form', '/send-modal'], (req, res) => {
     res.json({
         type: 'form',
         form: {
@@ -81,9 +77,12 @@ app.post(['/send/form', '/send-modal/submit'], (req, res) => {
                     label: 'message',
                 },
             ],
-            call: {
+            submit: {
                 path: '/send',
-            },
+                expand: {
+                    acting_user: 'summary',
+                },
+            }
         },
     });
 });
@@ -92,7 +91,7 @@ app.get('/static/icon.png', (req, res) => {
     res.sendFile(__dirname + '/icon.png');
 });
 
-app.post('/send/submit', async (req, res) => {
+app.post('/send', async (req, res) => {
     const call = req.body;
 
     let message = 'Hello, world!';
