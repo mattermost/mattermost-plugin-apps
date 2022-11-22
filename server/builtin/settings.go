@@ -63,7 +63,7 @@ func (a *builtinApp) settings(r *incoming.Request, creq apps.CallRequest) apps.C
 			ModalLabel: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "modal.developer_mode.modal_label",
-					Other: "Enable developers mode",
+					Other: "Enable developer mode",
 				},
 			}),
 			SelectStaticOptions: opts,
