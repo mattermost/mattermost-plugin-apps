@@ -94,7 +94,7 @@ func oauth2App(t *testing.T) *goapp.App {
 	return app
 }
 
-func oauth2Call(th *Helper, path string, value interface{}) apps.CallResponse {
+func oauth2Call(th *Helper, path string, value interface{}) apps.CallResponse { //nolint
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
