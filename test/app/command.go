@@ -21,7 +21,7 @@ func commandBindings(cc apps.Context) []apps.Binding {
 	return []apps.Binding{b}
 }
 
-func numBindingsCommandBinding(cc apps.Context) apps.Binding {
+func numBindingsCommandBinding(_ apps.Context) apps.Binding {
 	return apps.Binding{
 		Label:       "num_bindings",
 		Description: "Choose how many bindings to show in different locations. Provide -1 to use the default options.",
