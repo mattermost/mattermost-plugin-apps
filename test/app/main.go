@@ -74,6 +74,7 @@ func main() {
 	initHTTPLookup(r)
 	initHTTPNavigate(r)
 	initHTTPOK(r)
+	initNumBindingsCommand(r)
 	initHTTPSubscriptions(r)
 
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -13,12 +13,50 @@ func commandBindings(cc apps.Context) []apps.Binding {
 			formCommandBinding(cc),
 			subscriptionCommandBinding("subscribe", Subscribe),
 			subscriptionCommandBinding("unsubscribe", Unsubscribe),
-
+			numBindingsCommandBinding(cc),
 			testCommandBinding(cc),
 		},
 	}
 
 	return []apps.Binding{b}
+}
+
+func numBindingsCommandBinding(cc apps.Context) apps.Binding {
+	return apps.Binding{
+		Label:       "num_bindings",
+		Description: "Choose how many bindings to show in different locations. Provide -1 to use the default options.",
+		Icon:        "icon.png",
+		Form: &apps.Form{
+			Submit: apps.NewCall(NumBindingsPath),
+			Fields: []apps.Field{
+				{
+					Name:                 "location",
+					Type:                 apps.FieldTypeStaticSelect,
+					Description:          "Location to change",
+					IsRequired:           true,
+					AutocompletePosition: 1,
+					SelectStaticOptions: []apps.SelectOption{
+						{
+							Label: "post_menu",
+							Value: "post_menu",
+						},
+						{
+							Label: "channel_header",
+							Value: "channel_header",
+						},
+					},
+				},
+				{
+					Name:                 "number",
+					Type:                 apps.FieldTypeText,
+					TextSubtype:          apps.TextFieldSubtypeNumber,
+					Description:          "Number of bindings to show",
+					IsRequired:           true,
+					AutocompletePosition: 2,
+				},
+			},
+		},
+	}
 }
 
 func testCommandBinding(cc apps.Context) apps.Binding {
