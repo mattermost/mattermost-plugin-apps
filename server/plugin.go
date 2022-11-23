@@ -169,10 +169,9 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
+	cm := mm.Configuration.GetPluginConfig()
 
-	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(cm, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.log.WithError(err).Infof("failed to reconfigure")
 		return err

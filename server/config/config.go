@@ -43,15 +43,15 @@ type StoredConfig struct {
 	AllowHTTPApps bool `json:"allow_http_apps"`
 }
 
-func unmarshalPluginConfig(pluginConfig map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {
+func unmarshalStoredConfigMap(storedConfigMap map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {
 	sc := StoredConfig{}
-	utils.Remarshal(sc, pluginConfig)
+	utils.Remarshal(&sc, storedConfigMap)
 
-	if _, ok := pluginConfig["developer_mode"]; !ok {
+	if _, ok := storedConfigMap["developer_mode"]; !ok {
 		sc.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
 	}
 
-	if _, ok := pluginConfig["allow_http_apps"]; !ok {
+	if _, ok := storedConfigMap["allow_http_apps"]; !ok {
 		sc.AllowHTTPApps = sc.DeveloperMode || !mattermostCloudMode
 	}
 

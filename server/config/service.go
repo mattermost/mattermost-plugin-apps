@@ -26,7 +26,7 @@ type Service interface {
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 
-	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
+	Reconfigure(map[string]any, utils.Logger, ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
 }
 
@@ -64,7 +64,7 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 	}
 
 	cm := s.mm.Configuration.GetPluginConfig()
-	sc := unmarshalPluginConfig(cm, mmconf, conf.MattermostCloudMode)
+	sc := unmarshalStoredConfigMap(cm, mmconf, conf.MattermostCloudMode)
 	conf.StoredConfig = sc
 
 	s.lock.Lock()
@@ -141,7 +141,7 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 	return license
 }
 
-func (s *service) Reconfigure(sc StoredConfig, log utils.Logger, services ...Configurable) error {
+func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, services ...Configurable) error {
 	mmconf := s.reloadMattermostConfig()
 	newConfig := s.Get()
 	license := s.getMattermostLicense(log)
@@ -150,6 +150,8 @@ func (s *service) Reconfigure(sc StoredConfig, log utils.Logger, services ...Con
 	if err != nil {
 		return err
 	}
+
+	sc := unmarshalStoredConfigMap(storedConfigMap, mmconf, newConfig.MattermostCloudMode)
 	newConfig.StoredConfig = sc
 
 	s.lock.Lock()
@@ -170,8 +172,11 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
 		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperMode, sc.AllowHTTPApps)
 
+	var storedConfigMap map[string]any
+	utils.Remarshal(&storedConfigMap, sc)
+
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(sc, log)
+	err := s.Reconfigure(storedConfigMap, log)
 	if err != nil {
 		return err
 	}
