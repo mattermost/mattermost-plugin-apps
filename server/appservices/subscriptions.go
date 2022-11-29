@@ -166,7 +166,7 @@ func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e app
 		return modified, nil
 	}
 
-	return all, utils.ErrNotFound
+	return all, errors.New("You are not subscribed to this notification/s")
 }
 
 func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Subscription) func() error {
