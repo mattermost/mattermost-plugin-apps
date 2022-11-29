@@ -101,7 +101,7 @@ var awsCleanCmd = &cobra.Command{
 
 		accessKeyID := os.Getenv(upaws.AccessEnvVar)
 		if accessKeyID == "" {
-			return errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+			return errors.Errorf("no AWS access key was provided. Please set %s.", upaws.AccessEnvVar)
 		}
 
 		return upaws.CleanAWS(asDeploy, accessKeyID, log)
@@ -314,15 +314,15 @@ with the default initial IAM configuration`,
 func makeTestAWSUpstream() (*upaws.Upstream, error) {
 	region := os.Getenv(upaws.RegionEnvVar)
 	if region == "" {
-		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+		return nil, errors.Errorf("no AWS region was provided. Please set %s.", upaws.RegionEnvVar)
 	}
 	accessKey := os.Getenv(upaws.AccessEnvVar)
 	if accessKey == "" {
-		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.AccessEnvVar)
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s.", upaws.AccessEnvVar)
 	}
 	secretKey := os.Getenv(upaws.SecretEnvVar)
 	if secretKey == "" {
-		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.SecretEnvVar)
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s.", upaws.SecretEnvVar)
 	}
 
 	return upaws.MakeUpstream(accessKey, secretKey, region, upaws.S3BucketName(), log)
@@ -331,15 +331,15 @@ func makeTestAWSUpstream() (*upaws.Upstream, error) {
 func makeDeployAWSClient() (upaws.Client, error) {
 	region := os.Getenv(upaws.RegionEnvVar)
 	if region == "" {
-		return nil, errors.Errorf("no AWS region was provided. Please set %s", upaws.RegionEnvVar)
+		return nil, errors.Errorf("no AWS region was provided. Please set %s.", upaws.RegionEnvVar)
 	}
 	accessKey := os.Getenv(upaws.DeployAccessEnvVar)
 	if accessKey == "" {
-		return nil, errors.Errorf("no AWS access key was provided. Please set %s", upaws.DeployAccessEnvVar)
+		return nil, errors.Errorf("no AWS access key was provided. Please set %s.", upaws.DeployAccessEnvVar)
 	}
 	secretKey := os.Getenv(upaws.DeploySecretEnvVar)
 	if secretKey == "" {
-		return nil, errors.Errorf("no AWS secret key was provided. Please set %s", upaws.DeploySecretEnvVar)
+		return nil, errors.Errorf("no AWS secret key was provided. Please set %s.", upaws.DeploySecretEnvVar)
 	}
 
 	return upaws.MakeClient(accessKey, secretKey, region,
