@@ -34,8 +34,18 @@ var fullForm = apps.Form{
 			Type: apps.FieldTypeChannel,
 		},
 		{
+			Name: "channel-multi",
+			Type: apps.FieldTypeChannel,
+			SelectIsMulti: true,
+		},
+		{
 			Name: "user",
 			Type: apps.FieldTypeUser,
+		},
+		{
+			Name: "user-multi",
+			Type: apps.FieldTypeUser,
+			SelectIsMulti: true,
 		},
 		{
 			Name: "static",
