@@ -29,7 +29,8 @@ type LogConfigGetter interface {
 // SugaredLogger, using the plugin API log methods.
 type plugin struct {
 	zapcore.LevelEnabler
-	mm         *pluginapi.Client
+	poster     *pluginapi.PostService
+	logger     *pluginapi.LogService
 	confGetter LogConfigGetter
 	fields     map[string]zapcore.Field
 }
@@ -37,7 +38,8 @@ type plugin struct {
 func NewPluginLogger(mmapi *pluginapi.Client, confGetter LogConfigGetter) Logger {
 	return &logger{
 		SugaredLogger: zap.New(&plugin{
-			mm:           mmapi,
+			poster:       &mmapi.Post,
+			logger:       &mmapi.Log,
 			LevelEnabler: zapcore.DebugLevel,
 			confGetter:   confGetter,
 		}).Sugar(),
@@ -71,14 +73,14 @@ func (p *plugin) Sync() error {
 
 func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 	p = p.with(fields)
-	w := p.mm.Log.Error
+	w := p.logger.Error
 	switch e.Level {
 	case zapcore.DebugLevel:
-		w = p.mm.Log.Debug
+		w = p.logger.Debug
 	case zapcore.InfoLevel:
-		w = p.mm.Log.Info
+		w = p.logger.Info
 	case zapcore.WarnLevel:
-		w = p.mm.Log.Warn
+		w = p.logger.Warn
 	}
 
 	pairs := []interface{}{}
@@ -120,8 +122,9 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		UserId:    logconf.BotUserID,
 		Message:   message,
 	}
-	if err := p.mm.Post.CreatePost(logPost); err != nil {
-		p.mm.Log.Error("failed to post log message", "err", err.Error())
+	if err := p.poster.CreatePost(logPost); err != nil {
+		// Log directly to avoid loop
+		p.logger.Error("failed to post log message", "err", err.Error())
 	}
 
 	return nil

@@ -25,6 +25,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -53,6 +54,7 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
+	log := utils.NewPluginLogger(mm, nil)
 
 	// Make sure we have the Bot.
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
@@ -63,7 +65,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
-	mm.Log.Debug("ensured bot", "id", botUserID, "username", config.BotUsername)
+	log.Debugw("ensured bot", "id", botUserID, "username", config.BotUsername)
 
 	// Initialize internalization and telemetrty.
 	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
@@ -73,22 +75,22 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		mm.Log.Warn("failed to start telemetry client.", "error", err.Error())
+		log.Warnw("failed to start telemetry client.", "error", err.Error())
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
 	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
+	log = p.conf.NewBaseLogger()
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, false)
+	err = p.conf.Reconfigure(stored, log)
 	if err != nil {
-		mm.Log.Info("failed to load initial configuration", "error", err.Error())
+		log.Infow("failed to load initial configuration", "error", err.Error())
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 
 	conf := p.conf.Get()
-	log := p.conf.NewBaseLogger()
 	log.With(conf).Debugw("configured the plugin.")
 
 	// Initialize outgoing HTTP.
@@ -172,7 +174,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 
-	err = p.conf.Reconfigure(stored, true, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(stored, nil, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err

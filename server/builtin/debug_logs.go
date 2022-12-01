@@ -61,7 +61,7 @@ func (a *builtinApp) debugLogsCommandBinding(loc *i18n.Localizer) apps.Binding {
 					Type: apps.FieldTypeStaticSelect,
 					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.log.level.description",
-						Other: "Create a new channel for the plugin logs. Use --channel to specify an existing channel.",
+						Other: "Set minimum log severity (level) to output.",
 					}),
 					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.log.level.label",
@@ -161,7 +161,7 @@ func (a *builtinApp) debugLogs(r *incoming.Request, creq apps.CallRequest) apps.
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add user to channel"))
 		}
 		channelID = ch.Id
-		channelLabel = ch.DisplayName
+		channelLabel = ch.Name
 
 	case !create && channel != nil:
 		if optMap, ok := channel.(map[string]interface{}); ok {
@@ -200,7 +200,7 @@ func (a *builtinApp) debugLogs(r *incoming.Request, creq apps.CallRequest) apps.
 
 	if channelLabel == "" {
 		if ch, err := a.conf.MattermostAPI().Channel.Get(storedConfig.LogChannelID); err == nil {
-			channelLabel = ch.DisplayName
+			channelLabel = ch.Name
 		}
 	}
 

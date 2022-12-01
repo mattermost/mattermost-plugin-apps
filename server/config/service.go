@@ -33,7 +33,7 @@ type Service interface {
 	Telemetry() *telemetry.Telemetry
 	NewBaseLogger() utils.Logger
 
-	Reconfigure(_ StoredConfig, quiet bool, _ ...Configurable) error
+	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
 }
 
@@ -72,7 +72,7 @@ func (s *service) newConfig() Config {
 	}
 }
 
-func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogger utils.Logger) (*Config, error) {
+func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.Logger) (*Config, error) {
 	conf := s.newConfig()
 	conf.StoredConfig = newStoredConfig
 	newMattermostConfig := s.reloadMattermostConfig()
@@ -86,7 +86,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogge
 	if license == nil {
 		license = s.mm.System.GetLicense()
 		if license == nil && !conf.DeveloperMode {
-			configLogger.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
+			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
 		}
 	}
 
@@ -121,8 +121,6 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogge
 		localURL = "http://" + host + ":" + port + u.Path
 	}
 
-	conf.StoredConfig = newStoredConfig
-
 	conf.MattermostSiteURL = u.String()
 	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
@@ -135,7 +133,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogge
 
 	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
-		configLogger.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
+		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
 		conf.AllowHTTPApps = true
 	}
 
@@ -149,7 +147,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogge
 		license.Features.Cloud != nil &&
 		*license.Features.Cloud
 	if conf.MattermostCloudMode {
-		configLogger.Debugf("Detected Mattermost Cloud mode based on the license")
+		log.Debugf("Detected Mattermost Cloud mode based on the license")
 	}
 
 	// On community.mattermost.com license is not suitable for checking, resort
@@ -157,7 +155,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, configLogge
 	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
 	if legacyAccessKey != "" {
 		conf.MattermostCloudMode = true
-		configLogger.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
+		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
 		conf.AWSAccessKey = legacyAccessKey
 	}
 
@@ -220,13 +218,12 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(newStoredConfig StoredConfig, quiet bool, services ...Configurable) error {
-	var configLogger utils.Logger = utils.NilLogger{}
-	if !quiet {
-		configLogger = s.NewBaseLogger()
+func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, services ...Configurable) error {
+	if log == nil {
+		log = utils.NewTestLogger()
 	}
 
-	clone, err := s.newInitializedConfig(newStoredConfig, configLogger)
+	clone, err := s.newInitializedConfig(newStoredConfig, log)
 	if err != nil {
 		return err
 	}
@@ -236,7 +233,7 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, quiet bool, services
 	s.lock.Unlock()
 
 	for _, service := range services {
-		if err := service.Configure(*clone, configLogger); err != nil {
+		if err := service.Configure(*clone, log); err != nil {
 			return errors.Wrapf(err, "failed to configure service %T", service)
 		}
 	}
@@ -248,7 +245,7 @@ func (s *service) StoreConfig(c StoredConfig, log utils.Logger) error {
 		len(c.InstalledApps), len(c.LocalManifests))
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(c, false)
+	err := s.Reconfigure(c, nil)
 	if err != nil {
 		return err
 	}

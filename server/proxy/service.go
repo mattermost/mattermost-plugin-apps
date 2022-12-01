@@ -43,8 +43,6 @@ type Proxy struct {
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
-
-	// log utils.Logger
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -121,7 +119,6 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
 		appservices:      appservices,
-		// log:              conf.Get().BaseLogger,
 	}
 }
 
