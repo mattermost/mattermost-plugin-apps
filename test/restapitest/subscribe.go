@@ -154,7 +154,7 @@ func testSubscriptions(th *Helper) {
 		badResponse, _, err := th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, "does-not-exist", ""))
 		require.NoError(th, err)
 		require.Equal(th, apps.CallResponseTypeError, badResponse.Type)
-		require.Equal(th, "not found", badResponse.Text)
+		require.Equal(th, "You are not subscribed to this notification: not found", badResponse.Text)
 		assertNumSubs(th, th.HappyCall, 2)
 	})
 
