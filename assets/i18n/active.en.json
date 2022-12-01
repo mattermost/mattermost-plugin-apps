@@ -117,7 +117,7 @@
   "field.kv.namespace.hint": "namespace (up to 2 letters)",
   "field.kv.namespace.label": "namespace",
   "field.kv.new_value.modal_label": "New value to save",
-  "field.log.level.description": "Create a new channel for the plugin logs. Use --channel to specify an existing channel.",
+  "field.log.level.description": "Set minimum log severity (level) to output.",
   "field.log.level.label": "level",
   "field.secret.description.use_jwt": "The secret will be used to issue JWTs in outgoing messages to the app. Usually, it should be obtained from the App's web site, {{.HomepageURL}}",
   "field.secret.modal_label.use_jwt": "Outgoing JWT Secret",
