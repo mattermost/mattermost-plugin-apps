@@ -15,9 +15,9 @@ import (
 )
 
 type LogConfig struct {
+	BotUserID   string
 	ChannelID   string
 	Level       zapcore.Level
-	BotUserID   string
 	IncludeJSON bool
 }
 

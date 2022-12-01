@@ -23,7 +23,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	r := incoming.NewRequest(p.conf, p.sessionService).WithCtx(ctx)
+	r := p.NewIncomingRequest().WithCtx(ctx)
 
 	installed := p.store.App.AsMap()
 	listed := p.store.Manifest.AsMap()
