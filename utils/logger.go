@@ -116,6 +116,7 @@ func MustMakeCommandLogger(level zapcore.Level) Logger {
 	encodingConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	encodingConfig.EncodeDuration = zapcore.StringDurationEncoder
 	encodingConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	encodingConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	zconf := zap.Config{
 		Level:            zap.NewAtomicLevelAt(level),
