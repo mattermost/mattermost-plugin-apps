@@ -15,5 +15,9 @@ func channelHeaderBindings(_ apps.Context) []apps.Binding {
 		out = append(out, invalidFormBindings...)
 	}
 
-	return out
+	if numChannelHeaderBindings < 0 {
+		return out
+	}
+
+	return out[0:numChannelHeaderBindings]
 }
