@@ -74,6 +74,7 @@ func main() {
 	initHTTPLookup(r)
 	initHTTPNavigate(r)
 	initHTTPOK(r)
+	initNumBindingsCommand(r)
 	initHTTPSubscriptions(r)
 
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +89,7 @@ func main() {
 		Handler:           r,
 	}
 
-	Log.Infof("test app started, listening on port %s, manifest at %s/manifest.json", portStr, AppManifest.Deploy.HTTP.RootURL)
+	Log.Infof("test app started, listening on port %s, manifest at %s/manifest.json. Use %s as the JWT secret.", portStr, AppManifest.Deploy.HTTP.RootURL, AppSecret)
 	panic(server.ListenAndServe())
 }
 

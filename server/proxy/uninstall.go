@@ -13,8 +13,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, force bool) (string, error) {
-	if err := r.Check(
+func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, force bool) (text string, err error) {
+	if err = r.Check(
 		r.RequireActingUser,
 		r.RequireSysadminOrPlugin,
 	); err != nil {
@@ -27,7 +27,6 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
 	}
 
-	// Notify the App that it is being uninstalled.
 	message := fmt.Sprintf("Uninstalled %s", app.DisplayName)
 	if app.OnUninstall != nil {
 		resp := p.call(r, app, *app.OnUninstall, &cc)
@@ -43,10 +42,20 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		}
 	}
 
-	// Disable the app and clean out all of its sessions.
-	_, err = p.DisableApp(r, cc, appID)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to disable app")
+	// If the app's cleanup fails in the middle, disable the app and return the error.
+	defer func() {
+		if err == nil {
+			return
+		}
+		r.Log.WithError(err).Errorf("Failed to uninstall app %s: %s", appID, err)
+		if _, disableErr := p.DisableApp(r, cc, appID); disableErr != nil {
+			r.Log.WithError(disableErr).Errorf("Failed to disable app %s after a failed uninstall: %s", appID, disableErr)
+		}
+	}()
+
+	// Only clear the session store. Existing session are revoked when the OAuth app gets deleted.
+	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 	}
 
 	// Delete OAuth app.
@@ -80,6 +89,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to clear OAuth2 user data for %s, the app is left disabled", appID)
 	}
 
+	// Remove all subscriptions
 	if err = p.appservices.UnsubscribeApp(r, appID); err != nil {
 		return "", errors.Wrapf(err, "failed to clear subscriptions for %s, the app is left disabled", appID)
 	}
@@ -89,7 +99,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "can't delete app %s, the app is left disabled", appID)
 	}
 
-	r.Log.Infof("Uninstalled app.")
+	r.Log.Infof("Uninstalled app %s.", appID)
 
 	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
 
