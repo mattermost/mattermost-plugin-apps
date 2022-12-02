@@ -115,8 +115,7 @@ func (sub Subscription) Validate() error {
 }
 
 func (e Event) Validate() error {
-	var result error
-	return e.validate(result)
+	return e.validate(nil)
 }
 
 func (e Event) validate(appendTo error) error {
@@ -128,7 +127,9 @@ func (e Event) validate(appendTo error) error {
 	// Globally scoped, must not contain any extra qualifiers.
 	case SubjectUserCreated,
 		SubjectBotJoinedTeam,
-		SubjectBotLeftTeam /*, SubjectBotMentioned*/ :
+		SubjectBotLeftTeam,
+		SubjectBotJoinedChannel,
+		SubjectBotLeftChannel /*, SubjectBotMentioned*/ :
 		if e.TeamID != "" {
 			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is globally scoped; team_id and channel_id must both be empty", e.Subject))
 		}
@@ -139,24 +140,22 @@ func (e Event) validate(appendTo error) error {
 	// Team scoped, require TeamID, no ChannelID
 	case SubjectUserJoinedTeam,
 		SubjectUserLeftTeam,
-		SubjectBotJoinedChannel,
-		SubjectBotLeftChannel,
 		SubjectChannelCreated:
 		if e.TeamID == "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; teamID must not be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; team_id must not be empty", e.Subject))
 		}
 		if e.ChannelID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; channelID must be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; channel_id must be empty", e.Subject))
 		}
 
 	// Channel scoped, require ChannelID, no TeamID
 	case SubjectUserJoinedChannel,
 		SubjectUserLeftChannel /*, SubjectPostCreated */ :
 		if e.TeamID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; teamID must be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; team_id must be empty", e.Subject))
 		}
 		if e.ChannelID == "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; ChannelID must not be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; channel_id must not be empty", e.Subject))
 		}
 
 	default:

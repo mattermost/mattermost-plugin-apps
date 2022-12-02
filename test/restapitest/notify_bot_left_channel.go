@@ -33,7 +33,6 @@ func notifyBotLeftChannel(_ *Helper) *notifyTestCase {
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
 			return apps.Event{
 				Subject: apps.SubjectBotLeftChannel,
-				TeamID:  data.Team.Id,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
