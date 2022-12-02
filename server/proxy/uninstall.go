@@ -10,7 +10,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, force bool) (text string, err error) {
@@ -70,26 +69,12 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", errors.Wrapf(err, "failed to disable bot account for %s, the app is left disabled", appID)
 	}
 
-	// Remove the app's KV store and OAuth user data.
-	deleteKey := func(key string) error {
-		return mm.KV.Delete(key)
+	// Remove all KV and user data.
+	if err = p.store.RemoveAllKVAndUserDataForApp(r, appID); err != nil {
+		return "", errors.Wrapf(err, "failed to clear app data for %s, the app is left disabled", appID)
 	}
 
-	err = p.store.ListHashKeys(r, deleteKey,
-		store.WithAppID(appID),
-		store.WithPrefix(store.KVAppPrefix))
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to clear KV data for %s, the app is left disabled", appID)
-	}
-
-	err = p.store.ListHashKeys(r, deleteKey,
-		store.WithAppID(appID),
-		store.WithPrefix(store.KVUserPrefix))
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to clear OAuth2 user data for %s, the app is left disabled", appID)
-	}
-
-	// Remove all subscriptions
+	// Remove all subscriptions.
 	if err = p.appservices.UnsubscribeApp(r, appID); err != nil {
 		return "", errors.Wrapf(err, "failed to clear subscriptions for %s, the app is left disabled", appID)
 	}

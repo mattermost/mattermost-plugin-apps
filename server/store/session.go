@@ -113,9 +113,11 @@ func (s sessionStore) listKeysForUser(userID string) ([]string, error) {
 			if err != nil {
 				continue
 			}
-			if keyUserID == userID {
-				ret = append(ret, key)
+			if keyUserID != userID {
+				continue
 			}
+
+			ret = append(ret, key)
 		}
 	}
 
