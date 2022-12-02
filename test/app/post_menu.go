@@ -15,5 +15,9 @@ func postMenuBindings(_ apps.Context) []apps.Binding {
 		out = append(out, invalidFormBindings...)
 	}
 
-	return out
+	if numPostMenuBindings < 0 {
+		return out
+	}
+
+	return out[0:numPostMenuBindings]
 }
