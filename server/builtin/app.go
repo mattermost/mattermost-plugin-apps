@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
@@ -232,6 +233,12 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
+	loc := a.newLocalizer(creq)
+	confErr := a.checkConfigValid(loc)
+	if confErr != nil {
+		return readcloser(apps.NewErrorResponse(confErr))
+	}
+
 	h, ok := a.router[creq.Path]
 	if !ok {
 		return nil, utils.NewNotFoundError(creq.Path)
@@ -263,4 +270,26 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	}
 
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
+}
+
+func (a *builtinApp) checkConfigValid(loc *i18n.Localizer) error {
+	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+
+	if oauthEnabled == nil || !*oauthEnabled {
+		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)
+
+		message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "command.error.oauth2.disabled",
+				Other: "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",
+			},
+			TemplateData: map[string]string{
+				"IntegrationManagementPage": integrationManagementPage,
+			},
+		})
+
+		return errors.New(message)
+	}
+
+	return nil
 }
