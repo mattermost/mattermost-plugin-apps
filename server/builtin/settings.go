@@ -111,7 +111,7 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to store configuration"))
 	}
 
-	return apps.NewTextResponse("Saved %v", creq.Values)
+	return apps.NewTextResponse("Saved settings.")
 }
 
 func getSelectedValue(trueOtion, falseOption apps.SelectOption, value bool) apps.SelectOption {
