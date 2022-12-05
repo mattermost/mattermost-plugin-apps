@@ -78,6 +78,8 @@
   "command.list.submit.status.installed": "**Installed**",
   "command.list.submit.status.unreachable": "Installed, **Unreachable**",
   "command.list.submit.version": "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
+  "command.settings.description": "Configure systemwide apps settings",
+  "command.settings.label": "settings",
   "command.uninstall.description": "Uninstall an App",
   "command.uninstall.hint": "[ App ID ]",
   "command.uninstall.label": "uninstall",
@@ -113,6 +115,9 @@
   "field.url.description": "enter the HTTP URL for the app's manifest.json",
   "field.url.hint": "URL",
   "field.url.label": "url",
+  "modal.allow_http_apps.description": "Allow apps, which run as an http server, to be installed.",
+  "modal.developer_mode.description": "Enables various development tools.\n\nShould not be enabled in production.",
+  "modal.developer_mode.modal_label": "Enable HTTP apps",
   "modal.install_consent.header.header": "Application **{{.DisplayName}}** requires system administrator's consent to:",
   "modal.install_consent.header.locations": "- Add the following elements to the **Mattermost User Interface**:",
   "modal.install_consent.header.permissions": "- Access **Mattermost API** with the following permissions:",
@@ -120,6 +125,9 @@
   "modal.kv.edit.submit.deleted": "Deleted:\n```\nKey: {{.Key}}\n```\n",
   "modal.kv.edit.submit.stored": "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
   "modal.kv.edit.title": "Edit app's KV record",
+  "modal.settings.off": "Off",
+  "modal.settings.on": "On",
+  "modal.settings.title": "Configure systemwide apps settings",
   "option.kv.delete.label": "Delete Key",
   "option.kv.store.label": "Store New Value"
 }

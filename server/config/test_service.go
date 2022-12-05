@@ -82,7 +82,7 @@ func (s *TestService) MattermostConfig() configservice.ConfigService {
 	return &mattermostConfigService{&s.mmconfig}
 }
 
-func (s *TestService) Reconfigure(StoredConfig, utils.Logger, ...Configurable) error {
+func (s *TestService) Reconfigure(map[string]any, utils.Logger, ...Configurable) error {
 	return nil
 }
 
