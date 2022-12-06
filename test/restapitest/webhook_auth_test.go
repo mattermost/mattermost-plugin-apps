@@ -62,7 +62,6 @@ func sendWebhookPostRequest(th *Helper, secret string, body []byte) error {
 	}
 
 	return nil
-
 }
 
 func getTestWebhookSecret(th *Helper, app *goapp.App) string {
