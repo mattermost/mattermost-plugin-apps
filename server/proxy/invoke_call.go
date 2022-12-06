@@ -73,6 +73,18 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 // callApp in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
 func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) apps.CallResponse {
+	return p.callAppWithExpandGetter(r, app, creq, notify, nil)
+}
+
+// callApp in an internal method to execute a call to an upstream app. It does
+// not perform any cleanup of the inputs.
+func (p *Proxy) callAppWithExpandGetter(
+	r *incoming.Request,
+	app *apps.App,
+	creq apps.CallRequest,
+	notify bool,
+	expandGetter ExpandGetter,
+) apps.CallResponse {
 	// this may be invoked from various places in the code, and the Destination
 	// may or may not be set in the request. Since we have the app explicitly
 	// here, make sure it's set in the request
@@ -84,7 +96,7 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 	}
 
 	// expand
-	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
+	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand, expandGetter)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to expand context"))
 	}

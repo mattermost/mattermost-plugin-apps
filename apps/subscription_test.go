@@ -28,6 +28,10 @@ func TestValidateSubscriptionEvent(t *testing.T) {
 		{Event: apps.Event{Subject: apps.SubjectBotLeftChannel}},
 		{Event: apps.Event{Subject: apps.SubjectBotJoinedTeam}},
 		{Event: apps.Event{Subject: apps.SubjectBotLeftTeam}},
+		{Event: apps.Event{Subject: apps.SubjectSelfJoinedChannel}},
+		{Event: apps.Event{Subject: apps.SubjectSelfLeftChannel}},
+		{Event: apps.Event{Subject: apps.SubjectSelfJoinedTeam}},
+		{Event: apps.Event{Subject: apps.SubjectSelfLeftTeam}},
 		{Event: apps.Event{Subject: apps.SubjectChannelCreated, TeamID: "teamID"}},
 
 		// Bad.
@@ -82,6 +86,22 @@ func TestValidateSubscriptionEvent(t *testing.T) {
 		{
 			Event:         apps.Event{Subject: apps.SubjectBotLeftTeam, TeamID: "teamID"},
 			expectedError: "bot_left_team is globally scoped; team_id and channel_id must both be empty: invalid input",
+		},
+		{
+			Event:         apps.Event{Subject: apps.SubjectSelfJoinedChannel, TeamID: "teamID"},
+			expectedError: "self_joined_channel is globally scoped; team_id and channel_id must both be empty: invalid input",
+		},
+		{
+			Event:         apps.Event{Subject: apps.SubjectSelfLeftChannel, TeamID: "teamID"},
+			expectedError: "self_left_channel is globally scoped; team_id and channel_id must both be empty: invalid input",
+		},
+		{
+			Event:         apps.Event{Subject: apps.SubjectSelfJoinedTeam, TeamID: "teamID"},
+			expectedError: "self_joined_team is globally scoped; team_id and channel_id must both be empty: invalid input",
+		},
+		{
+			Event:         apps.Event{Subject: apps.SubjectSelfLeftTeam, TeamID: "teamID"},
+			expectedError: "self_left_team is globally scoped; team_id and channel_id must both be empty: invalid input",
 		},
 		{
 			Event:         apps.Event{Subject: apps.SubjectChannelCreated},

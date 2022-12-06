@@ -180,7 +180,7 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 				return errors.New("no permission to read user")
 			}
 
-		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /*, apps.SubjectPostCreated, apps.SubjectBotMentioned */ :
+		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel:
 			if !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 				return errors.New("no permission to read channel")
 			}
@@ -193,9 +193,12 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 		case apps.SubjectBotJoinedChannel,
 			apps.SubjectBotLeftChannel,
 			apps.SubjectBotJoinedTeam,
-			apps.SubjectBotLeftTeam:
-			// When the bot has joined an entity, it will have the permission to
-			// read it.
+			apps.SubjectBotLeftTeam,
+			apps.SubjectSelfJoinedChannel,
+			apps.SubjectSelfLeftChannel,
+			apps.SubjectSelfJoinedTeam,
+			apps.SubjectSelfLeftTeam:
+			// The subscriber has the permission to read the entity they are joining/leaving.
 			return nil
 
 		case apps.SubjectChannelCreated:

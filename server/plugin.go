@@ -189,20 +189,20 @@ func (p *Plugin) UserHasBeenCreated(_ *plugin.Context, user *model.User) {
 	p.proxy.NotifyUserCreated(user.Id)
 }
 
-func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
-	p.proxy.NotifyUserJoinedChannel(cm.ChannelId, cm.UserId)
+func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, actor *model.User) {
+	p.proxy.NotifyUserJoinedChannel(cm, actor)
 }
 
-func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
-	p.proxy.NotifyUserLeftChannel(cm.ChannelId, cm.UserId)
+func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, actor *model.User) {
+	p.proxy.NotifyUserLeftChannel(cm, actor)
 }
 
-func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
-	p.proxy.NotifyUserJoinedTeam(tm.TeamId, tm.UserId)
+func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, actor *model.User) {
+	p.proxy.NotifyUserJoinedTeam(tm, actor)
 }
 
-func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
-	p.proxy.NotifyUserLeftTeam(tm.TeamId, tm.UserId)
+func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, actor *model.User) {
+	p.proxy.NotifyUserLeftTeam(tm, actor)
 }
 
 func (p *Plugin) ChannelHasBeenCreated(_ *plugin.Context, ch *model.Channel) {

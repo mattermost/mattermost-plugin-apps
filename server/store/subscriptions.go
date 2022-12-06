@@ -42,11 +42,15 @@ func subsKey(e apps.Event) (string, error) {
 	idSuffix := ""
 	switch e.Subject {
 	case apps.SubjectUserCreated,
-		// apps.SubjectBotMentioned,
+		// apps.SubjectSelfMentioned,
 		apps.SubjectBotJoinedTeam,
 		apps.SubjectBotLeftTeam,
 		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel:
+		apps.SubjectBotLeftChannel,
+		apps.SubjectSelfJoinedTeam,
+		apps.SubjectSelfLeftTeam,
+		apps.SubjectSelfJoinedChannel,
+		apps.SubjectSelfLeftChannel:
 	// Global subscriptions, no suffix
 
 	case apps.SubjectUserJoinedChannel,

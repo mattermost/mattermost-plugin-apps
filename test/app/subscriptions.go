@@ -39,7 +39,27 @@ var allSubjects = map[apps.Subject]apps.Expand{
 		Team:       apps.ExpandAll,
 		TeamMember: apps.ExpandAll,
 	},
-	// apps.SubjectBotMentioned: {
+	apps.SubjectSelfJoinedChannel: {
+		User:          apps.ExpandAll,
+		Channel:       apps.ExpandAll,
+		ChannelMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfLeftChannel: {
+		User:          apps.ExpandAll,
+		Channel:       apps.ExpandAll,
+		ChannelMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfJoinedTeam: {
+		User:       apps.ExpandAll,
+		Team:       apps.ExpandAll,
+		TeamMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfLeftTeam: {
+		User:       apps.ExpandAll,
+		Team:       apps.ExpandAll,
+		TeamMember: apps.ExpandAll,
+	},
+	// apps.SubjectSelfMentioned: {
 	// 	Channel:  apps.ExpandAll,
 	// 	Post:     apps.ExpandSummary,
 	// 	RootPost: apps.ExpandSummary,
