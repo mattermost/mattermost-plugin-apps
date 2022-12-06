@@ -55,8 +55,8 @@ func NewService(proxy proxy.Service, appservices appservices.Service, conf confi
 	// Incoming remote webhooks.
 	h.HandleFunc(path.Webhook, h.Webhook).Methods(http.MethodPost)
 	h.HandleFunc(path.Webhook+"/{path}", h.Webhook).Methods(http.MethodPost)
-	h.HandleFunc(path.Webhook, h.WebhookValidate).Methods(http.MethodHead)
-	h.HandleFunc(path.Webhook+"/{path}", h.WebhookValidate).Methods(http.MethodHead)
+	h.HandleFunc(path.Webhook, h.WebhookValidateAuthentication).Methods(http.MethodHead)
+	h.HandleFunc(path.Webhook+"/{path}", h.WebhookValidateAuthentication).Methods(http.MethodHead)
 
 	// Remote OAuth2: /{appid}/oauth2/remote/connect and /{appid}/oauth2/remote/complete
 	h.HandleFunc(path.RemoteOAuth2Connect, h.RemoteOAuth2Connect).Methods(http.MethodGet)
