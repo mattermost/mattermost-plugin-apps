@@ -88,7 +88,9 @@ func (r *Request) WithSessionID(sessionID string) *Request {
 
 func (r *Request) WithSourcePluginID(pluginID string) *Request {
 	r = r.Clone()
-	r.Log = r.Log.With("source_plugin_id", pluginID)
+	if pluginID != "" {
+		r.Log = r.Log.With("source_plugin_id", pluginID)
+	}
 	r.sourcePluginID = pluginID
 	return r
 }
