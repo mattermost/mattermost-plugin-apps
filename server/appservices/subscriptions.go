@@ -20,7 +20,7 @@ type PermissionChecker interface {
 	HasPermissionToTeam(userID, teamID string, permission *model.Permission) bool
 }
 
-func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) error {
+func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription, testBypassBotSubjectMapping bool) error {
 	err := r.Check(
 		r.RequireActingUser,
 		r.RequireSourceApp,
@@ -36,6 +36,34 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 	all, err := a.unsubscribe(r, ownerID, sub.Event)
 	if err != nil && errors.Cause(err) != utils.ErrNotFound {
 		return err
+	}
+
+	//TODO <>/<> MM-??? deprecate bot_joined|left_...
+	oldSubject := sub.Event.Subject
+	if newSubject, isBotSubject := map[apps.Subject]apps.Subject{
+		apps.SubjectBotJoinedChannel: apps.SubjectSelfJoinedChannel,
+		apps.SubjectBotLeftChannel:   apps.SubjectSelfLeftChannel,
+		apps.SubjectBotJoinedTeam:    apps.SubjectSelfJoinedTeam,
+		apps.SubjectBotLeftTeam:      apps.SubjectSelfLeftTeam,
+	}[oldSubject]; isBotSubject && !testBypassBotSubjectMapping {
+		var app *apps.App
+		app, err = a.store.App.Get(r.SourceAppID())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get app %s to validate subscription to %s", r.SourceAppID(), sub.Event.Subject)
+		}
+		if r.ActingUserID() != app.BotUserID {
+			return errors.Errorf("only the app's bot user can subscribe to %s", sub.Event.Subject)
+		}
+
+		r.Log.Debugf("subscribing %s to %s instead of deprecated %s", r.SourceAppID(), newSubject, oldSubject)
+		sub.Event.Subject = newSubject
+
+		// If there was a prior same-scoped subscription from the app, now with
+		// the re-mapped subject, remove it and update all.
+		all, err = a.unsubscribe(r, ownerID, sub.Event)
+		if err != nil && errors.Cause(err) != utils.ErrNotFound {
+			return err
+		}
 	}
 
 	// Make and save the new subscription.

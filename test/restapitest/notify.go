@@ -21,7 +21,7 @@ type notifyTestCase struct {
 	init               func(*Helper) apps.ExpandedContext
 	event              func(*Helper, apps.ExpandedContext) apps.Event
 	trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
-	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) apps.ExpandedContext
+	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) apps.Context
 	except             []appClient
 	expandCombinations []apps.ExpandLevel
 }
