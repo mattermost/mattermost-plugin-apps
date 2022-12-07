@@ -51,6 +51,8 @@ const (
 	fSecret         = "secret"
 	fSessionID      = "session_id"
 	fURL            = "url"
+	fDeveloperMode  = "developer_mode"
+	fAllowHTTPApps  = "allow_http_apps"
 )
 
 const (
@@ -77,6 +79,8 @@ const (
 	pInstallListed        = "/install-listed"
 	pList                 = "/list"
 	pUninstall            = "/uninstall"
+	pSettings             = "/settings"
+	pSettingsSave         = "/settings/save"
 )
 
 const (
@@ -133,11 +137,13 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInstallHTTP:          requireAdmin(a.installHTTP),
 		pList:                 requireAdmin(a.list),
 		pUninstall:            requireAdmin(a.uninstall),
+		pSettings:             requireAdmin(a.settings),
 
 		// Modals.
 		pDebugKVEditModal:     requireAdmin(a.debugKVEditModal),
 		pInstallConsent:       requireAdmin(a.installConsent),
 		pInstallConsentSource: requireAdmin(a.installConsentForm),
+		pSettingsSave:         requireAdmin(a.settingsSave),
 
 		// Lookups.
 		pLookupAppID:     requireAdmin(a.lookupAppID),
