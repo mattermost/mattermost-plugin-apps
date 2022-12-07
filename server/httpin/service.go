@@ -161,6 +161,6 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.handlerFunc(r, w, req)
 
 	if s.Config.Get().DeveloperMode {
-		r.Log.Debugf("HTTP")
+		r.Log.Debugf("Handled HTTP request")
 	}
 }
