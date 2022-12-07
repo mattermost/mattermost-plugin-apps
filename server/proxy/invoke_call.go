@@ -12,6 +12,13 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+func isBindingPath(app *apps.App, pathForCheck string) bool {
+	if app.Bindings != nil {
+		return pathForCheck == app.Bindings.Path
+	}
+	return pathForCheck == apps.DefaultBindings.Path
+}
+
 func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.App, apps.CallResponse) {
 	if err := r.Check(
 		r.RequireActingUser,
@@ -112,5 +119,12 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 		}
 		cresp.Form = &clean
 	}
+
+	if cresp.Type != apps.CallResponseTypeError &&
+		!isBindingPath(app, creq.Call.Path) &&
+		cresp.RefreshBindings && r.ActingUserID() != "" {
+		p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	}
+
 	return cresp
 }
