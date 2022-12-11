@@ -155,7 +155,7 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() (err error) {
+func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -171,10 +171,14 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
+	var sc config.StoredConfig
+	err := mm.Configuration.LoadPluginConfiguration(&sc)
+	if err != nil {
+		p.API.LogInfo("failed to load updated configuration", "error", err.Error())
+		return err
+	}
 
-	err = p.conf.Reconfigure(stored, nil, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(sc, nil, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err

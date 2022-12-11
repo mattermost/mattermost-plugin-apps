@@ -257,8 +257,8 @@ func TestExpand(t *testing.T) {
 			for name, tc := range field.tcs {
 				t.Run(name, func(t *testing.T) {
 					conf := config.NewTestConfigService(&config.Config{
-						MattermostSiteURL: "https://test.mattermost.test",
 						DeveloperMode:     true,
+						MattermostSiteURL: "https://test.mattermost.test",
 					}).WithMattermostConfig(model.Config{
 						ServiceSettings: model.ServiceSettings{
 							SiteURL: model.NewString("https://test.mattermost.test"),

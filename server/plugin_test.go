@@ -70,7 +70,20 @@ func TestOnDeactivate(t *testing.T) {
 	testAPI := &plugintest.API{}
 	p := NewPlugin(manifest)
 
+	listenAddress := "localhost:8065"
+	siteURL := "http://" + listenAddress + "/subpath"
 	p.API = testAPI
+	testAPI.On("GetConfig").Return(&model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL:       &siteURL,
+			ListenAddress: &listenAddress,
+		},
+	})
+	testAPI.On("GetLicense").Return(&model.License{
+		Features:     &model.Features{},
+		SkuShortName: "professional",
+	})
+	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
 
 	testAPI.On("GetBundlePath").Return("/", nil)
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))

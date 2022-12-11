@@ -77,17 +77,10 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 	conf.StoredConfig = newStoredConfig
 	newMattermostConfig := s.reloadMattermostConfig()
 
-	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(newMattermostConfig)
-
-	// GetLicense silently drops an RPC error
-	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
-	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
-	license := s.mm.System.GetLicense()
-	if license == nil {
-		license = s.mm.System.GetLicense()
-		if license == nil && !conf.DeveloperMode {
-			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
-		}
+	if conf.DeveloperModeOverride != nil {
+		conf.DeveloperMode = *conf.DeveloperModeOverride
+	} else {
+		conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(newMattermostConfig)
 	}
 
 	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
@@ -131,17 +124,12 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 		conf.MaxWebhookSize = int(*newMattermostConfig.FileSettings.MaxFileSize)
 	}
 
-	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
-	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
-		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
-		conf.AllowHTTPApps = true
-	}
-
 	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
 	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
 	conf.AWSRegion = upaws.Region()
 	conf.AWSS3Bucket = upaws.S3BucketName()
 
+	license := s.getMattermostLicense(log)
 	conf.MattermostCloudMode = license != nil &&
 		license.Features != nil &&
 		license.Features.Cloud != nil &&
@@ -167,6 +155,12 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
 			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
+	}
+
+	if conf.AllowHTTPAppsOverride != nil {
+		conf.AllowHTTPApps = *conf.AllowHTTPAppsOverride
+	} else {
+		conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	}
 
 	return &conf, nil
@@ -218,6 +212,21 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
+func (s *service) getMattermostLicense(log utils.Logger) *model.License {
+	// GetLicense silently drops an RPC error
+	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
+	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
+	license := s.mm.System.GetLicense()
+	if license == nil {
+		license = s.mm.System.GetLicense()
+		if license == nil {
+			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
+		}
+	}
+
+	return license
+}
+
 func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, services ...Configurable) error {
 	if log == nil {
 		log = utils.NewTestLogger()
@@ -240,18 +249,18 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, se
 	return nil
 }
 
-func (s *service) StoreConfig(c StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration, %v installed , %v listed apps",
-		len(c.InstalledApps), len(c.LocalManifests))
+func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
+	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
+		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(c, nil)
+	err := s.Reconfigure(sc, log)
 	if err != nil {
 		return err
 	}
 
 	out := map[string]interface{}{}
-	utils.Remarshal(&out, c)
+	utils.Remarshal(&out, sc)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)
