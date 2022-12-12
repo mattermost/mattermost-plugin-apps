@@ -1,10 +1,6 @@
 package config
 
 import (
-	"net"
-	"net/url"
-	"os"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -17,7 +13,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -60,110 +55,6 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 		i18n:           i18nBundle,
 		telemetry:      telemetry,
 	}
-}
-
-func (s *service) newConfig() Config {
-	return Config{
-		PluginManifest: s.pluginManifest,
-		BuildDate:      BuildDate,
-		BuildHash:      BuildHash,
-		BuildHashShort: BuildHashShort,
-		BotUserID:      s.botUserID,
-	}
-}
-
-func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.Logger) (*Config, error) {
-	conf := s.newConfig()
-	conf.StoredConfig = newStoredConfig
-	newMattermostConfig := s.reloadMattermostConfig()
-
-	if conf.DeveloperModeOverride != nil {
-		conf.DeveloperMode = *conf.DeveloperModeOverride
-	} else {
-		conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(newMattermostConfig)
-	}
-
-	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
-	if mattermostSiteURL == nil {
-		return nil, errors.New("plugin requires Mattermost Site URL to be set")
-	}
-	u, err := url.Parse(*mattermostSiteURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid SiteURL in config")
-	}
-
-	var localURL string
-	if newMattermostConfig.ServiceSettings.ConnectionSecurity != nil && *newMattermostConfig.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
-		// If there is no reverse proxy use the server URL
-		localURL = u.String()
-	} else {
-		// Avoid the reverse proxy by using the local port
-		listenAddress := newMattermostConfig.ServiceSettings.ListenAddress
-		if listenAddress == nil {
-			return nil, errors.New("plugin requires Mattermost Listen Address to be set")
-		}
-		host, port, err := net.SplitHostPort(*listenAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		if host == "" {
-			host = "127.0.0.1"
-		}
-
-		localURL = "http://" + host + ":" + port + u.Path
-	}
-
-	conf.MattermostSiteURL = u.String()
-	conf.MattermostLocalURL = localURL
-	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
-	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
-
-	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
-	if newMattermostConfig.FileSettings.MaxFileSize != nil {
-		conf.MaxWebhookSize = int(*newMattermostConfig.FileSettings.MaxFileSize)
-	}
-
-	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
-	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
-	conf.AWSRegion = upaws.Region()
-	conf.AWSS3Bucket = upaws.S3BucketName()
-
-	license := s.getMattermostLicense(log)
-	conf.MattermostCloudMode = license != nil &&
-		license.Features != nil &&
-		license.Features.Cloud != nil &&
-		*license.Features.Cloud
-	if conf.MattermostCloudMode {
-		log.Debugf("Detected Mattermost Cloud mode based on the license")
-	}
-
-	// On community.mattermost.com license is not suitable for checking, resort
-	// to the presence of legacy environment variable to trigger it.
-	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
-	if legacyAccessKey != "" {
-		conf.MattermostCloudMode = true
-		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
-		conf.AWSAccessKey = legacyAccessKey
-	}
-
-	if conf.MattermostCloudMode {
-		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
-		if legacySecretKey != "" {
-			conf.AWSSecretKey = legacySecretKey
-		}
-		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
-			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
-		}
-	}
-
-	if conf.AllowHTTPAppsOverride != nil {
-		conf.AllowHTTPApps = *conf.AllowHTTPAppsOverride
-	} else {
-		conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
-	}
-
-	return &conf, nil
 }
 
 func (s *service) Get() Config {
