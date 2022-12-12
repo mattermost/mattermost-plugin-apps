@@ -28,6 +28,7 @@ type Service interface {
 
 	// Remote (3rd party) OAuth2
 
+	// here
 	StoreOAuth2App(_ *incoming.Request, data []byte) error
 	StoreOAuth2User(_ *incoming.Request, data []byte) error
 	GetOAuth2User(_ *incoming.Request) ([]byte, error)

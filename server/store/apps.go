@@ -100,6 +100,8 @@ func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 }
 
 func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
+	// TODO aes.decrypt Oauth thingie?
+
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -145,6 +147,8 @@ func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
 }
 
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {
+	// aes encrypt OAuth thingie? or outside
+
 	conf := s.conf.Get()
 	mm := s.conf.MattermostAPI()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
