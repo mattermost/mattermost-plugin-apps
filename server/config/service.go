@@ -232,7 +232,7 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 
 func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, services ...Configurable) error {
 	if log == nil {
-		log = utils.NewTestLogger()
+		log = utils.NilLogger{}
 	}
 
 	clone, err := s.newInitializedConfig(storedConfigMap, log)
@@ -260,7 +260,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 	utils.Remarshal(&storedConfigMap, sc)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(storedConfigMap, nil)
+	err := s.Reconfigure(storedConfigMap, utils.NilLogger{})
 	if err != nil {
 		return err
 	}
