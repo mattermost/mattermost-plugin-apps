@@ -131,13 +131,6 @@ type Manifest struct {
 
 	// Deployment information
 	Deploy
-
-	// unexported data
-
-	// v7AppType is the AppType field value if the Manifest was decoded from a
-	// v0.7.x version. It is used in App.DecodeCompatibleManifest to set
-	// DeployType.
-	v7AppType string
 }
 
 // DecodeCompatibleManifest decodes any known version of manifest.json into the
@@ -146,29 +139,16 @@ type Manifest struct {
 // Thus, custom functions to encode/decode JSON, with backwards compatibility
 // support for App and Manifest.
 func DecodeCompatibleManifest(data []byte) (m *Manifest, err error) {
-	defer func() {
-		if m != nil {
-			err = m.Validate()
-			if err != nil {
-				m = nil
-			}
-		}
-	}()
-
 	err = json.Unmarshal(data, &m)
-	// If failed to decode as current version, opportunistically try as a
-	// v0.7.x. There was no schema version before, this condition may need to be
-	// updated in the future.
-	if err != nil || m.SchemaVersion == "" {
-		m7 := ManifestV0_7{}
-		_ = json.Unmarshal(data, &m7)
-		if from7 := m7.Manifest(); from7 != nil {
-			return from7, nil
-		}
-	}
 	if err != nil {
 		return nil, err
 	}
+
+	err = m.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	return m, nil
 }
 
