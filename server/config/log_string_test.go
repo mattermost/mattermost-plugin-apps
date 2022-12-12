@@ -17,14 +17,16 @@ func TestLoggable(t *testing.T) {
 	var _ utils.HasLoggable = Config{}
 
 	var simpleConfig = Config{
+		StoredConfig: StoredConfig{
+			DeveloperMode: true,
+			AllowHTTPApps: true,
+		},
 		PluginManifest: model.Manifest{
 			Version: "v1.2.3",
 		},
 		BuildHashShort:      "1234567",
 		BuildDate:           "date-is-just-a-string",
 		MattermostCloudMode: true,
-		DeveloperMode:       true,
-		AllowHTTPApps:       true,
 	}
 
 	for name, test := range map[string]struct {

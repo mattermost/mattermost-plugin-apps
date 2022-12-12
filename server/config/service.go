@@ -33,7 +33,7 @@ type Service interface {
 	Telemetry() *telemetry.Telemetry
 	NewBaseLogger() utils.Logger
 
-	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
+	Reconfigure(map[string]any, utils.Logger, ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
 }
 
@@ -51,8 +51,8 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) Service {
-	return &service{
+func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
+	s := &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
 		mm:             mm,
@@ -60,6 +60,19 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 		i18n:           i18nBundle,
 		telemetry:      telemetry,
 	}
+
+	cm := s.mm.Configuration.GetPluginConfig()
+
+	clone, err := s.newInitializedConfig(cm, log)
+	if err != nil {
+		return nil, err
+	}
+
+	s.lock.Lock()
+	s.conf = clone
+	s.lock.Unlock()
+
+	return s, nil
 }
 
 func (s *service) newConfig() Config {
@@ -72,23 +85,10 @@ func (s *service) newConfig() Config {
 	}
 }
 
-func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.Logger) (*Config, error) {
+func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log utils.Logger) (*Config, error) {
 	conf := s.newConfig()
-	conf.StoredConfig = newStoredConfig
 	newMattermostConfig := s.reloadMattermostConfig()
-
-	conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(newMattermostConfig)
-
-	// GetLicense silently drops an RPC error
-	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
-	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
-	license := s.mm.System.GetLicense()
-	if license == nil {
-		license = s.mm.System.GetLicense()
-		if license == nil && !conf.DeveloperMode {
-			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
-		}
-	}
+	license := s.getMattermostLicense(log)
 
 	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
@@ -131,12 +131,6 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 		conf.MaxWebhookSize = int(*newMattermostConfig.FileSettings.MaxFileSize)
 	}
 
-	conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
-	if allowHTTPAppsDomains.MatchString(u.Hostname()) {
-		log.Debugf("set AllowHTTPApps based on the hostname '%s'", u.Hostname())
-		conf.AllowHTTPApps = true
-	}
-
 	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
 	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
 	conf.AWSRegion = upaws.Region()
@@ -168,6 +162,9 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
 	}
+
+	sc := unmarshalStoredConfigMap(newStoredMap, newMattermostConfig, conf.MattermostCloudMode)
+	conf.StoredConfig = sc
 
 	return &conf, nil
 }
@@ -218,12 +215,27 @@ func (s *service) reloadMattermostConfig() *model.Config {
 	return mmconf
 }
 
-func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, services ...Configurable) error {
+func (s *service) getMattermostLicense(log utils.Logger) *model.License {
+	// GetLicense silently drops an RPC error
+	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
+	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
+	license := s.mm.System.GetLicense()
+	if license == nil {
+		license = s.mm.System.GetLicense()
+		if license == nil {
+			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
+		}
+	}
+
+	return license
+}
+
+func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, services ...Configurable) error {
 	if log == nil {
 		log = utils.NewTestLogger()
 	}
 
-	clone, err := s.newInitializedConfig(newStoredConfig, log)
+	clone, err := s.newInitializedConfig(storedConfigMap, log)
 	if err != nil {
 		return err
 	}
@@ -240,18 +252,21 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, se
 	return nil
 }
 
-func (s *service) StoreConfig(c StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration, %v installed , %v listed apps",
-		len(c.InstalledApps), len(c.LocalManifests))
+func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
+	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
+		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperMode, sc.AllowHTTPApps)
+
+	var storedConfigMap map[string]any
+	utils.Remarshal(&storedConfigMap, sc)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(c, nil)
+	err := s.Reconfigure(storedConfigMap, nil)
 	if err != nil {
 		return err
 	}
 
 	out := map[string]interface{}{}
-	utils.Remarshal(&out, c)
+	utils.Remarshal(&out, sc)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)

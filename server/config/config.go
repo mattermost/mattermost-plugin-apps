@@ -3,13 +3,13 @@ package config
 import (
 	"fmt"
 	"path"
-	"regexp"
-	"strings"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 // StoredConfig represents the data stored in and managed with the Mattermost
@@ -33,9 +33,27 @@ type StoredConfig struct {
 	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
 
+	DeveloperMode bool `json:"developer_mode"`
+	AllowHTTPApps bool `json:"allow_http_apps"`
+
 	LogChannelID    string `json:"log_channel_id,omitempty"`
 	LogChannelLevel int    `json:"log_channel_level,omitempty"`
 	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
+}
+
+func unmarshalStoredConfigMap(storedConfigMap map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {
+	sc := StoredConfig{}
+	utils.Remarshal(&sc, storedConfigMap)
+
+	if _, ok := storedConfigMap["developer_mode"]; !ok {
+		sc.DeveloperMode = pluginapi.IsConfiguredForDevelopment(mmconf)
+	}
+
+	if _, ok := storedConfigMap["allow_http_apps"]; !ok {
+		sc.AllowHTTPApps = sc.DeveloperMode || !mattermostCloudMode
+	}
+
+	return sc
 }
 
 var BuildDate string
@@ -54,8 +72,6 @@ type Config struct {
 	BuildHash      string
 	BuildHashShort string
 
-	DeveloperMode       bool
-	AllowHTTPApps       bool
 	MattermostCloudMode bool
 
 	BotUserID          string
@@ -81,14 +97,6 @@ func (conf Config) AppURL(appID apps.AppID) string {
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
-
-// allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
-// forced on.
-var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
-	`.*\.test\.mattermost\.cloud`,
-	`community\.mattermost\.com`,
-	`community-[a-z]+\.mattermost\.com`,
-}, "|") + "$")
 
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{

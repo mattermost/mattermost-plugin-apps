@@ -69,6 +69,7 @@ type API interface {
 	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
 	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)
 	InvokeRemoteWebhook(*incoming.Request, apps.HTTPCallRequest) error
+	ValidateWebhookAuthentication(*incoming.Request, apps.HTTPCallRequest) error
 }
 
 // Notifier implements subscription notifications, each one may be going out to
