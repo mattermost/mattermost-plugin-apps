@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -596,7 +596,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 
 				// set up an empty OK call response
 				b, _ := json.Marshal(tc.callResponse)
-				reader := ioutil.NopCloser(bytes.NewReader(b))
+				reader := io.NopCloser(bytes.NewReader(b))
 				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 				upstreams[app.Manifest.AppID] = up
