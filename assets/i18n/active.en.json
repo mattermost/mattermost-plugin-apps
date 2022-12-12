@@ -130,16 +130,13 @@
   "field.url.description": "enter the HTTP URL for the app's manifest.json",
   "field.url.hint": "URL",
   "field.url.label": "url",
-<<<<<<< HEAD
   "log.level.debug.label": "Debug",
   "log.level.error.label": "Error",
   "log.level.info.label": "Info",
   "log.level.warn.label": "Warning",
-=======
   "modal.allow_http_apps.description": "Allow apps, which run as an http server, to be installed.",
   "modal.developer_mode.description": "Enables various development tools.\n\nShould not be enabled in production.",
   "modal.developer_mode.modal_label": "Enable HTTP apps",
->>>>>>> origin/master
   "modal.install_consent.header.header": "Application **{{.DisplayName}}** requires system administrator's consent to:",
   "modal.install_consent.header.locations": "- Add the following elements to the **Mattermost User Interface**:",
   "modal.install_consent.header.permissions": "- Access **Mattermost API** with the following permissions:",
