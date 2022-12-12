@@ -119,10 +119,6 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 }
 
 func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, services ...Configurable) error {
-	if log == nil {
-		log = utils.NewTestLogger()
-	}
-
 	clone, err := s.newInitializedConfig(newStoredConfig, log)
 	if err != nil {
 		return err
