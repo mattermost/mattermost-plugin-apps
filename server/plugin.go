@@ -75,14 +75,14 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		log.Warnw("failed to start telemetry client.", "error", err.Error())
+		log.WithError(err).Warnw("failed to start telemetry client.")
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
 	confService, err := config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
 	if err != nil {
-		log.Infow("failed to load initial configuration", "error", err.Error())
+		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	p.conf = confService
