@@ -71,6 +71,7 @@ const (
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugLogs            = "/debug/logs"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
 	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugSessionsView    = "/debug/session/view"
@@ -141,8 +142,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInstallHTTP:          requireAdmin(a.installHTTP),
 		pInstallListed:        requireAdmin(a.installListed),
 		pList:                 requireAdmin(a.list),
-		pSettingsModalSource:  requireAdmin(a.settingsForm),
 		pSettingsModalSave:    requireAdmin(a.settingsSave),
+		pSettingsModalSource:  requireAdmin(a.settingsForm),
 		pUninstall:            requireAdmin(a.uninstall),
 
 		// Lookups.

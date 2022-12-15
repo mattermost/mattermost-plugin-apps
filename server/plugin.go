@@ -86,6 +86,7 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	p.conf = confService
+	log = p.conf.NewBaseLogger()
 
 	conf := p.conf.Get()
 	log.With(conf).Debugw("configured the plugin.")
