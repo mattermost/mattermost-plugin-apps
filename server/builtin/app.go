@@ -33,26 +33,31 @@ const (
 )
 
 const (
+	FieldAppID     = "app"
+	FieldNamespace = "namespace"
+
 	fAction         = "action"
+	fAllowHTTPApps  = "allow_http_apps"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
+	fChannel        = "channel"
 	fConsent        = "consent"
 	fCount          = "count"
+	fCreate         = "create"
 	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fDeveloperMode  = "developer_mode"
 	fForce          = "force"
 	fHashkeys       = "hashkeys"
 	fID             = "id"
-	FieldAppID      = "app"
 	fIncludePlugins = "include_plugins"
-	fNamespace      = "namespace"
+	fJSON           = "json"
+	fLevel          = "level"
 	fNewValue       = "new_value"
 	fPage           = "page"
 	fSecret         = "secret"
 	fSessionID      = "session_id"
 	fURL            = "url"
-	fDeveloperMode  = "developer_mode"
-	fAllowHTTPApps  = "allow_http_apps"
 )
 
 const (
@@ -67,6 +72,7 @@ const (
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugLogs            = "/debug/logs"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
 	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugSessionsView    = "/debug/session/view"
@@ -118,6 +124,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInfo: a.info,
 
 		// Commands that require sysadmin.
+		pDebugLogs:            requireAdmin(a.debugLogs),
 		pDebugBindings:        requireAdmin(a.debugBindings),
 		PathDebugClean:        requireAdmin(a.debugClean),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
@@ -260,7 +267,7 @@ func requireAdmin(h handler) handler {
 	return func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 		if creq.Context.ActingUser == nil {
 			return apps.NewErrorResponse(utils.NewInvalidError(
-				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+				"no or invalid ActingUser in the context for %s, please make sure Expand.ActingUser is set", creq.Path))
 		}
 		if !creq.Context.ActingUser.IsSystemAdmin() {
 			return apps.NewErrorResponse(utils.NewUnauthorizedError(

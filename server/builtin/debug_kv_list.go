@@ -42,7 +42,7 @@ func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding
 
 func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
-	namespace := creq.GetValue(fNamespace, "")
+	namespace := creq.GetValue(FieldNamespace, "")
 	encode := creq.BoolValue(fBase64)
 
 	keys := []string{}
