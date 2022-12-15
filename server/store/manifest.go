@@ -53,9 +53,9 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func makeManifestStore(s *Service, conf config.Config, log utils.Logger) (*manifestStore, error) {
-	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion,
-		log.With("purpose", "Manifest store"))
+func (s *Service) makeManifestStore(conf config.Config) (*manifestStore, error) {
+	log := s.conf.NewBaseLogger().With("purpose", "Manifest store")
+	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize AWS access")
 	}
@@ -65,10 +65,10 @@ func makeManifestStore(s *Service, conf config.Config, log utils.Logger) (*manif
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}
-	err = mstore.Configure(conf, log)
-	if err != nil {
+	if err = mstore.Configure(conf, log); err != nil {
 		return nil, errors.Wrap(err, "failed to configure")
 	}
+
 	if conf.MattermostCloudMode {
 		err = mstore.InitGlobal(s.httpOut, log)
 		if err != nil {

@@ -44,9 +44,9 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
-func makeAppStore(s *Service, conf config.Config, log utils.Logger) (*appStore, error) {
+func (s *Service) makeAppStore(conf config.Config) (*appStore, error) {
 	appStore := &appStore{Service: s}
-	err := appStore.Configure(conf, log)
+	err := appStore.Configure(conf, s.conf.NewBaseLogger())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize App store")
 	}

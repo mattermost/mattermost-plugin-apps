@@ -1,9 +1,14 @@
 package config
 
 import (
+	"net"
+	"net/url"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/i18n"
@@ -12,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
+	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -25,6 +31,7 @@ type Service interface {
 	MattermostConfig() configservice.ConfigService
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
+	NewBaseLogger() utils.Logger
 
 	Reconfigure(map[string]any, utils.Logger, ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
@@ -54,24 +61,112 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 		telemetry:      telemetry,
 	}
 
-	mmconf := s.reloadMattermostConfig()
-	conf := s.Get()
-	license := s.getMattermostLicense(log)
+	cm := s.mm.Configuration.GetPluginConfig()
 
-	err := conf.update(mmconf, license, log)
+	clone, err := s.newInitializedConfig(cm, log)
 	if err != nil {
 		return nil, err
 	}
 
-	cm := s.mm.Configuration.GetPluginConfig()
-	sc := unmarshalStoredConfigMap(cm, mmconf, conf.MattermostCloudMode)
-	conf.StoredConfig = sc
-
 	s.lock.Lock()
-	s.conf = &conf
+	s.conf = clone
 	s.lock.Unlock()
 
 	return s, nil
+}
+
+func (s *service) newConfig() Config {
+	return Config{
+		PluginManifest: s.pluginManifest,
+		BuildDate:      BuildDate,
+		BuildHash:      BuildHash,
+		BuildHashShort: BuildHashShort,
+		BotUserID:      s.botUserID,
+	}
+}
+
+func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log utils.Logger) (*Config, error) {
+	conf := s.newConfig()
+	newMattermostConfig := s.reloadMattermostConfig()
+	license := s.getMattermostLicense(log)
+
+	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
+	if mattermostSiteURL == nil {
+		return nil, errors.New("plugin requires Mattermost Site URL to be set")
+	}
+	u, err := url.Parse(*mattermostSiteURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid SiteURL in config")
+	}
+
+	var localURL string
+	if newMattermostConfig.ServiceSettings.ConnectionSecurity != nil && *newMattermostConfig.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
+		// If there is no reverse proxy use the server URL
+		localURL = u.String()
+	} else {
+		// Avoid the reverse proxy by using the local port
+		listenAddress := newMattermostConfig.ServiceSettings.ListenAddress
+		if listenAddress == nil {
+			return nil, errors.New("plugin requires Mattermost Listen Address to be set")
+		}
+		host, port, err := net.SplitHostPort(*listenAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		if host == "" {
+			host = "127.0.0.1"
+		}
+
+		localURL = "http://" + host + ":" + port + u.Path
+	}
+
+	conf.MattermostSiteURL = u.String()
+	conf.MattermostLocalURL = localURL
+	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
+	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
+
+	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
+	if newMattermostConfig.FileSettings.MaxFileSize != nil {
+		conf.MaxWebhookSize = int(*newMattermostConfig.FileSettings.MaxFileSize)
+	}
+
+	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
+	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
+	conf.AWSRegion = upaws.Region()
+	conf.AWSS3Bucket = upaws.S3BucketName()
+
+	conf.MattermostCloudMode = license != nil &&
+		license.Features != nil &&
+		license.Features.Cloud != nil &&
+		*license.Features.Cloud
+	if conf.MattermostCloudMode {
+		log.Debugf("Detected Mattermost Cloud mode based on the license")
+	}
+
+	// On community.mattermost.com license is not suitable for checking, resort
+	// to the presence of legacy environment variable to trigger it.
+	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
+	if legacyAccessKey != "" {
+		conf.MattermostCloudMode = true
+		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
+		conf.AWSAccessKey = legacyAccessKey
+	}
+
+	if conf.MattermostCloudMode {
+		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
+		if legacySecretKey != "" {
+			conf.AWSSecretKey = legacySecretKey
+		}
+		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
+			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
+		}
+	}
+
+	sc := unmarshalStoredConfigMap(newStoredMap, newMattermostConfig, conf.MattermostCloudMode)
+	conf.StoredConfig = sc
+
+	return &conf, nil
 }
 
 func (s *service) Get() Config {
@@ -80,13 +175,7 @@ func (s *service) Get() Config {
 	s.lock.RUnlock()
 
 	if conf == nil {
-		return Config{
-			PluginManifest: s.pluginManifest,
-			BuildDate:      BuildDate,
-			BuildHash:      BuildHash,
-			BuildHashShort: BuildHashShort,
-			BotUserID:      s.botUserID,
-		}
+		return s.newConfig()
 	}
 	return *conf
 }
@@ -142,29 +231,24 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 }
 
 func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, services ...Configurable) error {
-	mmconf := s.reloadMattermostConfig()
-	newConfig := s.Get()
-	license := s.getMattermostLicense(log)
+	if log == nil {
+		log = utils.NilLogger{}
+	}
 
-	err := newConfig.update(mmconf, license, log)
+	clone, err := s.newInitializedConfig(storedConfigMap, log)
 	if err != nil {
 		return err
 	}
 
-	sc := unmarshalStoredConfigMap(storedConfigMap, mmconf, newConfig.MattermostCloudMode)
-	newConfig.StoredConfig = sc
-
 	s.lock.Lock()
-	s.conf = &newConfig
+	s.conf = clone
 	s.lock.Unlock()
 
 	for _, service := range services {
-		err = service.Configure(newConfig, log)
-		if err != nil {
+		if err := service.Configure(*clone, log); err != nil {
 			return errors.Wrapf(err, "failed to configure service %T", service)
 		}
 	}
-
 	return nil
 }
 
@@ -176,7 +260,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 	utils.Remarshal(&storedConfigMap, sc)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(storedConfigMap, log)
+	err := s.Reconfigure(storedConfigMap, utils.NilLogger{})
 	if err != nil {
 		return err
 	}
@@ -186,4 +270,22 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
 	return s.mm.Configuration.SavePluginConfig(out)
+}
+
+func (s *service) NewBaseLogger() utils.Logger {
+	if pluginapi.IsConfiguredForDevelopment(s.mattermostConfig) {
+		return utils.NewPluginLogger(s.mm, s)
+	}
+	return utils.NewPluginLogger(s.mm, nil)
+}
+
+func (s *service) GetLogConfig() utils.LogConfig {
+	conf := s.Get()
+
+	return utils.LogConfig{
+		ChannelID:   conf.LogChannelID,
+		Level:       zapcore.Level(conf.LogChannelLevel),
+		BotUserID:   s.botUserID,
+		IncludeJSON: conf.LogChannelJSON,
+	}
 }

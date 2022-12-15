@@ -2,19 +2,13 @@ package config
 
 import (
 	"fmt"
-	"net"
-	"net/url"
-	"os"
 	"path"
-	"strings"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
-	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -41,6 +35,10 @@ type StoredConfig struct {
 
 	DeveloperMode bool `json:"developer_mode"`
 	AllowHTTPApps bool `json:"allow_http_apps"`
+
+	LogChannelID    string `json:"log_channel_id,omitempty"`
+	LogChannelLevel int    `json:"log_channel_level,omitempty"`
+	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
 }
 
 func unmarshalStoredConfigMap(storedConfigMap map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {
@@ -98,84 +96,6 @@ func (conf Config) AppURL(appID apps.AppID) string {
 // StaticURL returns the URL to a static asset.
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
-}
-
-// update computes derived configuration values from a mattermost config and license.
-func (conf *Config) update(mmconf *model.Config, license *model.License, log utils.Logger) error {
-	mattermostSiteURL := mmconf.ServiceSettings.SiteURL
-	if mattermostSiteURL == nil {
-		return errors.New("plugin requires Mattermost Site URL to be set")
-	}
-	u, err := url.Parse(*mattermostSiteURL)
-	if err != nil {
-		return err
-	}
-
-	var localURL string
-	if mmconf.ServiceSettings.ConnectionSecurity != nil && *mmconf.ServiceSettings.ConnectionSecurity == model.ConnSecurityTLS {
-		// If there is no reverse proxy use the server URL
-		localURL = u.String()
-	} else {
-		// Avoid the reverse proxy by using the local port
-		listenAddress := mmconf.ServiceSettings.ListenAddress
-		if listenAddress == nil {
-			return errors.New("plugin requires Mattermost Listen Address to be set")
-		}
-		host, port, err := net.SplitHostPort(*listenAddress)
-		if err != nil {
-			return err
-		}
-
-		if host == "" {
-			host = "127.0.0.1"
-		}
-
-		localURL = "http://" + host + ":" + port + u.Path
-	}
-
-	conf.MattermostSiteURL = u.String()
-	conf.MattermostLocalURL = localURL
-	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
-	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
-
-	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
-	if mmconf.FileSettings.MaxFileSize != nil {
-		conf.MaxWebhookSize = int(*mmconf.FileSettings.MaxFileSize)
-	}
-
-	conf.AWSAccessKey = os.Getenv(upaws.AccessEnvVar)
-	conf.AWSSecretKey = os.Getenv(upaws.SecretEnvVar)
-	conf.AWSRegion = upaws.Region()
-	conf.AWSS3Bucket = upaws.S3BucketName()
-
-	conf.MattermostCloudMode = license != nil &&
-		license.Features != nil &&
-		license.Features.Cloud != nil &&
-		*license.Features.Cloud
-	if conf.MattermostCloudMode {
-		log.Debugf("Detected Mattermost Cloud mode based on the license")
-	}
-
-	// On community.mattermost.com license is not suitable for checking, resort
-	// to the presence of legacy environment variable to trigger it.
-	legacyAccessKey := os.Getenv(upaws.DeprecatedCloudAccessEnvVar)
-	if legacyAccessKey != "" {
-		conf.MattermostCloudMode = true
-		log.Debugf("Detected Mattermost Cloud mode based on the %s variable", upaws.DeprecatedCloudAccessEnvVar)
-		conf.AWSAccessKey = legacyAccessKey
-	}
-
-	if conf.MattermostCloudMode {
-		legacySecretKey := os.Getenv(upaws.DeprecatedCloudSecretEnvVar)
-		if legacySecretKey != "" {
-			conf.AWSSecretKey = legacySecretKey
-		}
-		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
-			return errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
-		}
-	}
-
-	return nil
 }
 
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
