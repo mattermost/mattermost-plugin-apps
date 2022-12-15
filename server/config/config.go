@@ -39,12 +39,12 @@ type StoredConfig struct {
 	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
 
-	DeveloperModeOverride *bool `json:"developer_mode"`
-	AllowHTTPAppsOverride *bool `json:"allow_http_apps"`
-
 	LogChannelID    string `json:"log_channel_id,omitempty"`
 	LogChannelLevel int    `json:"log_channel_level,omitempty"`
 	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
+
+	DeveloperModeOverride *bool `json:"developer_mode"`
+	AllowHTTPAppsOverride *bool `json:"allow_http_apps"`
 }
 
 var BuildDate string
