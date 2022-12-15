@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -583,7 +583,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				},
 			}).WithMattermostAPI(pluginapi.NewClient(testAPI, testDriver))
 
-			s, err := store.MakeService(utils.NewTestLogger(), conf, nil)
+			s, err := store.MakeService(conf, nil)
 			require.NoError(t, err)
 			appStore := mock_store.NewMockAppStore(ctrl)
 			s.App = appStore
@@ -596,7 +596,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 
 				// set up an empty OK call response
 				b, _ := json.Marshal(tc.callResponse)
-				reader := ioutil.NopCloser(bytes.NewReader(b))
+				reader := io.NopCloser(bytes.NewReader(b))
 				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 				upstreams[app.Manifest.AppID] = up
@@ -611,7 +611,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 
 			tc.checkExpectation(testAPI)
 
-			r := incoming.NewRequest(proxy.conf, utils.NewTestLogger(), nil).
+			r := incoming.NewRequest(proxy.conf, nil).
 				WithDestination("app1").
 				WithPrevContext(apps.Context{
 					ExpandedContext: apps.ExpandedContext{ActingUser: &model.User{Id: "userid"}},
