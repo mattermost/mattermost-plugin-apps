@@ -75,7 +75,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		log.Warnw("failed to start telemetry client.", "error", err.Error())
+		log.WithError(err).Warnw("failed to start telemetry client.")
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
@@ -85,7 +85,7 @@ func (p *Plugin) OnActivate() (err error) {
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
 	err = p.conf.Reconfigure(stored, true)
 	if err != nil {
-		log.Infow("failed to load initial configuration", "error", err.Error())
+		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	log = p.conf.NewBaseLogger()
