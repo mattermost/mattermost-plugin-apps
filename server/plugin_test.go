@@ -89,11 +89,13 @@ func TestOnDeactivate(t *testing.T) {
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, manifest, "the_bot_id", nil, i18nBundle)
+	var err error
+	p.conf, _, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle)
+	require.NoError(t, err)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
-	err := p.OnDeactivate()
+	err = p.OnDeactivate()
 	require.NoError(t, err)
 }
 
