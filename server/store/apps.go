@@ -24,7 +24,9 @@ type AppStore interface {
 	InitBuiltin(...apps.App)
 
 	Get(apps.AppID) (*apps.App, error)
-	AsMap() map[apps.AppID]apps.App
+	List() []apps.App                   // List returns all installed, enabled apps.
+	ListAsMap() map[apps.AppID]apps.App // List returns all installed, enabled apps as a map.
+	ListIncludeDisabled() []apps.App    // List returns all installed apps, including the disabled ones.
 	Save(*incoming.Request, apps.App) error
 	Delete(*incoming.Request, apps.AppID) error
 }
@@ -116,7 +118,16 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) AsMap() map[apps.AppID]apps.App {
+func (s *appStore) List() []apps.App {
+	var out []apps.App
+	for _, app := range s.ListAsMap() {
+		out = append(out, app)
+	}
+
+	return out
+}
+
+func (s *appStore) ListAsMap() map[apps.AppID]apps.App {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -124,24 +135,43 @@ func (s *appStore) AsMap() map[apps.AppID]apps.App {
 
 	out := map[apps.AppID]apps.App{}
 	for appID, app := range installed {
-		out[appID] = app
+		if !app.Disabled {
+			out[appID] = app
+		}
 	}
 	for appID, app := range builtin {
-		out[appID] = app
+		if !app.Disabled {
+			out[appID] = app
+		}
 	}
+
 	return out
 }
 
-func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
+func (s *appStore) ListIncludeDisabled() []apps.App {
+	s.mutex.RLock()
+	installed := s.installed
+	builtin := s.builtinInstalled
+	s.mutex.RUnlock()
+
 	out := []apps.App{}
-	for _, app := range appsMap {
+	for _, app := range installed {
+		out = append(out, app)
+	}
+	for _, app := range builtin {
 		out = append(out, app)
 	}
 
-	sort.SliceStable(out, func(i, j int) bool {
-		return apps.AppID(out[i].DisplayName) < apps.AppID(out[j].DisplayName)
-	})
 	return out
+}
+
+// SortApps sorts a list of apps alphabetically, by display name.
+func SortApps(appList []apps.App) []apps.App {
+	sort.SliceStable(appList, func(i, j int) bool {
+		return apps.AppID(appList[i].DisplayName) < apps.AppID(appList[j].DisplayName)
+	})
+
+	return appList
 }
 
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {

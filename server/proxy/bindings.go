@@ -54,7 +54,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	all := make(chan result)
 	defer close(all)
 
-	allApps := store.SortApps(p.store.App.AsMap())
+	allApps := store.SortApps(p.store.App.List())
 
 	for i := range allApps {
 		go func(app apps.App) {

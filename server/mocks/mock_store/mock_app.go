@@ -37,20 +37,6 @@ func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 	return m.recorder
 }
 
-// AsMap mocks base method.
-func (m *MockAppStore) AsMap() map[apps.AppID]apps.App {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AsMap")
-	ret0, _ := ret[0].(map[apps.AppID]apps.App)
-	return ret0
-}
-
-// AsMap indicates an expected call of AsMap.
-func (mr *MockAppStoreMockRecorder) AsMap() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap))
-}
-
 // Configure mocks base method.
 func (m *MockAppStore) Configure(arg0 config.Config, arg1 utils.Logger) error {
 	m.ctrl.T.Helper()
@@ -108,6 +94,48 @@ func (m *MockAppStore) InitBuiltin(arg0 ...apps.App) {
 func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitBuiltin", reflect.TypeOf((*MockAppStore)(nil).InitBuiltin), arg0...)
+}
+
+// List mocks base method.
+func (m *MockAppStore) List() []apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List")
+	ret0, _ := ret[0].([]apps.App)
+	return ret0
+}
+
+// List indicates an expected call of List.
+func (mr *MockAppStoreMockRecorder) List() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAppStore)(nil).List))
+}
+
+// ListAsMap mocks base method.
+func (m *MockAppStore) ListAsMap() map[apps.AppID]apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAsMap")
+	ret0, _ := ret[0].(map[apps.AppID]apps.App)
+	return ret0
+}
+
+// ListAsMap indicates an expected call of ListAsMap.
+func (mr *MockAppStoreMockRecorder) ListAsMap() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAsMap", reflect.TypeOf((*MockAppStore)(nil).ListAsMap))
+}
+
+// ListIncludeDisabled mocks base method.
+func (m *MockAppStore) ListIncludeDisabled() []apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIncludeDisabled")
+	ret0, _ := ret[0].([]apps.App)
+	return ret0
+}
+
+// ListIncludeDisabled indicates an expected call of ListIncludeDisabled.
+func (mr *MockAppStoreMockRecorder) ListIncludeDisabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIncludeDisabled", reflect.TypeOf((*MockAppStore)(nil).ListIncludeDisabled))
 }
 
 // Save mocks base method.
