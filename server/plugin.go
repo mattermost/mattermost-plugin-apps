@@ -81,14 +81,14 @@ func (p *Plugin) OnActivate() (err error) {
 
 	// Configure the plugin.
 	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
-	log = p.conf.NewBaseLogger()
 	stored := config.StoredConfig{}
 	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, log)
+	err = p.conf.Reconfigure(stored, true)
 	if err != nil {
 		log.Infow("failed to load initial configuration", "error", err.Error())
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
+	log = p.conf.NewBaseLogger()
 
 	conf := p.conf.Get()
 	log.With(conf).Debugw("configured the plugin.")
@@ -178,7 +178,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
-	err = p.conf.Reconfigure(sc, nil, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(sc, false, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err

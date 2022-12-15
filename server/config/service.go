@@ -27,8 +27,9 @@ type Service interface {
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 	NewBaseLogger() utils.Logger
+	SystemDefaultFlags() (devMode, allowHTTPApps bool)
 
-	Reconfigure(StoredConfig, utils.Logger, ...Configurable) error
+	Reconfigure(_ StoredConfig, verbose bool, _ ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
 }
 
@@ -118,7 +119,9 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 	return license
 }
 
-func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, services ...Configurable) error {
+func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, services ...Configurable) error {
+	// Use the old settings to log the processing of the new config.
+	log := s.NewBaseLogger()
 	clone, err := s.newInitializedConfig(newStoredConfig, log)
 	if err != nil {
 		return err
@@ -128,6 +131,9 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, log utils.Logger, se
 	s.conf = clone
 	s.lock.Unlock()
 
+	if !verbose {
+		log = utils.NilLogger{}
+	}
 	for _, service := range services {
 		if err := service.Configure(*clone, log); err != nil {
 			return errors.Wrapf(err, "failed to configure service %T", service)
@@ -141,7 +147,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(sc, log)
+	err := s.Reconfigure(sc, false)
 	if err != nil {
 		return err
 	}
@@ -154,7 +160,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 }
 
 func (s *service) NewBaseLogger() utils.Logger {
-	if pluginapi.IsConfiguredForDevelopment(s.mattermostConfig) {
+	if s.Get().DeveloperMode {
 		return utils.NewPluginLogger(s.mm, s)
 	}
 	return utils.NewPluginLogger(s.mm, nil)
@@ -169,4 +175,14 @@ func (s *service) GetLogConfig() utils.LogConfig {
 		BotUserID:   s.botUserID,
 		IncludeJSON: conf.LogChannelJSON,
 	}
+}
+
+func (s *service) SystemDefaultFlags() (bool, bool) {
+	s.lock.RLock()
+	mmconf := s.mattermostConfig
+	s.lock.RUnlock()
+
+	devMode := pluginapi.IsConfiguredForDevelopment(mmconf)
+	allowHTTP := devMode || !s.Get().MattermostCloudMode
+	return devMode, allowHTTP
 }
