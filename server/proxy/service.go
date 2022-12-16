@@ -40,7 +40,6 @@ type Proxy struct {
 	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
 	sessionService session.Service
 	appservices    appservices.Service
-	log            utils.Logger
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -67,16 +66,15 @@ type API interface {
 	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
 	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)
 	InvokeRemoteWebhook(*incoming.Request, apps.HTTPCallRequest) error
+	ValidateWebhookAuthentication(*incoming.Request, apps.HTTPCallRequest) error
 }
 
 // Notifier implements subscription notifications, each one may be going out to
 // multiple apps. Notify functions create their own app requests.
 type Notifier interface {
 	NotifyUserCreated(userID string)
-	NotifyUserJoinedChannel(member *model.ChannelMember, actor *model.User)
-	NotifyUserLeftChannel(member *model.ChannelMember, actor *model.User)
-	NotifyUserJoinedTeam(member *model.TeamMember, actor *model.User)
-	NotifyUserLeftTeam(member *model.TeamMember, actor *model.User)
+	NotifyUserChannel(member *model.ChannelMember, actor *model.User, joined bool)
+	NotifyUserTeam(member *model.TeamMember, actor *model.User, joined bool)
 	NotifyChannelCreated(teamID, channelID string)
 }
 
@@ -108,7 +106,7 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service, log utils.Logger) *Proxy {
+func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
@@ -117,7 +115,6 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
 		appservices:      appservices,
-		log:              log,
 	}
 }
 
@@ -236,7 +233,7 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 }
 
 func (p *Proxy) NewIncomingRequest() *incoming.Request {
-	return incoming.NewRequest(p.conf, p.log, p.sessionService)
+	return incoming.NewRequest(p.conf, p.sessionService)
 }
 
 func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {

@@ -1,15 +1,30 @@
 package proxy
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
+	"github.com/mattermost/mattermost-plugin-apps/upstream"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func testBinding(appID apps.AppID, parent apps.Location, n string) []apps.Binding {
@@ -458,6 +473,155 @@ func TestCleanAppBinding(t *testing.T) {
 				require.NoError(t, err)
 				require.EqualValues(t, tc.expected, b)
 			}
+		})
+	}
+}
+
+func TestRefreshBindingsEventAfterCall(t *testing.T) {
+	tApps := []apps.App{
+		{
+			BotUserID:   "botid",
+			BotUsername: "botusername",
+			DeployType:  apps.DeployBuiltin,
+			Manifest: apps.Manifest{
+				AppID:       apps.AppID("app1"),
+				DisplayName: "App 1",
+			},
+		},
+	}
+
+	creq := apps.CallRequest{
+		Context: apps.Context{
+			UserAgentContext: apps.UserAgentContext{
+				AppID:  "app1",
+				UserID: "userid",
+			},
+			ExpandedContext: apps.ExpandedContext{
+				ActingUser: &model.User{
+					Id: "userid",
+				},
+				App: &tApps[0],
+			},
+		},
+		Call: apps.Call{
+			Expand: &apps.Expand{
+				App:        apps.ExpandNone,
+				ActingUser: apps.ExpandNone,
+			},
+			Path: "/",
+		},
+	}
+
+	type TC struct {
+		name             string
+		applications     []apps.App
+		callRequest      apps.CallRequest
+		callResponse     apps.CallResponse
+		checkExpectation func(api *plugintest.API)
+	}
+
+	makeBindingRequest := func(req apps.CallRequest) apps.CallRequest {
+		req.Call.Path = path.Bindings
+		return req
+	}
+
+	for _, tc := range []TC{
+		{
+			name:         "refresh bindings when flag is set and OK response",
+			applications: tApps,
+			callRequest:  creq,
+			callResponse: apps.CallResponse{
+				Type:            apps.CallResponseTypeOK,
+				RefreshBindings: true,
+			},
+			checkExpectation: func(testApi *plugintest.API) {
+				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Once()
+			},
+		},
+		{
+			name:         "don't refresh bindings when flag is set and Error response",
+			applications: tApps,
+			callRequest:  creq,
+			callResponse: apps.CallResponse{
+				Type:            apps.CallResponseTypeError,
+				RefreshBindings: true,
+			},
+			checkExpectation: func(testApi *plugintest.API) {
+			},
+		},
+		{
+			name:         "don't refresh bindings when flag is not set",
+			applications: tApps,
+			callRequest:  creq,
+			callResponse: apps.CallResponse{
+				Type:            apps.CallResponseTypeOK,
+				RefreshBindings: false,
+			},
+			checkExpectation: func(testApi *plugintest.API) {
+			},
+		},
+		{
+			name:         "don't refresh when binding response is handled",
+			applications: tApps,
+			callRequest:  makeBindingRequest(creq),
+			callResponse: apps.CallResponse{
+				Type:            apps.CallResponseTypeOK,
+				RefreshBindings: true,
+			},
+			checkExpectation: func(testApi *plugintest.API) {
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testAPI := &plugintest.API{}
+			testDriver := &plugintest.Driver{}
+			ctrl := gomock.NewController(t)
+
+			conf := config.NewTestConfigService(nil).WithMattermostConfig(model.Config{
+				ServiceSettings: model.ServiceSettings{
+					SiteURL: model.NewString("test.mattermost.com"),
+				},
+			}).WithMattermostAPI(pluginapi.NewClient(testAPI, testDriver))
+
+			s, err := store.MakeService(conf, nil)
+			require.NoError(t, err)
+			appStore := mock_store.NewMockAppStore(ctrl)
+			s.App = appStore
+
+			upstreams := map[apps.AppID]upstream.Upstream{}
+			for i := range tc.applications {
+				app := tc.applications[i]
+
+				up := mock_upstream.NewMockUpstream(ctrl)
+
+				// set up an empty OK call response
+				b, _ := json.Marshal(tc.callResponse)
+				reader := io.NopCloser(bytes.NewReader(b))
+				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
+
+				upstreams[app.Manifest.AppID] = up
+				appStore.EXPECT().Get(app.Manifest.AppID).Return(&app, nil)
+			}
+
+			proxy := &Proxy{
+				store:            s,
+				builtinUpstreams: upstreams,
+				conf:             conf,
+			}
+
+			tc.checkExpectation(testAPI)
+
+			r := incoming.NewRequest(proxy.conf, nil).
+				WithDestination("app1").
+				WithPrevContext(apps.Context{
+					ExpandedContext: apps.ExpandedContext{ActingUser: &model.User{Id: "userid"}},
+				})
+			r.Log = utils.NewTestLogger()
+			_, resp := proxy.InvokeCall(r, tc.callRequest)
+
+			require.Equal(t, tc.callResponse.RefreshBindings, resp.RefreshBindings)
+
+			testAPI.AssertExpectations(t)
 		})
 	}
 }

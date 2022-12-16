@@ -29,42 +29,23 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 	)
 }
 
-// NotifyUserJoinedChannel handles plugin's UserHasJoinedChannel callback. It
-// emits user_joined_channel and self|bot_joined_channel notifications to
-// subscribed apps.
-//
-// Note that bot_joined_channel is deprecated, the same effect can be
-// accomplished by subscribing to self_joined_channel as the bot.
-func (p *Proxy) NotifyUserJoinedChannel(member *model.ChannelMember, _ *model.User) {
-	p.notifyUserChannel(member, true)
-}
-
-// NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
-// user_left_channel and self|bot_left_channel notifications to subscribed apps.
-//
-// Note that bot_joined_channel is deprecated, the same effect can be
-// accomplished by subscribing to self_joined_channel as the bot.
-func (p *Proxy) NotifyUserLeftChannel(member *model.ChannelMember, _ *model.User) {
-	p.notifyUserChannel(member, false)
-}
-
-func (p *Proxy) notifyUserChannel(member *model.ChannelMember, joined bool) {
-	mm := p.conf.MattermostAPI()
+func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedChannel
 	if !joined {
 		subject = apps.SubjectUserLeftChannel
 	}
 
-	// Need the channel to have TeamID (for context), and the user to have isBot
-	// (and might as well, for expand)
-	channel, err := mm.Channel.Get(member.ChannelId)
-	if err != nil {
-		p.log.WithError(err).Debugf("%s: failed to get channel %s", subject, member.ChannelId)
-		return
-	}
+	log := p.conf.NewBaseLogger().With("subject", subject)
+
+	mm := p.conf.MattermostAPI()
 	user, err := mm.User.Get(member.UserId)
 	if err != nil {
-		p.log.WithError(err).Debugf("%s: failed to get user %s", subject, member.UserId)
+		log.WithError(err).Debugf("failed to get user")
+		return
+	}
+	channel, err := mm.Channel.Get(member.ChannelId)
+	if err != nil {
+		log.WithError(err).Debugf("%s: failed to get channel", subject)
 		return
 	}
 
@@ -135,29 +116,17 @@ func (p *Proxy) notifyUserChannel(member *model.ChannelMember, joined bool) {
 	}
 }
 
-// NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
-// "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserJoinedTeam(member *model.TeamMember, _ *model.User) {
-	p.notifyUserTeam(member, true)
-}
-
-// NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
-// "user_left_team" and "bot_left_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserLeftTeam(member *model.TeamMember, _ *model.User) {
-	p.notifyUserTeam(member, false)
-}
-
-func (p *Proxy) notifyUserTeam(member *model.TeamMember, joined bool) {
-	mm := p.conf.MattermostAPI()
+func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedTeam
 	if !joined {
 		subject = apps.SubjectUserLeftTeam
 	}
+	log := p.conf.NewBaseLogger().With("subject", subject)
 
-	// Need the user to have isBot (and might as well, for expand)
+	mm := p.conf.MattermostAPI()
 	user, err := mm.User.Get(member.UserId)
 	if err != nil {
-		p.log.WithError(err).Debugf("%s: failed to get user %s", subject, member.UserId)
+		log.WithError(err).Debugf("%s: failed to get user %s", subject, member.UserId)
 		return
 	}
 

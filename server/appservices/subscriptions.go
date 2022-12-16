@@ -38,7 +38,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription, test
 		return err
 	}
 
-	//TODO <>/<> MM-??? deprecate bot_joined|left_...
+	// TODO <>/<> MM-??? deprecate bot_joined|left_...
 	oldSubject := sub.Event.Subject
 	if newSubject, isBotSubject := map[apps.Subject]apps.Subject{
 		apps.SubjectBotJoinedChannel: apps.SubjectSelfJoinedChannel,

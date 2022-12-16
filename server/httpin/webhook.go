@@ -35,6 +35,32 @@ func (s *Service) doHandleWebhook(r *incoming.Request, _ http.ResponseWriter, re
 	return nil
 }
 
+func (s *Service) WebhookValidateAuthentication(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
+	err := s.doHandleWebhookAuthentication(r, w, req)
+	if err != nil {
+		r.Log.WithError(err).Warnw("failed to process remote webhook HEAD request")
+		httputils.WriteErrorIfNeeded(w, err)
+	}
+}
+
+func (s *Service) doHandleWebhookAuthentication(r *incoming.Request, _ http.ResponseWriter, req *http.Request) error {
+	sreq, err := newHTTPCallRequest(req, s.Config.Get().MaxWebhookSize)
+	if err != nil {
+		return err
+	}
+
+	sreq.Path = mux.Vars(req)["path"]
+	r.Log = r.Log.With("call_path", sreq.Path)
+
+	err = s.Proxy.ValidateWebhookAuthentication(r, *sreq)
+	if err != nil {
+		return err
+	}
+
+	r.Log.Debugf("processed remote webhook HEAD request")
+	return nil
+}
+
 func newHTTPCallRequest(req *http.Request, limit int) (*apps.HTTPCallRequest, error) {
 	data, err := httputils.LimitReadAll(req.Body, limit)
 	if err != nil {
