@@ -27,6 +27,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 			a.installCommandBinding(loc),
 			a.listCommandBinding(loc),
 			a.uninstallCommandBinding(loc),
+			a.settingsCommandBinding(loc),
 		)
 	}
 
