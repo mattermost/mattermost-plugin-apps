@@ -13,7 +13,7 @@ import (
 // team. Bot is then added to the channel to trigger.
 func notifyBotJoinedTeam(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
 			return apps.ExpandedContext{
@@ -29,7 +29,7 @@ func notifyBotJoinedTeam(_ *Helper) *notifyTestCase {
 			data.TeamMember = th.addTeamMember(data.Team, th.LastInstalledBotUser)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
 				User: th.LastInstalledBotUser,
 			}
@@ -45,7 +45,7 @@ func notifyBotJoinedTeam(_ *Helper) *notifyTestCase {
 					ec.Team = &model.Team{Id: data.Team.Id}
 				}
 			}
-			return ec
+			return "<>/<>", ec
 		},
 	}
 }

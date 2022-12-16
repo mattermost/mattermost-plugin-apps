@@ -194,6 +194,17 @@ func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e app
 		return modified, nil
 	}
 
+	// TODO <>/<> MM-??? deprecate bot_joined|left_...
+	if newSubject, isBotSubject := map[apps.Subject]apps.Subject{
+		apps.SubjectBotJoinedChannel: apps.SubjectSelfJoinedChannel,
+		apps.SubjectBotLeftChannel:   apps.SubjectSelfLeftChannel,
+		apps.SubjectBotJoinedTeam:    apps.SubjectSelfJoinedTeam,
+		apps.SubjectBotLeftTeam:      apps.SubjectSelfLeftTeam,
+	}[e.Subject]; isBotSubject {
+		e.Subject = newSubject
+		return a.unsubscribe(r, ownerUserID, e)
+	}
+
 	return all, errors.Wrap(utils.ErrNotFound, "You are not subscribed to this notification")
 }
 
@@ -221,8 +232,16 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 		case apps.SubjectBotJoinedChannel,
 			apps.SubjectBotLeftChannel,
 			apps.SubjectBotJoinedTeam,
-			apps.SubjectBotLeftTeam,
-			apps.SubjectSelfJoinedChannel,
+			apps.SubjectBotLeftTeam:
+			app, err := a.store.App.Get(r.SourceAppID())
+			if err != nil {
+				return errors.Wrapf(err, "failed to get app %s to validate subscription to %s", r.SourceAppID(), sub.Subject)
+			}
+			if r.ActingUserID() != app.BotUserID {
+				return errors.Errorf("%s can only be subscribed to by the app's bot", sub.Subject)
+			}
+
+		case apps.SubjectSelfJoinedChannel,
 			apps.SubjectSelfLeftChannel,
 			apps.SubjectSelfJoinedTeam,
 			apps.SubjectSelfLeftTeam:

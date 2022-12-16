@@ -14,7 +14,7 @@ import (
 // removed from the channel to trigger.
 func notifyUserLeftChannel(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
 				User: th.ServerTestHelper.BasicUser2,
@@ -38,7 +38,7 @@ func notifyUserLeftChannel(_ *Helper) *notifyTestCase {
 			th.removeUserFromChannel(data.Channel, data.User)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
 				User:       data.User,
 				Team:       data.Team,
@@ -57,7 +57,7 @@ func notifyUserLeftChannel(_ *Helper) *notifyTestCase {
 					ec.Channel = &model.Channel{Id: data.Channel.Id, TeamId: data.Team.Id}
 				}
 			}
-			return ec
+			return "<>/<>", ec
 		},
 	}
 }

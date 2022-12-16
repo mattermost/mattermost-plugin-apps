@@ -18,7 +18,7 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 			th.asUser,
 			th.asUser2,
 		},
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				User: th.ServerTestHelper.BasicUser,
 				Team: th.createTestTeam(),
@@ -36,7 +36,7 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 			data.TeamMember = th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
 				User: th.ServerTestHelper.BasicUser,
 			}
@@ -52,7 +52,7 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 					ec.Team = &model.Team{Id: data.Team.Id}
 				}
 			}
-			return ec
+			return "<>/<>", ec
 		},
 	}
 }

@@ -118,6 +118,20 @@ func (c *ClientPP) Subscribe(sub *apps.Subscription) (*model.Response, error) {
 	return model.BuildResponse(r), nil
 }
 
+func (c *ClientPP) SubscribeWithTestFlag(sub *apps.Subscription) (*model.Response, error) {
+	data, err := json.Marshal(sub)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe) + "?test=true", string(data)) // nolint:bodyclose
+	if err != nil {
+		return model.BuildResponse(r), err
+	}
+	defer c.closeBody(r)
+
+	return model.BuildResponse(r), nil
+}
+
 func (c *ClientPP) GetSubscriptions() ([]apps.Subscription, *model.Response, error) {
 	r, err := c.DoAPIGET(c.apipath(appspath.Subscribe), "") // nolint:bodyclose
 	if err != nil {

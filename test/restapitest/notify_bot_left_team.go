@@ -13,7 +13,7 @@ import (
 // team. Bot is then removed from the team to trigger.
 func notifyBotLeftTeam(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
 				User: th.LastInstalledBotUser,
@@ -31,7 +31,7 @@ func notifyBotLeftTeam(_ *Helper) *notifyTestCase {
 			th.removeTeamMember(data.Team, data.User)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
 				User: data.User,
 			}
@@ -47,7 +47,7 @@ func notifyBotLeftTeam(_ *Helper) *notifyTestCase {
 					ec.Team = &model.Team{Id: data.Team.Id}
 				}
 			}
-			return ec
+			return "<>/<>", ec
 		},
 	}
 }

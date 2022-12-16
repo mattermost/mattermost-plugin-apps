@@ -14,7 +14,7 @@ import (
 // of the channel. Bot is then removed from the channel to trigger.
 func notifyBotLeftChannel(_ *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
 			tm := th.addTeamMember(team, th.LastInstalledBotUser)
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
@@ -39,7 +39,7 @@ func notifyBotLeftChannel(_ *Helper) *notifyTestCase {
 			th.removeUserFromChannel(data.Channel, th.LastInstalledBotUser)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
 				User:       th.LastInstalledBotUser,
 				Team:       data.Team,
@@ -58,7 +58,7 @@ func notifyBotLeftChannel(_ *Helper) *notifyTestCase {
 					ec.Channel = &model.Channel{Id: data.Channel.Id, TeamId: data.Team.Id}
 				}
 			}
-			return ec
+			return "<>/<>", ec
 		},
 	}
 }
