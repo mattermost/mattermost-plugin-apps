@@ -21,7 +21,7 @@ func newWebhookApp(t *testing.T) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       webhookAppID,
-			Version:     "v1.1.0",
+			Version:     "v1.2.0",
 			DisplayName: "tests App's Webhook APIs",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			RequestedPermissions: []apps.Permission{
