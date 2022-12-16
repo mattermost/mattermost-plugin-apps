@@ -8,9 +8,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // logs copy [--channel|--create-channel] --level

@@ -53,7 +53,6 @@ const (
 	fIncludePlugins = "include_plugins"
 	fJSON           = "json"
 	fLevel          = "level"
-	fNamespace      = "namespace"
 	fNewValue       = "new_value"
 	fPage           = "page"
 	fSecret         = "secret"
