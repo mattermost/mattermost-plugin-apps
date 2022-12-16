@@ -225,10 +225,10 @@ func (s *Service) ListHashKeys(
 func (s *Service) RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
 	mm := s.conf.MattermostAPI()
 	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
-		return err
+		return errors.Wrap(err, "failed to remove all data for app")
 	}
 	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
-		return err
+		return errors.Wrap(err, "failed to remove all data for app")
 	}
 	return nil
 }

@@ -46,9 +46,9 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		if err == nil {
 			return
 		}
-		r.Log.WithError(err).Errorf("Failed to uninstall app %s: %s", appID, err)
+		r.Log.WithError(err).Errorf("Failed to uninstall app %s: %v", appID, errors.Cause(err))
 		if _, disableErr := p.DisableApp(r, cc, appID); disableErr != nil {
-			r.Log.WithError(disableErr).Errorf("Failed to disable app %s after a failed uninstall: %s", appID, disableErr)
+			r.Log.WithError(disableErr).Errorf("Failed to disable app %s after a failed uninstall: %v", appID, errors.Cause(disableErr))
 		}
 	}()
 

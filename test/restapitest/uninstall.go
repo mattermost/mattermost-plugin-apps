@@ -77,7 +77,6 @@ func newUninstallApp(th *Helper) *goapp.App {
 					err := client.StoreOAuth2User("testing")
 					require.NoError(th, err)
 				}
-				// setUser(creq.AsBot())
 				setUser(creq.AsActingUser())
 			})
 			return apps.NewTextResponse("installed")
