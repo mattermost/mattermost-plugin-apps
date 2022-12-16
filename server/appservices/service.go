@@ -13,7 +13,7 @@ type Service interface {
 	// Subscriptions
 
 	Subscribe(_ *incoming.Request, _ apps.Subscription, testBypassBotSubjectMapping bool) error
-	GetSubscriptions(_ *incoming.Request) ([]apps.Subscription, error)
+	GetSubscriptions(*incoming.Request) ([]apps.Subscription, error)
 	Unsubscribe(*incoming.Request, apps.Event) error
 	UnsubscribeApp(*incoming.Request, apps.AppID) error
 
