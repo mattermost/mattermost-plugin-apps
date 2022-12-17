@@ -61,9 +61,17 @@ func notifyUserJoinedChannel(th *Helper) *notifyTestCase {
 }
 
 func notifyBotJoinedChannelRemapped(th *Helper) *notifyTestCase {
+	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectSelfJoinedChannel)
+}
+
+func notifyBotJoinedChannelLegacy(th *Helper) *notifyTestCase {
+	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectBotJoinedChannel)
+}
+
+func notifyBotJoinedChannelImpl(th *Helper, subjectIn, subjectOut apps.Subject, testFlag bool, except ) *notifyTestCase {
 	return &notifyTestCase{
 		except: []appClient{th.asAdmin, th.asUser, th.asUser2},
-		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
 			tm := th.addTeamMember(team, th.LastInstalledBotUser)
 			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
@@ -72,15 +80,16 @@ func notifyBotJoinedChannelRemapped(th *Helper) *notifyTestCase {
 				Team:       team,
 				TeamMember: tm,
 				Channel:    channel,
+				ActingUser: user,
 			}
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
 			return apps.Event{
-				Subject: apps.SubjectBotJoinedChannel,
+				Subject: subjectIn,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.ChannelMember = th.addChannelMember(data.Channel, th.LastInstalledBotUser)
+			data.ChannelMember = th.addChannelMember(data.Channel, data.ActingUser)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
@@ -94,7 +103,7 @@ func notifyBotJoinedChannelRemapped(th *Helper) *notifyTestCase {
 			}
 
 			// Remap the Subject, will receive SubjectSelfJoinedChannel, SubjectBotJoinedChannel is deprecvated.
-			return apps.SubjectSelfJoinedChannel, ec
+			return subjectOut, ec
 		},
 	}
 }
@@ -105,7 +114,7 @@ func notifyBotJoinedChannelRemapped(th *Helper) *notifyTestCase {
 func notifyBotJoinedChannelLegacy(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		useTestSubscribe: true,
-		except: []appClient{th.asAdmin, th.asUser, th.asUser2},
+		except:           []appClient{th.asAdmin, th.asUser, th.asUser2},
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
 			tm := th.addTeamMember(team, user)
