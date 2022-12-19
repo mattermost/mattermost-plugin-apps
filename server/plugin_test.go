@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestOnActivate(t *testing.T) {
@@ -38,7 +39,7 @@ func TestOnActivate(t *testing.T) {
 
 	testAPI.On("SetProfileImage", "the_bot_id", mock.AnythingOfType("[]uint8")).Return(nil)
 
-	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
+	testAPI.On("GetPluginConfig").Return(map[string]any{})
 
 	listenAddress := "localhost:8065"
 	siteURL := "http://" + listenAddress + "/subpath"
@@ -54,7 +55,7 @@ func TestOnActivate(t *testing.T) {
 		SkuShortName: "professional",
 	})
 
-	expectLog(testAPI, "LogDebug", 13)
+	expectLog(testAPI, "LogDebug", 15)
 	expectLog(testAPI, "LogInfo", 5)
 	expectLog(testAPI, "LogError", 3)
 
@@ -70,17 +71,32 @@ func TestOnDeactivate(t *testing.T) {
 	testAPI := &plugintest.API{}
 	p := NewPlugin(manifest)
 
+	listenAddress := "localhost:8065"
+	siteURL := "http://" + listenAddress + "/subpath"
 	p.API = testAPI
+	testAPI.On("GetConfig").Return(&model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL:       &siteURL,
+			ListenAddress: &listenAddress,
+		},
+	})
+	testAPI.On("GetLicense").Return(&model.License{
+		Features:     &model.Features{},
+		SkuShortName: "professional",
+	})
+	testAPI.On("GetPluginConfig").Return(map[string]any{})
 
 	testAPI.On("GetBundlePath").Return("/", nil)
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.conf = config.NewService(mm, manifest, "the_bot_id", nil, i18nBundle)
+	confService, err := config.NewService(mm, manifest, "the_bot_id", nil, i18nBundle, utils.NewTestLogger())
+	require.NoError(t, err)
+	p.conf = confService
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
-	err := p.OnDeactivate()
+	err = p.OnDeactivate()
 	require.NoError(t, err)
 }
 

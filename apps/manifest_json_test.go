@@ -23,15 +23,11 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 	helloHTTP.HTTP = &HTTP{
 		RootURL: "http://localhost:1111",
 	}
-	helloHTTP7 := helloHTTP
-	helloHTTP7.v7AppType = string(DeployHTTP)
 
 	helloPlugin := hello
 	helloPlugin.Plugin = &Plugin{
 		PluginID: "com.mattermost.hello-test",
 	}
-	helloPlugin7 := helloPlugin
-	helloPlugin7.v7AppType = string(DeployPlugin)
 
 	helloAWS := hello
 	helloAWS.AWSLambda = &AWSLambda{
@@ -44,33 +40,13 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 			},
 		},
 	}
-	helloAWS7 := helloAWS
-	helloAWS7.v7AppType = string(DeployAWSLambda)
 
 	for name, test := range map[string]struct {
 		In            string
 		Expected      Manifest
 		ExpectedError string
 	}{
-		"v0.7 http": {
-			In: `{
-					"app_id": "hello-test",
-					"display_name": "Hello, test!",
-					"app_type": "http",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:1111",
-					"root_url": "http://localhost:1111",
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloHTTP7,
-		},
-		"v0.8 http": {
+		"http": {
 			In: `{
 					"app_id": "hello-test",
 					"display_name": "Hello, test!",
@@ -89,32 +65,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 				}`,
 			Expected: helloHTTP,
 		},
-		"v0.7 aws": {
-			In: `{
-					"app_id": "hello-test",
-					"display_name": "Hello, test!",
-					"app_type": "aws_lambda",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:1111",
-					"aws_lambda": [
-						{
-							"path": "/",
-							"name": "go-function",
-							"handler": "hello-lambda",
-							"runtime": "go1.x"
-						}
-					],
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloAWS7,
-		},
-		"v0.8 aws": {
+		"aws": {
 			In: `{
 					"app_id": "hello-test",
 					"display_name": "Hello, test!",
@@ -140,25 +91,7 @@ func TestManifestUnmarshalJSON(t *testing.T) {
 				}`,
 			Expected: helloAWS,
 		},
-		"v0.7 plugin": {
-			In: `{
-					"app_id": "hello-test",
-					"display_name": "Hello, test!",
-					"app_type": "plugin",
-					"icon": "icon.png",
-					"homepage_url":"http://localhost:1111",
-					"plugin_id": "com.mattermost.hello-test",
-					"requested_permissions": [
-						"act_as_bot"
-					],
-					"requested_locations": [
-						"/channel_header",
-						"/command"
-					]
-				}`,
-			Expected: helloPlugin7,
-		},
-		"v0.8 plugin": {
+		"plugin": {
 			In: `{
 					"app_id": "hello-test",
 					"display_name": "Hello, test!",

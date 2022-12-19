@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
@@ -32,33 +33,46 @@ const (
 )
 
 const (
+	FieldAppID     = "app"
+	FieldNamespace = "namespace"
+
 	fAction         = "action"
-	FieldAppID      = "app"
-	fForce          = "force"
+	fAllowHTTPApps  = "allow_http_apps"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
+	fChannel        = "channel"
 	fConsent        = "consent"
+	fCount          = "count"
+	fCreate         = "create"
 	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fDeveloperMode  = "developer_mode"
+	fForce          = "force"
+	fHashkeys       = "hashkeys"
 	fID             = "id"
 	fIncludePlugins = "include_plugins"
-	FieldNamespace  = "namespace"
+	fJSON           = "json"
+	fLevel          = "level"
 	fNewValue       = "new_value"
+	fPage           = "page"
 	fSecret         = "secret"
-	fURL            = "url"
 	fSessionID      = "session_id"
+	fURL            = "url"
 )
 
 const (
 	PathDebugClean        = "/debug/clean"
 	PathDebugKVInfo       = "/debug/kv/info"
 	PathDebugKVList       = "/debug/kv/list"
+	PathDebugStoreList    = "/debug/store/list"
+	PathDebugStorePollute = "/debug/store/pollute"
 	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
 	pDebugKVClean         = "/debug/kv/clean"
 	pDebugKVCreate        = "/debug/kv/create"
 	pDebugKVEdit          = "/debug/kv/edit"
 	pDebugKVEditModal     = "/debug/kv/edit-modal"
+	pDebugLogs            = "/debug/logs"
 	pDebugOAuthConfigView = "/debug/oauth/config/view"
 	pDebugSessionsRevoke  = "/debug/session/delete"
 	pDebugSessionsView    = "/debug/session/view"
@@ -71,6 +85,8 @@ const (
 	pInstallListed        = "/install-listed"
 	pList                 = "/list"
 	pUninstall            = "/uninstall"
+	pSettings             = "/settings"
+	pSettingsSave         = "/settings/save"
 )
 
 const (
@@ -108,6 +124,7 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInfo: a.info,
 
 		// Commands that require sysadmin.
+		pDebugLogs:            requireAdmin(a.debugLogs),
 		pDebugBindings:        requireAdmin(a.debugBindings),
 		PathDebugClean:        requireAdmin(a.debugClean),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
@@ -115,6 +132,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
 		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
@@ -125,11 +144,13 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pInstallHTTP:          requireAdmin(a.installHTTP),
 		pList:                 requireAdmin(a.list),
 		pUninstall:            requireAdmin(a.uninstall),
+		pSettings:             requireAdmin(a.settings),
 
 		// Modals.
 		pDebugKVEditModal:     requireAdmin(a.debugKVEditModal),
 		pInstallConsent:       requireAdmin(a.installConsent),
 		pInstallConsentSource: requireAdmin(a.installConsentForm),
+		pSettingsSave:         requireAdmin(a.settingsSave),
 
 		// Lookups.
 		pLookupAppID:     requireAdmin(a.lookupAppID),
@@ -225,6 +246,12 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
+	loc := a.newLocalizer(creq)
+	confErr := a.checkConfigValid(loc)
+	if confErr != nil {
+		return readcloser(apps.NewErrorResponse(confErr))
+	}
+
 	h, ok := a.router[creq.Path]
 	if !ok {
 		return nil, utils.NewNotFoundError(creq.Path)
@@ -240,7 +267,7 @@ func requireAdmin(h handler) handler {
 	return func(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 		if creq.Context.ActingUser == nil {
 			return apps.NewErrorResponse(utils.NewInvalidError(
-				"no or invalid ActingUser in the context, please make sure Expand.ActingUser is set"))
+				"no or invalid ActingUser in the context for %s, please make sure Expand.ActingUser is set", creq.Path))
 		}
 		if !creq.Context.ActingUser.IsSystemAdmin() {
 			return apps.NewErrorResponse(utils.NewUnauthorizedError(
@@ -256,4 +283,26 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	}
 
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
+}
+
+func (a *builtinApp) checkConfigValid(loc *i18n.Localizer) error {
+	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+
+	if oauthEnabled == nil || !*oauthEnabled {
+		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)
+
+		message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "command.error.oauth2.disabled",
+				Other: "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",
+			},
+			TemplateData: map[string]string{
+				"IntegrationManagementPage": integrationManagementPage,
+			},
+		})
+
+		return errors.New(message)
+	}
+
+	return nil
 }

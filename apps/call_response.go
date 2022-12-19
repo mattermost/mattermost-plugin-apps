@@ -54,6 +54,9 @@ type CallResponse struct {
 	// proper output.
 	Text string `json:"text,omitempty"`
 
+	// Optional. Force refresh bindings for acting user
+	RefreshBindings bool `json:"refresh_bindings,omitempty"`
+
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
 	Data interface{} `json:"data,omitempty"`
 

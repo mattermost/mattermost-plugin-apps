@@ -15,11 +15,11 @@ import (
 
 type TestService struct {
 	config    Config
-	mmconfig  model.Config
-	mm        *pluginapi.Client
-	log       utils.Logger
-	telemetry *telemetry.Telemetry
 	i18n      *i18n.Bundle
+	log       utils.Logger
+	mm        *pluginapi.Client
+	mmconfig  model.Config
+	telemetry *telemetry.Telemetry
 }
 
 var _ Service = (*TestService)(nil)
@@ -41,10 +41,10 @@ func NewTestService(testConfig *Config) (*TestService, *plugintest.API) {
 
 	return &TestService{
 		config:    *testConfig,
+		i18n:      i18nBundle,
 		log:       utils.NewTestLogger(),
 		mm:        pluginapi.NewClient(testAPI, testDriver),
 		telemetry: telemetry.NewTelemetry(nil),
-		i18n:      i18nBundle,
 	}, testAPI
 }
 
@@ -62,7 +62,7 @@ func (s *TestService) Get() Config {
 	return s.config
 }
 
-func (s *TestService) Logger() utils.Logger {
+func (s *TestService) NewBaseLogger() utils.Logger {
 	return s.log
 }
 
@@ -82,7 +82,7 @@ func (s *TestService) MattermostConfig() configservice.ConfigService {
 	return &mattermostConfigService{&s.mmconfig}
 }
 
-func (s *TestService) Reconfigure(StoredConfig, utils.Logger, ...Configurable) error {
+func (s *TestService) Reconfigure(map[string]any, utils.Logger, ...Configurable) error {
 	return nil
 }
 
