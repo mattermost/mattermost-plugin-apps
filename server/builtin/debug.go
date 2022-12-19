@@ -18,6 +18,7 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 		}),
 		Bindings: []apps.Binding{
 			a.debugBindingsCommandBinding(loc),
+			a.debugLogsCommandBinding(loc),
 			a.debugCleanCommandBinding(loc),
 			{
 				Location: "kv",
@@ -35,6 +36,21 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 					a.debugKVEditCommandBinding(loc),
 					a.debugKVInfoCommandBinding(loc),
 					a.debugKVListCommandBinding(loc),
+				},
+			},
+			{
+				Location: "store",
+				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.store.label",
+					Other: "store",
+				}),
+				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.store.description",
+					Other: "View and update raw plugin KV store.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugStoreListCommandBinding(loc),
+					a.debugStorePolluteCommandBinding(loc),
 				},
 			},
 			{
@@ -122,5 +138,50 @@ func (a *builtinApp) debugBase64Field(loc *i18n.Localizer) apps.Field {
 			Other: "base64 encoded keys to use in other `debug kv` commands.",
 		}),
 		Value: true,
+	}
+}
+
+func (a *builtinApp) debugHashkeysField(loc *i18n.Localizer) apps.Field {
+	return apps.Field{
+		Name: fHashkeys,
+		Type: apps.FieldTypeBool,
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.hashkeys.label",
+			Other: "hashkeys",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.count.description",
+			Other: "display hashkeys only, parsed.",
+		}),
+	}
+}
+
+func (a *builtinApp) debugCountField(loc *i18n.Localizer) apps.Field {
+	return apps.Field{
+		Name: fCount,
+		Type: apps.FieldTypeText,
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.count.label",
+			Other: "count",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.count.description",
+			Other: "number of keys per page.",
+		}),
+	}
+}
+
+func (a *builtinApp) debugPageField(loc *i18n.Localizer) apps.Field {
+	return apps.Field{
+		Name: fPage,
+		Type: apps.FieldTypeText,
+		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.page.label",
+			Other: "page",
+		}),
+		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "field.store.page.description",
+			Other: "page number.",
+		}),
 	}
 }
