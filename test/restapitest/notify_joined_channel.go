@@ -61,19 +61,24 @@ func notifyUserJoinedChannel(th *Helper) *notifyTestCase {
 }
 
 func notifyBotJoinedChannelRemapped(th *Helper) *notifyTestCase {
-	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectSelfJoinedChannel)
+	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectSelfJoinedChannel, false, []appClient{th.asAdmin, th.asUser, th.asUser2})
 }
 
 func notifyBotJoinedChannelLegacy(th *Helper) *notifyTestCase {
-	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectBotJoinedChannel)
+	return notifyBotJoinedChannelImpl(th, apps.SubjectBotJoinedChannel, apps.SubjectBotJoinedChannel, true, []appClient{th.asAdmin, th.asUser, th.asUser2})
 }
 
-func notifyBotJoinedChannelImpl(th *Helper, subjectIn, subjectOut apps.Subject, testFlag bool, except ) *notifyTestCase {
+func notifySelfJoinedChannel(th *Helper) *notifyTestCase {
+	return notifyBotJoinedChannelImpl(th, apps.SubjectSelfJoinedChannel, apps.SubjectSelfJoinedChannel, false, []appClient{th.asAdmin})
+}
+
+func notifyBotJoinedChannelImpl(th *Helper, subjectIn, subjectOut apps.Subject, testFlag bool, except []appClient) *notifyTestCase {
 	return &notifyTestCase{
-		except: []appClient{th.asAdmin, th.asUser, th.asUser2},
+		useTestSubscribe: testFlag,
+		except:           except,
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
-			tm := th.addTeamMember(team, th.LastInstalledBotUser)
+			tm := th.addTeamMember(team, user)
 			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
 
 			return apps.ExpandedContext{
@@ -94,98 +99,15 @@ func notifyBotJoinedChannelImpl(th *Helper, subjectIn, subjectOut apps.Subject, 
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			ec := apps.ExpandedContext{
-				ActingUser:    th.LastInstalledBotUser,
-				Channel:       data.Channel,
-				ChannelMember: data.ChannelMember,
-				Team:          data.Team,
-				TeamMember:    data.TeamMember,
-				User:          th.LastInstalledBotUser,
-			}
-
-			// Remap the Subject, will receive SubjectSelfJoinedChannel, SubjectBotJoinedChannel is deprecvated.
-			return subjectOut, ec
-		},
-	}
-}
-
-// notifyBotJoinsChannel creates a test channel in a new test team. Bot, User
-// and user2 are added as members of the team, and User is added as a member of
-// the channel. Bot is then added to the channel to trigger.
-func notifyBotJoinedChannelLegacy(th *Helper) *notifyTestCase {
-	return &notifyTestCase{
-		useTestSubscribe: true,
-		except:           []appClient{th.asAdmin, th.asUser, th.asUser2},
-		init: func(th *Helper, user *model.User) apps.ExpandedContext {
-			team := th.createTestTeam()
-			tm := th.addTeamMember(team, user)
-			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
-
-			return apps.ExpandedContext{
-				Team:       team,
-				TeamMember: tm,
-				Channel:    channel,
-				ActingUser: user,
-			}
-		},
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: apps.SubjectBotJoinedChannel,
-			}
-		},
-		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.ChannelMember = th.addChannelMember(data.Channel, data.ActingUser)
-			return data
-		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
-				User:          th.LastInstalledBotUser,
-				Team:          data.Team,
-				TeamMember:    data.TeamMember,
-				Channel:       data.Channel,
-				ChannelMember: data.ChannelMember,
-			}
-			return apps.SubjectBotJoinedChannel, ec
-		},
-	}
-}
-
-func notifySelfJoinedChannel(th *Helper) *notifyTestCase {
-	return &notifyTestCase{
-		// admin creates the channel, so can not be added to it again, not
-		// easily. It should be covered by user tests though.
-		except: []appClient{th.asAdmin},
-		init: func(th *Helper, user *model.User) apps.ExpandedContext {
-			team := th.createTestTeam()
-			tm := th.addTeamMember(team, user)
-			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
-
-			return apps.ExpandedContext{
-				Team:       team,
-				TeamMember: tm,
-				Channel:    channel,
-				ActingUser: user,
-			}
-		},
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: apps.SubjectSelfJoinedChannel,
-			}
-		},
-		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.ChannelMember = th.addChannelMember(data.Channel, data.ActingUser)
-			return data
-		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
-				User:          data.ActingUser,
 				ActingUser:    data.ActingUser,
-				Team:          data.Team,
-				TeamMember:    data.TeamMember,
 				Channel:       data.Channel,
 				ChannelMember: data.ChannelMember,
+				Team:          data.Team,
+				TeamMember:    data.TeamMember,
+				User:          data.ActingUser,
 			}
 
-			return apps.SubjectSelfJoinedChannel, ec
+			return subjectOut, ec
 		},
 	}
 }

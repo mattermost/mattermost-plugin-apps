@@ -23,7 +23,7 @@ func notifyUserCreated(*Helper) *notifyTestCase {
 			}
 		},
 		expected: func(th *Helper, _ apps.ExpandLevel, _ appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			return "<>/<>", apps.ExpandedContext{
+			return apps.SubjectUserCreated, apps.ExpandedContext{
 				User: data.User,
 			}
 		},

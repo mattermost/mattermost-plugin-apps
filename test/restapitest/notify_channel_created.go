@@ -41,7 +41,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 			// subscribe since it was not added to the team in init.
 			switch appclient.name {
 			case "admin":
-				return "<>/<>", apps.ExpandedContext{
+				return apps.SubjectChannelCreated, apps.ExpandedContext{
 					Channel:       data.Channel,
 					ChannelMember: th.getChannelMember(data.Channel.Id, appclient.expectedActingUser.Id),
 					Team:          data.Team,
@@ -56,7 +56,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 				if level == apps.ExpandID {
 					ec.Channel = data.Channel
 				}
-				return "<>/<>", ec
+				return apps.SubjectChannelCreated, ec
 			}
 		},
 	}

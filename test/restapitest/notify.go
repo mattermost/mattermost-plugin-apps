@@ -115,18 +115,24 @@ func testNotify(th *Helper) {
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
-		"bot_joined_channel-remapped": notifyBotJoinedChannelRemapped(th),
-		"bot_joined_channel-legacy":   notifyBotJoinedChannelLegacy(th),
+		"bot_joined_channel_legacy":   notifyBotJoinedChannelLegacy(th),
+		"bot_joined_channel_remapped": notifyBotJoinedChannelRemapped(th),
+		"bot_joined_team_legacy":      notifyBotJoinedTeamLegacy(th),
+		"bot_joined_team_remapped":    notifyBotJoinedTeamRemapped(th),
+		"bot_left_channel_legacy":     notifyBotLeftChannelLegacy(th),
+		"bot_left_channel_remapped":   notifyBotLeftChannelRemapped(th),
+		"bot_left_team_legacy":        notifyBotLeftTeamLegacy(th),
+		"bot_left_team_remapped":      notifyBotLeftTeamRemapped(th),
+		"channel_created":             notifyChannelCreated(th),
 		"self_joined_channel":         notifySelfJoinedChannel(th),
-		"bot_joined_team":             notifyBotJoinedTeam(th),
-		"bot_left_channel":            notifyBotLeftChannel(th),
-		"bot_left_team":               notifyBotLeftTeam(th),
+		"self_joined_team":            notifySelfJoinedTeam(th),
+		"self_left_channel":           notifySelfLeftChannel(th),
+		"self_left_team":              notifySelfLeftTeam(th),
+		"user_created":                notifyUserCreated(th),
 		"user_joined_channel":         notifyUserJoinedChannel(th),
 		"user_joined_team":            notifyUserJoinedTeam(th),
 		"user_left_channel":           notifyUserLeftChannel(th),
 		"user_left_team":              notifyUserLeftTeam(th),
-		"channel_created":             notifyChannelCreated(th),
-		"user_created":                notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, tc.expandCombinations, tc.except,

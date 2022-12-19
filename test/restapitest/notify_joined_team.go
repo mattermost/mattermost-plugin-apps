@@ -52,7 +52,51 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 					ec.Team = &model.Team{Id: data.Team.Id}
 				}
 			}
-			return "<>/<>", ec
+			return apps.SubjectUserJoinedTeam, ec
+		},
+	}
+}
+
+func notifyBotJoinedTeamLegacy(th *Helper) *notifyTestCase {
+	return notifyJoinedTeamImpl(th, apps.SubjectBotJoinedTeam, apps.SubjectBotJoinedTeam, true, []appClient{th.asAdmin, th.asUser, th.asUser2})
+}
+
+func notifyBotJoinedTeamRemapped(th *Helper) *notifyTestCase {
+	return notifyJoinedTeamImpl(th, apps.SubjectBotJoinedTeam, apps.SubjectSelfJoinedTeam, false, []appClient{th.asAdmin, th.asUser, th.asUser2})
+}
+
+func notifySelfJoinedTeam(th *Helper) *notifyTestCase {
+	return notifyJoinedTeamImpl(th, apps.SubjectSelfJoinedTeam, apps.SubjectSelfJoinedTeam, false, []appClient{th.asAdmin})
+}
+
+func notifyJoinedTeamImpl(th *Helper, subjectIn, subjectOut apps.Subject, testFlag bool, except []appClient) *notifyTestCase {
+	return &notifyTestCase{
+		useTestSubscribe: testFlag,
+		except:           except,
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			return apps.ExpandedContext{
+				Team:       team,
+				ActingUser: user,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subjectIn,
+			}
+		},
+		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+			data.TeamMember = th.addTeamMember(data.Team, data.ActingUser)
+			return data
+		},
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
+			ec := apps.ExpandedContext{
+				User:       data.ActingUser,
+				ActingUser: data.ActingUser,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
+			}
+			return subjectOut, ec
 		},
 	}
 }

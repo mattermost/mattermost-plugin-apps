@@ -63,7 +63,7 @@ func newUninstallApp(th *Helper) *goapp.App {
 					require.NoError(th, err)
 				}
 				subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
-				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
+				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectSelfJoinedTeam})
 				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectChannelCreated, TeamID: th.ServerTestHelper.BasicTeam.Id})
 				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectUserJoinedChannel, ChannelID: th.ServerTestHelper.BasicChannel.Id})
 
