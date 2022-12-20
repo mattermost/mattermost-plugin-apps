@@ -25,7 +25,7 @@ func (p *Proxy) InvokeRemoteWebhook(r *incoming.Request, httpCallRequest apps.HT
 
 	err = p.validateWebhookAuthentication(app, httpCallRequest)
 	if err != nil {
-		return errors.Wrap(err, "failed to valuidate webhook authentication")
+		return errors.Wrap(err, "failed to validate webhook authentication")
 	}
 
 	up, err := p.upstreamForApp(app)
