@@ -170,10 +170,22 @@ func testWebhookPath(th *Helper) {
 			listenPath:      "/my-webhook",
 			called:          false,
 		},
-		"with OnRemoteWebhook long path, wrong request path": {
+		"with OnRemoteWebhook, long wrong request path": {
 			onRemoteWebhook: apps.NewCall("/my-webhook"),
 			reqPath:         "/my-webhook/request-suffix",
 			listenPath:      "/my-webhook/request-suffix",
+			called:          false,
+		},
+		"with OnRemoteWebhook long path, wrong request path": {
+			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
+			reqPath:         "/my-webhook/manifest-suffix",
+			listenPath:      "/my-webhook/manifest-suffix",
+			called:          false,
+		},
+		"with OnRemoteWebhook long path, long wrong request path": {
+			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
+			reqPath:         "/my-webhook/request-suffix",
+			listenPath:      "/my-webhook/manifest-suffix/request-suffix",
 			called:          false,
 		},
 	} {
