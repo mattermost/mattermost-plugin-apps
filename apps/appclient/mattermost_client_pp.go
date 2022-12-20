@@ -123,7 +123,7 @@ func (c *ClientPP) SubscribeWithTestFlag(sub *apps.Subscription) (*model.Respons
 	if err != nil {
 		return nil, err
 	}
-	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe) + "?test=true", string(data)) // nolint:bodyclose
+	r, err := c.DoAPIPOST(c.apipath(appspath.Subscribe)+"?test=true", string(data)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
 	}
