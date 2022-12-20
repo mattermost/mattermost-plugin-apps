@@ -4,8 +4,9 @@
 package restapitest
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-server/v6/model"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 // notifyChannelCreated creates a test channel in a new test team. User and
