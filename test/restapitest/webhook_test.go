@@ -123,7 +123,7 @@ func testWebhookAuth(th *Helper) {
 	})
 }
 
-func testWebhookPaths(th *Helper) {
+func testWebhookPath(th *Helper) {
 	for name, tc := range map[string]struct {
 		onRemoteWebhook *apps.Call
 		reqPath         string
@@ -135,12 +135,12 @@ func testWebhookPaths(th *Helper) {
 			listenPath: "/webhook",
 			called:     true,
 		},
-		"without OnRemoteWebhook, webhook path with suffix": {
+		"without OnRemoteWebhook, long request path": {
 			reqPath:    "/webhook/request-suffix",
 			listenPath: "/webhook/request-suffix",
 			called:     true,
 		},
-		"with OnRemoteWebhook, short request path": {
+		"with OnRemoteWebhook, default request path": {
 			onRemoteWebhook: apps.NewCall("/my-webhook"),
 			reqPath:         "/webhook",
 			listenPath:      "/my-webhook",
@@ -152,17 +152,29 @@ func testWebhookPaths(th *Helper) {
 			listenPath:      "/my-webhook/request-suffix",
 			called:          true,
 		},
-		"with OnRemoteWebhook, long OnRemoteWebhook path": {
+		"with OnRemoteWebhook long path": {
 			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
 			reqPath:         "/webhook",
 			listenPath:      "/my-webhook/manifest-suffix",
 			called:          true,
 		},
-		"with OnRemoteWebhook, long OnRemoteWebhook path request path": {
+		"with OnRemoteWebhook long path, long request path": {
 			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
 			reqPath:         "/webhook/request-suffix",
 			listenPath:      "/my-webhook/manifest-suffix/request-suffix",
 			called:          true,
+		},
+		"with OnRemoteWebhook, wrong request path": {
+			onRemoteWebhook: apps.NewCall("/my-webhook"),
+			reqPath:         "/my-webhook",
+			listenPath:      "/my-webhook",
+			called:          false,
+		},
+		"with OnRemoteWebhook long path, wrong request path": {
+			onRemoteWebhook: apps.NewCall("/my-webhook"),
+			reqPath:         "/my-webhook/request-suffix",
+			listenPath:      "/my-webhook/request-suffix",
+			called:          false,
 		},
 	} {
 		th.Run(name, func(th *Helper) {
@@ -178,7 +190,9 @@ func testWebhookPaths(th *Helper) {
 
 			webhookSecret := getTestWebhookSecret(th, app)
 			err := sendWebhookPostRequest(th, webhookSecret, tc.reqPath)
-			require.NoError(th, err)
+			if err != nil && (tc.called || err.Error() != "404 page not found") {
+				th.Fatal("received error for webhook request: " + err.Error())
+			}
 
 			var result bool
 			select {
@@ -186,7 +200,7 @@ func testWebhookPaths(th *Helper) {
 			case <-time.After(time.Second * 1):
 			}
 
-			require.True(th, result)
+			require.Equal(th, tc.called, result)
 		})
 	}
 }

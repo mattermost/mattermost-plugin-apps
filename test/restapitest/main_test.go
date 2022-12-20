@@ -35,7 +35,7 @@ func TestRESTAPI(t *testing.T) {
 		"KV":            testKV,
 		"OAuth2":        testOAuth2,
 		"webhook_auth":  testWebhookAuth,
-		"webhook_paths": testWebhookPaths,
+		"webhook_path":  testWebhookPath,
 		"subscriptions": testSubscriptions,
 		"notify":        testNotify,
 		"uninstall":     testUninstall,
