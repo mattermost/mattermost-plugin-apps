@@ -214,7 +214,7 @@ func testWebhookPath(th *Helper) {
 			var result bool
 			select {
 			case result = <-calledChan:
-			case <-time.After(time.Second * 1):
+			case <-time.After(time.Millisecond * 20):
 			}
 
 			require.Equal(th, tc.called, result)
