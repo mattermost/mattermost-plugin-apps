@@ -125,10 +125,10 @@ func testWebhookAuth(th *Helper) {
 
 func testWebhookPath(th *Helper) {
 	for name, tc := range map[string]struct {
-		onRemoteWebhook *apps.Call
-		reqPath         string
-		listenPath      string
-		called          bool
+		onRemoteWebhookPath string
+		reqPath             string
+		listenPath          string
+		called              bool
 	}{
 		"without OnRemoteWebhook, default webhook path": {
 			reqPath:    "/webhook",
@@ -141,56 +141,61 @@ func testWebhookPath(th *Helper) {
 			called:     true,
 		},
 		"with OnRemoteWebhook, default request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook"),
-			reqPath:         "/webhook",
-			listenPath:      "/my-webhook",
-			called:          true,
+			onRemoteWebhookPath: "/my-webhook",
+			reqPath:             "/webhook",
+			listenPath:          "/my-webhook",
+			called:              true,
 		},
 		"with OnRemoteWebhook, long request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook"),
-			reqPath:         "/webhook/request-suffix",
-			listenPath:      "/my-webhook/request-suffix",
-			called:          true,
+			onRemoteWebhookPath: "/my-webhook",
+			reqPath:             "/webhook/request-suffix",
+			listenPath:          "/my-webhook/request-suffix",
+			called:              true,
 		},
 		"with OnRemoteWebhook long path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
-			reqPath:         "/webhook",
-			listenPath:      "/my-webhook/manifest-suffix",
-			called:          true,
+			onRemoteWebhookPath: "/my-webhook/manifest-suffix",
+			reqPath:             "/webhook",
+			listenPath:          "/my-webhook/manifest-suffix",
+			called:              true,
 		},
 		"with OnRemoteWebhook long path, long request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
-			reqPath:         "/webhook/request-suffix",
-			listenPath:      "/my-webhook/manifest-suffix/request-suffix",
-			called:          true,
+			onRemoteWebhookPath: "/my-webhook/manifest-suffix",
+			reqPath:             "/webhook/request-suffix",
+			listenPath:          "/my-webhook/manifest-suffix/request-suffix",
+			called:              true,
 		},
 		"with OnRemoteWebhook, wrong request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook"),
-			reqPath:         "/my-webhook",
-			listenPath:      "/my-webhook",
-			called:          false,
+			onRemoteWebhookPath: "/my-webhook",
+			reqPath:             "/my-webhook",
+			listenPath:          "/my-webhook",
+			called:              false,
 		},
 		"with OnRemoteWebhook, long wrong request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook"),
-			reqPath:         "/my-webhook/request-suffix",
-			listenPath:      "/my-webhook/request-suffix",
-			called:          false,
+			onRemoteWebhookPath: "/my-webhook",
+			reqPath:             "/my-webhook/request-suffix",
+			listenPath:          "/my-webhook/request-suffix",
+			called:              false,
 		},
 		"with OnRemoteWebhook long path, wrong request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
-			reqPath:         "/my-webhook/manifest-suffix",
-			listenPath:      "/my-webhook/manifest-suffix",
-			called:          false,
+			onRemoteWebhookPath: "/my-webhook/manifest-suffix",
+			reqPath:             "/my-webhook/manifest-suffix",
+			listenPath:          "/my-webhook/manifest-suffix",
+			called:              false,
 		},
 		"with OnRemoteWebhook long path, long wrong request path": {
-			onRemoteWebhook: apps.NewCall("/my-webhook/manifest-suffix"),
-			reqPath:         "/my-webhook/request-suffix",
-			listenPath:      "/my-webhook/manifest-suffix/request-suffix",
-			called:          false,
+			onRemoteWebhookPath: "/my-webhook/manifest-suffix",
+			reqPath:             "/my-webhook/request-suffix",
+			listenPath:          "/my-webhook/manifest-suffix/request-suffix",
+			called:              false,
 		},
 	} {
 		th.Run(name, func(th *Helper) {
-			app := newWebhookApp(th.T, tc.onRemoteWebhook)
+			var onRemoteWebhook *apps.Call
+			if tc.onRemoteWebhookPath != "" {
+				onRemoteWebhook = apps.NewCall(tc.onRemoteWebhookPath)
+			}
+
+			app := newWebhookApp(th.T, onRemoteWebhook)
 			th.InstallAppWithCleanup(app)
 
 			calledChan := make(chan bool)
