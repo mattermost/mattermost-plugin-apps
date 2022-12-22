@@ -57,7 +57,7 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App,
 }
 
 func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, reachable map[apps.AppID]bool) {
-	all := p.store.App.ListIncludeDisabled()
+	all := p.store.App.AsMap(store.AllApps)
 	if len(all) == 0 {
 		return nil, nil
 	}
@@ -97,7 +97,7 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 }
 
 func (p *Proxy) GetInstalledApps() []apps.App {
-	return store.SortApps(p.store.App.ListIncludeDisabled())
+	return p.store.App.AsList(store.AllApps)
 }
 
 func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {

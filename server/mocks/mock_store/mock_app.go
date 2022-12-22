@@ -11,6 +11,7 @@ import (
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	store "github.com/mattermost/mattermost-plugin-apps/server/store"
 	utils "github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -35,6 +36,34 @@ func NewMockAppStore(ctrl *gomock.Controller) *MockAppStore {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 	return m.recorder
+}
+
+// AsList mocks base method.
+func (m *MockAppStore) AsList(arg0 store.FilterOpt) []apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AsList", arg0)
+	ret0, _ := ret[0].([]apps.App)
+	return ret0
+}
+
+// AsList indicates an expected call of AsList.
+func (mr *MockAppStoreMockRecorder) AsList(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsList", reflect.TypeOf((*MockAppStore)(nil).AsList), arg0)
+}
+
+// AsMap mocks base method.
+func (m *MockAppStore) AsMap(arg0 store.FilterOpt) map[apps.AppID]apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AsMap", arg0)
+	ret0, _ := ret[0].(map[apps.AppID]apps.App)
+	return ret0
+}
+
+// AsMap indicates an expected call of AsMap.
+func (mr *MockAppStoreMockRecorder) AsMap(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap), arg0)
 }
 
 // Configure mocks base method.
@@ -94,48 +123,6 @@ func (m *MockAppStore) InitBuiltin(arg0 ...apps.App) {
 func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitBuiltin", reflect.TypeOf((*MockAppStore)(nil).InitBuiltin), arg0...)
-}
-
-// List mocks base method.
-func (m *MockAppStore) List() []apps.App {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List")
-	ret0, _ := ret[0].([]apps.App)
-	return ret0
-}
-
-// List indicates an expected call of List.
-func (mr *MockAppStoreMockRecorder) List() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAppStore)(nil).List))
-}
-
-// ListAsMap mocks base method.
-func (m *MockAppStore) ListAsMap() map[apps.AppID]apps.App {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAsMap")
-	ret0, _ := ret[0].(map[apps.AppID]apps.App)
-	return ret0
-}
-
-// ListAsMap indicates an expected call of ListAsMap.
-func (mr *MockAppStoreMockRecorder) ListAsMap() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAsMap", reflect.TypeOf((*MockAppStore)(nil).ListAsMap))
-}
-
-// ListIncludeDisabled mocks base method.
-func (m *MockAppStore) ListIncludeDisabled() []apps.App {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListIncludeDisabled")
-	ret0, _ := ret[0].([]apps.App)
-	return ret0
-}
-
-// ListIncludeDisabled indicates an expected call of ListIncludeDisabled.
-func (mr *MockAppStoreMockRecorder) ListIncludeDisabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIncludeDisabled", reflect.TypeOf((*MockAppStore)(nil).ListIncludeDisabled))
 }
 
 // Save mocks base method.
