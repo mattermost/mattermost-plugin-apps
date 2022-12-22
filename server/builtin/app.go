@@ -37,30 +37,35 @@ const (
 	FieldNamespace = "namespace"
 
 	fAction         = "action"
+	fAllowHTTPApps  = "allow_http_apps"
 	fBase64         = "base64"
 	fBase64Key      = "base64_key"
 	fChannel        = "channel"
 	fConsent        = "consent"
+	fCount          = "count"
 	fCreate         = "create"
 	fCurrentValue   = "current_value"
 	fDeployType     = "deploy_type"
+	fDeveloperMode  = "developer_mode"
 	fForce          = "force"
+	fHashkeys       = "hashkeys"
 	fID             = "id"
 	fIncludePlugins = "include_plugins"
 	fJSON           = "json"
 	fLevel          = "level"
 	fNewValue       = "new_value"
+	fPage           = "page"
 	fSecret         = "secret"
 	fSessionID      = "session_id"
 	fURL            = "url"
-	fDeveloperMode  = "developer_mode"
-	fAllowHTTPApps  = "allow_http_apps"
 )
 
 const (
 	PathDebugClean        = "/debug/clean"
 	PathDebugKVInfo       = "/debug/kv/info"
 	PathDebugKVList       = "/debug/kv/list"
+	PathDebugStoreList    = "/debug/store/list"
+	PathDebugStorePollute = "/debug/store/pollute"
 	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
 	pDebugKVClean         = "/debug/kv/clean"
@@ -127,6 +132,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
 		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
