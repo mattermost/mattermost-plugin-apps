@@ -54,7 +54,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	all := make(chan result)
 	defer close(all)
 
-	allApps := p.store.App.AsList(store.AllApps)
+	allApps := p.store.App.AsList(store.EnabledAppsOnly)
 
 	for i := range allApps {
 		go func(app apps.App) {
