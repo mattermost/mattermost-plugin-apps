@@ -13,7 +13,7 @@ type Service interface {
 	// Subscriptions
 
 	Subscribe(*incoming.Request, apps.Subscription) error
-	GetSubscriptions(_ *incoming.Request) ([]apps.Subscription, error)
+	GetSubscriptions(*incoming.Request) ([]apps.Subscription, error)
 	Unsubscribe(*incoming.Request, apps.Event) error
 	UnsubscribeApp(*incoming.Request, apps.AppID) error
 
