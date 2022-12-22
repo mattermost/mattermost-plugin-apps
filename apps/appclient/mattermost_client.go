@@ -96,6 +96,19 @@ func (c *Client) Subscribe(sub *apps.Subscription) error {
 	return nil
 }
 
+func (c *Client) SubscribeWithTestFlag(sub *apps.Subscription) error {
+	res, err := c.ClientPP.SubscribeWithTestFlag(sub)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+		return errors.Errorf("returned with status %d", res.StatusCode)
+	}
+
+	return nil
+}
+
 func (c *Client) GetSubscriptions() ([]apps.Subscription, error) {
 	subs, res, err := c.ClientPP.GetSubscriptions()
 	if err != nil {

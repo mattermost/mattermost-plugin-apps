@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_mmclient"
+	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_proxy"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -83,7 +83,7 @@ func TestExpand(t *testing.T) {
 	type TC struct {
 		base              apps.Context
 		noActingUser      bool
-		expectClientCalls func(*mock_mmclient.MockClient)
+		expectClientCalls func(*mock_proxy.MockExpandGetter)
 		expect            map[string]interface{} // string for err.Error, or apps.ExpandedContext for success
 	}
 
@@ -103,7 +103,7 @@ func TestExpand(t *testing.T) {
 			name: "acting_user",
 			tcs: map[string]TC{
 				"happy with API GetUser": {
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetUser(userID).Times(1).Return(actingUser(), nil)
 					},
 					expect: map[string]interface{}{
@@ -121,7 +121,7 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"error GetUser fail": {
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetUser(userID).Times(1).Return(nil, utils.ErrForbidden)
 					},
 					expect: map[string]interface{}{
@@ -154,7 +154,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(&channelMember, nil)
 					},
 					expect: map[string]interface{}{
@@ -190,7 +190,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[string]interface{}{
@@ -207,7 +207,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(&teamMember, nil)
 					},
 					expect: map[string]interface{}{
@@ -243,7 +243,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
-					expectClientCalls: func(client *mock_mmclient.MockClient) {
+					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[string]interface{}{
@@ -269,13 +269,12 @@ func TestExpand(t *testing.T) {
 					for level, expected := range tc.expect {
 						t.Run(level, func(t *testing.T) {
 							ctrl := gomock.NewController(t)
-							client := mock_mmclient.NewMockClient(ctrl)
+							client := mock_proxy.NewMockExpandGetter(ctrl)
 							if tc.expectClientCalls != nil {
 								tc.expectClientCalls(client)
 							}
 							p := &Proxy{
-								conf:                 conf,
-								expandClientOverride: client,
+								conf: conf,
 							}
 
 							expandData := fmt.Sprintf(`{"%s":"%s"}`, field.name, level)
@@ -288,7 +287,7 @@ func TestExpand(t *testing.T) {
 								r = r.WithActingUserID(userID)
 							}
 							prev := tc.base
-							cc, err := p.expandContext(r, app, &prev, &e)
+							cc, err := p.expandContext(r, app, &prev, &e, client)
 							if err != nil {
 								require.EqualValues(t, expected, err.Error())
 							} else {

@@ -4,6 +4,8 @@
 package restapitest
 
 import (
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -16,7 +18,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 		except: []appClient{
 			th.asBot,
 		},
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			// create test team, and make "user" a member (but not bot, nor user2)
 			team := th.createTestTeam()
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
@@ -35,12 +37,12 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
 			// only user, user2 and admin can get here, bit wouldn't be able to
 			// subscribe since it was not added to the team in init.
 			switch appclient.name {
 			case "admin":
-				return apps.ExpandedContext{
+				return apps.SubjectChannelCreated, apps.ExpandedContext{
 					Channel:       data.Channel,
 					ChannelMember: th.getChannelMember(data.Channel.Id, appclient.expectedActingUser.Id),
 					Team:          data.Team,
@@ -55,7 +57,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 				if level == apps.ExpandID {
 					ec.Channel = data.Channel
 				}
-				return ec
+				return apps.SubjectChannelCreated, ec
 			}
 		},
 	}

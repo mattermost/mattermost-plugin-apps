@@ -46,24 +46,30 @@ const (
 	SubjectUserJoinedTeam Subject = "user_joined_team"
 	SubjectUserLeftTeam   Subject = "user_left_team"
 
-	// SubjectBotJoinedChannel, SubjectBotLeftChannel watches for the event when
-	// the app's own bot is added to, or removed from any channel in the
-	// specified team.
-	//   TeamID: specifies the team to watch.
+	// SubjectBotJoinedChannel, SubjectBotLeftChannel, SubjectBotJoinedTeam, SubjectBotLeftTeam are deprecated. Use "Self" instead.
+	SubjectBotJoinedChannel Subject = "bot_joined_channel"
+	SubjectBotLeftChannel   Subject = "bot_left_channel"
+	SubjectBotJoinedTeam    Subject = "bot_joined_team"
+	SubjectBotLeftTeam      Subject = "bot_left_team"
+
+	// SubjectSelfJoinedChannel, SubjectSelfLeftChannel watches for the event
+	// when the subscribed user (can be the app's bot) is added to, or removed
+	// from any channel in the system.
+	//   TeamID: must be empty, all channels are watched.
 	//   ChannelID: must be empty, all channels are watched.
 	//   Expandable: Channel, User (will be the app's bot user), ChannelMember.
 	//   Requires: none - if the event fires, the app's bot already has the permissions.
-	SubjectBotJoinedChannel Subject = "bot_joined_channel"
-	SubjectBotLeftChannel   Subject = "bot_left_channel"
+	SubjectSelfJoinedChannel Subject = "self_joined_channel"
+	SubjectSelfLeftChannel   Subject = "self_left_channel"
 
-	// SubjectBotJoinedTeam, SubjectBotLeftTeam system-wide watch for app's own
-	// bot added to, or removed from teams.
+	// SubjectSelfJoinedTeam, SubjectSelfLeftTeam system-wide watch for the
+	// subscribed user (can be the app's bot) added to, or removed from teams.
 	//   TeamID: must be empty.
 	//   ChannelID: must be empty.
 	//   Expandable: Team, User (will be the app's bot user), TeamMember.
 	//   Requires: none - if the event fires, the app's bot already has the permissions.
-	SubjectBotJoinedTeam Subject = "bot_joined_team"
-	SubjectBotLeftTeam   Subject = "bot_left_team"
+	SubjectSelfJoinedTeam Subject = "self_joined_team"
+	SubjectSelfLeftTeam   Subject = "self_left_team"
 
 	// SubjectChannelCreated watches for new channels in the specified team.
 	//   TeamID: specifies the team to watch.
@@ -81,9 +87,9 @@ const (
 	// used to expand other entities.
 	// SubjectPostCreated Subject = "post_created"
 
-	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
-	// when the App's bot is mentioned in the post.
-	// SubjectBotMentioned Subject = "bot_mentioned"
+	// SubjectSelfMentioned subscribes to MessageHasBeenPosted plugin events, specifically
+	// when the subscriber is mentioned in the post.
+	// SubjectSelfMentioned Subject = "self_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
@@ -129,7 +135,11 @@ func (e Event) validate(appendTo error) error {
 		SubjectBotJoinedTeam,
 		SubjectBotLeftTeam,
 		SubjectBotJoinedChannel,
-		SubjectBotLeftChannel /*, SubjectBotMentioned*/ :
+		SubjectBotLeftChannel,
+		SubjectSelfJoinedTeam,
+		SubjectSelfLeftTeam,
+		SubjectSelfJoinedChannel,
+		SubjectSelfLeftChannel /*, SubjectSelfMentioned*/ :
 		if e.TeamID != "" {
 			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is globally scoped; team_id and channel_id must both be empty", e.Subject))
 		}

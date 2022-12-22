@@ -36,7 +36,9 @@ func (s *Service) Subscribe(r *incoming.Request, w http.ResponseWriter, req *htt
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := s.AppServices.Subscribe(r, sub); err != nil {
+
+	testFlag := (req.URL.Query().Get("test") != "")
+	if err := s.AppServices.Subscribe(r, sub, testFlag); err != nil {
 		http.Error(w, err.Error(), httputils.ErrorToStatus(err))
 		return
 	}
