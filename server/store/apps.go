@@ -18,15 +18,21 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+type FilterOpt bool
+
+const (
+	EnabledAppsOnly = FilterOpt(false)
+	AllApps         = FilterOpt(true)
+)
+
 type AppStore interface {
 	config.Configurable
 
 	InitBuiltin(...apps.App)
 
 	Get(apps.AppID) (*apps.App, error)
-	List() []apps.App                   // List returns all installed, enabled apps.
-	ListAsMap() map[apps.AppID]apps.App // List returns all installed, enabled apps as a map.
-	ListIncludeDisabled() []apps.App    // List returns all installed apps, including the disabled ones.
+	AsList(FilterOpt) []apps.App
+	AsMap(FilterOpt) map[apps.AppID]apps.App
 	Save(*incoming.Request, apps.App) error
 	Delete(*incoming.Request, apps.AppID) error
 }
@@ -118,16 +124,18 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) List() []apps.App {
+func (s *appStore) AsList(filter FilterOpt) []apps.App {
 	var out []apps.App
-	for _, app := range s.ListAsMap() {
+	for _, app := range s.AsMap(filter) {
 		out = append(out, app)
 	}
-
+	sort.SliceStable(out, func(i, j int) bool {
+		return apps.AppID(out[i].DisplayName) < apps.AppID(out[j].DisplayName)
+	})
 	return out
 }
 
-func (s *appStore) ListAsMap() map[apps.AppID]apps.App {
+func (s *appStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -135,43 +143,17 @@ func (s *appStore) ListAsMap() map[apps.AppID]apps.App {
 
 	out := map[apps.AppID]apps.App{}
 	for appID, app := range installed {
-		if !app.Disabled {
+		if filter == AllApps || !app.Disabled {
 			out[appID] = app
 		}
 	}
 	for appID, app := range builtin {
-		if !app.Disabled {
+		if filter == AllApps || !app.Disabled {
 			out[appID] = app
 		}
 	}
 
 	return out
-}
-
-func (s *appStore) ListIncludeDisabled() []apps.App {
-	s.mutex.RLock()
-	installed := s.installed
-	builtin := s.builtinInstalled
-	s.mutex.RUnlock()
-
-	out := []apps.App{}
-	for _, app := range installed {
-		out = append(out, app)
-	}
-	for _, app := range builtin {
-		out = append(out, app)
-	}
-
-	return out
-}
-
-// SortApps sorts a list of apps alphabetically, by display name.
-func SortApps(appList []apps.App) []apps.App {
-	sort.SliceStable(appList, func(i, j int) bool {
-		return apps.AppID(appList[i].DisplayName) < apps.AppID(appList[j].DisplayName)
-	})
-
-	return appList
 }
 
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {

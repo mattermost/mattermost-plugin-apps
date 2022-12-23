@@ -74,7 +74,7 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method 
 
 	// If the user is a bot, process SubjectBot...Channel; only notify the
 	// app with the matching BotUserID.
-	allApps := p.store.App.ListAsMap()
+	allApps := p.store.App.AsMap(store.EnabledAppsOnly)
 	subject = apps.SubjectBotJoinedChannel
 	if !joined {
 		subject = apps.SubjectBotLeftChannel
@@ -139,7 +139,7 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string
 
 	// If the user is a bot, process SubjectBot...Channel; only notify the app
 	// with the matching BotUserID.
-	allApps := p.store.App.ListAsMap()
+	allApps := p.store.App.AsMap(store.EnabledAppsOnly)
 	subject = apps.SubjectBotJoinedTeam
 	if !joined {
 		subject = apps.SubjectBotLeftTeam
