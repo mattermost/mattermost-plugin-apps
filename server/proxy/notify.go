@@ -140,7 +140,7 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 			UserID: user.Id,
 			TeamID: member.TeamId,
 		},
-		nil, // no special filtering, notify all subscriptions mathcing the event.
+		nil, // no special filtering, notify all subscriptions matching the event.
 		nil, // no special expand rules for "any user" subscriptions.
 	)
 
