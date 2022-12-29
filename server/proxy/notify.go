@@ -87,7 +87,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 		newExpandSelfGetter(mm, user, member, nil, channel),
 	)
 
-	// Notify on the deprecated bot_joined|left_channel  subscriptions.
+	// Notify on the deprecated bot_joined|left_channel subscriptions.
 	if user.IsBot {
 		allApps := p.store.App.AsMap()
 		subject = apps.SubjectBotJoinedChannel
