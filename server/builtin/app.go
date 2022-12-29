@@ -127,13 +127,15 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		// Commands available to all users.
 		pInfo: a.info,
 
-		// Commands that require sysadmin.
+		// Commands that require sysadmin. Some are also used in the REST API
+		// tests.
 		PathDebugClean:        requireAdmin(a.debugClean),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		PathDebugStoreList:    requireAdmin(a.debugStoreList),
 		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
-		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
+
 		pDebugBindings:        requireAdmin(a.debugBindings),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
 		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
