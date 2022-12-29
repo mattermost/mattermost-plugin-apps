@@ -205,6 +205,8 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 
 	haveLog := conf.LogChannelID != ""
 	channelOpt := apps.SelectOption{}
+	levelOpt := apps.SelectOption{}
+	jsonVal := false
 	if haveLog {
 		channelOpt = apps.SelectOption{
 			Label: conf.LogChannelID + " (unavailable)",
@@ -214,6 +216,13 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		if ch != nil {
 			channelOpt.Label = ch.DisplayName
 		}
+
+		levelOpt = apps.SelectOption{
+			Label: zapcore.Level(conf.LogChannelLevel).CapitalString(),
+			Value: zapcore.Level(conf.LogChannelLevel).String(),
+		}
+
+		jsonVal = conf.LogChannelJSON
 	}
 	wantLog := creq.GetValue(fLog, "")
 
@@ -245,35 +254,23 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 			}),
 			SelectStaticOptions: []apps.SelectOption{
 				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "log.level.debug.label",
-						Other: "Debug",
-					}),
+					Label: zapcore.DebugLevel.CapitalString(),
 					Value: zapcore.DebugLevel.String(),
 				},
 				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "log.level.info.label",
-						Other: "Info",
-					}),
+					Label: zapcore.InfoLevel.CapitalString(),
 					Value: zapcore.InfoLevel.String(),
 				},
 				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "log.level.warn.label",
-						Other: "Warning",
-					}),
+					Label: zapcore.WarnLevel.CapitalString(),
 					Value: zapcore.WarnLevel.String(),
 				},
 				{
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-						ID:    "log.level.error.label",
-						Other: "Error",
-					}),
+					Label: zapcore.ErrorLevel.CapitalString(),
 					Value: zapcore.ErrorLevel.String(),
 				},
 			},
-			Value: zapcore.InfoLevel.String(),
+			Value: levelOpt,
 		},
 		{
 			Name: fJSON,
@@ -286,6 +283,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 				ID:    "modal.settings.channel_log.channel.json.label",
 				Other: "json",
 			}),
+			Value: jsonVal,
 		},
 	}
 
@@ -389,8 +387,6 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 }
 
 func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	r.Log.Debugf("<>/<> Save 0: values: %v", creq.Values)
-
 	wantOverrides := creq.GetValue(fOverrides, "")
 	developerModeOverride := creq.BoolValue(fDeveloperMode)
 	allowHTTPAppsOverride := creq.BoolValue(fAllowHTTPApps)
@@ -409,10 +405,6 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 	haveOverrides := sc.DeveloperModeOverride != nil || sc.AllowHTTPAppsOverride != nil
 	haveLog := sc.LogChannelID != ""
 
-	r.Log.Debugf("<>/<> Save 0: fChannel %T %v", creq.Values[fChannel], creq.Values[fChannel])
-
-	r.Log.Debugf("<>/<> Save 1: haveOverrides=%v, wantOverrides=%s, haveLog=%v, wantLog=%s", haveOverrides, wantOverrides, haveLog, wantLog)
-
 	if !haveOverrides && wantOverrides == "none" && !haveLog && wantLog == "none" {
 		loc := a.newLocalizer(creq)
 		return apps.CallResponse{
@@ -429,12 +421,10 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 	case wantOverrides == "use":
 		sc.DeveloperModeOverride = &developerModeOverride
 		sc.AllowHTTPAppsOverride = &allowHTTPAppsOverride
-		r.Log.Debugf("<>/<> Save 2: setting overrides to %v, %v", developerModeOverride, allowHTTPAppsOverride)
 
 	case wantOverrides == "none":
 		sc.DeveloperModeOverride = nil
 		sc.AllowHTTPAppsOverride = nil
-		r.Log.Debugf("<>/<> Save 3: resetting overrides")
 
 	default:
 		return apps.NewErrorResponse(utils.NewInvalidError("invalid input %s:%s: must be 'use' or 'none'", fOverrides, wantOverrides))
@@ -445,13 +435,11 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 	case haveLog && wantLog == "use":
 		sc.LogChannelLevel = int(level)
 		sc.LogChannelJSON = outputJSON
-		r.Log.Debugf("<>/<> Save 4: setting log settings to %s, %v", level, outputJSON)
 
 	case wantLog == "none":
 		sc.LogChannelID = ""
 		sc.LogChannelLevel = 0
 		sc.LogChannelJSON = false
-		r.Log.Debugf("<>/<> Save 5: resetting log settings")
 
 	case !haveLog && wantLog == "create":
 		ch, _ := a.conf.MattermostAPI().Channel.GetByName(creq.Context.Team.Id, channelName, false)
@@ -465,22 +453,18 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 			if err := a.conf.MattermostAPI().Channel.Create(ch); err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to create channel"))
 			}
-			r.Log.Debugf("<>/<> Save 6: created channel %s %s %s", ch.Id, ch.Name, ch.DisplayName)
 		}
 		_, err := a.conf.MattermostAPI().Channel.AddMember(ch.Id, creq.Context.ActingUser.Id)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add user to channel"))
 		}
 		sc.LogChannelID = ch.Id
-		r.Log.Debugf("<>/<> Save 7: forwarding to settings modal to set up log settings")
 		// Forward to the settings modal to set up the options
 		redirect = true
 
 	case !haveLog && wantLog == "select":
 		sc.LogChannelID = channelID
-		r.Log.Debugf("<>/<> Save 8: using channel %s", channelID)
 		// Forward to the settings modal to set up the options
-		r.Log.Debugf("<>/<> Save 9: forwarding to settings modal to set up log settings")
 		redirect = true
 
 	default:
@@ -491,7 +475,6 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to store configuration"))
 	}
-	r.Log.Debugf("<>/<> Save 100: stored")
 
 	if !redirect {
 		resp := apps.NewTextResponse("Saved settings.")
