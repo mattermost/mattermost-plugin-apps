@@ -44,11 +44,13 @@ const (
 	fChannelDisplayName = "channel_display_name"
 	fChannelName        = "channel_name"
 	fConsent            = "consent"
+	fCount              = "count"
 	fCreate             = "create"
 	fCurrentValue       = "current_value"
 	fDeployType         = "deploy_type"
 	fDeveloperMode      = "developer_mode"
 	fForce              = "force"
+	fHashkeys           = "hashkeys"
 	fID                 = "id"
 	fIncludePlugins     = "include_plugins"
 	fJSON               = "json"
@@ -56,6 +58,7 @@ const (
 	fLog                = "log"
 	fNewValue           = "new_value"
 	fOverrides          = "overrides"
+	fPage               = "page"
 	fSecret             = "secret"
 	fSessionID          = "session_id"
 	fURL                = "url"
@@ -65,6 +68,8 @@ const (
 	PathDebugClean        = "/debug/clean"
 	PathDebugKVInfo       = "/debug/kv/info"
 	PathDebugKVList       = "/debug/kv/list"
+	PathDebugStoreList    = "/debug/store/list"
+	PathDebugStorePollute = "/debug/store/pollute"
 	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
 	pDebugKVClean         = "/debug/kv/clean"
@@ -126,6 +131,8 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		PathDebugClean:        requireAdmin(a.debugClean),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
 		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
 		pDebugBindings:        requireAdmin(a.debugBindings),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
