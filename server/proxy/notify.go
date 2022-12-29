@@ -206,7 +206,7 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 			TeamID:    teamID,
 			ChannelID: channelID,
 		},
-		nil, // no special filtering, notify all subscriptions mathcing the event.
+		nil, // no special filtering, notify all subscriptions matching the event.
 		nil, // no special expand logic.
 	)
 }
