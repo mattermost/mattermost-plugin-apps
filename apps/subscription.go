@@ -55,7 +55,7 @@ const (
 	// SubjectSelfJoinedChannel, SubjectSelfLeftChannel watches for the event
 	// when the subscribed user (can be the app's bot) is added to, or removed
 	// from any channel in the system.
-	//   TeamID: must be empty, all channels are watched.
+	//   TeamID: must be empty, all teams are watched.
 	//   ChannelID: must be empty, all channels are watched.
 	//   Expandable: Channel, User (will be the app's bot user), ChannelMember.
 	//   Requires: none - if the event fires, the app's bot already has the permissions.
