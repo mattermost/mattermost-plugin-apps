@@ -24,7 +24,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 	r := p.NewIncomingRequest().WithCtx(ctx)
 
-	installed := p.store.App.AsMap()
+	installed := p.store.App.AsMap(store.AllApps)
 	listed := p.store.Manifest.AsMap()
 
 	diff := map[apps.AppID]apps.App{}
