@@ -60,7 +60,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 			TeamID:    channel.TeamId,
 			UserID:    user.Id,
 		},
-		nil, // no special filtering, notify all subscriptions mathcing the event.
+		nil, // no special filtering, notify all subscriptions matching the event.
 		nil, // no special expand rules for "any user" subscriptions.
 	)
 
