@@ -18,13 +18,21 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
+type FilterOpt bool
+
+const (
+	EnabledAppsOnly = FilterOpt(false)
+	AllApps         = FilterOpt(true)
+)
+
 type AppStore interface {
 	config.Configurable
 
 	InitBuiltin(...apps.App)
 
 	Get(apps.AppID) (*apps.App, error)
-	AsMap() map[apps.AppID]apps.App
+	AsList(FilterOpt) []apps.App
+	AsMap(FilterOpt) map[apps.AppID]apps.App
 	Save(*incoming.Request, apps.App) error
 	Delete(*incoming.Request, apps.AppID) error
 }
@@ -116,7 +124,18 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) AsMap() map[apps.AppID]apps.App {
+func (s *appStore) AsList(filter FilterOpt) []apps.App {
+	var out []apps.App
+	for _, app := range s.AsMap(filter) {
+		out = append(out, app)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return apps.AppID(out[i].DisplayName) < apps.AppID(out[j].DisplayName)
+	})
+	return out
+}
+
+func (s *appStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -124,23 +143,16 @@ func (s *appStore) AsMap() map[apps.AppID]apps.App {
 
 	out := map[apps.AppID]apps.App{}
 	for appID, app := range installed {
-		out[appID] = app
+		if filter == AllApps || !app.Disabled {
+			out[appID] = app
+		}
 	}
 	for appID, app := range builtin {
-		out[appID] = app
-	}
-	return out
-}
-
-func SortApps(appsMap map[apps.AppID]apps.App) []apps.App {
-	out := []apps.App{}
-	for _, app := range appsMap {
-		out = append(out, app)
+		if filter == AllApps || !app.Disabled {
+			out[appID] = app
+		}
 	}
 
-	sort.SliceStable(out, func(i, j int) bool {
-		return apps.AppID(out[i].DisplayName) < apps.AppID(out[j].DisplayName)
-	})
 	return out
 }
 
