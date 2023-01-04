@@ -67,13 +67,21 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 	defer close(reachableCh)
 	for _, app := range all {
 		go func(a apps.App) {
-			var response apps.AppID
-			if !a.Disabled {
+			var reachable bool
+
+			if a.DeployType == apps.DeployBuiltin {
+				// Builtin apps are always rechable
+				reachable = true
+			} else if !a.Disabled {
 				if p.pingApp(ctx, &a) {
-					response = a.AppID
+					reachable = true
 				}
 			}
-			reachableCh <- response
+			if reachable {
+				reachableCh <- a.AppID
+			} else {
+				reachableCh <- ""
+			}
 		}(app)
 	}
 
