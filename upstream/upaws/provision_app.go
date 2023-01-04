@@ -21,7 +21,6 @@ type DeployAppParams struct {
 	InvokePolicyName Name
 	ExecuteRoleName  Name
 	ShouldUpdate     bool
-	DryRun           bool
 	Environment      map[string]string
 }
 
