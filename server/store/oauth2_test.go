@@ -22,6 +22,7 @@ func TestCreateOAuth2State(t *testing.T) {
 		Service: &Service{
 			conf: conf,
 		},
+		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
 	}
 
 	// CreateState
@@ -66,6 +67,7 @@ func TestOAuth2User(t *testing.T) {
 		Service: &Service{
 			conf: conf,
 		},
+		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
 	}
 
 	type Entity struct {
