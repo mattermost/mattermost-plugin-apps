@@ -4,13 +4,18 @@
 package store
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -71,7 +76,12 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 		return err
 	}
 
-	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
+	dataEncrypted, err := encrypt([]byte("mykey"), string(data))
+	if err != nil {
+		return err
+	}
+
+	_, err = s.conf.MattermostAPI().KV.Set(userkey, dataEncrypted)
 	return err
 }
 
@@ -90,5 +100,75 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 		return nil, err
 	}
 
-	return data, nil
+	dataDecrypted, err := decrypt([]byte("mykey"), string(data))  // TODO Get key from DB
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(dataDecrypted), nil
+}
+
+func unpad(src []byte) ([]byte, error) {
+	length := len(src)
+	unpadding := int(src[length-1])
+
+	if unpadding > length {
+		return nil, errors.New("unpad error. This could happen when incorrect encryption key is used")
+	}
+
+	return src[:(length - unpadding)], nil
+}
+
+func pad(src []byte) []byte {
+	padding := aes.BlockSize - len(src)%aes.BlockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(src, padtext...)
+}
+
+func encrypt(key []byte, text string) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", errors.Wrap(err, "could not create a cipher block, check key")
+	}
+
+	msg := pad([]byte(text))
+	ciphertext := make([]byte, aes.BlockSize+len(msg))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", errors.Wrap(err, "readFull was unsuccessful, check buffer size")
+	}
+
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], msg)
+	finalMsg := base64.URLEncoding.EncodeToString(ciphertext)
+	return finalMsg, nil
+}
+
+func decrypt(key []byte, text string) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", errors.Wrap(err, "could not create a cipher block, check key")
+	}
+
+	decodedMsg, err := base64.URLEncoding.DecodeString(text)
+	if err != nil {
+		return "", errors.Wrap(err, "could not decode the message")
+	}
+
+	if (len(decodedMsg) % aes.BlockSize) != 0 {
+		return "", errors.New("blocksize must be multiple of decoded message length")
+	}
+
+	iv := decodedMsg[:aes.BlockSize]
+	msg := decodedMsg[aes.BlockSize:]
+
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(msg, msg)
+
+	unpadMsg, err := unpad(msg)
+	if err != nil {
+		return "", errors.Wrap(err, "unpad error, check key")
+	}
+
+	return string(unpadMsg), nil
 }
