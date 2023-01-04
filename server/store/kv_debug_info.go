@@ -96,7 +96,7 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 			case strings.HasPrefix(key, KVSubPrefix):
 				info.SubscriptionCount++
 
-			case strings.HasPrefix(key, KVSessionTokenPrefix):
+			case strings.HasPrefix(key, KVTokenPrefix):
 				appID, _, err := parseSessionKey(key)
 				if err != nil {
 					continue

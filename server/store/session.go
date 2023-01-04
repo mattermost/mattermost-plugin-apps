@@ -32,7 +32,7 @@ func sessionKey(appID apps.AppID, userID string) string {
 }
 
 func appKey(appID apps.AppID) string {
-	return KVSessionTokenPrefix + "_" + string(appID)
+	return KVTokenPrefix + "_" + string(appID)
 }
 
 func parseSessionKey(key string) (apps.AppID, string, error) { //nolint:golint,unparam
@@ -41,7 +41,7 @@ func parseSessionKey(key string) (apps.AppID, string, error) { //nolint:golint,u
 		return "", "", errors.New("invalid key pattern")
 	}
 
-	if s[0] != KVSessionTokenPrefix {
+	if s[0] != KVTokenPrefix {
 		return "", "", errors.New("invalid key prefix")
 	}
 

@@ -63,7 +63,7 @@ const (
 	// KVLocalManifestPrefix is used to store locally-listed manifests.
 	KVLocalManifestPrefix = "man."
 
-	KVSessionTokenPrefix = ".t"
+	KVTokenPrefix = ".t"
 
 	KVDebugPrefix = ".debug."
 
