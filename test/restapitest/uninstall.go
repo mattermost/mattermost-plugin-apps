@@ -146,7 +146,7 @@ func testUninstall(th *Helper) {
 			ManifestCount:          1,
 			Other:                  0, // was: 1 for the special bot key; `debug clean`` before the test clears it out.
 			Apps:                   map[apps.AppID]*store.KVDebugAppInfo{},
-			Debug: 2000,
+			Debug:                  2000,
 		}, info)
 	})
 
