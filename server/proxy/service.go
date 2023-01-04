@@ -43,8 +43,6 @@ type Proxy struct {
 
 	// expandClientOverride is set by the tests to use the mock client
 	expandClientOverride mmclient.Client
-
-	// log utils.Logger
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -71,6 +69,7 @@ type API interface {
 	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
 	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)
 	InvokeRemoteWebhook(*incoming.Request, apps.HTTPCallRequest) error
+	ValidateWebhookAuthentication(*incoming.Request, apps.HTTPCallRequest) error
 }
 
 // Notifier implements subscription notifications, each one may be going out to
@@ -121,7 +120,6 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 		httpOut:          httpOut,
 		sessionService:   session,
 		appservices:      appservices,
-		// log:              conf.Get().BaseLogger,
 	}
 }
 

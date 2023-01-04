@@ -25,6 +25,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type Plugin struct {
@@ -53,6 +54,7 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
+	log := utils.NewPluginLogger(mm, nil)
 
 	// Make sure we have the Bot.
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
@@ -63,7 +65,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
-	mm.Log.Debug("ensured bot", "id", botUserID, "username", config.BotUsername)
+	log.Debugw("ensured bot", "id", botUserID, "username", config.BotUsername)
 
 	// Initialize internalization and telemetrty.
 	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
@@ -73,22 +75,20 @@ func (p *Plugin) OnActivate() (err error) {
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		mm.Log.Warn("failed to start telemetry client.", "error", err.Error())
+		log.WithError(err).Warnw("failed to start telemetry client.")
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, false)
+	confService, log, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	if err != nil {
-		mm.Log.Info("failed to load initial configuration", "error", err.Error())
+		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
+	p.conf = confService
+	log = p.conf.NewBaseLogger()
 
 	conf := p.conf.Get()
-	log := p.conf.NewBaseLogger()
 	log.With(conf).Debugw("configured the plugin.")
 
 	// Initialize outgoing HTTP.
@@ -96,7 +96,8 @@ func (p *Plugin) OnActivate() (err error) {
 
 	// Initialize persistent storage. Also initialize the app API and the
 	// session services, both need the persisitent store.
-	p.store, err = store.MakeService(p.API, p.conf, p.httpOut)
+	p.store = &store.Service{}
+	err = p.store.Init(p.API, p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
@@ -153,7 +154,7 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() (err error) {
+func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -169,10 +170,14 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
+	var sc config.StoredConfig
+	err := mm.Configuration.LoadPluginConfiguration(&sc)
+	if err != nil {
+		p.API.LogInfo("failed to load updated configuration", "error", err.Error())
+		return err
+	}
 
-	err = p.conf.Reconfigure(stored, true, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(sc, false, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err

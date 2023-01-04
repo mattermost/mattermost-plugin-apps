@@ -90,3 +90,5 @@ func (s *TestService) StoreConfig(sc StoredConfig, _ utils.Logger) error {
 	s.config.StoredConfig = sc
 	return nil
 }
+
+func (s *TestService) SystemDefaultFlags() (bool, bool) { return false, false }

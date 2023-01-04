@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"path"
-	"regexp"
-	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
@@ -33,6 +31,9 @@ type StoredConfig struct {
 	// manifest_<sha1(Manifest)>. Implementation in `store.Manifest`.
 	LocalManifests map[string]string `json:"local_manifests,omitempty"`
 
+	DeveloperModeOverride *bool `json:"developer_mode"`
+	AllowHTTPAppsOverride *bool `json:"allow_http_apps"`
+
 	LogChannelID    string `json:"log_channel_id,omitempty"`
 	LogChannelLevel int    `json:"log_channel_level,omitempty"`
 	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
@@ -54,9 +55,9 @@ type Config struct {
 	BuildHash      string
 	BuildHashShort string
 
+	MattermostCloudMode bool
 	DeveloperMode       bool
 	AllowHTTPApps       bool
-	MattermostCloudMode bool
 
 	BotUserID          string
 	MattermostSiteURL  string
@@ -81,14 +82,6 @@ func (conf Config) AppURL(appID apps.AppID) string {
 func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
-
-// allowHTTPAppsDomains is the list of domains for which AllowHTTPApps will be
-// forced on.
-var allowHTTPAppsDomains = regexp.MustCompile("^" + strings.Join([]string{
-	`.*\.test\.mattermost\.cloud`,
-	`community\.mattermost\.com`,
-	`community-[a-z]+\.mattermost\.com`,
-}, "|") + "$")
 
 func (conf Config) GetPluginVersionInfo() map[string]interface{} {
 	return map[string]interface{}{

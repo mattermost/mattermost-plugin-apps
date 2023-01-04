@@ -9,9 +9,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
-	config "github.com/mattermost/mattermost-plugin-apps/server/config"
 	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	utils "github.com/mattermost/mattermost-plugin-apps/utils"
+	store "github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 // MockAppStore is a mock of AppStore interface.
@@ -37,32 +36,32 @@ func (m *MockAppStore) EXPECT() *MockAppStoreMockRecorder {
 	return m.recorder
 }
 
-// AsMap mocks base method.
-func (m *MockAppStore) AsMap() map[apps.AppID]apps.App {
+// AsList mocks base method.
+func (m *MockAppStore) AsList(arg0 store.FilterOpt) []apps.App {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AsMap")
+	ret := m.ctrl.Call(m, "AsList", arg0)
+	ret0, _ := ret[0].([]apps.App)
+	return ret0
+}
+
+// AsList indicates an expected call of AsList.
+func (mr *MockAppStoreMockRecorder) AsList(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsList", reflect.TypeOf((*MockAppStore)(nil).AsList), arg0)
+}
+
+// AsMap mocks base method.
+func (m *MockAppStore) AsMap(arg0 store.FilterOpt) map[apps.AppID]apps.App {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AsMap", arg0)
 	ret0, _ := ret[0].(map[apps.AppID]apps.App)
 	return ret0
 }
 
 // AsMap indicates an expected call of AsMap.
-func (mr *MockAppStoreMockRecorder) AsMap() *gomock.Call {
+func (mr *MockAppStoreMockRecorder) AsMap(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap))
-}
-
-// Configure mocks base method.
-func (m *MockAppStore) Configure(arg0 config.Config, arg1 utils.Logger) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Configure", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Configure indicates an expected call of Configure.
-func (mr *MockAppStoreMockRecorder) Configure(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockAppStore)(nil).Configure), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap), arg0)
 }
 
 // Delete mocks base method.

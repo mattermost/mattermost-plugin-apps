@@ -25,15 +25,16 @@ func (i KVDebugAppInfo) Total() int {
 }
 
 type KVDebugInfo struct {
-	InstalledAppCount      int
 	Apps                   map[apps.AppID]*KVDebugAppInfo
 	AppsTotal              int
+	CachedStoreCount       int
+	CachedStoreCountByName map[string]int
+	Debug                  int
+	InstalledAppCount      int
 	ManifestCount          int
 	OAuth2StateCount       int
 	Other                  int
 	SubscriptionCount      int
-	CachedStoreCount       int
-	CachedStoreCountByName map[string]int
 	Total                  int
 }
 
@@ -60,6 +61,9 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 		keys, err := mm.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
+		}
+		if len(keys) == 0 {
+			break
 		}
 
 		for _, key := range keys {
@@ -92,8 +96,8 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 			case strings.HasPrefix(key, KVSubPrefix):
 				info.SubscriptionCount++
 
-			case strings.HasPrefix(key, KVTokenPrefix):
-				appID, _, err := parseTokenKey(key)
+			case strings.HasPrefix(key, KVSessionTokenPrefix):
+				appID, _, err := parseSessionKey(key)
 				if err != nil {
 					continue
 				}
@@ -118,10 +122,10 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 
 			case key == "mmi_botid":
 				info.Other++
+
+			case strings.HasPrefix(key, KVDebugPrefix):
+				info.Debug++
 			}
-		}
-		if len(keys) < ListKeysPerPage {
-			break
 		}
 	}
 	return &info, nil

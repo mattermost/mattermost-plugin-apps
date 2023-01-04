@@ -25,9 +25,9 @@ import (
 func setUpBasics(ctrl *gomock.Controller) (session.Service,
 	*incoming.Request,
 	*mock_store.MockSessionStore,
-	*mock_store.MockAppStore,
+	store.AppStore,
 	*plugintest.API) {
-	appStore := mock_store.NewMockAppStore(ctrl)
+	appStore := store.TestAppStore{}
 	sessionStore := mock_store.NewMockSessionStore(ctrl)
 	mockStore := &store.Service{
 		App:     appStore,
@@ -149,9 +149,12 @@ func TestGetOrCreate(t *testing.T) {
 
 		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(nil, utils.ErrNotFound)
 		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
-		appStore.EXPECT().Get(appID).Times(1).Return(&apps.App{
+		_ = appStore.Save(nil, apps.App{
+			Manifest: apps.Manifest{
+				AppID: appID,
+			},
 			MattermostOAuth2: oAuthApp,
-		}, nil)
+		})
 
 		r = r.WithDestination(appID)
 		rSession, err := sessionService.GetOrCreate(r, userID)

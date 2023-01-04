@@ -4,9 +4,9 @@
 package store
 
 import (
-	"github.com/pkg/errors"
+	"strings"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -81,22 +81,30 @@ func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
 }
 
 func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
-	keys, err := s.conf.MattermostAPI().KV.ListKeys(0, ListKeysPerPage, pluginapi.WithPrefix(KVSubPrefix))
-	if err != nil {
-		return nil, err
-	}
-
 	all := []StoredSubscriptions{}
-	for _, key := range keys {
-		forKey := StoredSubscriptions{}
-		err := s.conf.MattermostAPI().KV.Get(key, &forKey)
+	for i := 0; ; i++ {
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
-		if forKey.Event.Subject == "" {
-			continue
+		if len(keys) == 0 {
+			break
 		}
-		all = append(all, forKey)
+
+		for _, key := range keys {
+			if !strings.HasPrefix(key, KVSubPrefix) {
+				continue
+			}
+			forKey := StoredSubscriptions{}
+			err := s.conf.MattermostAPI().KV.Get(key, &forKey)
+			if err != nil {
+				return nil, err
+			}
+			if forKey.Event.Subject == "" {
+				continue
+			}
+			all = append(all, forKey)
+		}
 	}
 	return all, nil
 }

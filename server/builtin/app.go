@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 
@@ -35,29 +36,40 @@ const (
 	FieldAppID     = "app"
 	FieldNamespace = "namespace"
 
-	fAction         = "action"
-	fBase64         = "base64"
-	fBase64Key      = "base64_key"
-	fChannel        = "channel"
-	fConsent        = "consent"
-	fCreate         = "create"
-	fCurrentValue   = "current_value"
-	fDeployType     = "deploy_type"
-	fForce          = "force"
-	fID             = "id"
-	fIncludePlugins = "include_plugins"
-	fJSON           = "json"
-	fLevel          = "level"
-	fNewValue       = "new_value"
-	fSecret         = "secret"
-	fSessionID      = "session_id"
-	fURL            = "url"
+	fAction             = "action"
+	fAllowHTTPApps      = "allow_http_apps"
+	fBase64             = "base64"
+	fBase64Key          = "base64_key"
+	fChannel            = "channel"
+	fChannelDisplayName = "channel_display_name"
+	fChannelName        = "channel_name"
+	fConsent            = "consent"
+	fCount              = "count"
+	fCreate             = "create"
+	fCurrentValue       = "current_value"
+	fDeployType         = "deploy_type"
+	fDeveloperMode      = "developer_mode"
+	fForce              = "force"
+	fHashkeys           = "hashkeys"
+	fID                 = "id"
+	fIncludePlugins     = "include_plugins"
+	fJSON               = "json"
+	fLevel              = "level"
+	fLog                = "log"
+	fNewValue           = "new_value"
+	fOverrides          = "overrides"
+	fPage               = "page"
+	fSecret             = "secret"
+	fSessionID          = "session_id"
+	fURL                = "url"
 )
 
 const (
 	PathDebugClean        = "/debug/clean"
 	PathDebugKVInfo       = "/debug/kv/info"
 	PathDebugKVList       = "/debug/kv/list"
+	PathDebugStoreList    = "/debug/store/list"
+	PathDebugStorePollute = "/debug/store/pollute"
 	PathDebugSessionsList = "/debug/session/list"
 	pDebugBindings        = "/debug/bindings"
 	pDebugKVClean         = "/debug/kv/clean"
@@ -71,11 +83,13 @@ const (
 	pDisable              = "/disable"
 	pEnable               = "/enable"
 	pInfo                 = "/info"
-	pInstallConsent       = "/install-consent"
+	pInstallConsentModal  = "/install-consent"
 	pInstallConsentSource = "/install-consent/form"
 	pInstallHTTP          = "/install-http"
 	pInstallListed        = "/install-listed"
 	pList                 = "/list"
+	pSettingsModalSave    = "/settings/save"
+	pSettingsModalSource  = "/settings/form"
 	pUninstall            = "/uninstall"
 )
 
@@ -113,30 +127,33 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		// Commands available to all users.
 		pInfo: a.info,
 
-		// Commands that require sysadmin.
-		pDebugLogs:            requireAdmin(a.debugLogs),
-		pDebugBindings:        requireAdmin(a.debugBindings),
+		// Commands that require sysadmin. Some are also used in the REST API
+		// tests.
 		PathDebugClean:        requireAdmin(a.debugClean),
-		pDebugKVClean:         requireAdmin(a.debugKVClean),
-		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
-		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
 		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
 		PathDebugKVList:       requireAdmin(a.debugKVList),
 		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
+
+		pDebugBindings:        requireAdmin(a.debugBindings),
+		pDebugKVClean:         requireAdmin(a.debugKVClean),
+		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
+		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
+		pDebugKVEditModal:     requireAdmin(a.debugKVEdit),
+		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
-		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
-		pEnable:               requireAdmin(a.enable),
 		pDisable:              requireAdmin(a.disable),
-		pInstallListed:        requireAdmin(a.installListed),
-		pInstallHTTP:          requireAdmin(a.installHTTP),
-		pList:                 requireAdmin(a.list),
-		pUninstall:            requireAdmin(a.uninstall),
-
-		// Modals.
-		pDebugKVEditModal:     requireAdmin(a.debugKVEditModal),
-		pInstallConsent:       requireAdmin(a.installConsent),
+		pEnable:               requireAdmin(a.enable),
+		pInstallConsentModal:  requireAdmin(a.installConsent),
 		pInstallConsentSource: requireAdmin(a.installConsentForm),
+		pInstallHTTP:          requireAdmin(a.installHTTP),
+		pInstallListed:        requireAdmin(a.installListed),
+		pList:                 requireAdmin(a.list),
+		pSettingsModalSave:    requireAdmin(a.settingsSave),
+		pSettingsModalSource:  requireAdmin(a.settingsForm),
+		pUninstall:            requireAdmin(a.uninstall),
 
 		// Lookups.
 		pLookupAppID:     requireAdmin(a.lookupAppID),
@@ -232,6 +249,12 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
+	loc := a.newLocalizer(creq)
+	confErr := a.checkConfigValid(loc)
+	if confErr != nil {
+		return readcloser(apps.NewErrorResponse(confErr))
+	}
+
 	h, ok := a.router[creq.Path]
 	if !ok {
 		return nil, utils.NewNotFoundError(creq.Path)
@@ -263,4 +286,26 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	}
 
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
+}
+
+func (a *builtinApp) checkConfigValid(loc *i18n.Localizer) error {
+	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+
+	if oauthEnabled == nil || !*oauthEnabled {
+		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)
+
+		message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "command.error.oauth2.disabled",
+				Other: "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",
+			},
+			TemplateData: map[string]string{
+				"IntegrationManagementPage": integrationManagementPage,
+			},
+		})
+
+		return errors.New(message)
+	}
+
+	return nil
 }

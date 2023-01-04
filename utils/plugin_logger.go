@@ -5,6 +5,7 @@ package utils
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,10 +15,12 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
+const pluginCallerKey = "plugin_caller"
+
 type LogConfig struct {
+	BotUserID   string
 	ChannelID   string
 	Level       zapcore.Level
-	BotUserID   string
 	IncludeJSON bool
 }
 
@@ -29,18 +32,21 @@ type LogConfigGetter interface {
 // SugaredLogger, using the plugin API log methods.
 type plugin struct {
 	zapcore.LevelEnabler
-	mm         *pluginapi.Client
+	poster     *pluginapi.PostService
+	logger     *pluginapi.LogService
 	confGetter LogConfigGetter
 	fields     map[string]zapcore.Field
 }
 
 func NewPluginLogger(mmapi *pluginapi.Client, confGetter LogConfigGetter) Logger {
+	options := zap.AddCaller()
 	return &logger{
 		SugaredLogger: zap.New(&plugin{
-			mm:           mmapi,
+			poster:       &mmapi.Post,
+			logger:       &mmapi.Log,
 			LevelEnabler: zapcore.DebugLevel,
 			confGetter:   confGetter,
-		}).Sugar(),
+		}, options).Sugar(),
 	}
 }
 
@@ -70,15 +76,24 @@ func (p *plugin) Sync() error {
 }
 
 func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
+	caller := strings.TrimPrefix(e.Caller.FullPath(), "github.com/mattermost/mattermost-plugin-apps/")
+	if e.Caller.Defined {
+		fields = append(fields, zapcore.Field{
+			Key:    pluginCallerKey,
+			Type:   zapcore.StringType,
+			String: caller,
+		})
+	}
+
 	p = p.with(fields)
-	w := p.mm.Log.Error
+	w := p.logger.Error
 	switch e.Level {
 	case zapcore.DebugLevel:
-		w = p.mm.Log.Debug
+		w = p.logger.Debug
 	case zapcore.InfoLevel:
-		w = p.mm.Log.Info
+		w = p.logger.Info
 	case zapcore.WarnLevel:
-		w = p.mm.Log.Warn
+		w = p.logger.Warn
 	}
 
 	pairs := []interface{}{}
@@ -103,12 +118,17 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		return nil
 	}
 
-	message := fmt.Sprintf("%s %s: %s", e.Time.Format(time.StampMilli), e.Level.CapitalString(), e.Message)
+	message := fmt.Sprintf("%s %s (%s): %s\n", e.Time.Format(time.StampMilli), e.Level.CapitalString(), caller, e.Message)
 
 	if logconf.IncludeJSON {
 		ccJSON := map[string]any{}
 		for i := 0; i < len(pairs); i += 2 {
-			ccJSON[pairs[i].(string)] = pairs[i+1]
+			key := pairs[i].(string)
+
+			// The caller is logged in message
+			if key != pluginCallerKey {
+				ccJSON[key] = pairs[i+1]
+			}
 		}
 		if len(ccJSON) > 0 {
 			message += JSONBlock(ccJSON)
@@ -120,8 +140,9 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		UserId:    logconf.BotUserID,
 		Message:   message,
 	}
-	if err := p.mm.Post.CreatePost(logPost); err != nil {
-		p.mm.Log.Error("failed to post log message", "err", err.Error())
+	if err := p.poster.CreatePost(logPost); err != nil {
+		// Log directly to avoid loop
+		p.logger.Error("failed to post log message", "err", err.Error())
 	}
 
 	return nil
