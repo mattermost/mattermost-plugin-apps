@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 const pingAppTimeout = 1 * time.Second
@@ -56,7 +57,7 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App,
 }
 
 func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, reachable map[apps.AppID]bool) {
-	all := p.store.App.AsMap()
+	all := p.store.App.AsMap(store.AllApps)
 	if len(all) == 0 {
 		return nil, nil
 	}
@@ -66,13 +67,21 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 	defer close(reachableCh)
 	for _, app := range all {
 		go func(a apps.App) {
-			var response apps.AppID
-			if !a.Disabled {
+			var reachable bool
+
+			if a.DeployType == apps.DeployBuiltin {
+				// Builtin apps are always rechable
+				reachable = true
+			} else if !a.Disabled {
 				if p.pingApp(ctx, &a) {
-					response = a.AppID
+					reachable = true
 				}
 			}
-			reachableCh <- response
+			if reachable {
+				reachableCh <- a.AppID
+			} else {
+				reachableCh <- ""
+			}
 		}(app)
 	}
 
@@ -96,16 +105,7 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 }
 
 func (p *Proxy) GetInstalledApps() []apps.App {
-	all := p.store.App.AsMap()
-	installed := []apps.App{}
-	for _, app := range all {
-		installed = append(installed, app)
-	}
-	// Sort result alphabetically, by display name.
-	sort.SliceStable(installed, func(i, j int) bool {
-		return strings.ToLower(installed[i].DisplayName) < strings.ToLower(installed[j].DisplayName)
-	})
-	return installed
+	return p.store.App.AsList(store.AllApps)
 }
 
 func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
