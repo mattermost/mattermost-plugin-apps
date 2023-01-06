@@ -39,7 +39,7 @@ func newEchoApp() *goapp.App {
 	return goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       echoID,
-			Version:     "v1.1.0",
+			Version:     "v1.2.0",
 			DisplayName: "Echos call requests as text/json",
 			Icon:        "icon.png",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
