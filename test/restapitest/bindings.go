@@ -29,7 +29,7 @@ func newBindingsApp(_ *Helper, appID apps.AppID, bindExpand *apps.Expand, bindin
 	app.App = goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       appID,
-			Version:     "v1.0.0",
+			Version:     "v1.2.0",
 			DisplayName: "Returns bindings",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 		},

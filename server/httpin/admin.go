@@ -3,6 +3,7 @@ package httpin
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -155,7 +156,7 @@ func (s *Service) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.R
 
 func (s *Service) GetMarketplace(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	filter := req.URL.Query().Get("filter")
-	includePlugins := req.URL.Query().Get("include_plugins") != ""
+	includePlugins, _ := strconv.ParseBool(req.URL.Query().Get("include_plugins"))
 
 	result := s.Proxy.GetListedApps(filter, includePlugins)
 	_ = httputils.WriteJSON(w, result)

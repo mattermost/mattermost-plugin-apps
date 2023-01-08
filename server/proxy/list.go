@@ -117,10 +117,6 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 			continue
 		}
 
-		if !includePluginApps && m.Contains(apps.DeployPlugin) {
-			continue
-		}
-
 		marketApp := apps.ListedApp{
 			Manifest: m,
 		}
@@ -130,6 +126,19 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 		}
 
 		app, _ := p.store.App.Get(m.AppID)
+
+		if !includePluginApps {
+			// Filter out if installed as plugin
+			if app != nil && app.DeployType == apps.DeployPlugin {
+				continue
+			}
+
+			// Filter out if not installed and only deployable as plugin
+			if app == nil && len(m.DeployTypes()) == 1 && m.DeployTypes()[0] == apps.DeployPlugin {
+				continue
+			}
+		}
+
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled
