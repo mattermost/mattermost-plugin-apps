@@ -153,3 +153,29 @@ func TestCachedStore(t *testing.T) {
 			`{"Data":[{"k":"1","h":"a74d512a5bc25ef815367c51c2bfa7535d1d73079fd9909f4a7d2ef4d256ff22"},{"k":"3","h":"d0b3bd259bb16568511cc24e41411895c16a58a579f00d9c8638b724c39824d0"}]}`)
 	})
 }
+
+func TestStoredIndexCompareTo(t *testing.T) {
+	before := StoredIndex[int]{
+		Data: []IndexEntry[int]{
+			{Key: "key1", ValueHash: "hash1", data: 1},
+			{Key: "key2", ValueHash: "hash2", data: 2},
+			{Key: "key3", ValueHash: "hash3", data: 3},
+		},
+	}
+	after := StoredIndex[int]{
+		Data: []IndexEntry[int]{
+			{Key: "key1", ValueHash: "hash1", data: 1},
+			{Key: "key3", ValueHash: "hash5", data: 5},
+			{Key: "key4", ValueHash: "hash4", data: 3},
+		},
+	}
+
+	change, remove := before.compareTo(after)
+	require.Equal(t, []IndexEntry[int]{
+		{Key: "key2", ValueHash: "hash2", data: 2},
+	}, remove)
+	require.Equal(t, []IndexEntry[int]{
+		{Key: "key3", ValueHash: "hash5", data: 5},
+		{Key: "key4", ValueHash: "hash4", data: 3},
+	}, change)
+}

@@ -56,7 +56,9 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	includePluginApps := creq.BoolValue("plugin-apps")
 
 	listed := a.proxy.GetListedApps("", includePluginApps)
+	r.Log.Debugf("<>/<> list 1: %v", listed)
 	installed, reachable := a.proxy.PingInstalledApps(r.Ctx())
+	r.Log.Debugf("<>/<> list 2: %v %v", installed, reachable)
 
 	// All of this information is non sensitive.
 	// Checks for the user's permissions might be needed in the future.

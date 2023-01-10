@@ -120,6 +120,7 @@ func (s *Service) Init(api plugin.API, confService config.Service, httpOut httpo
 }
 
 func (s *Service) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) error {
+	s.conf.NewBaseLogger().Debugw("<>/<> OnPluginClusterEvent", "event", ev)
 	if ev.Id != CachedStoreEventID {
 		return nil
 	}
@@ -129,6 +130,7 @@ func (s *Service) OnPluginClusterEvent(c *plugin.Context, ev model.PluginCluster
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
 	}
+	s.conf.NewBaseLogger().Debugw("<>/<> OnPluginClusterEvent 2", "decoded event", event)
 
 	if event.StoreName == AppStoreName {
 		return s.appStore.cache.processClusterEvent(event)

@@ -59,8 +59,8 @@ type CachedStore[T any] struct {
 	papi   plugin.API
 
 	// internal
-	cache        *sync.Map // of *IndexEntry[T]
-	persistMutex *cluster.Mutex
+	cache   *sync.Map // of *IndexEntry[T]
+	kvMutex *cluster.Mutex
 }
 
 func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client, logger utils.Logger) (*CachedStore[T], error) {
@@ -77,8 +77,9 @@ func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make a new cached store %s", s.name)
 	}
-	s.persistMutex = mutex
+	s.kvMutex = mutex
 
+	s.logger.Debugf("initializing CachedStore %s", s.name)
 	_, err = s.syncFromKV(false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync a new cached store %s from KV", s.name)
@@ -114,18 +115,21 @@ func (s *CachedStore[T]) Get(key string) (result T, ok bool) {
 	return entry.data, true
 }
 
-func (s *CachedStore[T]) withRollbacks(r *incoming.Request, updatef func(prevIndex StoredIndex[T]) (rollbacks []func(), err error)) (err error) {
-	s.persistMutex.Lock()
-	defer s.persistMutex.Unlock()
+func (s *CachedStore[T]) update(r *incoming.Request, updatef func(prevIndex StoredIndex[T]) (rollbacks []func(), err error)) (err error) {
+	s.kvMutex.Lock()
+	defer s.kvMutex.Unlock()
 
+	s.logger.Debugf("<>/<> CachedStore.update 1: %s", s.name)
 	prevIndex, err := s.syncFromKV(true)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync cached store %s", s.name)
 	}
 
+	s.logger.Debugf("<>/<> CachedStore.update 2: %s - updating the store", s.name)
 	rollbacks, err := updatef(prevIndex)
 	if err != nil {
 		for i := len(rollbacks) - 1; i >= 0; i-- {
+			s.logger.Debugf("<>/<> CachedStore.rollback: %s %v", s.name, i)
 			rollbacks[i]()
 		}
 	}
@@ -133,7 +137,7 @@ func (s *CachedStore[T]) withRollbacks(r *incoming.Request, updatef func(prevInd
 }
 
 func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err error) {
-	return s.withRollbacks(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+	return s.update(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		hash := jsonHash(value)
 		prevEntry, ok := s.get(key)
 		if ok && prevEntry.ValueHash == hash {
@@ -177,7 +181,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 }
 
 func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
-	return s.withRollbacks(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+	return s.update(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		prevEntry, ok := s.get(key)
 		if !ok {
 			return rollbacks, errors.Wrap(utils.ErrNotFound, key)
@@ -267,31 +271,37 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 	var nilIndex StoredIndex[T]
 	index := StoredIndex[T]{}
 	err = s.mmapi.KV.Get(s.indexKey(), &index)
+	s.logger.Debugf("CachedStore.synchFromKV %s: KV index %v %v", s.name, index, err)
 	if err != nil {
 		return nilIndex, err
 	}
 	prevPersistedIndex = index
 
 	cachedIndex := s.Index().Stored()
+	s.logger.Debugf("CachedStore.synchFromKV %s: cached index %v", s.name, cachedIndex)
 	if cachedIndex.hash() != prevPersistedIndex.hash() {
-		add, change, remove := cachedIndex.compareTo(prevPersistedIndex)
+		change, remove := cachedIndex.compareTo(prevPersistedIndex)
+		s.logger.Debugf("CachedStore.synchFromKV %s: changed: %v, removed: %v", s.name, change, remove)
 		if logWarnings {
-			s.logger.Warnf("stale cache for %s, rebuilding. extra keys: %v, missing keys:%v, different values for keys:%v", s.name, remove, add, change)
+			s.logger.Warnf("stale cache for %s, rebuilding. removing keys: %v, updating keys:%v", s.name, remove, change)
 		}
 
 		for _, entry := range remove {
 			s.logger.Debugf("CachedStore.synchFromKV %s: key %s in cache but no longer in index, deleting", s.name, entry.Key)
 			s.cache.Delete(entry.Key)
 		}
-		for _, entry := range append(add, change...) {
+		for _, entry := range change {
 			entry.data, err = s.getItem(entry.Key)
 			if err != nil {
 				return nilIndex, err
 			}
+
 			storableClone := entry
 			s.logger.Debugf("CachedStore.synchFromKV %s: loaded missing or stale key %s", s.name, entry.Key)
 			s.cache.Store(entry.Key, &storableClone)
 		}
+	} else {
+		s.logger.Debugf("CachedStore.synchFromKV %s: cache is up to date", s.name)
 	}
 
 	return prevPersistedIndex, nil
@@ -326,6 +336,7 @@ func (s *CachedStore[T]) deleteItem(key string) error {
 func (s *CachedStore[T]) getItem(key string) (T, error) {
 	var v T
 	err := s.mmapi.KV.Get(s.itemKey(key), &v)
+	s.logger.With("value", v).Debugf("CachedStore.synchFromKV %s: loaded item from KV %s %s", s.name, key, s.itemKey(key))
 	return v, err
 }
 
@@ -357,7 +368,7 @@ func (index StoredIndex[T]) hash() string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (add, change, remove []IndexEntry[T]) {
+func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (change, remove []IndexEntry[T]) {
 	otherData := other.Data
 	if otherData == nil {
 		otherData = []IndexEntry[T]{}
@@ -371,14 +382,14 @@ func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (add, change, remov
 	for {
 		switch {
 		case i >= len(indexData):
-			return append(add, otherData[o:]...), change, remove
+			return append(change, otherData[o:]...), remove
 		case o >= len(otherData):
-			return add, change, append(remove, indexData[i:]...)
+			return change, append(remove, indexData[i:]...)
 		case indexData[i].Key < otherData[o].Key:
 			remove = append(remove, indexData[i])
 			i++
 		case indexData[i].Key > otherData[o].Key:
-			add = append(add, otherData[o])
+			change = append(change, otherData[o])
 			o++
 		default:
 			if indexData[i].ValueHash != otherData[o].ValueHash {

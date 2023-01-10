@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-plugin-apps
 
-go 1.18
+go 1.19
 
 // replace github.com/mattermost/mattermost-server/v6 => ../mattermost-server
 
