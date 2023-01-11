@@ -63,7 +63,6 @@ func TestCachedStore(t *testing.T) {
 					require.Equal(t, "test", event.StoreName)
 					require.Equal(t, id, event.Key)
 					require.Equal(t, data, event.Data)
-					require.NotEmpty(t, event.SentAt)
 
 					opts, ok := args[1].(model.PluginClusterEventSendOptions)
 					require.True(t, ok)
@@ -111,7 +110,6 @@ func TestCachedStore(t *testing.T) {
 					require.Equal(t, CachedStoreDeleteMethod, event.Method)
 					require.Equal(t, "test", event.StoreName)
 					require.Equal(t, id, event.Key)
-					require.NotEmpty(t, event.SentAt)
 
 					opts, ok := args[1].(model.PluginClusterEventSendOptions)
 					require.True(t, ok)

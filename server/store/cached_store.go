@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
@@ -31,12 +30,11 @@ const (
 )
 
 type cachedStoreEvent[T any] struct {
-	Key       string    `json:"key"`
-	Method    string    `json:"method"`
-	SentAt    time.Time `json:"sent_at"`
-	StoreName string    `json:"name"`
-
-	Data T `json:"data,omitempty"`
+	Data      T      `json:"data,omitempty"`
+	IndexHash string `json:"index_hash,omitempty"`
+	Key       string `json:"key"`
+	Method    string `json:"method"`
+	StoreName string `json:"name"`
 }
 
 type IndexEntry[T any] struct {
@@ -119,17 +117,14 @@ func (s *CachedStore[T]) update(r *incoming.Request, updatef func(prevIndex Stor
 	s.kvMutex.Lock()
 	defer s.kvMutex.Unlock()
 
-	s.logger.Debugf("<>/<> CachedStore.update 1: %s", s.name)
 	prevIndex, err := s.syncFromKV(true)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync cached store %s", s.name)
 	}
 
-	s.logger.Debugf("<>/<> CachedStore.update 2: %s - updating the store", s.name)
 	rollbacks, err := updatef(prevIndex)
 	if err != nil {
 		for i := len(rollbacks) - 1; i >= 0; i-- {
-			s.logger.Debugf("<>/<> CachedStore.rollback: %s %v", s.name, i)
 			rollbacks[i]()
 		}
 	}
@@ -138,9 +133,10 @@ func (s *CachedStore[T]) update(r *incoming.Request, updatef func(prevIndex Stor
 
 func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err error) {
 	return s.update(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
-		hash := jsonHash(value)
+		valueHash := jsonHash(value)
 		prevEntry, ok := s.get(key)
-		if ok && prevEntry.ValueHash == hash {
+		if ok && prevEntry.ValueHash == valueHash {
+			r.Log.Debugf("CachedStore.Put: %s: %s: no change", s.name, key)
 			return rollbacks, nil
 		}
 
@@ -148,6 +144,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		if err != nil {
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store item %s to %s", key, s.name)
 		}
+		r.Log.Debugf("CachedStore.Put: %s: %s: persisted to KV", s.name, key)
 		rollbacks = append(rollbacks, func() {
 			if prevEntry != nil {
 				_ = s.persistItem(key, prevEntry.data)
@@ -159,7 +156,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		newIndex := s.Index()
 		newEntry := IndexEntry[T]{
 			Key:       key,
-			ValueHash: hash,
+			ValueHash: valueHash,
 			data:      value,
 		}
 		newIndex[key] = &newEntry
@@ -168,6 +165,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 			r.Log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store index to %s", s.name)
 		}
+		r.Log.Debugf("CachedStore.Put: %s: index persisted to KV", s.name)
 		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevIndex) })
 
 		if err = s.notifyPut(key, value); err != nil {
@@ -240,8 +238,6 @@ func (s *CachedStore[T]) notifyDelete(key string) error {
 }
 
 func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
-	s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
-
 	switch event.Method {
 	case CachedStorePutMethod:
 		s.cache.Store(event.Key, &IndexEntry[T]{
@@ -254,6 +250,14 @@ func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
 		s.cache.Delete(event.Key)
 	}
 
+	if s.Index().Stored().hash() != event.IndexHash {
+		s.logger.Debugf("CachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
+		if _, err := s.syncFromKV(true); err != nil {
+			return err
+		}
+	} else {
+		s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
+	}
 	return nil
 }
 
@@ -262,8 +266,8 @@ func (s *CachedStore[T]) newEvent(method, key string, data T) cachedStoreEvent[T
 		Method:    method,
 		StoreName: s.name,
 		Key:       key,
-		SentAt:    time.Now(),
 		Data:      data,
+		IndexHash: s.Index().Stored().hash(),
 	}
 }
 
@@ -271,17 +275,14 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 	var nilIndex StoredIndex[T]
 	index := StoredIndex[T]{}
 	err = s.mmapi.KV.Get(s.indexKey(), &index)
-	s.logger.Debugf("CachedStore.synchFromKV %s: KV index %v %v", s.name, index, err)
 	if err != nil {
 		return nilIndex, err
 	}
 	prevPersistedIndex = index
 
 	cachedIndex := s.Index().Stored()
-	s.logger.Debugf("CachedStore.synchFromKV %s: cached index %v", s.name, cachedIndex)
 	if cachedIndex.hash() != prevPersistedIndex.hash() {
 		change, remove := cachedIndex.compareTo(prevPersistedIndex)
-		s.logger.Debugf("CachedStore.synchFromKV %s: changed: %v, removed: %v", s.name, change, remove)
 		if logWarnings {
 			s.logger.Warnf("stale cache for %s, rebuilding. removing keys: %v, updating keys:%v", s.name, remove, change)
 		}
