@@ -16,12 +16,12 @@ import (
 
 type FakeEncrypter struct {}
 
-func (*FakeEncrypter) Encrypt(text string) (string, error) {
+func (*FakeEncrypter) Encrypt(text []byte) (string, error) {
 	return "qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ==", nil
 }
 
-func (*FakeEncrypter) Decrypt(text string) (string, error) {
-	return `{"Test1":"test-1","Test2":"test-2"}`, nil
+func (*FakeEncrypter) Decrypt(text string) ([]byte, error) {
+	return []byte(`{"Test1":"test-1","Test2":"test-2"}`), nil
 }
 
 func TestCreateOAuth2State(t *testing.T) {
@@ -87,7 +87,7 @@ func TestOAuth2User(t *testing.T) {
 	entity := Entity{"test-1", "test-2"}
 	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
-	dataEncrypted, err := s.encrypter.Encrypt("anything")
+	dataEncrypted, err := s.encrypter.Encrypt([]byte("anything"))
 	assert.NoError(t, err)
 
 	// CreateState

@@ -72,7 +72,7 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 		return err
 	}
 
-	dataEncrypted, err := s.encrypter.Encrypt(string(data))
+	dataEncrypted, err := s.encrypter.Encrypt(data)
 	if err != nil {
 		return err
 	}
@@ -101,5 +101,5 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 		return nil, err
 	}
 
-	return []byte(dataDecrypted), nil
+	return dataDecrypted, nil
 }

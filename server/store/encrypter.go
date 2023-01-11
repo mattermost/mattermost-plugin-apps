@@ -12,8 +12,8 @@ import (
 )
 
 type Encrypter interface {
-	Encrypt(text string) (string, error)
-	Decrypt(text string) (string, error)
+	Encrypt(text []byte) (string, error)
+	Decrypt(text string) ([]byte, error)
 }
 
 type StoreEncrypter struct {
@@ -39,13 +39,13 @@ func (s *StoreEncrypter) pad(src []byte) []byte {
 	return append(src, padtext...)
 }
 
-func (s *StoreEncrypter) Encrypt(text string) (string, error) {
+func (s *StoreEncrypter) Encrypt(text []byte) (string, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return "", errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
-	msg := s.pad([]byte(text))
+	msg := s.pad(text)
 	ciphertext := make([]byte, aes.BlockSize+len(msg))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -58,19 +58,19 @@ func (s *StoreEncrypter) Encrypt(text string) (string, error) {
 	return finalMsg, nil
 }
 
-func (s *StoreEncrypter) Decrypt(text string) (string, error) {
+func (s *StoreEncrypter) Decrypt(text string) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
-		return "", errors.Wrap(err, "could not create a cipher block, check key")
+		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
 	decodedMsg, err := base64.URLEncoding.DecodeString(text)
 	if err != nil {
-		return "", errors.Wrap(err, "could not decode the message")
+		return nil, errors.Wrap(err, "could not decode the message")
 	}
 
 	if (len(decodedMsg) % aes.BlockSize) != 0 {
-		return "", errors.New("blocksize must be multiple of decoded message length")
+		return nil, errors.New("blocksize must be multiple of decoded message length")
 	}
 
 	iv := decodedMsg[:aes.BlockSize]
@@ -81,8 +81,8 @@ func (s *StoreEncrypter) Decrypt(text string) (string, error) {
 
 	unpadMsg, err := s.unpad(msg)
 	if err != nil {
-		return "", errors.Wrap(err, "unpad error, check key")
+		return nil, errors.Wrap(err, "unpad error, check key")
 	}
 
-	return string(unpadMsg), nil
+	return unpadMsg, nil
 }

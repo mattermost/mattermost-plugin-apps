@@ -10,19 +10,19 @@ func TestEncrypterEncode(t *testing.T) {
 
 	for _, tc := range []struct {
 		name          string
-		message       string
+		message       []byte
 		expectedError string
 		key           []byte
 	}{
 		{
 			name:          "The key is not valid",
-			message:       "",
+			message:		nil,
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:           []byte("invalid"),
 		},
 		{
 			name:          "The message is encrypted",
-			message:       `{"Test1":"test-1","Test2":"test-2"}`,
+			message:       []byte(`{"Test1":"test-1","Test2":"test-2"}`),
 			expectedError: "",
 			key:           []byte("asuperstrong32bitpasswordgohere!"),
 		},
@@ -79,7 +79,7 @@ func TestEncrypterDecrypt(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err.Error())
 			} else {
-				assert.Equal(t, tc.expected, decryptedMessage)
+				assert.Equal(t, tc.expected, string(decryptedMessage))
 			}
 
 		})
