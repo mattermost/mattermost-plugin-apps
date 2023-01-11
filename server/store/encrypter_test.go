@@ -10,31 +10,21 @@ func TestEncrypterEncode(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		message       string
-		expected      string
 		expectedError string
 		key           []byte
 	}{
 		{
 			name:          "The key is not valid",
 			message:       "",
-			expected:      "",
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:           []byte("invalid"),
 		},
-		// {
-		// 	name:          "The key is valid but we couldn't decrypt the message",
-		// 	message:       "",
-		// 	expected:      "",
-		// 	expectedError: "",
-		// 	key:           []byte("invalid"),
-		// },
-		// {
-		// 	name:          "",
-		// 	message:       "",
-		// 	expected:      "",
-		// 	expectedError: "",
-		// 	key:           []byte("invalid"),
-		// },
+		{
+			name:          "The message is encrypted",
+			message:       "my message",
+			expectedError: "",
+			key:           []byte("asuperstrong32bitpasswordgohere!"),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			encrypter := &StoreEncrypter{key: tc.key}
@@ -43,9 +33,9 @@ func TestEncrypterEncode(t *testing.T) {
 
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err.Error())
+			} else {
+				assert.NotEmpty(t, encryptedItem)
 			}
-
-			assert.Equal(t, tc.expected, encryptedItem)
 		})
 	}
 }
@@ -65,20 +55,20 @@ func TestEncrypterDecrypt(t *testing.T) {
 			expectedError:    "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:              []byte("invalid"),
 		},
-		// {
-		// 	name:             "The key is valid but we couldn't decrypt the message",
-		// 	messageEncrypted: "",
-		// 	expected:         "",
-		// 	expectedError:    "",
-		// 	key:              []byte("invalid"),
-		// },
-		// {
-		// 	name:             "",
-		// 	messageEncrypted: "",
-		// 	expected:         "",
-		// 	expectedError:    "",
-		// 	key:              []byte("invalid"),
-		// },
+		{
+			name:             "The key is valid but the message stored is invalid",
+			messageEncrypted: "AAAAAAAAAAAA",
+			expected:         "",
+			expectedError:    "blocksize must be multiple of decoded message length",
+			key:              []byte("asuperstrong32bitpasswordgohere!"),
+		},
+		{
+			name:             "The key is valid and the message decoded",
+			messageEncrypted: "vA52EEUP_LCVGGzAvsKTiU_MZBCDXwssHIg5ZxK0KeA=",
+			expected:         "my message",
+			expectedError:    "",
+			key:              []byte("asuperstrong32bitpasswordgohere!"),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			encrypter := &StoreEncrypter{key: tc.key}
@@ -87,9 +77,10 @@ func TestEncrypterDecrypt(t *testing.T) {
 
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err.Error())
+			} else {
+				assert.Equal(t, tc.expected, decryptedMessage)
 			}
 
-			assert.Equal(t, tc.expected, decryptedMessage)
 		})
 	}
 }
