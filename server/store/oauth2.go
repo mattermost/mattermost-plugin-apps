@@ -25,7 +25,7 @@ type OAuth2Store interface {
 
 type oauth2Store struct {
 	*Service
-	encrypter *StoreEncrypter
+	encrypter Encrypter
 }
 
 var _ OAuth2Store = (*oauth2Store)(nil)

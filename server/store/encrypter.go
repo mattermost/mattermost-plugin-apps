@@ -11,9 +11,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Encrypter interface {
+	Encrypt(text string) (string, error)
+	Decrypt(text string) (string, error)
+}
+
 type StoreEncrypter struct {
 	key []byte
 }
+
+var _ Encrypter = (*StoreEncrypter)(nil)
 
 func (s *StoreEncrypter) unpad(src []byte) ([]byte, error) {
 	length := len(src)
