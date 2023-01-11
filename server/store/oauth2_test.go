@@ -1,9 +1,11 @@
 package store
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -11,6 +13,16 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
+
+type FakeEncrypter struct {}
+
+func (*FakeEncrypter) Encrypt(text string) (string, error) {
+	return "qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ==", nil
+}
+
+func (*FakeEncrypter) Decrypt(text string) (string, error) {
+	return `{"Test1":"test-1","Test2":"test-2"}`, nil
+}
 
 func TestCreateOAuth2State(t *testing.T) {
 	stateRE := `[A-Za-z0-9-_]+\.[A-Za-z0-9]`
@@ -58,34 +70,38 @@ func TestCreateOAuth2State(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// func TestOAuth2User(t *testing.T) {
-// 	userID := "userIDis26bytes12345678910"
-// 	conf, api := config.NewTestService(nil)
-// 	s := oauth2Store{
-// 		Service: &Service{
-// 			conf: conf,
-// 		},
-// 		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
-// 	}
+func TestOAuth2User(t *testing.T) {
+	userID := "userIDis26bytes12345678910"
+	conf, api := config.NewTestService(nil)
 
-// 	type Entity struct {
-// 		Test1, Test2 string
-// 	}
-// 	entity := Entity{"test-1", "test-2"}
-// 	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
-// 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
-// 	// CreateState
-// 	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
-// 	err := s.SaveUser("some_app_id", userID, data)
-// 	require.NoError(t, err)
+	s := oauth2Store{
+		Service: &Service{
+			conf: conf,
+		},
+		encrypter: &FakeEncrypter{},
+	}
 
-// 	api.On("KVGet", key).Return(data, nil).Once()
+	type Entity struct {
+		Test1, Test2 string
+	}
+	entity := Entity{"test-1", "test-2"}
+	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
+	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
+	dataEncrypted, err := s.encrypter.Encrypt("anything")
+	assert.NoError(t, err)
 
-// 	rData, err := s.GetUser("some_app_id", userID)
-// 	assert.NoError(t, err)
-// 	assert.NotNil(t, rData)
-// 	var r Entity
-// 	err = json.Unmarshal(rData, &r)
-// 	assert.NoError(t, err)
-// 	require.Equal(t, entity, r)
-// }
+	// CreateState
+	api.On("KVSetWithOptions", key, dataEncrypted, mock.Anything).Return(true, nil).Once()
+	err = s.SaveUser("some_app_id", userID, data)
+	require.NoError(t, err)
+
+	api.On("KVGet", key).Return(dataEncrypted, nil).Once()
+
+	rData, err := s.GetUser("some_app_id", userID)
+	assert.NoError(t, err)
+	assert.NotNil(t, rData)
+	var r Entity
+	err = json.Unmarshal(rData, &r)
+	assert.NoError(t, err)
+	require.Equal(t, entity, r)
+}
