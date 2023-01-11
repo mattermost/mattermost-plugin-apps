@@ -7,6 +7,7 @@ import (
 )
 
 func TestEncrypterEncode(t *testing.T) {
+
 	for _, tc := range []struct {
 		name          string
 		message       string
@@ -21,7 +22,7 @@ func TestEncrypterEncode(t *testing.T) {
 		},
 		{
 			name:          "The message is encrypted",
-			message:       "my message",
+			message:       `{"Test1":"test-1","Test2":"test-2"}`,
 			expectedError: "",
 			key:           []byte("asuperstrong32bitpasswordgohere!"),
 		},
@@ -64,8 +65,8 @@ func TestEncrypterDecrypt(t *testing.T) {
 		},
 		{
 			name:             "The key is valid and the message decoded",
-			messageEncrypted: "vA52EEUP_LCVGGzAvsKTiU_MZBCDXwssHIg5ZxK0KeA=",
-			expected:         "my message",
+			messageEncrypted: "qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ==",
+			expected:         `{"Test1":"test-1","Test2":"test-2"}`,
 			expectedError:    "",
 			key:              []byte("asuperstrong32bitpasswordgohere!"),
 		},
