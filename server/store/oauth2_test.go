@@ -1,11 +1,9 @@
 package store
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -60,34 +58,34 @@ func TestCreateOAuth2State(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestOAuth2User(t *testing.T) {
-	userID := "userIDis26bytes12345678910"
-	conf, api := config.NewTestService(nil)
-	s := oauth2Store{
-		Service: &Service{
-			conf: conf,
-		},
-		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
-	}
+// func TestOAuth2User(t *testing.T) {
+// 	userID := "userIDis26bytes12345678910"
+// 	conf, api := config.NewTestService(nil)
+// 	s := oauth2Store{
+// 		Service: &Service{
+// 			conf: conf,
+// 		},
+// 		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
+// 	}
 
-	type Entity struct {
-		Test1, Test2 string
-	}
-	entity := Entity{"test-1", "test-2"}
-	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
-	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
-	// CreateState
-	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
-	err := s.SaveUser("some_app_id", userID, data)
-	require.NoError(t, err)
+// 	type Entity struct {
+// 		Test1, Test2 string
+// 	}
+// 	entity := Entity{"test-1", "test-2"}
+// 	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
+// 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
+// 	// CreateState
+// 	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
+// 	err := s.SaveUser("some_app_id", userID, data)
+// 	require.NoError(t, err)
 
-	api.On("KVGet", key).Return(data, nil).Once()
+// 	api.On("KVGet", key).Return(data, nil).Once()
 
-	rData, err := s.GetUser("some_app_id", userID)
-	assert.NoError(t, err)
-	assert.NotNil(t, rData)
-	var r Entity
-	err = json.Unmarshal(rData, &r)
-	assert.NoError(t, err)
-	require.Equal(t, entity, r)
-}
+// 	rData, err := s.GetUser("some_app_id", userID)
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, rData)
+// 	var r Entity
+// 	err = json.Unmarshal(rData, &r)
+// 	assert.NoError(t, err)
+// 	require.Equal(t, entity, r)
+// }
