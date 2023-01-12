@@ -121,3 +121,8 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 
 	return data, nil
 }
+
+func (a *AppServices) RevokeOAuth2UserAccesses() error {
+	// TODO
+	return nil
+}
