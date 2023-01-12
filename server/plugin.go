@@ -150,6 +150,8 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 		}
 	}
 
+	// TODO Clean user oauth data
+
 	return nil
 }
 
