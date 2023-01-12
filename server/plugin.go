@@ -135,6 +135,7 @@ func (p *Plugin) OnActivate() (err error) {
 	log.Infof("activated")
 
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
+	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
 
 	return nil
 }
