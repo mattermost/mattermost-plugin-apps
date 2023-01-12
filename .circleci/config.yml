@@ -175,7 +175,7 @@ jobs:
             ls -lsa ..
             cd ..
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout v7.2.0
+            cd mattermost-server && git checkout v7.5.0
       - *restore_go_cache
       - run:
           name: Running REST API tests
