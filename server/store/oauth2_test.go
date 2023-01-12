@@ -91,11 +91,12 @@ func TestOAuth2User(t *testing.T) {
 	assert.NoError(t, err)
 
 	// CreateState
-	api.On("KVSetWithOptions", key, dataEncrypted, mock.Anything).Return(true, nil).Once()
+	api.On("KVSetWithOptions", key, []byte(dataEncrypted), mock.Anything).Return(true, nil).Once()
 	err = s.SaveUser("some_app_id", userID, data)
-	require.NoError(t, err)
 
-	api.On("KVGet", key).Return(dataEncrypted, nil).Once()
+	assert.NoError(t, err)
+
+	api.On("KVGet", key).Return([]byte(dataEncrypted), nil).Once()
 
 	rData, err := s.GetUser("some_app_id", userID)
 	assert.NoError(t, err)
