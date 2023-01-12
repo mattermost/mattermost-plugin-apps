@@ -56,24 +56,30 @@ func pluginctl() error {
 }
 
 func getClient() (*model.Client4, error) {
-	socketPath := os.Getenv("MM_LOCALSOCKETPATH")
-	if socketPath == "" {
-		socketPath = model.LocalModeSocketPath
-	}
+	adminUsername := os.Getenv("MM_ADMIN_USERNAME")
 
-	client, connected := getUnixClient(socketPath)
-	if connected {
-		log.Printf("Connecting using local mode over %s", socketPath)
-		return client, nil
-	}
+	var client *model.Client4
+	var connected bool
 
-	if os.Getenv("MM_LOCALSOCKETPATH") != "" {
-		log.Printf("No socket found at %s for local mode deployment. Attempting to authenticate with credentials.", socketPath)
+	if adminUsername == "" {
+		socketPath := os.Getenv("MM_LOCALSOCKETPATH")
+		if socketPath == "" {
+			socketPath = model.LocalModeSocketPath
+		}
+
+		client, connected = getUnixClient(socketPath)
+		if connected {
+			log.Printf("Connecting using local mode over %s", socketPath)
+			return client, nil
+		}
+
+		if os.Getenv("MM_LOCALSOCKETPATH") != "" {
+			log.Printf("No socket found at %s for local mode deployment. Attempting to authenticate with credentials.", socketPath)
+		}
 	}
 
 	siteURL := os.Getenv("MM_SERVICESETTINGS_SITEURL")
 	adminToken := os.Getenv("MM_ADMIN_TOKEN")
-	adminUsername := os.Getenv("MM_ADMIN_USERNAME")
 	adminPassword := os.Getenv("MM_ADMIN_PASSWORD")
 
 	if siteURL == "" {
