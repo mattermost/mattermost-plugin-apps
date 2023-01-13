@@ -106,3 +106,42 @@ func TestOAuth2User(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, entity, r)
 }
+
+func TestOAuth2UserNotEncryptedData(t *testing.T) {
+	userID := "userIDis26bytes12345678910"
+	conf, api := config.NewTestService(nil)
+
+	s := oauth2Store{
+		Service: &Service{
+			conf: conf,
+		},
+		encrypter: &FakeEncrypter{},
+	}
+
+	type Entity struct {
+		Test1, Test2 string
+	}
+	entity := Entity{"test-1", "test-2"}
+	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
+	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
+
+	// CreateState
+	api.On("KVSetWithOptions", key, data, mock.Anything).Return(true, nil).Once()
+
+	// Avoiding using save user so the data is not encrypted when saving
+	userkey, err := Hashkey(KVUserPrefix, "some_app_id", userID, "", KVUserKey)
+	assert.NoError(t, err)
+	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
+
+	assert.NoError(t, err)
+
+	api.On("KVGet", key).Return(data, nil).Once()
+
+	rData, err := s.GetUser("some_app_id", userID)
+	assert.NoError(t, err)
+	assert.NotNil(t, rData)
+	var r Entity
+	err = json.Unmarshal(rData, &r)
+	assert.NoError(t, err)
+	require.Equal(t, entity, r)
+}

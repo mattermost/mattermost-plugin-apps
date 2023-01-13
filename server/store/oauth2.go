@@ -6,6 +6,7 @@ package store
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -94,6 +95,12 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 	var data []byte
 	if err = s.conf.MattermostAPI().KV.Get(userkey, &data); err != nil {
 		return nil, err
+	}
+
+	// Backwards compatibility, if the data is JSON it means it's not encrypted
+	// so we return it as is
+	if json.Valid(data) {
+		return data, nil
 	}
 
 	dataDecrypted, err := s.encrypter.Decrypt(string(data))
