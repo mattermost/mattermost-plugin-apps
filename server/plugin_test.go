@@ -32,7 +32,7 @@ func TestOnActivate(t *testing.T) {
 		Description: &description,
 	}).Return(nil, nil)
 
-	testAPI.On("SavePluginConfig", map[string]interface{}{"allow_http_apps":true, "developer_mode":false, "encryption_key":"0N1i8yWWiSBpxajz23d8FarT4FZMgigv9hatecOSDw4="}).Return(nil)
+	testAPI.On("SavePluginConfig", map[string]interface{}{"allow_http_apps": true, "developer_mode": false, "encryption_key": "0N1i8yWWiSBpxajz23d8FarT4FZMgigv9hatecOSDw4="}).Return(nil)
 
 	testAPI.On("KVSetWithOptions", "mutex_mmi_bot_ensure", []byte{0x1}, model.PluginKVSetOptions{Atomic: true, OldValue: nil, ExpireInSeconds: 15}).Return(true, nil)
 	testAPI.On("KVSetWithOptions", "mutex_mmi_bot_ensure", []byte(nil), model.PluginKVSetOptions{Atomic: false, OldValue: nil, ExpireInSeconds: 0}).Return(true, nil)
@@ -42,7 +42,6 @@ func TestOnActivate(t *testing.T) {
 	testAPI.On("SetProfileImage", "the_bot_id", mock.AnythingOfType("[]uint8")).Return(nil)
 
 	testAPI.On("GetPluginConfig").Return(map[string]any{})
-
 	listenAddress := "localhost:8065"
 	siteURL := "http://" + listenAddress + "/subpath"
 	testAPI.On("GetConfig").Return(&model.Config{
