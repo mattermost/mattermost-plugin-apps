@@ -103,7 +103,7 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 		return data, nil
 	}
 
-	dataDecrypted, err := s.encrypter.Decrypt(string(data))
+	dataDecrypted, err := s.encrypter.Decrypt(data)
 	if err != nil {
 		return nil, err
 	}

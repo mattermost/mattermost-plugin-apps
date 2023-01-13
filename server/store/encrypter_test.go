@@ -44,28 +44,28 @@ func TestEncrypterEncode(t *testing.T) {
 func TestEncrypterDecrypt(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
-		messageEncrypted string
+		messageEncrypted []byte
 		expected         string
 		expectedError    string
 		key              []byte
 	}{
 		{
 			name:             "The key is not valid",
-			messageEncrypted: "",
+			messageEncrypted: nil,
 			expected:         "",
 			expectedError:    "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:              []byte("invalid"),
 		},
 		{
 			name:             "The key is valid but the message stored is invalid",
-			messageEncrypted: "AAAAAAAAAAAA",
+			messageEncrypted: []byte("AAAAAAAAAAAA"),
 			expected:         "",
 			expectedError:    "blocksize must be multiple of decoded message length",
 			key:              []byte("asuperstrong32bitpasswordgohere!"),
 		},
 		{
 			name:             "The key is valid and the message decoded",
-			messageEncrypted: "qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ==",
+			messageEncrypted: []byte("qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ=="),
 			expected:         `{"Test1":"test-1","Test2":"test-2"}`,
 			expectedError:    "",
 			key:              []byte("asuperstrong32bitpasswordgohere!"),

@@ -16,11 +16,11 @@ import (
 
 type FakeEncrypter struct {}
 
-func (*FakeEncrypter) Encrypt(text []byte) (string, error) {
-	return "qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ==", nil
+func (*FakeEncrypter) Encrypt(message []byte) ([]byte, error) {
+	return []byte("qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ=="), nil
 }
 
-func (*FakeEncrypter) Decrypt(text string) ([]byte, error) {
+func (*FakeEncrypter) Decrypt(message []byte) ([]byte, error) {
 	return []byte(`{"Test1":"test-1","Test2":"test-2"}`), nil
 }
 

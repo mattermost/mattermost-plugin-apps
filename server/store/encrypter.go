@@ -12,8 +12,8 @@ import (
 )
 
 type Encrypter interface {
-	Encrypt(text []byte) (string, error)
-	Decrypt(text string) ([]byte, error)
+	Encrypt(message []byte) ([]byte, error)
+	Decrypt(message []byte) ([]byte, error)
 }
 
 type StoreEncrypter struct {
@@ -39,32 +39,32 @@ func (s *StoreEncrypter) pad(src []byte) []byte {
 	return append(src, padtext...)
 }
 
-func (s *StoreEncrypter) Encrypt(text []byte) (string, error) {
+func (s *StoreEncrypter) Encrypt(text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
-		return "", errors.Wrap(err, "could not create a cipher block, check key")
+		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
 	msg := s.pad(text)
 	ciphertext := make([]byte, aes.BlockSize+len(msg))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", errors.Wrap(err, "readFull was unsuccessful, check buffer size")
+		return nil, errors.Wrap(err, "readFull was unsuccessful, check buffer size")
 	}
 
 	cfb := cipher.NewCFBEncrypter(block, iv)
 	cfb.XORKeyStream(ciphertext[aes.BlockSize:], msg)
 	finalMsg := base64.URLEncoding.EncodeToString(ciphertext)
-	return finalMsg, nil
+	return []byte(finalMsg), nil
 }
 
-func (s *StoreEncrypter) Decrypt(text string) ([]byte, error) {
+func (s *StoreEncrypter) Decrypt(message []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
-	decodedMsg, err := base64.URLEncoding.DecodeString(text)
+	decodedMsg, err := base64.URLEncoding.DecodeString(string(message))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode the message")
 	}
