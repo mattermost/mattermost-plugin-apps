@@ -78,7 +78,7 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 		return err
 	}
 
-	_, err = s.conf.MattermostAPI().KV.Set(userkey, dataEncrypted)
+	_, err = s.conf.MattermostAPI().KV.Set(userkey, []byte(dataEncrypted))
 	return err
 }
 
