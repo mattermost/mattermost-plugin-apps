@@ -39,6 +39,8 @@ type StoredConfig struct {
 	LogChannelID    string `json:"log_channel_id,omitempty"`
 	LogChannelLevel int    `json:"log_channel_level,omitempty"`
 	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
+
+	EncryptionKey []byte `json:"encryption_key,omitempty"`
 }
 
 func unmarshalStoredConfigMap(storedConfigMap map[string]any, mmconf *model.Config, mattermostCloudMode bool) StoredConfig {

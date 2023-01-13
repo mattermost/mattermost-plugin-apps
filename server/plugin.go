@@ -91,6 +91,23 @@ func (p *Plugin) OnActivate() (err error) {
 	conf := p.conf.Get()
 	log.With(conf).Debugw("configured the plugin.")
 
+	// Generate an encryption key on the fly
+	// to encrypt/decrypt oauth user data
+	if conf.StoredConfig.EncryptionKey == nil {
+		sc := conf.StoredConfig
+		encKey, encErr := store.GenerateEncryptionKey()
+
+		if encErr != nil {
+			log.Errorf("Couldn't generate the encryption key")
+		}
+
+		sc.EncryptionKey = encKey
+		encErr = confService.StoreConfig(sc, log)
+		if encErr != nil {
+			log.Errorf("Couldn't store encryption key")
+		}
+	}
+
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 

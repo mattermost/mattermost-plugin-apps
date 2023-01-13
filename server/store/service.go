@@ -84,6 +84,8 @@ type Service struct {
 }
 
 func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
+	conf := confService.Get()
+
 	s := &Service{
 		conf:    confService,
 		httpOut: httpOut,
@@ -91,12 +93,11 @@ func MakeService(confService config.Service, httpOut httpout.Service) (*Service,
 	s.AppKV = &appKVStore{Service: s}
 	s.OAuth2 = &oauth2Store{
 		Service:   s,
-		encrypter: &AESEncrypter{},
+		encrypter: &AESEncrypter{key: conf.EncryptionKey},
 	}
 	s.Subscription = &subscriptionStore{Service: s}
 	s.Session = &sessionStore{Service: s}
 
-	conf := confService.Get()
 	var err error
 	s.App, err = s.makeAppStore(conf)
 	if err != nil {

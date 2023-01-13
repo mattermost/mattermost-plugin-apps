@@ -7,6 +7,9 @@ import (
 )
 
 func TestEncrypterEncode(t *testing.T) {
+	key, err := GenerateEncryptionKey()
+	assert.NoError(t, err)
+
 	for _, tc := range []struct {
 		name          string
 		message       []byte
@@ -18,6 +21,12 @@ func TestEncrypterEncode(t *testing.T) {
 			message:       nil,
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:           []byte("invalid"),
+		},
+		{
+			name:          "The message is encrypted with a generated valid key",
+			message:       []byte(`{"Test1":"test-1","Test2":"test-2"}`),
+			expectedError: "",
+			key:           key,
 		},
 		{
 			name:          "The message is encrypted",
