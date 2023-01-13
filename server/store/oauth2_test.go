@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
-type FakeEncrypter struct {}
+type FakeEncrypter struct{}
 
 func (*FakeEncrypter) Encrypt(message []byte) ([]byte, error) {
 	return []byte("qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ=="), nil
@@ -32,7 +32,7 @@ func TestCreateOAuth2State(t *testing.T) {
 		Service: &Service{
 			conf: conf,
 		},
-		encrypter: &StoreEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
+		encrypter: &AESEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
 	}
 
 	// CreateState
@@ -87,16 +87,16 @@ func TestOAuth2User(t *testing.T) {
 	entity := Entity{"test-1", "test-2"}
 	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
-	dataEncrypted, err := s.encrypter.Encrypt([]byte("anything"))
+	dataEncrypted, err := s.encrypter.Encrypt(data)
 	assert.NoError(t, err)
 
 	// CreateState
-	api.On("KVSetWithOptions", key, []byte(dataEncrypted), mock.Anything).Return(true, nil).Once()
+	api.On("KVSetWithOptions", key, dataEncrypted, mock.Anything).Return(true, nil).Once()
 	err = s.SaveUser("some_app_id", userID, data)
 
 	assert.NoError(t, err)
 
-	api.On("KVGet", key).Return([]byte(dataEncrypted), nil).Once()
+	api.On("KVGet", key).Return(dataEncrypted, nil).Once()
 
 	rData, err := s.GetUser("some_app_id", userID)
 	assert.NoError(t, err)

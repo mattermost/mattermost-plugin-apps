@@ -90,8 +90,8 @@ func MakeService(confService config.Service, httpOut httpout.Service) (*Service,
 	}
 	s.AppKV = &appKVStore{Service: s}
 	s.OAuth2 = &oauth2Store{
-		Service: s,
-		encrypter: &StoreEncrypter{},
+		Service:   s,
+		encrypter: &AESEncrypter{},
 	}
 	s.Subscription = &subscriptionStore{Service: s}
 	s.Session = &sessionStore{Service: s}

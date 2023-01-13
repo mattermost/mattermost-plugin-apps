@@ -16,13 +16,13 @@ type Encrypter interface {
 	Decrypt(message []byte) ([]byte, error)
 }
 
-type StoreEncrypter struct {
+type AESEncrypter struct {
 	key []byte
 }
 
-var _ Encrypter = (*StoreEncrypter)(nil)
+var _ Encrypter = (*AESEncrypter)(nil)
 
-func (s *StoreEncrypter) unpad(src []byte) ([]byte, error) {
+func (s *AESEncrypter) unpad(src []byte) ([]byte, error) {
 	length := len(src)
 	unpadding := int(src[length-1])
 
@@ -33,13 +33,13 @@ func (s *StoreEncrypter) unpad(src []byte) ([]byte, error) {
 	return src[:(length - unpadding)], nil
 }
 
-func (s *StoreEncrypter) pad(src []byte) []byte {
+func (s *AESEncrypter) pad(src []byte) []byte {
 	padding := aes.BlockSize - len(src)%aes.BlockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(src, padtext...)
 }
 
-func (s *StoreEncrypter) Encrypt(text []byte) ([]byte, error) {
+func (s *AESEncrypter) Encrypt(text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")
@@ -58,7 +58,7 @@ func (s *StoreEncrypter) Encrypt(text []byte) ([]byte, error) {
 	return []byte(finalMsg), nil
 }
 
-func (s *StoreEncrypter) Decrypt(message []byte) ([]byte, error) {
+func (s *AESEncrypter) Decrypt(message []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")

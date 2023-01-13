@@ -7,7 +7,6 @@ import (
 )
 
 func TestEncrypterEncode(t *testing.T) {
-
 	for _, tc := range []struct {
 		name          string
 		message       []byte
@@ -16,7 +15,7 @@ func TestEncrypterEncode(t *testing.T) {
 	}{
 		{
 			name:          "The key is not valid",
-			message:		nil,
+			message:       nil,
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 7",
 			key:           []byte("invalid"),
 		},
@@ -28,7 +27,7 @@ func TestEncrypterEncode(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			encrypter := &StoreEncrypter{key: tc.key}
+			encrypter := &AESEncrypter{key: tc.key}
 
 			encryptedItem, err := encrypter.Encrypt(tc.message)
 
@@ -72,7 +71,7 @@ func TestEncrypterDecrypt(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			encrypter := &StoreEncrypter{key: tc.key}
+			encrypter := &AESEncrypter{key: tc.key}
 
 			decryptedMessage, err := encrypter.Decrypt(tc.messageEncrypted)
 
@@ -81,7 +80,6 @@ func TestEncrypterDecrypt(t *testing.T) {
 			} else {
 				assert.Equal(t, tc.expected, string(decryptedMessage))
 			}
-
 		})
 	}
 }
