@@ -97,9 +97,9 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 		return nil, err
 	}
 
-	// Backwards compatibility, if the data is JSON it means it's not encrypted
+	// Backwards compatibility, if the data is JSON or empty it means it's not encrypted
 	// so we return it as is
-	if json.Valid(data) {
+	if data == nil || json.Valid(data) {
 		return data, nil
 	}
 
