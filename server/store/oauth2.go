@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/pkg/errors"
 )
 
 type OAuth2Store interface {
@@ -21,6 +22,7 @@ type OAuth2Store interface {
 	ValidateStateOnce(urlState, actingUserID string) error
 	SaveUser(appID apps.AppID, actingUserID string, data []byte) error
 	GetUser(appID apps.AppID, actingUserID string) ([]byte, error)
+	ClearUsers(appID apps.AppID) error
 }
 
 type oauth2Store struct {
@@ -91,4 +93,30 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 	}
 
 	return data, nil
+}
+
+func (s *oauth2Store) ClearUsers(appID apps.AppID) error {
+	for i := 0; ; i++ {
+		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
+		if err != nil {
+			return errors.Wrapf(err, "failed to list keys - page, %d", i)
+		}
+
+		if len(keys) == 0 {
+			break
+		}
+
+		// Clear users
+		for _, key := range keys {
+			userAppID, keyUserID, err := parseSessionKey(key)
+			if err != nil {
+				continue
+			}
+
+			if userAppID == appID {
+				s.SaveUser(appID, keyUserID, nil)
+			}
+		}
+	}
+	return nil
 }

@@ -122,7 +122,6 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 	return data, nil
 }
 
-func (a *AppServices) RevokeOAuth2UserAccesses() error {
-	// TODO
-	return nil
+func (a *AppServices) RevokeOAuth2UserAccesses(appID apps.AppID) error {
+	return a.store.OAuth2.ClearUsers(appID)
 }
