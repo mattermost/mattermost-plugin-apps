@@ -31,6 +31,12 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
+	prevlog := r.Log
+	defer func() {
+		r.Log = prevlog
+	}()
+	r.Log = r.Log.With("app_id", appID, "deploy_type", deployType)
+
 	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
 	if err != nil {
@@ -44,17 +50,22 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return nil, "", err
 	}
 
+	r.Log.Debugf("app install flow: %s can be installed, proceeding", appID)
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
 		}
+		r.Log.Debugf("app install flow: no previous installation detected")
 		app = &apps.App{}
+	} else {
+		r.Log.Debugf("app install flow: previous installation detected")
 	}
 
 	app.DeployType = deployType
 	app.Manifest = *m
 	if app.Disabled {
+		r.Log.Debugf("app install flow: re-enabling previously disabled app")
 		app.Disabled = false
 	}
 	app.GrantedPermissions = m.RequestedPermissions
@@ -67,6 +78,12 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		app.RemoteWebhookAuthType == apps.SecretAuth || app.RemoteWebhookAuthType == "" {
 		app.WebhookSecret = model.NewId()
 	}
+	r.Log.Debugf("app install flow: updated app configuration")
+
+	if !p.pingApp(r.Ctx(), app) {
+		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
+	}
+	r.Log.Debugf("app install flow: app is pingable")
 
 	icon, err := p.getAppIcon(r, app)
 	if err != nil {
@@ -75,25 +92,25 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	if icon != nil {
 		defer icon.Close()
 	}
-
-	if !p.pingApp(r.Ctx(), app) {
-		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
-	}
+	r.Log.Debugf("app install flow: downloaded the app's icon")
 
 	err = p.ensureBot(r, app, icon)
 	if err != nil {
 		return nil, "", err
 	}
+	r.Log.Debugf("app install flow: configured bot account for the app")
 
 	err = p.ensureOAuthApp(r, conf, app, trusted, r.ActingUserID())
 	if err != nil {
 		return nil, "", err
 	}
+	r.Log.Debugf("app install flow: configured OAuth2 account for the app")
 
 	err = p.store.App.Save(r, *app)
 	if err != nil {
 		return nil, "", err
 	}
+	r.Log.Debugf("app install flow: stored updated app configuration")
 
 	message := fmt.Sprintf("Installed app `%s`: %s.", app.AppID, app.DisplayName)
 	if app.OnInstall != nil {
@@ -187,9 +204,19 @@ func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error 
 }
 
 func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) error {
+	username := strings.ToLower(string(app.AppID))
+	err := p.ensureBotNamed(r, app, icon, username)
+	if errors.Cause(err) == utils.ErrAlreadyExists {
+		r.Log.Debugf("app install flow: a user already owns the username %s, trying %s-app", username, username)
+		return p.ensureBotNamed(r, app, icon, username+"-app")
+	}
+	return err
+}
+
+func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reader, username string) error {
 	mm := p.conf.MattermostAPI()
 	bot := &model.Bot{
-		Username:    strings.ToLower(string(app.AppID)),
+		Username:    username,
 		DisplayName: app.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
@@ -202,7 +229,7 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 		}
 	} else {
 		if !user.IsBot {
-			return errors.New("a user already owns the bot username")
+			return utils.NewAlreadyExistsError("a user already owns the bot username %s", bot.Username)
 		}
 
 		// Check if disabled
