@@ -223,26 +223,33 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 
 	user, _ := mm.User.GetByUsername(bot.Username)
 	if user == nil {
+		r.Log.Debugw("app install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
 		err := p.createAndValidateBot(r, bot)
 		if err != nil {
 			return err
 		}
 	} else {
 		if !user.IsBot {
+			r.Log.Debugf("app install flow: user %s exists and is not a bot", bot.Username)
 			return utils.NewAlreadyExistsError("a user already owns the bot username %s", bot.Username)
 		}
 
 		// Check if disabled
 		if user.DeleteAt != 0 {
 			var err error
+			r.Log.Debugf("app install flow: bot user %s was deleted, reactivating", bot.Username)
 			bot, err = mm.Bot.UpdateActive(user.Id, true)
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err := mm.Bot.Get(user.Id, false)
+		// include deleted bots in the request, it appears that UpdateActive
+		// does not propagate instantly. The userID and username remain the
+		// same.
+		_, err := mm.Bot.Get(user.Id, true)
 		if err != nil {
+			r.Log.Debugf("app install flow: failed to get the bot record for user %s (%s): %v; attempting to create a new one...", bot.UserId, bot.Username, err)
 			err = p.createAndValidateBot(r, bot)
 			if err != nil {
 				return err
