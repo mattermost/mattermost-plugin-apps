@@ -15,8 +15,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
@@ -54,15 +52,6 @@ const (
 	// ephemeral state data.
 	KVOAuth2StatePrefix = ".o"
 
-	// KVSubPrefix is used for keys storing subscriptions.
-	KVSubPrefix = "sub."
-
-	// KVInstalledAppPrefix is used to store App records.
-	KVInstalledAppPrefix = "app."
-
-	// KVLocalManifestPrefix is used to store locally-listed manifests.
-	KVLocalManifestPrefix = "man."
-
 	KVTokenPrefix = ".t"
 
 	KVDebugPrefix = ".debug."
@@ -74,54 +63,17 @@ const (
 )
 
 const (
-	AppStoreName = "apps"
+	AppStoreName      = "apps"
+	ManifestStoreName = "manifests"
 )
 
 const (
 	ListKeysPerPage = 1000
 )
 
-type Service struct {
-	App          AppStore
-	Subscription SubscriptionStore
-	Manifest     ManifestStore
-	AppKV        AppKVStore
-	OAuth2       OAuth2Store
-	Session      SessionStore
-
-	appStore *appStore
-
-	conf    config.Service
-	httpOut httpout.Service
-}
-
-func (s *Service) Init(api plugin.API, confService config.Service, httpOut httpout.Service) error {
-	s.conf = confService
-	s.httpOut = httpOut
-
-	s.AppKV = &appKVStore{Service: s}
-	s.OAuth2 = &oauth2Store{Service: s}
-	s.Subscription = &subscriptionStore{Service: s}
-	s.Session = &sessionStore{Service: s}
-
-	conf := confService.Get()
-	var err error
-	s.appStore, err = s.makeAppStore(api)
-	if err != nil {
-		return err
-	}
-	s.App = s.appStore
-
-	s.Manifest, err = s.makeManifestStore(conf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) error {
-	log := s.conf.NewBaseLogger().With("event", ev, "IP", c.IPAddress)
-	log.Debugw("<>/<> OnPluginClusterEvent 1")
+func OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) error {
+	// log := s.Log(s.conf.NewBaseLogger().With("event", ev, "IP", c.IPAddress)
+	// log.Debugw("<>/<> OnPluginClusterEvent 1")
 	if ev.Id != CachedStoreEventID {
 		return nil
 	}
@@ -131,11 +83,11 @@ func (s *Service) OnPluginClusterEvent(c *plugin.Context, ev model.PluginCluster
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
 	}
-	log.Debugw("<>/<> OnPluginClusterEvent 2", "decoded_event", event)
+	// log.Debugw("<>/<> OnPluginClusterEvent 2", "decoded_event", event)
 
-	if event.StoreName == AppStoreName {
-		return s.appStore.cache.processClusterEvent(event)
-	}
+	// if event.StoreName == AppStoreName {
+	// 	return s.appStore.cache.processClusterEvent(event)
+	// }
 	return nil
 }
 
@@ -214,12 +166,12 @@ func ParseHashkey(key string) (globalNamespace string, appID apps.AppID, userID,
 	return string(gns), apps.AppID(strings.TrimSpace(string(a))), string(u), strings.TrimSpace(string(ns)), string(h), nil
 }
 
-func (s *Service) ListHashKeys(
+func ListHashKeys(
 	r *incoming.Request,
 	processf func(key string) error,
 	matchf ...func(prefix string, _ apps.AppID, userID, namespace, idhash string) bool,
 ) error {
-	mm := s.conf.MattermostAPI()
+	mm := r.Config().MattermostAPI()
 	for pageNumber := 0; ; pageNumber++ {
 		keys, err := mm.KV.ListKeys(pageNumber, ListKeysPerPage)
 		if err != nil {
@@ -254,12 +206,12 @@ func (s *Service) ListHashKeys(
 	}
 }
 
-func (s *Service) RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
-	mm := s.conf.MattermostAPI()
-	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
+func RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
+	mm := r.Config().MattermostAPI()
+	if err := ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
-	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
+	if err := ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
 	return nil

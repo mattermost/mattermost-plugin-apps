@@ -34,13 +34,15 @@ type Plugin struct {
 
 	conf config.Service
 
-	store          *store.Service
 	appservices    appservices.Service
 	proxy          proxy.Service
 	sessionService session.Service
+	httpIn         *httpin.Service
+	httpOut        httpout.Service
 
-	httpIn  *httpin.Service
-	httpOut httpout.Service
+	AppStore      *store.AppStore
+	ManifestStore *store.ManifestStore
+	KVStore       *store.KVStore
 
 	telemetryClient mmtelemetry.Client
 	tracker         *telemetry.Telemetry
@@ -94,14 +96,16 @@ func (p *Plugin) OnActivate() (err error) {
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
-	// Initialize persistent storage. Also initialize the app API and the
-	// session services, both need the persisitent store.
-	p.store = &store.Service{}
-	err = p.store.Init(p.API, p.conf, p.httpOut)
+	p.AppStore, err = store.MakeAppStore(p.API, p.conf, builtin.App(conf))
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize persistent store")
+		return errors.Wrap(err, "failed to initialize the app store")
 	}
-	p.store.App.InitBuiltin(builtin.App(conf))
+	p.ManifestStore, err = store.MakeManifestStore(p.API, p.conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the app store")
+	}
+
+	//  Initialize services (API implementations) - session, app services, proxy.
 	p.appservices = appservices.NewService(p.store)
 	p.sessionService = session.NewService(mm, p.store)
 	log.Debugf("initialized API and persistent store")
@@ -177,7 +181,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
-	err = p.conf.Reconfigure(sc, false, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(sc, false, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err
@@ -190,7 +194,9 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	err := p.store.OnPluginClusterEvent(c, ev)
+	// switch ev.Id {
+	// 	case
+	err := OnPluginClusterEvent(c, ev)
 	if err != nil {
 		p.API.LogWarn("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
 	}

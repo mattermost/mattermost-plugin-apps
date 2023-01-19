@@ -30,7 +30,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	}
 
 	appID := r.SourceAppID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.apps.Get(appID)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	}
 
 	app.RemoteOAuth2 = oapp
-	err = a.store.App.Save(r, *app)
+	err = a.apps.Save(r, *app)
 	if err != nil {
 		return err
 	}
@@ -66,9 +66,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 		return utils.NewInvalidError("payload is not valid JSON")
 	}
 
-	appID := r.SourceAppID()
-	actingUserID := r.ActingUserID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.apps.Get(r.SourceAppID())
 	if err != nil {
 		return err
 	}
@@ -76,7 +74,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 		return utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
 
-	oldData, err := a.store.OAuth2.GetUser(appID, actingUserID)
+	oldData, err := a.oauth2.GetUser(r)
 	if err != nil {
 		return err
 	}
@@ -84,12 +82,17 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 		return nil
 	}
 
-	err = a.store.OAuth2.SaveUser(appID, actingUserID, data)
+	err = a.oauth2.SaveUser(r, data)
 	if err != nil {
 		return err
 	}
 
-	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(
+		config.WebSocketEventRefreshBindings,
+		map[string]interface{}{},
+		&model.WebsocketBroadcast{
+			UserId: r.ActingUserID(),
+		})
 	return nil
 }
 
@@ -104,9 +107,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	appID := r.SourceAppID()
-	actingUserID := r.ActingUserID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.apps.Get(r.SourceAppID())
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 		return nil, utils.NewUnauthorizedError("%s is not authorized to use remote OAuth2", app.AppID)
 	}
 
-	data, err := a.store.OAuth2.GetUser(appID, actingUserID)
+	data, err := a.oauth2.GetUser(r)
 	if err != nil && !errors.Is(err, utils.ErrNotFound) {
 		return nil, err
 	}

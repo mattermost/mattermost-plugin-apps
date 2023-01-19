@@ -13,7 +13,7 @@ import (
 
 type TestAppStore map[apps.AppID]apps.App
 
-var _ AppStore = (TestAppStore)(nil)
+var _ Apps = (TestAppStore)(nil)
 
 func (s TestAppStore) InitBuiltin(builtinApps ...apps.App) {
 	for _, app := range builtinApps {

@@ -12,45 +12,34 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-type OAuth2Store interface {
-	CreateState(actingUserID string) (string, error)
-	ValidateStateOnce(urlState, actingUserID string) error
-	SaveUser(appID apps.AppID, actingUserID string, data []byte) error
-	GetUser(appID apps.AppID, actingUserID string) ([]byte, error)
-}
+type OAuth2Store struct{}
 
-type oauth2Store struct {
-	*Service
-}
-
-var _ OAuth2Store = (*oauth2Store)(nil)
-
-func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
+func (s *OAuth2Store) CreateState(r *incoming.Request) (string, error) {
 	// fit the max key size of ~50chars
 	buf := make([]byte, 15)
 	_, _ = rand.Read(buf)
-	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(buf), actingUserID)
-	_, err := s.conf.MattermostAPI().KV.Set(KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
+	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(buf), r.ActingUserID())
+	_, err := r.Config().MattermostAPI().KV.Set(KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
 	return state, nil
 }
 
-func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
+func (s *OAuth2Store) ValidateStateOnce(r *incoming.Request, urlState string) error {
 	ss := strings.Split(urlState, ".")
-	if len(ss) != 2 || ss[1] != actingUserID {
+	if len(ss) != 2 || ss[1] != r.ActingUserID() {
 		return utils.ErrForbidden
 	}
 
 	storedState := ""
 	key := KVOAuth2StatePrefix + urlState
-	err := s.conf.MattermostAPI().KV.Get(key, &storedState)
-	_ = s.conf.MattermostAPI().KV.Delete(key)
+	err := r.Config().MattermostAPI().KV.Get(key, &storedState)
+	_ = r.Config().MattermostAPI().KV.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -61,32 +50,32 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 	return nil
 }
 
-func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byte) error {
-	if appID == "" || actingUserID == "" {
+func (s *OAuth2Store) SaveUser(r *incoming.Request, data []byte) error {
+	if r.SourceAppID() == "" || r.ActingUserID() == "" {
 		return utils.NewInvalidError("app and user IDs must be provided")
 	}
 
-	userkey, err := Hashkey(KVUserPrefix, appID, actingUserID, "", KVUserKey)
+	userkey, err := Hashkey(KVUserPrefix, r.SourceAppID(), r.ActingUserID(), "", KVUserKey)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
+	_, err = r.Config().MattermostAPI().KV.Set(userkey, data)
 	return err
 }
 
-func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, error) {
-	if appID == "" || actingUserID == "" {
+func (s *OAuth2Store) GetUser(r *incoming.Request) ([]byte, error) {
+	if r.SourceAppID() == "" || r.ActingUserID() == "" {
 		return nil, utils.NewInvalidError("app and user IDs must be provided")
 	}
 
-	userkey, err := Hashkey(KVUserPrefix, appID, actingUserID, "", KVUserKey)
+	userkey, err := Hashkey(KVUserPrefix, r.SourceAppID(), r.ActingUserID(), "", KVUserKey)
 	if err != nil {
 		return nil, err
 	}
 
 	var data []byte
-	if err = s.conf.MattermostAPI().KV.Get(userkey, &data); err != nil {
+	if err = r.Config().MattermostAPI().KV.Get(userkey, &data); err != nil {
 		return nil, err
 	}
 

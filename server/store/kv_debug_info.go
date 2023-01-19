@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 type KVDebugAppInfo struct {
@@ -51,12 +51,12 @@ func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
 	return appInfo
 }
 
-func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
+func GetKVDebugInfo(r *incoming.Request) (*KVDebugInfo, error) {
 	info := KVDebugInfo{
 		Apps:                   map[apps.AppID]*KVDebugAppInfo{},
 		CachedStoreCountByName: map[string]int{},
 	}
-	mm := s.conf.MattermostAPI()
+	mm := r.Config().MattermostAPI()
 	for i := 0; ; i++ {
 		keys, err := mm.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
@@ -93,8 +93,8 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 			}
 
 			switch {
-			case strings.HasPrefix(key, KVSubPrefix):
-				info.SubscriptionCount++
+			// case strings.HasPrefix(key, KVSubPrefix):
+			// 	info.SubscriptionCount++
 
 			case strings.HasPrefix(key, KVTokenPrefix):
 				appID, _, err := parseSessionKey(key)
@@ -107,11 +107,11 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 			case strings.HasPrefix(key, KVOAuth2StatePrefix):
 				info.OAuth2StateCount++
 
-			case strings.HasPrefix(key, KVInstalledAppPrefix):
-				info.InstalledAppCount++
+			// case strings.HasPrefix(key, KVInstalledAppPrefix):
+			// 	info.InstalledAppCount++
 
-			case strings.HasPrefix(key, KVLocalManifestPrefix):
-				info.ManifestCount++
+			// case strings.HasPrefix(key, KVLocalManifestPrefix):
+			// 	info.ManifestCount++
 
 			case strings.HasPrefix(key, KVCachedPrefix):
 				name, _, _ := parseCachedStoreKey(key)

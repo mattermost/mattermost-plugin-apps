@@ -22,7 +22,7 @@ func (a *AppServices) KVSet(r *incoming.Request, prefix, id string, data []byte)
 		return false, utils.NewInvalidError("payload is not valid json")
 	}
 
-	return a.store.AppKV.Set(r, prefix, id, data)
+	return a.kv.Set(r, prefix, id, data)
 }
 
 // KVGet returns the stored KV data for a given user and app.
@@ -34,7 +34,7 @@ func (a *AppServices) KVGet(r *incoming.Request, prefix, id string) ([]byte, err
 	); err != nil {
 		return nil, err
 	}
-	data, err := a.store.AppKV.Get(r, prefix, id)
+	data, err := a.kv.Get(r, prefix, id)
 	if err != nil && !errors.Is(err, utils.ErrNotFound) {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (a *AppServices) KVDelete(r *incoming.Request, prefix, id string) error {
 		return err
 	}
 
-	return a.store.AppKV.Delete(r, prefix, id)
+	return a.kv.Delete(r, prefix, id)
 }
 
 func (a *AppServices) KVList(r *incoming.Request, prefix string, processf func(key string) error) error {
@@ -66,15 +66,15 @@ func (a *AppServices) KVList(r *incoming.Request, prefix string, processf func(k
 		return err
 	}
 
-	return a.store.AppKV.List(r, prefix, processf)
+	return a.kv.List(r, prefix, processf)
 }
 
 func (a *AppServices) KVDebugInfo(r *incoming.Request) (*store.KVDebugInfo, error) {
-	return a.store.GetDebugKVInfo(r.Log)
+	return store.GetKVDebugInfo(r)
 }
 
 func (a *AppServices) KVDebugAppInfo(r *incoming.Request, appID apps.AppID) (*store.KVDebugAppInfo, error) {
-	info, err := a.store.GetDebugKVInfo(r.Log)
+	info, err := store.GetKVDebugInfo(r)
 	if err != nil {
 		return nil, err
 	}

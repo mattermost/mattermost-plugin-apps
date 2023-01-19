@@ -34,13 +34,18 @@ type Service interface {
 }
 
 type AppServices struct {
-	store *store.Service
+	apps          store.Apps
+	kv            *store.KVStore
+	oauth2        *store.OAuth2Store
+	subscriptions *store.SubscriptionStore
 }
 
 var _ Service = (*AppServices)(nil)
 
-func NewService(store *store.Service) *AppServices {
+func NewService(appStore store.Apps, kvStore *store.KVStore, oauth2Store *store.OAuth2Store) *AppServices {
 	return &AppServices{
-		store: store,
+		apps:   appStore,
+		kv:     kvStore,
+		oauth2: oauth2Store,
 	}
 }

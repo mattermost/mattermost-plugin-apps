@@ -26,7 +26,7 @@ func TestCachedStore(t *testing.T) {
 
 	api.On("KVGet", ".cached.test-index").Once().
 		Return([]byte(nil), (*model.AppError)(nil))
-	s, err := MakeCachedStore[Test]("test", api, conf.MattermostAPI(), utils.NewTestLogger())
+	s, err := MakeCachedStore[Test]("test", api, conf)
 	require.NoError(t, err)
 
 	r := incoming.NewRequest(conf, nil)

@@ -5,20 +5,9 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-type AppKVStore interface {
-	Set(_ *incoming.Request, prefix, id string, data []byte) (bool, error)
-	Get(_ *incoming.Request, prefix, id string) ([]byte, error)
-	Delete(_ *incoming.Request, prefix, id string) error
-	List(_ *incoming.Request, namespace string, processf func(key string) error) error
-}
+type KVStore struct{}
 
-type appKVStore struct {
-	*Service
-}
-
-var _ AppKVStore = (*appKVStore)(nil)
-
-func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (bool, error) {
+func (s *KVStore) Set(r *incoming.Request, prefix, id string, data []byte) (bool, error) {
 	if r.SourceAppID() == "" || r.ActingUserID() == "" {
 		return false, utils.NewInvalidError("source app ID or user ID missing in the request")
 	}
@@ -27,7 +16,7 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 		return false, err
 	}
 
-	set, err := s.conf.MattermostAPI().KV.Set(key, data)
+	set, err := r.Config().MattermostAPI().KV.Set(key, data)
 	if err != nil {
 		return false, err
 	}
@@ -37,27 +26,27 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 	return set, nil
 }
 
-func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error) {
+func (s *KVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error) {
 	key, err := Hashkey(KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return nil, err
 	}
 
 	var data []byte
-	if err = s.conf.MattermostAPI().KV.Get(key, &data); err != nil {
+	if err = r.Config().MattermostAPI().KV.Get(key, &data); err != nil {
 		return nil, err
 	}
 
 	return data, err
 }
 
-func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
+func (s *KVStore) Delete(r *incoming.Request, prefix, id string) error {
 	key, err := Hashkey(KVAppPrefix, r.SourceAppID(), r.ActingUserID(), prefix, id)
 	if err != nil {
 		return err
 	}
 
-	err = s.conf.MattermostAPI().KV.Delete(key)
+	err = r.Config().MattermostAPI().KV.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -65,8 +54,8 @@ func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
 	return nil
 }
 
-func (s *appKVStore) List(r *incoming.Request, namespace string, processf func(key string) error) error {
-	return s.ListHashKeys(r, processf,
+func (s *KVStore) List(r *incoming.Request, namespace string, processf func(key string) error) error {
+	return ListHashKeys(r, processf,
 		WithPrefix(KVAppPrefix),
 		WithAppID(r.SourceAppID()),
 		WithUserID(r.ActingUserID()),

@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -51,23 +53,21 @@ type Index[T any] map[string]*IndexEntry[T]
 
 type CachedStore[T any] struct {
 	// dependencies
-	name   string
-	logger utils.Logger
-	mmapi  *pluginapi.Client
-	papi   plugin.API
+	name string
+	// logger utils.Logger
+	mmapi *pluginapi.Client
+	papi  plugin.API
 
 	// internal
 	cache   *sync.Map // of *IndexEntry[T]
 	kvMutex *cluster.Mutex
 }
 
-func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client, logger utils.Logger) (*CachedStore[T], error) {
+func MakeCachedStore[T any](name string, api plugin.API, conf config.Service) (*CachedStore[T], error) {
 	s := &CachedStore[T]{
-		name:   name,
-		papi:   api,
-		mmapi:  mmapi,
-		logger: logger,
-
+		name:  name,
+		papi:  api,
+		mmapi: conf.MattermostAPI(),
 		cache: &sync.Map{},
 	}
 
@@ -77,13 +77,19 @@ func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client
 	}
 	s.kvMutex = mutex
 
-	s.logger.Debugf("initializing CachedStore %s", s.name)
-	_, err = s.syncFromKV(false)
+	log := s.Log(conf.NewBaseLogger())
+	log.Debugf("initializing cached store: %s", s.name)
+	_, err = s.syncFromKV(log, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync a new cached store %s from KV", s.name)
 	}
 
 	return s, nil
+}
+
+func (s *CachedStore[T]) Log(log utils.Logger) utils.Logger {
+	hostname, _ := os.Hostname()
+	return log.With("cached_store", s.name, "hostname", hostname)
 }
 
 func (s *CachedStore[T]) Index() Index[T] {
@@ -113,11 +119,11 @@ func (s *CachedStore[T]) Get(key string) (result T, ok bool) {
 	return entry.data, true
 }
 
-func (s *CachedStore[T]) update(r *incoming.Request, updatef func(prevIndex StoredIndex[T]) (rollbacks []func(), err error)) (err error) {
+func (s *CachedStore[T]) update(log utils.Logger, updatef func(prevIndex StoredIndex[T]) (rollbacks []func(), err error)) (err error) {
 	s.kvMutex.Lock()
 	defer s.kvMutex.Unlock()
 
-	prevIndex, err := s.syncFromKV(true)
+	prevIndex, err := s.syncFromKV(log, true)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync cached store %s", s.name)
 	}
@@ -132,11 +138,12 @@ func (s *CachedStore[T]) update(r *incoming.Request, updatef func(prevIndex Stor
 }
 
 func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err error) {
-	return s.update(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+	log := s.Log(r.Log)
+	return s.update(log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		valueHash := jsonHash(value)
 		prevEntry, ok := s.get(key)
 		if ok && prevEntry.ValueHash == valueHash {
-			r.Log.Debugf("CachedStore.Put: %s: %s: no change", s.name, key)
+			log.Debugf("CachedStore.Put: %s: %s: no change", s.name, key)
 			return rollbacks, nil
 		}
 
@@ -144,7 +151,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		if err != nil {
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store item %s to %s", key, s.name)
 		}
-		r.Log.Debugf("CachedStore.Put: %s: %s: persisted to KV", s.name, key)
+		log.Debugf("CachedStore.Put: %s: %s: persisted to KV", s.name, key)
 		rollbacks = append(rollbacks, func() {
 			if prevEntry != nil {
 				_ = s.persistItem(key, prevEntry.data)
@@ -162,14 +169,14 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		newIndex[key] = &newEntry
 
 		if err = s.persistIndex(newIndex.Stored()); err != nil {
-			r.Log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
+			log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store index to %s", s.name)
 		}
-		r.Log.Debugf("CachedStore.Put: %s: index persisted to KV", s.name)
+		log.Debugf("CachedStore.Put: %s: index persisted to KV", s.name)
 		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevIndex) })
 
 		if err = s.notifyPut(key, value); err != nil {
-			r.Log.WithError(err).Warnf("CachedStore.Put: failed to send cluster message, rolling back to previous state")
+			log.WithError(err).Warnf("CachedStore.Put: failed to send cluster message, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
@@ -179,7 +186,8 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 }
 
 func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
-	return s.update(r, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+	log := s.Log(r.Log)
+	return s.update(log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		prevEntry, ok := s.get(key)
 		if !ok {
 			return rollbacks, errors.Wrap(utils.ErrNotFound, key)
@@ -194,7 +202,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 
 		err = s.deleteItem(key)
 		if err != nil {
-			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to remove the item from KV, rolling back to previous state")
+			log.WithError(err).Warnf("CachedStore.Delete: failed to remove the item from KV, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to store index to %s", s.name)
 		}
 		if prevEntry != nil {
@@ -202,7 +210,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 		}
 
 		if err = s.notifyDelete(key); err != nil {
-			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to send cluster message, rolling back to previous state")
+			log.WithError(err).Warnf("CachedStore.Delete: failed to send cluster message, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
@@ -237,29 +245,29 @@ func (s *CachedStore[T]) notifyDelete(key string) error {
 	)
 }
 
-func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
-	switch event.Method {
-	case CachedStorePutMethod:
-		s.cache.Store(event.Key, &IndexEntry[T]{
-			Key:       event.Key,
-			ValueHash: jsonHash(event.Data),
-			data:      event.Data,
-		})
+// func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
+// 	switch event.Method {
+// 	case CachedStorePutMethod:
+// 		s.cache.Store(event.Key, &IndexEntry[T]{
+// 			Key:       event.Key,
+// 			ValueHash: jsonHash(event.Data),
+// 			data:      event.Data,
+// 		})
 
-	case CachedStoreDeleteMethod:
-		s.cache.Delete(event.Key)
-	}
+// 	case CachedStoreDeleteMethod:
+// 		s.cache.Delete(event.Key)
+// 	}
 
-	if s.Index().Stored().hash() != event.IndexHash {
-		s.logger.Debugf("CachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
-		if _, err := s.syncFromKV(true); err != nil {
-			return err
-		}
-	} else {
-		s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
-	}
-	return nil
-}
+// 	if s.Index().Stored().hash() != event.IndexHash {
+// 		s.logger.Debugf("CachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
+// 		if _, err := s.syncFromKV(true); err != nil {
+// 			return err
+// 		}
+// 	} else {
+// 		s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
+// 	}
+// 	return nil
+// }
 
 func (s *CachedStore[T]) newEvent(method, key string, data T) cachedStoreEvent[T] {
 	return cachedStoreEvent[T]{
@@ -271,7 +279,10 @@ func (s *CachedStore[T]) newEvent(method, key string, data T) cachedStoreEvent[T
 	}
 }
 
-func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex StoredIndex[T], err error) {
+func (s *CachedStore[T]) syncFromKV(log utils.Logger, logWarnings bool) (prevPersistedIndex StoredIndex[T], err error) {
+	if log == nil {
+		log = utils.NilLogger{}
+	}
 	var nilIndex StoredIndex[T]
 	index := StoredIndex[T]{}
 	err = s.mmapi.KV.Get(s.indexKey(), &index)
@@ -283,26 +294,26 @@ func (s *CachedStore[T]) syncFromKV(logWarnings bool) (prevPersistedIndex Stored
 	cachedIndex := s.Index().Stored()
 	if cachedIndex.hash() != prevPersistedIndex.hash() {
 		change, remove := cachedIndex.compareTo(prevPersistedIndex)
-		if logWarnings {
-			s.logger.Warnf("stale cache for %s, rebuilding. removing keys: %v, updating keys:%v", s.name, remove, change)
+		if logWarnings && (len(change) > 0 || len(remove) > 0) {
+			log.Warnf("stale cache for %s, rebuilding. removing keys: %v, updating keys:%v", s.name, remove, change)
 		}
 
 		for _, entry := range remove {
-			s.logger.Debugf("CachedStore.synchFromKV %s: key %s in cache but no longer in index, deleting", s.name, entry.Key)
+			log.Debugf("CachedStore.synchFromKV %s: key %s in cache but no longer in index, deleting", s.name, entry.Key)
 			s.cache.Delete(entry.Key)
 		}
 		for _, entry := range change {
-			entry.data, err = s.getItem(entry.Key)
+			entry.data, err = s.getItem(entry.Key, log)
 			if err != nil {
 				return nilIndex, err
 			}
 
 			storableClone := entry
-			s.logger.Debugf("CachedStore.synchFromKV %s: loaded missing or stale key %s", s.name, entry.Key)
+			log.Debugf("CachedStore.synchFromKV %s: loaded missing or stale key %s", s.name, entry.Key)
 			s.cache.Store(entry.Key, &storableClone)
 		}
 	} else {
-		s.logger.Debugf("CachedStore.synchFromKV %s: cache is up to date", s.name)
+		log.Debugf("CachedStore.synchFromKV %s: cache is up to date", s.name)
 	}
 
 	return prevPersistedIndex, nil
@@ -334,10 +345,10 @@ func (s *CachedStore[T]) deleteItem(key string) error {
 	return s.mmapi.KV.Delete(s.itemKey(key))
 }
 
-func (s *CachedStore[T]) getItem(key string) (T, error) {
+func (s *CachedStore[T]) getItem(key string, log utils.Logger) (T, error) {
 	var v T
 	err := s.mmapi.KV.Get(s.itemKey(key), &v)
-	s.logger.With("value", v).Debugf("CachedStore.synchFromKV %s: loaded item from KV %s %s", s.name, key, s.itemKey(key))
+	log.With("value", v).Debugf("CachedStore.synchFromKV %s: loaded item from KV %s %s", s.name, key, s.itemKey(key))
 	return v, err
 }
 

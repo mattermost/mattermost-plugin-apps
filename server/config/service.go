@@ -137,6 +137,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
 	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
+	conf.PluginHostName, _ = os.Hostname()
 
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if newMattermostConfig.FileSettings.MaxFileSize != nil {

@@ -4,124 +4,53 @@
 package store
 
 import (
-	"strings"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// SubscriptionStore stores the complete (for all apps) list of subscriptions
-// for each "scope", everything in apps.Subscription, but the Call - the
-// subject, and the optional team/channel IDs.
-type SubscriptionStore interface {
-	Get(apps.Event) ([]Subscription, error)
-	List() ([]StoredSubscriptions, error)
-	Save(apps.Event, []Subscription) error
-}
-
 type Subscription struct {
-	Call        apps.Call
+	Call        apps.Call  `json:"call"`
 	AppID       apps.AppID `json:"app_id"`
 	OwnerUserID string     `json:"user_id"`
 }
 
-type StoredSubscriptions struct {
-	Event         apps.Event
-	Subscriptions []Subscription
+type SubscriptionStore struct {
+	cached *CachedStore[[]Subscription]
 }
 
-type subscriptionStore struct {
-	*Service
+func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscription, error) {
+	key := utils.ToJSON(e)
+	if key == "{}" {
+		return nil, errors.New("failed to get subscriptions: invalid empty event")
+	}
+	subs, ok := s.cached.Get(key)
+	if !ok {
+		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", key)
+	}
+	return subs, nil
 }
 
-var _ SubscriptionStore = (*subscriptionStore)(nil)
-
-func subsKey(e apps.Event) (string, error) {
-	idSuffix := ""
-	switch e.Subject {
-	case apps.SubjectUserCreated,
-		apps.SubjectBotJoinedTeam,
-		apps.SubjectBotLeftTeam /*, apps.SubjectBotMentioned */ :
-	// Global subscriptions, no suffix
-
-	case apps.SubjectUserJoinedChannel,
-		apps.SubjectUserLeftChannel /* , apps.SubjectPostCreated */ :
-		idSuffix = "." + e.ChannelID
-
-	case apps.SubjectUserJoinedTeam,
-		apps.SubjectUserLeftTeam,
-		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
-		apps.SubjectChannelCreated:
-		idSuffix = "." + e.TeamID
-	default:
-		return "", errors.Errorf("Unknown subject %s", e.Subject)
-	}
-
-	return KVSubPrefix + string(e.Subject) + idSuffix, nil
-}
-
-func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
-	key, err := subsKey(e)
-	if err != nil {
-		return nil, err
-	}
-
-	stored := &StoredSubscriptions{}
-	err = s.conf.MattermostAPI().KV.Get(key, &stored)
-	if err != nil {
-		return nil, err
-	}
-	if stored == nil {
-		return nil, utils.ErrNotFound
-	}
-	return stored.Subscriptions, nil
-}
-
-func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
-	all := []StoredSubscriptions{}
-	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
+func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Event, error) {
+	var events []apps.Event
+	for eventJSON := range s.cached.Index() {
+		var e apps.Event
+		if err := json.Unmarshal([]byte(eventJSON), &e); err != nil {
+			return nil, err
 		}
-		if len(keys) == 0 {
-			break
-		}
-
-		for _, key := range keys {
-			if !strings.HasPrefix(key, KVSubPrefix) {
-				continue
-			}
-			forKey := StoredSubscriptions{}
-			err := s.conf.MattermostAPI().KV.Get(key, &forKey)
-			if err != nil {
-				return nil, err
-			}
-			if forKey.Event.Subject == "" {
-				continue
-			}
-			all = append(all, forKey)
-		}
+		events = append(events, e)
 	}
-	return all, nil
+	return events, nil
 }
 
-func (s subscriptionStore) Save(e apps.Event, subs []Subscription) error {
-	key, err := subsKey(e)
-	if err != nil {
-		return err
+func (s *SubscriptionStore) Save(r *incoming.Request, e apps.Event, subs []Subscription) error {
+	key := utils.ToJSON(e)
+	if key == "{}" {
+		return errors.New("failed to get subscriptions: invalid empty event")
 	}
-
-	if len(subs) == 0 {
-		return s.conf.MattermostAPI().KV.Delete(key)
-	}
-
-	_, err = s.conf.MattermostAPI().KV.Set(key, StoredSubscriptions{
-		Event:         e,
-		Subscriptions: subs,
-	})
-	return err
+	return s.cached.Put(r, key, subs)
 }

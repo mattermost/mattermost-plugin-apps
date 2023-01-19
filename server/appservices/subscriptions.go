@@ -44,7 +44,7 @@ func (a *AppServices) Subscribe(r *incoming.Request, sub apps.Subscription) erro
 		AppID:       r.SourceAppID(),
 		OwnerUserID: ownerID,
 	})
-	err = a.store.Subscription.Save(sub.Event, all)
+	err = a.subscriptions.Save(r, sub.Event, all)
 	if err != nil {
 		return err
 	}
@@ -80,16 +80,20 @@ func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscrip
 		return nil, err
 	}
 
-	allStored, err := a.store.Subscription.List()
+	events, err := a.subscriptions.ListSubscribedEvents(r)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, stored := range allStored {
-		for _, s := range stored.Subscriptions {
+	for _, event := range events {
+		var subs []store.Subscription
+		subs, err = a.subscriptions.Get(r, event)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get subscriptions for "+event.String())
+		}
+		for _, s := range subs {
 			if s.AppID == r.SourceAppID() && s.OwnerUserID == r.ActingUserID() {
 				out = append(out, apps.Subscription{
-					Event: stored.Event,
+					Event: event,
 					Call:  s.Call,
 				})
 			}
@@ -107,23 +111,28 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 		return err
 	}
 
-	allStored, err := a.store.Subscription.List()
+	events, err := a.subscriptions.ListSubscribedEvents(r)
 	if err != nil {
 		return err
 	}
 
 	n := 0
-	for _, stored := range allStored {
+	for _, event := range events {
+		var subs []store.Subscription
 		modified := []store.Subscription{}
-		for _, s := range stored.Subscriptions {
-			if s.AppID == appID {
+		subs, err = a.subscriptions.Get(r, event)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get subscriptions for "+event.String())
+		}
+		for _, sub := range subs {
+			if sub.AppID == appID {
 				n++
 			} else {
-				modified = append(modified, s)
+				modified = append(modified, sub)
 			}
 		}
 		if len(modified) < len(stored.Subscriptions) {
-			err = a.store.Subscription.Save(stored.Event, modified)
+			err = a.subscriptions.Save(stored.Event, modified)
 			if err != nil {
 				return err
 			}

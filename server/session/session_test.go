@@ -24,20 +24,16 @@ import (
 
 func setUpBasics(ctrl *gomock.Controller) (session.Service,
 	*incoming.Request,
-	*mock_store.MockSessionStore,
-	store.AppStore,
+	*mock_store.MockSessions,
+	store.Apps,
 	*plugintest.API) {
 	appStore := store.TestAppStore{}
-	sessionStore := mock_store.NewMockSessionStore(ctrl)
-	mockStore := &store.Service{
-		App:     appStore,
-		Session: sessionStore,
-	}
+	sessionStore := mock_store.NewMockSessions(ctrl)
 
 	conf, api := config.NewTestService(nil)
 	r := incoming.NewRequest(conf, nil)
 
-	sessionService := session.NewService(conf.MattermostAPI(), mockStore)
+	sessionService := session.NewService(conf.MattermostAPI(), sessionStore, appStore)
 
 	return sessionService, r, sessionStore, appStore, api
 }
@@ -62,7 +58,7 @@ func TestGetOrCreate(t *testing.T) {
 		}
 
 		session.AddProp(model.SessionPropMattermostAppID, string(appID))
-		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(session, nil)
+		sessionStore.EXPECT().Get(gomock.Any(), appID, userID).Times(1).Return(session, nil)
 
 		r = r.WithDestination(appID)
 		rSession, err := sessionService.GetOrCreate(r, userID)
@@ -89,9 +85,9 @@ func TestGetOrCreate(t *testing.T) {
 		api.On("ExtendSessionExpiry", s.Id, mock.Anything).Once().Return(nil)
 
 		s.AddProp(model.SessionPropMattermostAppID, string(appID))
-		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(&s, nil)
+		sessionStore.EXPECT().Get(gomock.Any(), appID, userID).Times(1).Return(&s, nil)
 
-		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
+		sessionStore.EXPECT().Save(gomock.Any(), appID, userID, gomock.Any()).Times(1).Return(nil)
 
 		r = r.WithDestination(appID)
 		rSession, err := sessionService.GetOrCreate(r, userID)
@@ -147,8 +143,8 @@ func TestGetOrCreate(t *testing.T) {
 			assert.Equal(t, newSession, rSession)
 		}).Return(newSession, nil)
 
-		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(nil, utils.ErrNotFound)
-		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
+		sessionStore.EXPECT().Get(gomock.Any(), appID, userID).Times(1).Return(nil, utils.ErrNotFound)
+		sessionStore.EXPECT().Save(gomock.Any(), appID, userID, gomock.Any()).Times(1).Return(nil)
 		_ = appStore.Save(nil, apps.App{
 			Manifest: apps.Manifest{
 				AppID: appID,
@@ -203,9 +199,9 @@ func TestRevokeSessionsForApp(t *testing.T) {
 	session2.AddProp(model.SessionPropMattermostAppID, string(appID))
 	sessions := []*model.Session{session1, session2}
 
-	sessionStore.EXPECT().ListForApp(appID).Return(sessions, nil).Times(1)
-	sessionStore.EXPECT().Delete(appID, userID1).Return(nil).Times(1)
-	sessionStore.EXPECT().Delete(appID, userID2).Return(nil).Times(1)
+	sessionStore.EXPECT().ListForApp(gomock.Any(), appID).Return(sessions, nil).Times(1)
+	sessionStore.EXPECT().Delete(gomock.Any(), appID, userID1).Return(nil).Times(1)
+	sessionStore.EXPECT().Delete(gomock.Any(), appID, userID2).Return(nil).Times(1)
 
 	api.On("RevokeSession", sessions[0].Id).Return(nil).Once()
 	api.On("RevokeSession", sessions[1].Id).Return(nil).Once()

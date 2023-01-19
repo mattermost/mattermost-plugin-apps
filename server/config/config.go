@@ -64,6 +64,7 @@ type Config struct {
 	MattermostLocalURL string
 	PluginURL          string
 	PluginURLPath      string
+	PluginHostName     string
 
 	// Maximum size of incoming remote webhook messages
 	MaxWebhookSize int
