@@ -23,7 +23,7 @@ func newUninstallApp(th *Helper) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       uninstallID,
-			Version:     "v1.1.0",
+			Version:     "v1.2.0",
 			DisplayName: "This app creates data to verify that UninstallApp cleans it up",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			OnInstall:   apps.NewCall("/install").ExpandActingUserClient(),

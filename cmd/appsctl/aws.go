@@ -38,6 +38,9 @@ func init() {
 	// clean
 	awsCmd.AddCommand(awsCleanCmd)
 
+	// validate
+	awsCmd.AddCommand(awsValidateCmd)
+
 	// test
 	awsCmd.AddCommand(awsTestCmd)
 	awsTestCmd.AddCommand(awsTestLambdaCmd)
@@ -108,6 +111,22 @@ var awsCleanCmd = &cobra.Command{
 	},
 }
 
+var awsValidateCmd = &cobra.Command{
+	Use:   "validate",
+	Short: "Validate that a given bundle is correctly build",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		deployData, err := upaws.GetDeployDataFromFile(args[0], log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Bundle is valid!")
+		log.Debugf("Deploy data: %s\n", utils.Pretty(deployData))
+
+		return nil
+	},
+}
+
 var awsDeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy a Mattermost app to AWS (Lambda, S3)",
@@ -162,7 +181,7 @@ func helloServerless() apps.App {
 		DeployType: apps.DeployAWSLambda,
 		Manifest: apps.Manifest{
 			AppID:   "hello-serverless",
-			Version: "v1.1.0",
+			Version: "v1.2.0",
 			Deploy: apps.Deploy{
 				AWSLambda: &apps.AWSLambda{
 					Functions: []apps.AWSLambdaFunction{
