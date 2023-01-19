@@ -172,7 +172,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	var sc config.StoredConfig
 	err := mm.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
-		p.API.LogInfo("failed to load updated configuration", "error", err.Error())
+		p.API.LogWarn("failed to load updated configuration", "error", err.Error())
 		return err
 	}
 
