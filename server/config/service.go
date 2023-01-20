@@ -32,8 +32,9 @@ type Service interface {
 	I18N() *i18n.Bundle
 	Telemetry() *telemetry.Telemetry
 	NewBaseLogger() utils.Logger
+	SystemDefaultFlags() (devMode, allowHTTPApps bool)
 
-	Reconfigure(map[string]any, utils.Logger, ...Configurable) error
+	Reconfigure(_ StoredConfig, verbose bool, _ ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
 }
 
@@ -51,7 +52,7 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
+func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) (Service, utils.Logger, error) {
 	s := &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
@@ -61,18 +62,22 @@ func NewService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID s
 		telemetry:      telemetry,
 	}
 
-	cm := s.mm.Configuration.GetPluginConfig()
-
-	clone, err := s.newInitializedConfig(cm, log)
+	sc := StoredConfig{}
+	err := s.mm.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	clone, log, err := s.newInitializedConfig(sc)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	s.lock.Lock()
 	s.conf = clone
 	s.lock.Unlock()
 
-	return s, nil
+	return s, log, nil
 }
 
 func (s *service) newConfig() Config {
@@ -85,18 +90,25 @@ func (s *service) newConfig() Config {
 	}
 }
 
-func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log utils.Logger) (*Config, error) {
+func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, utils.Logger, error) {
+	log := s.NewBaseLogger()
 	conf := s.newConfig()
+	conf.StoredConfig = newStoredConfig
 	newMattermostConfig := s.reloadMattermostConfig()
-	license := s.getMattermostLicense(log)
+
+	if conf.DeveloperModeOverride != nil {
+		conf.DeveloperMode = *conf.DeveloperModeOverride
+	} else {
+		conf.DeveloperMode = pluginapi.IsConfiguredForDevelopment(newMattermostConfig)
+	}
 
 	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
-		return nil, errors.New("plugin requires Mattermost Site URL to be set")
+		return nil, nil, errors.New("plugin requires Mattermost Site URL to be set")
 	}
 	u, err := url.Parse(*mattermostSiteURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid SiteURL in config")
+		return nil, nil, errors.Wrap(err, "invalid SiteURL in config")
 	}
 
 	var localURL string
@@ -107,11 +119,11 @@ func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log 
 		// Avoid the reverse proxy by using the local port
 		listenAddress := newMattermostConfig.ServiceSettings.ListenAddress
 		if listenAddress == nil {
-			return nil, errors.New("plugin requires Mattermost Listen Address to be set")
+			return nil, nil, errors.New("plugin requires Mattermost Listen Address to be set")
 		}
 		host, port, err := net.SplitHostPort(*listenAddress)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if host == "" {
@@ -136,6 +148,7 @@ func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log 
 	conf.AWSRegion = upaws.Region()
 	conf.AWSS3Bucket = upaws.S3BucketName()
 
+	license := s.getMattermostLicense(log)
 	conf.MattermostCloudMode = license != nil &&
 		license.Features != nil &&
 		license.Features.Cloud != nil &&
@@ -159,14 +172,17 @@ func (s *service) newInitializedConfig(newStoredMap map[string]interface{}, log 
 			conf.AWSSecretKey = legacySecretKey
 		}
 		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
-			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
+			return nil, nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
 	}
 
-	sc := unmarshalStoredConfigMap(newStoredMap, newMattermostConfig, conf.MattermostCloudMode)
-	conf.StoredConfig = sc
+	if conf.AllowHTTPAppsOverride != nil {
+		conf.AllowHTTPApps = *conf.AllowHTTPAppsOverride
+	} else {
+		conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
+	}
 
-	return &conf, nil
+	return &conf, log, nil
 }
 
 func (s *service) Get() Config {
@@ -230,12 +246,9 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 	return license
 }
 
-func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, services ...Configurable) error {
-	if log == nil {
-		log = utils.NilLogger{}
-	}
-
-	clone, err := s.newInitializedConfig(storedConfigMap, log)
+func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, services ...Configurable) error {
+	// Use the old settings to log the processing of the new config.
+	clone, log, err := s.newInitializedConfig(newStoredConfig)
 	if err != nil {
 		return err
 	}
@@ -244,6 +257,9 @@ func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, 
 	s.conf = clone
 	s.lock.Unlock()
 
+	if !verbose {
+		log = utils.NilLogger{}
+	}
 	for _, service := range services {
 		if err := service.Configure(*clone, log); err != nil {
 			return errors.Wrapf(err, "failed to configure service %T", service)
@@ -254,13 +270,10 @@ func (s *service) Reconfigure(storedConfigMap map[string]any, log utils.Logger, 
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
-		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperMode, sc.AllowHTTPApps)
-
-	var storedConfigMap map[string]any
-	utils.Remarshal(&storedConfigMap, sc)
+		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
-	err := s.Reconfigure(storedConfigMap, utils.NilLogger{})
+	err := s.Reconfigure(sc, false)
 	if err != nil {
 		return err
 	}
@@ -273,7 +286,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 }
 
 func (s *service) NewBaseLogger() utils.Logger {
-	if pluginapi.IsConfiguredForDevelopment(s.mattermostConfig) {
+	if s.Get().DeveloperMode {
 		return utils.NewPluginLogger(s.mm, s)
 	}
 	return utils.NewPluginLogger(s.mm, nil)
@@ -288,4 +301,14 @@ func (s *service) GetLogConfig() utils.LogConfig {
 		BotUserID:   s.botUserID,
 		IncludeJSON: conf.LogChannelJSON,
 	}
+}
+
+func (s *service) SystemDefaultFlags() (bool, bool) {
+	s.lock.RLock()
+	mmconf := s.mattermostConfig
+	s.lock.RUnlock()
+
+	devMode := pluginapi.IsConfiguredForDevelopment(mmconf)
+	allowHTTP := devMode || !s.Get().MattermostCloudMode
+	return devMode, allowHTTP
 }

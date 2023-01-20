@@ -36,28 +36,32 @@ const (
 	FieldAppID     = "app"
 	FieldNamespace = "namespace"
 
-	fAction         = "action"
-	fAllowHTTPApps  = "allow_http_apps"
-	fBase64         = "base64"
-	fBase64Key      = "base64_key"
-	fChannel        = "channel"
-	fConsent        = "consent"
-	fCount          = "count"
-	fCreate         = "create"
-	fCurrentValue   = "current_value"
-	fDeployType     = "deploy_type"
-	fDeveloperMode  = "developer_mode"
-	fForce          = "force"
-	fHashkeys       = "hashkeys"
-	fID             = "id"
-	fIncludePlugins = "include_plugins"
-	fJSON           = "json"
-	fLevel          = "level"
-	fNewValue       = "new_value"
-	fPage           = "page"
-	fSecret         = "secret"
-	fSessionID      = "session_id"
-	fURL            = "url"
+	fAction             = "action"
+	fAllowHTTPApps      = "allow_http_apps"
+	fBase64             = "base64"
+	fBase64Key          = "base64_key"
+	fChannel            = "channel"
+	fChannelDisplayName = "channel_display_name"
+	fChannelName        = "channel_name"
+	fConsent            = "consent"
+	fCount              = "count"
+	fCreate             = "create"
+	fCurrentValue       = "current_value"
+	fDeployType         = "deploy_type"
+	fDeveloperMode      = "developer_mode"
+	fForce              = "force"
+	fHashkeys           = "hashkeys"
+	fID                 = "id"
+	fIncludePlugins     = "include_plugins"
+	fJSON               = "json"
+	fLevel              = "level"
+	fLog                = "log"
+	fNewValue           = "new_value"
+	fOverrides          = "overrides"
+	fPage               = "page"
+	fSecret             = "secret"
+	fSessionID          = "session_id"
+	fURL                = "url"
 )
 
 const (
@@ -79,14 +83,14 @@ const (
 	pDisable              = "/disable"
 	pEnable               = "/enable"
 	pInfo                 = "/info"
-	pInstallConsent       = "/install-consent"
+	pInstallConsentModal  = "/install-consent"
 	pInstallConsentSource = "/install-consent/form"
 	pInstallHTTP          = "/install-http"
 	pInstallListed        = "/install-listed"
 	pList                 = "/list"
+	pSettingsModalSave    = "/settings/save"
+	pSettingsModalSource  = "/settings/form"
 	pUninstall            = "/uninstall"
-	pSettings             = "/settings"
-	pSettingsSave         = "/settings/save"
 )
 
 const (
@@ -123,34 +127,33 @@ func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appserv
 		// Commands available to all users.
 		pInfo: a.info,
 
-		// Commands that require sysadmin.
-		pDebugLogs:            requireAdmin(a.debugLogs),
-		pDebugBindings:        requireAdmin(a.debugBindings),
+		// Commands that require sysadmin. Some are also used in the REST API
+		// tests.
 		PathDebugClean:        requireAdmin(a.debugClean),
+		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
+		PathDebugKVList:       requireAdmin(a.debugKVList),
+		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
+		PathDebugStoreList:    requireAdmin(a.debugStoreList),
+		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
+
+		pDebugBindings:        requireAdmin(a.debugBindings),
 		pDebugKVClean:         requireAdmin(a.debugKVClean),
 		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
 		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
-		PathDebugKVInfo:       requireAdmin(a.debugKVInfo),
-		PathDebugKVList:       requireAdmin(a.debugKVList),
-		PathDebugStoreList:    requireAdmin(a.debugStoreList),
-		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
-		PathDebugSessionsList: requireAdmin(a.debugSessionsList),
+		pDebugKVEditModal:     requireAdmin(a.debugKVEdit),
+		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
 		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
 		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
-		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
-		pEnable:               requireAdmin(a.enable),
 		pDisable:              requireAdmin(a.disable),
-		pInstallListed:        requireAdmin(a.installListed),
-		pInstallHTTP:          requireAdmin(a.installHTTP),
-		pList:                 requireAdmin(a.list),
-		pUninstall:            requireAdmin(a.uninstall),
-		pSettings:             requireAdmin(a.settings),
-
-		// Modals.
-		pDebugKVEditModal:     requireAdmin(a.debugKVEditModal),
-		pInstallConsent:       requireAdmin(a.installConsent),
+		pEnable:               requireAdmin(a.enable),
+		pInstallConsentModal:  requireAdmin(a.installConsent),
 		pInstallConsentSource: requireAdmin(a.installConsentForm),
-		pSettingsSave:         requireAdmin(a.settingsSave),
+		pInstallHTTP:          requireAdmin(a.installHTTP),
+		pInstallListed:        requireAdmin(a.installListed),
+		pList:                 requireAdmin(a.list),
+		pSettingsModalSave:    requireAdmin(a.settingsSave),
+		pSettingsModalSource:  requireAdmin(a.settingsForm),
+		pUninstall:            requireAdmin(a.uninstall),
 
 		// Lookups.
 		pLookupAppID:     requireAdmin(a.lookupAppID),

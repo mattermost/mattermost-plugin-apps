@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestOnActivate(t *testing.T) {
@@ -42,6 +41,8 @@ func TestOnActivate(t *testing.T) {
 	testAPI.On("SetProfileImage", "the_bot_id", mock.AnythingOfType("[]uint8")).Return(nil)
 
 	testAPI.On("GetPluginConfig").Return(map[string]any{})
+	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
+
 	listenAddress := "localhost:8065"
 	siteURL := "http://" + listenAddress + "/subpath"
 	testAPI.On("GetConfig").Return(&model.Config{
@@ -85,15 +86,15 @@ func TestOnDeactivate(t *testing.T) {
 		Features:     &model.Features{},
 		SkuShortName: "professional",
 	})
-	testAPI.On("GetPluginConfig").Return(map[string]any{})
+	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
 
 	testAPI.On("GetBundlePath").Return("/", nil)
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	confService, err := config.NewService(mm, manifest, "the_bot_id", nil, i18nBundle, utils.NewTestLogger())
+	var err error
+	p.conf, _, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle)
 	require.NoError(t, err)
-	p.conf = confService
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
