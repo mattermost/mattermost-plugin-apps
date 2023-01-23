@@ -30,7 +30,7 @@ type AppStore interface {
 
 	InitBuiltin(...apps.App)
 
-	Get(apps.AppID) (*apps.App, error)
+	Get(apps.AppID, FilterOpt) (*apps.App, error)
 	AsList(FilterOpt) []apps.App
 	AsMap(FilterOpt) map[apps.AppID]apps.App
 	Save(*incoming.Request, apps.App) error
@@ -107,7 +107,7 @@ func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
 	return nil
 }
 
-func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
+func (s *appStore) Get(appID apps.AppID, filter FilterOpt) (*apps.App, error) {
 	s.mutex.RLock()
 	installed := s.installed
 	builtin := s.builtinInstalled
@@ -117,10 +117,16 @@ func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
 	if ok {
 		return &app, nil
 	}
+
 	app, ok = installed[appID]
 	if ok {
 		return &app, nil
 	}
+
+	if filter == EnabledAppsOnly && app.Disabled {
+		return nil, utils.NewNotFoundError("app %s is disabled", appID)
+	}
+
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 

@@ -31,9 +31,6 @@ type Service interface {
 	StoreOAuth2App(_ *incoming.Request, data []byte) error
 	StoreOAuth2User(_ *incoming.Request, data []byte) error
 	GetOAuth2User(_ *incoming.Request) ([]byte, error)
-
-	// Users
-	RevokeOAuth2UserAccesses() error
 }
 
 type AppServices struct {

@@ -72,7 +72,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		return nil, errors.Wrap(err, "failed to fetch user for new session")
 	}
 
-	app, err := s.store.App.Get(appID)
+	app, err := s.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch app for new session")
 	}

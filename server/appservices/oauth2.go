@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -30,7 +31,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 	}
 
 	appID := r.SourceAppID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 
 	appID := r.SourceAppID()
 	actingUserID := r.ActingUserID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 
 	appID := r.SourceAppID()
 	actingUserID := r.ActingUserID()
-	app, err := a.store.App.Get(appID)
+	app, err := a.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +121,4 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-func (a *AppServices) RevokeOAuth2UserAccesses(appID apps.AppID) error {
-	return a.store.OAuth2.ClearUsers(appID)
 }

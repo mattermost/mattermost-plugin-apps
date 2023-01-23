@@ -29,7 +29,7 @@ func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
 		return nil, err
 	}
 
-	app, err := p.store.App.Get(r.Destination())
+	app, err := p.store.App.Get(r.Destination(), store.EnabledAppsOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
 }
 
 func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App, error) {
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 			marketApp.IconURL = conf.StaticURL(m.AppID, m.Icon)
 		}
 
-		app, _ := p.store.App.Get(m.AppID)
+		app, _ := p.store.App.Get(m.AppID, store.EnabledAppsOnly)
 
 		if !includePluginApps {
 			// Filter out if installed as plugin

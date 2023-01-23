@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
 func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, force bool) (text string, err error) {
@@ -21,7 +22,7 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 	}
 
 	mm := p.conf.MattermostAPI()
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(appID, store.EnabledAppsOnly)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
 	}

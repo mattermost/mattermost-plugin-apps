@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -67,7 +68,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return "", err
 	}
 
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(appID, store.AllApps)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}

@@ -150,8 +150,6 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 		}
 	}
 
-	p.appservices.RevokeOAuth2UserAccesses()
-
 	return nil
 }
 

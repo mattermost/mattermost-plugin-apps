@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -51,7 +52,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 
 	r.Log.Debugf("app install flow: %s can be installed, proceeding", appID)
-	app, err := p.store.App.Get(appID)
+	app, err := p.store.App.Get(appID, store.AllApps)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
