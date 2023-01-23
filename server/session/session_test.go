@@ -149,7 +149,7 @@ func TestGetOrCreate(t *testing.T) {
 
 		sessionStore.EXPECT().Get(appID, userID).Times(1).Return(nil, utils.ErrNotFound)
 		sessionStore.EXPECT().Save(appID, userID, gomock.Any()).Times(1).Return(nil)
-		appStore.EXPECT().Get(appID).Times(1).Return(&apps.App{
+		appStore.EXPECT().Get(appID, store.EnabledAppsOnly).Times(1).Return(&apps.App{
 			MattermostOAuth2: oAuthApp,
 		}, nil)
 

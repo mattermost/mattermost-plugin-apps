@@ -600,7 +600,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 				upstreams[app.Manifest.AppID] = up
-				appStore.EXPECT().Get(app.Manifest.AppID).Return(&app, nil)
+				appStore.EXPECT().Get(app.Manifest.AppID, store.EnabledAppsOnly).Return(&app, nil)
 			}
 
 			proxy := &Proxy{
