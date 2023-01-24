@@ -44,25 +44,25 @@ func TestOnActivate(t *testing.T) {
 	siteURL := "http://" + listenAddress + "/subpath"
 
 	for _, tc := range []struct {
-		name               string
-		enableOAuth bool
+		name         string
+		enableOAuth  bool
 		errorMessage string
-	} {
+	}{
 		{
-			name: "on activate is valid",
-			enableOAuth: true,
+			name:         "on activate is valid",
+			enableOAuth:  true,
 			errorMessage: "",
 		},
 		{
-			name: "on activate fails because oauth2 is not enabled on system settings",
-			enableOAuth: true,
+			name:         "on activate fails because oauth2 is not enabled on system settings",
+			enableOAuth:  true,
 			errorMessage: "",
 		},
 	} {
 		testAPI.On("GetConfig").Return(&model.Config{
 			ServiceSettings: model.ServiceSettings{
-				SiteURL:       &siteURL,
-				ListenAddress: &listenAddress,
+				SiteURL:                    &siteURL,
+				ListenAddress:              &listenAddress,
 				EnableOAuthServiceProvider: &tc.enableOAuth,
 			},
 		})
