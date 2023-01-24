@@ -42,31 +42,52 @@ func TestOnActivate(t *testing.T) {
 
 	listenAddress := "localhost:8065"
 	siteURL := "http://" + listenAddress + "/subpath"
-	enableOAuth := new(bool)
-	*enableOAuth = true
-	testAPI.On("GetConfig").Return(&model.Config{
-		ServiceSettings: model.ServiceSettings{
-			SiteURL:       &siteURL,
-			ListenAddress: &listenAddress,
-			EnableOAuthServiceProvider: enableOAuth,
+
+	for _, tc := range []struct {
+		name               string
+		enableOAuth bool
+		errorMessage string
+	} {
+		{
+			name: "on activate is valid",
+			enableOAuth: true,
+			errorMessage: "",
 		},
-	})
+		{
+			name: "on activate fails because oauth2 is not enabled on system settings",
+			enableOAuth: true,
+			errorMessage: "",
+		},
+	} {
+		testAPI.On("GetConfig").Return(&model.Config{
+			ServiceSettings: model.ServiceSettings{
+				SiteURL:       &siteURL,
+				ListenAddress: &listenAddress,
+				EnableOAuthServiceProvider: &tc.enableOAuth,
+			},
+		})
 
-	testAPI.On("GetLicense").Return(&model.License{
-		Features:     &model.Features{},
-		SkuShortName: "professional",
-	})
+		testAPI.On("GetLicense").Return(&model.License{
+			Features:     &model.Features{},
+			SkuShortName: "professional",
+		})
 
-	expectLog(testAPI, "LogDebug", 15)
-	expectLog(testAPI, "LogInfo", 5)
-	expectLog(testAPI, "LogError", 3)
+		expectLog(testAPI, "LogDebug", 15)
+		expectLog(testAPI, "LogInfo", 5)
+		expectLog(testAPI, "LogError", 3)
 
-	testAPI.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
+		testAPI.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 
-	testAPI.On("PublishWebSocketEvent", "plugin_enabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
+		testAPI.On("PublishWebSocketEvent", "plugin_enabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})
 
-	err := p.OnActivate()
-	require.NoError(t, err)
+		err := p.OnActivate()
+		if tc.errorMessage != "" {
+			require.Error(t, err, tc.errorMessage)
+			continue
+		}
+
+		require.NoError(t, err)
+	}
 }
 
 func TestOnDeactivate(t *testing.T) {
