@@ -210,3 +210,41 @@ func TestRevokeSessionsForApp(t *testing.T) {
 	err := sessionService.RevokeSessionsForApp(r, appID)
 	assert.NoError(t, err)
 }
+
+func TestRevokeSessionsForAllUsers(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	sessionService, r, sessionStore, _, api := setUpBasics(ctrl)
+
+	appID := apps.AppID("foo")
+	userID1 := model.NewId()
+	userID2 := model.NewId()
+
+	session1 := &model.Session{
+		Id:      model.NewId(),
+		UserId:  userID1,
+		IsOAuth: true,
+	}
+	session1.AddProp(model.SessionPropMattermostAppID, string(appID))
+	session2 := &model.Session{
+		Id:      model.NewId(),
+		UserId:  userID2,
+		IsOAuth: true,
+	}
+	session2.AddProp(model.SessionPropMattermostAppID, string(appID))
+	userKeys := []string{session1.Id, session2.Id}
+
+	sessionStore.EXPECT().Delete(appID, userID1).Return(nil).Times(1)
+	sessionStore.EXPECT().Delete(appID, userID2).Return(nil).Times(1)
+	sessionStore.EXPECT().ListForUser(r, userKeys[0]).Return([]*model.Session{session1}, nil).Times(1)
+	sessionStore.EXPECT().ListForUser(r, userKeys[1]).Return([]*model.Session{session2}, nil).Times(1)
+	sessionStore.EXPECT().ListUsersWithSessions(appID).Return(userKeys, nil).Times(1)
+
+	api.On("RevokeSession", session1.Id).Return(nil).Once()
+	api.On("RevokeSession", session2.Id).Return(nil).Once()
+
+	err := sessionService.RevokeSessionsForAllUsers(r, appID)
+	assert.NoError(t, err)
+}
