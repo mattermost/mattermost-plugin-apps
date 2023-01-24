@@ -80,7 +80,7 @@ func (p *Plugin) OnActivate() (err error) {
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	confService, err := config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
+	confService, log, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	if err != nil {
 		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
@@ -153,7 +153,7 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() (err error) {
+func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -169,9 +169,14 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	cm := mm.Configuration.GetPluginConfig()
+	var sc config.StoredConfig
+	err := mm.Configuration.LoadPluginConfiguration(&sc)
+	if err != nil {
+		p.API.LogWarn("failed to load updated configuration", "error", err.Error())
+		return err
+	}
 
-	err = p.conf.Reconfigure(cm, nil, p.store.App, p.store.Manifest, p.proxy)
+	err = p.conf.Reconfigure(sc, false, p.store.App, p.store.Manifest, p.proxy)
 	if err != nil {
 		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err
