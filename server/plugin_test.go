@@ -42,10 +42,13 @@ func TestOnActivate(t *testing.T) {
 
 	listenAddress := "localhost:8065"
 	siteURL := "http://" + listenAddress + "/subpath"
+	enableOAuth := new(bool)
+	*enableOAuth = true
 	testAPI.On("GetConfig").Return(&model.Config{
 		ServiceSettings: model.ServiceSettings{
 			SiteURL:       &siteURL,
 			ListenAddress: &listenAddress,
+			EnableOAuthServiceProvider: enableOAuth,
 		},
 	})
 
