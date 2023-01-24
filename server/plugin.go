@@ -56,6 +56,11 @@ func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	log := utils.NewPluginLogger(mm, nil)
 
+	oauthEnabled := p.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+	if oauthEnabled == nil || !*oauthEnabled {
+		return errors.New("The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to /admin_console/integrations/integration_management and enable it.")
+	}
+
 	// Make sure we have the Bot.
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
 		Username:    config.BotUsername,
