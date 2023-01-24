@@ -96,9 +96,12 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
 
-	// Only clear the store. Existing session will still work until they expire. https://mattermost.atlassian.net/browse/MM-40012
+	err = p.sessionService.RevokeSessionsForAllUsers(r, app.AppID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to delete sessions  for %s", app.AppID)
+	}
 	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
-		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
+		return "", errors.Wrapf(err, "failed to delete sessions  for %s", app.AppID)
 	}
 
 	app.Disabled = true

@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -15,6 +16,7 @@ type SessionStore interface {
 	Get(_ apps.AppID, userID string) (*model.Session, error)
 	ListForApp(apps.AppID) ([]*model.Session, error)
 	ListForUser(_ *incoming.Request, userID string) ([]*model.Session, error)
+	ListUsersWithSessions(apps.AppID) ([]string, error)
 	Save(_ apps.AppID, userID string, session *model.Session) error
 	Delete(_ apps.AppID, userID string) error
 	DeleteAllForApp(*incoming.Request, apps.AppID) error
@@ -142,6 +144,33 @@ func (s sessionStore) ListForApp(appID apps.AppID) ([]*model.Session, error) {
 	}
 
 	return ret, nil
+}
+
+func (s sessionStore) ListUsersWithSessions(appID apps.AppID) ([]string, error) {
+	userKeys := make([]string, 0)
+
+	for i := 0; ; i++ {
+		keys, err := s.listKeysForApp(appID)
+		if err != nil {
+			return nil, err
+		}
+		if len(keys) == 0 {
+			break
+		}
+
+		for _, key := range keys {
+			_, keyUserID, err := parseSessionKey(key)
+			if err != nil {
+				continue
+			}
+
+			if !slices.Contains(userKeys, keyUserID) {
+				userKeys = append(userKeys, keyUserID)
+			}
+		}
+	}
+
+	return userKeys, nil
 }
 
 func (s sessionStore) ListForUser(r *incoming.Request, userID string) ([]*model.Session, error) {

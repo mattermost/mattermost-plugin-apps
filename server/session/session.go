@@ -24,6 +24,7 @@ type Service interface {
 	ListForUser(_ *incoming.Request, userID string) ([]*model.Session, error)
 	RevokeSessionsForApp(*incoming.Request, apps.AppID) error
 	RevokeSessionsForUser(_ *incoming.Request, userID string) error
+	RevokeSessionsForAllUsers(*incoming.Request, apps.AppID) error
 }
 
 var _ Service = (*service)(nil)
@@ -170,6 +171,22 @@ func (s service) RevokeSessionsForApp(r *incoming.Request, appID apps.AppID) err
 	}
 
 	s.revokeSessions(r, sessions)
+
+	return nil
+}
+
+func (s service) RevokeSessionsForAllUsers(r *incoming.Request, appID apps.AppID) error {
+	userKeys, err := s.store.Session.ListUsersWithSessions(appID)
+	if err != nil {
+		return err
+	}
+
+	for _, userKey := range userKeys {
+		err := s.RevokeSessionsForUser(r, userKey)
+		if err != nil {
+			r.Log.WithError(err).Warnw("failed to revoke session for user")
+		}
+	}
 
 	return nil
 }

@@ -21,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.7.2
 	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	golang.org/x/exp v0.0.0-20230118134722-a68e582fa157
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -187,7 +188,7 @@ require (
 	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	google.golang.org/api v0.88.0 // indirect

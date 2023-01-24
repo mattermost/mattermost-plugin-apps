@@ -123,6 +123,21 @@ func (mr *MockSessionStoreMockRecorder) ListForUser(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForUser", reflect.TypeOf((*MockSessionStore)(nil).ListForUser), arg0, arg1)
 }
 
+// ListUsersWithSessions mocks base method.
+func (m *MockSessionStore) ListUsersWithSessions(arg0 apps.AppID) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUsersWithSessions", arg0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUsersWithSessions indicates an expected call of ListUsersWithSessions.
+func (mr *MockSessionStoreMockRecorder) ListUsersWithSessions(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUsersWithSessions", reflect.TypeOf((*MockSessionStore)(nil).ListUsersWithSessions), arg0)
+}
+
 // Save mocks base method.
 func (m *MockSessionStore) Save(arg0 apps.AppID, arg1 string, arg2 *model.Session) error {
 	m.ctrl.T.Helper()
