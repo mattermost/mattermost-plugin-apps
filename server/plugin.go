@@ -58,7 +58,7 @@ func (p *Plugin) OnActivate() (err error) {
 
 	oauthEnabled := p.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
 	if oauthEnabled == nil || !*oauthEnabled {
-		return errors.New("The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to /admin_console/integrations/integration_management and enable it.")
+		return errors.New("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to /admin_console/integrations/integration_management and enable it")
 	}
 
 	// Make sure we have the Bot.
