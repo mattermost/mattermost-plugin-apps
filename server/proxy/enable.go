@@ -98,7 +98,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	err = p.sessionService.RevokeSessionsForAllUsers(r, app.AppID)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to delete sessions  for %s", app.AppID)
+		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 	}
 	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
 		return "", errors.Wrapf(err, "failed to delete sessions  for %s", app.AppID)
