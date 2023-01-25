@@ -12,6 +12,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
+const bindingsFetchTimeout = 5 * time.Second
+
 func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 	out := append([]apps.Binding(nil), bb1...)
 
@@ -58,7 +60,10 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 
 	for i := range allApps {
 		go func(app apps.App) {
-			apprequest := r.WithDestination(app.AppID)
+			ctx, done := context.WithTimeout(r.Ctx(), bindingsFetchTimeout)
+			defer done()
+
+			apprequest := r.WithDestination(app.AppID).WithCtx(ctx)
 			res := result{
 				appID: app.AppID,
 			}
