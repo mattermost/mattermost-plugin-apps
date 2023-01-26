@@ -34,8 +34,11 @@ type Proxy struct {
 
 	builtinUpstreams map[apps.AppID]upstream.Upstream
 
+	appStore          store.Apps
+	manifestStore     *store.ManifestStore
+	subscriptionStore *store.SubscriptionStore
+
 	conf           config.Service
-	store          *store.Service
 	httpOut        httpout.Service
 	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
 	sessionService session.Service
@@ -111,15 +114,26 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
+func NewService(conf config.Service,
+	appStore store.Apps,
+	manifestStore *store.ManifestStore,
+	subscriptionStore *store.SubscriptionStore,
+	mutex *cluster.Mutex,
+	httpOut httpout.Service,
+	session session.Service,
+	appservices appservices.Service,
+) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
-		store:            store,
-		callOnceMutex:    mutex,
-		httpOut:          httpOut,
-		sessionService:   session,
-		appservices:      appservices,
+		appStore:         appStore,
+		manifestStore:    manifestStore,
+		//TODO: <>/<> why sessionStore if have sessionService?
+		subscriptionStore: subscriptionStore,
+		callOnceMutex:     mutex,
+		httpOut:           httpOut,
+		sessionService:    session,
+		appservices:       appservices,
 	}
 }
 
@@ -191,7 +205,6 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
 	p.builtinUpstreams[appID] = up
-	p.store.App.InitBuiltin()
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {

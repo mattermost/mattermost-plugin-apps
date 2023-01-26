@@ -8,7 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/plugin"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -21,6 +24,16 @@ type Subscription struct {
 
 type SubscriptionStore struct {
 	cached *CachedStore[[]Subscription]
+}
+
+func MakeSubscriptionStore(api plugin.API, conf config.Service) (*SubscriptionStore, error) {
+	store, err := MakeCachedStore[[]Subscription](SubscriptionStoreName, api, conf)
+	if err != nil {
+		return nil, err
+	}
+	return &SubscriptionStore{
+		cached: store,
+	}, nil
 }
 
 func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscription, error) {

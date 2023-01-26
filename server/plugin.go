@@ -40,9 +40,12 @@ type Plugin struct {
 	httpIn         *httpin.Service
 	httpOut        httpout.Service
 
-	AppStore      *store.AppStore
-	ManifestStore *store.ManifestStore
-	KVStore       *store.KVStore
+	AppStore          *store.AppStore
+	KVStore           *store.KVStore
+	ManifestStore     *store.ManifestStore
+	OAuth2Store       *store.OAuth2Store
+	SessionStore      *store.SessionStore
+	SubscriptionStore *store.SubscriptionStore
 
 	telemetryClient mmtelemetry.Client
 	tracker         *telemetry.Telemetry
@@ -96,18 +99,26 @@ func (p *Plugin) OnActivate() (err error) {
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
+	// Initialize persistent stores.
 	p.AppStore, err = store.MakeAppStore(p.API, p.conf, builtin.App(conf))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
-	p.ManifestStore, err = store.MakeManifestStore(p.API, p.conf)
+	p.ManifestStore, err = store.MakeManifestStore(p.API, p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
+	p.KVStore = &store.KVStore{}
+	p.OAuth2Store = &store.OAuth2Store{}
+	p.SessionStore = &store.SessionStore{}
+	p.SubscriptionStore, err = store.MakeSubscriptionStore(p.API, p.conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize the subscription store")
+	}
 
 	//  Initialize services (API implementations) - session, app services, proxy.
-	p.appservices = appservices.NewService(p.store)
-	p.sessionService = session.NewService(mm, p.store)
+	p.appservices = appservices.NewService(p.AppStore, p.KVStore, p.OAuth2Store)
+	p.sessionService = session.NewService(mm, p.AppStore, p.SessionStore)
 	log.Debugf("initialized API and persistent store")
 
 	// Initialize the app proxy.
@@ -115,7 +126,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
+	p.proxy = proxy.NewService(p.conf, p.AppStore, p.ManifestStore, p.SubscriptionStore, mutex, p.httpOut, p.sessionService, p.appservices)
 	err = p.proxy.Configure(conf, log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy")
@@ -177,7 +188,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	var sc config.StoredConfig
 	err := mm.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
-		p.API.LogInfo("failed to load updated configuration", "error", err.Error())
+		p.API.LogWarn("failed to load updated configuration", "error", err.Error())
 		return err
 	}
 
@@ -193,14 +204,14 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 	return nil
 }
 
-func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	// switch ev.Id {
-	// 	case
-	err := OnPluginClusterEvent(c, ev)
-	if err != nil {
-		p.API.LogWarn("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
-	}
-}
+// func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
+// 	// switch ev.Id {
+// 	// 	case
+// 	err := OnPluginClusterEvent(c, ev)
+// 	if err != nil {
+// 		p.API.LogWarn("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
+// 	}
+// }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
 	p.httpIn.ServePluginHTTP(c, w, req)

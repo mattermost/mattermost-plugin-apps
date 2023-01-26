@@ -30,15 +30,15 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	mm           *pluginapi.Client
-	sessionStore store.Sessions
 	appStore     store.Apps
+	sessionStore store.Sessions
 }
 
-func NewService(mm *pluginapi.Client, sessionStore store.Sessions, appStore store.Apps) Service {
+func NewService(mm *pluginapi.Client, appStore store.Apps, sessionStore store.Sessions) Service {
 	return &service{
 		mm:           mm,
-		sessionStore: sessionStore,
 		appStore:     appStore,
+		sessionStore: sessionStore,
 	}
 }
 

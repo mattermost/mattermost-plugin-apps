@@ -21,6 +21,8 @@ func TestOnActivate(t *testing.T) {
 
 	testAPI.On("GetServerVersion").Return("5.30.1")
 	testAPI.On("KVGet", ".cached.apps-index").Return([]byte("{}"), nil)
+	testAPI.On("KVGet", ".cached.manifests-index").Return([]byte("{}"), nil)
+	testAPI.On("KVGet", ".cached.subscriptions-index").Return([]byte("{}"), nil)
 	testAPI.On("KVGet", "mmi_botid").Return([]byte("the_bot_id"), nil)
 
 	username := "appsbot"

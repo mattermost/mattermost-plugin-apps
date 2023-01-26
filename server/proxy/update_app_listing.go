@@ -35,7 +35,7 @@ func (p *Proxy) UpdateAppListing(r *incoming.Request, req appclient.UpdateAppLis
 		req.Manifest.Deploy = mergeDeployData(prevDeploy, req.Manifest.Deploy, req.AddDeploys, req.RemoveDeploys)
 	}
 
-	err := p.store.Manifest.StoreLocal(r, req.Manifest)
+	err := p.manifestStore.Save(r, req.Manifest)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update listed manifest")
 	}

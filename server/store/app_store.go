@@ -6,11 +6,12 @@ package store
 import (
 	"sort"
 
+	"github.com/mattermost/mattermost-server/v6/plugin"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 type FilterOpt bool

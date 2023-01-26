@@ -63,8 +63,9 @@ const (
 )
 
 const (
-	AppStoreName      = "apps"
-	ManifestStoreName = "manifests"
+	AppStoreName          = "apps"
+	ManifestStoreName     = "manifests"
+	SubscriptionStoreName = "subscriptions"
 )
 
 const (

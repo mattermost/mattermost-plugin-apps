@@ -33,7 +33,7 @@ func setUpBasics(ctrl *gomock.Controller) (session.Service,
 	conf, api := config.NewTestService(nil)
 	r := incoming.NewRequest(conf, nil)
 
-	sessionService := session.NewService(conf.MattermostAPI(), sessionStore, appStore)
+	sessionService := session.NewService(conf.MattermostAPI(), appStore, sessionStore)
 
 	return sessionService, r, sessionStore, appStore, api
 }

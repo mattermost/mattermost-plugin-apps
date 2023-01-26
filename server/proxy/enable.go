@@ -35,7 +35,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	// Enable the app in the store first to allow calls to it
 	app.Disabled = false
-	err = p.store.App.Save(r, *app)
+	err = p.appStore.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
@@ -67,7 +67,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		return "", err
 	}
 
-	app, err := p.store.App.Get(appID)
+	app, err := p.appStore.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -96,12 +96,12 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 
 	// Only clear the store. Existing session will still work until they expire. https://mattermost.atlassian.net/browse/MM-40012
-	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
+	if err = p.sessionService.RevokeSessionsForApp(r, app.AppID); err != nil {
 		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
 	}
 
 	app.Disabled = true
-	err = p.store.App.Save(r, *app)
+	err = p.appStore.Save(r, *app)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app. appID: %s", appID)
 	}
@@ -121,7 +121,7 @@ func (p *Proxy) ensureEnabled(app *apps.App) error {
 	if app.Disabled {
 		return utils.NewForbiddenError("app is disabled by the administrator: %s", app.AppID)
 	}
-	if m, _ := p.store.Manifest.Get(app.AppID); m == nil {
+	if m, _ := p.manifestStore.Get(app.AppID); m == nil {
 		return utils.NewForbiddenError("app is no longer listed: %s", app.AppID)
 	}
 	return nil

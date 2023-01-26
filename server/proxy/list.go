@@ -19,7 +19,7 @@ import (
 const pingAppTimeout = 1 * time.Second
 
 func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
-	return p.store.Manifest.Get(appID)
+	return p.manifestStore.Get(appID)
 }
 
 func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
@@ -29,7 +29,7 @@ func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
 		return nil, err
 	}
 
-	app, err := p.store.App.Get(r.Destination())
+	app, err := p.appStore.Get(r.Destination())
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (p *Proxy) GetApp(r *incoming.Request) (*apps.App, error) {
 }
 
 func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App, error) {
-	app, err := p.store.App.Get(appID)
+	app, err := p.appStore.Get(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App,
 }
 
 func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, reachable map[apps.AppID]bool) {
-	all := p.store.App.AsMap(store.AllApps)
+	all := p.appStore.AsMap(store.AllApps)
 	if len(all) == 0 {
 		return nil, nil
 	}
@@ -105,14 +105,14 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 }
 
 func (p *Proxy) GetInstalledApps() []apps.App {
-	return p.store.App.AsList(store.AllApps)
+	return p.appStore.AsList(store.AllApps)
 }
 
 func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
 	conf := p.conf.Get()
 	out := []apps.ListedApp{}
 
-	for _, m := range p.store.Manifest.AsMap() {
+	for _, m := range p.manifestStore.AsMap() {
 		if !appMatchesFilter(m, filter) {
 			continue
 		}
@@ -125,7 +125,7 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 			marketApp.IconURL = conf.StaticURL(m.AppID, m.Icon)
 		}
 
-		app, _ := p.store.App.Get(m.AppID)
+		app, _ := p.appStore.Get(m.AppID)
 
 		if !includePluginApps {
 			// Filter out if installed as plugin

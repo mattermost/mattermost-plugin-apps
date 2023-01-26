@@ -122,3 +122,11 @@ func (a *AppServices) GetOAuth2User(r *incoming.Request) ([]byte, error) {
 
 	return data, nil
 }
+
+func (a *AppServices) CreateOAuth2State(r *incoming.Request) (string, error) {
+	return a.oauth2.CreateState(r)
+}
+
+func (a *AppServices) ValidateOAuth2StateOnce(r *incoming.Request, urlState string) error {
+	return a.oauth2.ValidateStateOnce(r, urlState)
+}

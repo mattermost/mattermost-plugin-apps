@@ -74,7 +74,7 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method 
 
 	// If the user is a bot, process SubjectBot...Channel; only notify the
 	// app with the matching BotUserID.
-	allApps := p.store.App.AsMap(store.EnabledAppsOnly)
+	allApps := p.appStore.AsMap(store.EnabledAppsOnly)
 	subject = apps.SubjectBotJoinedChannel
 	if !joined {
 		subject = apps.SubjectBotLeftChannel
@@ -139,7 +139,7 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string
 
 	// If the user is a bot, process SubjectBot...Channel; only notify the app
 	// with the matching BotUserID.
-	allApps := p.store.App.AsMap(store.EnabledAppsOnly)
+	allApps := p.appStore.AsMap(store.EnabledAppsOnly)
 	subject = apps.SubjectBotJoinedTeam
 	if !joined {
 		subject = apps.SubjectBotLeftTeam
@@ -181,7 +181,7 @@ func (p *Proxy) notify(match func(store.Subscription) bool, event apps.Event, ua
 	r := p.NewIncomingRequest().WithCtx(ctx)
 	r.Log = r.Log.With(event)
 
-	subs, err := p.store.Subscription.Get(event)
+	subs, err := p.subscriptionStore.Get(r, event)
 	if err != nil {
 		r.Log.WithError(err).Errorf("notify: failed to load subscriptions")
 		return

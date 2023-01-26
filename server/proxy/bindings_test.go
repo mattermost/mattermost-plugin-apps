@@ -582,9 +582,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				},
 			}).WithMattermostAPI(pluginapi.NewClient(testAPI, testDriver))
 
-			s := &store.Service{
-				App: store.TestAppStore{},
-			}
+			appstore := store.TestAppStore{}
 
 			upstreams := map[apps.AppID]upstream.Upstream{}
 			for i := range tc.applications {
@@ -598,11 +596,11 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 				upstreams[app.Manifest.AppID] = up
-				_ = s.App.Save(nil, app)
+				_ = appstore.Save(nil, app)
 			}
 
 			proxy := &Proxy{
-				store:            s,
+				appStore:         appstore,
 				builtinUpstreams: upstreams,
 				conf:             conf,
 			}

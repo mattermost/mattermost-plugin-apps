@@ -12,12 +12,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/plugin"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
-	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 type ManifestStore struct {
@@ -168,4 +170,8 @@ func (s *ManifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*a
 	}
 
 	return m, nil
+}
+
+func (s *ManifestStore) Save(r *incoming.Request, m apps.Manifest) error {
+	return s.locallyListed.Put(r, string(m.AppID), m)
 }

@@ -24,8 +24,8 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 	r := p.NewIncomingRequest().WithCtx(ctx)
 
-	installed := p.store.App.AsMap(store.AllApps)
-	listed := p.store.Manifest.AsMap()
+	installed := p.appStore.AsMap(store.AllApps)
+	listed := p.manifestStore.AsMap()
 
 	diff := map[apps.AppID]apps.App{}
 	for _, app := range installed {
@@ -45,7 +45,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 		// Store the new manifest to update the current mappings of the App
 		app.Manifest = m
-		err := p.store.App.Save(r, app)
+		err := p.appStore.Save(r, app)
 		if err != nil {
 			return err
 		}

@@ -103,7 +103,7 @@ func (a *AppServices) GetSubscriptions(r *incoming.Request) (out []apps.Subscrip
 	return out, nil
 }
 
-func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) error {
+func (a *AppServices) unsubscribeApp(r *incoming.Request, appID apps.AppID) error {
 	err := r.Check(
 		r.RequireSysadminOrPlugin,
 	)
@@ -122,7 +122,7 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 		modified := []store.Subscription{}
 		subs, err = a.subscriptions.Get(r, event)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get subscriptions for "+event.String())
+			return errors.Wrap(err, "failed to get subscriptions for "+event.String())
 		}
 		for _, sub := range subs {
 			if sub.AppID == appID {
@@ -131,8 +131,8 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 				modified = append(modified, sub)
 			}
 		}
-		if len(modified) < len(stored.Subscriptions) {
-			err = a.subscriptions.Save(stored.Event, modified)
+		if len(modified) < len(subs) {
+			err = a.subscriptions.Save(r, event, modified)
 			if err != nil {
 				return err
 			}
@@ -144,7 +144,7 @@ func (a *AppServices) UnsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 }
 
 func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e apps.Event) ([]store.Subscription, error) {
-	all, err := a.store.Subscription.Get(e)
+	all, err := a.subscriptions.Get(r, e)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e app
 		if i < len(all) {
 			modified = append(modified, all[i+1:]...)
 		}
-		err = a.store.Subscription.Save(e, modified)
+		err = a.subscriptions.Save(r, e, modified)
 		if err != nil {
 			return nil, err
 		}
