@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -66,4 +67,15 @@ func (s *SubscriptionStore) Save(r *incoming.Request, e apps.Event, subs []Subsc
 		return errors.New("failed to get subscriptions: invalid empty event")
 	}
 	return s.cached.Put(r, key, subs)
+}
+
+func (s *SubscriptionStore) PluginClusterEventID() string {
+	return s.cached.clusterEventID()
+}
+
+func (s *SubscriptionStore) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
+	if ev.Id != s.PluginClusterEventID() {
+		return utils.NewInvalidError("unexpected cluster event id: %s", ev.Id)
+	}
+	return s.cached.processClusterEvent(r, ev.Data)
 }

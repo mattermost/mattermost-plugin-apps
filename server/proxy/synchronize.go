@@ -9,6 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
@@ -22,7 +24,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	r := p.NewIncomingRequest().WithCtx(ctx)
+	r := p.NewIncomingRequest(model.NewId()).WithCtx(ctx)
 
 	installed := p.appStore.AsMap(store.AllApps)
 	listed := p.manifestStore.AsMap()

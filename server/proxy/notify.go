@@ -6,6 +6,8 @@ package proxy
 import (
 	"context"
 
+	"github.com/mattermost/mattermost-server/v6/plugin"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -14,8 +16,8 @@ import (
 
 // NotifyUserCreated handles plugin's UserHasBeenCreated callback. It emits
 // "user_created" notifications to subscribed apps.
-func (p *Proxy) NotifyUserCreated(userID string) {
-	p.notify(nil,
+func (p *Proxy) NotifyUserCreated(pluginContext *plugin.Context, userID string) {
+	p.notify(pluginContext, nil,
 		apps.Event{
 			Subject: apps.SubjectUserCreated,
 		},
@@ -28,17 +30,17 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 // NotifyUserJoinedChannel handles plugin's UserHasJoinedChannel callback. It
 // emits "user_joined_channel" and "bot_joined_channel" notifications to
 // subscribed apps.
-func (p *Proxy) NotifyUserJoinedChannel(channelID, userID string) {
-	p.notifyUserChannel(channelID, userID, true, "NotifyUserJoinedChannel")
+func (p *Proxy) NotifyUserJoinedChannel(pluginContext *plugin.Context, channelID, userID string) {
+	p.notifyUserChannel(pluginContext, channelID, userID, true, "NotifyUserJoinedChannel")
 }
 
 // NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
 // "user_left_channel" and "bot_left_channel" notifications to subscribed apps.
-func (p *Proxy) NotifyUserLeftChannel(channelID, userID string) {
-	p.notifyUserChannel(channelID, userID, false, "NotifyUserLeftChannel")
+func (p *Proxy) NotifyUserLeftChannel(pluginContext *plugin.Context, channelID, userID string) {
+	p.notifyUserChannel(pluginContext, channelID, userID, false, "NotifyUserLeftChannel")
 }
 
-func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method string) {
+func (p *Proxy) notifyUserChannel(pluginContext *plugin.Context, channelID, userID string, joined bool, method string) {
 	mm := p.conf.MattermostAPI()
 	log := p.conf.NewBaseLogger().With("method", method)
 	user, err := mm.User.Get(userID)
@@ -56,8 +58,7 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method 
 	if !joined {
 		subject = apps.SubjectUserLeftChannel
 	}
-	p.notify(
-		nil,
+	p.notify(pluginContext, nil,
 		apps.Event{
 			Subject:   subject,
 			ChannelID: channelID,
@@ -79,7 +80,7 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method 
 	if !joined {
 		subject = apps.SubjectBotLeftChannel
 	}
-	p.notify(
+	p.notify(pluginContext,
 		func(sub store.Subscription) bool {
 			if app, ok := allApps[sub.AppID]; ok {
 				return app.BotUserID == userID
@@ -100,17 +101,17 @@ func (p *Proxy) notifyUserChannel(channelID, userID string, joined bool, method 
 
 // NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
 // "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserJoinedTeam(teamID, userID string) {
-	p.notifyUserTeam(teamID, userID, true, "NotifyUserJoinedTeam")
+func (p *Proxy) NotifyUserJoinedTeam(pluginContext *plugin.Context, teamID, userID string) {
+	p.notifyUserTeam(pluginContext, teamID, userID, true, "NotifyUserJoinedTeam")
 }
 
 // NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
 // "user_left_team" and "bot_left_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserLeftTeam(teamID, userID string) {
-	p.notifyUserTeam(teamID, userID, false, "NotifyUserLeftTeam")
+func (p *Proxy) NotifyUserLeftTeam(pluginContext *plugin.Context, teamID, userID string) {
+	p.notifyUserTeam(pluginContext, teamID, userID, false, "NotifyUserLeftTeam")
 }
 
-func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string) {
+func (p *Proxy) notifyUserTeam(pluginContext *plugin.Context, teamID, userID string, joined bool, method string) {
 	mm := p.conf.MattermostAPI()
 	log := p.conf.NewBaseLogger().With("method", method)
 	user, err := mm.User.Get(userID)
@@ -122,8 +123,7 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string
 	if !joined {
 		subject = apps.SubjectUserLeftTeam
 	}
-	p.notify(
-		nil,
+	p.notify(pluginContext, nil,
 		apps.Event{
 			Subject: subject,
 			TeamID:  teamID,
@@ -144,7 +144,7 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string
 	if !joined {
 		subject = apps.SubjectBotLeftTeam
 	}
-	p.notify(
+	p.notify(pluginContext,
 		func(sub store.Subscription) bool {
 			if app, ok := allApps[sub.AppID]; ok {
 				return app.BotUserID == userID
@@ -163,8 +163,8 @@ func (p *Proxy) notifyUserTeam(teamID, userID string, joined bool, method string
 
 // NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
 // "channel_created" notifications to subscribed apps.
-func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
-	p.notify(nil,
+func (p *Proxy) NotifyChannelCreated(pluginContext *plugin.Context, teamID, channelID string) {
+	p.notify(pluginContext, nil,
 		apps.Event{
 			Subject: apps.SubjectChannelCreated,
 			TeamID:  teamID,
@@ -175,10 +175,10 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 		})
 }
 
-func (p *Proxy) notify(match func(store.Subscription) bool, event apps.Event, uac apps.UserAgentContext) {
+func (p *Proxy) notify(pluginContext *plugin.Context, match func(store.Subscription) bool, event apps.Event, uac apps.UserAgentContext) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
-	r := p.NewIncomingRequest().WithCtx(ctx)
+	r := p.NewIncomingRequest(pluginContext.RequestId).WithCtx(ctx)
 	r.Log = r.Log.With(event)
 
 	subs, err := p.subscriptionStore.Get(r, event)

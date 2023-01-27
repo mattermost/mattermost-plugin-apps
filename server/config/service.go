@@ -287,10 +287,13 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 }
 
 func (s *service) NewBaseLogger() utils.Logger {
+	var log utils.Logger
 	if s.Get().DeveloperMode {
-		return utils.NewPluginLogger(s.mm, s)
+		log = utils.NewPluginLogger(s.mm, s)
+	} else {
+		log = utils.NewPluginLogger(s.mm, nil)
 	}
-	return utils.NewPluginLogger(s.mm, nil)
+	return log.With("hostname", s.Get().PluginHostName)
 }
 
 func (s *service) GetLogConfig() utils.LogConfig {

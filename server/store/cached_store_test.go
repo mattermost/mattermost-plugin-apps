@@ -29,7 +29,7 @@ func TestCachedStore(t *testing.T) {
 	s, err := MakeCachedStore[Test]("test", api, conf)
 	require.NoError(t, err)
 
-	r := incoming.NewRequest(conf, nil)
+	r := incoming.NewRequest(conf, nil, "reqid")
 	put := func(id string, data Test, indexBefore, indexAfter string) {
 		api.On("KVSetWithOptions", "mutex_.cached.test-mutex", []byte{0x1}, mock.Anything).Once().
 			Return(true, nil)
@@ -52,10 +52,10 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, CachedStoreEventID, e.Id)
+					require.Equal(t, s.clusterEventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event cachedStoreEvent[Test]
+					var event CachedStoreClusterEvent[Test]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 
@@ -100,10 +100,10 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, CachedStoreEventID, e.Id)
+					require.Equal(t, s.clusterEventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event cachedStoreEvent[Test]
+					var event CachedStoreClusterEvent[Test]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 

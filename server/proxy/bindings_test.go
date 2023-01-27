@@ -607,7 +607,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 
 			tc.checkExpectation(testAPI)
 
-			r := incoming.NewRequest(proxy.conf, nil).
+			r := incoming.NewRequest(proxy.conf, nil, "req-id").
 				WithDestination("app1").
 				WithPrevContext(apps.Context{
 					ExpandedContext: apps.ExpandedContext{ActingUser: &model.User{Id: "userid"}},

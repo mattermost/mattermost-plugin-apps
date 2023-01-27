@@ -57,7 +57,7 @@ func TestOnActivate(t *testing.T) {
 		SkuShortName: "professional",
 	})
 
-	expectLog(testAPI, "LogDebug", 15)
+	expectLog(testAPI, "LogDebug", 17)
 	expectLog(testAPI, "LogInfo", 5)
 	expectLog(testAPI, "LogError", 3)
 

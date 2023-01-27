@@ -204,39 +204,34 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 	return nil
 }
 
-// func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-// 	// switch ev.Id {
-// 	// 	case
-// 	err := OnPluginClusterEvent(c, ev)
-// 	if err != nil {
-// 		p.API.LogWarn("OnPluginClusterEvent: failed to handle cluster event", "error", err.Error())
-// 	}
-// }
-
-func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
-	p.httpIn.ServePluginHTTP(c, w, req)
+func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
+	p.proxy.OnPluginClusterEvent(c, ev)
 }
 
-func (p *Plugin) UserHasBeenCreated(_ *plugin.Context, user *model.User) {
-	p.proxy.NotifyUserCreated(user.Id)
+func (p *Plugin) ServeHTTP(pluginContext *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
+	p.httpIn.ServePluginHTTP(pluginContext, w, req)
 }
 
-func (p *Plugin) UserHasJoinedChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
-	p.proxy.NotifyUserJoinedChannel(cm.ChannelId, cm.UserId)
+func (p *Plugin) UserHasBeenCreated(pluginContext *plugin.Context, user *model.User) {
+	p.proxy.NotifyUserCreated(pluginContext, user.Id)
 }
 
-func (p *Plugin) UserHasLeftChannel(_ *plugin.Context, cm *model.ChannelMember, _ *model.User) {
-	p.proxy.NotifyUserLeftChannel(cm.ChannelId, cm.UserId)
+func (p *Plugin) UserHasJoinedChannel(pluginContext *plugin.Context, cm *model.ChannelMember, _ *model.User) {
+	p.proxy.NotifyUserJoinedChannel(pluginContext, cm.ChannelId, cm.UserId)
 }
 
-func (p *Plugin) UserHasJoinedTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
-	p.proxy.NotifyUserJoinedTeam(tm.TeamId, tm.UserId)
+func (p *Plugin) UserHasLeftChannel(pluginContext *plugin.Context, cm *model.ChannelMember, _ *model.User) {
+	p.proxy.NotifyUserLeftChannel(pluginContext, cm.ChannelId, cm.UserId)
 }
 
-func (p *Plugin) UserHasLeftTeam(_ *plugin.Context, tm *model.TeamMember, _ *model.User) {
-	p.proxy.NotifyUserLeftTeam(tm.TeamId, tm.UserId)
+func (p *Plugin) UserHasJoinedTeam(pluginContext *plugin.Context, tm *model.TeamMember, _ *model.User) {
+	p.proxy.NotifyUserJoinedTeam(pluginContext, tm.TeamId, tm.UserId)
 }
 
-func (p *Plugin) ChannelHasBeenCreated(_ *plugin.Context, ch *model.Channel) {
-	p.proxy.NotifyChannelCreated(ch.TeamId, ch.Id)
+func (p *Plugin) UserHasLeftTeam(pluginContext *plugin.Context, tm *model.TeamMember, _ *model.User) {
+	p.proxy.NotifyUserLeftTeam(pluginContext, tm.TeamId, tm.UserId)
+}
+
+func (p *Plugin) ChannelHasBeenCreated(pluginContext *plugin.Context, ch *model.Channel) {
+	p.proxy.NotifyChannelCreated(pluginContext, ch.TeamId, ch.Id)
 }

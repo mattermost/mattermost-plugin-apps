@@ -31,7 +31,7 @@ const (
 	CachedStoreDeleteMethod = "delete"
 )
 
-type cachedStoreEvent[T any] struct {
+type CachedStoreClusterEvent[T any] struct {
 	Data      T      `json:"data,omitempty"`
 	IndexHash string `json:"index_hash,omitempty"`
 	Key       string `json:"key"`
@@ -219,58 +219,68 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 	})
 }
 
+func (s *CachedStore[T]) clusterEventID() string {
+	return CachedStoreEventID + "/" + s.name
+}
+
 func (s *CachedStore[T]) notifyPut(key string, data T) error {
-	event := s.newEvent(CachedStorePutMethod, key, data)
+	event := s.newPluginClusterEvent(CachedStorePutMethod, key, data)
 	bb, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: CachedStoreEventID, Data: bb},
+		model.PluginClusterEvent{Id: s.clusterEventID(), Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
 func (s *CachedStore[T]) notifyDelete(key string) error {
 	var data T
-	bb, err := json.Marshal(s.newEvent(CachedStoreDeleteMethod, key, data))
+	bb, err := json.Marshal(s.newPluginClusterEvent(CachedStoreDeleteMethod, key, data))
 	if err != nil {
 		return err
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: CachedStoreEventID, Data: bb},
+		model.PluginClusterEvent{Id: s.clusterEventID(), Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
-// func (s *CachedStore[T]) processClusterEvent(event cachedStoreEvent[T]) error {
-// 	switch event.Method {
-// 	case CachedStorePutMethod:
-// 		s.cache.Store(event.Key, &IndexEntry[T]{
-// 			Key:       event.Key,
-// 			ValueHash: jsonHash(event.Data),
-// 			data:      event.Data,
-// 		})
+func (s *CachedStore[T]) processClusterEvent(r *incoming.Request, eventData []byte) error {
+	event := CachedStoreClusterEvent[T]{}
+	err := json.Unmarshal(eventData, &event)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
+	}
 
-// 	case CachedStoreDeleteMethod:
-// 		s.cache.Delete(event.Key)
-// 	}
+	switch event.Method {
+	case CachedStorePutMethod:
+		s.cache.Store(event.Key, &IndexEntry[T]{
+			Key:       event.Key,
+			ValueHash: jsonHash(event.Data),
+			data:      event.Data,
+		})
 
-// 	if s.Index().Stored().hash() != event.IndexHash {
-// 		s.logger.Debugf("CachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
-// 		if _, err := s.syncFromKV(true); err != nil {
-// 			return err
-// 		}
-// 	} else {
-// 		s.logger.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
-// 	}
-// 	return nil
-// }
+	case CachedStoreDeleteMethod:
+		s.cache.Delete(event.Key)
+	}
 
-func (s *CachedStore[T]) newEvent(method, key string, data T) cachedStoreEvent[T] {
-	return cachedStoreEvent[T]{
+	if s.Index().Stored().hash() != event.IndexHash {
+		r.Log.Debugf("CachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
+		if _, err := s.syncFromKV(r.Log, true); err != nil {
+			return err
+		}
+	} else {
+		r.Log.Debugf("CachedStore.processClusterEvent %s: %s key %s", s.name, event.Method, event.Key)
+	}
+	return nil
+}
+
+func (s *CachedStore[T]) newPluginClusterEvent(method, key string, data T) CachedStoreClusterEvent[T] {
+	return CachedStoreClusterEvent[T]{
 		Method:    method,
 		StoreName: s.name,
 		Key:       key,

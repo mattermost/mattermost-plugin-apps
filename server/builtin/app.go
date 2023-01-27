@@ -201,7 +201,7 @@ func App(conf config.Config) apps.App {
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
 	self := App(a.conf.Get())
-	r := a.proxy.NewIncomingRequest().WithCtx(ctx).WithDestination(self.AppID)
+	r := a.proxy.NewIncomingRequest(model.NewId()).WithCtx(ctx).WithDestination(self.AppID)
 
 	if creq.Context.ActingUser != nil {
 		r = r.WithActingUserID(creq.Context.ActingUser.Id)

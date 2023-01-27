@@ -29,7 +29,7 @@ func TestCreateOAuth2State(t *testing.T) {
 		require.Regexp(t, stateRE, string(data))
 	}).Return(true, nil)
 
-	r := incoming.NewRequest(conf, nil).WithActingUserID(userID).WithSourceAppID("some_app_id")
+	r := incoming.NewRequest(conf, nil, "reqid").WithActingUserID(userID).WithSourceAppID("some_app_id")
 
 	urlState, err := s.CreateState(r)
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestOAuth2User(t *testing.T) {
 	appID := apps.AppID("some_app_id")
 	conf, api := config.NewTestService(nil)
 	s := OAuth2Store{}
-	r := incoming.NewRequest(conf, nil).WithActingUserID(userID).WithSourceAppID(appID)
+	r := incoming.NewRequest(conf, nil, "reqid").WithActingUserID(userID).WithSourceAppID(appID)
 
 	type Entity struct {
 		Test1, Test2 string

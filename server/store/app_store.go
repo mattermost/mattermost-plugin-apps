@@ -6,6 +6,7 @@ package store
 import (
 	"sort"
 
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -31,11 +32,13 @@ type AppStore struct {
 }
 
 type Apps interface {
-	AsList(filter FilterOpt) []apps.App
-	AsMap(filter FilterOpt) map[apps.AppID]apps.App
-	Delete(r *incoming.Request, appID apps.AppID) error
-	Get(appID apps.AppID) (*apps.App, error)
-	Save(r *incoming.Request, app apps.App) error
+	AsList(FilterOpt) []apps.App
+	AsMap(FilterOpt) map[apps.AppID]apps.App
+	Delete(*incoming.Request, apps.AppID) error
+	Get(apps.AppID) (*apps.App, error)
+	Save(*incoming.Request, apps.App) error
+	PluginClusterEventID() string
+	OnPluginClusterEvent(*incoming.Request, model.PluginClusterEvent) error
 }
 
 var _ Apps = (*AppStore)(nil)
@@ -104,4 +107,15 @@ func (s *AppStore) Save(r *incoming.Request, app apps.App) error {
 
 func (s *AppStore) Delete(r *incoming.Request, appID apps.AppID) error {
 	return s.installed.Delete(r, string(appID))
+}
+
+func (s *AppStore) PluginClusterEventID() string {
+	return s.installed.clusterEventID()
+}
+
+func (s *AppStore) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
+	if ev.Id != s.PluginClusterEventID() {
+		return utils.NewInvalidError("unexpected cluster event id: %s", ev.Id)
+	}
+	return s.installed.processClusterEvent(r, ev.Data)
 }

@@ -5,14 +5,12 @@ package store
 
 import (
 	"encoding/ascii85"
-	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
@@ -71,26 +69,6 @@ const (
 const (
 	ListKeysPerPage = 1000
 )
-
-func OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) error {
-	// log := s.Log(s.conf.NewBaseLogger().With("event", ev, "IP", c.IPAddress)
-	// log.Debugw("<>/<> OnPluginClusterEvent 1")
-	if ev.Id != CachedStoreEventID {
-		return nil
-	}
-
-	event := cachedStoreEvent[apps.App]{}
-	err := json.Unmarshal(ev.Data, &event)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
-	}
-	// log.Debugw("<>/<> OnPluginClusterEvent 2", "decoded_event", event)
-
-	// if event.StoreName == AppStoreName {
-	// 	return s.appStore.cache.processClusterEvent(event)
-	// }
-	return nil
-}
 
 const (
 	hashKeyLength = 82

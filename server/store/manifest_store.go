@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -174,4 +175,15 @@ func (s *ManifestStore) GetFromS3(appID apps.AppID, version apps.AppVersion) (*a
 
 func (s *ManifestStore) Save(r *incoming.Request, m apps.Manifest) error {
 	return s.locallyListed.Put(r, string(m.AppID), m)
+}
+
+func (s *ManifestStore) PluginClusterEventID() string {
+	return s.locallyListed.clusterEventID()
+}
+
+func (s *ManifestStore) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
+	if ev.Id != s.PluginClusterEventID() {
+		return utils.NewInvalidError("unexpected cluster event id: %s", ev.Id)
+	}
+	return s.locallyListed.processClusterEvent(r, ev.Data)
 }

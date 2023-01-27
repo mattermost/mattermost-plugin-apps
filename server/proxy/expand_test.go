@@ -281,7 +281,7 @@ func TestExpand(t *testing.T) {
 							err := json.Unmarshal([]byte(expandData), &e)
 							require.NoError(t, err)
 
-							r := incoming.NewRequest(conf, nil).WithDestination(app.AppID)
+							r := incoming.NewRequest(conf, nil, "").WithDestination(app.AppID)
 							if !tc.noActingUser {
 								r = r.WithActingUserID(userID)
 							}
