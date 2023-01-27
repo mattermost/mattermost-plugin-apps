@@ -3,11 +3,12 @@ package store
 import (
 	"testing"
 
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEncrypterEncode(t *testing.T) {
-	key, err := GenerateEncryptionKey()
+	key, err := config.GenerateEncryptionKey()
 	assert.NoError(t, err)
 
 	for _, tc := range []struct {

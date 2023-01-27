@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"net"
 	"net/url"
 	"os"
@@ -20,6 +21,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
+
+const DefaultAESKeySize = 32
 
 type Configurable interface {
 	Configure(Config, utils.Logger) error
@@ -131,6 +134,17 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 		}
 
 		localURL = "http://" + host + ":" + port + u.Path
+	}
+
+	// Generate an encryption key on the fly
+	// to encrypt/decrypt oauth user data
+	if conf.EncryptionKey == nil {
+		encKey, encErr := GenerateEncryptionKey()
+		if encErr != nil {
+			log.Errorf("Couldn't generate the encryption key for OAuth user data encryption")
+		}
+
+		conf.EncryptionKey = encKey
 	}
 
 	conf.MattermostSiteURL = u.String()
@@ -311,4 +325,14 @@ func (s *service) SystemDefaultFlags() (bool, bool) {
 	devMode := pluginapi.IsConfiguredForDevelopment(mmconf)
 	allowHTTP := devMode || !s.Get().MattermostCloudMode
 	return devMode, allowHTTP
+}
+
+func GenerateEncryptionKey() ([]byte, error) {
+	key := make([]byte, DefaultAESKeySize)
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
 }

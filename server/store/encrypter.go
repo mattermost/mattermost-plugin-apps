@@ -11,8 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const DefaultAesKeySize = 32
-
 type Encrypter interface {
 	Encrypt(message []byte) ([]byte, error)
 	Decrypt(message []byte) ([]byte, error)
@@ -87,14 +85,4 @@ func (s *AESEncrypter) Decrypt(message []byte) ([]byte, error) {
 	}
 
 	return unpadMsg, nil
-}
-
-func GenerateEncryptionKey() ([]byte, error) {
-	key := make([]byte, DefaultAesKeySize)
-	_, err := rand.Read(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
 }
