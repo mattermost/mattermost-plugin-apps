@@ -3,8 +3,9 @@ package store
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 func TestEncrypterEncode(t *testing.T) {
