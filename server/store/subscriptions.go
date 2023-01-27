@@ -8,11 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -24,16 +23,16 @@ type Subscription struct {
 }
 
 type SubscriptionStore struct {
-	cached *CachedStore[[]Subscription]
+	*CachedStore[[]Subscription]
 }
 
-func MakeSubscriptionStore(api plugin.API, conf config.Service) (*SubscriptionStore, error) {
-	store, err := MakeCachedStore[[]Subscription](SubscriptionStoreName, api, conf)
+func MakeSubscriptionStore(api plugin.API, mmapi *pluginapi.Client, log utils.Logger) (*SubscriptionStore, error) {
+	store, err := MakeCachedStore[[]Subscription](SubscriptionStoreName, api, mmapi, log)
 	if err != nil {
 		return nil, err
 	}
 	return &SubscriptionStore{
-		cached: store,
+		CachedStore: store,
 	}, nil
 }
 
@@ -42,7 +41,7 @@ func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscripti
 	if key == "{}" {
 		return nil, errors.New("failed to get subscriptions: invalid empty event")
 	}
-	subs, ok := s.cached.Get(key)
+	subs, ok := s.GetCachedStoreItem(key)
 	if !ok {
 		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", key)
 	}
@@ -51,7 +50,7 @@ func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscripti
 
 func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Event, error) {
 	var events []apps.Event
-	for eventJSON := range s.cached.Index() {
+	for eventJSON := range s.Index() {
 		var e apps.Event
 		if err := json.Unmarshal([]byte(eventJSON), &e); err != nil {
 			return nil, err
@@ -66,16 +65,5 @@ func (s *SubscriptionStore) Save(r *incoming.Request, e apps.Event, subs []Subsc
 	if key == "{}" {
 		return errors.New("failed to get subscriptions: invalid empty event")
 	}
-	return s.cached.Put(r, key, subs)
-}
-
-func (s *SubscriptionStore) PluginClusterEventID() string {
-	return s.cached.clusterEventID()
-}
-
-func (s *SubscriptionStore) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
-	if ev.Id != s.PluginClusterEventID() {
-		return utils.NewInvalidError("unexpected cluster event id: %s", ev.Id)
-	}
-	return s.cached.processClusterEvent(r, ev.Data)
+	return s.PutCachedStoreItem(r, key, subs)
 }

@@ -6,11 +6,10 @@ package store
 import (
 	"sort"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -28,7 +27,7 @@ const (
 type AppStore struct {
 	schemaVersion string
 	builtin       map[apps.AppID]apps.App
-	installed     *CachedStore[apps.App]
+	*CachedStore[apps.App]
 }
 
 type Apps interface {
@@ -37,14 +36,12 @@ type Apps interface {
 	Delete(*incoming.Request, apps.AppID) error
 	Get(apps.AppID) (*apps.App, error)
 	Save(*incoming.Request, apps.App) error
-	PluginClusterEventID() string
-	OnPluginClusterEvent(*incoming.Request, model.PluginClusterEvent) error
 }
 
 var _ Apps = (*AppStore)(nil)
 
-func MakeAppStore(api plugin.API, conf config.Service, builtinApps ...apps.App) (*AppStore, error) {
-	store, err := MakeCachedStore[apps.App](AppStoreName, api, conf)
+func MakeAppStore(api plugin.API, mmapi *pluginapi.Client, log utils.Logger, version string, builtinApps ...apps.App) (*AppStore, error) {
+	store, err := MakeCachedStore[apps.App](AppStoreName, api, mmapi, log)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +51,9 @@ func MakeAppStore(api plugin.API, conf config.Service, builtinApps ...apps.App) 
 		builtin[app.AppID] = app
 	}
 	return &AppStore{
-		schemaVersion: conf.Get().PluginManifest.Version,
+		schemaVersion: version,
 		builtin:       builtin,
-		installed:     store,
+		CachedStore:   store,
 	}, nil
 }
 
@@ -65,7 +62,7 @@ func (s *AppStore) Get(appID apps.AppID) (*apps.App, error) {
 	if ok {
 		return &app, nil
 	}
-	app, ok = s.installed.Get(string(appID))
+	app, ok = s.GetCachedStoreItem(string(appID))
 	if ok {
 		return &app, nil
 	}
@@ -74,8 +71,8 @@ func (s *AppStore) Get(appID apps.AppID) (*apps.App, error) {
 
 func (s *AppStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
 	out := map[apps.AppID]apps.App{}
-	for id := range s.installed.Index() {
-		if app, ok := s.installed.Get(id); ok {
+	for id := range s.Index() {
+		if app, ok := s.GetCachedStoreItem(id); ok {
 			if filter == AllApps || !app.Disabled {
 				out[apps.AppID(id)] = app
 			}
@@ -102,20 +99,9 @@ func (s *AppStore) AsList(filter FilterOpt) []apps.App {
 
 func (s *AppStore) Save(r *incoming.Request, app apps.App) error {
 	app.Manifest.SchemaVersion = s.schemaVersion
-	return s.installed.Put(r, string(app.AppID), app)
+	return s.PutCachedStoreItem(r, string(app.AppID), app)
 }
 
 func (s *AppStore) Delete(r *incoming.Request, appID apps.AppID) error {
-	return s.installed.Delete(r, string(appID))
-}
-
-func (s *AppStore) PluginClusterEventID() string {
-	return s.installed.clusterEventID()
-}
-
-func (s *AppStore) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
-	if ev.Id != s.PluginClusterEventID() {
-		return utils.NewInvalidError("unexpected cluster event id: %s", ev.Id)
-	}
-	return s.installed.processClusterEvent(r, ev.Data)
+	return s.DeleteCachedStoreItem(r, string(appID))
 }

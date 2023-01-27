@@ -100,18 +100,24 @@ func (p *Plugin) OnActivate() (err error) {
 	p.httpOut = httpout.NewService(p.conf)
 
 	// Initialize persistent stores.
-	p.AppStore, err = store.MakeAppStore(p.API, p.conf, builtin.App(conf))
+	p.AppStore, err = store.MakeAppStore(p.API, mm, log, p.manifest.Version, builtin.App(conf))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
-	p.ManifestStore, err = store.MakeManifestStore(p.API, p.conf, p.httpOut)
+	p.ManifestStore, err = store.MakeManifestStore(p.API, mm, log)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize the app store")
+		return errors.Wrap(err, "failed to initialize the manifest store")
+	}
+	if conf.MattermostCloudMode {
+		err = p.ManifestStore.InitCloudCatalog(mm, log, conf, p.httpOut)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize the manifest store")
+		}
 	}
 	p.KVStore = &store.KVStore{}
 	p.OAuth2Store = &store.OAuth2Store{}
 	p.SessionStore = &store.SessionStore{}
-	p.SubscriptionStore, err = store.MakeSubscriptionStore(p.API, p.conf)
+	p.SubscriptionStore, err = store.MakeSubscriptionStore(p.API, mm, log)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the subscription store")
 	}
@@ -205,7 +211,8 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	p.proxy.OnPluginClusterEvent(c, ev)
+	r := p.proxy.NewIncomingRequest(c.RequestId)
+	store.OnPluginClusterEvent(r, ev)
 }
 
 func (p *Plugin) ServeHTTP(pluginContext *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {

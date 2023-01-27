@@ -26,7 +26,7 @@ func TestCachedStore(t *testing.T) {
 
 	api.On("KVGet", ".cached.test-index").Once().
 		Return([]byte(nil), (*model.AppError)(nil))
-	s, err := MakeCachedStore[Test]("test", api, conf)
+	s, err := MakeCachedStore[Test]("test", api, conf.MattermostAPI(), conf.NewBaseLogger())
 	require.NoError(t, err)
 
 	r := incoming.NewRequest(conf, nil, "reqid")
@@ -52,7 +52,7 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, s.clusterEventID(), e.Id)
+					require.Equal(t, s.PluginClusterEventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
 					var event CachedStoreClusterEvent[Test]
@@ -73,7 +73,7 @@ func TestCachedStore(t *testing.T) {
 		api.On("KVSetWithOptions", "mutex_.cached.test-mutex", []byte(nil), mock.Anything).Once().
 			Return(true, nil)
 
-		err = s.Put(r, id, data)
+		err = s.PutCachedStoreItem(r, id, data)
 		require.NoError(t, err)
 		api.AssertExpectations(t)
 	}
@@ -100,7 +100,7 @@ func TestCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, s.clusterEventID(), e.Id)
+					require.Equal(t, s.PluginClusterEventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
 					var event CachedStoreClusterEvent[Test]
@@ -120,7 +120,7 @@ func TestCachedStore(t *testing.T) {
 		api.On("KVSetWithOptions", "mutex_.cached.test-mutex", []byte(nil), mock.Anything).Once().
 			Return(true, nil)
 
-		err = s.Delete(r, id)
+		err = s.DeleteCachedStoreItem(r, id)
 		require.NoError(t, err)
 		api.AssertExpectations(t)
 	}
@@ -154,14 +154,14 @@ func TestCachedStore(t *testing.T) {
 
 func TestStoredIndexCompareTo(t *testing.T) {
 	before := StoredIndex[int]{
-		Data: []IndexEntry[int]{
+		Data: []CachedIndexEntry[int]{
 			{Key: "key1", ValueHash: "hash1", data: 1},
 			{Key: "key2", ValueHash: "hash2", data: 2},
 			{Key: "key3", ValueHash: "hash3", data: 3},
 		},
 	}
 	after := StoredIndex[int]{
-		Data: []IndexEntry[int]{
+		Data: []CachedIndexEntry[int]{
 			{Key: "key1", ValueHash: "hash1", data: 1},
 			{Key: "key3", ValueHash: "hash5", data: 5},
 			{Key: "key4", ValueHash: "hash4", data: 3},
@@ -169,10 +169,10 @@ func TestStoredIndexCompareTo(t *testing.T) {
 	}
 
 	change, remove := before.compareTo(after)
-	require.Equal(t, []IndexEntry[int]{
+	require.Equal(t, []CachedIndexEntry[int]{
 		{Key: "key2", ValueHash: "hash2", data: 2},
 	}, remove)
-	require.Equal(t, []IndexEntry[int]{
+	require.Equal(t, []CachedIndexEntry[int]{
 		{Key: "key3", ValueHash: "hash5", data: 5},
 		{Key: "key4", ValueHash: "hash4", data: 3},
 	}, change)

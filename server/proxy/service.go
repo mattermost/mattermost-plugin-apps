@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -95,7 +94,6 @@ type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(apps.DeployType) (allowed, usable bool)
 	NewIncomingRequest(id string) *incoming.Request
-	OnPluginClusterEvent(*plugin.Context, model.PluginClusterEvent)
 	SynchronizeInstalledApps() error
 
 	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
@@ -259,21 +257,4 @@ func (p *Proxy) NewIncomingRequest(id string) *incoming.Request {
 
 func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {
 	return p.GetInstalledApp(r.Destination(), true)
-}
-
-func (p *Proxy) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	r := p.NewIncomingRequest(c.RequestId)
-	var err error
-	switch ev.Id {
-	case p.appStore.PluginClusterEventID():
-		err = p.appStore.OnPluginClusterEvent(r, ev)
-	case p.manifestStore.PluginClusterEventID():
-		err = p.manifestStore.OnPluginClusterEvent(r, ev)
-	case p.subscriptionStore.PluginClusterEventID():
-		err = p.subscriptionStore.OnPluginClusterEvent(r, ev)
-	}
-
-	if err != nil {
-		r.Log.WithError(err).Errorw("failed to handle plugin cluster event")
-	}
 }

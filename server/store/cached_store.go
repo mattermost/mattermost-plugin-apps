@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -20,7 +19,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -31,25 +29,12 @@ const (
 	CachedStoreDeleteMethod = "delete"
 )
 
-type CachedStoreClusterEvent[T any] struct {
-	Data      T      `json:"data,omitempty"`
-	IndexHash string `json:"index_hash,omitempty"`
-	Key       string `json:"key"`
-	Method    string `json:"method"`
-	StoreName string `json:"name"`
+type cachedStoreEventProcessor interface {
+	OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error
+	PluginClusterEventID() string
 }
 
-type IndexEntry[T any] struct {
-	Key       string `json:"k"`
-	ValueHash string `json:"h"`
-	data      T
-}
-
-type StoredIndex[T any] struct {
-	Data []IndexEntry[T]
-}
-
-type Index[T any] map[string]*IndexEntry[T]
+var cachedStoreEventSink = sync.Map{} // of cachedStoreEventProcessor
 
 type CachedStore[T any] struct {
 	// dependencies
@@ -63,11 +48,33 @@ type CachedStore[T any] struct {
 	kvMutex *cluster.Mutex
 }
 
-func MakeCachedStore[T any](name string, api plugin.API, conf config.Service) (*CachedStore[T], error) {
+var _ cachedStoreEventProcessor = (*CachedStore[any])(nil)
+
+type CachedStoreClusterEvent[T any] struct {
+	Data      T      `json:"data,omitempty"`
+	IndexHash string `json:"index_hash,omitempty"`
+	Key       string `json:"key"`
+	Method    string `json:"method"`
+	StoreName string `json:"name"`
+}
+
+type CachedIndexEntry[T any] struct {
+	Key       string `json:"k"`
+	ValueHash string `json:"h"`
+	data      T
+}
+
+type StoredIndex[T any] struct {
+	Data []CachedIndexEntry[T]
+}
+
+type CachedIndex[T any] map[string]*CachedIndexEntry[T]
+
+func MakeCachedStore[T any](name string, api plugin.API, mmapi *pluginapi.Client, log utils.Logger) (*CachedStore[T], error) {
 	s := &CachedStore[T]{
 		name:  name,
 		papi:  api,
-		mmapi: conf.MattermostAPI(),
+		mmapi: mmapi,
 		cache: &sync.Map{},
 	}
 
@@ -77,45 +84,41 @@ func MakeCachedStore[T any](name string, api plugin.API, conf config.Service) (*
 	}
 	s.kvMutex = mutex
 
-	log := s.Log(conf.NewBaseLogger())
 	log.Debugf("initializing cached store: %s", s.name)
 	_, err = s.syncFromKV(log, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync a new cached store %s from KV", s.name)
 	}
 
+	cachedStoreEventSink.Store(s.name, s)
+
 	return s, nil
 }
 
-func (s *CachedStore[T]) Log(log utils.Logger) utils.Logger {
-	hostname, _ := os.Hostname()
-	return log.With("cached_store", s.name, "hostname", hostname)
-}
-
-func (s *CachedStore[T]) Index() Index[T] {
-	out := Index[T]{}
+func (s *CachedStore[T]) Index() CachedIndex[T] {
+	out := CachedIndex[T]{}
 	s.cache.Range(func(key, mapv interface{}) bool {
-		entry := mapv.(*IndexEntry[T])
+		entry := mapv.(*CachedIndexEntry[T])
 		out[entry.Key] = entry
 		return true
 	})
 	return out
 }
 
-func (s *CachedStore[T]) get(key string) (entry *IndexEntry[T], ok bool) {
+func (s *CachedStore[T]) get(key string) (entry *CachedIndexEntry[T], ok bool) {
 	mapv, ok := s.cache.Load(key)
 	if !ok {
 		return entry, false
 	}
-	return mapv.(*IndexEntry[T]), true
+	return mapv.(*CachedIndexEntry[T]), true
 }
 
-func (s *CachedStore[T]) Get(key string) (result T, ok bool) {
+func (s *CachedStore[T]) GetCachedStoreItem(key string) (result T, ok bool) {
 	mapv, ok := s.cache.Load(key)
 	if !ok {
 		return result, false
 	}
-	entry := mapv.(*IndexEntry[T])
+	entry := mapv.(*CachedIndexEntry[T])
 	return entry.data, true
 }
 
@@ -137,13 +140,12 @@ func (s *CachedStore[T]) update(log utils.Logger, updatef func(prevIndex StoredI
 	return err
 }
 
-func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err error) {
-	log := s.Log(r.Log)
-	return s.update(log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+func (s *CachedStore[T]) PutCachedStoreItem(r *incoming.Request, key string, value T) (err error) {
+	return s.update(r.Log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		valueHash := jsonHash(value)
 		prevEntry, ok := s.get(key)
 		if ok && prevEntry.ValueHash == valueHash {
-			log.Debugf("CachedStore.Put: %s: %s: no change", s.name, key)
+			r.Log.Debugf("CachedStore.Put: %s: %s: no change", s.name, key)
 			return rollbacks, nil
 		}
 
@@ -151,7 +153,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		if err != nil {
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store item %s to %s", key, s.name)
 		}
-		log.Debugf("CachedStore.Put: %s: %s: persisted to KV", s.name, key)
+		r.Log.Debugf("CachedStore.Put: %s: %s: persisted to KV", s.name, key)
 		rollbacks = append(rollbacks, func() {
 			if prevEntry != nil {
 				_ = s.persistItem(key, prevEntry.data)
@@ -161,7 +163,7 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		})
 
 		newIndex := s.Index()
-		newEntry := IndexEntry[T]{
+		newEntry := CachedIndexEntry[T]{
 			Key:       key,
 			ValueHash: valueHash,
 			data:      value,
@@ -169,14 +171,14 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 		newIndex[key] = &newEntry
 
 		if err = s.persistIndex(newIndex.Stored()); err != nil {
-			log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
+			r.Log.WithError(err).Warnf("CachedStore.Put: failed to persist index, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to store index to %s", s.name)
 		}
-		log.Debugf("CachedStore.Put: %s: index persisted to KV", s.name)
+		r.Log.Debugf("CachedStore.Put: %s: index persisted to KV", s.name)
 		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevIndex) })
 
 		if err = s.notifyPut(key, value); err != nil {
-			log.WithError(err).Warnf("CachedStore.Put: failed to send cluster message, rolling back to previous state")
+			r.Log.WithError(err).Warnf("CachedStore.Put: failed to send cluster message, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Put: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
@@ -185,9 +187,8 @@ func (s *CachedStore[T]) Put(r *incoming.Request, key string, value T) (err erro
 	})
 }
 
-func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
-	log := s.Log(r.Log)
-	return s.update(log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
+func (s *CachedStore[T]) DeleteCachedStoreItem(r *incoming.Request, key string) (err error) {
+	return s.update(r.Log, func(prevIndex StoredIndex[T]) (rollbacks []func(), err error) {
 		prevEntry, ok := s.get(key)
 		if !ok {
 			return rollbacks, errors.Wrap(utils.ErrNotFound, key)
@@ -202,7 +203,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 
 		err = s.deleteItem(key)
 		if err != nil {
-			log.WithError(err).Warnf("CachedStore.Delete: failed to remove the item from KV, rolling back to previous state")
+			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to remove the item from KV, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to store index to %s", s.name)
 		}
 		if prevEntry != nil {
@@ -210,7 +211,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 		}
 
 		if err = s.notifyDelete(key); err != nil {
-			log.WithError(err).Warnf("CachedStore.Delete: failed to send cluster message, rolling back to previous state")
+			r.Log.WithError(err).Warnf("CachedStore.Delete: failed to send cluster message, rolling back to previous state")
 			return rollbacks, errors.Wrapf(err, "CachedStore.Delete: failed to send cluster message for key %s in %s", key, s.name)
 		}
 
@@ -219,7 +220,7 @@ func (s *CachedStore[T]) Delete(r *incoming.Request, key string) (err error) {
 	})
 }
 
-func (s *CachedStore[T]) clusterEventID() string {
+func (s *CachedStore[T]) PluginClusterEventID() string {
 	return CachedStoreEventID + "/" + s.name
 }
 
@@ -231,7 +232,7 @@ func (s *CachedStore[T]) notifyPut(key string, data T) error {
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: s.clusterEventID(), Data: bb},
+		model.PluginClusterEvent{Id: s.PluginClusterEventID(), Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
@@ -244,21 +245,21 @@ func (s *CachedStore[T]) notifyDelete(key string) error {
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: s.clusterEventID(), Data: bb},
+		model.PluginClusterEvent{Id: s.PluginClusterEventID(), Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
-func (s *CachedStore[T]) processClusterEvent(r *incoming.Request, eventData []byte) error {
+func (s *CachedStore[T]) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
 	event := CachedStoreClusterEvent[T]{}
-	err := json.Unmarshal(eventData, &event)
+	err := json.Unmarshal(ev.Data, &event)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
 	}
 
 	switch event.Method {
 	case CachedStorePutMethod:
-		s.cache.Store(event.Key, &IndexEntry[T]{
+		s.cache.Store(event.Key, &CachedIndexEntry[T]{
 			Key:       event.Key,
 			ValueHash: jsonHash(event.Data),
 			data:      event.Data,
@@ -362,11 +363,11 @@ func (s *CachedStore[T]) getItem(key string, log utils.Logger) (T, error) {
 	return v, err
 }
 
-func (entry *IndexEntry[T]) String() string {
+func (entry *CachedIndexEntry[T]) String() string {
 	return entry.Key
 }
 
-func (index Index[T]) Stored() StoredIndex[T] {
+func (index CachedIndex[T]) Stored() StoredIndex[T] {
 	stored := StoredIndex[T]{}
 	for _, v := range index {
 		stored.Data = append(stored.Data, *v)
@@ -390,14 +391,14 @@ func (index StoredIndex[T]) hash() string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (change, remove []IndexEntry[T]) {
+func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (change, remove []CachedIndexEntry[T]) {
 	otherData := other.Data
 	if otherData == nil {
-		otherData = []IndexEntry[T]{}
+		otherData = []CachedIndexEntry[T]{}
 	}
 	indexData := index.Data
 	if indexData == nil {
-		indexData = []IndexEntry[T]{}
+		indexData = []CachedIndexEntry[T]{}
 	}
 
 	i, o := 0, 0
@@ -423,8 +424,8 @@ func (index *StoredIndex[T]) compareTo(other StoredIndex[T]) (change, remove []I
 	}
 }
 
-func (index Index[T]) Clone() Index[T] {
-	out := Index[T]{}
+func (index CachedIndex[T]) Clone() CachedIndex[T] {
+	out := CachedIndex[T]{}
 	for k, v := range index {
 		out[k] = v
 	}
@@ -450,4 +451,22 @@ func parseCachedStoreKey(key string) (name, id string, err error) {
 func jsonHash(value any) string {
 	data, _ := json.Marshal(value)
 	return fmt.Sprintf("%x", sha256.Sum256(data))
+}
+
+func OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) {
+	v, ok := cachedStoreEventSink.Load(ev.Id)
+	if !ok {
+		r.Log.Debugf("OnPluginClusterEvent: no processor event for %s", ev.Id)
+		return
+	}
+	handler, ok := v.(cachedStoreEventProcessor)
+	if !ok {
+		r.Log.Debugf("OnPluginClusterEvent: invalid event processor %s, type %T", ev.Id, v)
+		return
+	}
+
+	err := handler.OnPluginClusterEvent(r, ev)
+	if err != nil {
+		r.Log.WithError(err).Errorw("failed to handle plugin cluster event")
+	}
 }
