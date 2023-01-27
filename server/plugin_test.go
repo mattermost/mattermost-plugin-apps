@@ -53,11 +53,6 @@ func TestOnActivate(t *testing.T) {
 			enableOAuth:  true,
 			errorMessage: "",
 		},
-		{
-			name:         "on activate fails because oauth2 is not enabled on system settings",
-			enableOAuth:  true,
-			errorMessage: "",
-		},
 	} {
 		testAPI.On("GetConfig").Return(&model.Config{
 			ServiceSettings: model.ServiceSettings{

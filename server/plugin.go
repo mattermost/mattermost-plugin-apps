@@ -91,11 +91,6 @@ func (p *Plugin) OnActivate() (err error) {
 	conf := p.conf.Get()
 	log.With(conf).Debugw("configured the plugin.")
 
-	oauthEnabled := confService.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
-	if oauthEnabled == nil || !*oauthEnabled {
-		return errors.New("the system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to /admin_console/integrations/integration_management and enable it")
-	}
-
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
