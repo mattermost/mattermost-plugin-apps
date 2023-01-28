@@ -57,13 +57,10 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 		DefaultMessage: &i18n.Message{
 			ID: "command.debug.kv.info.submit.message",
 			Other: `{{.Total}} total keys:
-- Special cached keys: {{.CachedStoreCount}}
+- Special cached keys: {{.CachedStoreTotal}}
 {{range $name, $count := .CachedStoreCountByName}}
   - ` + "`{{$name}}`" + `: {{$count}}
 {{end}}
-- Known manifest records: {{.ManifestCount}}
-- Installed app records: {{.InstalledAppCount}}
-- Subscription records: {{.SubscriptionCount}}
 - OAuth2 temporary state records: {{.OAuth2StateCount}}
 - Other internal records: {{.Other}}
 
@@ -77,7 +74,7 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 		message += fmt.Sprintf("  - `%s`: %v (%v kv, %v users, %v tokens)\n", appID, appInfo.Total(), appInfo.AppKVCount, appInfo.UserCount, appInfo.TokenCount)
 	}
 
-	totalKnown := info.ManifestCount + info.InstalledAppCount + info.SubscriptionCount + info.OAuth2StateCount + info.AppsTotal + info.Other + info.CachedStoreCount
+	totalKnown := info.OAuth2StateCount + info.AppsTotal + info.Other + info.CachedStoreTotal
 	if totalKnown != info.Total {
 		message += fmt.Sprintf("- **UNKNOWN**: %v\n", info.Total-totalKnown)
 	}

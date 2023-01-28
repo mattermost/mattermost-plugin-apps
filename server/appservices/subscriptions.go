@@ -132,7 +132,11 @@ func (a *AppServices) unsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 			}
 		}
 		if len(modified) < len(subs) {
-			err = a.subscriptions.Save(r, event, modified)
+			if len(modified) > 0 {
+				err = a.subscriptions.Save(r, event, modified)
+			} else {
+				err = a.subscriptions.Delete(r, event)
+			}
 			if err != nil {
 				return err
 			}
@@ -143,8 +147,8 @@ func (a *AppServices) unsubscribeApp(r *incoming.Request, appID apps.AppID) erro
 	return err
 }
 
-func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e apps.Event) ([]store.Subscription, error) {
-	all, err := a.subscriptions.Get(r, e)
+func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, event apps.Event) ([]store.Subscription, error) {
+	all, err := a.subscriptions.Get(r, event)
 	if err != nil {
 		return nil, err
 	}
@@ -168,14 +172,19 @@ func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e app
 		if i < len(all) {
 			modified = append(modified, all[i+1:]...)
 		}
-		err = a.subscriptions.Save(r, e, modified)
+		if len(modified) > 0 {
+			err = a.subscriptions.Save(r, event, modified)
+		} else {
+			err = a.subscriptions.Delete(r, event)
+		}
 		if err != nil {
 			return nil, err
 		}
+
 		return modified, nil
 	}
 
-	return all, errors.Wrap(utils.ErrNotFound, "You are not subscribed to this notification")
+	return all, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", event.String())
 }
 
 func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Subscription) func() error {

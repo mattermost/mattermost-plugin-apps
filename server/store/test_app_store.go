@@ -6,10 +6,6 @@ package store
 import (
 	"sort"
 
-	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-server/v6/model"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -18,13 +14,6 @@ import (
 type TestAppStore map[apps.AppID]apps.App
 
 var _ Apps = (TestAppStore)(nil)
-
-func (s TestAppStore) InitBuiltin(builtinApps ...apps.App) {
-	for _, app := range builtinApps {
-		app.DeployType = apps.DeployBuiltin
-		s[app.AppID] = app
-	}
-}
 
 func (s TestAppStore) Get(appID apps.AppID) (*apps.App, error) {
 	app, ok := s[appID]
@@ -63,12 +52,4 @@ func (s TestAppStore) Save(r *incoming.Request, app apps.App) error {
 func (s TestAppStore) Delete(r *incoming.Request, appID apps.AppID) error {
 	delete(s, appID)
 	return nil
-}
-
-func (s TestAppStore) PluginClusterEventID() string {
-	return "test"
-}
-
-func (s TestAppStore) OnPluginClusterEvent(_ *incoming.Request, _ model.PluginClusterEvent) error {
-	return errors.New("not implemented")
 }

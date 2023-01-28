@@ -277,7 +277,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
 func (p *Proxy) getAppIcon(r *incoming.Request, app *apps.App) (io.ReadCloser, error) {
-	iconPath := app.Manifest.Icon
+	iconPath := app.Icon
 	if iconPath == "" {
 		return nil, nil
 	}

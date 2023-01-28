@@ -45,11 +45,12 @@ type AppServices struct {
 
 var _ Service = (*AppServices)(nil)
 
-func NewService(appStore store.Apps, kvStore *store.KVStore, oauth2Store *store.OAuth2Store) *AppServices {
+func NewService(appStore store.Apps, kvStore *store.KVStore, oauth2Store *store.OAuth2Store, subscriptionsStore *store.SubscriptionStore) *AppServices {
 	return &AppServices{
-		apps:   appStore,
-		kv:     kvStore,
-		oauth2: oauth2Store,
+		apps:          appStore,
+		kv:            kvStore,
+		oauth2:        oauth2Store,
+		subscriptions: subscriptionsStore,
 	}
 }
 

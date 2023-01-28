@@ -5,6 +5,7 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -43,7 +44,7 @@ func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscripti
 	}
 	subs, ok := s.GetCachedStoreItem(key)
 	if !ok {
-		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", key)
+		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", e.String())
 	}
 	return subs, nil
 }
@@ -63,7 +64,19 @@ func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Ev
 func (s *SubscriptionStore) Save(r *incoming.Request, e apps.Event, subs []Subscription) error {
 	key := utils.ToJSON(e)
 	if key == "{}" {
-		return errors.New("failed to get subscriptions: invalid empty event")
+		return errors.New("failed to save subscriptions: invalid empty event")
 	}
 	return s.PutCachedStoreItem(r, key, subs)
+}
+
+func (s *SubscriptionStore) Delete(r *incoming.Request, e apps.Event) error {
+	key := utils.ToJSON(e)
+	if key == "{}" {
+		return errors.New("failed to delete subscriptions: invalid empty event")
+	}
+	return s.DeleteCachedStoreItem(r, key)
+}
+
+func (s Subscription) String() string {
+	return fmt.Sprintf("%s/%s/%s", s.AppID, s.OwnerUserID, s.Call.Path)
 }

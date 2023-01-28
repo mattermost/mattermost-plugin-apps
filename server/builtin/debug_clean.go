@@ -7,6 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
@@ -36,10 +37,7 @@ func (a *builtinApp) debugClean(r *incoming.Request, creq apps.CallRequest) apps
 		Other: "Deleted all KV records.",
 	}) + "\n"
 
-	sc := a.conf.Get().StoredConfig
-	sc.InstalledApps = nil
-	sc.LocalManifests = nil
-	err = a.conf.StoreConfig(sc, r.Log)
+	err = a.conf.StoreConfig(config.StoredConfig{}, r.Log)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

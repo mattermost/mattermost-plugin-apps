@@ -52,7 +52,7 @@ type service struct {
 	mattermostConfig *model.Config
 }
 
-func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) (Service, utils.Logger, error) {
+func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle) (Service, error) {
 	s := &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
@@ -65,19 +65,19 @@ func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID 
 	sc := StoredConfig{}
 	err := s.mm.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	clone, log, err := s.newInitializedConfig(sc)
+	clone, err := s.newInitializedConfig(sc)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	s.lock.Lock()
 	s.conf = clone
 	s.lock.Unlock()
 
-	return s, log, nil
+	return s, nil
 }
 
 func (s *service) newConfig() Config {
@@ -90,7 +90,7 @@ func (s *service) newConfig() Config {
 	}
 }
 
-func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, utils.Logger, error) {
+func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, error) {
 	log := s.NewBaseLogger()
 	conf := s.newConfig()
 	conf.StoredConfig = newStoredConfig
@@ -104,11 +104,11 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 
 	mattermostSiteURL := newMattermostConfig.ServiceSettings.SiteURL
 	if mattermostSiteURL == nil {
-		return nil, nil, errors.New("plugin requires Mattermost Site URL to be set")
+		return nil, errors.New("plugin requires Mattermost Site URL to be set")
 	}
 	u, err := url.Parse(*mattermostSiteURL)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "invalid SiteURL in config")
+		return nil, errors.Wrap(err, "invalid SiteURL in config")
 	}
 
 	var localURL string
@@ -119,11 +119,11 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 		// Avoid the reverse proxy by using the local port
 		listenAddress := newMattermostConfig.ServiceSettings.ListenAddress
 		if listenAddress == nil {
-			return nil, nil, errors.New("plugin requires Mattermost Listen Address to be set")
+			return nil, errors.New("plugin requires Mattermost Listen Address to be set")
 		}
 		host, port, err := net.SplitHostPort(*listenAddress)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if host == "" {
@@ -137,7 +137,6 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 	conf.MattermostLocalURL = localURL
 	conf.PluginURLPath = "/plugins/" + conf.PluginManifest.Id
 	conf.PluginURL = strings.TrimRight(u.String(), "/") + conf.PluginURLPath
-	conf.PluginHostName, _ = os.Hostname()
 
 	conf.MaxWebhookSize = 75 * 1024 * 1024 // 75Mb
 	if newMattermostConfig.FileSettings.MaxFileSize != nil {
@@ -173,7 +172,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 			conf.AWSSecretKey = legacySecretKey
 		}
 		if conf.AWSAccessKey == "" || conf.AWSSecretKey == "" {
-			return nil, nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
+			return nil, errors.New("access credentials for AWS must be set in Mattermost Cloud mode")
 		}
 	}
 
@@ -183,7 +182,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 		conf.AllowHTTPApps = !conf.MattermostCloudMode || conf.DeveloperMode
 	}
 
-	return &conf, log, nil
+	return &conf, nil
 }
 
 func (s *service) Get() Config {
@@ -248,8 +247,7 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 }
 
 func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, services ...Configurable) error {
-	// Use the old settings to log the processing of the new config.
-	clone, log, err := s.newInitializedConfig(newStoredConfig)
+	clone, err := s.newInitializedConfig(newStoredConfig)
 	if err != nil {
 		return err
 	}
@@ -258,6 +256,8 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 	s.conf = clone
 	s.lock.Unlock()
 
+	// Use the old settings to log the processing of the new config.
+	log := s.NewBaseLogger()
 	if !verbose {
 		log = utils.NilLogger{}
 	}
@@ -270,8 +270,7 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 }
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration, %v installed , %v listed apps, developer mode %v, allow http apps %v",
-		len(sc.InstalledApps), len(sc.LocalManifests), sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
+	log.Debugf("Storing configuration, developer mode %v, allow http apps %v", sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
 	err := s.Reconfigure(sc, false)
@@ -287,13 +286,10 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 }
 
 func (s *service) NewBaseLogger() utils.Logger {
-	var log utils.Logger
 	if s.Get().DeveloperMode {
-		log = utils.NewPluginLogger(s.mm, s)
-	} else {
-		log = utils.NewPluginLogger(s.mm, nil)
+		return utils.NewPluginLogger(s.mm, s)
 	}
-	return log.With("hostname", s.Get().PluginHostName)
+	return utils.NewPluginLogger(s.mm, nil)
 }
 
 func (s *service) GetLogConfig() utils.LogConfig {

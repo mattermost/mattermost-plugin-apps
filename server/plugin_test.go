@@ -57,7 +57,7 @@ func TestOnActivate(t *testing.T) {
 		SkuShortName: "professional",
 	})
 
-	expectLog(testAPI, "LogDebug", 17)
+	expectLog(testAPI, "LogDebug", 19)
 	expectLog(testAPI, "LogInfo", 5)
 	expectLog(testAPI, "LogError", 3)
 
@@ -93,7 +93,7 @@ func TestOnDeactivate(t *testing.T) {
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	var err error
-	p.conf, _, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle)
+	p.conf, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle)
 	require.NoError(t, err)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})

@@ -85,7 +85,7 @@ func (p *Plugin) OnActivate() (err error) {
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	confService, log, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
+	confService, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
 	if err != nil {
 		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
@@ -123,7 +123,7 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 
 	//  Initialize services (API implementations) - session, app services, proxy.
-	p.appservices = appservices.NewService(p.AppStore, p.KVStore, p.OAuth2Store)
+	p.appservices = appservices.NewService(p.AppStore, p.KVStore, p.OAuth2Store, p.SubscriptionStore)
 	p.sessionService = session.NewService(mm, p.AppStore, p.SessionStore)
 	log.Debugf("initialized API and persistent store")
 
@@ -211,7 +211,12 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	r := p.proxy.NewIncomingRequest(c.RequestId)
+	requestId := c.RequestId
+	if requestId == "" {
+		// This is a hack to work around the fact that the plugin API does not pass in a request ID.
+		requestId = model.NewId()
+	}
+	r := p.proxy.NewIncomingRequest(requestId)
 	store.OnPluginClusterEvent(r, ev)
 }
 

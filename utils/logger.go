@@ -5,9 +5,12 @@ package utils
 
 import (
 	"fmt"
+	"hash/fnv"
+	"os"
 	"sort"
 	"strings"
 
+	"github.com/goombaio/namegenerator"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -159,4 +162,12 @@ func LogDigest(i interface{}) string {
 	}
 
 	return fmt.Sprintf("%v", i)
+}
+
+func HostNickname() string {
+	hostname, _ := os.Hostname()
+
+	h := fnv.New64a()
+	h.Write([]byte(hostname))
+	return namegenerator.NewNameGenerator(int64(h.Sum64())).Generate()
 }
