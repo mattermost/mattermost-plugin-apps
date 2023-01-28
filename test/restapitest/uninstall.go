@@ -139,7 +139,7 @@ func testUninstall(th *Helper) {
 			AppsTotal:        0,
 			CachedStoreTotal: 4,
 			CachedStoreCountByName: map[string]int{
-				"manifests":     1,
+				"manifests": 1,
 			},
 			Debug:            2000,
 			OAuth2StateCount: 0,

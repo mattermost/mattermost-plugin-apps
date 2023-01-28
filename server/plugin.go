@@ -211,12 +211,12 @@ func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
-	requestId := c.RequestId
-	if requestId == "" {
+	requestID := c.RequestId
+	if requestID == "" {
 		// This is a hack to work around the fact that the plugin API does not pass in a request ID.
-		requestId = model.NewId()
+		requestID = model.NewId()
 	}
-	r := p.proxy.NewIncomingRequest(requestId)
+	r := p.proxy.NewIncomingRequest(requestID)
 	store.OnPluginClusterEvent(r, ev)
 }
 
