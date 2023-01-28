@@ -221,7 +221,7 @@ func testOAuth2(th *Helper) {
 	})
 
 	th.Run("User and bot calls can expand OAuth2App", func(th *Helper) {
-		th.Skip("https://mattermost.atlassian.net/browse/MM-48448")
+		// th.Skip("https://mattermost.atlassian.net/browse/MM-48448")
 		th.Cleanup(func() {
 			cleanupOAuth2App(th)()
 			cleanupOAuth2User(th)()
