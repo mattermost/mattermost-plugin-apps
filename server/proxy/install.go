@@ -80,7 +80,8 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 	r.Log.Debugf("app install flow: updated app configuration")
 
-	if !p.pingApp(r.Ctx(), app) {
+	err = p.pingApp(r.Ctx(), app)
+	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
 	r.Log.Debugf("app install flow: app is pingable")
