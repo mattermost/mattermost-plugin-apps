@@ -3,8 +3,9 @@ package store
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
 func Test_subsKey(t *testing.T) {
@@ -71,25 +72,25 @@ func Test_subsKey(t *testing.T) {
 		"sub.user_left_team.teamID",
 		"can't make a key for a subscription, expected channel ID empty for subject user_left_team")...)
 
-	tests = append(tests, tcs(apps.SubjectBotJoinedChannel_Deprecated,
+	tests = append(tests, tcs(apps.SubjectBotJoinedChannelDeprecated,
 		"sub.bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel")...)
 
-	tests = append(tests, tcs(apps.SubjectBotLeftChannel_Deprecated,
+	tests = append(tests, tcs(apps.SubjectBotLeftChannelDeprecated,
 		"sub.bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel")...)
 
-	tests = append(tests, tcs(apps.SubjectBotJoinedTeam_Deprecated,
+	tests = append(tests, tcs(apps.SubjectBotJoinedTeamDeprecated,
 		"sub.bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team")...)
 
-	tests = append(tests, tcs(apps.SubjectBotLeftTeam_Deprecated,
+	tests = append(tests, tcs(apps.SubjectBotLeftTeamDeprecated,
 		"sub.bot_left_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_team",

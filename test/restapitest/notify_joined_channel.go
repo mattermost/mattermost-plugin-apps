@@ -21,7 +21,7 @@ func notifyAnyUserJoinedTheChannel(th *Helper) *notifyTestCase {
 				ChannelID: data.Channel.Id,
 			}
 		},
-		except: []appClient{ th.asUser2, },
+		except: []appClient{th.asUser2},
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
@@ -55,7 +55,7 @@ func notifySubscriberJoinedAnyChannel(th *Helper) *notifyTestCase {
 }
 
 func notifyBotJoinedAnyChannel(th *Helper) *notifyTestCase {
-	return notifyTheUserJoinedAnyChannel(th, apps.SubjectBotJoinedChannel_Deprecated, []appClient{th.asUser, th.asUser2, th.asAdmin})
+	return notifyTheUserJoinedAnyChannel(th, apps.SubjectBotJoinedChannelDeprecated, []appClient{th.asUser, th.asUser2, th.asAdmin})
 }
 
 // notifyTheUserJoinedAnyChannelImpl tests SubjectUserJoinedChannel with no

@@ -56,14 +56,14 @@ const (
 	SubjectUserJoinedTeam Subject = "user_joined_team"
 	SubjectUserLeftTeam   Subject = "user_left_team"
 
-	// SubjectBotJoinedChannel_Deprecated, SubjectBotLeftChannel,
+	// SubjectBotJoinedChannelDeprecated, SubjectBotLeftChannel,
 	// SubjectBotJoinedTeam, SubjectBotLeftTeam are deprecated. Use "User"
 	// instead. They are kept for backwards compatibility, and only work in the
 	// "system-wide" mode for the app's bot user.
-	SubjectBotJoinedChannel_Deprecated Subject = "bot_joined_channel"
-	SubjectBotLeftChannel_Deprecated   Subject = "bot_left_channel"
-	SubjectBotJoinedTeam_Deprecated    Subject = "bot_joined_team"
-	SubjectBotLeftTeam_Deprecated      Subject = "bot_left_team"
+	SubjectBotJoinedChannelDeprecated Subject = "bot_joined_channel"
+	SubjectBotLeftChannelDeprecated   Subject = "bot_left_channel"
+	SubjectBotJoinedTeamDeprecated    Subject = "bot_joined_team"
+	SubjectBotLeftTeamDeprecated      Subject = "bot_left_team"
 
 	// SubjectChannelCreated watches for new channels in the specified team.
 	//   TeamID: specifies the team to watch.
@@ -126,10 +126,10 @@ func (e Event) validate(appendTo error) error {
 	switch e.Subject {
 	// Globally scoped, must not contain any extra qualifiers.
 	case SubjectUserCreated,
-		SubjectBotJoinedTeam_Deprecated,
-		SubjectBotLeftTeam_Deprecated,
-		SubjectBotJoinedChannel_Deprecated,
-		SubjectBotLeftChannel_Deprecated /*, SubjectSelfMentioned*/ :
+		SubjectBotJoinedTeamDeprecated,
+		SubjectBotLeftTeamDeprecated,
+		SubjectBotJoinedChannelDeprecated,
+		SubjectBotLeftChannelDeprecated /*, SubjectSelfMentioned*/ :
 		if e.TeamID != "" {
 			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped globally; team_id and channel_id must both be empty", e.Subject))
 		}

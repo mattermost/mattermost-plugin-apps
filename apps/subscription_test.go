@@ -28,10 +28,10 @@ func TestValidateSubscriptionEvent(t *testing.T) {
 		{Event: apps.Event{Subject: apps.SubjectUserLeftChannel}},
 		{Event: apps.Event{Subject: apps.SubjectUserJoinedTeam}},
 		{Event: apps.Event{Subject: apps.SubjectUserLeftTeam}},
-		{Event: apps.Event{Subject: apps.SubjectBotJoinedChannel_Deprecated}},
-		{Event: apps.Event{Subject: apps.SubjectBotLeftChannel_Deprecated}},
-		{Event: apps.Event{Subject: apps.SubjectBotJoinedTeam_Deprecated}},
-		{Event: apps.Event{Subject: apps.SubjectBotLeftTeam_Deprecated}},
+		{Event: apps.Event{Subject: apps.SubjectBotJoinedChannelDeprecated}},
+		{Event: apps.Event{Subject: apps.SubjectBotLeftChannelDeprecated}},
+		{Event: apps.Event{Subject: apps.SubjectBotJoinedTeamDeprecated}},
+		{Event: apps.Event{Subject: apps.SubjectBotLeftTeamDeprecated}},
 		{Event: apps.Event{Subject: apps.SubjectChannelCreated, TeamID: "teamID"}},
 
 		// Bad.
@@ -72,19 +72,19 @@ func TestValidateSubscriptionEvent(t *testing.T) {
 			expectedError: "user_left_team is scoped globally, or to a team; channel_id must be empty: invalid input",
 		},
 		{
-			Event:         apps.Event{Subject: apps.SubjectBotJoinedChannel_Deprecated, TeamID: "teamID"},
+			Event:         apps.Event{Subject: apps.SubjectBotJoinedChannelDeprecated, TeamID: "teamID"},
 			expectedError: "bot_joined_channel is scoped globally; team_id and channel_id must both be empty: invalid input",
 		},
 		{
-			Event:         apps.Event{Subject: apps.SubjectBotLeftChannel_Deprecated, TeamID: "teamID"},
+			Event:         apps.Event{Subject: apps.SubjectBotLeftChannelDeprecated, TeamID: "teamID"},
 			expectedError: "bot_left_channel is scoped globally; team_id and channel_id must both be empty: invalid input",
 		},
 		{
-			Event:         apps.Event{Subject: apps.SubjectBotJoinedTeam_Deprecated, TeamID: "teamID"},
+			Event:         apps.Event{Subject: apps.SubjectBotJoinedTeamDeprecated, TeamID: "teamID"},
 			expectedError: "bot_joined_team is scoped globally; team_id and channel_id must both be empty: invalid input",
 		},
 		{
-			Event:         apps.Event{Subject: apps.SubjectBotLeftTeam_Deprecated, TeamID: "teamID"},
+			Event:         apps.Event{Subject: apps.SubjectBotLeftTeamDeprecated, TeamID: "teamID"},
 			expectedError: "bot_left_team is scoped globally; team_id and channel_id must both be empty: invalid input",
 		},
 		{

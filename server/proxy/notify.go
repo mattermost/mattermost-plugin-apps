@@ -87,9 +87,9 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 	// Notify on the deprecated bot_joined|left_channel subscriptions.
 	if user.IsBot {
 		allApps := p.store.App.AsMap(store.EnabledAppsOnly)
-		subject = apps.SubjectBotJoinedChannel_Deprecated
+		subject = apps.SubjectBotJoinedChannelDeprecated
 		if !joined {
-			subject = apps.SubjectBotLeftChannel_Deprecated
+			subject = apps.SubjectBotLeftChannelDeprecated
 		}
 		p.notifyAll(
 			apps.Event{
@@ -169,9 +169,9 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 	// with the matching BotUserID.
 	if user.IsBot {
 		allApps := p.store.App.AsMap(store.EnabledAppsOnly)
-		subject = apps.SubjectBotJoinedTeam_Deprecated
+		subject = apps.SubjectBotJoinedTeamDeprecated
 		if !joined {
-			subject = apps.SubjectBotLeftTeam_Deprecated
+			subject = apps.SubjectBotLeftTeamDeprecated
 		}
 		p.notifyAll(
 			apps.Event{

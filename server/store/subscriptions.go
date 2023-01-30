@@ -42,8 +42,8 @@ func subsKey(e apps.Event) (string, error) {
 	idSuffix := ""
 	switch e.Subject {
 	case apps.SubjectUserCreated,
-		apps.SubjectBotJoinedTeam_Deprecated, apps.SubjectBotLeftTeam_Deprecated,
-		apps.SubjectBotJoinedChannel_Deprecated, apps.SubjectBotLeftChannel_Deprecated:
+		apps.SubjectBotJoinedTeamDeprecated, apps.SubjectBotLeftTeamDeprecated,
+		apps.SubjectBotJoinedChannelDeprecated, apps.SubjectBotLeftChannelDeprecated:
 		if e.TeamID != "" || e.ChannelID != "" {
 			return "", errors.Errorf("can't make a key for a subscription, expected team and channel IDs empty for subject %s", e.Subject)
 		}
