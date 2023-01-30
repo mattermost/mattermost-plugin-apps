@@ -134,10 +134,9 @@ func testNotify(th *Helper) {
 					require.Empty(th, received)
 					require.EqualValues(th, apps.NewCall("/notify").WithExpand(expandEverything(level)), &n.Call)
 
-					ec := tc.expected(th, level, appclient, data)
 					expected := apps.Context{
 						Subject:         event.Subject,
-						ExpandedContext: ec,
+						ExpandedContext: tc.expected(th, level, appclient, data),
 					}
 					expected.ExpandedContext.App = th.LastInstalledApp
 					expected.ExpandedContext.ActingUser = appclient.expectedActingUser
