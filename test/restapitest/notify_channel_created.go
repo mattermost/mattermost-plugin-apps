@@ -37,12 +37,12 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			// only user, user2 and admin can get here, bit wouldn't be able to
 			// subscribe since it was not added to the team in init.
 			switch appclient.name {
 			case "admin":
-				return apps.SubjectChannelCreated, apps.ExpandedContext{
+				return apps.ExpandedContext{
 					Channel:       data.Channel,
 					ChannelMember: th.getChannelMember(data.Channel.Id, appclient.expectedActingUser.Id),
 					Team:          data.Team,
@@ -57,7 +57,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 				if level == apps.ExpandID {
 					ec.Channel = data.Channel
 				}
-				return apps.SubjectChannelCreated, ec
+				return ec
 			}
 		},
 	}

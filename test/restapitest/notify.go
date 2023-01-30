@@ -22,7 +22,7 @@ type notifyTestCase struct {
 	init               func(*Helper, *model.User) apps.ExpandedContext
 	event              func(*Helper, apps.ExpandedContext) apps.Event
 	trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
-	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) (apps.Subject, apps.ExpandedContext)
+	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) apps.ExpandedContext
 	except             []appClient
 	expandCombinations []apps.ExpandLevel
 }
@@ -134,9 +134,9 @@ func testNotify(th *Helper) {
 					require.Empty(th, received)
 					require.EqualValues(th, apps.NewCall("/notify").WithExpand(expandEverything(level)), &n.Call)
 
-					subj, ec := tc.expected(th, level, appclient, data)
+					ec := tc.expected(th, level, appclient, data)
 					expected := apps.Context{
-						Subject:         subj,
+						Subject:         event.Subject,
 						ExpandedContext: ec,
 					}
 					expected.ExpandedContext.App = th.LastInstalledApp

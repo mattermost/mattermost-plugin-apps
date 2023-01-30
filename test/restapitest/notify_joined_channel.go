@@ -37,15 +37,14 @@ func notifyAnyUserJoinedTheChannel(th *Helper) *notifyTestCase {
 			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
 				User:          data.User,
 				Team:          data.Team,
 				TeamMember:    data.TeamMember,
 				Channel:       data.Channel,
 				ChannelMember: data.ChannelMember,
 			}
-			return apps.SubjectUserJoinedChannel, ec
 		},
 	}
 }
@@ -86,8 +85,8 @@ func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []ap
 			data.ChannelMember = th.addChannelMember(data.Channel, data.ActingUser)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
 				ActingUser:    data.ActingUser,
 				Channel:       data.Channel,
 				ChannelMember: data.ChannelMember,
@@ -95,7 +94,6 @@ func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []ap
 				TeamMember:    data.TeamMember,
 				User:          data.ActingUser,
 			}
-			return subject, ec
 		},
 	}
 }

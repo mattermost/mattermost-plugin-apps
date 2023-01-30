@@ -37,14 +37,13 @@ func notifyAnyUserLeftTheChannel(th *Helper) *notifyTestCase {
 			th.removeUserFromChannel(data.Channel, data.User)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
 				User:       data.User,
 				Team:       data.Team,
 				TeamMember: data.TeamMember,
 				Channel:    data.Channel,
 			}
-			return apps.SubjectUserLeftChannel, ec
 		},
 	}
 }
@@ -84,8 +83,8 @@ func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appC
 			th.removeUserFromChannel(data.Channel, data.User)
 			return data
 		},
-		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) (apps.Subject, apps.ExpandedContext) {
-			ec := apps.ExpandedContext{
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
 				User:          data.User,
 				ActingUser:    data.ActingUser,
 				Team:          data.Team,
@@ -93,7 +92,6 @@ func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appC
 				Channel:       data.Channel,
 				ChannelMember: data.ChannelMember,
 			}
-			return subject, ec
 		},
 	}
 }
