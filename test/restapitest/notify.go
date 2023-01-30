@@ -19,7 +19,6 @@ import (
 )
 
 type notifyTestCase struct {
-	useTestSubscribe   bool
 	init               func(*Helper, *model.User) apps.ExpandedContext
 	event              func(*Helper, apps.ExpandedContext) apps.Event
 	trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
@@ -127,7 +126,7 @@ func testNotify(th *Helper) {
 					}
 
 					event := tc.event(th, data)
-					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level), tc.useTestSubscribe)
+					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level))
 
 					data = tc.trigger(th, data)
 
@@ -150,7 +149,7 @@ func testNotify(th *Helper) {
 	}
 }
 
-func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand, testFlag bool) {
+func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand) {
 	cresp := appclient.happyCall(appID, apps.CallRequest{
 		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
 		Values: map[string]interface{}{
@@ -159,7 +158,6 @@ func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.
 				Call:  *apps.NewCall("/notify").WithExpand(expand),
 			},
 			"as_bot": appclient.appActsAsBot,
-			"test":   testFlag,
 		},
 	})
 	require.Equal(th, `subscribed`, cresp.Text)
