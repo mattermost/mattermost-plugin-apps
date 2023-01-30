@@ -25,7 +25,7 @@ func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Bindi
 		Form: &apps.Form{
 			Submit: newUserCall(pDebugBindings),
 			Fields: []apps.Field{
-				a.appIDField(LookupInstalledApps, 1, true, loc),
+				a.appIDField(LookupEnabledApps, 1, true, loc),
 			},
 		},
 	}
