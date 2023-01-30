@@ -109,14 +109,14 @@ func testNotify(th *Helper) {
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
-		"channel_created":               notifyChannelCreated(th),
-		"user_created":                  notifyUserCreated(th),
 		"any_user_joined_the_channel":   notifyAnyUserJoinedTheChannel(th),
-		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
-		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
 		"any_user_left_the_channel":     notifyAnyUserLeftTheChannel(th),
-		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
+		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
 		"bot_left_any_channel":          notifyBotLeftAnyChannel(th),
+		"channel_created":               notifyChannelCreated(th),
+		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
+		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
+		"user_created":                  notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, tc.expandCombinations, tc.except,
