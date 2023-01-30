@@ -19,27 +19,47 @@ var allSubjects = map[apps.Subject]apps.Expand{
 		User: apps.ExpandAll,
 		Team: apps.ExpandAll,
 	},
-	apps.SubjectBotJoinedChannel: {
+	apps.SubjectBotJoinedChannel_Deprecated: {
 		User:          apps.ExpandAll,
 		Channel:       apps.ExpandAll,
 		ChannelMember: apps.ExpandAll,
 	},
-	apps.SubjectBotLeftChannel: {
+	apps.SubjectBotLeftChannel_Deprecated: {
 		User:          apps.ExpandAll,
 		Channel:       apps.ExpandAll,
 		ChannelMember: apps.ExpandAll,
 	},
-	apps.SubjectBotJoinedTeam: {
+	apps.SubjectBotJoinedTeam_Deprecated: {
 		User:       apps.ExpandAll,
 		Team:       apps.ExpandAll,
 		TeamMember: apps.ExpandAll,
 	},
-	apps.SubjectBotLeftTeam: {
+	apps.SubjectBotLeftTeam_Deprecated: {
 		User:       apps.ExpandAll,
 		Team:       apps.ExpandAll,
 		TeamMember: apps.ExpandAll,
 	},
-	// apps.SubjectBotMentioned: {
+	apps.SubjectSelfJoinedChannel: {
+		User:          apps.ExpandAll,
+		Channel:       apps.ExpandAll,
+		ChannelMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfLeftChannel: {
+		User:          apps.ExpandAll,
+		Channel:       apps.ExpandAll,
+		ChannelMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfJoinedTeam: {
+		User:       apps.ExpandAll,
+		Team:       apps.ExpandAll,
+		TeamMember: apps.ExpandAll,
+	},
+	apps.SubjectSelfLeftTeam: {
+		User:       apps.ExpandAll,
+		Team:       apps.ExpandAll,
+		TeamMember: apps.ExpandAll,
+	},
+	// apps.SubjectSelfMentioned: {
 	// 	Channel:  apps.ExpandAll,
 	// 	Post:     apps.ExpandSummary,
 	// 	RootPost: apps.ExpandSummary,
@@ -132,8 +152,8 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
-		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
+		apps.SubjectBotJoinedChannel_Deprecated,
+		apps.SubjectBotLeftChannel_Deprecated,
 		apps.SubjectChannelCreated:
 		sub.TeamID = creq.Context.Team.Id
 	}

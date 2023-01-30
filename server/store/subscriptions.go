@@ -42,20 +42,37 @@ func subsKey(e apps.Event) (string, error) {
 	idSuffix := ""
 	switch e.Subject {
 	case apps.SubjectUserCreated,
-		apps.SubjectBotJoinedTeam,
-		apps.SubjectBotLeftTeam /*, apps.SubjectBotMentioned */ :
-	// Global subscriptions, no suffix
+		apps.SubjectBotJoinedTeam_Deprecated, apps.SubjectBotLeftTeam_Deprecated,
+		apps.SubjectBotJoinedChannel_Deprecated, apps.SubjectBotLeftChannel_Deprecated:
+		if e.TeamID != "" || e.ChannelID != "" {
+			return "", errors.Errorf("can't make a key for a subscription, expected team and channel IDs empty for subject %s", e.Subject)
+		}
 
-	case apps.SubjectUserJoinedChannel,
-		apps.SubjectUserLeftChannel /* , apps.SubjectPostCreated */ :
-		idSuffix = "." + e.ChannelID
+	case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /* , apps.SubjectPostCreated */ :
+		if e.TeamID != "" {
+			return "", errors.Errorf("can't make a key for a subscription, expected team ID empty for subject %s", e.Subject)
+		}
+		if e.ChannelID != "" {
+			idSuffix = "." + e.ChannelID
+		}
 
-	case apps.SubjectUserJoinedTeam,
-		apps.SubjectUserLeftTeam,
-		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
-		apps.SubjectChannelCreated:
+	case apps.SubjectUserJoinedTeam, apps.SubjectUserLeftTeam:
+		if e.ChannelID != "" {
+			return "", errors.Errorf("can't make a key for a subscription, expected channel ID empty for subject %s", e.Subject)
+		}
+		if e.TeamID != "" {
+			idSuffix = "." + e.TeamID
+		}
+
+	case apps.SubjectChannelCreated:
+		if e.ChannelID != "" {
+			return "", errors.Errorf("can't make a key for a subscription, expected channel ID empty for subject %s", e.Subject)
+		}
+		if e.TeamID == "" {
+			return "", errors.Errorf("can't make a key for a subscription, expected a team ID for subject %s", e.Subject)
+		}
 		idSuffix = "." + e.TeamID
+
 	default:
 		return "", errors.Errorf("Unknown subject %s", e.Subject)
 	}

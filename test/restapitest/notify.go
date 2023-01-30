@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -18,10 +19,11 @@ import (
 )
 
 type notifyTestCase struct {
-	init               func(*Helper) apps.ExpandedContext
+	useTestSubscribe   bool
+	init               func(*Helper, *model.User) apps.ExpandedContext
 	event              func(*Helper, apps.ExpandedContext) apps.Event
 	trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
-	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) apps.ExpandedContext
+	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) (apps.Subject, apps.ExpandedContext)
 	except             []appClient
 	expandCombinations []apps.ExpandLevel
 }
@@ -107,27 +109,25 @@ func testNotify(th *Helper) {
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
-		"bot_joined_channel":  notifyBotJoinedChannel(th),
-		"bot_joined_team":     notifyBotJoinedTeam(th),
-		"bot_left_channel":    notifyBotLeftChannel(th),
-		"bot_left_team":       notifyBotLeftTeam(th),
-		"user_joined_channel": notifyUserJoinedChannel(th),
-		"user_joined_team":    notifyUserJoinedTeam(th),
-		"user_left_channel":   notifyUserLeftChannel(th),
-		"user_left_team":      notifyUserLeftTeam(th),
-		"channel_created":     notifyChannelCreated(th),
-		"user_created":        notifyUserCreated(th),
+		"channel_created":               notifyChannelCreated(th),
+		"user_created":                  notifyUserCreated(th),
+		"any_user_joined_the_channel":   notifyAnyUserJoinedTheChannel(th),
+		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
+		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
+		"any_user_left_the_channel":     notifyAnyUserLeftTheChannel(th),
+		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
+		"bot_left_any_channel":          notifyBotLeftAnyChannel(th),
 	} {
 		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, tc.expandCombinations, tc.except,
 				func(th *Helper, level apps.ExpandLevel, appclient appClient) {
 					data := apps.ExpandedContext{}
 					if tc.init != nil {
-						data = tc.init(th)
+						data = tc.init(th, appclient.expectedActingUser)
 					}
 
 					event := tc.event(th, data)
-					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level))
+					th.subscribeAs(appclient, th.LastInstalledApp.AppID, event, expandEverything(level), tc.useTestSubscribe)
 
 					data = tc.trigger(th, data)
 
@@ -135,9 +135,10 @@ func testNotify(th *Helper) {
 					require.Empty(th, received)
 					require.EqualValues(th, apps.NewCall("/notify").WithExpand(expandEverything(level)), &n.Call)
 
+					subj, ec := tc.expected(th, level, appclient, data)
 					expected := apps.Context{
-						Subject:         event.Subject,
-						ExpandedContext: tc.expected(th, level, appclient, data),
+						Subject:         subj,
+						ExpandedContext: ec,
 					}
 					expected.ExpandedContext.App = th.LastInstalledApp
 					expected.ExpandedContext.ActingUser = appclient.expectedActingUser
@@ -149,7 +150,7 @@ func testNotify(th *Helper) {
 	}
 }
 
-func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand) {
+func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand, testFlag bool) {
 	cresp := appclient.happyCall(appID, apps.CallRequest{
 		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
 		Values: map[string]interface{}{
@@ -158,6 +159,7 @@ func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.
 				Call:  *apps.NewCall("/notify").WithExpand(expand),
 			},
 			"as_bot": appclient.appActsAsBot,
+			"test":   testFlag,
 		},
 	})
 	require.Equal(th, `subscribed`, cresp.Text)

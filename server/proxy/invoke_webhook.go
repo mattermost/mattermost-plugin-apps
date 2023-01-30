@@ -44,7 +44,7 @@ func (p *Proxy) InvokeRemoteWebhook(r *incoming.Request, httpCallRequest apps.HT
 	call.Path = path.Join(call.Path, httpCallRequest.Path)
 
 	appRequest := r.WithActingUserID("")
-	cc, err := p.expandContext(appRequest, app, nil, call.Expand)
+	cc, err := p.expandContext(appRequest, app, nil, call.Expand, nil)
 	if err != nil {
 		return err
 	}
