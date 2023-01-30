@@ -93,9 +93,15 @@ type Manifest struct {
 	// explicitly provided in the manifest.
 	OnUninstall *Call `json:"on_uninstall,omitempty"`
 
-	// OnEnable, OnDisable are not yet supported
+	// OnEnable gets invoked when a sysadmin uses the `/apps enable`
+	// command, after the app is enabled. It is not called unless
+	// explicitly provided in the manifest.
+	OnEnable *Call `json:"on_enable,omitempty"`
+
+	// OnDisable gets invoked when a sysadmin uses the `/apps disable`
+	// command, before the app is actually disabled. It is not called unless
+	// explicitly provided in the manifest.
 	OnDisable *Call `json:"on_disable,omitempty"`
-	OnEnable  *Call `json:"on_enable,omitempty"`
 
 	// GetOAuth2ConnectURL is called when the App's "connect to 3rd party" link
 	// is clicked, to be redirected to the OAuth flow. It must return Data set
