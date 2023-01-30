@@ -158,6 +158,12 @@ type validator interface {
 
 func (m Manifest) Validate() error {
 	var result error
+
+	if m.DisplayName == "" {
+		result = multierror.Append(result,
+			utils.NewInvalidError("display_name is empty"))
+	}
+
 	if m.HomepageURL == "" {
 		result = multierror.Append(result,
 			utils.NewInvalidError("homepage_url is empty"))

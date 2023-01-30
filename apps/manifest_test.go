@@ -109,6 +109,7 @@ func TestValidateManifest(t *testing.T) {
 		"minimal valid HTTP app example manifest": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
@@ -232,6 +233,7 @@ func TestValidateManifest(t *testing.T) {
 		"minimal valid AWS app example manifest": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{
