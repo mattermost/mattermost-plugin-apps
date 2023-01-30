@@ -12,7 +12,7 @@ import (
 type Service interface {
 	// Subscriptions
 
-	Subscribe(_ *incoming.Request, _ apps.Subscription) error
+	Subscribe(*incoming.Request, apps.Subscription) error
 	GetSubscriptions(*incoming.Request) ([]apps.Subscription, error)
 	Unsubscribe(*incoming.Request, apps.Event) error
 	UnsubscribeApp(*incoming.Request, apps.AppID) error
