@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func TestOnActivate(t *testing.T) {
@@ -93,7 +94,7 @@ func TestOnDeactivate(t *testing.T) {
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	var err error
-	p.conf, _, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle)
+	p.conf, err = config.MakeService(mm, manifest, "the_bot_id", nil, i18nBundle, utils.NilLogger{})
 	require.NoError(t, err)
 
 	testAPI.On("PublishWebSocketEvent", "plugin_disabled", map[string]interface{}{"version": manifest.Version}, &model.WebsocketBroadcast{})

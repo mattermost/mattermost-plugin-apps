@@ -80,7 +80,7 @@ func (p *Plugin) OnActivate() (err error) {
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	confService, log, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
+	confService, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
 	if err != nil {
 		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
