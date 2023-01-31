@@ -175,7 +175,7 @@ jobs:
             ls -lsa ..
             cd ..
             git clone -n https://github.com/mattermost/mattermost-server.git
-            cd mattermost-server && git checkout v7.5.0
+            cd mattermost-server && git checkout v7.7.0
       - *restore_go_cache
       - run:
           name: Running REST API tests
@@ -235,7 +235,7 @@ jobs:
           MM_ANNOUNCEMENTSETTINGS_ADMINNOTICESENABLED: false
           MM_FEATUREFLAGS_AppsEnabled: true
     environment:
-      MM_DOCKER_IMAGE_TAG: release-7.2
+      MM_DOCKER_IMAGE_TAG: release-7.7
       TYPE: NONE
       PULL_REQUEST:
       HEADLESS: true
