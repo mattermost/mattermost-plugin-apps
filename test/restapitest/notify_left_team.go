@@ -9,31 +9,30 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-// notifyUserJoinsTeam creates a new test team. Bot is added as a member of the
-// team. User is then added to the team to trigger. Since user and user2 are not
-// members of the team, they can not subscribe and are excluded from the test.
-func notifyAnyUserJoinedTheTeam(th *Helper) *notifyTestCase {
+// notifyUserLeftTeam creates a new test team. User, user2 and bot are added as members of the
+// team. User2 is then removed from the team to trigger.
+func notifyAnyUserLeftTheTeam(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
 			return apps.Event{
-				Subject: apps.SubjectUserJoinedTeam,
+				Subject: apps.SubjectUserLeftTeam,
 				TeamID:  data.Team.Id,
 			}
 		},
-		except: []appClient{
-			th.asUser2,
-		},
+		except: []appClient{th.asUser2},
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
-			joiningUser := th.ServerTestHelper.BasicUser2
 			team := th.createTestTeam()
+			joiningUser := th.ServerTestHelper.BasicUser2
+			tm := th.addTeamMember(team, joiningUser)
 			th.addTeamMember(team, user)
 			return apps.ExpandedContext{
-				User: joiningUser,
-				Team: team,
+				Team:       team,
+				User:       joiningUser,
+				TeamMember: tm,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.TeamMember = th.addTeamMember(data.Team, data.User)
+			th.removeTeamMember(data.Team, data.User)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
@@ -46,38 +45,41 @@ func notifyAnyUserJoinedTheTeam(th *Helper) *notifyTestCase {
 	}
 }
 
-func notifySubscriberJoinedAnyTeam(th *Helper) *notifyTestCase {
-	return notifyTheUserJoinedAnyTeam(th, apps.SubjectUserJoinedTeam, []appClient{th.asAdmin})
+func notifyBotLeftAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyTeam(th, apps.SubjectBotLeftTeamDeprecated, []appClient{th.asAdmin, th.asUser, th.asUser2})
 }
 
-func notifyBotJoinedAnyTeam(th *Helper) *notifyTestCase {
-	return notifyTheUserJoinedAnyTeam(th, apps.SubjectBotJoinedTeamDeprecated, []appClient{th.asAdmin, th.asUser2, th.asUser})
+func notifySubscriberLeftAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyTeam(th, apps.SubjectUserLeftTeam, []appClient{th.asAdmin})
 }
 
-func notifyTheUserJoinedAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
+func notifyTheUserLeftAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
 	return &notifyTestCase{
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: subject,
-			}
+			return apps.Event{Subject: subject}
 		},
 		except: except,
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			tm := th.addTeamMember(team, user)
 			return apps.ExpandedContext{
-				Team: th.createTestTeam(),
-				User: user,
+				Team:       team,
+				TeamMember: tm,
+				User:       user,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.TeamMember = th.addTeamMember(data.Team, data.User)
+			th.removeTeamMember(data.Team, data.User)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
-			return apps.ExpandedContext{
+			ec := apps.ExpandedContext{
 				User:       data.User,
 				Team:       data.Team,
 				TeamMember: data.TeamMember,
 			}
+			ec.TeamMember.Roles = ""
+			return ec
 		},
 	}
 }

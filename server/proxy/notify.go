@@ -150,7 +150,6 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 	p.notifyAll(
 		apps.Event{
 			Subject: subject,
-			TeamID:  member.TeamId,
 		},
 		apps.UserAgentContext{
 			TeamID: member.TeamId,

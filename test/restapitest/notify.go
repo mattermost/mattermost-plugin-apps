@@ -111,13 +111,16 @@ func testNotify(th *Helper) {
 		"any_user_joined_the_channel":   notifyAnyUserJoinedTheChannel(th),
 		"any_user_joined_the_team":      notifyAnyUserJoinedTheTeam(th),
 		"any_user_left_the_channel":     notifyAnyUserLeftTheChannel(th),
+		"any_user_left_the_team":        notifyAnyUserLeftTheTeam(th),
 		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
 		"bot_joined_any_team":           notifyBotJoinedAnyTeam(th),
 		"bot_left_any_channel":          notifyBotLeftAnyChannel(th),
+		"bot_left_any_team":             notifyBotLeftAnyTeam(th),
 		"channel_created":               notifyChannelCreated(th),
 		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
 		"subscriber_joined_any_team":    notifySubscriberJoinedAnyTeam(th),
 		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
+		"subscriber_left_any_team":      notifySubscriberLeftAnyTeam(th),
 		"user_created":                  notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
@@ -144,6 +147,11 @@ func testNotify(th *Helper) {
 					expected.ExpandedContext.App = th.LastInstalledApp
 					expected.ExpandedContext.ActingUser = appclient.expectedActingUser
 					expected.ExpandedContext.Locale = "en"
+
+					// Reset DeleteAt since we don't know what to expect there.
+					if n.Context.ExpandedContext.TeamMember != nil {
+						n.Context.ExpandedContext.TeamMember.DeleteAt = 0
+					}
 
 					th.verifyContext(level, th.LastInstalledApp, appclient.appActsAsSystemAdmin, expected, n.Context)
 				})

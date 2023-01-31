@@ -78,21 +78,20 @@ func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []ap
 				Team:       team,
 				TeamMember: tm,
 				Channel:    channel,
-				ActingUser: user,
+				User:       user,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.ChannelMember = th.addChannelMember(data.Channel, data.ActingUser)
+			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			return apps.ExpandedContext{
-				ActingUser:    data.ActingUser,
 				Channel:       data.Channel,
 				ChannelMember: data.ChannelMember,
 				Team:          data.Team,
 				TeamMember:    data.TeamMember,
-				User:          data.ActingUser,
+				User:          data.User,
 			}
 		},
 	}

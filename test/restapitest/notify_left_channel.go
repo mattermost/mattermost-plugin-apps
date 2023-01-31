@@ -75,7 +75,6 @@ func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appC
 				TeamMember:    tm,
 				Channel:       channel,
 				ChannelMember: cm,
-				ActingUser:    user,
 				User:          user,
 			}
 		},
@@ -86,7 +85,6 @@ func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appC
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			return apps.ExpandedContext{
 				User:          data.User,
-				ActingUser:    data.ActingUser,
 				Team:          data.Team,
 				TeamMember:    data.TeamMember,
 				Channel:       data.Channel,
