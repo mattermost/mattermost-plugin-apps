@@ -73,7 +73,7 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 				// Builtin apps are always rechable
 				reachable = true
 			} else if !a.Disabled {
-				if p.pingApp(ctx, &a) {
+				if p.pingApp(ctx, &a) == nil {
 					reachable = true
 				}
 			}
