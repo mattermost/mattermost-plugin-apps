@@ -6,6 +6,7 @@ package proxy
 import (
 	"context"
 
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -17,154 +18,185 @@ import (
 // NotifyUserCreated handles plugin's UserHasBeenCreated callback. It emits
 // "user_created" notifications to subscribed apps.
 func (p *Proxy) NotifyUserCreated(pluginContext *plugin.Context, userID string) {
-	p.notify(pluginContext, nil,
+	p.notifyAll(pluginContext,
 		apps.Event{
 			Subject: apps.SubjectUserCreated,
 		},
 		apps.UserAgentContext{
 			UserID: userID,
 		},
+		nil, // no special filtering, notify all subscriptions mathcing the event.
+		nil, // no special expand rules.
 	)
 }
 
-// NotifyUserJoinedChannel handles plugin's UserHasJoinedChannel callback. It
-// emits "user_joined_channel" and "bot_joined_channel" notifications to
-// subscribed apps.
-func (p *Proxy) NotifyUserJoinedChannel(pluginContext *plugin.Context, channelID, userID string) {
-	p.notifyUserChannel(pluginContext, channelID, userID, true, "NotifyUserJoinedChannel")
-}
-
-// NotifyUserLeftChannel handles plugin's UserHasLeftChannel callback. It emits
-// "user_left_channel" and "bot_left_channel" notifications to subscribed apps.
-func (p *Proxy) NotifyUserLeftChannel(pluginContext *plugin.Context, channelID, userID string) {
-	p.notifyUserChannel(pluginContext, channelID, userID, false, "NotifyUserLeftChannel")
-}
-
-func (p *Proxy) notifyUserChannel(pluginContext *plugin.Context, channelID, userID string, joined bool, method string) {
-	mm := p.conf.MattermostAPI()
-	log := p.conf.NewBaseLogger().With("method", method)
-	user, err := mm.User.Get(userID)
-	if err != nil {
-		log.WithError(err).Debugf("failed to get user")
-		return
-	}
-	channel, err := mm.Channel.Get(channelID)
-	if err != nil {
-		log.WithError(err).Debugf("%s: failed to get channel", method)
-		return
-	}
-
+func (p *Proxy) NotifyUserChannel(pluginContext *plugin.Context, member *model.ChannelMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedChannel
 	if !joined {
 		subject = apps.SubjectUserLeftChannel
 	}
-	p.notify(pluginContext, nil,
+
+	log := p.conf.NewBaseLogger().With("subject", subject)
+
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(member.UserId)
+	if err != nil {
+		log.WithError(err).Debugf("failed to get user")
+		return
+	}
+	channel, err := mm.Channel.Get(member.ChannelId)
+	if err != nil {
+		log.WithError(err).Debugf("%s: failed to get channel", subject)
+		return
+	}
+
+	// Notify on user_joined|left_channel subscriptions specific to the channel
+	// that may include any user.
+	p.notifyAll(pluginContext,
 		apps.Event{
 			Subject:   subject,
-			ChannelID: channelID,
+			ChannelID: channel.Id,
 		},
 		apps.UserAgentContext{
-			ChannelID: channelID,
+			ChannelID: channel.Id,
 			TeamID:    channel.TeamId,
 			UserID:    user.Id,
 		},
+		nil, // no special filtering, notify all subscriptions matching the event.
+		nil, // no special expand rules for "any user" subscriptions.
 	)
-	if !user.IsBot {
-		return
-	}
 
-	// If the user is a bot, process SubjectBot...Channel; only notify the
-	// app with the matching BotUserID.
-	allApps := p.appStore.AsMap(store.EnabledAppsOnly)
-	subject = apps.SubjectBotJoinedChannel
-	if !joined {
-		subject = apps.SubjectBotLeftChannel
-	}
-	p.notify(pluginContext,
-		func(sub store.Subscription) bool {
-			if app, ok := allApps[sub.AppID]; ok {
-				return app.BotUserID == userID
-			}
-			return false
-		},
+	// Notify on "self" subscriptions for the user.
+	p.notifyAll(pluginContext,
 		apps.Event{
 			Subject: subject,
-			TeamID:  channel.TeamId,
 		},
 		apps.UserAgentContext{
-			ChannelID: channelID,
+			ChannelID: channel.Id,
 			TeamID:    channel.TeamId,
-			UserID:    user.Id,
+			UserID:    member.UserId,
 		},
+		// Include subscriptions where the user (added/removed channel member)
+		// is the same as the subscriber.
+		func(sub store.Subscription) bool {
+			return sub.OwnerUserID == member.UserId
+		},
+		// special expand for "self" subscriptions.
+		newExpandSelfGetter(mm, user, member, nil, channel),
 	)
-}
 
-// NotifyUserJoinedTeam handles plugin's UserHasJoinedTeam callback. It emits
-// "user_joined_team" and "bot_joined_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserJoinedTeam(pluginContext *plugin.Context, teamID, userID string) {
-	p.notifyUserTeam(pluginContext, teamID, userID, true, "NotifyUserJoinedTeam")
-}
-
-// NotifyUserLeftTeam handles plugin's UserHasLeftTeam callback. It emits
-// "user_left_team" and "bot_left_team" notifications to subscribed apps.
-func (p *Proxy) NotifyUserLeftTeam(pluginContext *plugin.Context, teamID, userID string) {
-	p.notifyUserTeam(pluginContext, teamID, userID, false, "NotifyUserLeftTeam")
-}
-
-func (p *Proxy) notifyUserTeam(pluginContext *plugin.Context, teamID, userID string, joined bool, method string) {
-	mm := p.conf.MattermostAPI()
-	log := p.conf.NewBaseLogger().With("method", method)
-	user, err := mm.User.Get(userID)
-	if err != nil {
-		log.WithError(err).Debugf("%s: failed to get user", method)
-		return
+	// Notify on the deprecated bot_joined|left_channel subscriptions.
+	if user.IsBot {
+		allApps := p.appStore.AsMap(store.EnabledAppsOnly)
+		subject = apps.SubjectBotJoinedChannelDeprecated
+		if !joined {
+			subject = apps.SubjectBotLeftChannelDeprecated
+		}
+		p.notifyAll(pluginContext,
+			apps.Event{
+				Subject: subject,
+			},
+			apps.UserAgentContext{
+				ChannelID: channel.Id,
+				TeamID:    channel.TeamId,
+				UserID:    member.UserId,
+			},
+			func(sub store.Subscription) bool {
+				if app, ok := allApps[sub.AppID]; ok {
+					return app.BotUserID == member.UserId
+				}
+				return false
+			},
+			// special expand for "self" subscriptions.
+			newExpandSelfGetter(mm, user, member, nil, channel),
+		)
 	}
+}
+
+func (p *Proxy) NotifyUserTeam(pluginContext *plugin.Context, member *model.TeamMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedTeam
 	if !joined {
 		subject = apps.SubjectUserLeftTeam
 	}
-	p.notify(pluginContext, nil,
-		apps.Event{
-			Subject: subject,
-			TeamID:  teamID,
-		},
-		apps.UserAgentContext{
-			UserID: user.Id,
-			TeamID: teamID,
-		},
-	)
-	if !user.IsBot {
+	log := p.conf.NewBaseLogger().With("subject", subject)
+
+	mm := p.conf.MattermostAPI()
+	user, err := mm.User.Get(member.UserId)
+	if err != nil {
+		log.WithError(err).Debugf("%s: failed to get user %s", subject, member.UserId)
 		return
 	}
 
-	// If the user is a bot, process SubjectBot...Channel; only notify the app
-	// with the matching BotUserID.
-	allApps := p.appStore.AsMap(store.EnabledAppsOnly)
-	subject = apps.SubjectBotJoinedTeam
-	if !joined {
-		subject = apps.SubjectBotLeftTeam
-	}
-	p.notify(pluginContext,
-		func(sub store.Subscription) bool {
-			if app, ok := allApps[sub.AppID]; ok {
-				return app.BotUserID == userID
-			}
-			return false
+	// TODO: add a test: user subscribed to user_joined_team, then removed from the
+	// team. Subsequent notifications should fail.
+
+	// TODO: OnUserLeftTeam can remove any team-specific subscriptions for the
+	// user.
+
+	// Notify on user_joined|left_team subscriptions specific to the team that
+	// may include any user.
+	p.notifyAll(pluginContext,
+		apps.Event{
+			Subject: subject,
+			TeamID:  member.TeamId,
 		},
+		apps.UserAgentContext{
+			UserID: user.Id,
+			TeamID: member.TeamId,
+		},
+		nil, // no special filtering, notify all subscriptions matching the event.
+		nil, // no special expand rules for "any user" subscriptions.
+	)
+
+	p.notifyAll(pluginContext,
 		apps.Event{
 			Subject: subject,
 		},
 		apps.UserAgentContext{
-			UserID: user.Id,
-			TeamID: teamID,
+			TeamID: member.TeamId,
+			UserID: member.UserId,
 		},
+		// Include subscriptions where the user (added/removed team member)
+		// is the same as the subscriber.
+		func(sub store.Subscription) bool {
+			return sub.OwnerUserID == member.UserId
+		},
+		// special expand for "self" subscriptions.
+		newExpandSelfGetter(mm, user, nil, member, nil),
 	)
+
+	// If the user is a bot, process SubjectBot...Channel; only notify the app
+	// with the matching BotUserID.
+	if user.IsBot {
+		allApps := p.appStore.AsMap(store.EnabledAppsOnly)
+		subject = apps.SubjectBotJoinedTeamDeprecated
+		if !joined {
+			subject = apps.SubjectBotLeftTeamDeprecated
+		}
+		p.notifyAll(pluginContext,
+			apps.Event{
+				Subject: subject,
+			},
+			apps.UserAgentContext{
+				UserID: user.Id,
+				TeamID: member.TeamId,
+			},
+			func(sub store.Subscription) bool {
+				if app, ok := allApps[sub.AppID]; ok {
+					return app.BotUserID == member.UserId
+				}
+				return false
+			},
+			// special expand for "self" subscriptions.
+			newExpandSelfGetter(mm, user, nil, member, nil),
+		)
+	}
 }
 
 // NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
 // "channel_created" notifications to subscribed apps.
 func (p *Proxy) NotifyChannelCreated(pluginContext *plugin.Context, teamID, channelID string) {
-	p.notify(pluginContext, nil,
+	p.notifyAll(pluginContext,
 		apps.Event{
 			Subject: apps.SubjectChannelCreated,
 			TeamID:  teamID,
@@ -172,10 +204,13 @@ func (p *Proxy) NotifyChannelCreated(pluginContext *plugin.Context, teamID, chan
 		apps.UserAgentContext{
 			TeamID:    teamID,
 			ChannelID: channelID,
-		})
+		},
+		nil, // no special filtering, notify all subscriptions matching the event.
+		nil, // no special expand logic.
+	)
 }
 
-func (p *Proxy) notify(pluginContext *plugin.Context, match func(store.Subscription) bool, event apps.Event, uac apps.UserAgentContext) {
+func (p *Proxy) notifyAll(pluginContext *plugin.Context, event apps.Event, uac apps.UserAgentContext, match func(store.Subscription) bool, getter ExpandGetter) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 	r := p.NewIncomingRequest(pluginContext.RequestId).WithCtx(ctx)
@@ -189,15 +224,17 @@ func (p *Proxy) notify(pluginContext *plugin.Context, match func(store.Subscript
 
 	for _, sub := range subs {
 		if match == nil || match(sub) {
-			go p.invokeNotify(r, event, sub, &apps.Context{
-				Subject:          event.Subject,
-				UserAgentContext: uac,
-			})
+			go p.invokeNotify(r, event, sub,
+				&apps.Context{
+					Subject:          event.Subject,
+					UserAgentContext: uac,
+				},
+				getter)
 		}
 	}
 }
 
-func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Subscription, contextToExpand *apps.Context) {
+func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Subscription, contextToExpand *apps.Context, getter ExpandGetter) {
 	var err error
 	defer func() {
 		if err == nil {
@@ -231,7 +268,7 @@ func (p *Proxy) invokeNotify(r *incoming.Request, event apps.Event, sub store.Su
 		Context: *contextToExpand,
 	}
 	r.Log = r.Log.With(creq)
-	cresp := p.callApp(appRequest, app, creq, true)
+	cresp := p.callAppWithExpandGetter(appRequest, app, creq, true, getter)
 	if cresp.Type == apps.CallResponseTypeError {
 		err = cresp
 	}

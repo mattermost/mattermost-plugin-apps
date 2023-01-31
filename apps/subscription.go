@@ -22,48 +22,48 @@ const (
 	//   Requires: model.PermissionViewMembers.
 	SubjectUserCreated Subject = "user_created"
 
-	// SubjectUserJoinedChannel, SubjectUserLeftChannel watch the specified
-	// channel for users joining and leaving it.
+	// SubjectUserJoinedChannel, SubjectUserLeftChannel behave differently
+	// depending on the provided parameters. If no channel is specified, the
+	// subscription is system-wide, and the event is fired for every channel the
+	// subscriber joins or leaves. If a channel is specified (and the user has
+	// access to the channel), the event is fired for all users joining or
+	// leaving the channel.
 	//   TeamID: must be empty.
-	//   ChannelID: specifies the channel to watch.
-	//   Expandable: Channel, User, ChannelMember.
+	//   ChannelID: (optional) specifies the channel to watch.
+	//   Expandable: Channel, Team, User, ChannelMember.
 	//   Requires: model.PermissionReadChannel permission to ChannelID.
 	//
+	// TODO: add channel member as part of the subscribe call for the app's bot user?
 	// To receive and process these notifications as Bot, the bot must first be
 	// added as a channel member with an AddChannelMember API call.
 	SubjectUserJoinedChannel Subject = "user_joined_channel"
 	SubjectUserLeftChannel   Subject = "user_left_channel"
 
-	// SubjectUserJoinedTeam, SubjectUserLeftTeam watch the specified
-	// team for users joining and leaving it.
-	//   TeamID: specifies the team to watch.
+	// SubjectUserJoinedTeam, SubjectUserLeftTeam behave differently
+	// depending on the provided parameters. If no team is specified, the
+	// subscription is system-wide, and the event is fired for every team the
+	// subscriber joins or leaves. If a team is specified (and the user has
+	// access to the team), the event is fired for all users joining or
+	// leaving the team.
+	//   TeamID: (optional) specifies the team to watch.
 	//   ChannelID: must be empty.
 	//   Expandable: Team, User, TeamMember.
-	//   Requires: model.PermissionViewTeam
+	//   Requires: model.PermissionViewTeam permission to TeamID.
 	//
+	// TODO: add team member as part of the subscribe call for the app's bot user?
 	// To receive and process these notifications as Bot, the bot must first be
-	// added as a channel member with an AddTeamMember API call.
+	// added as a team member with an AddTeamMember API call.
 	SubjectUserJoinedTeam Subject = "user_joined_team"
 	SubjectUserLeftTeam   Subject = "user_left_team"
 
-	// SubjectBotJoinedChannel, SubjectBotLeftChannel watches for the event when
-	// the app's own bot is added to, or removed from any channel in the
-	// specified team.
-	//   TeamID: specifies the team to watch.
-	//   ChannelID: must be empty, all channels are watched.
-	//   Expandable: Channel, User (will be the app's bot user), ChannelMember.
-	//   Requires: none - if the event fires, the app's bot already has the permissions.
-	SubjectBotJoinedChannel Subject = "bot_joined_channel"
-	SubjectBotLeftChannel   Subject = "bot_left_channel"
-
-	// SubjectBotJoinedTeam, SubjectBotLeftTeam system-wide watch for app's own
-	// bot added to, or removed from teams.
-	//   TeamID: must be empty.
-	//   ChannelID: must be empty.
-	//   Expandable: Team, User (will be the app's bot user), TeamMember.
-	//   Requires: none - if the event fires, the app's bot already has the permissions.
-	SubjectBotJoinedTeam Subject = "bot_joined_team"
-	SubjectBotLeftTeam   Subject = "bot_left_team"
+	// SubjectBotJoinedChannelDeprecated, SubjectBotLeftChannel,
+	// SubjectBotJoinedTeam, SubjectBotLeftTeam are deprecated. Use "User"
+	// instead. They are kept for backwards compatibility, and only work in the
+	// "system-wide" mode for the app's bot user.
+	SubjectBotJoinedChannelDeprecated Subject = "bot_joined_channel"
+	SubjectBotLeftChannelDeprecated   Subject = "bot_left_channel"
+	SubjectBotJoinedTeamDeprecated    Subject = "bot_joined_team"
+	SubjectBotLeftTeamDeprecated      Subject = "bot_left_team"
 
 	// SubjectChannelCreated watches for new channels in the specified team.
 	//   TeamID: specifies the team to watch.
@@ -81,9 +81,9 @@ const (
 	// used to expand other entities.
 	// SubjectPostCreated Subject = "post_created"
 
-	// SubjectBotMentioned subscribes to MessageHasBeenPosted plugin events, specifically
-	// when the App's bot is mentioned in the post.
-	// SubjectBotMentioned Subject = "bot_mentioned"
+	// SubjectSelfMentioned subscribes to MessageHasBeenPosted plugin events, specifically
+	// when the subscriber is mentioned in the post.
+	// SubjectSelfMentioned Subject = "self_mentioned"
 )
 
 // Subscription is submitted by an app to the Subscribe API. It determines what
@@ -115,8 +115,7 @@ func (sub Subscription) Validate() error {
 }
 
 func (e Event) Validate() error {
-	var result error
-	return e.validate(result)
+	return e.validate(nil)
 }
 
 func (e Event) validate(appendTo error) error {
@@ -127,36 +126,38 @@ func (e Event) validate(appendTo error) error {
 	switch e.Subject {
 	// Globally scoped, must not contain any extra qualifiers.
 	case SubjectUserCreated,
-		SubjectBotJoinedTeam,
-		SubjectBotLeftTeam /*, SubjectBotMentioned*/ :
+		SubjectBotJoinedTeamDeprecated,
+		SubjectBotLeftTeamDeprecated,
+		SubjectBotJoinedChannelDeprecated,
+		SubjectBotLeftChannelDeprecated /*, SubjectSelfMentioned*/ :
 		if e.TeamID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is globally scoped; team_id and channel_id must both be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped globally; team_id and channel_id must both be empty", e.Subject))
 		}
 		if e.ChannelID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is globally scoped; team_id and channel_id must both be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped globally; team_id and channel_id must both be empty", e.Subject))
 		}
 
-	// Team scoped, require TeamID, no ChannelID
-	case SubjectUserJoinedTeam,
-		SubjectUserLeftTeam,
-		SubjectBotJoinedChannel,
-		SubjectBotLeftChannel,
-		SubjectChannelCreated:
+	// Team scoped, require TeamID, no ChannelID.
+	case SubjectChannelCreated:
 		if e.TeamID == "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; teamID must not be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; team_id must not be empty", e.Subject))
 		}
 		if e.ChannelID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; channelID must be empty", e.Subject))
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a team; channel_id must be empty", e.Subject))
 		}
 
-	// Channel scoped, require ChannelID, no TeamID
-	case SubjectUserJoinedChannel,
-		SubjectUserLeftChannel /*, SubjectPostCreated */ :
-		if e.TeamID != "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; teamID must be empty", e.Subject))
+	// Special case SubjectUserJoinedTeam, SubjectUserLeftTeam: optional TeamID,
+	// no ChannelID.
+	case SubjectUserJoinedTeam, SubjectUserLeftTeam:
+		if e.ChannelID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped globally, or to a team; channel_id must be empty", e.Subject))
 		}
-		if e.ChannelID == "" {
-			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped to a channel; ChannelID must not be empty", e.Subject))
+
+	// Special case SubjectUserJoinedChannel, SubjectUserLeftChannel: optional ChannelID,
+	// no TeamID.
+	case SubjectUserJoinedChannel, SubjectUserLeftChannel:
+		if e.TeamID != "" {
+			appendTo = multierror.Append(appendTo, utils.NewInvalidError("%s is scoped globally, or to a channel; team_id must be empty", e.Subject))
 		}
 
 	default:

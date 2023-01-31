@@ -14,68 +14,40 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-var allSubjects = map[apps.Subject]apps.Expand{
-	apps.SubjectUserCreated: {
-		User: apps.ExpandAll,
-		Team: apps.ExpandAll,
-	},
-	apps.SubjectBotJoinedChannel: {
-		User:          apps.ExpandAll,
-		Channel:       apps.ExpandAll,
-		ChannelMember: apps.ExpandAll,
-	},
-	apps.SubjectBotLeftChannel: {
-		User:          apps.ExpandAll,
-		Channel:       apps.ExpandAll,
-		ChannelMember: apps.ExpandAll,
-	},
-	apps.SubjectBotJoinedTeam: {
-		User:       apps.ExpandAll,
-		Team:       apps.ExpandAll,
-		TeamMember: apps.ExpandAll,
-	},
-	apps.SubjectBotLeftTeam: {
-		User:       apps.ExpandAll,
-		Team:       apps.ExpandAll,
-		TeamMember: apps.ExpandAll,
-	},
-	// apps.SubjectBotMentioned: {
-	// 	Channel:  apps.ExpandAll,
-	// 	Post:     apps.ExpandSummary,
-	// 	RootPost: apps.ExpandSummary,
-	// },
-	apps.SubjectUserJoinedChannel: {
-		User:          apps.ExpandAll,
-		Channel:       apps.ExpandAll,
-		ChannelMember: apps.ExpandAll,
-	},
-	apps.SubjectUserLeftChannel: {
-		User:          apps.ExpandAll,
-		Channel:       apps.ExpandAll,
-		ChannelMember: apps.ExpandAll,
-	},
-	// apps.SubjectPostCreated: {
-	// 	Post:    apps.ExpandAll,
-	// 	Channel: apps.ExpandAll,
-	// },
-	apps.SubjectUserJoinedTeam: {
-		User:       apps.ExpandAll,
-		Team:       apps.ExpandAll,
-		TeamMember: apps.ExpandAll,
-	},
-	apps.SubjectUserLeftTeam: {
-		User:       apps.ExpandAll,
-		Team:       apps.ExpandAll,
-		TeamMember: apps.ExpandAll,
-	},
-	apps.SubjectChannelCreated: {
-		Channel: apps.ExpandAll,
-	},
+var expandAll = apps.Expand{
+	ActingUser:            apps.ExpandAll,
+	ActingUserAccessToken: apps.ExpandAll,
+	App:                   apps.ExpandAll,
+	Channel:               apps.ExpandAll,
+	ChannelMember:         apps.ExpandAll,
+	Locale:                apps.ExpandAll,
+	OAuth2App:             apps.ExpandAll,
+	OAuth2User:            apps.ExpandAll,
+	Post:                  apps.ExpandAll,
+	RootPost:              apps.ExpandAll,
+	Team:                  apps.ExpandAll,
+	TeamMember:            apps.ExpandAll,
+	User:                  apps.ExpandAll,
+}
+
+var allSubjects = []apps.Subject{
+	// apps.SubjectPostCreated,
+	// apps.SubjectSelfMentioned,
+	apps.SubjectBotJoinedChannelDeprecated,
+	apps.SubjectBotJoinedTeamDeprecated,
+	apps.SubjectBotLeftChannelDeprecated,
+	apps.SubjectBotLeftTeamDeprecated,
+	apps.SubjectChannelCreated,
+	apps.SubjectUserCreated,
+	apps.SubjectUserJoinedChannel,
+	apps.SubjectUserJoinedTeam,
+	apps.SubjectUserLeftChannel,
+	apps.SubjectUserLeftTeam,
 }
 
 func subscriptionOptions() []apps.SelectOption {
 	opts := []apps.SelectOption{}
-	for subject := range allSubjects {
+	for _, subject := range allSubjects {
 		opts = append(opts, apps.SelectOption{
 			Label: string(subject),
 			Value: string(subject),
@@ -97,11 +69,22 @@ func subscriptionCommandBinding(label, callPath string) apps.Binding {
 			Fields: []apps.Field{
 				{
 					Name:                 "subject",
-					Label:                "subject",
 					IsRequired:           true,
 					AutocompletePosition: 1,
 					Type:                 apps.FieldTypeStaticSelect,
 					SelectStaticOptions:  subscriptionOptions(),
+				},
+				{
+					Name: "channel",
+					Type: apps.FieldTypeChannel,
+				},
+				{
+					Name: "team_name",
+					Type: apps.FieldTypeText,
+				},
+				{
+					Name: "as_bot",
+					Type: apps.FieldTypeBool,
 				},
 			},
 		},
@@ -116,30 +99,50 @@ func initHTTPSubscriptions(r *mux.Router) {
 
 func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallResponse {
 	subject := apps.Subject(creq.GetValue("subject", ""))
-	client := appclient.AsActingUser(creq.Context)
+	teamName := creq.GetValue("team_name", "")
+	channelID := creq.GetValue("channel", "")
+	subscribeAsBot := creq.BoolValue("as_bot")
+	asActingUser := appclient.AsActingUser(creq.Context)
+	subscribeClient := asActingUser
+	if subscribeAsBot {
+		subscribeClient = appclient.AsBot(creq.Context)
+	}
+
+	teamID := ""
+	if teamName != "" {
+		team, _, err := asActingUser.GetTeamByName(teamName, "")
+		if err != nil || team == nil {
+			return apps.NewErrorResponse(err)
+		}
+		teamID = team.Id
+	}
 
 	sub := &apps.Subscription{
 		Event: apps.Event{
 			Subject: subject,
 		},
-		Call: *apps.NewCall(NotifyPath).WithExpand(allSubjects[subject]),
+		Call: *apps.NewCall(NotifyPath).WithExpand(expandAll),
 	}
 
 	switch subject {
 	case apps.SubjectUserJoinedChannel,
 		apps.SubjectUserLeftChannel:
-		sub.ChannelID = creq.Context.Channel.Id
+		sub.ChannelID = channelID
 
 	case apps.SubjectUserJoinedTeam,
 		apps.SubjectUserLeftTeam,
-		apps.SubjectBotJoinedChannel,
-		apps.SubjectBotLeftChannel,
 		apps.SubjectChannelCreated:
-		sub.TeamID = creq.Context.Team.Id
+		sub.TeamID = teamID
+		if teamID != "" {
+			_, _, err := asActingUser.AddTeamMember(teamID, creq.Context.BotUserID)
+			if err != nil {
+				return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to team"))
+			}
+		}
 	}
 
 	if !subscribe {
-		err := client.Unsubscribe(sub)
+		err := subscribeClient.Unsubscribe(sub)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
@@ -147,15 +150,8 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 		return apps.NewTextResponse("Successfully unsubscribed from `%v` notifications.", subject)
 	}
 
-	if creq.Context.Team != nil {
-		_, _, err := client.AddTeamMember(creq.Context.Team.Id, creq.Context.BotUserID)
-		if err != nil {
-			return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to team"))
-		}
-	}
-
 	if creq.Context.Channel.Type == model.ChannelTypeOpen || creq.Context.Channel.Type == model.ChannelTypePrivate {
-		_, _, err := client.AddChannelMember(creq.Context.Channel.Id, creq.Context.BotUserID)
+		_, _, err := asActingUser.AddChannelMember(creq.Context.Channel.Id, creq.Context.BotUserID)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to channel"))
 		}
@@ -166,7 +162,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 		return apps.NewErrorResponse(err)
 	}
 
-	err = client.Subscribe(sub)
+	err = subscribeClient.Subscribe(sub)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

@@ -61,8 +61,9 @@ func newUninstallApp(th *Helper) *goapp.App {
 				})
 				require.NoError(th, err)
 			}
-			subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
-			subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
+			subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectUserJoinedChannel})
+			subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectUserJoinedTeam})
+			subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectUserJoinedChannel})
 			subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectChannelCreated, TeamID: th.ServerTestHelper.BasicTeam.Id})
 			subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectUserJoinedChannel, ChannelID: th.ServerTestHelper.BasicChannel.Id})
 
@@ -72,6 +73,7 @@ func newUninstallApp(th *Helper) *goapp.App {
 				ClientSecret: "testingSecret",
 			})
 			require.NoError(th, err)
+
 			setUser := func(client *appclient.Client) {
 				err := client.StoreOAuth2User("testing")
 				require.NoError(th, err)
@@ -116,14 +118,14 @@ func testUninstall(th *Helper) {
 				},
 			},
 			AppsTotal:        7,
-			CachedStoreTotal: 8,
+			CachedStoreTotal: 9,
 			CachedStoreCountByName: map[string]int{
 				"apps":          1,
 				"manifests":     1,
-				"subscriptions": 3,
+				"subscriptions": 4,
 			},
 			Debug: 2000,
-			Total: 2015,
+			Total: 2016,
 		}, info)
 	})
 

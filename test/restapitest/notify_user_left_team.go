@@ -11,18 +11,19 @@ import (
 
 // notifyUserLeftTeam creates a new test team. User, user2 and bot are added as members of the
 // team. User2 is then removed from the team to trigger.
-func notifyUserLeftTeam(_ *Helper) *notifyTestCase {
+func notifyAnyUserLeftTheTeam(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
-			// th.Skip(" https://mattermost.atlassian.net/browse/MM-47962")
-			data := apps.ExpandedContext{
-				Team: th.createTestTeam(),
-				User: th.ServerTestHelper.BasicUser2,
+		except: []appClient{th.asUser2},
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			joiningUser := th.ServerTestHelper.BasicUser2
+			tm := th.addTeamMember(team, joiningUser)
+			th.addTeamMember(team, user)
+			return apps.ExpandedContext{
+				Team:       team,
+				User:       joiningUser,
+				TeamMember: tm,
 			}
-			data.TeamMember = th.addTeamMember(data.Team, data.User)
-			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
-			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
 			return apps.Event{
@@ -35,19 +36,49 @@ func notifyUserLeftTeam(_ *Helper) *notifyTestCase {
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
+				User:       data.User,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
+			}
+		},
+	}
+}
+
+func notifyBotLeftAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyTeam(th, apps.SubjectBotLeftTeamDeprecated, []appClient{th.asAdmin, th.asUser, th.asUser2})
+}
+
+func notifySubscriberLeftAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyTeam(th, apps.SubjectUserLeftTeam, []appClient{th.asAdmin})
+}
+
+func notifyTheUserLeftAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
+	return &notifyTestCase{
+		except: except,
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			tm := th.addTeamMember(team, user)
+			return apps.ExpandedContext{
+				Team:       team,
+				TeamMember: tm,
+				User:       user,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{Subject: subject}
+		},
+		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+			th.removeTeamMember(data.Team, data.User)
+			return data
+		},
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
 			ec := apps.ExpandedContext{
-				User: data.User,
+				User:       data.User,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
 			}
-			switch appclient.name {
-			case "admin", "user", "bot":
-				ec.Team = data.Team
-				ec.TeamMember = th.getTeamMember(data.Team.Id, data.User.Id)
-			default: // user2
-				// TeamID gets expanded at the ID level even though user2 has no access to it.
-				if level == apps.ExpandID {
-					ec.Team = &model.Team{Id: data.Team.Id}
-				}
-			}
+			ec.TeamMember.Roles = ""
 			return ec
 		},
 	}

@@ -24,9 +24,10 @@ export MM_SERVER_PATH
 mock:
 ifneq ($(HAS_SERVER),)
 	go install github.com/golang/mock/mockgen@v1.6.0
-	mockgen -destination server/mocks/mock_mmclient/mock_mmclient.go github.com/mattermost/mattermost-plugin-apps/server/mmclient Client
+	mockgen -destination server/mocks/mock_proxy/mock_expand_getter.go github.com/mattermost/mattermost-plugin-apps/server/proxy ExpandGetter
 	mockgen -destination server/mocks/mock_upstream/mock_upstream.go github.com/mattermost/mattermost-plugin-apps/upstream Upstream
-	mockgen -destination server/mocks/mock_store/mock_session.go github.com/mattermost/mattermost-plugin-apps/server/store Sessions
+	mockgen -destination server/mocks/mock_store/mock_session_store.go github.com/mattermost/mattermost-plugin-apps/server/store Sessions
+	mockgen -destination server/mocks/mock_store/mock_app_store.go github.com/mattermost/mattermost-plugin-apps/server/store Apps
 endif
 
 ## Generates mock golang interfaces for testing

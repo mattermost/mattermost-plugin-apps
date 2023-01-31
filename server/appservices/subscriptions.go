@@ -198,23 +198,27 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 				return errors.New("no permission to read user")
 			}
 
-		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /*, apps.SubjectPostCreated, apps.SubjectBotMentioned */ :
-			if !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
+		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel:
+			if sub.ChannelID != "" && !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 				return errors.New("no permission to read channel")
 			}
 
 		case apps.SubjectUserJoinedTeam, apps.SubjectUserLeftTeam:
-			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
+			if sub.TeamID != "" && !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
 				return errors.New("no permission to view team")
 			}
 
-		case apps.SubjectBotJoinedChannel,
-			apps.SubjectBotLeftChannel,
-			apps.SubjectBotJoinedTeam,
-			apps.SubjectBotLeftTeam:
-			// When the bot has joined an entity, it will have the permission to
-			// read it.
-			return nil
+		case apps.SubjectBotJoinedChannelDeprecated,
+			apps.SubjectBotLeftChannelDeprecated,
+			apps.SubjectBotJoinedTeamDeprecated,
+			apps.SubjectBotLeftTeamDeprecated:
+			app, err := a.apps.Get(r.SourceAppID())
+			if err != nil {
+				return errors.Wrapf(err, "failed to get app %s to validate subscription to %s", r.SourceAppID(), sub.Subject)
+			}
+			if r.ActingUserID() != app.BotUserID {
+				return errors.Errorf("%s can only be subscribed to by the app's bot", sub.Subject)
+			}
 
 		case apps.SubjectChannelCreated:
 			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {

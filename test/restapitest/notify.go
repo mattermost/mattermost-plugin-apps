@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/v6/api4"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -18,7 +19,7 @@ import (
 )
 
 type notifyTestCase struct {
-	init               func(*Helper) apps.ExpandedContext
+	init               func(*Helper, *model.User) apps.ExpandedContext
 	event              func(*Helper, apps.ExpandedContext) apps.Event
 	trigger            func(*Helper, apps.ExpandedContext) apps.ExpandedContext
 	expected           func(*Helper, apps.ExpandLevel, appClient, apps.ExpandedContext) apps.ExpandedContext
@@ -107,23 +108,27 @@ func testNotify(th *Helper) {
 	api4.CheckCreatedStatus(th, resp)
 
 	for name, tc := range map[string]*notifyTestCase{
-		"bot_joined_channel":  notifyBotJoinedChannel(th),
-		"bot_joined_team":     notifyBotJoinedTeam(th),
-		"bot_left_channel":    notifyBotLeftChannel(th),
-		"bot_left_team":       notifyBotLeftTeam(th),
-		"user_joined_channel": notifyUserJoinedChannel(th),
-		"user_joined_team":    notifyUserJoinedTeam(th),
-		"user_left_channel":   notifyUserLeftChannel(th),
-		"user_left_team":      notifyUserLeftTeam(th),
-		"channel_created":     notifyChannelCreated(th),
-		"user_created":        notifyUserCreated(th),
+		"any_user_joined_the_channel":   notifyAnyUserJoinedTheChannel(th),
+		"any_user_joined_the_team":      notifyAnyUserJoinedTheTeam(th),
+		"any_user_left_the_channel":     notifyAnyUserLeftTheChannel(th),
+		"any_user_left_the_team":        notifyAnyUserLeftTheTeam(th),
+		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
+		"bot_joined_any_team":           notifyBotJoinedAnyTeam(th),
+		"bot_left_any_channel":          notifyBotLeftAnyChannel(th),
+		"bot_left_any_team":             notifyBotLeftAnyTeam(th),
+		"channel_created":               notifyChannelCreated(th),
+		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
+		"subscriber_joined_any_team":    notifySubscriberJoinedAnyTeam(th),
+		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
+		"subscriber_left_any_team":      notifySubscriberLeftAnyTeam(th),
+		"user_created":                  notifyUserCreated(th),
 	} {
 		th.Run(name, func(th *Helper) {
 			forExpandClientCombinations(th, tc.expandCombinations, tc.except,
 				func(th *Helper, level apps.ExpandLevel, appclient appClient) {
 					data := apps.ExpandedContext{}
 					if tc.init != nil {
-						data = tc.init(th)
+						data = tc.init(th, appclient.expectedActingUser)
 					}
 
 					event := tc.event(th, data)
@@ -142,6 +147,11 @@ func testNotify(th *Helper) {
 					expected.ExpandedContext.App = th.LastInstalledApp
 					expected.ExpandedContext.ActingUser = appclient.expectedActingUser
 					expected.ExpandedContext.Locale = "en"
+
+					// Reset DeleteAt since we don't know what to expect there.
+					if n.Context.ExpandedContext.TeamMember != nil {
+						n.Context.ExpandedContext.TeamMember.DeleteAt = 0
+					}
 
 					th.verifyContext(level, th.LastInstalledApp, appclient.appActsAsSystemAdmin, expected, n.Context)
 				})
