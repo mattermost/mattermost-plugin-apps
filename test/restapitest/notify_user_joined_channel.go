@@ -15,12 +15,6 @@ import (
 // trigger.
 func notifyAnyUserJoinedTheChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject:   apps.SubjectUserJoinedChannel,
-				ChannelID: data.Channel.Id,
-			}
-		},
 		except: []appClient{th.asUser2},
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
@@ -32,6 +26,12 @@ func notifyAnyUserJoinedTheChannel(th *Helper) *notifyTestCase {
 			th.addTeamMember(data.Team, user)
 			th.addChannelMember(data.Channel, user)
 			return data
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject:   apps.SubjectUserJoinedChannel,
+				ChannelID: data.Channel.Id,
+			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
 			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
@@ -63,11 +63,6 @@ func notifyBotJoinedAnyChannel(th *Helper) *notifyTestCase {
 // is then added to the channel to trigger.
 func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: subject,
-			}
-		},
 		except: except,
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
@@ -79,6 +74,11 @@ func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []ap
 				TeamMember: tm,
 				Channel:    channel,
 				User:       user,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subject,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {

@@ -13,12 +13,6 @@ import (
 // team. User2 is then removed from the team to trigger.
 func notifyAnyUserLeftTheTeam(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: apps.SubjectUserLeftTeam,
-				TeamID:  data.Team.Id,
-			}
-		},
 		except: []appClient{th.asUser2},
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
@@ -29,6 +23,12 @@ func notifyAnyUserLeftTheTeam(th *Helper) *notifyTestCase {
 				Team:       team,
 				User:       joiningUser,
 				TeamMember: tm,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: apps.SubjectUserLeftTeam,
+				TeamID:  data.Team.Id,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
@@ -55,9 +55,6 @@ func notifySubscriberLeftAnyTeam(th *Helper) *notifyTestCase {
 
 func notifyTheUserLeftAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{Subject: subject}
-		},
 		except: except,
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			team := th.createTestTeam()
@@ -67,6 +64,9 @@ func notifyTheUserLeftAnyTeam(th *Helper, subject apps.Subject, except []appClie
 				TeamMember: tm,
 				User:       user,
 			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{Subject: subject}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
 			th.removeTeamMember(data.Team, data.User)

@@ -14,12 +14,6 @@ import (
 // members of the team, they can not subscribe and are excluded from the test.
 func notifyAnyUserJoinedTheTeam(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: apps.SubjectUserJoinedTeam,
-				TeamID:  data.Team.Id,
-			}
-		},
 		except: []appClient{
 			th.asUser2,
 		},
@@ -30,6 +24,12 @@ func notifyAnyUserJoinedTheTeam(th *Helper) *notifyTestCase {
 			return apps.ExpandedContext{
 				User: joiningUser,
 				Team: team,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: apps.SubjectUserJoinedTeam,
+				TeamID:  data.Team.Id,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
@@ -56,16 +56,16 @@ func notifyBotJoinedAnyTeam(th *Helper) *notifyTestCase {
 
 func notifyTheUserJoinedAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
 	return &notifyTestCase{
-		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
-			return apps.Event{
-				Subject: subject,
-			}
-		},
 		except: except,
 		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			return apps.ExpandedContext{
 				Team: th.createTestTeam(),
 				User: user,
+			}
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subject,
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
