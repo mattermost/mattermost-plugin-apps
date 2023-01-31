@@ -30,6 +30,7 @@ func TestRESTAPI(t *testing.T) {
 	th := NewHelper(t)
 
 	for name, testF := range map[string]func(*Helper){
+		"calls":         testCalls,
 		"bindings":      testBindings,
 		"echo":          testEcho,
 		"KV":            testKV,
