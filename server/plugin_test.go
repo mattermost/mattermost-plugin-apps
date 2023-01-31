@@ -88,6 +88,7 @@ func TestOnDeactivate(t *testing.T) {
 		SkuShortName: "professional",
 	})
 	testAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.StoredConfig")).Return(nil)
+	testAPI.On("SavePluginConfig", mock.Anything).Return(nil)
 
 	testAPI.On("GetBundlePath").Return("/", nil)
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
