@@ -144,7 +144,11 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, u
 			log.Errorf("Couldn't generate the encryption key for OAuth user data encryption")
 		}
 
-		conf.EncryptionKey = encKey
+		conf.StoredConfig.EncryptionKey = encKey
+		err := s.StoreConfig(conf.StoredConfig, log)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "Failed to store encryption key")
+		}
 	}
 
 	conf.MattermostSiteURL = u.String()
