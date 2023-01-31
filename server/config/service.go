@@ -146,7 +146,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 		conf.StoredConfig.EncryptionKey = encKey
 		err := s.StoreConfig(conf.StoredConfig, log)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "Failed to store encryption key")
+			return nil, errors.Wrap(err, "Failed to store encryption key")
 		}
 	}
 
