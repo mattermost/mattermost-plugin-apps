@@ -109,11 +109,14 @@ func testNotify(th *Helper) {
 
 	for name, tc := range map[string]*notifyTestCase{
 		"any_user_joined_the_channel":   notifyAnyUserJoinedTheChannel(th),
+		"any_user_joined_the_team":      notifyAnyUserJoinedTheTeam(th),
 		"any_user_left_the_channel":     notifyAnyUserLeftTheChannel(th),
 		"bot_joined_any_channel":        notifyBotJoinedAnyChannel(th),
+		"bot_joined_any_team":           notifyBotJoinedAnyTeam(th),
 		"bot_left_any_channel":          notifyBotLeftAnyChannel(th),
 		"channel_created":               notifyChannelCreated(th),
 		"subscriber_joined_any_channel": notifySubscriberJoinedAnyChannel(th),
+		"subscriber_joined_any_team":    notifySubscriberJoinedAnyTeam(th),
 		"subscriber_left_any_channel":   notifySubscriberLeftAnyChannel(th),
 		"user_created":                  notifyUserCreated(th),
 	} {
