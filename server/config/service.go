@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"net"
 	"net/url"
 	"os"
@@ -137,7 +138,7 @@ func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.L
 
 	// Generate an encryption key on the fly
 	// to encrypt/decrypt oauth user data
-	if conf.EncryptionKey == nil {
+	if conf.EncryptionKey == "" {
 		encKey, encErr := GenerateEncryptionKey()
 		if encErr != nil {
 			log.Errorf("Couldn't generate the encryption key for OAuth user data encryption")
@@ -338,12 +339,10 @@ func (s *service) SystemDefaultFlags() (bool, bool) {
 	return devMode, allowHTTP
 }
 
-func GenerateEncryptionKey() ([]byte, error) {
-	key := make([]byte, DefaultAESKeySize)
-	_, err := rand.Read(key)
-	if err != nil {
-		return nil, err
+func GenerateEncryptionKey() (string, error) {
+	bytes := make([]byte, DefaultAESKeySize)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
 	}
-
-	return key, nil
+	return hex.EncodeToString(bytes), nil
 }

@@ -32,7 +32,7 @@ func TestCreateOAuth2State(t *testing.T) {
 		Service: &Service{
 			conf: conf,
 		},
-		encrypter: &AESEncrypter{key: []byte("asuperstrong32bitpasswordgohere!")},
+		encrypter: &AESEncrypter{key: "6368616e676520746869732070617373"},
 	}
 
 	// CreateState

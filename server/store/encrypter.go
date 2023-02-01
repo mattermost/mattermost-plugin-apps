@@ -1,11 +1,10 @@
 package store
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/hex"
 	"io"
 
 	"github.com/pkg/errors"
@@ -17,72 +16,59 @@ type Encrypter interface {
 }
 
 type AESEncrypter struct {
-	key []byte
+	key string
 }
 
 var _ Encrypter = (*AESEncrypter)(nil)
 
-func (s *AESEncrypter) unpad(src []byte) ([]byte, error) {
-	length := len(src)
-	unpadding := int(src[length-1])
-
-	if unpadding > length {
-		return nil, errors.New("unpad error. This could happen when incorrect encryption key is used")
-	}
-
-	return src[:(length - unpadding)], nil
-}
-
-func (s *AESEncrypter) pad(src []byte) []byte {
-	padding := aes.BlockSize - len(src)%aes.BlockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(src, padtext...)
-}
-
 func (s *AESEncrypter) Encrypt(text []byte) ([]byte, error) {
-	block, err := aes.NewCipher(s.key)
+	key, err := hex.DecodeString(s.key)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create a cipher block, check key")
+	}
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
-	msg := s.pad(text)
-	ciphertext := make([]byte, aes.BlockSize+len(msg))
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, aes.BlockSize+len(text))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, errors.Wrap(err, "readFull was unsuccessful, check buffer size")
 	}
 
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(ciphertext[aes.BlockSize:], msg)
-	finalMsg := base64.URLEncoding.EncodeToString(ciphertext)
-	return []byte(finalMsg), nil
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], text)
+
+	return ciphertext, nil
 }
 
 func (s *AESEncrypter) Decrypt(message []byte) ([]byte, error) {
-	block, err := aes.NewCipher(s.key)
+	key, err := hex.DecodeString(s.key)
+	ciphertext, _ := hex.DecodeString(string(message))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
-	decodedMsg, err := base64.URLEncoding.DecodeString(string(message))
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not decode the message")
+		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
-	if (len(decodedMsg) % aes.BlockSize) != 0 {
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	if len(ciphertext) < aes.BlockSize {
 		return nil, errors.New("blocksize must be multiple of decoded message length")
 	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
 
-	iv := decodedMsg[:aes.BlockSize]
-	msg := decodedMsg[aes.BlockSize:]
+	stream := cipher.NewCFBDecrypter(block, iv)
 
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(msg, msg)
+	// XORKeyStream can work in-place if the two arguments are the same.
+	stream.XORKeyStream(ciphertext, ciphertext)
 
-	unpadMsg, err := s.unpad(msg)
-	if err != nil {
-		return nil, errors.Wrap(err, "unpad error, check key")
-	}
-
-	return unpadMsg, nil
+	return ciphertext, nil
 }

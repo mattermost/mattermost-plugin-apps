@@ -38,7 +38,7 @@ type StoredConfig struct {
 	LogChannelLevel int    `json:"log_channel_level,omitempty"`
 	LogChannelJSON  bool   `json:"log_channel_json,omitempty"`
 
-	EncryptionKey []byte `json:"encryption_key,omitempty"`
+	EncryptionKey string `json:"encryption_key,omitempty"`
 }
 
 var BuildDate string

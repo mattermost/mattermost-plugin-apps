@@ -16,13 +16,13 @@ func TestEncrypterEncode(t *testing.T) {
 		name          string
 		message       []byte
 		expectedError string
-		key           []byte
+		key           string
 	}{
 		{
 			name:          "The key is not valid",
 			message:       nil,
-			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 7",
-			key:           []byte("invalid"),
+			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 0",
+			key:           "",
 		},
 		{
 			name:          "The message is encrypted with a generated valid key",
@@ -34,7 +34,7 @@ func TestEncrypterEncode(t *testing.T) {
 			name:          "The message is encrypted",
 			message:       []byte(`{"Test1":"test-1","Test2":"test-2"}`),
 			expectedError: "",
-			key:           []byte("asuperstrong32bitpasswordgohere!"),
+			key:           "6368616e676520746869732070617373",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,28 +57,21 @@ func TestEncrypterDecrypt(t *testing.T) {
 		messageEncrypted []byte
 		expected         string
 		expectedError    string
-		key              []byte
+		key              string
 	}{
 		{
 			name:             "The key is not valid",
-			messageEncrypted: nil,
+			messageEncrypted: []byte(""),
 			expected:         "",
-			expectedError:    "could not create a cipher block, check key: crypto/aes: invalid key size 7",
-			key:              []byte("invalid"),
-		},
-		{
-			name:             "The key is valid but the message stored is invalid",
-			messageEncrypted: []byte("AAAAAAAAAAAA"),
-			expected:         "",
-			expectedError:    "blocksize must be multiple of decoded message length",
-			key:              []byte("asuperstrong32bitpasswordgohere!"),
+			expectedError:    "could not create a cipher block, check key: crypto/aes: invalid key size 0",
+			key:              "",
 		},
 		{
 			name:             "The key is valid and the message decoded",
-			messageEncrypted: []byte("qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ=="),
+			messageEncrypted: []byte("67ef87bec4a7d5f8f6e889241788c666af162ab02be3ef6e79a4a514c398536a6f543d400374443e4882d52c2c38c9f06a9cd7"),
 			expected:         `{"Test1":"test-1","Test2":"test-2"}`,
 			expectedError:    "",
-			key:              []byte("asuperstrong32bitpasswordgohere!"),
+			key:              "6368616e676520746869732070617373",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
