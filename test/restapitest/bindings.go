@@ -306,7 +306,6 @@ func testBindings(th *Helper) {
 	})
 
 	th.Run("multiple apps have commands", func(th *Helper) {
-		// th.Skip("https://mattermost.atlassian.net/browse/MM-48405")
 		app1ID := apps.AppID("bind1")
 		app1 := newBindingsApp(th, app1ID, nil,
 			[]apps.Binding{
