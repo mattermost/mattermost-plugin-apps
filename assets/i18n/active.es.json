@@ -47,10 +47,6 @@
     "hash": "sha1-59bd0a3ff43b32849b319e645d4798d8a5d1e889",
     "other": "información"
   },
-  "command.install.cloud.label": {
-    "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
-    "other": "instalar"
-  },
   "command.install.hint": {
     "hash": "sha1-2b71aa8996b8b3567df46bd3a68e9d5099805e92",
     "other": "[ listada | http ]"
@@ -58,10 +54,6 @@
   "command.install.http.label": {
     "hash": "sha1-77b5f8e343a90f6f597751021fb8b7a08fe83083",
     "other": "http"
-  },
-  "command.install.label": {
-    "hash": "sha1-89fb511ffe93ee7826661ca1e3bb468dc1ad0ff2",
-    "other": "instalar"
   },
   "command.install.listed.label": {
     "hash": "sha1-adcc7aee87e914f9b782de197376a29c2e4245de",
