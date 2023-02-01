@@ -270,7 +270,10 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 }
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration, developer mode %v, allow http apps %v", sc.DeveloperModeOverride, sc.AllowHTTPAppsOverride)
+	log.Debugf("Storing configuration: developer mode %t, allow http apps %t",
+		sc.DeveloperModeOverride != nil && *sc.DeveloperModeOverride,
+		sc.AllowHTTPAppsOverride != nil && *sc.AllowHTTPAppsOverride,
+	)
 
 	// Refresh computed values immediately, do not wait for OnConfigurationChanged
 	err := s.Reconfigure(sc, false)
