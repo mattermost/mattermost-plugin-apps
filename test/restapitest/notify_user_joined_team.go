@@ -51,7 +51,7 @@ func notifySubscriberJoinedAnyTeam(th *Helper) *notifyTestCase {
 }
 
 func notifyBotJoinedAnyTeam(th *Helper) *notifyTestCase {
-	return notifyTheUserJoinedAnyTeam(th, apps.SubjectBotJoinedTeamDeprecated, []appClient{th.asAdmin, th.asUser2, th.asUser})
+	return notifyTheUserJoinedAnyTeam(th, apps.SubjectBotJoinedTeam, []appClient{th.asAdmin, th.asUser2, th.asUser})
 }
 
 func notifyTheUserJoinedAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {

@@ -54,7 +54,7 @@ func notifySubscriberJoinedAnyChannel(th *Helper) *notifyTestCase {
 }
 
 func notifyBotJoinedAnyChannel(th *Helper) *notifyTestCase {
-	return notifyTheUserJoinedAnyChannel(th, apps.SubjectBotJoinedChannelDeprecated, []appClient{th.asUser, th.asUser2, th.asAdmin})
+	return notifyTheUserJoinedAnyChannel(th, apps.SubjectBotJoinedChannel, []appClient{th.asUser, th.asUser2, th.asAdmin})
 }
 
 // notifyTheUserJoinedAnyChannelImpl tests SubjectUserJoinedChannel with no

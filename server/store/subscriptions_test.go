@@ -72,25 +72,25 @@ func Test_subsKey(t *testing.T) {
 		"sub.user_left_team.teamID",
 		"can't make a key for a subscription, expected channel ID empty for subject user_left_team")...)
 
-	tests = append(tests, tcs(apps.SubjectBotJoinedChannelDeprecated,
+	tests = append(tests, tcs(apps.SubjectBotJoinedChannel,
 		"sub.bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_channel")...)
 
-	tests = append(tests, tcs(apps.SubjectBotLeftChannelDeprecated,
+	tests = append(tests, tcs(apps.SubjectBotLeftChannel,
 		"sub.bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_channel")...)
 
-	tests = append(tests, tcs(apps.SubjectBotJoinedTeamDeprecated,
+	tests = append(tests, tcs(apps.SubjectBotJoinedTeam,
 		"sub.bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_joined_team")...)
 
-	tests = append(tests, tcs(apps.SubjectBotLeftTeamDeprecated,
+	tests = append(tests, tcs(apps.SubjectBotLeftTeam,
 		"sub.bot_left_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_team",
 		"can't make a key for a subscription, expected team and channel IDs empty for subject bot_left_team",
