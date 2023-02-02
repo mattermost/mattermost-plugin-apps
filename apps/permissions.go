@@ -9,6 +9,27 @@ import (
 
 type Permissions []Permission
 
+func (list Permissions) String() string {
+	m := ""
+	for i, permission := range list {
+		if i != 0 {
+			m += ", "
+		}
+		m += permission.String()
+	}
+
+	return m
+}
+
+func (list Permissions) Contains(permission Permission) bool {
+	for _, current := range list {
+		if current == permission {
+			return true
+		}
+	}
+	return false
+}
+
 type Permission string
 
 const (
@@ -35,15 +56,6 @@ const (
 	PermissionRemoteWebhooks Permission = "remote_webhooks"
 )
 
-func (p Permissions) Contains(permission Permission) bool {
-	for _, current := range p {
-		if current == permission {
-			return true
-		}
-	}
-	return false
-}
-
 func (p Permission) String() string {
 	m := ""
 	switch p {
@@ -63,23 +75,23 @@ func (p Permission) String() string {
 	return m
 }
 
-func (p Permissions) Validate() error {
-	if len(p) == 0 {
+func (list Permissions) Validate() error {
+	if len(list) == 0 {
 		return nil
 	}
 	// Check for permission dependencies. (P1, P2, ..., PN) means P1 requires
 	// (depends on) P2...PN.
-	for _, pp := range []Permissions{
+	for _, p := range []Permissions{
 		{PermissionRemoteWebhooks, PermissionActAsBot},
 		{PermissionRemoteOAuth2, PermissionActAsUser},
 		{PermissionUserJoinedChannelNotification, PermissionActAsBot},
 	} {
-		if len(pp) == 0 || !p.Contains(pp[0]) {
+		if len(p) == 0 || !list.Contains(p[0]) {
 			continue
 		}
-		for _, d := range pp[1:] {
-			if !p.Contains(d) {
-				return utils.NewInvalidError("%s requires %s", p, d)
+		for _, d := range p[1:] {
+			if !list.Contains(d) {
+				return utils.NewInvalidError("%s requires %s", list, d)
 			}
 		}
 	}
