@@ -25,7 +25,7 @@ func (s *Service) Static(r *incoming.Request, w http.ResponseWriter, req *http.R
 
 	body, status, err := s.Proxy.InvokeGetStatic(r, assetName)
 	if err != nil {
-		r.Log.WithError(err).Debugw("failed to get asset", "asset_name", assetName)
+		r.Log.WithError(err).Debugw("Failed to get asset", "asset_name", assetName)
 		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
