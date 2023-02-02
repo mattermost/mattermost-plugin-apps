@@ -53,7 +53,7 @@ func notifySubscriberLeftAnyChannel(th *Helper) *notifyTestCase {
 }
 
 func notifyBotLeftAnyChannel(th *Helper) *notifyTestCase {
-	return notifyTheUserLeftAnyChannel(th, apps.SubjectBotLeftChannelDeprecated, []appClient{th.asUser, th.asUser2, th.asAdmin})
+	return notifyTheUserLeftAnyChannel(th, apps.SubjectBotLeftChannel, []appClient{th.asUser, th.asUser2, th.asAdmin})
 }
 
 func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {

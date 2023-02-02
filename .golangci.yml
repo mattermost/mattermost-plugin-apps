@@ -55,5 +55,14 @@ issues:
         - bodyclose
         - unused
         - unparam
+        - staticcheck
+    - path: /
+      linters:
+        - staticcheck
+      text: "BotJoined"
+    - path: /
+      linters:
+        - staticcheck
+      text: "BotLeft"
 
 

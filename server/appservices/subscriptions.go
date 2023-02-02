@@ -208,10 +208,10 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 				return errors.New("no permission to view team")
 			}
 
-		case apps.SubjectBotJoinedChannelDeprecated,
-			apps.SubjectBotLeftChannelDeprecated,
-			apps.SubjectBotJoinedTeamDeprecated,
-			apps.SubjectBotLeftTeamDeprecated:
+		case apps.SubjectBotJoinedChannel,
+			apps.SubjectBotLeftChannel,
+			apps.SubjectBotJoinedTeam,
+			apps.SubjectBotLeftTeam:
 			app, err := a.apps.Get(r.SourceAppID())
 			if err != nil {
 				return errors.Wrapf(err, "failed to get app %s to validate subscription to %s", r.SourceAppID(), sub.Subject)

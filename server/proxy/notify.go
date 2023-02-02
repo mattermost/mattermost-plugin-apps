@@ -88,9 +88,9 @@ func (p *Proxy) NotifyUserChannel(pluginContext *plugin.Context, member *model.C
 	// Notify on the deprecated bot_joined|left_channel subscriptions.
 	if user.IsBot {
 		allApps := p.appStore.AsMap(store.EnabledAppsOnly)
-		subject = apps.SubjectBotJoinedChannelDeprecated
+		subject = apps.SubjectBotJoinedChannel
 		if !joined {
-			subject = apps.SubjectBotLeftChannelDeprecated
+			subject = apps.SubjectBotLeftChannel
 		}
 		p.notifyAll(pluginContext,
 			apps.Event{
@@ -169,9 +169,9 @@ func (p *Proxy) NotifyUserTeam(pluginContext *plugin.Context, member *model.Team
 	// with the matching BotUserID.
 	if user.IsBot {
 		allApps := p.appStore.AsMap(store.EnabledAppsOnly)
-		subject = apps.SubjectBotJoinedTeamDeprecated
+		subject = apps.SubjectBotJoinedTeam
 		if !joined {
-			subject = apps.SubjectBotLeftTeamDeprecated
+			subject = apps.SubjectBotLeftTeam
 		}
 		p.notifyAll(pluginContext,
 			apps.Event{

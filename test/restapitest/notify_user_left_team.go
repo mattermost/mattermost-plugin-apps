@@ -46,7 +46,7 @@ func notifyAnyUserLeftTheTeam(th *Helper) *notifyTestCase {
 }
 
 func notifyBotLeftAnyTeam(th *Helper) *notifyTestCase {
-	return notifyTheUserLeftAnyTeam(th, apps.SubjectBotLeftTeamDeprecated, []appClient{th.asAdmin, th.asUser, th.asUser2})
+	return notifyTheUserLeftAnyTeam(th, apps.SubjectBotLeftTeam, []appClient{th.asAdmin, th.asUser, th.asUser2})
 }
 
 func notifySubscriberLeftAnyTeam(th *Helper) *notifyTestCase {
