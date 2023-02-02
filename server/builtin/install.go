@@ -13,45 +13,20 @@ import (
 
 func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 	conf := a.conf.Get()
-	if !conf.AllowHTTPApps {
-		// No need for subcommands, only listed apps are installable.
-		return apps.Binding{
-			Location: "install",
-			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.install.cloud.label",
-				Other: "install",
-			}),
-			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.install.cloud.hint",
-				Other: "[ app ID ]",
-			}),
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-				ID:    "command.install.cloud.description",
-				Other: "Install an App from the Marketplace",
-			}),
-			Form: &apps.Form{
-				Submit: newUserCall(pInstallListed),
-				Fields: []apps.Field{
-					a.appIDField(LookupNotInstalledApps, 1, true, loc),
-				},
-			},
-		}
-	}
 
-	// install http|listed
-	return apps.Binding{
+	bindings := apps.Binding{
+		Location: "install",
 		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.label",
 			Other: "install",
 		}),
-		Location: "install",
 		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-			ID:    "command.install.hint",
-			Other: "[ listed | http ]",
+			ID:    "command.install.listed.hint",
+			Other: "[ listed ]",
 		}),
 		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.description",
-			Other: "Install an App, locally deployed or from a remote URL",
+			Other: "Install an App",
 		}),
 		Bindings: []apps.Binding{
 			{
@@ -66,7 +41,7 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 				}),
 				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.description",
-					Other: "Install a listed App that has been locally deployed. (in the future, applicable Marketplace Apps will also be listed here).",
+					Other: "Install an App from the Marketplace or a listed App that has been deployed.",
 				}),
 				Form: &apps.Form{
 					Submit: newUserCall(pInstallListed),
@@ -75,46 +50,56 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 					},
 				},
 			},
-			{
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.install.http.label",
-					Other: "http",
-				}),
-				Location: "http",
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.install.http.hint",
-					Other: "[URL to manifest.json]",
-				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-					ID:    "command.install.http.description",
-					Other: "Install an HTTP App from a URL",
-				}),
-				Form: &apps.Form{
-					Fields: []apps.Field{
-						{
-							Name: fURL,
-							Type: apps.FieldTypeText,
-							Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url.description",
-								Other: "enter the HTTP URL for the app's manifest.json",
-							}),
-							Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url.label",
-								Other: "url",
-							}),
-							AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
-								ID:    "field.url.hint",
-								Other: "URL",
-							}),
-							AutocompletePosition: 1,
-							IsRequired:           true,
-						},
-					},
-					Submit: newUserCall(pInstallHTTP).WithLocale(),
-				},
-			},
 		},
 	}
+
+	if conf.AllowHTTPApps {
+		bindings.Hint = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ID:    "command.install.hint",
+			Other: "[ listed | http ]",
+		})
+
+		bindings.Bindings = append(bindings.Bindings, apps.Binding{
+			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.http.label",
+				Other: "http",
+			}),
+			Location: "http",
+			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.http.hint",
+				Other: "[URL to manifest.json]",
+			}),
+			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ID:    "command.install.http.description",
+				Other: "Install an HTTP App from a URL",
+			}),
+			Form: &apps.Form{
+				Fields: []apps.Field{
+					{
+						Name: fURL,
+						Type: apps.FieldTypeText,
+						Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.url.description",
+							Other: "enter the HTTP URL for the app's manifest.json",
+						}),
+						Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.url.label",
+							Other: "url",
+						}),
+						AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+							ID:    "field.url.hint",
+							Other: "URL",
+						}),
+						AutocompletePosition: 1,
+						IsRequired:           true,
+					},
+				},
+				Submit: newUserCall(pInstallHTTP).WithLocale(),
+			},
+		})
+	}
+
+	return bindings
 }
 
 func (a *builtinApp) installListed(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
