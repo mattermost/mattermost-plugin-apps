@@ -40,6 +40,19 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
+	// TODO Get this to a separate method
+	oauthApi := p.conf.MattermostAPI().OAuth
+	oauthApp, err := oauthApi.Get(string(appID))
+	// TODO This doesn't exist yet in the MM server
+	oauthApp.Disabled = false
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get OAuth app %s", app.AppID)
+	}
+	p.conf.MattermostAPI().OAuth.Update(oauthApp)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to update OAuth app %s", app.AppID)
+	}
+
 	var message string
 	if app.OnEnable != nil {
 		resp := p.call(r, app, *app.OnEnable, &cc)
@@ -98,6 +111,19 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	// Only clear the store. Existing session will still work until they expire. https://mattermost.atlassian.net/browse/MM-40012
 	if err = p.store.Session.DeleteAllForApp(r, app.AppID); err != nil {
 		return "", errors.Wrapf(err, "failed to revoke sessions  for %s", app.AppID)
+	}
+
+	// TODO Get this to a separate method
+	oauthApi := p.conf.MattermostAPI().OAuth
+	oauthApp, err := oauthApi.Get(string(appID))
+	// TODO This doesn't exist yet in the MM server
+	oauthApp.Disabled = true
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get OAuth app %s", app.AppID)
+	}
+	p.conf.MattermostAPI().OAuth.Update(oauthApp)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to update OAuth app %s", app.AppID)
 	}
 
 	app.Disabled = true
