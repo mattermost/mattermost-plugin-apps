@@ -62,6 +62,14 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		r.Log.Debugf("app install flow: previous installation detected")
 	}
 
+	if app.AppID != "" {
+		r.Log.Debugw("app install flow: found a previously installed App, clearing its sessions cache")
+		err = p.store.Session.DeleteAllForApp(r, app.AppID)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "failed to clear sessions cache for %s", app.AppID)
+		}
+	}
+
 	app.DeployType = deployType
 	app.Manifest = *m
 	if app.Disabled {
@@ -70,6 +78,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 	app.GrantedPermissions = m.RequestedPermissions
 	app.GrantedLocations = m.RequestedLocations
+	app.GrantedScopes = m.RequestedScopes
 	if secret != "" {
 		app.Secret = secret
 	}
@@ -144,31 +153,39 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) error {
 	mm := p.conf.MattermostAPI()
+	oAuthApp := &model.OAuthApp{}
+	var err error
 	if app.MattermostOAuth2 != nil {
-		r.Log.Debugw("app install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
-		return nil
+		oAuthApp, err = mm.OAuth.Get(app.MattermostOAuth2.Id)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get existing OAuth2 App: %s", app.MattermostOAuth2.Id)
+		}
 	}
 
-	oauth2CallbackURL := conf.AppURL(app.AppID) + path.MattermostOAuth2Complete
+	oAuthApp.CreatorId = actingUserID
+	oAuthApp.Name = app.DisplayName
+	oAuthApp.Description = app.Description
+	oAuthApp.CallbackUrls = []string{conf.AppURL(app.AppID) + path.MattermostOAuth2Complete}
+	oAuthApp.Homepage = app.HomepageURL
+	oAuthApp.IsTrusted = noUserConsent
+	oAuthApp.MattermostAppID = string(app.AppID)
+	oAuthApp.Scopes = app.GrantedScopes
 
-	oAuthApp := &model.OAuthApp{
-		CreatorId:       actingUserID,
-		Name:            app.DisplayName,
-		Description:     app.Description,
-		CallbackUrls:    []string{oauth2CallbackURL},
-		Homepage:        app.HomepageURL,
-		IsTrusted:       noUserConsent,
-		MattermostAppID: string(app.AppID),
-	}
-	err := mm.OAuth.Create(oAuthApp)
-	if err != nil {
-		return errors.Wrap(err, "failed to create OAuth2 App")
+	if oAuthApp.Id == "" {
+		err = mm.OAuth.Create(oAuthApp)
+		if err != nil {
+			return errors.Wrap(err, "failed to create OAuth2 App")
+		}
+		r.Log.Debugw("app install flow: created OAuth2 App", "id", oAuthApp.Id)
+	} else {
+		err = mm.OAuth.Update(oAuthApp)
+		if err != nil {
+			return errors.Wrap(err, "failed to update OAuth2 App")
+		}
+		r.Log.Debugw("app install flow: updated existing OAuth2 App", "id", app.MattermostOAuth2.Id)
 	}
 
 	app.MattermostOAuth2 = oAuthApp
-
-	r.Log.Debugw("app install flow: created OAuth2 App", "id", app.MattermostOAuth2.Id)
-
 	return nil
 }
 

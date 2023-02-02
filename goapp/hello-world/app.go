@@ -5,6 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
 )
@@ -25,6 +27,11 @@ func main() {
 			DisplayName: "Hello, world! as a goapp",
 			Icon:        "icon.png",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/examples/go/goapp",
+			RequestedScopes: model.AppScopes{
+				model.ScopeUsersRead,
+				model.ScopePostsCreate,
+				model.ScopeChannelsCreate,
+			},
 		},
 		goapp.WithStatic(static),
 		goapp.WithCommand(send),

@@ -62,9 +62,9 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	// Checks for the user's permissions might be needed in the future.
 	txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "command.list.submit.header",
-		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
+		Other: "| Name | Status | Type | Version | Account | UI locations | App permissions | OAuth2 scopes |",
 	}) + "\n"
-	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- |\n"
+	txt += "| :-- |:-- | :-- | :-- | :-- | :-- | :-- | :-- |\n"
 
 	for _, app := range installed {
 		m, _ := a.proxy.GetManifest(app.AppID)
@@ -129,8 +129,8 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 			deployType += " (" + app.HTTP.RootURL + ")"
 		}
 
-		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-			name, status, deployType, version, account, app.GrantedLocations, app.GrantedPermissions)
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, deployType, version, account, app.GrantedLocations, app.GrantedPermissions, app.GrantedScopes)
 	}
 
 	listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
@@ -150,8 +150,8 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 
 		name := fmt.Sprintf("[%s](%s) (`%s`)",
 			l.Manifest.DisplayName, l.Manifest.HomepageURL, l.Manifest.AppID)
-		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",
-			name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions)
+		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|%s|\n",
+			name, status, l.Manifest.DeployTypes(), version, "", l.Manifest.RequestedLocations, l.Manifest.RequestedPermissions, l.Manifest.RequestedScopes)
 	}
 	return apps.NewTextResponse(txt)
 }
