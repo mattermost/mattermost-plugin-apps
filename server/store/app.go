@@ -6,9 +6,6 @@ package store
 import (
 	"sort"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/plugin"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -27,7 +24,7 @@ const (
 type AppStore struct {
 	schemaVersion string
 	builtin       map[apps.AppID]apps.App
-	*CachedStore[apps.App]
+	CachedStore[apps.App]
 }
 
 type Apps interface {
@@ -40,8 +37,8 @@ type Apps interface {
 
 var _ Apps = (*AppStore)(nil)
 
-func MakeAppStore(api plugin.API, mmapi *pluginapi.Client, log utils.Logger, version string, builtinApps ...apps.App) (*AppStore, error) {
-	store, err := MakeCachedStore[apps.App](AppStoreName, api, mmapi, log)
+func MakeAppStore(version string, storeMaker func(string) (CachedStore[apps.App], error), builtinApps ...apps.App) (*AppStore, error) {
+	store, err := storeMaker(AppStoreName)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +55,11 @@ func MakeAppStore(api plugin.API, mmapi *pluginapi.Client, log utils.Logger, ver
 }
 
 func (s *AppStore) Get(appID apps.AppID) (*apps.App, error) {
-	app, ok := s.builtin[appID]
-	if ok {
+	if app, ok := s.builtin[appID]; ok {
 		return &app, nil
 	}
-	app, ok = s.GetCachedStoreItem(string(appID))
-	if ok {
-		return &app, nil
+	if app := s.CachedStore.Get(string(appID)); app != nil {
+		return app, nil
 	}
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
@@ -72,9 +67,9 @@ func (s *AppStore) Get(appID apps.AppID) (*apps.App, error) {
 func (s *AppStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
 	out := map[apps.AppID]apps.App{}
 	for id := range s.Index() {
-		if app, ok := s.GetCachedStoreItem(id); ok {
+		if app := s.CachedStore.Get(id); app != nil {
 			if filter == AllApps || !app.Disabled {
-				out[apps.AppID(id)] = app
+				out[apps.AppID(id)] = *app
 			}
 		}
 	}
@@ -99,9 +94,9 @@ func (s *AppStore) AsList(filter FilterOpt) []apps.App {
 
 func (s *AppStore) Save(r *incoming.Request, app apps.App) error {
 	app.Manifest.SchemaVersion = s.schemaVersion
-	return s.PutCachedStoreItem(r, string(app.AppID), app)
+	return s.CachedStore.Put(r, string(app.AppID), &app)
 }
 
 func (s *AppStore) Delete(r *incoming.Request, appID apps.AppID) error {
-	return s.DeleteCachedStoreItem(r, string(appID))
+	return s.CachedStore.Put(r, string(appID), nil)
 }

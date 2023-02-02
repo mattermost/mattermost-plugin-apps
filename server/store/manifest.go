@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -24,12 +23,12 @@ import (
 )
 
 type ManifestStore struct {
-	*CachedStore[apps.Manifest]
+	CachedStore[apps.Manifest]
 	catalog map[apps.AppID]apps.Manifest
 }
 
-func MakeManifestStore(papi plugin.API, mmapi *pluginapi.Client, log utils.Logger) (*ManifestStore, error) {
-	cached, err := MakeCachedStore[apps.Manifest](ManifestStoreName, papi, mmapi, log)
+func MakeManifestStore(storeMaker func(string) (CachedStore[apps.Manifest], error)) (*ManifestStore, error) {
+	cached, err := storeMaker(ManifestStoreName)
 	if err != nil {
 		return nil, err
 	}
@@ -108,13 +107,13 @@ func (s *ManifestStore) InitCloudCatalog(mmapi *pluginapi.Client, log utils.Logg
 }
 
 func (s *ManifestStore) Get(appID apps.AppID) (*apps.Manifest, error) {
-	m, ok := s.GetCachedStoreItem(string(appID))
-	if ok {
-		return &m, nil
+	m := s.CachedStore.Get(string(appID))
+	if m != nil {
+		return m, nil
 	}
-	m, ok = s.catalog[appID]
+	listed, ok := s.catalog[appID]
 	if ok {
-		return &m, nil
+		return &listed, nil
 	}
 	return nil, errors.Wrap(utils.ErrNotFound, string(appID))
 }
@@ -125,8 +124,8 @@ func (s *ManifestStore) AsMap() map[apps.AppID]apps.Manifest {
 		out[appID] = m
 	}
 	for id := range s.Index() {
-		if m, ok := s.GetCachedStoreItem(id); ok {
-			out[apps.AppID(id)] = m
+		if m := s.CachedStore.Get(id); m != nil {
+			out[apps.AppID(id)] = *m.Clone()
 		}
 	}
 	return out
@@ -143,5 +142,5 @@ func getManifestFromS3(aws upaws.Client, bucket string, appID apps.AppID, versio
 }
 
 func (s *ManifestStore) Save(r *incoming.Request, m apps.Manifest) error {
-	return s.PutCachedStoreItem(r, string(m.AppID), m)
+	return s.CachedStore.Put(r, string(m.AppID), &m)
 }

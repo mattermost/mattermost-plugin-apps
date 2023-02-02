@@ -27,7 +27,7 @@ func setUpBasics(ctrl *gomock.Controller) (session.Service,
 	*mock_store.MockSessions,
 	store.Apps,
 	*plugintest.API) {
-	appStore := store.TestAppStore{}
+	appStore, _ := store.MakeAppStore("", store.TestingCachedStoreMaker[apps.App])
 	sessionStore := mock_store.NewMockSessions(ctrl)
 
 	conf, api := config.NewTestService(nil)

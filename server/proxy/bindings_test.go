@@ -582,7 +582,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				},
 			}).WithMattermostAPI(pluginapi.NewClient(testAPI, testDriver))
 
-			appstore := store.TestAppStore{}
+			appstore, _ := store.MakeAppStore("", store.TestingCachedStoreMaker[apps.App])
 
 			upstreams := map[apps.AppID]upstream.Upstream{}
 			for i := range tc.applications {

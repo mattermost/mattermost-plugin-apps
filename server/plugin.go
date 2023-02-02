@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
+	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -100,11 +101,11 @@ func (p *Plugin) OnActivate() (err error) {
 	p.httpOut = httpout.NewService(p.conf)
 
 	// Initialize persistent stores.
-	p.AppStore, err = store.MakeAppStore(p.API, mm, log, p.manifest.Version, builtin.App(conf))
+	p.AppStore, err = store.MakeAppStore(p.manifest.Version, store.MutexCachedStoreMaker[apps.App](p.API, mm, log), builtin.App(conf))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
-	p.ManifestStore, err = store.MakeManifestStore(p.API, mm, log)
+	p.ManifestStore, err = store.MakeManifestStore(store.MutexCachedStoreMaker[apps.Manifest](p.API, mm, log))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
@@ -117,7 +118,7 @@ func (p *Plugin) OnActivate() (err error) {
 	p.KVStore = &store.KVStore{}
 	p.OAuth2Store = &store.OAuth2Store{}
 	p.SessionStore = &store.SessionStore{}
-	p.SubscriptionStore, err = store.MakeSubscriptionStore(p.API, mm, log)
+	p.SubscriptionStore, err = store.MakeSubscriptionStore(store.MutexCachedStoreMaker[store.Subscriptions](p.API, mm, log))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the subscription store")
 	}

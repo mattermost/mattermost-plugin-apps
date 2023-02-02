@@ -9,9 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/plugin"
-
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -23,12 +20,20 @@ type Subscription struct {
 	OwnerUserID string     `json:"user_id"`
 }
 
-type SubscriptionStore struct {
-	*CachedStore[[]Subscription]
+type Subscriptions []Subscription
+
+func (s Subscriptions) Clone() *Subscriptions {
+	out := make(Subscriptions, len(s))
+	copy(out, s)
+	return &out
 }
 
-func MakeSubscriptionStore(api plugin.API, mmapi *pluginapi.Client, log utils.Logger) (*SubscriptionStore, error) {
-	store, err := MakeCachedStore[[]Subscription](SubscriptionStoreName, api, mmapi, log)
+type SubscriptionStore struct {
+	CachedStore[Subscriptions]
+}
+
+func MakeSubscriptionStore(storeMaker func(string) (CachedStore[Subscriptions], error)) (*SubscriptionStore, error) {
+	store, err := storeMaker(SubscriptionStoreName)
 	if err != nil {
 		return nil, err
 	}
@@ -37,16 +42,16 @@ func MakeSubscriptionStore(api plugin.API, mmapi *pluginapi.Client, log utils.Lo
 	}, nil
 }
 
-func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) ([]Subscription, error) {
+func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) (Subscriptions, error) {
 	key := utils.ToJSON(e)
 	if key == "{}" {
 		return nil, errors.New("failed to get subscriptions: invalid empty event")
 	}
-	subs, ok := s.GetCachedStoreItem(key)
-	if !ok {
+	subs := s.CachedStore.Get(key)
+	if subs == nil {
 		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", e.String())
 	}
-	return subs, nil
+	return *subs, nil
 }
 
 func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Event, error) {
@@ -61,20 +66,12 @@ func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Ev
 	return events, nil
 }
 
-func (s *SubscriptionStore) Save(r *incoming.Request, e apps.Event, subs []Subscription) error {
+func (s *SubscriptionStore) Put(r *incoming.Request, e apps.Event, subs *Subscriptions) error {
 	key := utils.ToJSON(e)
 	if key == "{}" {
 		return errors.New("failed to save subscriptions: invalid empty event")
 	}
-	return s.PutCachedStoreItem(r, key, subs)
-}
-
-func (s *SubscriptionStore) Delete(r *incoming.Request, e apps.Event) error {
-	key := utils.ToJSON(e)
-	if key == "{}" {
-		return errors.New("failed to delete subscriptions: invalid empty event")
-	}
-	return s.DeleteCachedStoreItem(r, key)
+	return s.CachedStore.Put(r, key, subs)
 }
 
 func (s Subscription) String() string {
