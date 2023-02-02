@@ -130,7 +130,7 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 	return p.callAppWithExpandGetter(r, app, creq, notify, nil)
 }
 
-// callApp in an internal method to execute a call to an upstream app. It does
+// callAppWithExpandGetter in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
 func (p *Proxy) callAppWithExpandGetter(
 	r *incoming.Request,
