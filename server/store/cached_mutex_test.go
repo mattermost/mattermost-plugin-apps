@@ -56,10 +56,10 @@ func TestMutexCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, s.PluginClusterEventID(), e.Id)
+					require.Equal(t, s.eventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event MutexCachedStoreClusterEvent[CachedStoreTestType]
+					var event CachedStoreClusterEvent[CachedStoreTestType]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 
@@ -104,10 +104,10 @@ func TestMutexCachedStore(t *testing.T) {
 				func(args mock.Arguments) {
 					e, ok := args[0].(model.PluginClusterEvent)
 					require.True(t, ok)
-					require.Equal(t, s.PluginClusterEventID(), e.Id)
+					require.Equal(t, s.eventID(), e.Id)
 					require.NotEmpty(t, e.Data)
 
-					var event MutexCachedStoreClusterEvent[CachedStoreTestType]
+					var event CachedStoreClusterEvent[CachedStoreTestType]
 					err = json.Unmarshal(e.Data, &event)
 					require.NoError(t, err)
 

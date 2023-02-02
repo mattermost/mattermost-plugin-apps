@@ -3,8 +3,6 @@
 
 package store
 
-// TODO <>/<> wrap all errors
-
 import (
 	"encoding/json"
 	"fmt"
@@ -19,25 +17,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-const (
-	MutexCachedStoreEventID      = "mutex_cached_store"
-	MutexCachedStorePutMethod    = "put"
-	MutexCachedStoreDeleteMethod = "delete"
-)
-
 type MutexCachedStore[T Cloneable[T]] struct {
 	*SimpleCachedStore[T]
 	papi    plugin.API
 	kvMutex *cluster.Mutex
-}
-
-// MutexCachedStoreClusterEvent.Data is a pointer to make sure we can
-// differentiate between put and delete (nil) events.
-type MutexCachedStoreClusterEvent[T any] struct {
-	Value     *T     `json:"value,omitempty"`
-	IndexHash string `json:"index_hash,omitempty"`
-	Key       string `json:"key"`
-	StoreName string `json:"name"`
 }
 
 func MutexCachedStoreMaker[T Cloneable[T]](api plugin.API, mmapi *pluginapi.Client, log utils.Logger) func(string) (CachedStore[T], error) {
@@ -62,7 +45,7 @@ func MakeMutexCachedStore[T Cloneable[T]](name string, api plugin.API, mmapi *pl
 	}
 	s.kvMutex = mutex
 
-	cachedStoreEventSink.Store(s.PluginClusterEventID(), s)
+	cachedStoreEventSink.Store(s.eventID(), s)
 	return s, nil
 }
 
@@ -70,8 +53,8 @@ func (s *MutexCachedStore[T]) Put(r *incoming.Request, key string, value *T) err
 	s.kvMutex.Lock()
 	defer s.kvMutex.Unlock()
 
-	return s.SimpleCachedStore.update(r, key, value,
-		func(value *T, _, changed *StoredIndex[T]) error {
+	return s.SimpleCachedStore.update(r, true, key, value,
+		func(value *T, changed *StoredIndex[T]) error {
 			if changed != nil {
 				if err := s.notify(key, value, changed.hash()); err != nil {
 					r.Log.WithError(err).Warnf("MutexCachedStore: failed to send cluster message, rolling back to previous state")
@@ -82,8 +65,8 @@ func (s *MutexCachedStore[T]) Put(r *incoming.Request, key string, value *T) err
 		})
 }
 
-func (s *MutexCachedStore[T]) PluginClusterEventID() string {
-	return MutexCachedStoreEventID + "/" + s.name
+func (s *MutexCachedStore[T]) eventID() string {
+	return CachedStoreEventID + "/" + s.name
 }
 
 func (s *MutexCachedStore[T]) notify(key string, data *T, indexHash string) error {
@@ -94,13 +77,13 @@ func (s *MutexCachedStore[T]) notify(key string, data *T, indexHash string) erro
 	}
 
 	return s.papi.PublishPluginClusterEvent(
-		model.PluginClusterEvent{Id: s.PluginClusterEventID(), Data: bb},
+		model.PluginClusterEvent{Id: s.eventID(), Data: bb},
 		model.PluginClusterEventSendOptions{SendType: model.PluginClusterEventSendTypeReliable},
 	)
 }
 
 func (s *MutexCachedStore[T]) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
-	event := MutexCachedStoreClusterEvent[T]{}
+	event := CachedStoreClusterEvent[T]{}
 	err := json.Unmarshal(ev.Data, &event)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
@@ -128,8 +111,8 @@ func (s *MutexCachedStore[T]) OnPluginClusterEvent(r *incoming.Request, ev model
 	return nil
 }
 
-func (s *MutexCachedStore[T]) newPluginClusterEvent(key string, data *T, indexHash string) MutexCachedStoreClusterEvent[T] {
-	return MutexCachedStoreClusterEvent[T]{
+func (s *MutexCachedStore[T]) newPluginClusterEvent(key string, data *T, indexHash string) CachedStoreClusterEvent[T] {
+	return CachedStoreClusterEvent[T]{
 		StoreName: s.name,
 		Key:       key,
 		Value:     data,

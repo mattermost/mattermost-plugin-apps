@@ -3,8 +3,6 @@
 
 package store
 
-// TODO <>/<> wrap all errors
-
 import (
 	"crypto/sha256"
 	"fmt"
@@ -26,12 +24,25 @@ type CachedStore[T Cloneable[T]] interface {
 	Put(r *incoming.Request, key string, value *T) error
 }
 
-type cachedStoreEventProcessor interface {
-	OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error
-	PluginClusterEventID() string
-}
+type onPluginClusterMessage func(r *incoming.Request, ev model.PluginClusterEvent) error
 
 var cachedStoreEventSink = sync.Map{} // of cachedStoreEventProcessor
+
+// CachedStoreClusterEvent is a cluster event sent between nodes. It works for
+// both the mutex-based and the single writer implementations. If Key is set,
+// the message instructs to modify the key. If Data is nil, it is a delete
+// operation. If IndexHash set, the receiver attempts to re-sync to it from the
+// KV store. differentiate between put and delete (nil) events.
+type CachedStoreClusterEvent[T any] struct {
+	Value     *T     `json:"value,omitempty"`
+	IndexHash string `json:"index_hash,omitempty"`
+	Key       string `json:"key"`
+	StoreName string `json:"name"`
+}
+
+const (
+	CachedStoreEventID = "cached_store"
+)
 
 type CachedIndexEntry[T any] struct {
 	Key       string `json:"k"`
@@ -121,16 +132,15 @@ func (index CachedIndex[T]) Clone() CachedIndex[T] {
 func OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) {
 	v, ok := cachedStoreEventSink.Load(ev.Id)
 	if !ok {
-		r.Log.Debugf("OnPluginClusterEvent: no processor event for %s", ev.Id)
+		r.Log.Debugf("OnPluginClusterEvent: no handler for %s", ev.Id)
 		return
 	}
-	handler, ok := v.(cachedStoreEventProcessor)
+	f, ok := v.(onPluginClusterMessage)
 	if !ok {
-		r.Log.Debugf("OnPluginClusterEvent: invalid event processor %s, type %T", ev.Id, v)
+		r.Log.Debugf("OnPluginClusterEvent: invalid handler %s, type %T", ev.Id, v)
 		return
 	}
-
-	err := handler.OnPluginClusterEvent(r, ev)
+	err := f(r, ev)
 	if err != nil {
 		r.Log.WithError(err).Errorw("failed to handle plugin cluster event")
 	}

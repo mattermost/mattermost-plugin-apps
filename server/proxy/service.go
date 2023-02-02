@@ -120,11 +120,10 @@ func NewService(conf config.Service,
 	appservices appservices.Service,
 ) *Proxy {
 	return &Proxy{
-		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
-		conf:             conf,
-		appStore:         appStore,
-		manifestStore:    manifestStore,
-		//TODO: <>/<> why sessionStore if have sessionService?
+		builtinUpstreams:  map[apps.AppID]upstream.Upstream{},
+		conf:              conf,
+		appStore:          appStore,
+		manifestStore:     manifestStore,
 		subscriptionStore: subscriptionStore,
 		callOnceMutex:     mutex,
 		httpOut:           httpOut,

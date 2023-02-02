@@ -101,11 +101,13 @@ func (p *Plugin) OnActivate() (err error) {
 	p.httpOut = httpout.NewService(p.conf)
 
 	// Initialize persistent stores.
-	p.AppStore, err = store.MakeAppStore(p.manifest.Version, store.MutexCachedStoreMaker[apps.App](p.API, mm, log), builtin.App(conf))
+	// p.AppStore, err = store.MakeAppStore(p.manifest.Version, store.MutexCachedStoreMaker[apps.App](p.API, mm, log), builtin.App(conf))
+	p.AppStore, err = store.MakeAppStore(p.manifest.Version, store.SingleWriterCachedStoreMaker[apps.App](p.API, mm, log), builtin.App(conf))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the app store")
 	}
-	p.ManifestStore, err = store.MakeManifestStore(store.MutexCachedStoreMaker[apps.Manifest](p.API, mm, log))
+	// p.ManifestStore, err = store.MakeManifestStore(store.MutexCachedStoreMaker[apps.Manifest](p.API, mm, log))
+	p.ManifestStore, err = store.MakeManifestStore(store.SingleWriterCachedStoreMaker[apps.Manifest](p.API, mm, log))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
@@ -118,7 +120,8 @@ func (p *Plugin) OnActivate() (err error) {
 	p.KVStore = &store.KVStore{}
 	p.OAuth2Store = &store.OAuth2Store{}
 	p.SessionStore = &store.SessionStore{}
-	p.SubscriptionStore, err = store.MakeSubscriptionStore(store.MutexCachedStoreMaker[store.Subscriptions](p.API, mm, log))
+	// p.SubscriptionStore, err = store.MakeSubscriptionStore(store.MutexCachedStoreMaker[store.Subscriptions](p.API, mm, log))
+	p.SubscriptionStore, err = store.MakeSubscriptionStore(store.SingleWriterCachedStoreMaker[store.Subscriptions](p.API, mm, log))
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize the subscription store")
 	}
@@ -208,7 +211,7 @@ func (p *Plugin) OnConfigurationChange() error {
 }
 
 func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
-	return nil
+	return errors.New("not implemented")
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {

@@ -3,8 +3,6 @@
 
 package store
 
-// TODO <>/<> wrap all errors
-
 import (
 	"crypto/sha256"
 	"encoding/json"
@@ -80,11 +78,10 @@ func (s *SimpleCachedStore[T]) Get(key string) *T {
 
 // update returns nil for newIndex if there was no change
 func (s *SimpleCachedStore[T]) Put(r *incoming.Request, key string, value *T) error {
-	return s.update(r, key, value, nil)
+	return s.update(r, true, key, value, nil)
 }
 
-// update returns nil for newIndex if there was no change
-func (s *SimpleCachedStore[T]) update(r *incoming.Request, key string, value *T, notify func(newValue *T, prevStoredIndex, newStoredIndex *StoredIndex[T]) error) (err error) {
+func (s *SimpleCachedStore[T]) update(r *incoming.Request, persist bool, key string, value *T, notify func(newValue *T, newStoredIndex *StoredIndex[T]) error) (err error) {
 	var rollbacks []func()
 	defer func() {
 		if err != nil {
@@ -95,12 +92,15 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, key string, value *T,
 		}
 	}()
 
-	prevStoredIndex, err := s.syncFromKV(r.Log, true)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync cached store %s before updating", s.name)
+	newIndex := s.Index()
+	prevStoredIndex := newIndex.Stored()
+	if persist {
+		prevStoredIndex, err = s.syncFromKV(r.Log, true)
+		if err != nil {
+			return errors.Wrapf(err, "failed to sync cached store %s before updating", s.name)
+		}
 	}
 
-	newIndex := s.Index()
 	var newEntry *CachedIndexEntry[T]
 	op := ""
 	prevEntry := s.getEntry(key)
@@ -111,14 +111,16 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, key string, value *T,
 			return nil
 		}
 
-		err = s.deleteItem(key)
-		if err != nil {
-			return errors.Wrap(err, "failed to delete item")
+		if persist {
+			err = s.deleteItem(key)
+			if err != nil {
+				return errors.Wrap(err, "failed to delete item")
+			}
+			r.Log.Debugf(" %s: key %s deleted from KV", op, key)
+			rollbacks = append(rollbacks, func() {
+				_ = s.persistItem(key, prevEntry.data)
+			})
 		}
-		r.Log.Debugf(" %s: key %s deleted from KV", op, key)
-		rollbacks = append(rollbacks, func() {
-			_ = s.persistItem(key, prevEntry.data)
-		})
 
 		delete(newIndex, key)
 	} else {
@@ -129,40 +131,49 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, key string, value *T,
 			return nil
 		}
 
-		err = s.persistItem(key, value)
-		if err != nil {
-			return errors.Wrap(err, "failed to persist item")
-		}
-		r.Log.Debugf(" %s: key %s persisted to KV", op, key)
-		rollbacks = append(rollbacks, func() {
-			if prevEntry != nil {
-				_ = s.persistItem(key, prevEntry.data)
-			} else {
-				_ = s.deleteItem(key)
+		if persist {
+			err = s.persistItem(key, value)
+			if err != nil {
+				return errors.Wrap(err, "failed to persist item")
 			}
-		})
+			r.Log.Debugf(" %s: key %s persisted to KV", op, key)
+			rollbacks = append(rollbacks, func() {
+				if prevEntry != nil {
+					_ = s.persistItem(key, prevEntry.data)
+				} else {
+					_ = s.deleteItem(key)
+				}
+			})
+		}
 
 		newEntry = &CachedIndexEntry[T]{
 			Key:       key,
 			ValueHash: valueHash,
-			data:      value,
+			data:      (*value).Clone(),
 		}
 		newIndex[key] = newEntry
 	}
 
 	newStoredIndex := newIndex.Stored()
-	if err = s.persistIndex(newStoredIndex); err != nil {
-		r.Log.WithError(err).Warnf("%s: failed to persist index, rolling back to previous state", op)
-		return errors.Wrap(err, "failed to persist index")
+	if newStoredIndex.hash() == prevStoredIndex.hash() {
+		r.Log.Debugf("%s: %s: no change (index)", op, key)
+		return nil
 	}
-	r.Log.Debugf("%s: index persisted to KV", op)
-	rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevStoredIndex) })
+
+	if persist {
+		if err = s.persistIndex(newStoredIndex); err != nil {
+			r.Log.WithError(err).Warnf("%s: failed to persist index, rolling back to previous state", op)
+			return errors.Wrap(err, "failed to persist index")
+		}
+		r.Log.Debugf("%s: index persisted to KV", op)
+		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevStoredIndex) })
+	}
 
 	s.updateCachedValue(key, newEntry)
 	rollbacks = append(rollbacks, func() { s.updateCachedValue(key, prevEntry) })
 
 	if notify != nil {
-		err = notify(value, prevStoredIndex, newStoredIndex)
+		err = notify(value, newStoredIndex)
 		if err != nil {
 			return err
 		}
