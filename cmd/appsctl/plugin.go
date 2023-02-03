@@ -28,12 +28,17 @@ var pluginDeployCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 
-		m, err := installPlugin(bundlePath)
+		appClient, err := getMattermostClient()
 		if err != nil {
 			return err
 		}
 
-		if err = updateMattermost(*m, apps.DeployPlugin, install); err != nil {
+		m, err := installPlugin(appClient, bundlePath)
+		if err != nil {
+			return err
+		}
+
+		if err = updateMattermost(appClient, *m, apps.DeployPlugin, install); err != nil {
 			return err
 		}
 

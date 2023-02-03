@@ -137,6 +137,11 @@ var awsDeployCmd = &cobra.Command{
 			return err
 		}
 
+		appClient, err := getMattermostClient()
+		if err != nil {
+			return err
+		}
+
 		bucket := upaws.S3BucketName()
 		out, err := upaws.DeployAppFromFile(asDeploy, args[0], log, upaws.DeployAppParams{
 			Bucket:           bucket,
@@ -149,7 +154,7 @@ var awsDeployCmd = &cobra.Command{
 			return err
 		}
 
-		if err = updateMattermost(out.Manifest, apps.DeployAWSLambda, install); err != nil {
+		if err = updateMattermost(appClient, out.Manifest, apps.DeployAWSLambda, install); err != nil {
 			return err
 		}
 

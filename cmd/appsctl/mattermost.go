@@ -23,15 +23,10 @@ func getMattermostClient() (*appclient.Client, error) {
 	return appclient.NewClient(adminToken, siteURL), nil
 }
 
-func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bool) error {
-	appClient, err := getMattermostClient()
-	if err != nil {
-		return err
-	}
-
+func updateMattermost(appClient *appclient.Client, m apps.Manifest, deployType apps.DeployType, installApp bool) error {
 	// Update the listed app manifest and append the new deployment type if it's
 	// not already listed.
-	_, _, err = appClient.UpdateAppListing(appclient.UpdateAppListingRequest{
+	_, _, err := appClient.UpdateAppListing(appclient.UpdateAppListingRequest{
 		Manifest:   m,
 		AddDeploys: apps.DeployTypes{deployType},
 	})
@@ -51,12 +46,7 @@ func updateMattermost(m apps.Manifest, deployType apps.DeployType, installApp bo
 	return nil
 }
 
-func installPlugin(bundlePath string) (*apps.Manifest, error) {
-	appClient, err := getMattermostClient()
-	if err != nil {
-		return nil, err
-	}
-
+func installPlugin(appClient *appclient.Client, bundlePath string) (*apps.Manifest, error) {
 	f, err := os.Open(bundlePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open the plugin bundle")
