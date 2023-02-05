@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -60,7 +61,16 @@ func (p *Proxy) getStatic(r *incoming.Request, app *apps.App, path string) (io.R
 // expanded, ignore 404 errors coming back and consider everything else a
 // "success".
 func (p *Proxy) pingApp(ctx context.Context, app *apps.App) error {
-	ctx, cancel := context.WithTimeout(ctx, pingAppTimeout)
+	var timeout time.Duration
+	if app.DeployType == apps.DeployAWSLambda {
+		// Lambda functions might need to cold start and take longer to reply.
+		// Use a longer timeout.
+		timeout = pingAppTimeoutLambda
+	} else {
+		timeout = pingAppTimeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	up, err := p.upstreamForApp(app)
