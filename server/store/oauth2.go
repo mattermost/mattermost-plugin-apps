@@ -75,7 +75,7 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 
 	dataEncrypted, err := s.encrypter.Encrypt(string(data))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to encrypt oauth user data")
 	}
 
 	_, err = s.conf.MattermostAPI().KV.Set(userkey, dataEncrypted)
