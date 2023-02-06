@@ -15,28 +15,24 @@ func TestEncrypterEncode(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		message       string
-		isBase64      bool
 		expectedError string
 		key           []byte
 	}{
 		{
 			name:          "The key is not valid",
 			message:       "",
-			isBase64:      false,
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 0",
 			key:           []byte(""),
 		},
 		{
 			name:          "The message is encrypted with a generated valid key",
 			message:       `{"Test1":"test-1","Test2":"test-2"}`,
-			isBase64:      true,
 			expectedError: "",
 			key:           key,
 		},
 		{
 			name:          "The message is encrypted",
 			message:       `{"Test1":"test-1","Test2":"test-2"}`,
-			isBase64:      true,
 			expectedError: "",
 			key:           []byte("6368616e676520746869732070617373"),
 		},

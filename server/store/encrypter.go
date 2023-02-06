@@ -22,8 +22,8 @@ type AESEncrypter struct {
 
 var _ Encrypter = (*AESEncrypter)(nil)
 
-func (s *AESEncrypter) Encrypt(text string) ([]byte, error) {
-	byteMsg := []byte(text)
+func (s *AESEncrypter) Encrypt(message string) ([]byte, error) {
+	byteMsg := []byte(message)
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create a cipher block, check key")
