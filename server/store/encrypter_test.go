@@ -75,7 +75,7 @@ func TestEncrypterDecrypt(t *testing.T) {
 		{
 			name:             "The key is valid but the message is not base64 encoded",
 			messageEncrypted: "67ef87bec4a7d5f8f6e889241788c666af162ab02be3ef6e79a4a514c398536a6f543d400374443e4882d52c2c38c9f06a9cd7",
-			expected:		  "",
+			expected:         "",
 			expectedError:    "could not base64 decode: illegal base64 data at input byte 100",
 			key:              []byte("6368616e676520746869732070617373"),
 		},
