@@ -14,30 +14,36 @@ func TestEncrypterEncode(t *testing.T) {
 
 	for _, tc := range []struct {
 		name          string
-		message       []byte
+		message       string
+		isBase64      bool
 		expectedError string
-		key           string
+		key           []byte
 	}{
 		{
 			name:          "The key is not valid",
-			message:       nil,
+			message:       "",
+			isBase64:      false,
 			expectedError: "could not create a cipher block, check key: crypto/aes: invalid key size 0",
-			key:           "",
+			key:           []byte(""),
 		},
 		{
 			name:          "The message is encrypted with a generated valid key",
-			message:       []byte(`{"Test1":"test-1","Test2":"test-2"}`),
+			message:       `{"Test1":"test-1","Test2":"test-2"}`,
+			isBase64:      true,
 			expectedError: "",
 			key:           key,
 		},
 		{
 			name:          "The message is encrypted",
-			message:       []byte(`{"Test1":"test-1","Test2":"test-2"}`),
+			message:       `{"Test1":"test-1","Test2":"test-2"}`,
+			isBase64:      true,
 			expectedError: "",
-			key:           "6368616e676520746869732070617373",
+			key:           []byte("6368616e676520746869732070617373"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			const isBase64 = "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$"
+
 			encrypter := &AESEncrypter{key: tc.key}
 
 			encryptedItem, err := encrypter.Encrypt(tc.message)
@@ -46,6 +52,7 @@ func TestEncrypterEncode(t *testing.T) {
 				assert.Equal(t, tc.expectedError, err.Error())
 			} else {
 				assert.NotEmpty(t, encryptedItem)
+				assert.Regexp(t, isBase64, encryptedItem)
 			}
 		})
 	}
@@ -54,24 +61,31 @@ func TestEncrypterEncode(t *testing.T) {
 func TestEncrypterDecrypt(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
-		messageEncrypted []byte
+		messageEncrypted string
 		expected         string
 		expectedError    string
-		key              string
+		key              []byte
 	}{
 		{
 			name:             "The key is not valid",
-			messageEncrypted: []byte(""),
+			messageEncrypted: "",
 			expected:         "",
 			expectedError:    "could not create a cipher block, check key: crypto/aes: invalid key size 0",
-			key:              "",
+			key:              []byte(""),
+		},
+		{
+			name:             "The key is valid but the message is not base64 encoded",
+			messageEncrypted: "67ef87bec4a7d5f8f6e889241788c666af162ab02be3ef6e79a4a514c398536a6f543d400374443e4882d52c2c38c9f06a9cd7",
+			expected:		  "",
+			expectedError:    "could not base64 decode: illegal base64 data at input byte 100",
+			key:              []byte("6368616e676520746869732070617373"),
 		},
 		{
 			name:             "The key is valid and the message decoded",
-			messageEncrypted: []byte("67ef87bec4a7d5f8f6e889241788c666af162ab02be3ef6e79a4a514c398536a6f543d400374443e4882d52c2c38c9f06a9cd7"),
+			messageEncrypted: "5MJMe6KixZJfxnRw2RYoRoGSW3W2GQA1+XKNf4gM1jyKQluH5zqWpmsjcP/kclwCyNsU",
 			expected:         `{"Test1":"test-1","Test2":"test-2"}`,
 			expectedError:    "",
-			key:              "6368616e676520746869732070617373",
+			key:              []byte("6368616e676520746869732070617373"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
