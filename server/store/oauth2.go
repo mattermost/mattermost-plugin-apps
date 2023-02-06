@@ -105,7 +105,7 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 
 	dataDecrypted, err := s.encrypter.Decrypt(string(data))
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "failed to decrypt oauth user data")
 	}
 
 	return dataDecrypted, nil
