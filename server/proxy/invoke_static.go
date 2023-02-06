@@ -35,13 +35,13 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 }
 
 func (p *Proxy) InvokeGetStatic(r *incoming.Request, path string) (io.ReadCloser, int, error) {
-	app, err := p.getEnabledDestination(r)
+	app, err := p.GetApp(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
 			status = http.StatusNotFound
 		}
-		r.Log = r.Log.WithError(err)
+
 		return nil, status, err
 	}
 
