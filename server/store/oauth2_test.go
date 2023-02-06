@@ -16,11 +16,11 @@ import (
 
 type FakeEncrypter struct{}
 
-func (*FakeEncrypter) Encrypt(message []byte) ([]byte, error) {
-	return []byte("qrZ7JgEW2hi37toQsTorIZSqLv4xRDyHfQulLziP3UonAP77idbimFk9dRObgDgOlJj8E9rrFna0ESpSFFj4UQ=="), nil
+func (*FakeEncrypter) Encrypt(message string) ([]byte, error) {
+	return []byte("5MJMe6KixZJfxnRw2RYoRoGSW3W2GQA1+XKNf4gM1jyKQluH5zqWpmsjcP/kclwCyNsU"), nil
 }
 
-func (*FakeEncrypter) Decrypt(message []byte) ([]byte, error) {
+func (*FakeEncrypter) Decrypt(message string) ([]byte, error) {
 	return []byte(`{"Test1":"test-1","Test2":"test-2"}`), nil
 }
 
@@ -32,7 +32,7 @@ func TestCreateOAuth2State(t *testing.T) {
 		Service: &Service{
 			conf: conf,
 		},
-		encrypter: &AESEncrypter{key: "6368616e676520746869732070617373"},
+		encrypter: &AESEncrypter{key: []byte("6368616e676520746869732070617373")},
 	}
 
 	// CreateState
@@ -87,7 +87,7 @@ func TestOAuth2User(t *testing.T) {
 	entity := Entity{"test-1", "test-2"}
 	key := ".usome_app_id                     userIDis26bytes12345678910  nYmK(/C@:ZHulkHPF_PY"
 	data := []byte(`{"Test1":"test-1","Test2":"test-2"}`)
-	dataEncrypted, err := s.encrypter.Encrypt(data)
+	dataEncrypted, err := s.encrypter.Encrypt(string(data))
 	assert.NoError(t, err)
 
 	// CreateState

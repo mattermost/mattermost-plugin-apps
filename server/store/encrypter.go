@@ -12,7 +12,7 @@ import (
 )
 
 type Encrypter interface {
-	Encrypt(message string) (string, error)
+	Encrypt(message string) ([]byte, error)
 	Decrypt(message string) ([]byte, error)
 }
 
@@ -22,11 +22,11 @@ type AESEncrypter struct {
 
 var _ Encrypter = (*AESEncrypter)(nil)
 
-func (s *AESEncrypter) Encrypt(text string) (string, error) {
+func (s *AESEncrypter) Encrypt(text string) ([]byte, error) {
 	byteMsg := []byte(text)
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
-		return "", errors.Wrap(err, "could not create a cipher block, check key")
+		return nil, errors.Wrap(err, "could not create a cipher block, check key")
 	}
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
@@ -34,13 +34,13 @@ func (s *AESEncrypter) Encrypt(text string) (string, error) {
 	ciphertext := make([]byte, aes.BlockSize+len(byteMsg))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", errors.Wrap(err, "readFull was unsuccessful, check buffer size")
+		return nil, errors.Wrap(err, "readFull was unsuccessful, check buffer size")
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], byteMsg)
 
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	return []byte(base64.StdEncoding.EncodeToString(ciphertext)), nil
 }
 
 func (s *AESEncrypter) Decrypt(message string) ([]byte, error) {

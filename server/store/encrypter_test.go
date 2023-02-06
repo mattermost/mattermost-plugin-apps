@@ -42,7 +42,7 @@ func TestEncrypterEncode(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			const isBase64 = "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$"
+			const regexBase64 = "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$"
 
 			encrypter := &AESEncrypter{key: tc.key}
 
@@ -51,8 +51,7 @@ func TestEncrypterEncode(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err.Error())
 			} else {
-				assert.NotEmpty(t, encryptedItem)
-				assert.Regexp(t, isBase64, encryptedItem)
+				assert.Regexp(t, regexBase64, string(encryptedItem))
 			}
 		})
 	}
