@@ -58,8 +58,12 @@ func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.Ap
 // checkForForbiddenPath checks if the call path matches on of the call paths defined in the manifest, expect /bindings.
 // These should only be called by the proxy directly, and not by the user.
 func checkForForbiddenPath(app *apps.App, path string) error {
-	matchesCallPath := func(call *apps.Call) bool {
+	matchesCallPath := func(call *apps.Call, defaultCall *apps.Call) bool {
 		if call == nil {
+			if defaultCall != nil {
+				return defaultCall.Path == path
+			}
+
 			return false
 		}
 
@@ -68,28 +72,31 @@ func checkForForbiddenPath(app *apps.App, path string) error {
 
 	manifest := app.Manifest
 
-	if matchesCallPath(manifest.OnInstall) {
+	if matchesCallPath(nil, &apps.DefaultPing) {
+		return errors.Errorf("path %s defined as /ping", path)
+	}
+	if matchesCallPath(manifest.OnInstall, nil) {
 		return errors.Errorf("path %s defined as on_install.path", path)
 	}
-	if matchesCallPath(manifest.OnUninstall) {
+	if matchesCallPath(manifest.OnUninstall, nil) {
 		return errors.Errorf("path %s defined as on_uninstall.path", path)
 	}
-	if matchesCallPath(manifest.OnVersionChanged) {
+	if matchesCallPath(manifest.OnVersionChanged, nil) {
 		return errors.Errorf("path %s defined as on_version_changed.path", path)
 	}
-	if matchesCallPath(manifest.OnEnable) {
+	if matchesCallPath(manifest.OnEnable, nil) {
 		return errors.Errorf("path %s defined as on_enable.path", path)
 	}
-	if matchesCallPath(manifest.OnDisable) {
+	if matchesCallPath(manifest.OnDisable, nil) {
 		return errors.Errorf("path %s defined as on_disable.path", path)
 	}
-	if matchesCallPath(manifest.GetOAuth2ConnectURL) {
+	if matchesCallPath(manifest.GetOAuth2ConnectURL, &apps.DefaultGetOAuth2ConnectURL) {
 		return errors.Errorf("path %s defined as get_oauth2_connect_url.path", path)
 	}
-	if matchesCallPath(manifest.OnOAuth2Complete) {
+	if matchesCallPath(manifest.OnOAuth2Complete, &apps.DefaultOnOAuth2Complete) {
 		return errors.Errorf("path %s defined as on_oauth2_complete.path", path)
 	}
-	if matchesCallPath(manifest.OnRemoteWebhook) {
+	if matchesCallPath(manifest.OnRemoteWebhook, &apps.DefaultOnRemoteWebhook) {
 		return errors.Errorf("path %s defined as on_remote_webhook.path", path)
 	}
 
