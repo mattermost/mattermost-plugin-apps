@@ -39,16 +39,70 @@ func (p *Proxy) InvokeCall(r *incoming.Request, creq apps.CallRequest) (*apps.Ap
 	if creq.Path[0] != '/' {
 		return app, apps.NewErrorResponse(utils.NewInvalidError("call path must start with a %q: %q", "/", creq.Path))
 	}
+
 	cleanPath, err := utils.CleanPath(creq.Path)
 	if err != nil {
 		return app, apps.NewErrorResponse(errors.Wrap(err, "failed to clean call path"))
 	}
 	creq.Path = cleanPath
 
+	err = checkForForbiddenPath(app, creq.Path)
+	if err != nil {
+		return app, apps.NewErrorResponse(errors.Wrap(err, "forbidden call path"))
+	}
+
 	appRequest := r.WithDestination(app.AppID)
 	cresp := p.callApp(appRequest, app, creq, false)
 
 	return app, cresp
+}
+
+// checkForForbiddenPath checks if the call path matches on of the call paths defined in the manifest, expect /bindings.
+// These should only be called by the proxy directly, and not by the user.
+func checkForForbiddenPath(app *apps.App, path string) error {
+	matchesCallPath := func(call *apps.Call, defaultCall *apps.Call) bool {
+		if call == nil {
+			if defaultCall != nil {
+				return defaultCall.Path == path
+			}
+
+			return false
+		}
+
+		return call.Path == path
+	}
+
+	manifest := app.Manifest
+
+	if matchesCallPath(nil, &apps.DefaultPing) {
+		return errors.Errorf("path %s defined as /ping", path)
+	}
+	if matchesCallPath(manifest.OnInstall, nil) {
+		return errors.Errorf("path %s defined as on_install.path", path)
+	}
+	if matchesCallPath(manifest.OnUninstall, nil) {
+		return errors.Errorf("path %s defined as on_uninstall.path", path)
+	}
+	if matchesCallPath(manifest.OnVersionChanged, nil) {
+		return errors.Errorf("path %s defined as on_version_changed.path", path)
+	}
+	if matchesCallPath(manifest.OnEnable, nil) {
+		return errors.Errorf("path %s defined as on_enable.path", path)
+	}
+	if matchesCallPath(manifest.OnDisable, nil) {
+		return errors.Errorf("path %s defined as on_disable.path", path)
+	}
+	if matchesCallPath(manifest.GetOAuth2ConnectURL, &apps.DefaultGetOAuth2ConnectURL) {
+		return errors.Errorf("path %s defined as get_oauth2_connect_url.path", path)
+	}
+	if matchesCallPath(manifest.OnOAuth2Complete, &apps.DefaultOnOAuth2Complete) {
+		return errors.Errorf("path %s defined as on_oauth2_complete.path", path)
+	}
+	if matchesCallPath(manifest.OnRemoteWebhook, &apps.DefaultOnRemoteWebhook) {
+		return errors.Errorf("path %s defined as on_remote_webhook.path", path)
+	}
+
+	return nil
 }
 
 // <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?
