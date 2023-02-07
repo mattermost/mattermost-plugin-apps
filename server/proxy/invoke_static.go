@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -35,13 +36,13 @@ func normalizeStaticPath(conf config.Config, appID apps.AppID, icon string) (str
 }
 
 func (p *Proxy) InvokeGetStatic(r *incoming.Request, path string) (io.ReadCloser, int, error) {
-	app, err := p.getEnabledDestination(r)
+	app, err := p.GetApp(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, utils.ErrNotFound) {
 			status = http.StatusNotFound
 		}
-		r.Log = r.Log.WithError(err)
+
 		return nil, status, err
 	}
 
@@ -59,17 +60,31 @@ func (p *Proxy) getStatic(r *incoming.Request, app *apps.App, path string) (io.R
 // pingApp checks if the app is accessible. Call its ping path with nothing
 // expanded, ignore 404 errors coming back and consider everything else a
 // "success".
-func (p *Proxy) pingApp(ctx context.Context, app *apps.App) (reachable bool) {
-	ctx, cancel := context.WithTimeout(ctx, pingAppTimeout)
+func (p *Proxy) pingApp(ctx context.Context, app *apps.App) error {
+	var timeout time.Duration
+	if app.DeployType == apps.DeployAWSLambda {
+		// Lambda functions might need to cold start and take longer to reply.
+		// Use a longer timeout.
+		timeout = pingAppTimeoutLambda
+	} else {
+		timeout = pingAppTimeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return false
+		return errors.Wrap(err, "failed to get upstream for app")
 	}
 
 	_, err = upstream.Call(ctx, up, *app, apps.CallRequest{
 		Call: apps.DefaultPing,
 	})
-	return err == nil || errors.Cause(err) == utils.ErrNotFound
+
+	if err != nil && errors.Cause(err) != utils.ErrNotFound {
+		return errors.Wrapf(err, "failed to call %s endpoint", apps.DefaultPing.Path)
+	}
+
+	return nil
 }

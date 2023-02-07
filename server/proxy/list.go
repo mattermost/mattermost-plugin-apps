@@ -13,9 +13,13 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-const pingAppTimeout = 1 * time.Second
+const (
+	pingAppTimeout       = 2 * time.Second
+	pingAppTimeoutLambda = 5 * time.Second
+)
 
 func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)
@@ -56,7 +60,7 @@ func (p *Proxy) GetInstalledApp(appID apps.AppID, checkEnabled bool) (*apps.App,
 }
 
 func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, reachable map[apps.AppID]bool) {
-	all := p.store.App.AsMap()
+	all := p.store.App.AsMap(store.AllApps)
 	if len(all) == 0 {
 		return nil, nil
 	}
@@ -66,13 +70,21 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 	defer close(reachableCh)
 	for _, app := range all {
 		go func(a apps.App) {
-			var response apps.AppID
-			if !a.Disabled {
-				if p.pingApp(ctx, &a) {
-					response = a.AppID
+			var reachable bool
+
+			if a.DeployType == apps.DeployBuiltin {
+				// Builtin apps are always rechable
+				reachable = true
+			} else if !a.Disabled {
+				if p.pingApp(ctx, &a) == nil {
+					reachable = true
 				}
 			}
-			reachableCh <- response
+			if reachable {
+				reachableCh <- a.AppID
+			} else {
+				reachableCh <- ""
+			}
 		}(app)
 	}
 
@@ -96,16 +108,7 @@ func (p *Proxy) PingInstalledApps(ctx context.Context) (installed []apps.App, re
 }
 
 func (p *Proxy) GetInstalledApps() []apps.App {
-	all := p.store.App.AsMap()
-	installed := []apps.App{}
-	for _, app := range all {
-		installed = append(installed, app)
-	}
-	// Sort result alphabetically, by display name.
-	sort.SliceStable(installed, func(i, j int) bool {
-		return strings.ToLower(installed[i].DisplayName) < strings.ToLower(installed[j].DisplayName)
-	})
-	return installed
+	return p.store.App.AsList(store.AllApps)
 }
 
 func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.ListedApp {
@@ -114,10 +117,6 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 
 	for _, m := range p.store.Manifest.AsMap() {
 		if !appMatchesFilter(m, filter) {
-			continue
-		}
-
-		if !includePluginApps && m.Contains(apps.DeployPlugin) {
 			continue
 		}
 
@@ -130,6 +129,19 @@ func (p *Proxy) GetListedApps(filter string, includePluginApps bool) []apps.List
 		}
 
 		app, _ := p.store.App.Get(m.AppID)
+
+		if !includePluginApps {
+			// Filter out if installed as plugin
+			if app != nil && app.DeployType == apps.DeployPlugin {
+				continue
+			}
+
+			// Filter out if not installed and only deployable as plugin
+			if app == nil && len(m.DeployTypes()) == 1 && m.DeployTypes()[0] == apps.DeployPlugin {
+				continue
+			}
+		}
+
 		if app != nil {
 			marketApp.Installed = true
 			marketApp.Enabled = !app.Disabled

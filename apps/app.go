@@ -57,29 +57,16 @@ type App struct {
 }
 
 func DecodeCompatibleApp(data []byte) (app *App, err error) {
-	defer func() {
-		if app != nil {
-			err = app.Validate()
-			if err != nil {
-				app = nil
-			}
-		}
-	}()
-
 	err = json.Unmarshal(data, &app)
-	// If failed to decode as current version, opportunistically try as a
-	// v0.7.x. There was no schema version before, this condition may need to be
-	// updated in the future.
-	if err != nil || app.SchemaVersion == "" {
-		app7 := AppV0_7{}
-		_ = json.Unmarshal(data, &app7)
-		if from7 := app7.App(); from7 != nil {
-			return from7, nil
-		}
-	}
 	if err != nil {
 		return nil, err
 	}
+
+	err = app.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	return app, nil
 }
 

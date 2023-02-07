@@ -124,9 +124,9 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 		name := fmt.Sprintf("**[%s](%s)** (`%s`)",
 			app.DisplayName, app.HomepageURL, app.AppID)
 
-		deployType := string(app.DeployType)
+		deployType := app.DeployType.String()
 		if app.DeployType == apps.DeployHTTP && app.HTTP != nil {
-			deployType = app.HTTP.RootURL
+			deployType += " (" + app.HTTP.RootURL + ")"
 		}
 
 		txt += fmt.Sprintf("|%s|%s|%s|%s|%s|%s|%s|\n",

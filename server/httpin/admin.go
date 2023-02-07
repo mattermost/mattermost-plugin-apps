@@ -3,6 +3,7 @@ package httpin
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -76,7 +77,7 @@ func (s *Service) InstallApp(r *incoming.Request, w http.ResponseWriter, req *ht
 //	Path: /api/v1/enable-app
 //	Method: POST
 //	Input: JSON {app_id}
-//	Output: none
+//	Output: text message of operation's success.
 func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -98,7 +99,7 @@ func (s *Service) EnableApp(r *incoming.Request, w http.ResponseWriter, req *htt
 //	Path: /api/v1/disable-app
 //	Method: POST
 //	Input: JSON {app_id}
-//	Output: JSON, unsanitized App record
+//	Output: text message of operation's success.
 func (s *Service) DisableApp(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	var err error
 	defer func() { httputils.WriteErrorIfNeeded(w, err) }()
@@ -155,7 +156,7 @@ func (s *Service) GetApp(r *incoming.Request, w http.ResponseWriter, req *http.R
 
 func (s *Service) GetMarketplace(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	filter := req.URL.Query().Get("filter")
-	includePlugins := req.URL.Query().Get("include_plugins") != ""
+	includePlugins, _ := strconv.ParseBool(req.URL.Query().Get("include_plugins"))
 
 	result := s.Proxy.GetListedApps(filter, includePlugins)
 	_ = httputils.WriteJSON(w, result)

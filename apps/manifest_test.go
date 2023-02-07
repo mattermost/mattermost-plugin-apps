@@ -78,16 +78,30 @@ func TestValidateManifest(t *testing.T) {
 			Manifest:      apps.Manifest{},
 			ExpectedError: true,
 		},
-		"no app types": {
+		"no deploy type": {
+			Manifest: apps.Manifest{
+				AppID:       "abc",
+				DisplayName: "some display name",
+				HomepageURL: "https://example.org",
+			},
+			ExpectedError: true,
+		},
+		"DisplayName empty": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
 				HomepageURL: "https://example.org",
+				Deploy: apps.Deploy{
+					HTTP: &apps.HTTP{
+						RootURL: "https://example.org/root",
+					},
+				},
 			},
 			ExpectedError: true,
 		},
 		"HomepageURL empty": {
 			Manifest: apps.Manifest{
-				AppID: "abc",
+				AppID:       "abc",
+				DisplayName: "some display name",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
 						RootURL: "https://example.org/root",
@@ -99,6 +113,7 @@ func TestValidateManifest(t *testing.T) {
 		"HTTP RootURL empty": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{},
@@ -109,6 +124,7 @@ func TestValidateManifest(t *testing.T) {
 		"minimal valid HTTP app example manifest": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
@@ -121,6 +137,7 @@ func TestValidateManifest(t *testing.T) {
 		"invalid Icon": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
@@ -134,6 +151,7 @@ func TestValidateManifest(t *testing.T) {
 		"invalid HomepageURL": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: ":invalid",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
@@ -146,6 +164,7 @@ func TestValidateManifest(t *testing.T) {
 		"invalid HTTPRootURL": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org/root",
 				Deploy: apps.Deploy{
 					HTTP: &apps.HTTP{
@@ -158,6 +177,7 @@ func TestValidateManifest(t *testing.T) {
 		"no lambda for AWS app": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{},
@@ -168,6 +188,7 @@ func TestValidateManifest(t *testing.T) {
 		"missing path for AWS app": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{
@@ -184,6 +205,7 @@ func TestValidateManifest(t *testing.T) {
 		"missing name for AWS app": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{
@@ -200,6 +222,7 @@ func TestValidateManifest(t *testing.T) {
 		"missing handler for AWS app": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{
@@ -216,6 +239,7 @@ func TestValidateManifest(t *testing.T) {
 		"missing runtime for AWS app": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{
@@ -232,6 +256,7 @@ func TestValidateManifest(t *testing.T) {
 		"minimal valid AWS app example manifest": {
 			Manifest: apps.Manifest{
 				AppID:       "abc",
+				DisplayName: "some display name",
 				HomepageURL: "https://example.org",
 				Deploy: apps.Deploy{
 					AWSLambda: &apps.AWSLambda{

@@ -93,9 +93,15 @@ type Manifest struct {
 	// explicitly provided in the manifest.
 	OnUninstall *Call `json:"on_uninstall,omitempty"`
 
-	// OnEnable, OnDisable are not yet supported
+	// OnEnable gets invoked when a sysadmin uses the `/apps enable`
+	// command, after the app is enabled. It is not called unless
+	// explicitly provided in the manifest.
+	OnEnable *Call `json:"on_enable,omitempty"`
+
+	// OnDisable gets invoked when a sysadmin uses the `/apps disable`
+	// command, before the app is actually disabled. It is not called unless
+	// explicitly provided in the manifest.
 	OnDisable *Call `json:"on_disable,omitempty"`
-	OnEnable  *Call `json:"on_enable,omitempty"`
 
 	// GetOAuth2ConnectURL is called when the App's "connect to 3rd party" link
 	// is clicked, to be redirected to the OAuth flow. It must return Data set
@@ -131,13 +137,6 @@ type Manifest struct {
 
 	// Deployment information
 	Deploy
-
-	// unexported data
-
-	// v7AppType is the AppType field value if the Manifest was decoded from a
-	// v0.7.x version. It is used in App.DecodeCompatibleManifest to set
-	// DeployType.
-	v7AppType string
 }
 
 // DecodeCompatibleManifest decodes any known version of manifest.json into the
@@ -146,29 +145,16 @@ type Manifest struct {
 // Thus, custom functions to encode/decode JSON, with backwards compatibility
 // support for App and Manifest.
 func DecodeCompatibleManifest(data []byte) (m *Manifest, err error) {
-	defer func() {
-		if m != nil {
-			err = m.Validate()
-			if err != nil {
-				m = nil
-			}
-		}
-	}()
-
 	err = json.Unmarshal(data, &m)
-	// If failed to decode as current version, opportunistically try as a
-	// v0.7.x. There was no schema version before, this condition may need to be
-	// updated in the future.
-	if err != nil || m.SchemaVersion == "" {
-		m7 := ManifestV0_7{}
-		_ = json.Unmarshal(data, &m7)
-		if from7 := m7.Manifest(); from7 != nil {
-			return from7, nil
-		}
-	}
 	if err != nil {
 		return nil, err
 	}
+
+	err = m.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	return m, nil
 }
 
@@ -178,6 +164,12 @@ type validator interface {
 
 func (m Manifest) Validate() error {
 	var result error
+
+	if m.DisplayName == "" {
+		result = multierror.Append(result,
+			utils.NewInvalidError("display_name is empty"))
+	}
+
 	if m.HomepageURL == "" {
 		result = multierror.Append(result,
 			utils.NewInvalidError("homepage_url is empty"))

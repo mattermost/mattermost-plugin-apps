@@ -20,7 +20,7 @@ import (
 
 type bindingsApp struct {
 	*goapp.App
-	creq  apps.CallRequest
+	creq  *apps.CallRequest
 	cresp apps.CallResponse
 }
 
@@ -29,14 +29,14 @@ func newBindingsApp(_ *Helper, appID apps.AppID, bindExpand *apps.Expand, bindin
 	app.App = goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       appID,
-			Version:     "v1.0.0",
+			Version:     "v1.2.0",
 			DisplayName: "Returns bindings",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 		},
 		goapp.WithBindingsExpand(bindExpand),
 		goapp.TestWithBindingsHandler(
 			func(creq goapp.CallRequest) apps.CallResponse {
-				app.creq = creq.CallRequest
+				app.creq = &creq.CallRequest
 				app.cresp = apps.NewDataResponse(bindings)
 				return app.cresp
 			},
@@ -136,7 +136,7 @@ func testBindings(th *Helper) {
 		th.InstallAppWithCleanup(app.App)
 
 		require.Equal(th, th.ServerTestHelper.BasicPost.ChannelId, th.ServerTestHelper.BasicChannel.Id)
-		app.creq = apps.CallRequest{}
+		app.creq = &apps.CallRequest{}
 		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
 		require.NoError(th, err)
 		require.Equal(th, "", out.Err)
@@ -262,7 +262,7 @@ func testBindings(th *Helper) {
 
 				th.InstallAppWithCleanup(app.App)
 
-				app.creq = apps.CallRequest{}
+				app.creq = &apps.CallRequest{}
 				out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
 				require.NoError(th, err)
 				require.Equal(th, tc.expectedError, out.Err)
@@ -299,11 +299,10 @@ func testBindings(th *Helper) {
 		th.InstallAppWithCleanup(app.App)
 		th.DisableApp(app.App)
 
-		app.creq = apps.CallRequest{}
-		out, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
+		app.creq = nil
+		_, err := httpGetBindings(th, th.ServerTestHelper.BasicChannel.TeamId, th.ServerTestHelper.BasicChannel.Id)
 		require.NoError(th, err)
-		require.Equal(th, "1 error occurred:\n\t* app is disabled by the administrator: disabled-app: forbidden\n\n", out.Err)
-		require.Empty(th, app.creq)
+		require.Nil(th, app.creq)
 	})
 
 	th.Run("multiple apps have commands", func(th *Helper) {

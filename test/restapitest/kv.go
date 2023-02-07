@@ -24,7 +24,7 @@ func newKVApp(t testing.TB) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       kvID,
-			Version:     "v1.1.0",
+			Version:     "v1.2.0",
 			DisplayName: "tests access to the KV store",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			RequestedPermissions: []apps.Permission{

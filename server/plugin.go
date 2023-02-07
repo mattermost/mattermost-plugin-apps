@@ -33,7 +33,6 @@ type Plugin struct {
 	manifest model.Manifest
 
 	conf config.Service
-	log  utils.Logger
 
 	store          *store.Service
 	appservices    appservices.Service
@@ -55,7 +54,7 @@ func NewPlugin(pluginManifest model.Manifest) *Plugin {
 
 func (p *Plugin) OnActivate() (err error) {
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	p.log = utils.NewPluginLogger(mm)
+	log := utils.NewPluginLogger(mm, nil)
 
 	// Make sure we have the Bot.
 	botUserID, err := mm.Bot.EnsureBot(&model.Bot{
@@ -66,51 +65,51 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
-	p.log.Debugw("ensured bot", "id", botUserID, "username", config.BotUsername)
+	log.Debugw("ensured bot", "id", botUserID, "username", config.BotUsername)
 
 	// Initialize internalization and telemetrty.
 	i18nBundle, err := i18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to load localization files")
 	}
 
 	p.telemetryClient, err = mmtelemetry.NewRudderClient()
 	if err != nil {
-		p.API.LogWarn("telemetry client not started", "error", err.Error())
+		log.WithError(err).Warnw("failed to start telemetry client.")
 	}
 	p.tracker = telemetry.NewTelemetry(nil)
 
 	// Configure the plugin.
-	p.conf = config.NewService(mm, p.manifest, botUserID, p.tracker, i18nBundle)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-	err = p.conf.Reconfigure(stored, p.log)
+	confService, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
 	if err != nil {
-		p.log.WithError(err).Infof("failed to configure")
+		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
+	p.conf = confService
+	log = p.conf.NewBaseLogger()
+
 	conf := p.conf.Get()
-	p.log.With(conf).Debugf("configured")
+	log.With(conf).Debugw("configured the plugin.")
 
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
 	// Initialize persistent storage. Also initialize the app API and the
 	// session services, both need the persisitent store.
-	p.store, err = store.MakeService(p.log, p.conf, p.httpOut)
+	p.store, err = store.MakeService(p.conf, p.httpOut)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
 	p.store.App.InitBuiltin(builtin.App(conf))
 	scheduler := cluster.GetJobOnceScheduler(p.API)
-	appservice, err := appservices.NewService(p.log, p.conf, p.store, scheduler)
+	appservice, err := appservices.NewService(log, p.conf, p.store, scheduler)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize appservices")
 	}
 	p.appservices = appservice
 
 	p.sessionService = session.NewService(mm, p.store)
-	p.log.Debugf("initialized API and persistent store")
+	log.Debugf("initialized API and persistent store")
 
 	// Initialize the app proxy.
 	mutex, err := cluster.NewMutex(p.API, store.KVClusterMutexKey)
@@ -118,8 +117,8 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
 
-	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices, p.log)
-	err = p.proxy.Configure(conf, p.log)
+	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
+	err = p.proxy.Configure(conf, log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize app proxy")
 	}
@@ -127,22 +126,21 @@ func (p *Plugin) OnActivate() (err error) {
 		builtin.AppID,
 		builtin.NewBuiltinApp(p.conf, p.proxy, p.appservices, p.httpOut, p.sessionService),
 	)
-	p.log.Debugf("initialized the app proxy")
+	log.Debugf("initialized the app proxy")
 
 	appservice.SetCaller(p.proxy)
-
-	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf, p.log)
-	p.log.Debugf("initialized incoming HTTP")
+	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf)
+	log.Debugf("initialized incoming HTTP")
 
 	if conf.MattermostCloudMode {
 		err = p.proxy.SynchronizeInstalledApps()
 		if err != nil {
-			p.log.WithError(err).Errorf("failed to synchronize apps metadata")
+			log.WithError(err).Errorf("failed to synchronize apps metadata")
 		} else {
-			p.log.Debugf("Synchronized the installed apps metadata")
+			log.Debugf("Synchronized the installed apps metadata")
 		}
 	}
-	p.log.Infof("activated")
+	log.Infof("activated")
 
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginEnabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
@@ -163,7 +161,7 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	return nil
 }
 
-func (p *Plugin) OnConfigurationChange() (err error) {
+func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
@@ -179,12 +177,16 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
-	stored := config.StoredConfig{}
-	_ = mm.Configuration.LoadPluginConfiguration(&stored)
-
-	err = p.conf.Reconfigure(stored, utils.NilLogger{}, p.store.App, p.store.Manifest, p.proxy)
+	var sc config.StoredConfig
+	err := mm.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
-		p.log.WithError(err).Infof("failed to reconfigure")
+		p.API.LogWarn("failed to load updated configuration", "error", err.Error())
+		return err
+	}
+
+	err = p.conf.Reconfigure(sc, false, p.store.App, p.store.Manifest, p.proxy)
+	if err != nil {
+		p.API.LogInfo("failed to reconfigure", "error", err.Error())
 		return err
 	}
 	return nil

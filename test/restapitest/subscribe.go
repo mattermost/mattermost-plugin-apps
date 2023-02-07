@@ -25,7 +25,7 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
 			AppID:       subID,
-			Version:     "v1.1.0",
+			Version:     "v1.2.0",
 			DisplayName: "tests Subscription API",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
 			RequestedPermissions: []apps.Permission{
@@ -154,7 +154,7 @@ func testSubscriptions(th *Helper) {
 		badResponse, _, err := th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, "does-not-exist", ""))
 		require.NoError(th, err)
 		require.Equal(th, apps.CallResponseTypeError, badResponse.Type)
-		require.Equal(th, "not found", badResponse.Text)
+		require.Equal(th, "You are not subscribed to this notification: not found", badResponse.Text)
 		assertNumSubs(th, th.HappyCall, 2)
 	})
 

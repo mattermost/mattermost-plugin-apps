@@ -383,6 +383,10 @@ func (c *ClientPP) DoAPIGET(url string, etag string) (*http.Response, error) {
 	return c.DoAPIRequest(http.MethodGet, c.URL+url, "", etag)
 }
 
+func (c *ClientPP) DoAPIHEAD(url string, etag string) (*http.Response, error) {
+	return c.DoAPIRequest(http.MethodHead, c.URL+url, "", etag)
+}
+
 func (c *ClientPP) DoAPIPOST(url string, data string) (*http.Response, error) {
 	return c.DoAPIRequest(http.MethodPost, c.URL+url, data, "")
 }

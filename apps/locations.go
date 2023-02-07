@@ -8,16 +8,37 @@ import (
 	"strings"
 )
 
+type Locations []Location
+
+func (list Locations) String() string {
+	m := ""
+	for i, location := range list {
+		if i != 0 {
+			m += ", "
+		}
+		m += location.Markdown()
+	}
+
+	return m
+}
+
+func (list Locations) Contains(loc Location) bool {
+	for _, current := range list {
+		if current == loc {
+			return true
+		}
+	}
+	return false
+}
+
+type Location string
+
 const (
 	LocationPostMenu      Location = "/post_menu"
 	LocationChannelHeader Location = "/channel_header"
 	LocationCommand       Location = "/command"
 	LocationInPost        Location = "/in_post"
 )
-
-type Location string
-
-type Locations []Location
 
 func (l Location) IsTop() bool {
 	switch l {
@@ -66,13 +87,4 @@ func (l Location) Markdown() string {
 		return fmt.Sprintf("`/%s` command", strings.Join(tokens[1:], " "))
 	}
 	return string(l)
-}
-
-func (list Locations) Contains(loc Location) bool {
-	for _, current := range list {
-		if current == loc {
-			return true
-		}
-	}
-	return false
 }

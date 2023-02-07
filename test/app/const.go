@@ -8,11 +8,12 @@ const (
 	NotifyPath   = "/notify"
 
 	// Commands
-	CreateEmbedded = "/create-embedded"
-	Subscribe      = "/subscribe"
-	Unsubscribe    = "/unsubscribe"
-	CreateTimer    = "/timer/create"
-	ExecuteTimer   = "/timer/execute"
+	CreateEmbedded  = "/create-embedded"
+	Subscribe       = "/subscribe"
+	Unsubscribe     = "/unsubscribe"
+	CreateTimer     = "/timer/create"
+	ExecuteTimer    = "/timer/execute"
+	NumBindingsPath = "/num_bindings"
 
 	// Submit responses
 	OK               = "/ok"

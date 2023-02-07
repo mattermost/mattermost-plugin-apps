@@ -20,6 +20,7 @@ func (p *Proxy) InvokeGetBindings(r *incoming.Request, cc apps.Context) ([]apps.
 	if err != nil {
 		return nil, err
 	}
+
 	if len(app.GrantedLocations) == 0 {
 		return nil, utils.NewForbiddenError("no location granted to bind to")
 	}

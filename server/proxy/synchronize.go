@@ -11,9 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 const PrevVersion = "prev_version"
@@ -24,10 +22,9 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 
-	mm := p.conf.MattermostAPI()
-	r := incoming.NewRequest(p.conf, utils.NewPluginLogger(mm), p.sessionService).WithCtx(ctx)
+	r := p.NewIncomingRequest().WithCtx(ctx)
 
-	installed := p.store.App.AsMap()
+	installed := p.store.App.AsMap(store.AllApps)
 	listed := p.store.Manifest.AsMap()
 
 	diff := map[apps.AppID]apps.App{}
