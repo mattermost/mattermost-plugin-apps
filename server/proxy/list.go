@@ -16,7 +16,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 )
 
-const pingAppTimeout = 1 * time.Second
+const (
+	pingAppTimeout       = 2 * time.Second
+	pingAppTimeoutLambda = 5 * time.Second
+)
 
 func (p *Proxy) GetManifest(appID apps.AppID) (*apps.Manifest, error) {
 	return p.store.Manifest.Get(appID)

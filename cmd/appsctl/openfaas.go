@@ -37,6 +37,11 @@ var openfaasDeployCmd = &cobra.Command{
 		bundlePath := args[0]
 		gateway := os.Getenv(upopenfaas.EnvGatewayURL)
 
+		appClient, err := getMattermostClient()
+		if err != nil {
+			return err
+		}
+
 		m, err := upopenfaas.DeployApp(bundlePath, log, shouldUpdate, gateway, dockerRegistry)
 		if err != nil {
 			return err
@@ -48,7 +53,7 @@ var openfaasDeployCmd = &cobra.Command{
 			return errors.New("no OpenFaaS functions to deploy in manifest.json")
 		}
 
-		if err = updateMattermost(*m, apps.DeployOpenFAAS, install); err != nil {
+		if err = updateMattermost(appClient, *m, apps.DeployOpenFAAS, install); err != nil {
 			return err
 		}
 

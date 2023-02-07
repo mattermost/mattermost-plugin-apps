@@ -40,9 +40,6 @@ linters:
 
 issues:
   exclude-rules:
-    - path: server/incoming/request.go
-      linters: 
-        - govet
     - path: _test\.go
       linters:
         - bodyclose

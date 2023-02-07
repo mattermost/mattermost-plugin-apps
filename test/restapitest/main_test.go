@@ -38,9 +38,9 @@ func TestRESTAPI(t *testing.T) {
 		"webhook_auth":  testWebhookAuth,
 		"webhook_path":  testWebhookPath,
 		"subscriptions": testSubscriptions,
+		"static":        testStatic,
 		"notify":        testNotify,
 		"uninstall":     testUninstall,
-		"misc":          testMisc,
 	} {
 		th.CleanRun(name, testF)
 	}
