@@ -45,7 +45,7 @@ func MakeMutexCachedStore[T Cloneable[T]](name string, api plugin.API, mmapi *pl
 	}
 	s.kvMutex = mutex
 
-	cachedStoreEventSink.Store(s.eventID(), s)
+	cachedStorePluginClusterMessageSink[s.eventID()] = s.onEvent
 	return s, nil
 }
 
@@ -82,7 +82,7 @@ func (s *MutexCachedStore[T]) notify(key string, data *T, indexHash string) erro
 	)
 }
 
-func (s *MutexCachedStore[T]) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
+func (s *MutexCachedStore[T]) onEvent(r *incoming.Request, ev model.PluginClusterEvent) error {
 	event := CachedStoreClusterEvent[T]{}
 	err := json.Unmarshal(ev.Data, &event)
 	if err != nil {

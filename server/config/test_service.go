@@ -82,6 +82,8 @@ func (s *TestService) MattermostConfig() configservice.ConfigService {
 	return &mattermostConfigService{&s.mmconfig}
 }
 
+func (s *TestService) OnClusterLeaderChanged(bool) {}
+
 func (s *TestService) Reconfigure(StoredConfig, bool, ...Configurable) error {
 	return nil
 }

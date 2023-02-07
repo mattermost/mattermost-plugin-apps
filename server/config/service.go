@@ -36,6 +36,7 @@ type Service interface {
 
 	Reconfigure(_ StoredConfig, verbose bool, _ ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
+	OnClusterLeaderChanged(isLeader bool)
 }
 
 var _ Service = (*service)(nil)
@@ -267,6 +268,16 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 		}
 	}
 	return nil
+}
+
+func (s *service) OnClusterLeaderChanged(isLeader bool) {
+	s.lock.Lock()
+	if s.conf != nil {
+		s.conf.IsClusterLeader = isLeader
+	}
+	s.lock.Unlock()
+
+	s.NewBaseLogger().Debugf("Cluster leader changed to %t", isLeader)
 }
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {

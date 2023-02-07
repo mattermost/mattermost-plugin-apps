@@ -210,8 +210,10 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
+//nolint:unparam
 func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error {
-	return errors.New("not implemented")
+	p.conf.OnClusterLeaderChanged(isLeader)
+	return nil
 }
 
 func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {

@@ -58,6 +58,7 @@ type Config struct {
 	MattermostCloudMode bool
 	DeveloperMode       bool
 	AllowHTTPApps       bool
+	IsClusterLeader     bool
 
 	BotUserID          string
 	MattermostSiteURL  string

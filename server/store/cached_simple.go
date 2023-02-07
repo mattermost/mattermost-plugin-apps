@@ -22,7 +22,7 @@ type SimpleCachedStore[T Cloneable[T]] struct {
 	// dependencies
 	mmapi *pluginapi.Client
 
-	// internal
+	// implementation
 	name  string
 	cache *sync.Map // of *IndexEntry[T]
 }
@@ -136,7 +136,7 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, persist bool, key str
 			if err != nil {
 				return errors.Wrap(err, "failed to persist item")
 			}
-			r.Log.Debugf(" %s: key %s persisted to KV", op, key)
+			r.Log.Debugf(" %s: key %s persisted to KV, hash: %s", op, key, valueHash)
 			rollbacks = append(rollbacks, func() {
 				if prevEntry != nil {
 					_ = s.persistItem(key, prevEntry.data)
@@ -155,7 +155,8 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, persist bool, key str
 	}
 
 	newStoredIndex := newIndex.Stored()
-	if newStoredIndex.hash() == prevStoredIndex.hash() {
+	newHash := newStoredIndex.hash()
+	if newHash == prevStoredIndex.hash() {
 		r.Log.Debugf("%s: %s: no change (index)", op, key)
 		return nil
 	}
@@ -165,7 +166,7 @@ func (s *SimpleCachedStore[T]) update(r *incoming.Request, persist bool, key str
 			r.Log.WithError(err).Warnf("%s: failed to persist index, rolling back to previous state", op)
 			return errors.Wrap(err, "failed to persist index")
 		}
-		r.Log.Debugf("%s: index persisted to KV", op)
+		r.Log.Debugf("%s: index persisted to KV, hash: %s", op, newHash)
 		rollbacks = append(rollbacks, func() { _ = s.persistIndex(prevStoredIndex) })
 	}
 
