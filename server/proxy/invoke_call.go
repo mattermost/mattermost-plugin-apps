@@ -4,6 +4,8 @@
 package proxy
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -80,6 +82,36 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 // callApp in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
 func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) apps.CallResponse {
+	cresp, err := p.callAppImpl(r, app, creq, notify)
+	if err != nil {
+		return apps.NewErrorResponse(err)
+	}
+	return *cresp
+}
+
+func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) (cresp *apps.CallResponse, err error) {
+	start := time.Now()
+	callElapsed, expandElapsed := time.Duration(0), time.Duration(0)
+	defer func() {
+		log := r.Log.With(
+			"elapsed", time.Since(start).String(),
+			"elapsed_expand", expandElapsed.String(),
+			"elapsed_call", callElapsed.String(),
+		)
+		switch {
+		case err != nil:
+			log.Errorf("Call failed: %v", err)
+		case cresp == nil:
+			log.Errorf("Call failed: no response")
+		case cresp.Type == apps.CallResponseTypeError:
+			log.Infof("Call returned an error from app: %v", cresp.Error())
+		case cresp.Type == apps.CallResponseTypeOK && cresp.Text != "":
+			log.Debugf("Called %s:%s -> %s: %s", app.AppID, creq.Path, cresp.Type, utils.FirstN(cresp.Text, 32))
+		default:
+			log.Debugf("Called %s:%s -> %s", app.AppID, creq.Path, cresp.Type)
+		}
+	}()
+
 	// this may be invoked from various places in the code, and the Destination
 	// may or may not be set in the request. Since we have the app explicitly
 	// here, make sure it's set in the request
@@ -87,28 +119,36 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 
 	up, err := p.upstreamForApp(app)
 	if err != nil {
-		return apps.NewErrorResponse(errors.Wrapf(err, "no available upstream for %s", app.AppID))
+		return nil, errors.Wrapf(err, "no available upstream for %s", app.AppID)
 	}
 
 	// expand
 	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
 	if err != nil {
-		return apps.NewErrorResponse(errors.Wrap(err, "failed to expand context"))
+		return nil, errors.Wrap(err, "failed to expand context")
 	}
 	creq.Context = *expanded
+	expandElapsed = time.Since(start)
 
+	callStart := time.Now()
 	if notify {
 		err = upstream.Notify(r.Ctx(), up, *app, creq)
+		callElapsed = time.Since(callStart)
 		if err != nil {
-			return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
+			return nil, errors.Wrap(err, "upstream call failed")
 		}
-		return apps.NewTextResponse("OK")
+		return &apps.CallResponse{
+			Type: apps.CallResponseTypeOK,
+			Text: "OK",
+		}, nil
 	}
 
-	cresp, err := upstream.Call(r.Ctx(), up, *app, creq)
+	response, err := upstream.Call(r.Ctx(), up, *app, creq)
+	callElapsed = time.Since(callStart)
 	if err != nil {
-		return apps.NewErrorResponse(errors.Wrap(err, "upstream call failed"))
+		return nil, errors.Wrap(err, "upstream call failed")
 	}
+	cresp = &response
 	if cresp.Type == "" {
 		cresp.Type = apps.CallResponseTypeOK
 	}
@@ -126,5 +166,5 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 		p.dispatchRefreshBindingsEvent(r.ActingUserID())
 	}
 
-	return cresp
+	return cresp, nil
 }

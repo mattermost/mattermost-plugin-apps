@@ -135,6 +135,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.Log = r.Log.With(
 		"path", req.URL.Path,
 	)
+	if s.Config.Get().DeveloperMode {
+		r.Log.Debugf("Received HTTP request: %s %s", req.Method, req.URL.Path)
+	}
 
 	// Output panics in dev. mode.
 	defer func() {
@@ -161,8 +164,4 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	s.handlerFunc(r, w, req)
-
-	if s.Config.Get().DeveloperMode {
-		r.Log.Debugf("Handled HTTP request")
-	}
 }

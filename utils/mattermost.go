@@ -66,3 +66,10 @@ func LastN(s string, n int) string {
 	}
 	return string(out)
 }
+
+func FirstN(s string, n int) string {
+	if len(s) <= n-3 {
+		return s
+	}
+	return s[:n-3] + "..."
+}
