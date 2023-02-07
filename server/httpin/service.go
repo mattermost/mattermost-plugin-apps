@@ -165,9 +165,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	s.handlerFunc(r, w, req)
-
 	if s.Config.Get().DeveloperMode {
-		r.Log.Debugf("Handled HTTP request")
+		r.Log.With(
+			"method", req.Method,
+			"url", req.URL.String(),
+			"user_agent", req.Header.Get("User-Agent"),
+		).Debugf("Received HTTP request")
 	}
+
+	s.handlerFunc(r, w, req)
 }

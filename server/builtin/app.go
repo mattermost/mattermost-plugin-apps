@@ -251,7 +251,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 	}
 
 	loc := a.newLocalizer(creq)
-	confErr := a.checkConfigValid(loc)
+	confErr := a.checkConfigValid(&creq.Call, loc)
 	if confErr != nil {
 		return readcloser(apps.NewErrorResponse(confErr))
 	}
@@ -289,7 +289,13 @@ func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
 }
 
-func (a *builtinApp) checkConfigValid(loc *i18n.Localizer) error {
+func (a *builtinApp) checkConfigValid(call *apps.Call, loc *i18n.Localizer) error {
+	// If the call is for bindings,
+	// It shouldn't error
+	if call.Path == appspath.Bindings {
+		return nil
+	}
+
 	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
 
 	if oauthEnabled == nil || !*oauthEnabled {
