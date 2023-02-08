@@ -41,10 +41,11 @@ func MakeSingleWriterCachedStore[T Cloneable[T]](name string, api plugin.API, mm
 }
 
 func (s *SingleWriterCachedStore[T]) Put(r *incoming.Request, key string, value *T) error {
-	return s.SimpleCachedStore.update(r, true, key, value,
+	persist := r.Config().Get().IsClusterLeader
+	return s.SimpleCachedStore.update(r, persist, key, value,
 		func(value *T, changed *StoredIndex[T]) error {
 			if changed != nil {
-				// tell everyone else about the change
+				// tell everyone else about the change.
 				err := s.notify(s.eventID(), s.newPutEvent(key, value, changed.hash()))
 				if err != nil {
 					r.Log.WithError(err).Warnf("SingleWriterCachedStore: failed to send cluster message, rolling back to previous state")
@@ -77,23 +78,27 @@ func (s *SingleWriterCachedStore[T]) onEvent(r *incoming.Request, ev model.Plugi
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal cached store cluster event")
 	}
-	r.Log.Debugf("SingleWriterCachedStore.processClusterEvent %s: received key %s; new index hash: `%s`", s.name, event.Key, event.IndexHash)
+	isClusterLeader := r.Config().Get().IsClusterLeader
+	r.Log.Debugf("SingleWriterCachedStore.processClusterEvent %s: received key %s; new index hash: `%s`, isClusterLeader: %t",
+		s.name, event.Key, utils.FirstN(event.IndexHash, 10), isClusterLeader)
 
 	if event.Key != "" {
 		persist := true
 		notifyOthers := func(newValue *T, newStoredIndex *StoredIndex[T]) error {
 			return s.notify(s.eventID(), s.newSyncEvent(newStoredIndex.hash()))
 		}
-		if !r.Config().Get().IsClusterLeader {
+		if !isClusterLeader {
 			persist = false
 			notifyOthers = nil
 		}
+		r.Log.Debugf("SingleWriterCachedStore.processClusterEvent %s: updating key %s: persist:%t", s.name, event.Key, persist)
 		if err := s.SimpleCachedStore.update(r, persist, event.Key, event.Value, notifyOthers); err != nil {
 			return err
 		}
 	}
 
-	if event.IndexHash != "" {
+	// process sync only if not the leader
+	if !isClusterLeader && event.IndexHash != "" {
 		if event.IndexHash != s.Index().Stored().hash() {
 			r.Log.Debugf("SingleWriterCachedStore.processClusterEvent %s: index hash mismatch, syncing from KV", s.name)
 			if _, err := s.syncFromKV(r.Log, true); err != nil {
