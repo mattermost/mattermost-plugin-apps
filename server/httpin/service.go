@@ -133,13 +133,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r = r.WithCtx(ctx)
 
 	if s.Config.Get().DeveloperMode {
-		if s.Config.Get().DeveloperMode {
-			r.Log.With(
-				"method", req.Method,
-				"url", req.URL.String(),
-				"user_agent", req.Header.Get("User-Agent"),
-			).Debugf("Received HTTP request")
-		}
+		r.Log.With(
+			"method", req.Method,
+			"url", req.URL.String(),
+			"user_agent", req.Header.Get("User-Agent"),
+		).Debugf("Received HTTP request")
 	}
 
 	// Output panics in dev. mode.
