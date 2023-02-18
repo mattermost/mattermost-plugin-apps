@@ -145,7 +145,7 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 
 func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) (cresp *apps.CallResponse, err error) {
 	start := time.Now()
-	callElapsed, expandElapsed := time.Duration(0), time.Duration(0)
+	var callElapsed, expandElapsed time.Duration
 	defer func() {
 		log := r.Log.With(
 			"elapsed", time.Since(start).String(),
