@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -13,8 +14,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	if err := r.Check(
+func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (_ string, err error) {
+	start := time.Now()
+	var message string
+	defer func() {
+		log := r.Log.With("elapsed", time.Since(start).String())
+		if err != nil {
+			log.WithError(err).Errorf("EnableApp failed")
+		} else {
+			log.With("message", message).Infof("Enabled app %s", appID)
+		}
+	}()
+
+	if err = r.Check(
 		r.RequireSysadminOrPlugin,
 	); err != nil {
 		return "", err
@@ -40,7 +52,6 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
-	var message string
 	if app.OnEnable != nil {
 		resp := p.call(r, app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
@@ -49,8 +60,6 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 			message = resp.Text
 		}
 	}
-
-	r.Log.Infof("Enabled app")
 
 	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
