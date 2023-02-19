@@ -32,8 +32,11 @@ type CachedStoreCluster struct {
 type eventHandler func(r *incoming.Request, ev model.PluginClusterEvent) error
 
 const (
-	putEventID  = "cached_store_data"
-	syncEventID = "cached_store_sync"
+	putEventID        = "cached_store_data"
+	syncEventID       = "cached_store_sync"
+	testInitEventID   = "cached_store_test_init"
+	testRunEventID    = "cached_store_test_run"
+	testReportEventID = "cached_store_test_report"
 )
 
 // cachedStoreClusterEvent is a cluster event sent between nodes. It works for
@@ -60,6 +63,10 @@ func NewCachedStoreCluster(api config.API, kind CachedStoreClusterKind) *CachedS
 }
 
 func (s *Service) OnPluginClusterEvent(r *incoming.Request, ev model.PluginClusterEvent) {
+	if done := s.processTestPluginClusterEvent(r, ev); done {
+		return
+	}
+
 	f, err := s.cluster.getEventHandler(ev)
 	if err != nil {
 		r.Log.WithError(err).Errorw("failed to find a handler for plugin cluster event")
@@ -106,4 +113,8 @@ func (c *CachedStoreCluster) getEventHandler(ev model.PluginClusterEvent) (event
 
 func (c *CachedStoreCluster) setEventHandler(eventID string, h eventHandler) {
 	c.eventHandlers.Store(eventID, h)
+}
+
+func (c *CachedStoreCluster) removeEventHandler(eventID string) {
+	c.eventHandlers.Delete(eventID)
 }

@@ -6,6 +6,7 @@ package store
 import (
 	"encoding/ascii85"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
@@ -83,6 +84,15 @@ type Service struct {
 	Session      Sessions
 
 	cluster *CachedStoreCluster
+
+	// testReportChan is used in the cluster test to receive test reports from
+	// other hosts. It is initialized only on the host that actually runs the
+	// test. It receives reports from all nodes in the cluster. It should be
+	// synchronized, but is modified only from the test command, rarely, so it's
+	// ok not to.
+	testReportChan chan CachedStoreTestReport
+	testStore      CachedStore[testDataType]
+	testDataMutex  *sync.RWMutex
 }
 
 // MakeService creates and initializes a persistent storage Service. defaultKind
@@ -94,6 +104,8 @@ func MakeService(conf config.Service, defaultKind CachedStoreClusterKind) (*Serv
 		AppKV:   &KVStore{},
 		OAuth2:  &OAuth2Store{},
 		Session: &SessionStore{},
+
+		testDataMutex: &sync.RWMutex{},
 	}
 	log := conf.NewBaseLogger()
 

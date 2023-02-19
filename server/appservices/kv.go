@@ -85,3 +85,9 @@ func (a *AppServices) KVDebugAppInfo(r *incoming.Request, appID apps.AppID) (*st
 	}
 	return appInfo, nil
 }
+
+func (a *AppServices) RunCachedStoreTest(r *incoming.Request, params store.CachedStoreTestParams) {
+	go func() {
+		a.store.RunCachedStoreTest(r, params)
+	}()
+}

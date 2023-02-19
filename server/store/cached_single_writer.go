@@ -46,6 +46,11 @@ func MakeSingleWriterCachedStore[T Cloneable[T]](name string, c *CachedStoreClus
 	return s, nil
 }
 
+func (s *SingleWriterCachedStore[T]) Stop() {
+	s.cluster.removeEventHandler(s.getPutEventID())
+	s.cluster.removeEventHandler(s.getSyncEventID())
+}
+
 const syncBroadcastDelay = 500 * time.Millisecond
 
 func (s *SingleWriterCachedStore[T]) broadcastSyncLater(r *incoming.Request, hash string) {
