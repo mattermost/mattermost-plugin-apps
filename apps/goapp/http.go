@@ -40,7 +40,7 @@ func (app *App) HandleCall(p string, h HandlerFunc) {
 		}
 		_ = httputils.WriteJSON(w, cresp)
 
-		creq.Log.With(cresp).Debugw("Call:")
+		creq.Log.With(cresp).Debugf("Call %s returned %s:", creq.Path, cresp.Type)
 	})
 }
 

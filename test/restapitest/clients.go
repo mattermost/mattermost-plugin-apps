@@ -264,8 +264,8 @@ func (th *Helper) getTeam(channelID string) *model.Team {
 	return team
 }
 
-func (th *Helper) getTeamMember(channelID, userID string) *model.TeamMember {
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(channelID, userID, "")
+func (th *Helper) getTeamMember(teamID, userID string) *model.TeamMember {
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(teamID, userID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return tm

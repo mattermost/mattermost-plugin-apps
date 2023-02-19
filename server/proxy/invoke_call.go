@@ -136,14 +136,20 @@ func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *app
 // callApp in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
 func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) apps.CallResponse {
-	cresp, err := p.callAppImpl(r, app, creq, notify)
+	return p.callAppWithExpandGetter(r, app, creq, notify, nil)
+}
+
+// callAppWithExpandGetter in an internal method to execute a call to an upstream app. It does
+// not perform any cleanup of the inputs.
+func (p *Proxy) callAppWithExpandGetter(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool, expandGetter ExpandGetter) apps.CallResponse {
+	cresp, err := p.callAppImpl(r, app, creq, notify, expandGetter)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
 	return *cresp
 }
 
-func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool) (cresp *apps.CallResponse, err error) {
+func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool, expandGetter ExpandGetter) (cresp *apps.CallResponse, err error) {
 	start := time.Now()
 	var callElapsed, expandElapsed time.Duration
 	defer func() {
@@ -177,7 +183,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 	}
 
 	// expand
-	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand)
+	expanded, err := p.expandContext(r, app, &creq.Context, creq.Expand, expandGetter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to expand context")
 	}
