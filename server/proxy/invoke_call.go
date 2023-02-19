@@ -158,7 +158,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 		case cresp == nil:
 			log.Errorf("Call failed: no response")
 		case cresp.Type == apps.CallResponseTypeError:
-			log.Infof("Call returned an error from app: %v", cresp.Error())
+			log.Debugf("Call returned an error from app: %v", cresp.Error())
 		case cresp.Type == apps.CallResponseTypeOK && cresp.Text != "":
 			log.Debugf("Called %s:%s -> %s: %s", app.AppID, creq.Path, cresp.Type, utils.FirstN(cresp.Text, 32))
 		default:

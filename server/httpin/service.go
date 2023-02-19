@@ -131,15 +131,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 	r = r.WithCtx(ctx)
-
-	if s.Config.Get().DeveloperMode {
-		r.Log.With(
-			"method", req.Method,
-			"url", req.URL.String(),
-			"user_agent", req.Header.Get("User-Agent"),
-		).Debugf("Received HTTP request")
-	}
-
+	r.Log = r.Log.With(
+		"path", req.URL.Path,
+	)
 	// Output panics in dev. mode.
 	defer func() {
 		if x := recover(); x != nil {
@@ -163,6 +157,14 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, txt, http.StatusInternalServerError)
 		}
 	}()
+
+	if s.Config.Get().DeveloperMode {
+		r.Log.With(
+			"method", req.Method,
+			"url", req.URL.String(),
+			"user_agent", req.Header.Get("User-Agent"),
+		).Debugf("Received HTTP request")
+	}
 
 	s.handlerFunc(r, w, req)
 }

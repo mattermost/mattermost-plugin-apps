@@ -20,7 +20,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 	defer func() {
 		log := r.Log.With("elapsed", time.Since(start).String())
 		if err != nil {
-			log.Errorf("EnableApp: %v", err)
+			log.WithError(err).Errorf("EnableApp failed")
 		} else {
 			log.With("message", message).Infof("Enabled app %s", appID)
 		}
