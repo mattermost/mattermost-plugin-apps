@@ -59,7 +59,7 @@ func (a *builtinApp) debugKVCreate(r *incoming.Request, creq apps.CallRequest) a
 	}
 
 	key := ""
-	key, err = store.Hashkey(store.KVAppPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
+	key, err = store.Hashkey(store.KVPrefix, appID, creq.Context.ActingUser.Id, namespace, id)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

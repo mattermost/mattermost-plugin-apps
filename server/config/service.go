@@ -39,9 +39,11 @@ type Service interface {
 	API() API
 	NewBaseLogger() utils.Logger
 	SystemDefaultFlags() (devMode, allowHTTPApps bool)
+	IsClusterLeader() bool
 
 	Reconfigure(_ StoredConfig, verbose bool, _ ...Configurable) error
 	StoreConfig(StoredConfig, utils.Logger) error
+	OnClusterLeaderChanged(isLeader bool)
 }
 
 var _ Service = (*service)(nil)
@@ -54,6 +56,7 @@ type service struct {
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
+	isClusterLeader  bool
 }
 
 func MakeService(api API, pliginManifest model.Manifest, botUserID string) (Service, error) {
@@ -261,6 +264,23 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 		}
 	}
 	return nil
+}
+
+func (s *service) OnClusterLeaderChanged(isLeader bool) {
+	s.lock.Lock()
+	if s.conf != nil {
+		s.isClusterLeader = isLeader
+	}
+	s.lock.Unlock()
+
+	s.NewBaseLogger().Debugf("Cluster leader changed to %t", isLeader)
+}
+
+func (s *service) IsClusterLeader() bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return s.isClusterLeader
 }
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {

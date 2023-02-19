@@ -4,16 +4,9 @@
 package store
 
 import (
-	"crypto/sha1" // nolint:gosec
-	"encoding/json"
-	"fmt"
 	"sort"
-	"sync"
-
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -25,104 +18,74 @@ const (
 	AllApps         = FilterOpt(true)
 )
 
-type AppStore interface {
-	config.Configurable
-
-	InitBuiltin(...apps.App)
-
-	Get(apps.AppID) (*apps.App, error)
-	AsList(FilterOpt) []apps.App
-	AsMap(FilterOpt) map[apps.AppID]apps.App
-	Save(*incoming.Request, apps.App) error
-	Delete(*incoming.Request, apps.AppID) error
-}
-
 // appStore combines installed and builtin Apps.  The installed Apps are stored
 // in KV store, and the list of their keys is stored in the config, as a map of
 // AppID->sha1(App).
-type appStore struct {
-	*Service
-
-	// mutex guards installed, the pointer to the map of locally-installed apps.
-	mutex sync.RWMutex
-
-	installed        map[apps.AppID]apps.App
-	builtinInstalled map[apps.AppID]apps.App
+type AppStore struct {
+	schemaVersion string
+	builtin       map[apps.AppID]apps.App
+	CachedStore[apps.App]
 }
 
-var _ AppStore = (*appStore)(nil)
+type Apps interface {
+	AsList(FilterOpt) []apps.App
+	AsMap(FilterOpt) map[apps.AppID]apps.App
+	Delete(*incoming.Request, apps.AppID) error
+	Get(apps.AppID) (*apps.App, error)
+	InitBuiltin(builtinApps ...apps.App)
+	Save(*incoming.Request, apps.App) error
+}
 
-func (s *Service) makeAppStore() (*appStore, error) {
-	appStore := &appStore{Service: s}
-	err := appStore.Configure(s.conf.NewBaseLogger())
+var _ Apps = (*AppStore)(nil)
+
+func (s *Service) makeAppStore(version string, log utils.Logger) (*AppStore, error) {
+	store, err := MakeCachedStore[apps.App](AppStoreName, s.cluster, log)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize App store")
+		return nil, err
 	}
-	return appStore, nil
+	return &AppStore{
+		schemaVersion: version,
+		CachedStore:   store,
+	}, nil
 }
 
-func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
-	s.mutex.Lock()
-	if s.builtinInstalled == nil {
-		s.builtinInstalled = map[apps.AppID]apps.App{}
-	}
+func (s *AppStore) InitBuiltin(builtinApps ...apps.App) {
+	builtin := map[apps.AppID]apps.App{}
 	for _, app := range builtinApps {
 		app.DeployType = apps.DeployBuiltin
-		s.builtinInstalled[app.AppID] = app
+		builtin[app.AppID] = app
 	}
-	s.mutex.Unlock()
+	s.builtin = builtin
 }
 
-func (s *appStore) Configure(log utils.Logger) error {
-	newInstalled := map[apps.AppID]apps.App{}
-	for id, key := range s.conf.Get().InstalledApps {
-		log = log.With("app_id", id)
-
-		var data []byte
-		err := s.conf.API().Mattermost.KV.Get(KVInstalledAppPrefix+key, &data)
-		if err != nil {
-			log.WithError(err).Errorw("failed to load app")
-			continue
-		}
-
-		if len(data) == 0 {
-			err = utils.NewNotFoundError(KVInstalledAppPrefix + key)
-			log.WithError(err).Errorw("failed to load app")
-			continue
-		}
-
-		app, err := apps.DecodeCompatibleApp(data)
-		if err != nil {
-			log.WithError(err).Errorw("failed to decode app")
-			continue
-		}
-		newInstalled[apps.AppID(id)] = *app
-	}
-
-	s.mutex.Lock()
-	s.installed = newInstalled
-	s.mutex.Unlock()
-	return nil
-}
-
-func (s *appStore) Get(appID apps.AppID) (*apps.App, error) {
-	s.mutex.RLock()
-	installed := s.installed
-	builtin := s.builtinInstalled
-	s.mutex.RUnlock()
-
-	app, ok := builtin[appID]
-	if ok {
+func (s *AppStore) Get(appID apps.AppID) (*apps.App, error) {
+	if app, ok := s.builtin[appID]; ok {
 		return &app, nil
 	}
-	app, ok = installed[appID]
-	if ok {
-		return &app, nil
+	if app := s.CachedStore.Get(string(appID)); app != nil {
+		return app, nil
 	}
 	return nil, utils.NewNotFoundError("app %s is not installed", appID)
 }
 
-func (s *appStore) AsList(filter FilterOpt) []apps.App {
+func (s *AppStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
+	out := map[apps.AppID]apps.App{}
+	for id := range s.Index() {
+		if app := s.CachedStore.Get(id); app != nil {
+			if filter == AllApps || !app.Disabled {
+				out[apps.AppID(id)] = *app
+			}
+		}
+	}
+	for appID, app := range s.builtin {
+		if filter == AllApps || !app.Disabled {
+			out[appID] = app
+		}
+	}
+	return out
+}
+
+func (s *AppStore) AsList(filter FilterOpt) []apps.App {
 	var out []apps.App
 	for _, app := range s.AsMap(filter) {
 		out = append(out, app)
@@ -133,117 +96,11 @@ func (s *appStore) AsList(filter FilterOpt) []apps.App {
 	return out
 }
 
-func (s *appStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
-	s.mutex.RLock()
-	installed := s.installed
-	builtin := s.builtinInstalled
-	s.mutex.RUnlock()
-
-	out := map[apps.AppID]apps.App{}
-	for appID, app := range installed {
-		if filter == AllApps || !app.Disabled {
-			out[appID] = app
-		}
-	}
-	for appID, app := range builtin {
-		if filter == AllApps || !app.Disabled {
-			out[appID] = app
-		}
-	}
-
-	return out
+func (s *AppStore) Save(r *incoming.Request, app apps.App) error {
+	app.Manifest.SchemaVersion = s.schemaVersion
+	return s.CachedStore.Put(r, string(app.AppID), &app)
 }
 
-func (s *appStore) Save(r *incoming.Request, app apps.App) error {
-	conf := s.conf.Get()
-	prevSHA := conf.InstalledApps[string(app.AppID)]
-
-	app.Manifest.SchemaVersion = conf.PluginManifest.Version
-	data, err := json.Marshal(app)
-	if err != nil {
-		return err
-	}
-	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	_, err = r.API.Mattermost.KV.Set(KVInstalledAppPrefix+sha, app)
-	if err != nil {
-		return err
-	}
-
-	s.mutex.RLock()
-	installed := s.installed
-	s.mutex.RUnlock()
-	updatedInstalled := map[apps.AppID]apps.App{}
-	for k, v := range installed {
-		if k != app.AppID {
-			updatedInstalled[k] = v
-		}
-	}
-	updatedInstalled[app.AppID] = app
-	s.mutex.Lock()
-	s.installed = updatedInstalled
-	s.mutex.Unlock()
-
-	sc := conf.StoredConfig
-	updated := map[string]string{}
-	for k, v := range conf.InstalledApps {
-		// delete prevSHA from the list by skipping
-		if v != prevSHA {
-			updated[k] = v
-		}
-	}
-	updated[string(app.AppID)] = sha
-	sc.InstalledApps = updated
-	err = s.conf.StoreConfig(sc, r.Log)
-	if err != nil {
-		return err
-	}
-
-	if sha != prevSHA {
-		err = r.API.Mattermost.KV.Delete(KVInstalledAppPrefix + prevSHA)
-		if err != nil {
-			r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
-		}
-	}
-
-	return nil
-}
-
-func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
-	s.mutex.RLock()
-	installed := s.installed
-	s.mutex.RUnlock()
-	_, ok := installed[appID]
-	if !ok {
-		return utils.NewNotFoundError(appID)
-	}
-
-	conf := s.conf.Get()
-	sha, ok := conf.InstalledApps[string(appID)]
-	if !ok {
-		return utils.ErrNotFound
-	}
-
-	err := r.API.Mattermost.KV.Delete(KVInstalledAppPrefix + sha)
-	if err != nil {
-		return err
-	}
-
-	updatedInstalled := map[apps.AppID]apps.App{}
-	for k, v := range installed {
-		if k != appID {
-			updatedInstalled[k] = v
-		}
-	}
-	s.mutex.Lock()
-	s.installed = updatedInstalled
-	s.mutex.Unlock()
-
-	sc := conf.StoredConfig
-	updated := map[string]string{}
-	for k, v := range conf.InstalledApps {
-		updated[k] = v
-	}
-	delete(updated, string(appID))
-	sc.InstalledApps = updated
-	return s.conf.StoreConfig(sc, r.Log)
+func (s *AppStore) Delete(r *incoming.Request, appID apps.AppID) error {
+	return s.CachedStore.Put(r, string(appID), nil)
 }

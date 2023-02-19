@@ -215,7 +215,7 @@ func (p *Proxy) notifyAll(r *incoming.Request, event apps.Event, uac apps.UserAg
 	}
 	r.Log = r.Log.With(event)
 
-	subs, err := p.store.Subscription.Get(event)
+	subs, err := p.store.Subscription.Get(r, event)
 	if err != nil {
 		r.Log.WithError(err).Errorf("notify: failed to load subscriptions")
 		return

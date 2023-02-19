@@ -74,7 +74,7 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 		message += fmt.Sprintf("  - `%s`: %v (%v kv, %v users, %v tokens)\n", appID, appInfo.Total(), appInfo.AppKVCount, appInfo.UserCount, appInfo.TokenCount)
 	}
 
-	totalKnown := info.OAuth2StateCount + info.AppsTotal + info.Other
+	totalKnown := info.OAuth2StateCount + info.AppsTotal + info.Other + info.CachedStoreTotal
 	if totalKnown != info.Total {
 		message += fmt.Sprintf("- **UNKNOWN**: %v\n", info.Total-totalKnown)
 	}

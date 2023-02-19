@@ -4,141 +4,76 @@
 package store
 
 import (
-	"strings"
+	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-// SubscriptionStore stores the complete (for all apps) list of subscriptions
-// for each "scope", everything in apps.Subscription, but the Call - the
-// subject, and the optional team/channel IDs.
-type SubscriptionStore interface {
-	Get(apps.Event) ([]Subscription, error)
-	List() ([]StoredSubscriptions, error)
-	Save(apps.Event, []Subscription) error
-}
-
 type Subscription struct {
-	Call        apps.Call
+	Call        apps.Call  `json:"call"`
 	AppID       apps.AppID `json:"app_id"`
 	OwnerUserID string     `json:"user_id"`
 }
 
-type StoredSubscriptions struct {
-	Event         apps.Event
-	Subscriptions []Subscription
+type Subscriptions []Subscription
+
+func (s Subscriptions) Clone() *Subscriptions {
+	out := make(Subscriptions, len(s))
+	copy(out, s)
+	return &out
 }
 
-type subscriptionStore struct {
-	*Service
+type SubscriptionStore struct {
+	CachedStore[Subscriptions]
 }
 
-var _ SubscriptionStore = (*subscriptionStore)(nil)
-
-func subsKey(e apps.Event) (string, error) {
-	idSuffix := ""
-	switch e.Subject {
-	case apps.SubjectUserCreated,
-		apps.SubjectBotJoinedTeam, apps.SubjectBotLeftTeam,
-		apps.SubjectBotJoinedChannel, apps.SubjectBotLeftChannel:
-		if e.TeamID != "" || e.ChannelID != "" {
-			return "", errors.Errorf("can't make a key for a subscription, expected team and channel IDs empty for subject %s", e.Subject)
-		}
-
-	case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel /* , apps.SubjectPostCreated */ :
-		if e.TeamID != "" {
-			return "", errors.Errorf("can't make a key for a subscription, expected team ID empty for subject %s", e.Subject)
-		}
-		if e.ChannelID != "" {
-			idSuffix = "." + e.ChannelID
-		}
-
-	case apps.SubjectUserJoinedTeam, apps.SubjectUserLeftTeam:
-		if e.ChannelID != "" {
-			return "", errors.Errorf("can't make a key for a subscription, expected channel ID empty for subject %s", e.Subject)
-		}
-		if e.TeamID != "" {
-			idSuffix = "." + e.TeamID
-		}
-
-	case apps.SubjectChannelCreated:
-		if e.ChannelID != "" {
-			return "", errors.Errorf("can't make a key for a subscription, expected channel ID empty for subject %s", e.Subject)
-		}
-		if e.TeamID == "" {
-			return "", errors.Errorf("can't make a key for a subscription, expected a team ID for subject %s", e.Subject)
-		}
-		idSuffix = "." + e.TeamID
-
-	default:
-		return "", errors.Errorf("Unknown subject %s", e.Subject)
-	}
-
-	return KVSubPrefix + string(e.Subject) + idSuffix, nil
-}
-
-func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
-	key, err := subsKey(e)
+func (s *Service) makeSubscriptionStore(log utils.Logger) (*SubscriptionStore, error) {
+	cached, err := MakeCachedStore[Subscriptions](SubscriptionStoreName, s.cluster, log)
 	if err != nil {
 		return nil, err
 	}
-
-	stored := &StoredSubscriptions{}
-	err = s.conf.API().Mattermost.KV.Get(key, &stored)
-	if err != nil {
-		return nil, err
-	}
-	if stored == nil {
-		return nil, utils.ErrNotFound
-	}
-	return stored.Subscriptions, nil
+	return &SubscriptionStore{
+		CachedStore: cached,
+	}, nil
 }
 
-func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
-	all := []StoredSubscriptions{}
-	for i := 0; ; i++ {
-		keys, err := s.conf.API().Mattermost.KV.ListKeys(i, ListKeysPerPage)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
-		}
-		if len(keys) == 0 {
-			break
-		}
-
-		for _, key := range keys {
-			if !strings.HasPrefix(key, KVSubPrefix) {
-				continue
-			}
-			forKey := StoredSubscriptions{}
-			err := s.conf.API().Mattermost.KV.Get(key, &forKey)
-			if err != nil {
-				return nil, err
-			}
-			if forKey.Event.Subject == "" {
-				continue
-			}
-			all = append(all, forKey)
-		}
+func (s *SubscriptionStore) Get(_ *incoming.Request, e apps.Event) (Subscriptions, error) {
+	key := utils.ToJSON(e)
+	if key == "{}" {
+		return nil, errors.New("failed to get subscriptions: invalid empty event")
 	}
-	return all, nil
+	subs := s.CachedStore.Get(key)
+	if subs == nil {
+		return nil, errors.Wrapf(utils.ErrNotFound, "failed to get subscriptions for event %s", e.String())
+	}
+	return *subs, nil
 }
 
-func (s subscriptionStore) Save(e apps.Event, subs []Subscription) error {
-	key, err := subsKey(e)
-	if err != nil {
-		return err
+func (s *SubscriptionStore) ListSubscribedEvents(_ *incoming.Request) ([]apps.Event, error) {
+	var events []apps.Event
+	for eventJSON := range s.Index() {
+		var e apps.Event
+		if err := json.Unmarshal([]byte(eventJSON), &e); err != nil {
+			return nil, err
+		}
+		events = append(events, e)
 	}
+	return events, nil
+}
 
-	if len(subs) == 0 {
-		return s.conf.API().Mattermost.KV.Delete(key)
+func (s *SubscriptionStore) Put(r *incoming.Request, e apps.Event, subs *Subscriptions) error {
+	key := utils.ToJSON(e)
+	if key == "{}" {
+		return errors.New("failed to save subscriptions: invalid empty event")
 	}
+	return s.CachedStore.Put(r, key, subs)
+}
 
-	_, err = s.conf.API().Mattermost.KV.Set(key, StoredSubscriptions{
-		Event:         e,
-		Subscriptions: subs,
-	})
-	return err
+func (s Subscription) String() string {
+	return fmt.Sprintf("%s/%s/%s", s.AppID, s.OwnerUserID, s.Call.Path)
 }
