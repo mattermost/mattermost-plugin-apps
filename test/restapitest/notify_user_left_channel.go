@@ -12,20 +12,19 @@ import (
 // notifyUserJoinsChannel creates a test channel in a new test team. Bot, user
 // and user2 are added as members of the team, and of the channel. User2 is then
 // removed from the channel to trigger.
-func notifyUserLeftChannel(_ *Helper) *notifyTestCase {
+func notifyAnyUserLeftTheChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		init: func(th *Helper) apps.ExpandedContext {
+		except: []appClient{th.asUser2},
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
-				Team: th.createTestTeam(),
 				User: th.ServerTestHelper.BasicUser2,
 			}
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
-			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
-			data.TeamMember = th.addTeamMember(data.Team, data.User)
+			data.Team = th.createTestTeam()
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
-			th.addChannelMember(data.Channel, th.LastInstalledBotUser)
-			th.addChannelMember(data.Channel, th.ServerTestHelper.BasicUser)
+			data.TeamMember = th.addTeamMember(data.Team, data.User)
+			th.addTeamMember(data.Team, user)
 			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
+			th.addChannelMember(data.Channel, user)
 			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
@@ -39,25 +38,58 @@ func notifyUserLeftChannel(_ *Helper) *notifyTestCase {
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
-			ec := apps.ExpandedContext{
+			return apps.ExpandedContext{
 				User:       data.User,
 				Team:       data.Team,
 				TeamMember: data.TeamMember,
+				Channel:    data.Channel,
 			}
-			switch appclient.name {
-			case "admin", "user", "bot":
-				// Channel is fully expanded (user is a member of the channel,
-				// and admin is admin).
-				ec.Channel = data.Channel
+		},
+	}
+}
 
-			default: // user2
-				// ChannelID gets expanded at the ID level even though the
-				// acting user have no access to it.
-				if level == apps.ExpandID {
-					ec.Channel = &model.Channel{Id: data.Channel.Id, TeamId: data.Team.Id}
-				}
+func notifySubscriberLeftAnyChannel(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyChannel(th, apps.SubjectUserLeftChannel, []appClient{th.asAdmin})
+}
+
+func notifyBotLeftAnyChannel(th *Helper) *notifyTestCase {
+	return notifyTheUserLeftAnyChannel(th, apps.SubjectBotLeftChannel, []appClient{th.asUser, th.asUser2, th.asAdmin})
+}
+
+func notifyTheUserLeftAnyChannel(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
+	return &notifyTestCase{
+		except: except,
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			tm := th.addTeamMember(team, user)
+			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
+			cm := th.addChannelMember(channel, user)
+
+			return apps.ExpandedContext{
+				Team:          team,
+				TeamMember:    tm,
+				Channel:       channel,
+				ChannelMember: cm,
+				User:          user,
 			}
-			return ec
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subject,
+			}
+		},
+		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+			th.removeUserFromChannel(data.Channel, data.User)
+			return data
+		},
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
+				User:          data.User,
+				Team:          data.Team,
+				TeamMember:    data.TeamMember,
+				Channel:       data.Channel,
+				ChannelMember: data.ChannelMember,
+			}
 		},
 	}
 }

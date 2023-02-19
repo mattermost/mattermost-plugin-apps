@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -19,7 +20,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/server/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -41,9 +41,6 @@ type Proxy struct {
 	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
 	sessionService session.Service
 	appservices    appservices.Service
-
-	// expandClientOverride is set by the tests to use the mock client
-	expandClientOverride mmclient.Client
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -77,10 +74,8 @@ type API interface {
 // multiple apps. Notify functions create their own app requests.
 type Notifier interface {
 	NotifyUserCreated(userID string)
-	NotifyUserJoinedChannel(channelID, userID string)
-	NotifyUserLeftChannel(channelID, userID string)
-	NotifyUserJoinedTeam(teamID, userID string)
-	NotifyUserLeftTeam(teamID, userID string)
+	NotifyUserChannel(member *model.ChannelMember, actor *model.User, joined bool)
+	NotifyUserTeam(member *model.TeamMember, actor *model.User, joined bool)
 	NotifyChannelCreated(teamID, channelID string)
 }
 

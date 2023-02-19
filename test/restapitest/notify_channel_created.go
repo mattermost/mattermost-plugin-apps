@@ -4,6 +4,8 @@
 package restapitest
 
 import (
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
@@ -16,7 +18,7 @@ func notifyChannelCreated(th *Helper) *notifyTestCase {
 		except: []appClient{
 			th.asBot,
 		},
-		init: func(th *Helper) apps.ExpandedContext {
+		init: func(th *Helper, _ *model.User) apps.ExpandedContext {
 			// create test team, and make "user" a member (but not bot, nor user2)
 			team := th.createTestTeam()
 			th.addTeamMember(team, th.ServerTestHelper.BasicUser)
