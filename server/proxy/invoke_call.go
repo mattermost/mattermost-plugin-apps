@@ -141,13 +141,7 @@ func (p *Proxy) callApp(r *incoming.Request, app *apps.App, creq apps.CallReques
 
 // callAppWithExpandGetter in an internal method to execute a call to an upstream app. It does
 // not perform any cleanup of the inputs.
-func (p *Proxy) callAppWithExpandGetter(
-	r *incoming.Request,
-	app *apps.App,
-	creq apps.CallRequest,
-	notify bool,
-	expandGetter ExpandGetter,
-) apps.CallResponse {
+func (p *Proxy) callAppWithExpandGetter(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool, expandGetter ExpandGetter) apps.CallResponse {
 	cresp, err := p.callAppImpl(r, app, creq, notify, expandGetter)
 	if err != nil {
 		return apps.NewErrorResponse(err)
@@ -157,7 +151,7 @@ func (p *Proxy) callAppWithExpandGetter(
 
 func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRequest, notify bool, expandGetter ExpandGetter) (cresp *apps.CallResponse, err error) {
 	start := time.Now()
-	callElapsed, expandElapsed := time.Duration(0), time.Duration(0)
+	var callElapsed, expandElapsed time.Duration
 	defer func() {
 		log := r.Log.With(
 			"elapsed", time.Since(start).String(),
@@ -170,7 +164,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 		case cresp == nil:
 			log.Errorf("Call failed: no response")
 		case cresp.Type == apps.CallResponseTypeError:
-			log.Infof("Call returned an error from app: %v", cresp.Error())
+			log.Debugf("Call returned an error from app: %v", cresp.Error())
 		case cresp.Type == apps.CallResponseTypeOK && cresp.Text != "":
 			log.Debugf("Called %s:%s -> %s: %s", app.AppID, creq.Path, cresp.Type, utils.FirstN(cresp.Text, 32))
 		default:
