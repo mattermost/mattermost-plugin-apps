@@ -17,11 +17,11 @@ import (
 func (a *builtinApp) debugStoreListCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "list",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.store.list.label",
 			Other: "list",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.store.list.description",
 			Other: "Display the list of all raw keys in the store.",
 		}),
@@ -56,13 +56,13 @@ func (a *builtinApp) debugStoreList(r *incoming.Request, creq apps.CallRequest) 
 		}
 	}
 
-	keys, err := a.conf.MattermostAPI().KV.ListKeys(page, count)
+	keys, err := a.api.Mattermost.KV.ListKeys(page, count)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
 
 	loc := a.newLocalizer(creq)
-	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	message := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.debug.store.list.submit.message",
 			Other: "{{.Count}} keys",

@@ -87,7 +87,7 @@ func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
 	}
 
 	stored := &StoredSubscriptions{}
-	err = s.conf.MattermostAPI().KV.Get(key, &stored)
+	err = s.conf.API().Mattermost.KV.Get(key, &stored)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
 func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
 	all := []StoredSubscriptions{}
 	for i := 0; ; i++ {
-		keys, err := s.conf.MattermostAPI().KV.ListKeys(i, ListKeysPerPage)
+		keys, err := s.conf.API().Mattermost.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
@@ -113,7 +113,7 @@ func (s subscriptionStore) List() ([]StoredSubscriptions, error) {
 				continue
 			}
 			forKey := StoredSubscriptions{}
-			err := s.conf.MattermostAPI().KV.Get(key, &forKey)
+			err := s.conf.API().Mattermost.KV.Get(key, &forKey)
 			if err != nil {
 				return nil, err
 			}
@@ -133,10 +133,10 @@ func (s subscriptionStore) Save(e apps.Event, subs []Subscription) error {
 	}
 
 	if len(subs) == 0 {
-		return s.conf.MattermostAPI().KV.Delete(key)
+		return s.conf.API().Mattermost.KV.Delete(key)
 	}
 
-	_, err = s.conf.MattermostAPI().KV.Set(key, StoredSubscriptions{
+	_, err = s.conf.API().Mattermost.KV.Set(key, StoredSubscriptions{
 		Event:         e,
 		Subscriptions: subs,
 	})

@@ -14,12 +14,10 @@ import (
 )
 
 type TestService struct {
-	config    Config
-	i18n      *i18n.Bundle
-	log       utils.Logger
-	mm        *pluginapi.Client
-	mmconfig  model.Config
-	telemetry *telemetry.Telemetry
+	api      API
+	log      utils.Logger
+	config   Config
+	mmconfig model.Config
 }
 
 var _ Service = (*TestService)(nil)
@@ -40,11 +38,14 @@ func NewTestService(testConfig *Config) (*TestService, *plugintest.API) {
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	return &TestService{
-		config:    *testConfig,
-		i18n:      i18nBundle,
-		log:       utils.NewTestLogger(),
-		mm:        pluginapi.NewClient(testAPI, testDriver),
-		telemetry: telemetry.NewTelemetry(nil),
+		config: *testConfig,
+		api: API{
+			I18N:       i18nBundle,
+			Mattermost: pluginapi.NewClient(testAPI, testDriver),
+			Telemetry:  telemetry.NewTelemetry(nil),
+			Plugin:     testAPI,
+		},
+		log: utils.NewTestLogger(),
 	}, testAPI
 }
 
@@ -54,36 +55,12 @@ func (s TestService) WithMattermostConfig(mmconfig model.Config) *TestService {
 }
 
 func (s TestService) WithMattermostAPI(mm *pluginapi.Client) *TestService {
-	s.mm = mm
+	s.api.Mattermost = mm
 	return &s
 }
 
-func (s *TestService) Get() Config {
-	return s.config
-}
-
-func (s *TestService) NewBaseLogger() utils.Logger {
-	return s.log
-}
-
-func (s *TestService) MattermostAPI() *pluginapi.Client {
-	return s.mm
-}
-
-func (s *TestService) I18N() *i18n.Bundle {
-	return s.i18n
-}
-
-func (s *TestService) Telemetry() *telemetry.Telemetry {
-	return s.telemetry
-}
-
-func (s *TestService) MattermostConfig() configservice.ConfigService {
+func (s *TestService) GetMattermostConfig() configservice.ConfigService {
 	return &mattermostConfigService{&s.mmconfig}
-}
-
-func (s *TestService) Reconfigure(StoredConfig, bool, ...Configurable) error {
-	return nil
 }
 
 func (s *TestService) StoreConfig(sc StoredConfig, _ utils.Logger) error {
@@ -91,4 +68,8 @@ func (s *TestService) StoreConfig(sc StoredConfig, _ utils.Logger) error {
 	return nil
 }
 
-func (s *TestService) SystemDefaultFlags() (bool, bool) { return false, false }
+func (s *TestService) API() API                                              { return s.api }
+func (s *TestService) Get() Config                                           { return s.config }
+func (s *TestService) NewBaseLogger() utils.Logger                           { return s.log }
+func (s *TestService) Reconfigure(StoredConfig, bool, ...Configurable) error { return nil }
+func (s *TestService) SystemDefaultFlags() (bool, bool)                      { return false, false }

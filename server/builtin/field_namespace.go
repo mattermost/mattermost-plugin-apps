@@ -17,17 +17,17 @@ func (a *builtinApp) namespaceField(pos int, isRequired bool, loc *i18n.Localize
 	return apps.Field{
 		Name: FieldNamespace,
 		Type: apps.FieldTypeDynamicSelect,
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.namespace.label",
 			Other: "namespace",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.namespace.description",
 			Other: "App-specific namespace (up to 2 letters). See `debug kv info` for the list of app's namespaces.",
 		}),
 		IsRequired:           isRequired,
 		AutocompletePosition: pos,
-		AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		AutocompleteHint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.kv.namespace.hint",
 			Other: "namespace (up to 2 letters)",
 		}),

@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -13,8 +14,19 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
-func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (string, error) {
-	if err := r.Check(
+func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID) (_ string, err error) {
+	start := time.Now()
+	var message string
+	defer func() {
+		log := r.Log.With("elapsed", time.Since(start).String())
+		if err != nil {
+			log.Errorf("EnableApp: %v", err)
+		} else {
+			log.With("message", message).Infof("Enabled app %s", appID)
+		}
+	}()
+
+	if err = r.Check(
 		r.RequireSysadminOrPlugin,
 	); err != nil {
 		return "", err
@@ -28,7 +40,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, true)
+	_, err = r.API.Mattermost.Bot.UpdateActive(app.BotUserID, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -40,7 +52,6 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		return "", errors.Wrapf(err, "failed to save app. appID: %s", appID)
 	}
 
-	var message string
 	if app.OnEnable != nil {
 		resp := p.call(r, app, *app.OnEnable, &cc)
 		if resp.Type == apps.CallResponseTypeError {
@@ -52,7 +63,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 
 	r.Log.Infof("Enabled app")
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	if message == "" {
 		message = fmt.Sprintf("Enabled %s", app.DisplayName)
@@ -90,7 +101,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, false)
+	_, err = r.API.Mattermost.Bot.UpdateActive(app.BotUserID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
@@ -108,7 +119,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	r.Log.Infof("Disabled app")
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	return message, nil
 }

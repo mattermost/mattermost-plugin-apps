@@ -70,7 +70,7 @@ func (p *Proxy) InvokeCompleteRemoteOAuth2(r *incoming.Request, urlValues map[st
 		return errors.Errorf("oauth2: unexpected response type from the app: %q", cresp.Type)
 	}
 
-	p.conf.Telemetry().TrackOAuthComplete(string(app.AppID), r.ActingUserID())
+	r.API.Telemetry.TrackOAuthComplete(string(app.AppID), r.ActingUserID())
 
 	return nil
 }

@@ -65,7 +65,7 @@ func (s *Service) Call(r *incoming.Request, w http.ResponseWriter, req *http.Req
 	// <>/<> TODO move to proxy.
 	// Only track submit calls.
 	if creq.Context.UserAgentContext.TrackAsSubmit {
-		s.Config.Telemetry().TrackCall(string(creq.Context.AppID), string(creq.Context.Location), r.ActingUserID(), "submit")
+		r.API.Telemetry.TrackCall(string(creq.Context.AppID), string(creq.Context.Location), r.ActingUserID(), "submit")
 	}
 
 	_ = httputils.WriteJSON(w, ccresp)

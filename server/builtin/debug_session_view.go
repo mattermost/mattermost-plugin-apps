@@ -14,11 +14,11 @@ import (
 func (a *builtinApp) debugSessionsViewBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "view",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.view.label",
 			Other: "view",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.view.description",
 			Other: "View a session.",
 		}),
@@ -28,15 +28,15 @@ func (a *builtinApp) debugSessionsViewBinding(loc *i18n.Localizer) apps.Binding 
 				{
 					Name: fSessionID,
 					Type: apps.FieldTypeText,
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.session.label",
 						Other: "sessionID",
 					}),
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.session.description",
 						Other: "enter the session ID",
 					}),
-					AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					AutocompleteHint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.session.hint",
 						Other: "Session ID",
 					}),
@@ -50,7 +50,7 @@ func (a *builtinApp) debugSessionsViewBinding(loc *i18n.Localizer) apps.Binding 
 
 func (a *builtinApp) debugSessionsView(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	sessionID := creq.GetValue(fSessionID, "")
-	session, err := a.conf.MattermostAPI().Session.Get(sessionID)
+	session, err := a.api.Mattermost.Session.Get(sessionID)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

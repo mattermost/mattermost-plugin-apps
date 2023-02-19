@@ -17,15 +17,15 @@ import (
 func (a *builtinApp) debugKVListCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "list",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.list.label",
 			Other: "list",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.list.description",
 			Other: "Display the list of KV keys for an app, in a specific namespace.",
 		}),
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.list.hint",
 			Other: "[ AppID Namespace ]",
 		}),
@@ -56,7 +56,7 @@ func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) app
 	}
 
 	loc := a.newLocalizer(creq)
-	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	message := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.debug.kv.list.submit.message",
 			Other: "{{.Count}} total keys for `{{.AppID}}`",
@@ -68,7 +68,7 @@ func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) app
 	})
 
 	if namespace != "" {
-		message += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		message += a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "command.debug.kv.list.submit.namespace",
 				Other: ", namespace `{{.Namespace}}`",
@@ -81,7 +81,7 @@ func (a *builtinApp) debugKVList(r *incoming.Request, creq apps.CallRequest) app
 	message += "\n"
 
 	if encode {
-		message += a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		message += a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.list.submit.note",
 			Other: "**NOTE**: keys are base64-encoded for pasting into `/apps debug kv edit` command. Use `/apps debug kv list --base64 false` to output raw values.",
 		}) + "\n"

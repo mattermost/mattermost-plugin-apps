@@ -30,16 +30,16 @@ import (
 )
 
 type Proxy struct {
-	callOnceMutex *cluster.Mutex
-
-	builtinUpstreams map[apps.AppID]upstream.Upstream
-
-	conf           config.Service
 	store          *store.Service
-	httpOut        httpout.Service
-	upstreams      sync.Map // key: apps.AppID, value upstream.Upstream
+	conf           config.Service
 	sessionService session.Service
 	appservices    appservices.Service
+	httpOut        httpout.Service
+
+	builtinUpstreams map[apps.AppID]upstream.Upstream
+	upstreams        sync.Map // key: apps.AppID, value upstream.Upstream
+
+	callOnceMutex *cluster.Mutex
 }
 
 // Admin defines the REST API methods to manipulate Apps. Since they operate in
@@ -72,10 +72,10 @@ type API interface {
 // Notifier implements subscription notifications, each one may be going out to
 // multiple apps. Notify functions create their own app requests.
 type Notifier interface {
-	NotifyUserCreated(userID string)
-	NotifyUserChannel(member *model.ChannelMember, actor *model.User, joined bool)
-	NotifyUserTeam(member *model.TeamMember, actor *model.User, joined bool)
-	NotifyChannelCreated(teamID, channelID string)
+	NotifyUserCreated(_ *incoming.Request, userID string)
+	NotifyUserChannel(_ *incoming.Request, _ *model.ChannelMember, _ *model.User, joined bool)
+	NotifyUserTeam(_ *incoming.Request, _ *model.TeamMember, _ *model.User, joined bool)
+	NotifyChannelCreated(_ *incoming.Request, teamID, channelID string)
 }
 
 // Internal implements go API used by other plugin-apps packages. When relevant,
@@ -84,7 +84,7 @@ type Notifier interface {
 type Internal interface {
 	AddBuiltinUpstream(apps.AppID, upstream.Upstream)
 	CanDeploy(apps.DeployType) (allowed, usable bool)
-	NewIncomingRequest() *incoming.Request
+	NewIncomingRequest(origin, id string) *incoming.Request
 	SynchronizeInstalledApps() error
 
 	GetInstalledApp(_ apps.AppID, checkEnabled bool) (*apps.App, error)
@@ -106,7 +106,13 @@ type Service interface {
 
 var _ Service = (*Proxy)(nil)
 
-func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex, httpOut httpout.Service, session session.Service, appservices appservices.Service) *Proxy {
+func NewService(conf config.Service,
+	store *store.Service,
+	mutex *cluster.Mutex,
+	httpOut httpout.Service,
+	session session.Service,
+	appservices appservices.Service,
+) *Proxy {
 	return &Proxy{
 		builtinUpstreams: map[apps.AppID]upstream.Upstream{},
 		conf:             conf,
@@ -118,9 +124,8 @@ func NewService(conf config.Service, store *store.Service, mutex *cluster.Mutex,
 	}
 }
 
-func (p *Proxy) Configure(conf config.Config, log utils.Logger) error {
-	mm := p.conf.MattermostAPI()
-
+func (p *Proxy) Configure(log utils.Logger) error {
+	conf := p.conf.Get()
 	p.initUpstream(apps.DeployHTTP, conf, log, func() (upstream.Upstream, error) {
 		return uphttp.NewUpstream(p.httpOut, conf.DeveloperMode, uphttp.AppRootURL), nil
 	})
@@ -128,7 +133,7 @@ func (p *Proxy) Configure(conf config.Config, log utils.Logger) error {
 		return upaws.MakeUpstream(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, conf.AWSS3Bucket, log)
 	})
 	p.initUpstream(apps.DeployPlugin, conf, log, func() (upstream.Upstream, error) {
-		return upplugin.NewUpstream(&mm.Plugin), nil
+		return upplugin.NewUpstream(&p.conf.API().Mattermost.Plugin), nil
 	})
 	p.initUpstream(apps.DeployOpenFAAS, conf, log, func() (upstream.Upstream, error) {
 		return upopenfaas.MakeUpstream(p.httpOut, conf.DeveloperMode)
@@ -186,7 +191,6 @@ func (p *Proxy) AddBuiltinUpstream(appID apps.AppID, up upstream.Upstream) {
 		p.builtinUpstreams = map[apps.AppID]upstream.Upstream{}
 	}
 	p.builtinUpstreams[appID] = up
-	p.store.App.InitBuiltin()
 }
 
 func (p *Proxy) upstreamForApp(app *apps.App) (upstream.Upstream, error) {
@@ -232,8 +236,11 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 	}
 }
 
-func (p *Proxy) NewIncomingRequest() *incoming.Request {
-	return incoming.NewRequest(p.conf, p.sessionService)
+func (p *Proxy) NewIncomingRequest(origin, id string) *incoming.Request {
+	if id == "" {
+		id = model.NewId()
+	}
+	return incoming.NewRequest(p.conf, p.sessionService, origin, id)
 }
 
 func (p *Proxy) getEnabledDestination(r *incoming.Request) (*apps.App, error) {

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"sort"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -38,7 +39,18 @@ func mergeBindings(bb1, bb2 []apps.Binding) []apps.Binding {
 
 // GetBindings fetches bindings for all apps.
 // We should avoid unnecessary logging here as this route is called very often.
-func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Binding, error) {
+func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) (ret []apps.Binding, err error) {
+	start := time.Now()
+	var allApps []apps.App
+	defer func() {
+		log := r.Log.With("elapsed", time.Since(start).String)
+		if err != nil {
+			log.Errorf("GetBindings: %v", err)
+		} else {
+			log.Debugf("GetBindings: returned bindings for %v apps", len(allApps))
+		}
+	}()
+
 	if err := r.Check(
 		r.RequireActingUser,
 	); err != nil {
@@ -54,8 +66,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	all := make(chan result)
 	defer close(all)
 
-	allApps := p.store.App.AsList(store.EnabledAppsOnly)
-
+	allApps = p.store.App.AsList(store.EnabledAppsOnly)
 	for i := range allApps {
 		go func(app apps.App) {
 			apprequest := r.WithDestination(app.AppID)
@@ -70,7 +81,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 		}(allApps[i])
 	}
 
-	ret := []apps.Binding{}
+	ret = []apps.Binding{}
 	var problems error
 	for i := 0; i < len(allApps); i++ {
 		res := <-all
@@ -83,10 +94,10 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) ([]apps.Bindin
 	return SortTopBindings(ret), problems
 }
 
-func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
-	if userID != "" {
-		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
-			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+func (p *Proxy) dispatchRefreshBindingsEvent(r *incoming.Request) {
+	if r.ActingUserID() != "" {
+		r.API.Mattermost.Frontend.PublishWebSocketEvent(
+			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: r.ActingUserID()})
 	}
 }
 

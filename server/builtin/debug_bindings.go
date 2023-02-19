@@ -14,11 +14,11 @@ import (
 func (a *builtinApp) debugBindingsCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "bindings",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.bindings.label",
 			Other: "bindings",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.bindings.description",
 			Other: "Display all bindings for the current context",
 		}),

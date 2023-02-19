@@ -54,7 +54,7 @@ func (p *Proxy) getStatic(r *incoming.Request, app *apps.App, path string) (io.R
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	return up.GetStatic(r.Ctx(), *app, path)
+	return up.GetStatic(r.Ctx, *app, path)
 }
 
 // pingApp checks if the app is accessible. Call its ping path with nothing

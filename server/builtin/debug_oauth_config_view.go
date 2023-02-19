@@ -14,11 +14,11 @@ import (
 func (a *builtinApp) debugOAuthConfigViewBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "view",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.oauth.config.view.label",
 			Other: "view",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.oauth.config.view.description",
 			Other: "View the OAuth configuration of a app.",
 		}),

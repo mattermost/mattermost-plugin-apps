@@ -35,9 +35,9 @@ func setUpBasics(ctrl *gomock.Controller) (session.Service,
 	}
 
 	conf, api := config.NewTestService(nil)
-	r := incoming.NewRequest(conf, nil)
+	r := incoming.NewRequest(conf, nil, "test", "reqid")
 
-	sessionService := session.NewService(conf.MattermostAPI(), mockStore)
+	sessionService := session.NewService(mockStore)
 
 	return sessionService, r, sessionStore, appStore, api
 }

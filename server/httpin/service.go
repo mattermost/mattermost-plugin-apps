@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -114,13 +115,17 @@ func (s *Service) HandleFunc(path string, handlerFunc handlerFunc) *mux.Route {
 // ServePluginHTTP is the interface invoked from the plugin's ServeHTTP
 func (s *Service) ServePluginHTTP(c *plugin.Context, w http.ResponseWriter, req *http.Request) {
 	req.Header.Set(config.MattermostSessionIDHeader, c.SessionId)
+	if req.Header.Get(model.HeaderRequestId) == "" {
+		req.Header.Set(model.HeaderRequestId, c.RequestId)
+	}
 	s.router.ServeHTTP(w, req)
 }
 
 // ServeHTTP is the go http.Handler (mux compliant).
 func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Setup the incoming request.
-	r := s.Proxy.NewIncomingRequest()
+	r := s.Proxy.NewIncomingRequest("ServeHTTP", req.Header.Get(model.HeaderRequestId))
+
 	r = r.WithActingUserID(req.Header.Get(config.MattermostUserIDHeader))
 	r = r.WithSourcePluginID(req.Header.Get(config.MattermostPluginIDHeader))
 	r = r.WithSessionID(req.Header.Get(config.MattermostSessionIDHeader))
@@ -132,9 +137,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer cancel()
 	r = r.WithCtx(ctx)
 
-	r.Log = r.Log.With(
-		"path", req.URL.Path,
-	)
+	if s.Config.Get().DeveloperMode {
+		r.Log.With(
+			"method", req.Method,
+			"url", req.URL.String(),
+			"user_agent", req.Header.Get("User-Agent"),
+		).Debugf("Received HTTP request")
+	}
 
 	// Output panics in dev. mode.
 	defer func() {
@@ -159,14 +168,6 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, txt, http.StatusInternalServerError)
 		}
 	}()
-
-	if s.Config.Get().DeveloperMode {
-		r.Log.With(
-			"method", req.Method,
-			"url", req.URL.String(),
-			"user_agent", req.Header.Get("User-Agent"),
-		).Debugf("Received HTTP request")
-	}
 
 	s.handlerFunc(r, w, req)
 }

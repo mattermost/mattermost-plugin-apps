@@ -93,14 +93,13 @@ func MakeService(confService config.Service, httpOut httpout.Service) (*Service,
 	s.Subscription = &subscriptionStore{Service: s}
 	s.Session = &sessionStore{Service: s}
 
-	conf := confService.Get()
 	var err error
-	s.App, err = s.makeAppStore(conf)
+	s.App, err = s.makeAppStore()
 	if err != nil {
 		return nil, err
 	}
 
-	s.Manifest, err = s.makeManifestStore(conf)
+	s.Manifest, err = s.makeManifestStore()
 	if err != nil {
 		return nil, err
 	}
@@ -187,9 +186,8 @@ func (s *Service) ListHashKeys(
 	processf func(key string) error,
 	matchf ...func(prefix string, _ apps.AppID, userID, namespace, idhash string) bool,
 ) error {
-	mm := s.conf.MattermostAPI()
 	for pageNumber := 0; ; pageNumber++ {
-		keys, err := mm.KV.ListKeys(pageNumber, ListKeysPerPage)
+		keys, err := r.API.Mattermost.KV.ListKeys(pageNumber, ListKeysPerPage)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list keys - page, %d", pageNumber)
 		}
@@ -223,11 +221,10 @@ func (s *Service) ListHashKeys(
 }
 
 func (s *Service) RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
-	mm := s.conf.MattermostAPI()
-	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
+	if err := s.ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
-	if err := s.ListHashKeys(r, mm.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
+	if err := s.ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
 	return nil

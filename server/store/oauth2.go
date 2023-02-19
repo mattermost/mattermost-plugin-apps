@@ -34,7 +34,7 @@ func (s *oauth2Store) CreateState(actingUserID string) (string, error) {
 	buf := make([]byte, 15)
 	_, _ = rand.Read(buf)
 	state := fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(buf), actingUserID)
-	_, err := s.conf.MattermostAPI().KV.Set(KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
+	_, err := s.conf.API().Mattermost.KV.Set(KVOAuth2StatePrefix+state, state, pluginapi.SetExpiry(15*time.Minute))
 	if err != nil {
 		return "", err
 	}
@@ -49,8 +49,8 @@ func (s *oauth2Store) ValidateStateOnce(urlState, actingUserID string) error {
 
 	storedState := ""
 	key := KVOAuth2StatePrefix + urlState
-	err := s.conf.MattermostAPI().KV.Get(key, &storedState)
-	_ = s.conf.MattermostAPI().KV.Delete(key)
+	err := s.conf.API().Mattermost.KV.Get(key, &storedState)
+	_ = s.conf.API().Mattermost.KV.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (s *oauth2Store) SaveUser(appID apps.AppID, actingUserID string, data []byt
 		return err
 	}
 
-	_, err = s.conf.MattermostAPI().KV.Set(userkey, data)
+	_, err = s.conf.API().Mattermost.KV.Set(userkey, data)
 	return err
 }
 
@@ -86,7 +86,7 @@ func (s *oauth2Store) GetUser(appID apps.AppID, actingUserID string) ([]byte, er
 	}
 
 	var data []byte
-	if err = s.conf.MattermostAPI().KV.Get(userkey, &data); err != nil {
+	if err = s.conf.API().Mattermost.KV.Get(userkey, &data); err != nil {
 		return nil, err
 	}
 

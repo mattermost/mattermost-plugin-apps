@@ -53,9 +53,8 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 	info := KVDebugInfo{
 		Apps: map[apps.AppID]*KVDebugAppInfo{},
 	}
-	mm := s.conf.MattermostAPI()
 	for i := 0; ; i++ {
-		keys, err := mm.KV.ListKeys(i, ListKeysPerPage)
+		keys, err := s.conf.API().Mattermost.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}

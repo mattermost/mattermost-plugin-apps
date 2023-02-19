@@ -13,12 +13,12 @@ import (
 
 func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.info.label",
 			Other: "info",
 		}),
 		Location: "info",
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.info.description",
 			Other: "Display Apps plugin info",
 		}),
@@ -31,10 +31,10 @@ func (a *builtinApp) infoCommandBinding(loc *i18n.Localizer) apps.Binding {
 	}
 }
 
-func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) info(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	conf := a.conf.Get()
-	out := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	conf := r.Config.Get()
+	out := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.info.submit",
 			Other: "Mattermost Apps plugin version: {{.Version}}, {{.URL}}, built {{.BuildDate}}\n\n- Mattermost Cloud Mode: {{.CloudMode}}\n- Developer Mode: {{.DeveloperMode}}\n- Allow HTTP Apps: {{.AllowHTTPApps}}",
@@ -43,7 +43,7 @@ func (a *builtinApp) info(_ *incoming.Request, creq apps.CallRequest) apps.CallR
 	}) + "\n\n"
 
 	if conf.DeveloperMode && conf.AWSAccessKey != "" {
-		out += a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		out += a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "command.info.aws",
 				Other: "AWS config:\n- Region: `{{.Region}}`\n- S3 Bucket: `{{.Bucket}}`\n- Access Key: `{{.Access}}`\n- Secret Key: `{{.Secret}}`",

@@ -53,7 +53,8 @@ type manifestStore struct {
 
 var _ ManifestStore = (*manifestStore)(nil)
 
-func (s *Service) makeManifestStore(conf config.Config) (*manifestStore, error) {
+func (s *Service) makeManifestStore() (*manifestStore, error) {
+	conf := s.conf.Get()
 	log := s.conf.NewBaseLogger().With("purpose", "Manifest store")
 	awsClient, err := upaws.MakeClient(conf.AWSAccessKey, conf.AWSSecretKey, conf.AWSRegion, log)
 	if err != nil {
@@ -65,7 +66,7 @@ func (s *Service) makeManifestStore(conf config.Config) (*manifestStore, error) 
 		aws:           awsClient,
 		s3AssetBucket: conf.AWSS3Bucket,
 	}
-	if err = mstore.Configure(conf, log); err != nil {
+	if err = mstore.Configure(log); err != nil {
 		return nil, errors.Wrap(err, "failed to configure")
 	}
 
@@ -82,9 +83,8 @@ func (s *Service) makeManifestStore(conf config.Config) (*manifestStore, error) 
 // manifests.
 func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) error {
 	conf := s.conf.Get()
-	mm := s.conf.MattermostAPI()
 
-	bundlePath, err := mm.System.GetBundlePath()
+	bundlePath, err := s.conf.API().Mattermost.System.GetBundlePath()
 	if err != nil {
 		return errors.Wrap(err, "can't get bundle path")
 	}
@@ -150,15 +150,14 @@ func (s *manifestStore) InitGlobal(httpOut httpout.Service, log utils.Logger) er
 	return nil
 }
 
-func (s *manifestStore) Configure(conf config.Config, log utils.Logger) error {
+func (s *manifestStore) Configure(log utils.Logger) error {
 	updatedLocal := map[apps.AppID]apps.Manifest{}
-	mm := s.conf.MattermostAPI()
 
-	for id, key := range conf.LocalManifests {
+	for id, key := range s.conf.Get().LocalManifests {
 		log = log.With("app_id", id)
 
 		var data []byte
-		err := mm.KV.Get(KVLocalManifestPrefix+key, &data)
+		err := s.conf.API().Mattermost.KV.Get(KVLocalManifestPrefix+key, &data)
 		if err != nil {
 			log.WithError(err).Errorw("Failed to get local manifest from KV")
 			continue
@@ -219,7 +218,7 @@ func (s *manifestStore) AsMap() map[apps.AppID]apps.Manifest {
 
 func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 	conf := s.conf.Get()
-	mm := s.conf.MattermostAPI()
+	mm := s.conf.API().Mattermost
 	prevSHA := conf.LocalManifests[string(m.AppID)]
 
 	m.SchemaVersion = conf.PluginManifest.Version
@@ -270,10 +269,9 @@ func (s *manifestStore) StoreLocal(r *incoming.Request, m apps.Manifest) error {
 
 func (s *manifestStore) DeleteLocal(r *incoming.Request, appID apps.AppID) error {
 	conf := s.conf.Get()
-	mm := s.conf.MattermostAPI()
 	sha := conf.LocalManifests[string(appID)]
 
-	err := mm.KV.Delete(KVLocalManifestPrefix + sha)
+	err := s.conf.API().Mattermost.KV.Delete(KVLocalManifestPrefix + sha)
 	if err != nil {
 		return err
 	}
