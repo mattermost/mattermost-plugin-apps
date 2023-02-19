@@ -48,7 +48,7 @@ func (a *builtinApp) debugStorePollute(r *incoming.Request, creq apps.CallReques
 
 	keys := []string{}
 	for i := 0; i < c; i++ {
-		key := fmt.Sprintf("%s-%v-%d", store.KVDebugPrefix, time.Now().UnixMilli(), i)
+		key := fmt.Sprintf("%s-%v-%d", store.DebugPrefix, time.Now().UnixMilli(), i)
 		_, err = a.api.Mattermost.KV.Set(key, []byte("garbage"))
 		if err != nil {
 			return apps.NewErrorResponse(err)

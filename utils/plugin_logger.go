@@ -46,7 +46,7 @@ func NewPluginLogger(mmapi *pluginapi.Client, confGetter LogConfigGetter) Logger
 			logger:       &mmapi.Log,
 			LevelEnabler: zapcore.DebugLevel,
 			confGetter:   confGetter,
-		}, options).Sugar(),
+		}, options).Sugar().Named(HostNickname()),
 	}
 }
 
@@ -118,7 +118,7 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		return nil
 	}
 
-	message := fmt.Sprintf("%s %s (%s): %s\n", e.Time.Format(time.StampMilli), e.Level.CapitalString(), caller, e.Message)
+	message := fmt.Sprintf("%s: %s **%s** (%s): %s\n", e.LoggerName, e.Time.Format(time.StampMilli), e.Level.CapitalString(), caller, e.Message)
 
 	if logconf.IncludeJSON {
 		ccJSON := map[string]any{}

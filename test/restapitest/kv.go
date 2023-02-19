@@ -15,6 +15,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
+	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -84,7 +86,7 @@ func newKVApp(t testing.TB) *goapp.App {
 }
 
 //nolint:golint,unparam
-func kvCall(th *Helper, path string, asBot bool, prefix, key string, value interface{}) apps.CallResponse {
+func kvCall(th *Helper, path string, asBot bool, prefix, key string, value interface{}) *apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path),
 		Values: model.StringInterface{
@@ -106,7 +108,7 @@ func kvCall(th *Helper, path string, asBot bool, prefix, key string, value inter
 	if value != nil {
 		creq.Values["value"] = value
 	}
-	return *th.HappyCall(kvID, creq)
+	return th.HappyCall(kvID, creq)
 }
 
 func testKV(th *Helper) {
@@ -240,4 +242,48 @@ func testKV(th *Helper) {
 	})
 
 	// TODO: Add a test for namespacing 2 separate users
+
+	th.Run("debug info", func(th *Helper) {
+		cresp := kvCall(th, "/set", false, "p1", "testkey1", model.StringInterface{"n": "v"})
+		require.Equal(th, "true", cresp.Text)
+		cresp = kvCall(th, "/set", false, "p2", "testkey2", model.StringInterface{"n": "v"})
+		require.Equal(th, "true", cresp.Text)
+
+		th.Cleanup(func() {
+			_ = kvCall(th, "/delete", false, "p1", "testkey1", nil)
+			_ = kvCall(th, "/delete", false, "p2", "testkey2", nil)
+			th.Logf("deleted test KV keys")
+		})
+
+		infoRequest := apps.CallRequest{
+			Call: *apps.NewCall(builtin.PathDebugKVInfo).WithExpand(apps.Expand{ActingUser: apps.ExpandSummary}),
+		}
+		cresp = th.HappyAdminCall(builtin.AppID, infoRequest)
+		info := store.KVDebugInfo{}
+		utils.Remarshal(&info, cresp.Data)
+
+		require.EqualValues(th,
+			store.KVDebugInfo{
+				Apps: map[apps.AppID]*store.KVDebugAppInfo{
+					"kvtest": {
+						AppKVCount:            2,
+						AppKVCountByNamespace: map[string]int{"p1": 1, "p2": 1},
+						AppKVCountByUserID:    map[string]int{th.ServerTestHelper.BasicUser.Id: 2},
+						TokenCount:            2,
+						UserCount:             0,
+					},
+				},
+				AppsTotal:        4,
+				CachedStoreTotal: 4,
+				CachedStoreCountByName: map[string]int{
+					"apps":      1,
+					"manifests": 1,
+				},
+				Debug:            0,
+				OAuth2StateCount: 0,
+				Other:            0,
+				Total:            8,
+			},
+			info)
+	})
 }

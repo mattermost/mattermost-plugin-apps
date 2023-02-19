@@ -5,6 +5,7 @@ package restapitest
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,10 +22,10 @@ import (
 
 const subID = apps.AppID("subtest")
 
-func newSubscribeApp(t testing.TB) *goapp.App {
+func newSubscribeApp(t testing.TB, appID apps.AppID) *goapp.App {
 	app := goapp.MakeAppOrPanic(
 		apps.Manifest{
-			AppID:       subID,
+			AppID:       appID,
 			Version:     "v1.2.0",
 			DisplayName: "tests Subscription API",
 			HomepageURL: "https://github.com/mattermost/mattermost-plugin-apps/test/restapitest",
@@ -84,7 +85,11 @@ func newSubscribeApp(t testing.TB) *goapp.App {
 }
 
 func assertNumSubs(th *Helper, callf Caller, n int) {
-	cresp := callf(subID, subCallRequest("/list", false, "", "", ""))
+	assertNumSubsForID(th, callf, n, subID)
+}
+
+func assertNumSubsForID(th *Helper, callf Caller, n int, appID apps.AppID) {
+	cresp := callf(appID, subCallRequest("/list", false, "", "", ""))
 	subs := []apps.Subscription{}
 	err := json.Unmarshal([]byte(cresp.Text), &subs)
 	require.NoError(th, err)
@@ -111,7 +116,7 @@ func subCallRequest(path string, asBot bool, subject apps.Subject, teamID, chann
 }
 
 func testSubscriptions(th *Helper) {
-	th.InstallAppWithCleanup(newSubscribeApp(th.T))
+	th.InstallAppWithCleanup(newSubscribeApp(th.T, subID))
 
 	th.Run("Unauthenticated requests are rejected", func(th *Helper) {
 		assert := assert.New(th)
@@ -149,13 +154,48 @@ func testSubscriptions(th *Helper) {
 		cresp = th.HappyCall(subID, subCallRequest("/unsubscribe", false, apps.SubjectUserCreated, "", ""))
 		require.Equal(th, `unsubscribed`, cresp.Text)
 		assertNumSubs(th, th.HappyCall, 2)
+	})
 
-		// Unsubscribe from a non-existing subscription.
-		badResponse, _, err := th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, "does-not-exist", ""))
+	th.Run("unsubscribe fails not subscribed", func(th *Helper) {
+		otherID := subID + "-other"
+		th.InstallAppWithCleanup(newSubscribeApp(th.T, otherID))
+
+		assertNumSubsForID(th, th.HappyCall, 0, subID)
+		assertNumSubsForID(th, th.HappyCall, 0, otherID)
+
+		cresp := th.HappyCall(subID, subCallRequest("/subscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+		require.Equal(th, `subscribed`, cresp.Text)
+		cresp = th.HappyCall(otherID, subCallRequest("/subscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+		require.Equal(th, `subscribed`, cresp.Text)
+		assertNumSubsForID(th, th.HappyCall, 1, subID)
+		assertNumSubsForID(th, th.HappyCall, 1, otherID)
+		th.Cleanup(func() {
+			_, _, _ = th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+			_, _, _ = th.Call(otherID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+			assertNumSubsForID(th, th.HappyCall, 0, subID)
+			assertNumSubsForID(th, th.HappyCall, 0, otherID)
+		})
+
+		cresp = th.HappyCall(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
+		require.Equal(th, `unsubscribed`, cresp.Text)
+		assertNumSubsForID(th, th.HappyCall, 0, subID)
+		assertNumSubsForID(th, th.HappyCall, 1, otherID)
+
+		// Unsubscribe again should fail
+		badResponse, _, err := th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, th.ServerTestHelper.BasicTeam.Id, ""))
 		require.NoError(th, err)
 		require.Equal(th, apps.CallResponseTypeError, badResponse.Type)
-		require.Equal(th, "You are not subscribed to this notification: not found", badResponse.Text)
-		assertNumSubs(th, th.HappyCall, 2)
+		require.Equal(th, fmt.Sprintf("failed to get subscriptions for event subject: channel_created, team_id: %s: not found", th.ServerTestHelper.BasicTeam.Id), badResponse.Text)
+		assertNumSubsForID(th, th.HappyCall, 0, subID)
+		assertNumSubsForID(th, th.HappyCall, 1, otherID)
+
+		// Unsubscribe to a non-existing subscription should fail
+		badResponse, _, err = th.Call(subID, subCallRequest("/unsubscribe", false, apps.SubjectChannelCreated, "does-not-exist", ""))
+		require.NoError(th, err)
+		require.Equal(th, apps.CallResponseTypeError, badResponse.Type)
+		require.Equal(th, "failed to get subscriptions for event subject: channel_created, team_id: does-not-exist: not found", badResponse.Text)
+		assertNumSubsForID(th, th.HappyCall, 0, subID)
+		assertNumSubsForID(th, th.HappyCall, 1, otherID)
 	})
 
 	th.Run("subscribe as bot list as user", func(th *Helper) {

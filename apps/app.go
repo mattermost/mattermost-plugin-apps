@@ -120,3 +120,7 @@ type ListedApp struct {
 	IconURL   string                   `json:"icon_url,omitempty"`
 	Labels    []model.MarketplaceLabel `json:"labels,omitempty"`
 }
+
+func (app App) Clone() *App {
+	return &app
+}

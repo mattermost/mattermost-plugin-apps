@@ -15,7 +15,6 @@ type Service interface {
 	Subscribe(*incoming.Request, apps.Subscription) error
 	GetSubscriptions(*incoming.Request) ([]apps.Subscription, error)
 	Unsubscribe(*incoming.Request, apps.Event) error
-	UnsubscribeApp(*incoming.Request, apps.AppID) error
 
 	// KV
 
@@ -31,6 +30,10 @@ type Service interface {
 	StoreOAuth2App(_ *incoming.Request, data []byte) error
 	StoreOAuth2User(_ *incoming.Request, data []byte) error
 	GetOAuth2User(_ *incoming.Request) ([]byte, error)
+
+	// Internal
+
+	DeleteAppData(r *incoming.Request, appID apps.AppID, force bool) error
 }
 
 type AppServices struct {
@@ -43,4 +46,30 @@ func NewService(store *store.Service) *AppServices {
 	return &AppServices{
 		store: store,
 	}
+}
+
+func (a *AppServices) DeleteAppData(r *incoming.Request, appID apps.AppID, force bool) (err error) {
+	defer func() {
+		if err != nil {
+			r.Log.WithError(err).Errorf("Failed to clean up app data for %s: %v", appID, err)
+		}
+	}()
+
+	if err = r.Check(
+		r.RequireActingUser,
+		r.RequireSysadminOrPlugin,
+	); err != nil {
+		return err
+	}
+
+	// Remove all KV and user data.
+	if err = store.RemoveAllKVAndUserDataForApp(r, appID); err != nil {
+		return err
+	}
+
+	// Remove all subscriptions.
+	if err = a.unsubscribeApp(r, appID); err != nil {
+		return err
+	}
+	return nil
 }

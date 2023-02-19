@@ -14,7 +14,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
-	"github.com/mattermost/mattermost-plugin-apps/server/httpout"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
@@ -33,83 +32,91 @@ import (
 // All other keys must start with an ASCII letter. '.' is usually used as the
 // terminator since it is not used in the base64 representation.
 const (
-	// KVAppPrefix is the Apps global namespace.
-	KVAppPrefix = ".k"
+	// KVPrefix is the global namespace for apps KV data.
+	KVPrefix = ".k"
 
-	// KVUserPrefix is the global namespace used to store user
-	// records.
-	KVUserPrefix = ".u"
+	// UserPrefix is the global namespace used to store user records.
+	UserPrefix = ".u"
 
-	// KVUserPrefix is the key to store OAuth2 user
-	// records.
-	KVUserKey = "oauth2_user"
+	// CachedPrefix is the global namespace for storing synchronized cached
+	// lists of records like apps and subscriptions.
+	CachedPrefix = ".cached"
 
-	// KVOAuth2StatePrefix is the global namespace used to store OAuth2
-	// ephemeral state data.
-	KVOAuth2StatePrefix = ".o"
+	// OAuth2StatePrefix is the global namespace used to store OAuth2 ephemeral
+	// state data.
+	OAuth2StatePrefix = ".o"
 
-	// KVSubPrefix is used for keys storing subscriptions.
-	KVSubPrefix = "sub."
+	TokenPrefix = ".t"
 
-	// KVInstalledAppPrefix is used to store App records.
-	KVInstalledAppPrefix = "app."
+	DebugPrefix = ".debug."
 
-	// KVLocalManifestPrefix is used to store locally-listed manifests.
-	KVLocalManifestPrefix = "man."
+	// OAuth2UserKey is the key to store OAuth2 user records, in the UserPrefix
+	// global namespace. There is only one key per user.
+	OAuth2UserKey = "oauth2_user"
 
-	KVTokenPrefix = ".t"
-
-	KVDebugPrefix = ".debug."
-
-	// KVCallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
+	// CallOnceKey and KVClusterMutexKey are used for invoking App Calls once,
 	// usually upon a Mattermost instance startup.
-	KVCallOnceKey     = "CallOnce"
-	KVClusterMutexKey = "Cluster_Mutex"
+	CallOnceKey     = "CallOnce"
+	ClusterMutexKey = "Cluster_Mutex"
+)
+
+const (
+	AppStoreName          = "apps"
+	ManifestStoreName     = "manifests"
+	SubscriptionStoreName = "subscriptions"
 )
 
 const (
 	ListKeysPerPage = 1000
 )
 
-type Service struct {
-	App          AppStore
-	Subscription SubscriptionStore
-	Manifest     ManifestStore
-	AppKV        AppKVStore
-	OAuth2       OAuth2Store
-	Session      SessionStore
-
-	conf    config.Service
-	httpOut httpout.Service
-}
-
-func MakeService(confService config.Service, httpOut httpout.Service) (*Service, error) {
-	s := &Service{
-		conf:    confService,
-		httpOut: httpOut,
-	}
-	s.AppKV = &appKVStore{Service: s}
-	s.OAuth2 = &oauth2Store{Service: s}
-	s.Subscription = &subscriptionStore{Service: s}
-	s.Session = &sessionStore{Service: s}
-
-	var err error
-	s.App, err = s.makeAppStore()
-	if err != nil {
-		return nil, err
-	}
-
-	s.Manifest, err = s.makeManifestStore()
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
 const (
 	hashKeyLength = 82
 )
 
+type Service struct {
+	App          Apps
+	Subscription *SubscriptionStore
+	Manifest     *ManifestStore
+	AppKV        *KVStore
+	OAuth2       *OAuth2Store
+	Session      Sessions
+
+	cluster *CachedStoreCluster
+}
+
+// MakeService creates and initializes a persistent storage Service. defaultKind
+// will be used to make the app, manifest, and subscription stores and specifies
+// how they will be replicated across cluster nodes.
+func MakeService(conf config.Service, defaultKind CachedStoreClusterKind) (*Service, error) {
+	s := &Service{
+		cluster: NewCachedStoreCluster(conf.API(), defaultKind),
+		AppKV:   &KVStore{},
+		OAuth2:  &OAuth2Store{},
+		Session: &SessionStore{},
+	}
+	log := conf.NewBaseLogger()
+
+	var err error
+	s.App, err = s.makeAppStore(conf.Get().PluginManifest.Version, log)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize the app store")
+	}
+	s.Manifest, err = s.makeManifestStore(log)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize the manifest store")
+	}
+	s.Subscription, err = s.makeSubscriptionStore(log)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize the subscription store")
+	}
+
+	return s, nil
+}
+
+// Makes a hash key that is used to store data in the KV store, that is specific
+// to a given app and user. key is hashed, everything else is preserved in the
+// output.
 func Hashkey(globalNamespace string, appID apps.AppID, userID, appNamespace, key string) (string, error) {
 	gns := []byte(globalNamespace)
 	a := []byte(appID)
@@ -137,7 +144,7 @@ func Hashkey(globalNamespace string, appID apps.AppID, userID, appNamespace, key
 	case len(k) == 0:
 		return "", errors.New("key must not be empty")
 	case len(a) != 32:
-		return "", errors.New("appID must be max length")
+		return "", errors.New("appID %s is tooo long, must be 32 bytes or fewer")
 	case len(u) != 26:
 		return "", errors.Errorf("userID %q must be exactly 26 ASCII characters", userID)
 	case len(gns) != 2 || gns[0] != '.':
@@ -152,19 +159,19 @@ func Hashkey(globalNamespace string, appID apps.AppID, userID, appNamespace, key
 	return hashed, nil
 }
 
-func hashkey(globalNamespace, appID, userID, appNamespace, id []byte) string {
-	idHash := make([]byte, 16)
-	sha3.ShakeSum128(idHash, id)
-	encodedID := make([]byte, ascii85.MaxEncodedLen(len(idHash)))
-	_ = ascii85.Encode(encodedID, idHash)
+func hashkey(globalNamespace, appID, userID, appNamespace, key []byte) string {
+	hash := make([]byte, 16)
+	sha3.ShakeSum128(hash, key)
+	encodedID := make([]byte, ascii85.MaxEncodedLen(len(hash)))
+	_ = ascii85.Encode(encodedID, hash)
 
-	key := make([]byte, 0, model.KeyValueKeyMaxRunes)
-	key = append(key, globalNamespace...)
-	key = append(key, appID...)
-	key = append(key, userID...)
-	key = append(key, appNamespace...)
-	key = append(key, encodedID...)
-	return string(key)
+	hashed := make([]byte, 0, model.KeyValueKeyMaxRunes)
+	hashed = append(hashed, globalNamespace...)
+	hashed = append(hashed, appID...)
+	hashed = append(hashed, userID...)
+	hashed = append(hashed, appNamespace...)
+	hashed = append(hashed, encodedID...)
+	return string(hashed)
 }
 
 func ParseHashkey(key string) (globalNamespace string, appID apps.AppID, userID, appNamespace, idhash string, err error) {
@@ -181,7 +188,7 @@ func ParseHashkey(key string) (globalNamespace string, appID apps.AppID, userID,
 	return string(gns), apps.AppID(strings.TrimSpace(string(a))), string(u), strings.TrimSpace(string(ns)), string(h), nil
 }
 
-func (s *Service) ListHashKeys(
+func ListHashKeys(
 	r *incoming.Request,
 	processf func(key string) error,
 	matchf ...func(prefix string, _ apps.AppID, userID, namespace, idhash string) bool,
@@ -220,11 +227,11 @@ func (s *Service) ListHashKeys(
 	}
 }
 
-func (s *Service) RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
-	if err := s.ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(KVAppPrefix)); err != nil {
+func RemoveAllKVAndUserDataForApp(r *incoming.Request, appID apps.AppID) error {
+	if err := ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(KVPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
-	if err := s.ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(KVUserPrefix)); err != nil {
+	if err := ListHashKeys(r, r.API.Mattermost.KV.Delete, WithAppID(appID), WithPrefix(UserPrefix)); err != nil {
 		return errors.Wrap(err, "failed to remove all data for app")
 	}
 	return nil

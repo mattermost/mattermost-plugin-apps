@@ -202,6 +202,10 @@ func (m Manifest) Validate() error {
 	return result
 }
 
+func (m Manifest) Clone() *Manifest {
+	return &m
+}
+
 // AppID is a globally unique identifier that represents a Mattermost App.
 // An AppID is restricted to no more than 32 ASCII letters, numbers, '-', or '_'.
 type AppID string

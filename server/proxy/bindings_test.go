@@ -20,7 +20,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps/path"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_store"
 	"github.com/mattermost/mattermost-plugin-apps/server/mocks/mock_upstream"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
 	"github.com/mattermost/mattermost-plugin-apps/upstream"
@@ -583,10 +582,8 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				},
 			}).WithMattermostAPI(pluginapi.NewClient(testAPI, testDriver))
 
-			s, err := store.MakeService(conf, nil)
+			store, err := store.MakeService(conf, store.TestCachedStoreKind)
 			require.NoError(t, err)
-			appStore := mock_store.NewMockAppStore(ctrl)
-			s.App = appStore
 
 			upstreams := map[apps.AppID]upstream.Upstream{}
 			for i := range tc.applications {
@@ -600,11 +597,11 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				up.EXPECT().Roundtrip(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(reader, nil)
 
 				upstreams[app.Manifest.AppID] = up
-				appStore.EXPECT().Get(app.Manifest.AppID).Return(&app, nil)
+				_ = store.App.Save(nil, app)
 			}
 
 			proxy := &Proxy{
-				store:            s,
+				store:            store,
 				builtinUpstreams: upstreams,
 				conf:             conf,
 			}

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/utils"
+	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
 type KVDebugAppInfo struct {
@@ -25,15 +25,14 @@ func (i KVDebugAppInfo) Total() int {
 }
 
 type KVDebugInfo struct {
-	InstalledAppCount int
-	Apps              map[apps.AppID]*KVDebugAppInfo
-	AppsTotal         int
-	ManifestCount     int
-	OAuth2StateCount  int
-	Other             int
-	SubscriptionCount int
-	Total             int
-	Debug             int
+	Apps                   map[apps.AppID]*KVDebugAppInfo
+	AppsTotal              int
+	CachedStoreTotal       int
+	CachedStoreCountByName map[string]int
+	Debug                  int
+	OAuth2StateCount       int
+	Other                  int
+	Total                  int
 }
 
 func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
@@ -49,12 +48,13 @@ func (i KVDebugInfo) forAppID(appID apps.AppID) *KVDebugAppInfo {
 	return appInfo
 }
 
-func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
+func GetKVDebugInfo(r *incoming.Request) (*KVDebugInfo, error) {
 	info := KVDebugInfo{
-		Apps: map[apps.AppID]*KVDebugAppInfo{},
+		Apps:                   map[apps.AppID]*KVDebugAppInfo{},
+		CachedStoreCountByName: map[string]int{},
 	}
 	for i := 0; ; i++ {
-		keys, err := s.conf.API().Mattermost.KV.ListKeys(i, ListKeysPerPage)
+		keys, err := r.API.Mattermost.KV.ListKeys(i, ListKeysPerPage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list keys - page, %d", i)
 		}
@@ -70,13 +70,13 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 				appInfo := info.forAppID(appID)
 				isHashKey = true
 				switch gns {
-				case KVAppPrefix:
+				case KVPrefix:
 					appInfo.AppKVCount++
 					appInfo.AppKVCountByNamespace[ns]++
 					appInfo.AppKVCountByUserID[userID]++
 					info.AppsTotal++
 
-				case KVUserPrefix:
+				case UserPrefix:
 					appInfo.UserCount++
 					info.AppsTotal++
 
@@ -89,10 +89,7 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 			}
 
 			switch {
-			case strings.HasPrefix(key, KVSubPrefix):
-				info.SubscriptionCount++
-
-			case strings.HasPrefix(key, KVTokenPrefix):
+			case strings.HasPrefix(key, TokenPrefix):
 				appID, _, err := parseSessionKey(key)
 				if err != nil {
 					continue
@@ -100,19 +97,20 @@ func (s *Service) GetDebugKVInfo(log utils.Logger) (*KVDebugInfo, error) {
 				info.forAppID(appID).TokenCount++
 				info.AppsTotal++
 
-			case strings.HasPrefix(key, KVOAuth2StatePrefix):
+			case strings.HasPrefix(key, OAuth2StatePrefix):
 				info.OAuth2StateCount++
 
-			case strings.HasPrefix(key, KVInstalledAppPrefix):
-				info.InstalledAppCount++
-
-			case strings.HasPrefix(key, KVLocalManifestPrefix):
-				info.ManifestCount++
+			case strings.HasPrefix(key, CachedPrefix):
+				name, _, _ := parseCachedStoreKey(key)
+				if name != "" {
+					info.CachedStoreCountByName[name]++
+				}
+				info.CachedStoreTotal++
 
 			case key == "mmi_botid":
 				info.Other++
 
-			case strings.HasPrefix(key, KVDebugPrefix):
+			case strings.HasPrefix(key, DebugPrefix):
 				info.Debug++
 			}
 		}

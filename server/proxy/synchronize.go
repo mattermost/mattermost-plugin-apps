@@ -72,7 +72,7 @@ func (p *Proxy) SynchronizeInstalledApps() error {
 
 func (p *Proxy) callOnce(r *incoming.Request, f func() error) error {
 	// Delete previous job
-	if err := r.API.Mattermost.KV.Delete(store.KVCallOnceKey); err != nil {
+	if err := r.API.Mattermost.KV.Delete(store.CallOnceKey); err != nil {
 		return errors.Wrap(err, "can't delete key")
 	}
 	// Ensure all instances run this
@@ -81,7 +81,7 @@ func (p *Proxy) callOnce(r *incoming.Request, f func() error) error {
 	p.callOnceMutex.Lock()
 	defer p.callOnceMutex.Unlock()
 	value := 0
-	if err := r.API.Mattermost.KV.Get(store.KVCallOnceKey, &value); err != nil {
+	if err := r.API.Mattermost.KV.Get(store.CallOnceKey, &value); err != nil {
 		return err
 	}
 	if value != 0 {
@@ -94,12 +94,12 @@ func (p *Proxy) callOnce(r *incoming.Request, f func() error) error {
 		return errors.Wrap(err, "can't run the job")
 	}
 	value = 1
-	ok, err := r.API.Mattermost.KV.Set(store.KVCallOnceKey, value)
+	ok, err := r.API.Mattermost.KV.Set(store.CallOnceKey, value)
 	if err != nil {
-		return errors.Wrapf(err, "can't set key %s to %d", store.KVCallOnceKey, value)
+		return errors.Wrapf(err, "can't set key %s to %d", store.CallOnceKey, value)
 	}
 	if !ok {
-		return errors.Errorf("can't set key %s to %d", store.KVCallOnceKey, value)
+		return errors.Errorf("can't set key %s to %d", store.CallOnceKey, value)
 	}
 	return nil
 }

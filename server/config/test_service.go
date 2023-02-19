@@ -71,5 +71,7 @@ func (s *TestService) StoreConfig(sc StoredConfig, _ utils.Logger) error {
 func (s *TestService) API() API                                              { return s.api }
 func (s *TestService) Get() Config                                           { return s.config }
 func (s *TestService) NewBaseLogger() utils.Logger                           { return s.log }
+func (s *TestService) OnClusterLeaderChanged(bool)                           {}
+func (s *TestService) IsClusterLeader() bool                                 { return true }
 func (s *TestService) Reconfigure(StoredConfig, bool, ...Configurable) error { return nil }
 func (s *TestService) SystemDefaultFlags() (bool, bool)                      { return false, false }

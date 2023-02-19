@@ -96,13 +96,18 @@ func (p *Plugin) OnActivate() (err error) {
 	// Initialize outgoing HTTP.
 	p.httpOut = httpout.NewService(p.conf)
 
-	// Initialize persistent storage. Also initialize the app API and the
-	// session services, both need the persisitent store.
-	p.store, err = store.MakeService(p.conf, p.httpOut)
+	// Initialize persistent stores.
+	p.store, err = store.MakeService(p.conf, store.SingleWriterCachedStoreKind)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize persistent store")
+		return errors.Wrap(err, "failed to initialize the manifest store")
 	}
-	p.store.App.InitBuiltin(builtin.App(conf))
+
+	if conf.MattermostCloudMode {
+		err = p.store.Manifest.InitCloudCatalog(p.conf, p.httpOut)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize the manifest store")
+		}
+	}
 
 	//  Initialize services (API implementations) - session, app services, proxy.
 	p.appservices = appservices.NewService(p.store)
@@ -110,7 +115,7 @@ func (p *Plugin) OnActivate() (err error) {
 	log.Debugf("initialized API and persistent store")
 
 	// Initialize the app proxy.
-	mutex, err := cluster.NewMutex(p.API, store.KVClusterMutexKey)
+	mutex, err := cluster.NewMutex(p.API, store.ClusterMutexKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
@@ -121,9 +126,9 @@ func (p *Plugin) OnActivate() (err error) {
 	}
 	log.Debugf("initialized the app proxy")
 
-	p.proxy.AddBuiltinUpstream(
-		builtin.AppID,
-		builtin.NewBuiltinApp(api, p.proxy, p.appservices, p.httpOut, p.sessionService))
+	// Initialize the built-in "/apps" app.
+	p.store.App.InitBuiltin(builtin.App(conf))
+	p.proxy.AddBuiltinUpstream(builtin.AppID, builtin.NewBuiltinApp(api, p.proxy, p.appservices, p.httpOut, p.sessionService))
 	log.Debugf("initialized the built-in app: use /apps command")
 
 	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf)
@@ -187,6 +192,16 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 	return nil
+}
+
+func (p *Plugin) OnClusterLeaderChanged(isLeader bool) error { //nolint:unparam
+	p.conf.OnClusterLeaderChanged(isLeader)
+	return nil
+}
+
+func (p *Plugin) OnPluginClusterEvent(c *plugin.Context, ev model.PluginClusterEvent) {
+	r := p.proxy.NewIncomingRequest("OnPluginClusterEvent", c.RequestId)
+	p.store.OnPluginClusterEvent(r, ev)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w gohttp.ResponseWriter, req *gohttp.Request) {
