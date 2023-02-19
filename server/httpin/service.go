@@ -131,9 +131,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
 	defer cancel()
 	r = r.WithCtx(ctx)
+
 	r.Log = r.Log.With(
 		"path", req.URL.Path,
 	)
+
 	// Output panics in dev. mode.
 	defer func() {
 		if x := recover(); x != nil {
