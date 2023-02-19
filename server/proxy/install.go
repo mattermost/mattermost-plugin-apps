@@ -31,7 +31,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		log := r.Log.With("elapsed", time.Since(start).String())
 		r.Log = prevlog
 		if err != nil {
-			log.Errorf("InstallApp: %v", err)
+			log.WithError(err).Errorf("InstallApp failed")
 		} else {
 			r.Log.Infof(message)
 		}

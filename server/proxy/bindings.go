@@ -43,9 +43,9 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) (ret []apps.Bi
 	start := time.Now()
 	var allApps []apps.App
 	defer func() {
-		log := r.Log.With("elapsed", time.Since(start).String)
+		log := r.Log.With("elapsed", time.Since(start).String())
 		if err != nil {
-			log.Errorf("GetBindings: %v", err)
+			log.WithError(err).Warnf("GetBindings failed")
 		} else {
 			log.Debugf("GetBindings: returned bindings for %v apps", len(allApps))
 		}
