@@ -18,11 +18,11 @@ import (
 func (a *builtinApp) debugSessionsListBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "list",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.list.label",
 			Other: "list",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.list.description",
 			Other: "List all App specific sessions.",
 		}),
@@ -42,7 +42,7 @@ func (a *builtinApp) debugSessionsList(r *incoming.Request, creq apps.CallReques
 		return apps.NewErrorResponse(err)
 	}
 
-	txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+	txt := a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "command.debug.session.list.submit.header",
 		Other: "| SessionID | AppID | ExpiresAt | ExpiresIn | Token |",
 	})

@@ -49,7 +49,7 @@ func (a *AppServices) StoreOAuth2App(r *incoming.Request, data []byte) error {
 		return err
 	}
 
-	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
+	r.API.Mattermost.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{})
 
 	return nil
 }
@@ -89,7 +89,7 @@ func (a *AppServices) StoreOAuth2User(r *incoming.Request, data []byte) error {
 		return err
 	}
 
-	r.Config().MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
+	r.API.Mattermost.Frontend.PublishWebSocketEvent(config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: actingUserID})
 	return nil
 }
 

@@ -18,11 +18,11 @@ import (
 func (a *builtinApp) debugStorePolluteCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "list",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.store.pollute.label",
 			Other: "pollute",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.store.pollute.description",
 			Other: "Add garbage records to the store.",
 		}),
@@ -49,7 +49,7 @@ func (a *builtinApp) debugStorePollute(r *incoming.Request, creq apps.CallReques
 	keys := []string{}
 	for i := 0; i < c; i++ {
 		key := fmt.Sprintf("%s-%v-%d", store.KVDebugPrefix, time.Now().UnixMilli(), i)
-		_, err = a.conf.MattermostAPI().KV.Set(key, []byte("garbage"))
+		_, err = a.api.Mattermost.KV.Set(key, []byte("garbage"))
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
@@ -57,7 +57,7 @@ func (a *builtinApp) debugStorePollute(r *incoming.Request, creq apps.CallReques
 	}
 
 	loc := a.newLocalizer(creq)
-	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	message := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.debug.store.pollute.submit.message",
 			Other: "Created {{.Count}} garbage keys",

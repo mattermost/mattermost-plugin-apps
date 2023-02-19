@@ -3,7 +3,6 @@ package session
 import (
 	"time"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
@@ -29,13 +28,11 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	mm    *pluginapi.Client
 	store *store.Service
 }
 
-func NewService(mm *pluginapi.Client, store *store.Service) Service {
+func NewService(store *store.Service) Service {
 	return &service{
-		mm:    mm,
 		store: store,
 	}
 }
@@ -45,7 +42,7 @@ func (s *service) GetOrCreate(r *incoming.Request, userID string) (*model.Sessio
 	session, err := s.store.Session.Get(appID, userID)
 
 	if err == nil && !session.IsExpired() {
-		err = s.extendSessionExpiryIfNeeded(appID, userID, session)
+		err = s.extendSessionExpiryIfNeeded(r, appID, userID, session)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extend session length")
 		}
@@ -66,7 +63,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 	if userID == r.ActingUserID() {
 		user, err = r.GetActingUser()
 	} else {
-		user, err = s.mm.User.Get(userID)
+		user, err = r.API.Mattermost.User.Get(userID)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch user for new session")
@@ -101,7 +98,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 		session.AddProp(model.SessionPropOAuthAppID, oAuthApp.Id)
 	}
 
-	session, err = s.mm.Session.Create(session)
+	session, err = r.API.Mattermost.Session.Create(session)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app session")
 	}
@@ -116,7 +113,7 @@ func (s *service) createSession(r *incoming.Request, appID apps.AppID, userID st
 	return session, nil
 }
 
-func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, session *model.Session) error {
+func (s *service) extendSessionExpiryIfNeeded(r *incoming.Request, appID apps.AppID, userID string, session *model.Session) error {
 	remaining := time.Until(time.UnixMilli(session.ExpiresAt))
 	if remaining > MinSessionLength {
 		return nil
@@ -124,7 +121,7 @@ func (s *service) extendSessionExpiryIfNeeded(appID apps.AppID, userID string, s
 
 	newExpiryTime := time.Now().Add(SessionLength)
 
-	err := s.mm.Session.ExtendExpiry(session.Id, newExpiryTime.UnixMilli())
+	err := r.API.Mattermost.Session.ExtendExpiry(session.Id, newExpiryTime.UnixMilli())
 	if err != nil {
 		return err
 	}
@@ -148,7 +145,7 @@ func (s service) revokeSessions(r *incoming.Request, sessions []*model.Session) 
 	for _, session := range sessions {
 		// Revoke active sessions
 		if !session.IsExpired() {
-			err := s.mm.Session.Revoke(session.Id)
+			err := r.API.Mattermost.Session.Revoke(session.Id)
 			if err != nil {
 				r.Log.WithError(err).Warnw("failed to revoke app session")
 			}

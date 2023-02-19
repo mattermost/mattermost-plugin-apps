@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-api/i18n"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/mattermost/mattermost-server/v6/services/configservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
@@ -22,15 +23,20 @@ import (
 )
 
 type Configurable interface {
-	Configure(Config, utils.Logger) error
+	Configure(utils.Logger) error
+}
+
+type API struct {
+	I18N       *i18n.Bundle
+	Telemetry  *telemetry.Telemetry
+	Plugin     plugin.API
+	Mattermost *pluginapi.Client
 }
 
 type Service interface {
 	Get() Config
-	MattermostAPI() *pluginapi.Client
-	MattermostConfig() configservice.ConfigService
-	I18N() *i18n.Bundle
-	Telemetry() *telemetry.Telemetry
+	GetMattermostConfig() configservice.ConfigService
+	API() API
 	NewBaseLogger() utils.Logger
 	SystemDefaultFlags() (devMode, allowHTTPApps bool)
 
@@ -41,34 +47,30 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
+	api            API
 	pluginManifest model.Manifest
 	botUserID      string
-	mm             *pluginapi.Client
-	i18n           *i18n.Bundle
-	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
+func MakeService(api API, pliginManifest model.Manifest, botUserID string) (Service, error) {
 	s := &service{
+		api:            api,
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
-		mm:             mm,
 		lock:           &sync.RWMutex{},
-		i18n:           i18nBundle,
-		telemetry:      telemetry,
 	}
 
 	sc := StoredConfig{}
-	err := s.mm.Configuration.LoadPluginConfiguration(&sc)
+	err := s.api.Mattermost.Configuration.LoadPluginConfiguration(&sc)
 	if err != nil {
 		return nil, err
 	}
 
-	clone, err := s.newInitializedConfig(sc, log)
+	clone, err := s.newInitializedConfig(sc)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,8 @@ func (s *service) newConfig() Config {
 	}
 }
 
-func (s *service) newInitializedConfig(newStoredConfig StoredConfig, log utils.Logger) (*Config, error) {
+func (s *service) newInitializedConfig(newStoredConfig StoredConfig) (*Config, error) {
+	log := s.NewBaseLogger()
 	conf := s.newConfig()
 	conf.StoredConfig = newStoredConfig
 	newMattermostConfig := s.reloadMattermostConfig()
@@ -195,19 +198,11 @@ func (s *service) Get() Config {
 	return *conf
 }
 
-func (s *service) MattermostAPI() *pluginapi.Client {
-	return s.mm
+func (s *service) API() API {
+	return s.api
 }
 
-func (s *service) I18N() *i18n.Bundle {
-	return s.i18n
-}
-
-func (s *service) Telemetry() *telemetry.Telemetry {
-	return s.telemetry
-}
-
-func (s *service) MattermostConfig() configservice.ConfigService {
+func (s *service) GetMattermostConfig() configservice.ConfigService {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
@@ -221,7 +216,7 @@ func (s *service) MattermostConfig() configservice.ConfigService {
 }
 
 func (s *service) reloadMattermostConfig() *model.Config {
-	mmconf := s.mm.Configuration.GetConfig()
+	mmconf := s.api.Mattermost.Configuration.GetConfig()
 
 	s.lock.Lock()
 	s.mattermostConfig = mmconf
@@ -234,9 +229,9 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 	// GetLicense silently drops an RPC error
 	// (https://github.com/mattermost/mattermost-server/blob/fc75b72bbabf7fabfad24b9e1e4c321ca9b9b7f1/plugin/client_rpc_generated.go#L864).
 	// When running in Mattermost cloud we must not fall back to the on-prem mode, so in case we get a nil retry once.
-	license := s.mm.System.GetLicense()
+	license := s.api.Mattermost.System.GetLicense()
 	if license == nil {
-		license = s.mm.System.GetLicense()
+		license = s.api.Mattermost.System.GetLicense()
 		if license == nil {
 			log.Debugf("failed to fetch license twice. May incorrectly default to on-prem mode")
 		}
@@ -246,15 +241,7 @@ func (s *service) getMattermostLicense(log utils.Logger) *model.License {
 }
 
 func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, services ...Configurable) error {
-	var log utils.Logger
-	if verbose {
-		// Use the old settings to log the processing of the new config.
-		log = s.NewBaseLogger()
-	} else {
-		log = utils.NilLogger{}
-	}
-
-	clone, err := s.newInitializedConfig(newStoredConfig, log)
+	clone, err := s.newInitializedConfig(newStoredConfig)
 	if err != nil {
 		return err
 	}
@@ -263,8 +250,13 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 	s.conf = clone
 	s.lock.Unlock()
 
+	// Use the old settings to log the processing of the new config.
+	log := s.NewBaseLogger()
+	if !verbose {
+		log = utils.NilLogger{}
+	}
 	for _, service := range services {
-		if err := service.Configure(*clone, log); err != nil {
+		if err := service.Configure(log); err != nil {
 			return errors.Wrapf(err, "failed to configure service %T", service)
 		}
 	}
@@ -272,9 +264,7 @@ func (s *service) Reconfigure(newStoredConfig StoredConfig, verbose bool, servic
 }
 
 func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
-	log.Debugf("Storing configuration: %d installed, %d listed apps, developer mode %t, allow http apps %t",
-		len(sc.InstalledApps),
-		len(sc.LocalManifests),
+	log.Debugf("Storing configuration: developer mode %t, allow http apps %t",
 		sc.DeveloperModeOverride != nil && *sc.DeveloperModeOverride,
 		sc.AllowHTTPAppsOverride != nil && *sc.AllowHTTPAppsOverride,
 	)
@@ -289,14 +279,14 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 	utils.Remarshal(&out, sc)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh
-	return s.mm.Configuration.SavePluginConfig(out)
+	return s.api.Mattermost.Configuration.SavePluginConfig(out)
 }
 
 func (s *service) NewBaseLogger() utils.Logger {
 	if s.Get().DeveloperMode {
-		return utils.NewPluginLogger(s.mm, s)
+		return utils.NewPluginLogger(s.api.Mattermost, s)
 	}
-	return utils.NewPluginLogger(s.mm, nil)
+	return utils.NewPluginLogger(s.api.Mattermost, nil)
 }
 
 func (s *service) GetLogConfig() utils.LogConfig {

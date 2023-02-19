@@ -11,35 +11,33 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
-	conf := a.conf.Get()
-
+func (a *builtinApp) installCommandBinding(r *incoming.Request, loc *i18n.Localizer) apps.Binding {
 	bindings := apps.Binding{
 		Location: "install",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.label",
 			Other: "install",
 		}),
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.listed.hint",
 			Other: "[ listed ]",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.description",
 			Other: "Install an App",
 		}),
 		Bindings: []apps.Binding{
 			{
-				Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.label",
 					Other: "listed",
 				}),
 				Location: "listed",
-				Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.hint",
 					Other: "[app ID]",
 				}),
-				Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.install.listed.description",
 					Other: "Install an App from the Marketplace or a listed App that has been deployed.",
 				}),
@@ -53,23 +51,23 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 		},
 	}
 
-	if conf.AllowHTTPApps {
-		bindings.Hint = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+	if r.Config.Get().AllowHTTPApps {
+		bindings.Hint = a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.install.hint",
 			Other: "[ listed | http ]",
 		})
 
 		bindings.Bindings = append(bindings.Bindings, apps.Binding{
-			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.install.http.label",
 				Other: "http",
 			}),
 			Location: "http",
-			Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.install.http.hint",
 				Other: "[URL to manifest.json]",
 			}),
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.install.http.description",
 				Other: "Install an HTTP App from a URL",
 			}),
@@ -78,15 +76,15 @@ func (a *builtinApp) installCommandBinding(loc *i18n.Localizer) apps.Binding {
 					{
 						Name: fURL,
 						Type: apps.FieldTypeText,
-						Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.url.description",
 							Other: "enter the HTTP URL for the app's manifest.json",
 						}),
-						Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.url.label",
 							Other: "url",
 						}),
-						AutocompleteHint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+						AutocompleteHint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 							ID:    "field.url.hint",
 							Other: "URL",
 						}),
@@ -116,8 +114,7 @@ func (a *builtinApp) installListed(r *incoming.Request, creq apps.CallRequest) a
 func (a *builtinApp) installHTTP(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
 	manifestURL := creq.GetValue(fURL, "")
-	conf := a.conf.Get()
-	data, err := a.httpOut.GetFromURL(manifestURL, conf.DeveloperMode, apps.MaxManifestSize)
+	data, err := a.httpOut.GetFromURL(manifestURL, r.Config.Get().DeveloperMode, apps.MaxManifestSize)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}

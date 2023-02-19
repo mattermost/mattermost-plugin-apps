@@ -13,11 +13,11 @@ import (
 func (a *builtinApp) debugSessionsRevokeBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "revoke",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.revoke.label",
 			Other: "revoke",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.session.revoke.description",
 			Other: "Revoke all App specific sessions.",
 		}),
@@ -38,7 +38,7 @@ func (a *builtinApp) debugSessionsRevoke(r *incoming.Request, creq apps.CallRequ
 		return apps.NewErrorResponse(err)
 	}
 
-	return apps.NewTextResponse(a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+	return apps.NewTextResponse(a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "command.debug.session.revoke.submit",
 		Other: "Revoked all of your app specific sessions.",
 	}))

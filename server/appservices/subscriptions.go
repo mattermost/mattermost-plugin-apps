@@ -171,22 +171,21 @@ func (a *AppServices) unsubscribe(r *incoming.Request, ownerUserID string, e app
 
 func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Subscription) func() error {
 	return func() error {
-		mm := r.Config().MattermostAPI()
 		userID := r.ActingUserID()
 
 		switch sub.Subject {
 		case apps.SubjectUserCreated:
-			if !mm.User.HasPermissionTo(userID, model.PermissionViewMembers) {
+			if !r.API.Mattermost.User.HasPermissionTo(userID, model.PermissionViewMembers) {
 				return errors.New("no permission to read user")
 			}
 
 		case apps.SubjectUserJoinedChannel, apps.SubjectUserLeftChannel:
-			if sub.ChannelID != "" && !mm.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
+			if sub.ChannelID != "" && !r.API.Mattermost.User.HasPermissionToChannel(userID, sub.ChannelID, model.PermissionReadChannel) {
 				return errors.New("no permission to read channel")
 			}
 
 		case apps.SubjectUserJoinedTeam, apps.SubjectUserLeftTeam:
-			if sub.TeamID != "" && !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
+			if sub.TeamID != "" && !r.API.Mattermost.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionViewTeam) {
 				return errors.New("no permission to view team")
 			}
 
@@ -203,7 +202,7 @@ func (a *AppServices) hasPermissionToSubscribe(r *incoming.Request, sub apps.Sub
 			}
 
 		case apps.SubjectChannelCreated:
-			if !mm.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
+			if !r.API.Mattermost.User.HasPermissionToTeam(userID, sub.TeamID, model.PermissionListTeamChannels) {
 				return errors.New("no permission to list channels")
 			}
 

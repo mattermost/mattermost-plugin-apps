@@ -52,9 +52,9 @@ type appStore struct {
 
 var _ AppStore = (*appStore)(nil)
 
-func (s *Service) makeAppStore(conf config.Config) (*appStore, error) {
+func (s *Service) makeAppStore() (*appStore, error) {
 	appStore := &appStore{Service: s}
-	err := appStore.Configure(conf, s.conf.NewBaseLogger())
+	err := appStore.Configure(s.conf.NewBaseLogger())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize App store")
 	}
@@ -73,15 +73,13 @@ func (s *appStore) InitBuiltin(builtinApps ...apps.App) {
 	s.mutex.Unlock()
 }
 
-func (s *appStore) Configure(conf config.Config, log utils.Logger) error {
+func (s *appStore) Configure(log utils.Logger) error {
 	newInstalled := map[apps.AppID]apps.App{}
-	mm := s.conf.MattermostAPI()
-
-	for id, key := range conf.InstalledApps {
+	for id, key := range s.conf.Get().InstalledApps {
 		log = log.With("app_id", id)
 
 		var data []byte
-		err := mm.KV.Get(KVInstalledAppPrefix+key, &data)
+		err := s.conf.API().Mattermost.KV.Get(KVInstalledAppPrefix+key, &data)
 		if err != nil {
 			log.WithError(err).Errorw("failed to load app")
 			continue
@@ -158,7 +156,6 @@ func (s *appStore) AsMap(filter FilterOpt) map[apps.AppID]apps.App {
 
 func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 	conf := s.conf.Get()
-	mm := s.conf.MattermostAPI()
 	prevSHA := conf.InstalledApps[string(app.AppID)]
 
 	app.Manifest.SchemaVersion = conf.PluginManifest.Version
@@ -167,7 +164,7 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 		return err
 	}
 	sha := fmt.Sprintf("%x", sha1.Sum(data)) // nolint:gosec
-	_, err = mm.KV.Set(KVInstalledAppPrefix+sha, app)
+	_, err = r.API.Mattermost.KV.Set(KVInstalledAppPrefix+sha, app)
 	if err != nil {
 		return err
 	}
@@ -202,7 +199,7 @@ func (s *appStore) Save(r *incoming.Request, app apps.App) error {
 	}
 
 	if sha != prevSHA {
-		err = mm.KV.Delete(KVInstalledAppPrefix + prevSHA)
+		err = r.API.Mattermost.KV.Delete(KVInstalledAppPrefix + prevSHA)
 		if err != nil {
 			r.Log.WithError(err).Warnf("Failed to delete previous App KV value")
 		}
@@ -221,13 +218,12 @@ func (s *appStore) Delete(r *incoming.Request, appID apps.AppID) error {
 	}
 
 	conf := s.conf.Get()
-	mm := s.conf.MattermostAPI()
 	sha, ok := conf.InstalledApps[string(appID)]
 	if !ok {
 		return utils.ErrNotFound
 	}
 
-	err := mm.KV.Delete(KVInstalledAppPrefix + sha)
+	err := r.API.Mattermost.KV.Delete(KVInstalledAppPrefix + sha)
 	if err != nil {
 		return err
 	}

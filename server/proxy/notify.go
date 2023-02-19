@@ -16,8 +16,8 @@ import (
 
 // NotifyUserCreated handles plugin's UserHasBeenCreated callback. It emits
 // "user_created" notifications to subscribed apps.
-func (p *Proxy) NotifyUserCreated(userID string) {
-	p.notifyAll(
+func (p *Proxy) NotifyUserCreated(r *incoming.Request, userID string) {
+	p.notifyAll(r,
 		apps.Event{
 			Subject: apps.SubjectUserCreated,
 		},
@@ -29,7 +29,7 @@ func (p *Proxy) NotifyUserCreated(userID string) {
 	)
 }
 
-func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User, joined bool) {
+func (p *Proxy) NotifyUserChannel(r *incoming.Request, member *model.ChannelMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedChannel
 	if !joined {
 		subject = apps.SubjectUserLeftChannel
@@ -37,13 +37,12 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 
 	log := p.conf.NewBaseLogger().With("subject", subject)
 
-	mm := p.conf.MattermostAPI()
-	user, err := mm.User.Get(member.UserId)
+	user, err := r.API.Mattermost.User.Get(member.UserId)
 	if err != nil {
 		log.WithError(err).Debugf("failed to get user")
 		return
 	}
-	channel, err := mm.Channel.Get(member.ChannelId)
+	channel, err := r.API.Mattermost.Channel.Get(member.ChannelId)
 	if err != nil {
 		log.WithError(err).Debugf("%s: failed to get channel", subject)
 		return
@@ -51,7 +50,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 
 	// Notify on user_joined|left_channel subscriptions specific to the channel
 	// that may include any user.
-	p.notifyAll(
+	p.notifyAll(r,
 		apps.Event{
 			Subject:   subject,
 			ChannelID: channel.Id,
@@ -66,7 +65,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 	)
 
 	// Notify on "self" subscriptions for the user.
-	p.notifyAll(
+	p.notifyAll(r,
 		apps.Event{
 			Subject: subject,
 		},
@@ -81,7 +80,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 			return sub.OwnerUserID == member.UserId
 		},
 		// special expand for "self" subscriptions.
-		newExpandSelfGetter(mm, user, member, nil, channel),
+		newExpandSelfGetter(r.API.Mattermost, user, member, nil, channel),
 	)
 
 	// Notify on the deprecated bot_joined|left_channel subscriptions.
@@ -91,7 +90,7 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 		if !joined {
 			subject = apps.SubjectBotLeftChannel
 		}
-		p.notifyAll(
+		p.notifyAll(r,
 			apps.Event{
 				Subject: subject,
 			},
@@ -107,20 +106,19 @@ func (p *Proxy) NotifyUserChannel(member *model.ChannelMember, actor *model.User
 				return false
 			},
 			// special expand for "self" subscriptions.
-			newExpandSelfGetter(mm, user, member, nil, channel),
+			newExpandSelfGetter(r.API.Mattermost, user, member, nil, channel),
 		)
 	}
 }
 
-func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, joined bool) {
+func (p *Proxy) NotifyUserTeam(r *incoming.Request, member *model.TeamMember, actor *model.User, joined bool) {
 	subject := apps.SubjectUserJoinedTeam
 	if !joined {
 		subject = apps.SubjectUserLeftTeam
 	}
 	log := p.conf.NewBaseLogger().With("subject", subject)
 
-	mm := p.conf.MattermostAPI()
-	user, err := mm.User.Get(member.UserId)
+	user, err := r.API.Mattermost.User.Get(member.UserId)
 	if err != nil {
 		log.WithError(err).Debugf("%s: failed to get user %s", subject, member.UserId)
 		return
@@ -134,7 +132,7 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 
 	// Notify on user_joined|left_team subscriptions specific to the team that
 	// may include any user.
-	p.notifyAll(
+	p.notifyAll(r,
 		apps.Event{
 			Subject: subject,
 			TeamID:  member.TeamId,
@@ -147,7 +145,7 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 		nil, // no special expand rules for "any user" subscriptions.
 	)
 
-	p.notifyAll(
+	p.notifyAll(r,
 		apps.Event{
 			Subject: subject,
 		},
@@ -161,7 +159,7 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 			return sub.OwnerUserID == member.UserId
 		},
 		// special expand for "self" subscriptions.
-		newExpandSelfGetter(mm, user, nil, member, nil),
+		newExpandSelfGetter(r.API.Mattermost, user, nil, member, nil),
 	)
 
 	// If the user is a bot, process SubjectBot...Channel; only notify the app
@@ -172,7 +170,7 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 		if !joined {
 			subject = apps.SubjectBotLeftTeam
 		}
-		p.notifyAll(
+		p.notifyAll(r,
 			apps.Event{
 				Subject: subject,
 			},
@@ -187,15 +185,15 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 				return false
 			},
 			// special expand for "self" subscriptions.
-			newExpandSelfGetter(mm, user, nil, member, nil),
+			newExpandSelfGetter(r.API.Mattermost, user, nil, member, nil),
 		)
 	}
 }
 
 // NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
 // "channel_created" notifications to subscribed apps.
-func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
-	p.notifyAll(
+func (p *Proxy) NotifyChannelCreated(r *incoming.Request, teamID, channelID string) {
+	p.notifyAll(r,
 		apps.Event{
 			Subject: apps.SubjectChannelCreated,
 			TeamID:  teamID,
@@ -209,10 +207,12 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 	)
 }
 
-func (p *Proxy) notifyAll(event apps.Event, uac apps.UserAgentContext, match func(store.Subscription) bool, getter ExpandGetter) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
-	r := p.NewIncomingRequest().WithCtx(ctx)
+func (p *Proxy) notifyAll(r *incoming.Request, event apps.Event, uac apps.UserAgentContext, match func(store.Subscription) bool, getter ExpandGetter) {
+	if r.Ctx == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+		defer cancel()
+		r = r.WithCtx(ctx)
+	}
 	r.Log = r.Log.With(event)
 
 	subs, err := p.store.Subscription.Get(event)

@@ -20,15 +20,14 @@ func (a *builtinApp) debugKVEditModal(_ *incoming.Request, creq apps.CallRequest
 	key, _ := creq.State.(string)
 	loc := a.newLocalizer(creq)
 
-	mm := a.conf.MattermostAPI()
 	switch action {
 	case "store":
-		_, err := mm.KV.Set(key, []byte(newValue))
+		_, err := a.api.Mattermost.KV.Set(key, []byte(newValue))
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
 		return apps.NewTextResponse(
-			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "modal.kv.edit.submit.stored",
 					Other: "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
@@ -40,12 +39,12 @@ func (a *builtinApp) debugKVEditModal(_ *incoming.Request, creq apps.CallRequest
 			}))
 
 	case "delete":
-		err := mm.KV.Delete(key)
+		err := a.api.Mattermost.KV.Delete(key)
 		if err != nil {
 			return apps.NewErrorResponse(err)
 		}
 		return apps.NewTextResponse(
-			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "modal.kv.edit.submit.deleted",
 					Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
@@ -67,7 +66,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 	}
 
 	value := []byte{}
-	err := a.conf.MattermostAPI().KV.Get(key, &value)
+	err := a.api.Mattermost.KV.Get(key, &value)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
@@ -77,7 +76,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 	buttons := []apps.SelectOption{
 		{
 			Value: "store",
-			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "option.kv.store.label",
 				Other: "Store New Value",
 			}),
@@ -86,7 +85,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 	if len(value) > 0 {
 		buttons = append(buttons, apps.SelectOption{
 			Value: "delete",
-			Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "option.kv.delete.label",
 				Other: "Delete Key",
 			}),
@@ -94,7 +93,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 	}
 
 	return apps.NewFormResponse(apps.Form{
-		Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Title: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.kv.edit.title",
 			Other: "Edit app's KV record",
 		}),
@@ -104,7 +103,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 				Name:        fCurrentValue,
 				Type:        apps.FieldTypeText,
 				TextSubtype: apps.TextFieldSubtypeTextarea,
-				ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "field.kv.current_value.modal_label",
 					Other: "Current value",
 				}),
@@ -115,7 +114,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 				Name:        fNewValue,
 				Type:        apps.FieldTypeText,
 				TextSubtype: apps.TextFieldSubtypeTextarea,
-				ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "field.kv.new_value.modal_label",
 					Other: "New value to save",
 				}),
@@ -123,7 +122,7 @@ func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallReq
 			{
 				Name: fAction,
 				Type: apps.FieldTypeStaticSelect,
-				ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+				ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "field.kv.action.modal_label",
 					Other: "Action to take",
 				}),

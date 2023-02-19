@@ -94,10 +94,10 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) (ret []apps.Bi
 	return SortTopBindings(ret), problems
 }
 
-func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
-	if userID != "" {
-		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
-			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+func (p *Proxy) dispatchRefreshBindingsEvent(r *incoming.Request) {
+	if r.ActingUserID() != "" {
+		r.API.Mattermost.Frontend.PublishWebSocketEvent(
+			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: r.ActingUserID()})
 	}
 }
 

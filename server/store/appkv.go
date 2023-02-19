@@ -27,7 +27,7 @@ func (s *appKVStore) Set(r *incoming.Request, prefix, id string, data []byte) (b
 		return false, err
 	}
 
-	set, err := s.conf.MattermostAPI().KV.Set(key, data)
+	set, err := r.API.Mattermost.KV.Set(key, data)
 	if err != nil {
 		return false, err
 	}
@@ -44,7 +44,7 @@ func (s *appKVStore) Get(r *incoming.Request, prefix, id string) ([]byte, error)
 	}
 
 	var data []byte
-	if err = s.conf.MattermostAPI().KV.Get(key, &data); err != nil {
+	if err = r.API.Mattermost.KV.Get(key, &data); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +57,7 @@ func (s *appKVStore) Delete(r *incoming.Request, prefix, id string) error {
 		return err
 	}
 
-	err = s.conf.MattermostAPI().KV.Delete(key)
+	err = r.API.Mattermost.KV.Delete(key)
 	if err != nil {
 		return err
 	}

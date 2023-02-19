@@ -12,16 +12,16 @@ import (
 
 func (a *builtinApp) disableCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.disable.label",
 			Other: "disable",
 		}),
 		Location: "disable",
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.disable.hint",
 			Other: "[ App ID ]",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.disable.description",
 			Other: "Disable an App",
 		}),

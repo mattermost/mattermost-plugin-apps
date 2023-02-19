@@ -7,24 +7,24 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 )
 
-func (a *builtinApp) bindings(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
+func (a *builtinApp) bindings(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	return apps.NewDataResponse(a.getBindings(creq, loc))
+	return apps.NewDataResponse(a.getBindings(r, creq, loc))
 }
 
-func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []apps.Binding {
+func (a *builtinApp) getBindings(r *incoming.Request, creq apps.CallRequest, loc *i18n.Localizer) []apps.Binding {
 	commands := []apps.Binding{
 		a.infoCommandBinding(loc),
 	}
 
 	if creq.Context.ActingUser != nil && creq.Context.ActingUser.IsSystemAdmin() {
-		if a.conf.Get().DeveloperMode {
+		if r.Config.Get().DeveloperMode {
 			commands = append(commands, a.debugCommandBinding(loc))
 		}
 		commands = append(commands,
 			a.disableCommandBinding(loc),
 			a.enableCommandBinding(loc),
-			a.installCommandBinding(loc),
+			a.installCommandBinding(r, loc),
 			a.listCommandBinding(loc),
 			a.uninstallCommandBinding(loc),
 			a.settingsCommandBinding(loc),
@@ -38,7 +38,7 @@ func (a *builtinApp) getBindings(creq apps.CallRequest, loc *i18n.Localizer) []a
 				{
 					Label:    "apps", // "/apps" in all locales
 					Location: "apps",
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Description: r.API.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "command.base.description",
 						Other: "Mattermost Apps",
 					}),

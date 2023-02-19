@@ -12,16 +12,16 @@ import (
 
 func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.uninstall.label",
 			Other: "uninstall",
 		}),
 		Location: "uninstall",
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.uninstall.hint",
 			Other: "[ App ID ]",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.uninstall.description",
 			Other: "Uninstall an App",
 		}),
@@ -33,11 +33,11 @@ func (a *builtinApp) uninstallCommandBinding(loc *i18n.Localizer) apps.Binding {
 				{
 					Name: fForce,
 					Type: apps.FieldTypeBool,
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.force.description",
 						Other: "Forcefully uninstall the app, even if there is an error",
 					}),
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.foce.label",
 						Other: "force",
 					}),

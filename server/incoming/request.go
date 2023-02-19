@@ -3,7 +3,6 @@ package incoming
 import (
 	"context"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
@@ -21,32 +20,32 @@ var ErrNotABot = errors.New("not a bot")
 var ErrIsABot = errors.New("is a bot")
 
 type Request struct {
-	actingUserID   string
-	destination    apps.AppID
-	sessionID      string
-	sourceAppID    apps.AppID
-	sourcePluginID string
+	RequestID string
+	Origin    string
 
-	ctx                   context.Context
-	mm                    *pluginapi.Client
-	config                config.Service
-	Log                   utils.Logger
-	sessionService        SessionService
-	requestID             string
-	actingUserAccessToken string
+	Ctx     context.Context
+	API     config.API // redundant with Config.API(), but convenient
+	Config  config.Service
+	Session SessionService
+	Log     utils.Logger
+
 	actingUser            *model.User
+	actingUserAccessToken string
+	actingUserID          string
+	destination           apps.AppID
+	sessionID             string
+	sourceAppID           apps.AppID
+	sourcePluginID        string
 }
 
-func NewRequest(config config.Service, session SessionService) *Request {
-	// TODO <>/<>: is the incoming Mattermost request ID available, and should it be used?
-	requestID := model.NewId()
+func NewRequest(config config.Service, session SessionService, origin, id string) *Request {
 	return &Request{
-		ctx:            context.Background(),
-		mm:             config.MattermostAPI(),
-		config:         config,
-		Log:            config.NewBaseLogger().With("request_id", requestID),
-		sessionService: session,
-		requestID:      requestID,
+		Ctx:       context.Background(),
+		API:       config.API(),
+		Config:    config,
+		Log:       config.NewBaseLogger().With("request_id", id, "origin", origin),
+		Session:   session,
+		RequestID: id,
 	}
 }
 
@@ -56,13 +55,9 @@ func (r *Request) Clone() *Request {
 	return &clone
 }
 
-func (r *Request) Ctx() context.Context {
-	return r.ctx
-}
-
 func (r *Request) WithCtx(ctx context.Context) *Request {
 	r = r.Clone()
-	r.ctx = ctx
+	r.Ctx = ctx
 	return r
 }
 
@@ -112,10 +107,6 @@ func (r *Request) WithPrevContext(cc apps.Context) *Request {
 	return r.WithActingUserID(id)
 }
 
-func (r *Request) Config() config.Service {
-	return r.config
-}
-
 func (r *Request) SourceAppID() apps.AppID {
 	return r.sourceAppID
 }
@@ -139,7 +130,7 @@ func (r *Request) GetActingUser() (*model.User, error) {
 	if r.actingUserID == "" {
 		return nil, utils.ErrInvalid
 	}
-	return r.mm.User.Get(r.actingUserID)
+	return r.Config.API().Mattermost.User.Get(r.actingUserID)
 }
 
 func (r *Request) RequireActingUser() error {
@@ -179,8 +170,7 @@ func (r *Request) RequireActingUserIsBot() error {
 
 func (r *Request) RequireUserPermission(p *model.Permission) func() error {
 	return func() error {
-		mm := r.config.MattermostAPI()
-		if !mm.User.HasPermissionTo(r.ActingUserID(), p) {
+		if !r.Config.API().Mattermost.User.HasPermissionTo(r.ActingUserID(), p) {
 			return utils.NewUnauthorizedError("access to this operation is limited to users with permission: %s", p.Id)
 		}
 		return nil
@@ -204,8 +194,7 @@ func (r *Request) RequireSourceApp() error {
 	if r.sessionID == "" {
 		return utils.NewUnauthorizedError("access to this operation is limited to Mattermost Apps")
 	}
-	mm := r.Config().MattermostAPI()
-	s, err := mm.Session.Get(r.sessionID)
+	s, err := r.API.Mattermost.Session.Get(r.sessionID)
 	if err != nil {
 		return utils.NewUnauthorizedError(err)
 	}

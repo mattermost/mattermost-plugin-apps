@@ -22,7 +22,6 @@ type Service interface {
 
 type service struct {
 	httpservice.HTTPService
-
 	conf config.Service
 }
 
@@ -31,13 +30,13 @@ var _ httpservice.HTTPService = (*service)(nil)
 
 func NewService(conf config.Service) Service {
 	return &service{
-		HTTPService: httpservice.MakeHTTPService(conf.MattermostConfig()),
+		HTTPService: httpservice.MakeHTTPService(conf.GetMattermostConfig()),
 		conf:        conf,
 	}
 }
 
-func (s *service) Configure(_ config.Config, _ utils.Logger) error {
-	s.HTTPService = httpservice.MakeHTTPService(s.conf.MattermostConfig())
+func (s *service) Configure(_ utils.Logger) error {
+	s.HTTPService = httpservice.MakeHTTPService(s.conf.GetMattermostConfig())
 	return nil
 }
 

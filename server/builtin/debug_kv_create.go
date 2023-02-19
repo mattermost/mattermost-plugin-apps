@@ -16,15 +16,15 @@ import (
 func (a *builtinApp) debugKVCreateCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "create",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.create.label",
 			Other: "create",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.create.description",
 			Other: "Create a new key-value for an App.",
 		}),
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.create.hint",
 			Other: "[ AppID keyspec ]",
 		}),

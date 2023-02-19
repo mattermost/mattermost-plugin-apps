@@ -11,27 +11,28 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
+	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "info",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.info.label",
 			Other: "info",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.info.description",
 			Other: "Display KV store statistics for an app..",
 		}),
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.info.hint",
 			Other: "[ AppID ]",
 		}),
 		Form: &apps.Form{
 			Submit: newUserCall(PathDebugKVInfo),
 			Fields: []apps.Field{
-				a.appIDField(LookupInstalledApps, 1, false, loc),
+				a.appIDField(LookupInstalledApps, 0, false, loc),
 			},
 		},
 	}
@@ -39,10 +40,10 @@ func (a *builtinApp) debugKVInfoCommandBinding(loc *i18n.Localizer) apps.Binding
 
 func (a *builtinApp) debugKVInfo(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	appID := apps.AppID(creq.GetValue(FieldAppID, ""))
-	if appID != "" {
-		return a.debugKVInfoForApp(r, creq, appID)
+	if appID == "" {
+		return a.debugKVInfoForAll(r, creq)
 	}
-	return a.debugKVInfoForAll(r, creq)
+	return a.debugKVInfoForApp(r, creq, appID)
 }
 
 func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
@@ -52,40 +53,35 @@ func (a *builtinApp) debugKVInfoForAll(r *incoming.Request, creq apps.CallReques
 	}
 	loc := a.newLocalizer(creq)
 
-	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	message := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID: "command.debug.kv.info.submit.message",
 			Other: `{{.Total}} total keys:
-- Manifest records: {{.Manifests}}
-- App records: {{.Apps}}
-- Subscription records: {{.Subscriptions}}
-- OAuth2 temporary state records: {{.OAuth2State}}
+- Special cached keys: {{.CachedStoreTotal}}
+{{range $name, $count := .CachedStoreCountByName}}
+  - ` + "`{{$name}}`" + `: {{$count}}
+{{end}}
+- OAuth2 temporary state records: {{.OAuth2StateCount}}
 - Other internal records: {{.Other}}
-- Apps' own records: {{.AppsTotal}}
+
+
+- Apps' proprietary KV records: {{.AppsTotal}}
 `},
-		TemplateData: map[string]string{
-			"Total":         strconv.Itoa(info.Total),
-			"Manifests":     strconv.Itoa(info.ManifestCount),
-			"Apps":          strconv.Itoa(info.InstalledAppCount),
-			"Subscriptions": strconv.Itoa(info.SubscriptionCount),
-			"OAuth2State":   strconv.Itoa(info.OAuth2StateCount),
-			"Other":         strconv.Itoa(info.Other),
-			"AppsTotal":     strconv.Itoa(info.AppsTotal),
-		},
+		TemplateData: *info,
 	})
 
 	for appID, appInfo := range info.Apps {
 		message += fmt.Sprintf("  - `%s`: %v (%v kv, %v users, %v tokens)\n", appID, appInfo.Total(), appInfo.AppKVCount, appInfo.UserCount, appInfo.TokenCount)
 	}
 
-	totalKnown := info.ManifestCount + info.InstalledAppCount + info.SubscriptionCount + info.OAuth2StateCount + info.AppsTotal + info.Other
+	totalKnown := info.OAuth2StateCount + info.AppsTotal + info.Other
 	if totalKnown != info.Total {
 		message += fmt.Sprintf("- **UNKNOWN**: %v\n", info.Total-totalKnown)
 	}
 
 	return apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
-		Text: message,
+		Text: message + "\n\n" + utils.JSONBlock(info),
 		Data: info,
 	}
 }
@@ -97,7 +93,7 @@ func (a *builtinApp) debugKVInfoForApp(r *incoming.Request, creq apps.CallReques
 	}
 	loc := a.newLocalizer(creq)
 
-	message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+	message := a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "command.debug.kv.info.submit.message",
 			Other: "{{.Count}} total keys for `{{.AppID}}`.",
@@ -110,7 +106,7 @@ func (a *builtinApp) debugKVInfoForApp(r *incoming.Request, creq apps.CallReques
 
 	if len(appInfo.AppKVCountByNamespace) > 0 {
 		message += "\n" +
-			a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.debug.kv.info.submit.namespaces",
 				Other: "Namespaces:",
 			}) +
@@ -118,7 +114,7 @@ func (a *builtinApp) debugKVInfoForApp(r *incoming.Request, creq apps.CallReques
 	}
 	for ns, c := range appInfo.AppKVCountByNamespace {
 		if ns == "" {
-			ns = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ns = a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.debug.kv.info.submit.none",
 				Other: "(none)",
 			})

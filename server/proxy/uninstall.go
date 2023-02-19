@@ -20,7 +20,6 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 		return "", err
 	}
 
-	mm := p.conf.MattermostAPI()
 	app, err := p.store.App.Get(appID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get app, appID: %s", appID)
@@ -59,13 +58,13 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 
 	// Delete OAuth app.
 	if app.MattermostOAuth2 != nil {
-		if err = mm.OAuth.Delete(app.MattermostOAuth2.Id); err != nil {
+		if err = r.API.Mattermost.OAuth.Delete(app.MattermostOAuth2.Id); err != nil {
 			return "", errors.Wrapf(err, "failed to delete Mattermost OAuth2 for %s, the app is left disabled", appID)
 		}
 	}
 
 	// Disable the app's bot account.
-	if _, err = mm.Bot.UpdateActive(app.BotUserID, false); err != nil {
+	if _, err = r.API.Mattermost.Bot.UpdateActive(app.BotUserID, false); err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s, the app is left disabled", appID)
 	}
 
@@ -86,9 +85,9 @@ func (p *Proxy) UninstallApp(r *incoming.Request, cc apps.Context, appID apps.Ap
 
 	r.Log.Infof("Uninstalled app %s.", appID)
 
-	p.conf.Telemetry().TrackUninstall(string(app.AppID), string(app.DeployType))
+	r.API.Telemetry.TrackUninstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	return message, nil
 }

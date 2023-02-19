@@ -14,21 +14,21 @@ import (
 
 func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.list.label",
 			Other: "list",
 		}),
 		Location: "list",
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.list.hint",
 			Other: "[ flags ]",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.list.description",
 			Other: "Display available and installed Apps",
 		}),
 		Form: &apps.Form{
-			Title: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Title: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.list.form.title",
 				Other: "list Apps",
 			}),
@@ -36,11 +36,11 @@ func (a *builtinApp) listCommandBinding(loc *i18n.Localizer) apps.Binding {
 				{
 					Name: fIncludePlugins,
 					Type: apps.FieldTypeBool,
-					Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.include_plugins.label",
 						Other: "include-plugins",
 					}),
-					Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+					Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 						ID:    "field.include_plugins.description",
 						Other: "include compatible Mattermost plugins in the output.",
 					}),
@@ -56,11 +56,11 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 	includePluginApps := creq.BoolValue("plugin-apps")
 
 	listed := a.proxy.GetListedApps("", includePluginApps)
-	installed, reachable := a.proxy.PingInstalledApps(r.Ctx())
+	installed, reachable := a.proxy.PingInstalledApps(r.Ctx)
 
 	// All of this information is non sensitive.
 	// Checks for the user's permissions might be needed in the future.
-	txt := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+	txt := a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "command.list.submit.header",
 		Other: "| Name | Status | Type | Version | Account | Locations | Permissions |",
 	}) + "\n"
@@ -76,17 +76,17 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 			continue
 		}
 
-		status := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		status := a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.list.submit.status.installed",
 			Other: "**Installed**",
 		})
 		if app.Disabled {
-			status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			status = a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.list.submit.status.disabled",
 				Other: "Installed, Disabled",
 			})
 		} else if !reachable[app.AppID] {
-			status = a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			status = a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "command.list.submit.status.unreachable",
 				Other: "Installed, **Unreachable**",
 			})
@@ -94,7 +94,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 
 		version := string(app.Version)
 		if string(m.Version) != version {
-			version = a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+			version = a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    "command.list.submit.version",
 					Other: "{{.CurrentVersion}}, {{.MarketplaceVersion}} in marketplace",
@@ -133,7 +133,7 @@ func (a *builtinApp) list(r *incoming.Request, creq apps.CallRequest) apps.CallR
 			name, status, deployType, version, account, app.GrantedLocations, app.GrantedPermissions)
 	}
 
-	listedString := a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+	listedString := a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 		ID:    "command.list.submit.listed",
 		Other: "Listed",
 	})

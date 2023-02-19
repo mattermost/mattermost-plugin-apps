@@ -31,11 +31,11 @@ func (a *builtinApp) settingsCommandBinding(loc *i18n.Localizer) apps.Binding {
 	// Open settings modal
 	return apps.Binding{
 		Location: "setttings",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.settings.label",
 			Other: "settings",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.settings.description",
 			Other: "Configure system-wide apps settings",
 		}),
@@ -45,21 +45,21 @@ func (a *builtinApp) settingsCommandBinding(loc *i18n.Localizer) apps.Binding {
 
 func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	loc := a.newLocalizer(creq)
-	conf := a.conf.Get()
+	conf := r.Config.Get()
 
 	haveOverrides := conf.DeveloperModeOverride != nil || conf.AllowHTTPAppsOverride != nil
 	wantOverrides := creq.GetValue(fOverrides, "")
 	useOverrides := wantOverrides == "use" || (wantOverrides == "" && haveOverrides)
-	defaultDevMode, defaultAllowHTTP := a.conf.SystemDefaultFlags()
+	defaultDevMode, defaultAllowHTTP := r.Config.SystemDefaultFlags()
 	optUseOverrides := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.use_overrides",
 			Other: "Use overrides for developer mode and HTTP apps",
 		}),
 		Value: "use",
 	}
 	optNoOverrides := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.reset_overrides",
 			Other: "Do not use overrides for developer mode and HTTP apps",
 		}),
@@ -70,7 +70,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		Type:          apps.FieldTypeStaticSelect,
 		IsRequired:    true,
 		SelectRefresh: true,
-		ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.overrides.modal_label",
 			Other: "Overrides for developer mode and HTTP apps",
 		}),
@@ -79,7 +79,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 			optNoOverrides,
 		},
 		Value: optNoOverrides,
-		Description: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		Description: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.overrides.description",
 				Other: "Current system settings: developer mode: **{{.DeveloperMode}}**, allow HTTP apps: **{{.AllowHTTPApps}}**",
@@ -91,7 +91,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		}),
 	}
 
-	conf.DeveloperMode, conf.AllowHTTPApps = a.conf.SystemDefaultFlags()
+	conf.DeveloperMode, conf.AllowHTTPApps = r.Config.SystemDefaultFlags()
 	if useOverrides {
 		if conf.DeveloperModeOverride == nil {
 			conf.DeveloperModeOverride = &conf.DeveloperMode
@@ -114,13 +114,13 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 				Name:  fDeveloperMode,
 				Type:  apps.FieldTypeBool,
 				Value: conf.DeveloperMode,
-				Description: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				Description: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "modal.developer_mode.description",
 						Other: "Enables various development tools. Apps developer mode can lead to performance degradation of the Mattermost server and should not be used in a production environment.",
 					},
 				}),
-				ModalLabel: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				ModalLabel: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "modal.developer_mode.modal_label",
 						Other: "Enable developer mode",
@@ -131,13 +131,13 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 				Name:  fAllowHTTPApps,
 				Type:  apps.FieldTypeBool,
 				Value: conf.AllowHTTPApps,
-				Description: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				Description: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "modal.allow_http_apps.description",
 						Other: "Allow apps, which run as an http server, to be installed.",
 					},
 				}),
-				ModalLabel: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+				ModalLabel: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "modal.developer_mode.modal_label",
 						Other: "Enable HTTP apps",
@@ -147,28 +147,28 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 	}
 
 	optUseChannelLog := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.use",
 			Other: "Copy apps logs to a channel",
 		}),
 		Value: "use",
 	}
 	optNoChannelLog := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.none",
 			Other: "Do not copy apps logs to a channel",
 		}),
 		Value: "none",
 	}
 	optCreateChannelLog := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.create",
 			Other: "Create a new channel for apps logs",
 		}),
 		Value: "create",
 	}
 	optSelectChannelLog := apps.SelectOption{
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.select",
 			Other: "Select an existing channel for apps logs",
 		}),
@@ -181,7 +181,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		Type:          apps.FieldTypeStaticSelect,
 		SelectRefresh: true,
 		IsRequired:    true,
-		ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.modal_label",
 			Other: "Apps logs settings",
 		}),
@@ -194,11 +194,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		SelectStaticOptions: []apps.SelectOption{optNoChannelLog},
 		Type:                apps.FieldTypeStaticSelect,
 		Value:               optNoChannelLog,
-		ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.dev_mode_needed.modal_label",
 			Other: "Apps logs settings",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "modal.settings.channel_log.dev_mode_needed.description",
 			Other: "Developer mode is required to use apps logs. Please enable developer mode in the settings above.",
 		}),
@@ -213,7 +213,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 			Label: conf.LogChannelID + " (unavailable)",
 			Value: conf.LogChannelID,
 		}
-		ch, _ := a.conf.MattermostAPI().Channel.Get(conf.LogChannelID)
+		ch, _ := a.api.Mattermost.Channel.Get(conf.LogChannelID)
 		if ch != nil {
 			channelOpt.Label = ch.DisplayName
 		}
@@ -233,11 +233,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 			Type:     apps.FieldTypeChannel,
 			Value:    channelOpt,
 			ReadOnly: true,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.description",
 				Other: "Channel where apps logs are copied to",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.label",
 				Other: "channel",
 			}),
@@ -245,11 +245,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		{
 			Name: fLevel,
 			Type: apps.FieldTypeStaticSelect,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.level.description",
 				Other: "Set minimum log severity (level) to output.",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.level.label",
 				Other: "level",
 			}),
@@ -276,11 +276,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		{
 			Name: fJSON,
 			Type: apps.FieldTypeBool,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.json.description",
 				Other: "Include entry properties in the output, as JSON.",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.json.label",
 				Other: "json",
 			}),
@@ -292,11 +292,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		{
 			Name: fChannelName,
 			Type: apps.FieldTypeText,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.name.description",
 				Other: "Name (short) a new channel where apps logs will be copied to (in the current team).",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.name,label",
 				Other: "Name",
 			}),
@@ -304,11 +304,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		{
 			Name: fChannelDisplayName,
 			Type: apps.FieldTypeText,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.display_name.description",
 				Other: "Display name for the logs channel",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.display_name,label",
 				Other: "Display Name",
 			}),
@@ -319,11 +319,11 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 		{
 			Name: fChannel,
 			Type: apps.FieldTypeChannel,
-			Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.channel.description",
 				Other: "Select an existing channel where apps logs will be copied to.",
 			}),
-			ModalLabel: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			ModalLabel: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.channel_log.channel.channel,label",
 				Other: "Channel",
 			}),
@@ -374,7 +374,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 	fields = append(fields, otherFields...)
 
 	form := apps.Form{
-		Title: a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		Title: a.api.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "modal.settings.title",
 				Other: "Configure systemwide apps settings",
@@ -402,7 +402,7 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 	}
 	outputJSON := creq.BoolValue(fJSON)
 
-	sc := a.conf.Get().StoredConfig
+	sc := r.Config.Get().StoredConfig
 	haveOverrides := sc.DeveloperModeOverride != nil || sc.AllowHTTPAppsOverride != nil
 	haveLog := sc.LogChannelID != ""
 
@@ -410,7 +410,7 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 		loc := a.newLocalizer(creq)
 		return apps.CallResponse{
 			Type: apps.CallResponseTypeOK,
-			Text: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+			Text: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 				ID:    "modal.settings.save.nothing_to_do",
 				Other: "No changes to save",
 			}),
@@ -443,7 +443,7 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 		sc.LogChannelJSON = false
 
 	case !haveLog && wantLog == "create":
-		ch, _ := a.conf.MattermostAPI().Channel.GetByName(creq.Context.Team.Id, channelName, false)
+		ch, _ := a.api.Mattermost.Channel.GetByName(creq.Context.Team.Id, channelName, false)
 		if ch == nil {
 			ch = &model.Channel{
 				Name:        channelName,
@@ -451,11 +451,11 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 				Type:        model.ChannelTypePrivate,
 				TeamId:      creq.Context.Team.Id,
 			}
-			if err := a.conf.MattermostAPI().Channel.Create(ch); err != nil {
+			if err := a.api.Mattermost.Channel.Create(ch); err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to create channel"))
 			}
 		}
-		_, err := a.conf.MattermostAPI().Channel.AddMember(ch.Id, creq.Context.ActingUser.Id)
+		_, err := a.api.Mattermost.Channel.AddMember(ch.Id, creq.Context.ActingUser.Id)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add user to channel"))
 		}
@@ -472,7 +472,7 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 		return apps.NewErrorResponse(utils.NewInvalidError("invalid input %s:%s: must be 'use', 'select', 'create', or 'none'", fLog, wantLog))
 	}
 
-	err := a.conf.StoreConfig(sc, r.Log)
+	err := r.Config.StoreConfig(sc, r.Log)
 	if err != nil {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to store configuration"))
 	}

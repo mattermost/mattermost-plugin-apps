@@ -192,7 +192,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 
 	callStart := time.Now()
 	if notify {
-		err = upstream.Notify(r.Ctx(), up, *app, creq)
+		err = upstream.Notify(r.Ctx, up, *app, creq)
 		callElapsed = time.Since(callStart)
 		if err != nil {
 			return nil, errors.Wrap(err, "upstream call failed")
@@ -203,7 +203,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 		}, nil
 	}
 
-	response, err := upstream.Call(r.Ctx(), up, *app, creq)
+	response, err := upstream.Call(r.Ctx, up, *app, creq)
 	callElapsed = time.Since(callStart)
 	if err != nil {
 		return nil, errors.Wrap(err, "upstream call failed")
@@ -223,7 +223,7 @@ func (p *Proxy) callAppImpl(r *incoming.Request, app *apps.App, creq apps.CallRe
 	if cresp.Type != apps.CallResponseTypeError &&
 		!isBindingPath(app, creq.Call.Path) &&
 		cresp.RefreshBindings && r.ActingUserID() != "" {
-		p.dispatchRefreshBindingsEvent(r.ActingUserID())
+		p.dispatchRefreshBindingsEvent(r)
 	}
 
 	return cresp, nil

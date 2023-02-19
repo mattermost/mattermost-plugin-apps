@@ -43,7 +43,7 @@ func (p *Proxy) expandContext(
 	expand *apps.Expand,
 	specialGetter ExpandGetter,
 ) (_ *apps.Context, err error) {
-	conf := r.Config().Get()
+	conf := r.Config.Get()
 	defer func() {
 		if err != nil && conf.DeveloperMode {
 			r.Log.WithError(err).Debugw("Expand failed")
@@ -362,11 +362,11 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 }
 
 func (e *expander) expandLocale(level apps.ExpandLevel) error {
-	confService := e.r.Config()
+	confService := e.r.Config
 	if e.ExpandedContext.ActingUser != nil {
-		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig().Config(), e.ExpandedContext.ActingUser)
+		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.GetMattermostConfig().Config(), e.ExpandedContext.ActingUser)
 	} else {
-		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig().Config(), e.r.ActingUserID())
+		e.ExpandedContext.Locale = utils.GetLocale(confService.API().Mattermost, confService.GetMattermostConfig().Config(), e.r.ActingUserID())
 	}
 	return nil
 }
@@ -429,7 +429,7 @@ func (e *expander) ensureGetter() error {
 
 	switch {
 	case app.DeployType == apps.DeployBuiltin:
-		getter = newExpandRPCGetter(e.proxy.conf.MattermostAPI())
+		getter = newExpandRPCGetter(e.r.API.Mattermost)
 
 	case app.GrantedPermissions.Contains(apps.PermissionActAsUser) && e.r.ActingUserID() != "":
 		token, err := e.getActingUserAccessToken()

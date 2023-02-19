@@ -87,7 +87,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 	r.Log.Debugf("app install flow: updated app configuration")
 
-	err = p.pingApp(r.Ctx(), app)
+	err = p.pingApp(r.Ctx, app)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to install, %s path is not accessible", apps.DefaultPing.Path)
 	}
@@ -140,15 +140,14 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		}
 	}
 
-	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
+	r.API.Telemetry.TrackInstall(string(app.AppID), string(app.DeployType))
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	return app, message, nil
 }
 
 func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *apps.App, noUserConsent bool, actingUserID string) error {
-	mm := p.conf.MattermostAPI()
 	if app.MattermostOAuth2 != nil {
 		r.Log.Debugw("app install flow: Using existing OAuth2 App", "id", app.MattermostOAuth2.Id)
 		return nil
@@ -165,7 +164,7 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 		IsTrusted:       noUserConsent,
 		MattermostAppID: string(app.AppID),
 	}
-	err := mm.OAuth.Create(oAuthApp)
+	err := r.API.Mattermost.OAuth.Create(oAuthApp)
 	if err != nil {
 		return errors.Wrap(err, "failed to create OAuth2 App")
 	}
@@ -178,9 +177,7 @@ func (p *Proxy) ensureOAuthApp(r *incoming.Request, conf config.Config, app *app
 }
 
 func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error {
-	mm := p.conf.MattermostAPI()
-
-	err := mm.Bot.Create(bot)
+	err := r.API.Mattermost.Bot.Create(bot)
 	if err != nil {
 		return err
 	}
@@ -192,7 +189,7 @@ func (p *Proxy) createAndValidateBot(r *incoming.Request, bot *model.Bot) error 
 	delay := 50 * time.Millisecond
 	i := 0
 	for {
-		bb, ee := mm.Bot.Get(bot.UserId, false)
+		bb, ee := r.API.Mattermost.Bot.Get(bot.UserId, false)
 		if bb != nil {
 			r.Log.Debugw("app install flow: validated Bot Account", "bot_user_id", bb.UserId)
 			return nil
@@ -220,14 +217,13 @@ func (p *Proxy) ensureBot(r *incoming.Request, app *apps.App, icon io.Reader) er
 }
 
 func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reader, username string) error {
-	mm := p.conf.MattermostAPI()
 	bot := &model.Bot{
 		Username:    username,
 		DisplayName: app.DisplayName,
 		Description: fmt.Sprintf("Bot account for `%s` App.", app.DisplayName),
 	}
 
-	user, _ := mm.User.GetByUsername(bot.Username)
+	user, _ := r.API.Mattermost.User.GetByUsername(bot.Username)
 	if user == nil {
 		r.Log.Debugw("app install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
 		err := p.createAndValidateBot(r, bot)
@@ -244,7 +240,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 		if user.DeleteAt != 0 {
 			var err error
 			r.Log.Debugf("app install flow: bot user %s was deleted, reactivating", bot.Username)
-			bot, err = mm.Bot.UpdateActive(user.Id, true)
+			bot, err = r.API.Mattermost.Bot.UpdateActive(user.Id, true)
 			if err != nil {
 				return err
 			}
@@ -253,7 +249,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 		// include deleted bots in the request, it appears that UpdateActive
 		// does not propagate instantly. The userID and username remain the
 		// same.
-		_, err := mm.Bot.Get(user.Id, true)
+		_, err := r.API.Mattermost.Bot.Get(user.Id, true)
 		if err != nil {
 			r.Log.Debugf("app install flow: failed to get the bot record for user %s (%s): %v; attempting to create a new one...", bot.UserId, bot.Username, err)
 			err = p.createAndValidateBot(r, bot)
@@ -270,7 +266,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 	app.BotUsername = bot.Username
 
 	if icon != nil {
-		err := mm.User.SetProfileImage(app.BotUserID, icon)
+		err := r.API.Mattermost.User.SetProfileImage(app.BotUserID, icon)
 		if err != nil {
 			r.Log.WithError(err).Errorf("app install flow: failed to update Bot Account profile icon, try re-installing")
 		}
@@ -283,7 +279,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 // Returns nil, nil if no app icon is defined in the manifest.
 // The caller must close the returned io.ReadCloser if there is one.
 func (p *Proxy) getAppIcon(r *incoming.Request, app *apps.App) (io.ReadCloser, error) {
-	iconPath := app.Manifest.Icon
+	iconPath := app.Icon
 	if iconPath == "" {
 		return nil, nil
 	}

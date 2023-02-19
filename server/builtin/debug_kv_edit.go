@@ -16,15 +16,15 @@ import (
 func (a *builtinApp) debugKVEditCommandBinding(loc *i18n.Localizer) apps.Binding {
 	return apps.Binding{
 		Location: "edit",
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.edit.label",
 			Other: "edit",
 		}),
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.edit.description",
 			Other: "View or edit specific KV keys of an app.",
 		}),
-		Hint: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Hint: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "command.debug.kv.edit.hint",
 			Other: "[ AppID keyspec ]",
 		}),

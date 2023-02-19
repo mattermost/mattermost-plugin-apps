@@ -101,19 +101,21 @@ const (
 type handler func(*incoming.Request, apps.CallRequest) apps.CallResponse
 
 type builtinApp struct {
-	conf           config.Service
+	api config.API
+
 	proxy          proxy.Service
 	appservices    appservices.Service
 	httpOut        httpout.Service
 	sessionService session.Service
-	router         map[string]handler
+
+	router map[string]handler
 }
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) *builtinApp {
+func NewBuiltinApp(api config.API, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) *builtinApp {
 	a := &builtinApp{
-		conf:           conf,
+		api:            api,
 		proxy:          proxy,
 		appservices:    appservices,
 		httpOut:        httpOut,
@@ -200,8 +202,8 @@ func App(conf config.Config) apps.App {
 }
 
 func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRequest, async bool) (out io.ReadCloser, err error) {
-	self := App(a.conf.Get())
-	r := a.proxy.NewIncomingRequest().WithCtx(ctx).WithDestination(self.AppID)
+	// TODO: find a way to pass the original request ID here.
+	r := a.proxy.NewIncomingRequest("builtin", "").WithCtx(ctx).WithDestination(AppID)
 
 	if creq.Context.ActingUser != nil {
 		r = r.WithActingUserID(creq.Context.ActingUser.Id)
@@ -223,7 +225,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 				log.Errorf("Recovered from a panic in a Call")
 			}
 
-			if a.conf.Get().DeveloperMode {
+			if r.Config.Get().DeveloperMode {
 				txt += "\n"
 				txt += fmt.Sprintf("Error: **%v**.\n", x)
 				txt += fmt.Sprintf("Stack:\n%v", utils.CodeBlock(stack))
@@ -250,7 +252,7 @@ func (a *builtinApp) Roundtrip(ctx context.Context, _ apps.App, creq apps.CallRe
 	}
 
 	loc := a.newLocalizer(creq)
-	confErr := a.checkConfigValid(&creq.Call, loc)
+	confErr := a.checkConfigValid(r, &creq.Call, loc)
 	if confErr != nil {
 		return readcloser(apps.NewErrorResponse(confErr))
 	}
@@ -282,25 +284,25 @@ func requireAdmin(h handler) handler {
 
 func (a *builtinApp) newLocalizer(creq apps.CallRequest) *i18n.Localizer {
 	if creq.Context.Locale != "" {
-		return i18n.NewLocalizer(a.conf.I18N().Bundle, creq.Context.Locale)
+		return i18n.NewLocalizer(a.api.I18N.Bundle, creq.Context.Locale)
 	}
 
-	return a.conf.I18N().GetUserLocalizer(creq.Context.ActingUser.Id)
+	return a.api.I18N.GetUserLocalizer(creq.Context.ActingUser.Id)
 }
 
-func (a *builtinApp) checkConfigValid(call *apps.Call, loc *i18n.Localizer) error {
+func (a *builtinApp) checkConfigValid(r *incoming.Request, call *apps.Call, loc *i18n.Localizer) error {
 	// If the call is for bindings,
 	// It shouldn't error
 	if call.Path == appspath.Bindings {
 		return nil
 	}
 
-	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+	oauthEnabled := r.Config.GetMattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
 
 	if oauthEnabled == nil || !*oauthEnabled {
-		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)
+		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", r.Config.Get().MattermostSiteURL)
 
-		message := a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
+		message := r.API.I18N.LocalizeWithConfig(loc, &i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "command.error.oauth2.disabled",
 				Other: "The system setting `Enable OAuth 2.0 Service Provider` needs to be enabled in order for the Apps plugin to work. Please go to {{.IntegrationManagementPage}} and enable it.",

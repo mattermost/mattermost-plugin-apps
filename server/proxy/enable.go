@@ -40,7 +40,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		return fmt.Sprintf("%s is already enabled", app.DisplayName), nil
 	}
 
-	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, true)
+	_, err = r.API.Mattermost.Bot.UpdateActive(app.BotUserID, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to enable bot account for %s", app.AppID)
 	}
@@ -61,7 +61,7 @@ func (p *Proxy) EnableApp(r *incoming.Request, cc apps.Context, appID apps.AppID
 		}
 	}
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	if message == "" {
 		message = fmt.Sprintf("Enabled %s", app.DisplayName)
@@ -99,7 +99,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		message = fmt.Sprintf("Disabled %s", app.DisplayName)
 	}
 
-	_, err = p.conf.MattermostAPI().Bot.UpdateActive(app.BotUserID, false)
+	_, err = r.API.Mattermost.Bot.UpdateActive(app.BotUserID, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to disable bot account for %s", app.AppID)
 	}
@@ -117,7 +117,7 @@ func (p *Proxy) DisableApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 
 	r.Log.Infof("Disabled app")
 
-	p.dispatchRefreshBindingsEvent(r.ActingUserID())
+	p.dispatchRefreshBindingsEvent(r)
 
 	return message, nil
 }

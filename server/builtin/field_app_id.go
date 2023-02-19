@@ -25,11 +25,11 @@ func (a *builtinApp) appIDField(lookupType string, autocompletePos int, isRequir
 	return apps.Field{
 		Name: FieldAppID,
 		Type: apps.FieldTypeDynamicSelect,
-		Description: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.appID.description",
 			Other: "Select an App or enter the App ID",
 		}),
-		Label: a.conf.I18N().LocalizeDefaultMessage(loc, &i18n.Message{
+		Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 			ID:    "field.appID.label",
 			Other: "app",
 		}),
