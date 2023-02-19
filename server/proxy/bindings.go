@@ -47,7 +47,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) (ret []apps.Bi
 		if err != nil {
 			log.WithError(err).Warnf("GetBindings failed")
 		} else {
-			log.Debugf("GetBindings: returned bindings for %v apps", len(allApps))
+			// log.Debugf("GetBindings: returned bindings for %v apps", len(allApps))
 		}
 	}()
 

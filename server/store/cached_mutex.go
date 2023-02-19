@@ -66,8 +66,6 @@ func (s *MutexCachedStore[T]) Put(r *incoming.Request, key string, value *T) err
 		return err
 	}
 
-	r.Log.Debugf("<>/<> 1 %v", changed)
-
 	if changed {
 		event := s.newPluginClusterEvent(key, value, updatedIndex.hash())
 		s.cluster.broadcastEvent(r, s.eventID(), event)

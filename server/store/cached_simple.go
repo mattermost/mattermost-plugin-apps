@@ -23,6 +23,8 @@ type SimpleCachedStore[T Cloneable[T]] struct {
 	name  string
 }
 
+var _ CachedStore[testDataType] = (*SimpleCachedStore[testDataType])(nil)
+
 func MakeSimpleCachedStore[T Cloneable[T]](name string, api config.API, log utils.Logger) (*SimpleCachedStore[T], error) {
 	s := &SimpleCachedStore[T]{
 		cache: &sync.Map{},
@@ -37,6 +39,8 @@ func MakeSimpleCachedStore[T Cloneable[T]](name string, api config.API, log util
 	log.Debugf("initialized cached store: %s, %v items", s.name, len(index.Data))
 	return s, nil
 }
+
+func (s *SimpleCachedStore[T]) Stop() {}
 
 func (s *SimpleCachedStore[T]) Index() CachedIndex[T] {
 	out := CachedIndex[T]{}

@@ -17,6 +17,8 @@ func MakeTestCachedStore[T Cloneable[T]](name string, c *CachedStoreCluster, log
 	return TestingCachedStore[T]{}, nil
 }
 
+func (s TestingCachedStore[T]) Stop() {}
+
 func (s TestingCachedStore[T]) Get(key string) *T {
 	value, ok := s[key]
 	if ok {

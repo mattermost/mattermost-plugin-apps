@@ -34,6 +34,7 @@ type Service interface {
 	// Internal
 
 	DeleteAppData(r *incoming.Request, appID apps.AppID, force bool) error
+	RunCachedStoreTest(r *incoming.Request, s store.CachedStoreTestParams)
 }
 
 type AppServices struct {

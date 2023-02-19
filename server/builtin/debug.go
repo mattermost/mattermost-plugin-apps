@@ -20,6 +20,20 @@ func (a *builtinApp) debugCommandBinding(loc *i18n.Localizer) apps.Binding {
 			a.debugBindingsCommandBinding(loc),
 			a.debugCleanCommandBinding(loc),
 			{
+				Location: "cluster",
+				Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.cluster.label",
+					Other: "cluster",
+				}),
+				Description: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
+					ID:    "command.debug.cluster.description",
+					Other: "Test high availability (cluster) functionality.",
+				}),
+				Bindings: []apps.Binding{
+					a.debugClusterTestCachedCommandBinding(loc),
+				},
+			},
+			{
 				Location: "kv",
 				Label: a.api.I18N.LocalizeDefaultMessage(loc, &i18n.Message{
 					ID:    "command.debug.kv.label",

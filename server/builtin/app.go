@@ -60,37 +60,41 @@ const (
 	fOverrides          = "overrides"
 	fPage               = "page"
 	fSecret             = "secret"
+	fNumberPuts         = "num_puts"
+	fWaitToSync         = "wait_to_sync"
+	fStoreKind          = "store_kind"
 	fSessionID          = "session_id"
 	fURL                = "url"
 )
 
 const (
-	PathDebugClean        = "/debug/clean"
-	PathDebugKVInfo       = "/debug/kv/info"
-	PathDebugKVList       = "/debug/kv/list"
-	PathDebugStoreList    = "/debug/store/list"
-	PathDebugStorePollute = "/debug/store/pollute"
-	PathDebugSessionsList = "/debug/session/list"
-	pDebugBindings        = "/debug/bindings"
-	pDebugKVClean         = "/debug/kv/clean"
-	pDebugKVCreate        = "/debug/kv/create"
-	pDebugKVEdit          = "/debug/kv/edit"
-	pDebugKVEditModal     = "/debug/kv/edit-modal"
-	pDebugLogs            = "/debug/logs"
-	pDebugOAuthConfigView = "/debug/oauth/config/view"
-	pDebugSessionsRevoke  = "/debug/session/delete"
-	pDebugSessionsView    = "/debug/session/view"
-	pDisable              = "/disable"
-	pEnable               = "/enable"
-	pInfo                 = "/info"
-	pInstallConsentModal  = "/install-consent"
-	pInstallConsentSource = "/install-consent/form"
-	pInstallHTTP          = "/install-http"
-	pInstallListed        = "/install-listed"
-	pList                 = "/list"
-	pSettingsModalSave    = "/settings/save"
-	pSettingsModalSource  = "/settings/form"
-	pUninstall            = "/uninstall"
+	PathDebugClean          = "/debug/clean"
+	PathDebugKVInfo         = "/debug/kv/info"
+	PathDebugKVList         = "/debug/kv/list"
+	PathDebugStoreList      = "/debug/store/list"
+	PathDebugStorePollute   = "/debug/store/pollute"
+	PathDebugSessionsList   = "/debug/session/list"
+	pDebugBindings          = "/debug/bindings"
+	pDebugClusterTestCached = "/debug/cluster/test-cached"
+	pDebugKVClean           = "/debug/kv/clean"
+	pDebugKVCreate          = "/debug/kv/create"
+	pDebugKVEdit            = "/debug/kv/edit"
+	pDebugKVEditModal       = "/debug/kv/edit-modal"
+	pDebugLogs              = "/debug/logs"
+	pDebugOAuthConfigView   = "/debug/oauth/config/view"
+	pDebugSessionsRevoke    = "/debug/session/delete"
+	pDebugSessionsView      = "/debug/session/view"
+	pDisable                = "/disable"
+	pEnable                 = "/enable"
+	pInfo                   = "/info"
+	pInstallConsentModal    = "/install-consent"
+	pInstallConsentSource   = "/install-consent/form"
+	pInstallHTTP            = "/install-http"
+	pInstallListed          = "/install-listed"
+	pList                   = "/list"
+	pSettingsModalSave      = "/settings/save"
+	pSettingsModalSource    = "/settings/form"
+	pUninstall              = "/uninstall"
 )
 
 const (
@@ -138,24 +142,25 @@ func NewBuiltinApp(api config.API, proxy proxy.Service, appservices appservices.
 		PathDebugStoreList:    requireAdmin(a.debugStoreList),
 		PathDebugStorePollute: requireAdmin(a.debugStorePollute),
 
-		pDebugBindings:        requireAdmin(a.debugBindings),
-		pDebugKVClean:         requireAdmin(a.debugKVClean),
-		pDebugKVCreate:        requireAdmin(a.debugKVCreate),
-		pDebugKVEdit:          requireAdmin(a.debugKVEdit),
-		pDebugKVEditModal:     requireAdmin(a.debugKVEdit),
-		pDebugOAuthConfigView: requireAdmin(a.debugOAuthConfigView),
-		pDebugSessionsRevoke:  requireAdmin(a.debugSessionsRevoke),
-		pDebugSessionsView:    requireAdmin(a.debugSessionsView),
-		pDisable:              requireAdmin(a.disable),
-		pEnable:               requireAdmin(a.enable),
-		pInstallConsentModal:  requireAdmin(a.installConsent),
-		pInstallConsentSource: requireAdmin(a.installConsentForm),
-		pInstallHTTP:          requireAdmin(a.installHTTP),
-		pInstallListed:        requireAdmin(a.installListed),
-		pList:                 requireAdmin(a.list),
-		pSettingsModalSave:    requireAdmin(a.settingsSave),
-		pSettingsModalSource:  requireAdmin(a.settingsForm),
-		pUninstall:            requireAdmin(a.uninstall),
+		pDebugBindings:          requireAdmin(a.debugBindings),
+		pDebugClusterTestCached: requireAdmin(a.debugClusterTestCached),
+		pDebugKVClean:           requireAdmin(a.debugKVClean),
+		pDebugKVCreate:          requireAdmin(a.debugKVCreate),
+		pDebugKVEdit:            requireAdmin(a.debugKVEdit),
+		pDebugKVEditModal:       requireAdmin(a.debugKVEdit),
+		pDebugOAuthConfigView:   requireAdmin(a.debugOAuthConfigView),
+		pDebugSessionsRevoke:    requireAdmin(a.debugSessionsRevoke),
+		pDebugSessionsView:      requireAdmin(a.debugSessionsView),
+		pDisable:                requireAdmin(a.disable),
+		pEnable:                 requireAdmin(a.enable),
+		pInstallConsentModal:    requireAdmin(a.installConsent),
+		pInstallConsentSource:   requireAdmin(a.installConsentForm),
+		pInstallHTTP:            requireAdmin(a.installHTTP),
+		pInstallListed:          requireAdmin(a.installListed),
+		pList:                   requireAdmin(a.list),
+		pSettingsModalSave:      requireAdmin(a.settingsSave),
+		pSettingsModalSource:    requireAdmin(a.settingsForm),
+		pUninstall:              requireAdmin(a.uninstall),
 
 		// Lookups.
 		pLookupAppID:     requireAdmin(a.lookupAppID),

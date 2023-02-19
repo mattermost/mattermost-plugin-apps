@@ -228,7 +228,7 @@ func (p *Proxy) initUpstream(typ apps.DeployType, newConfig config.Config, log u
 			log.WithError(err).Errorf("Failed to initialize upstream %s.", typ)
 		default:
 			p.upstreams.Store(typ, up)
-			log.Debugw("available upstream", "type", typ)
+			log.Debugf("available upstream: %s", typ)
 		}
 	} else {
 		p.upstreams.Delete(typ)

@@ -21,6 +21,7 @@ type CachedStore[T Cloneable[T]] interface {
 	Index() CachedIndex[T]
 	Get(key string) (value *T)
 	Put(r *incoming.Request, key string, value *T) error
+	Stop()
 }
 
 func MakeCachedStore[T Cloneable[T]](name string, cluster *CachedStoreCluster, log utils.Logger) (CachedStore[T], error) {
