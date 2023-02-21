@@ -16,6 +16,7 @@ const (
 	OAuth2User        = "/oauth2/user"
 	Subscribe         = "/subscribe"
 	Unsubscribe       = "/unsubscribe"
+	TimerCreate       = "/timer"
 
 	// Invoke.
 	Call = "/call"

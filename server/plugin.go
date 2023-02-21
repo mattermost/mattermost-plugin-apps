@@ -101,7 +101,13 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to initialize persistent store")
 	}
 	p.store.App.InitBuiltin(builtin.App(conf))
-	p.appservices = appservices.NewService(p.store)
+	scheduler := cluster.GetJobOnceScheduler(p.API)
+	appservice, err := appservices.NewService(log, p.conf, p.store, scheduler)
+	if err != nil {
+		return errors.Wrapf(err, "failed to initialize appservices")
+	}
+	p.appservices = appservice
+
 	p.sessionService = session.NewService(mm, p.store)
 	log.Debugf("initialized API and persistent store")
 
@@ -110,6 +116,7 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed creating cluster mutex")
 	}
+
 	p.proxy = proxy.NewService(p.conf, p.store, mutex, p.httpOut, p.sessionService, p.appservices)
 	err = p.proxy.Configure(conf, log)
 	if err != nil {
@@ -121,6 +128,7 @@ func (p *Plugin) OnActivate() (err error) {
 	)
 	log.Debugf("initialized the app proxy")
 
+	appservice.SetCaller(p.proxy)
 	p.httpIn = httpin.NewService(p.proxy, p.appservices, p.conf)
 	log.Debugf("initialized incoming HTTP")
 
