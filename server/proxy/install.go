@@ -23,19 +23,26 @@ import (
 
 // InstallApp installs an App.
 //   - cc is the Context that will be passed down to the App's OnInstall callback.
-func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (*apps.App, string, error) {
-	if err := r.Check(
+func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppID, deployType apps.DeployType, trusted bool, secret string) (app *apps.App, message string, err error) {
+	prevlog := r.Log
+	start := time.Now()
+	r.Log = r.Log.With("app_id", appID, "deploy_type", deployType)
+	defer func() {
+		log := r.Log.With("elapsed", time.Since(start).String())
+		r.Log = prevlog
+		if err != nil {
+			log.WithError(err).Errorf("InstallApp failed")
+		} else {
+			r.Log.Infof(message)
+		}
+	}()
+
+	if err = r.Check(
 		r.RequireActingUser,
 		r.RequireSysadminOrPlugin,
 	); err != nil {
 		return nil, "", err
 	}
-
-	prevlog := r.Log
-	defer func() {
-		r.Log = prevlog
-	}()
-	r.Log = r.Log.With("app_id", appID, "deploy_type", deployType)
 
 	conf := p.conf.Get()
 	m, err := p.store.Manifest.Get(appID)
@@ -51,7 +58,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 
 	r.Log.Debugf("app install flow: %s can be installed, proceeding", appID)
-	app, err := p.store.App.Get(appID)
+	app, err = p.store.App.Get(appID)
 	if err != nil {
 		if !errors.Is(err, utils.ErrNotFound) {
 			return nil, "", errors.Wrap(err, "failed looking for existing app")
@@ -113,7 +120,7 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	}
 	r.Log.Debugf("app install flow: stored updated app configuration")
 
-	message := fmt.Sprintf("Installed app `%s`: %s.", app.AppID, app.DisplayName)
+	message = fmt.Sprintf("Installed app `%s`: %s.", app.AppID, app.DisplayName)
 	if app.OnInstall != nil {
 		cresp := p.call(r, app, *app.OnInstall, &cc)
 		if cresp.Type == apps.CallResponseTypeError {
@@ -136,8 +143,6 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
 
 	p.dispatchRefreshBindingsEvent(r.ActingUserID())
-
-	r.Log.Infof(message)
 
 	return app, message, nil
 }

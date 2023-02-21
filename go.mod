@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-getter v1.6.2
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mattermost/mattermost-plugin-api v0.1.1
+	github.com/mattermost/mattermost-plugin-api v0.1.2-0.20221110071900-f8b73bc6795e
 	// mmgoget: github.com/mattermost/mattermost-server/v6@v7.7.0 is replaced by -> github.com/mattermost/mattermost-server/v6@ea08d47f60
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20230113170349-ea08d47f6051
 	github.com/nicksnyder/go-i18n/v2 v2.2.1

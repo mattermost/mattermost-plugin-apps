@@ -62,8 +62,9 @@ func newUninstallApp(th *Helper) *goapp.App {
 					})
 					require.NoError(th, err)
 				}
-				subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
-				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectBotJoinedTeam})
+				subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectUserJoinedChannel})
+				subscribe(creq.AsBot(), apps.Event{Subject: apps.SubjectUserJoinedTeam})
+				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectUserJoinedChannel})
 				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectChannelCreated, TeamID: th.ServerTestHelper.BasicTeam.Id})
 				subscribe(creq.AsActingUser(), apps.Event{Subject: apps.SubjectUserJoinedChannel, ChannelID: th.ServerTestHelper.BasicChannel.Id})
 
@@ -111,13 +112,13 @@ func testUninstall(th *Helper) {
 		require.Len(th, info.Apps, 1)
 		info.Apps[uninstallID].AppKVCountByUserID = nil
 		require.EqualValues(th, store.KVDebugInfo{
-			Total:             2012,
+			Total:             2013,
 			AppsTotal:         7,
 			InstalledAppCount: 1,
 			ManifestCount:     1,
 			OAuth2StateCount:  0,
 			Other:             0, // debug clean before the test clears out the special bot key; was: 1
-			SubscriptionCount: 3,
+			SubscriptionCount: 4,
 			Debug:             2000,
 			Apps: map[apps.AppID]*store.KVDebugAppInfo{
 				"uninstalltest": {

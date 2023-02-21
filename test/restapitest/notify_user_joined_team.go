@@ -12,19 +12,19 @@ import (
 // notifyUserJoinsTeam creates a new test team. Bot is added as a member of the
 // team. User is then added to the team to trigger. Since user and user2 are not
 // members of the team, they can not subscribe and are excluded from the test.
-func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
+func notifyAnyUserJoinedTheTeam(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
 		except: []appClient{
-			th.asUser,
 			th.asUser2,
 		},
-		init: func(th *Helper) apps.ExpandedContext {
-			data := apps.ExpandedContext{
-				User: th.ServerTestHelper.BasicUser,
-				Team: th.createTestTeam(),
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			joiningUser := th.ServerTestHelper.BasicUser2
+			team := th.createTestTeam()
+			th.addTeamMember(team, user)
+			return apps.ExpandedContext{
+				User: joiningUser,
+				Team: team,
 			}
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
-			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
 			return apps.Event{
@@ -33,26 +33,51 @@ func notifyUserJoinedTeam(th *Helper) *notifyTestCase {
 			}
 		},
 		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
-			data.TeamMember = th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
+			data.TeamMember = th.addTeamMember(data.Team, data.User)
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
-			ec := apps.ExpandedContext{
-				User: th.ServerTestHelper.BasicUser,
+			return apps.ExpandedContext{
+				User:       data.User,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
 			}
+		},
+	}
+}
 
-			switch appclient.name {
-			case "admin", "bot", "user":
-				ec.Team = data.Team
-				ec.TeamMember = data.TeamMember
+func notifySubscriberJoinedAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserJoinedAnyTeam(th, apps.SubjectUserJoinedTeam, []appClient{th.asAdmin})
+}
 
-			default: // user2
-				// TeamID gets expanded at the ID level even though user2 has no access to it.
-				if level == apps.ExpandID {
-					ec.Team = &model.Team{Id: data.Team.Id}
-				}
+func notifyBotJoinedAnyTeam(th *Helper) *notifyTestCase {
+	return notifyTheUserJoinedAnyTeam(th, apps.SubjectBotJoinedTeam, []appClient{th.asAdmin, th.asUser2, th.asUser})
+}
+
+func notifyTheUserJoinedAnyTeam(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
+	return &notifyTestCase{
+		except: except,
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			return apps.ExpandedContext{
+				Team: th.createTestTeam(),
+				User: user,
 			}
-			return ec
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subject,
+			}
+		},
+		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+			data.TeamMember = th.addTeamMember(data.Team, data.User)
+			return data
+		},
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
+				User:       data.User,
+				Team:       data.Team,
+				TeamMember: data.TeamMember,
+			}
 		},
 	}
 }

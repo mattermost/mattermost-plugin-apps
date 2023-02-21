@@ -9,28 +9,22 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 )
 
-// notifyUserJoinsChannel creates a test channel in a new test team. Bot and
-// user are added as members of the team; Bot is added as a member of the
-// channel. User is then added to the channel to trigger. Since user and user2
-// are not members of the channel, thay can not subscribe and is excluded from
-// the test.
-func notifyUserJoinedChannel(th *Helper) *notifyTestCase {
+// notifyAnyUserJoinedTheChannel tests SubjectUserJoinedChannel with a specific
+// ChannelID. It creates a test channel in a new test team. The acting test user
+// is added as a channel member. BasicUser2 is then added to the channel to
+// trigger.
+func notifyAnyUserJoinedTheChannel(th *Helper) *notifyTestCase {
 	return &notifyTestCase{
-		except: []appClient{
-			th.asUser,
-			th.asUser2,
-		},
-		init: func(th *Helper) apps.ExpandedContext {
+		except: []appClient{th.asUser2},
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
 			data := apps.ExpandedContext{
 				Team: th.createTestTeam(),
-				User: th.ServerTestHelper.BasicUser,
+				User: th.ServerTestHelper.BasicUser2,
 			}
-			th.addTeamMember(data.Team, th.LastInstalledBotUser)
-			th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
-			data.TeamMember = th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser)
-
+			data.TeamMember = th.addTeamMember(data.Team, th.ServerTestHelper.BasicUser2)
 			data.Channel = th.createTestChannel(th.ServerTestHelper.SystemAdminClient, data.Team.Id)
-			th.addChannelMember(data.Channel, th.LastInstalledBotUser)
+			th.addTeamMember(data.Team, user)
+			th.addChannelMember(data.Channel, user)
 			return data
 		},
 		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
@@ -44,18 +38,61 @@ func notifyUserJoinedChannel(th *Helper) *notifyTestCase {
 			return data
 		},
 		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
-			ec := apps.ExpandedContext{
-				User:       data.User,
-				Team:       data.Team,
-				TeamMember: data.TeamMember,
-				Channel:    &model.Channel{Id: data.Channel.Id, TeamId: data.Team.Id},
+			return apps.ExpandedContext{
+				User:          data.User,
+				Team:          data.Team,
+				TeamMember:    data.TeamMember,
+				Channel:       data.Channel,
+				ChannelMember: data.ChannelMember,
 			}
-			switch appclient.name {
-			case "admin", "bot", "user":
-				ec.Channel = data.Channel
-				ec.ChannelMember = data.ChannelMember
+		},
+	}
+}
+
+func notifySubscriberJoinedAnyChannel(th *Helper) *notifyTestCase {
+	return notifyTheUserJoinedAnyChannel(th, apps.SubjectUserJoinedChannel, []appClient{th.asAdmin})
+}
+
+func notifyBotJoinedAnyChannel(th *Helper) *notifyTestCase {
+	return notifyTheUserJoinedAnyChannel(th, apps.SubjectBotJoinedChannel, []appClient{th.asUser, th.asUser2, th.asAdmin})
+}
+
+// notifyTheUserJoinedAnyChannelImpl tests SubjectUserJoinedChannel with no
+// ChannelID, and SubjectBotJoinedChannel. It creates a test channel in a new
+// test team. Bot and user2 are added as members of the team and channel.  User
+// is then added to the channel to trigger.
+func notifyTheUserJoinedAnyChannel(th *Helper, subject apps.Subject, except []appClient) *notifyTestCase {
+	return &notifyTestCase{
+		except: except,
+		init: func(th *Helper, user *model.User) apps.ExpandedContext {
+			team := th.createTestTeam()
+			tm := th.addTeamMember(team, user)
+			channel := th.createTestChannel(th.ServerTestHelper.SystemAdminClient, team.Id)
+
+			return apps.ExpandedContext{
+				Team:       team,
+				TeamMember: tm,
+				Channel:    channel,
+				User:       user,
 			}
-			return ec
+		},
+		event: func(th *Helper, data apps.ExpandedContext) apps.Event {
+			return apps.Event{
+				Subject: subject,
+			}
+		},
+		trigger: func(th *Helper, data apps.ExpandedContext) apps.ExpandedContext {
+			data.ChannelMember = th.addChannelMember(data.Channel, data.User)
+			return data
+		},
+		expected: func(th *Helper, level apps.ExpandLevel, appclient appClient, data apps.ExpandedContext) apps.ExpandedContext {
+			return apps.ExpandedContext{
+				Channel:       data.Channel,
+				ChannelMember: data.ChannelMember,
+				Team:          data.Team,
+				TeamMember:    data.TeamMember,
+				User:          data.User,
+			}
 		},
 	}
 }
