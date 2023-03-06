@@ -76,6 +76,11 @@ dev_server:
 run-example-hello-4000:
 	cd test/hello-world && go run .
 
+## Run the hello-world app on ci
+.PHONY: run-example-hello-4000-ci
+run-example-hello-4000-ci:
+	cd test/hello-world && go run . &
+
 ## Run the test app
 .PHONY: run-test-app-8081
 run-test-app-8081:
