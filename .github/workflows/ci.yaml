@@ -165,6 +165,12 @@ jobs:
           path: mattermost-server
           ref: v7.7.0
 
+      - name: ci/setup-go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+          cache: true
+
       - name: ci/test-with-db
         env:
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
@@ -257,6 +263,19 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           fetch-depth: "0"
+
+      - name: ci/setup-go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+          cache: true
+
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: "npm"
+          cache-dependency-path: test/e2e/package-lock.json
 
       - name: ci/create-admin-user
         run: |
@@ -364,6 +383,19 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           fetch-depth: "0"
+
+      - name: ci/setup-go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+          cache: true
+
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: "npm"
+          cache-dependency-path: test/e2e/package-lock.json
 
       - name: ci/create-admin-user
         run: |
