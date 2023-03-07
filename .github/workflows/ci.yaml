@@ -242,6 +242,8 @@ jobs:
       MM_ADMIN_EMAIL: sysadmin@sample.mattermost.com
       MM_ADMIN_USERNAME: sysadmin
       MM_ADMIN_PASSWORD: Sys@dmin-sample1
+      TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: true
     steps:
       - name: ci/checkout-repo
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -253,13 +255,14 @@ jobs:
           cache: true
 
       - name: ci/setup-node
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
-        with:
-          node-version: "${{ env.NODE_VERSION }}"
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+          nvm install ${{ env.NODE_VERSION }}
+          nvm use ${{ env.NODE_VERSION }}
 
       - name: ci/create-admin-user
         run: |
-          STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
+          STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' ${MM_SERVICESETTINGS_SITEURL}/api/v4/users -w "%{http_code}" -o /dev/stderr)
           if test $STATUSCODE -ne 201; then exit 1; fi
 
       - name: ci/install-apps-plugin
@@ -273,6 +276,8 @@ jobs:
           cd test/e2e
           git config --global url."https://github.com/".insteadOf git@github.com:
           git config --global url."https://".insteadOf git://
+          node -v 
+          npm -v          
           npm install
 
       - name: ci/run-cypress-tests
@@ -360,6 +365,8 @@ jobs:
       MM_ADMIN_EMAIL: sysadmin@sample.mattermost.com
       MM_ADMIN_USERNAME: sysadmin
       MM_ADMIN_PASSWORD: Sys@dmin-sample1
+      TEST_DATABASE_URL: postgres://mmuser:mostest@localhost:5432/mattermost_test
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: true
     steps:
       - name: ci/checkout-repo
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -371,13 +378,14 @@ jobs:
           cache: true
 
       - name: ci/setup-node
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
-        with:
-          node-version: "${{ env.NODE_VERSION }}"
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+          nvm install ${{ env.NODE_VERSION }}
+          nvm use ${{ env.NODE_VERSION }}
 
       - name: ci/create-admin-user
         run: |
-          STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' $MM_SERVICESETTINGS_SITEURL/api/v4/users -w "%{http_code}" -o /dev/stderr)
+          STATUSCODE=$(curl -X POST -H "Content-Type: application/json" -d '{"email": "'${MM_ADMIN_EMAIL}'", "username": "'${MM_ADMIN_USERNAME}'", "password": "'${MM_ADMIN_PASSWORD}'"}' ${MM_SERVICESETTINGS_SITEURL}/api/v4/users -w "%{http_code}" -o /dev/stderr)
           if test $STATUSCODE -ne 201; then exit 1; fi
 
       - name: ci/install-apps-plugin
@@ -391,6 +399,8 @@ jobs:
           cd test/e2e
           git config --global url."https://github.com/".insteadOf git@github.com:
           git config --global url."https://".insteadOf git://
+          node -v 
+          npm -v
           npm install
 
       - name: ci/run-cypress-tests
