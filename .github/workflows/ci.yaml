@@ -255,12 +255,8 @@ jobs:
           cache: true
 
       - name: ci/setup-node-with-nvm
-        run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-          node -v
-          npm -v
+        shell: bash -l -e -o pipefail {0} #https://github.com/actions/runner-images/issues/4#issuecomment-617671978
+        run: nvm install ${{ env.NODE_VERSION }}
 
       - name: ci/create-admin-user
         run: |
@@ -274,17 +270,19 @@ jobs:
         run: make run-example-hello-4000-ci
 
       - name: ci/install-tests-deps
+        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
+          nvm use ${{ env.NODE_VERSION }}
           git config --global url."https://github.com/".insteadOf git@github.com:
-          git config --global url."https://".insteadOf git://
-          node -v 
-          npm -v          
+          git config --global url."https://".insteadOf git:// 
           npm install
 
       - name: ci/run-cypress-tests
+        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
+          nvm use ${{ env.NODE_VERSION }}
           npm run test
 
   e2e-cypress-tests-master:
@@ -380,12 +378,8 @@ jobs:
           cache: true
 
       - name: ci/setup-node-with-nvm
-        run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-          node -v
-          npm -v
+        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
+        run: nvm install ${{ env.NODE_VERSION }}
 
       - name: ci/create-admin-user
         run: |
@@ -399,15 +393,17 @@ jobs:
         run: make run-example-hello-4000-ci
 
       - name: ci/install-tests-deps
+        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
+          nvm use ${{ env.NODE_VERSION }}
           git config --global url."https://github.com/".insteadOf git@github.com:
-          git config --global url."https://".insteadOf git://
-          node -v 
-          npm -v
+          git config --global url."https://".insteadOf git:// 
           npm install
 
       - name: ci/run-cypress-tests
+        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
+          nvm use ${{ env.NODE_VERSION }}
           npm run test
