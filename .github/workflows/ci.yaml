@@ -8,7 +8,7 @@ on:
 env:
   TERM: xterm
   GO_VERSION: 1.19.6
-  NODE_VERSION: 13
+  NODE_VERSION: 16
 
 jobs:
   lint:
