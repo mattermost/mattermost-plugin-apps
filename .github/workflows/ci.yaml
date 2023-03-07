@@ -11,7 +11,7 @@ defaults:
 
 env:
   TERM: xterm
-  GO_VERSION: 1.19.6
+  GO_VERSION: 1.18.3
   NODE_VERSION: 13
 
 jobs:
@@ -287,6 +287,8 @@ jobs:
       - name: ci/install-tests-deps
         run: |
           cd test/e2e
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git config --global url."https://".insteadOf git://
           npm install
 
       - name: ci/run-cypress-tests
@@ -405,6 +407,8 @@ jobs:
       - name: ci/install-tests-deps
         run: |
           cd test/e2e
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git config --global url."https://".insteadOf git://
           npm install
 
       - name: ci/run-cypress-tests
