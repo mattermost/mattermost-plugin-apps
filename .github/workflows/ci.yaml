@@ -254,9 +254,12 @@ jobs:
           go-version: "${{ env.GO_VERSION }}"
           cache: true
 
-      - name: ci/setup-node
+      - name: ci/setup-nvm
         run: |
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+
+      - name: ci/setup-node
+        run: |
           nvm install ${{ env.NODE_VERSION }}
           nvm use ${{ env.NODE_VERSION }}
 
@@ -377,9 +380,12 @@ jobs:
           go-version: "${{ env.GO_VERSION }}"
           cache: true
 
-      - name: ci/setup-node
+      - name: ci/setup-nvm
         run: |
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+
+      - name: ci/setup-node
+        run: |
           nvm install ${{ env.NODE_VERSION }}
           nvm use ${{ env.NODE_VERSION }}
 
