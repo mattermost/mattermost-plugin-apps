@@ -8,7 +8,7 @@ on:
 env:
   TERM: xterm
   GO_VERSION: 1.19.6
-  NODE_VERSION: 16
+  NODE_VERSION: 16.15.0
 
 jobs:
   lint:
@@ -254,9 +254,12 @@ jobs:
           go-version: "${{ env.GO_VERSION }}"
           cache: true
 
-      - name: ci/setup-node-with-nvm
-        shell: bash -l -e -o pipefail {0} #https://github.com/actions/runner-images/issues/4#issuecomment-617671978
-        run: nvm install ${{ env.NODE_VERSION }}
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: "npm"
+          cache-dependency-path: test/e2e/package-lock.json
 
       - name: ci/create-admin-user
         run: |
@@ -270,19 +273,13 @@ jobs:
         run: make run-example-hello-4000-ci
 
       - name: ci/install-tests-deps
-        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
-          nvm use ${{ env.NODE_VERSION }}
-          git config --global url."https://github.com/".insteadOf git@github.com:
-          git config --global url."https://".insteadOf git:// 
           npm install
 
       - name: ci/run-cypress-tests
-        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
-          nvm use ${{ env.NODE_VERSION }}
           npm run test
 
   e2e-cypress-tests-master:
@@ -377,9 +374,12 @@ jobs:
           go-version: "${{ env.GO_VERSION }}"
           cache: true
 
-      - name: ci/setup-node-with-nvm
-        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
-        run: nvm install ${{ env.NODE_VERSION }}
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: "npm"
+          cache-dependency-path: test/e2e/package-lock.json
 
       - name: ci/create-admin-user
         run: |
@@ -393,17 +393,11 @@ jobs:
         run: make run-example-hello-4000-ci
 
       - name: ci/install-tests-deps
-        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
-          nvm use ${{ env.NODE_VERSION }}
-          git config --global url."https://github.com/".insteadOf git@github.com:
-          git config --global url."https://".insteadOf git:// 
           npm install
 
       - name: ci/run-cypress-tests
-        shell: bash -l -e -o pipefail {0} # https://github.com/actions/runner-images/issues/4#issuecomment-617671978
         run: |
           cd test/e2e
-          nvm use ${{ env.NODE_VERSION }}
           npm run test
