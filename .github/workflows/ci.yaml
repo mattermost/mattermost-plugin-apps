@@ -232,6 +232,7 @@ jobs:
           MM_FEATUREFLAGS_AppsEnabled: true
         ports:
           - 8065:8065
+          - 4000:4000
     env:
       TYPE: NONE
       PULL_REQUEST: ""
@@ -270,7 +271,12 @@ jobs:
         run: make deploy
 
       - name: ci/start-hello-app
-        run: make run-example-hello-4000-ci MATTERMOST_CONTAINER_ID=`docker ps | grep mattermost | awk '{print $1}'`
+        run: |
+          echo "Mattermost Server Container ID: ${{ job.services.mattermost-server.id }}"
+          cd test/hello-world
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build .
+          docker cp hello-world ${{ job.services.mattermost-server.id }}:/hello-world
+          docker exec -d ${{ job.services.mattermost-server.id }} /hello-world
 
       - name: ci/install-tests-deps
         run: |
@@ -352,6 +358,7 @@ jobs:
           MM_FEATUREFLAGS_AppsEnabled: true
         ports:
           - 8065:8065
+          - 4000:4000
     env:
       TYPE: NONE
       PULL_REQUEST: ""
@@ -390,7 +397,12 @@ jobs:
         run: make deploy
 
       - name: ci/start-hello-app
-        run: make run-example-hello-4000-ci MATTERMOST_CONTAINER_ID=`docker ps | grep mattermost | awk '{print $1}'`
+        run: |
+          echo "Mattermost Server Container ID: ${{ job.services.mattermost-server.id }}"
+          cd test/hello-world
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build .
+          docker cp hello-world ${{ job.services.mattermost-server.id }}:/hello-world
+          docker exec -d ${{ job.services.mattermost-server.id }} /hello-world
 
       - name: ci/install-tests-deps
         run: |
