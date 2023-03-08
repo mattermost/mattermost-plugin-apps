@@ -79,7 +79,11 @@ run-example-hello-4000:
 ## Run the hello-world app on ci
 .PHONY: run-example-hello-4000-ci
 run-example-hello-4000-ci:
-	cd test/hello-world && go run . &
+	@echo "Mattermost Server Container ID: ${MATTERMOST_CONTAINER_ID}"
+	@echo "Building hello-world app"
+	cd test/hello-world; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build .
+	docker cp test/hello-world/hello-world ${MATTERMOST_CONTAINER_ID}:/hello-world
+	docker exec -d ${MATTERMOST_CONTAINER_ID} /hello-world
 
 ## Run the test app
 .PHONY: run-test-app-8081

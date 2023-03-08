@@ -270,7 +270,7 @@ jobs:
         run: make deploy
 
       - name: ci/start-hello-app
-        run: make run-example-hello-4000-ci
+        run: make run-example-hello-4000-ci MATTERMOST_CONTAINER_ID=`docker ps | grep mattermost | awk '{print $1}'`
 
       - name: ci/install-tests-deps
         run: |
@@ -390,7 +390,7 @@ jobs:
         run: make deploy
 
       - name: ci/start-hello-app
-        run: make run-example-hello-4000-ci
+        run: make run-example-hello-4000-ci MATTERMOST_CONTAINER_ID=`docker ps | grep mattermost | awk '{print $1}'`
 
       - name: ci/install-tests-deps
         run: |
