@@ -1,14 +1,12 @@
-name: ci
+name: nightly
+
 on:
-  pull_request:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: "0 0 * * *"
 
 env:
   TERM: xterm
   GO_VERSION: 1.19.6
-  NODE_VERSION: 16.15.0
 
 jobs:
   lint:
@@ -47,42 +45,6 @@ jobs:
       - name: ci/check-diff-on-webapp-i18n-files
         run: git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
 
-  dist:
-    runs-on: ubuntu-22.04
-    if: github.ref_name != 'master' # No need to run dist here as it will run during the cd workflow
-    needs:
-      - lint
-    steps:
-      - name: ci/checkout-repo
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-
-      - name: ci/setup-go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "${{ env.GO_VERSION }}"
-          cache: true
-
-      - name: ci/ensure-build-on-all-platforms
-        run: make dist
-
-      - name: ci/generate-release-notes
-        run: |
-          printf "Supported Mattermost Server Versions: **$(cat plugin.json | jq .min_server_version -r)+** \n## Enhancements\n\n## Fixes\n"  >> dist/release-notes.md
-          if [[ $(git tag -l | wc -l) -eq 1 ]]; then
-            git log --pretty='format:- %h %s' --abbrev-commit --no-decorate --no-color $(git rev-list --max-parents=0 HEAD) HEAD >> dist/release-notes.md
-          else
-            git log --pretty='format:- %h %s' --abbrev-commit --no-decorate --no-color $(git describe --tags --abbrev=0 $(git describe --tags --abbrev=0)^)..HEAD >> dist/release-notes.md
-          fi
-
-      - name: ci/persist-build-artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        with:
-          name: dist
-          path: |
-            dist/*.tar.gz
-            dist/release-notes.md
-          retention-days: 5 ## No need to keep CI builds more than 5 days
-
   test:
     runs-on: ubuntu-22.04
     needs:
@@ -99,28 +61,6 @@ jobs:
 
       - name: ci/test
         run: make test
-
-  coverage:
-    runs-on: ubuntu-22.04
-    needs:
-      - lint
-    steps:
-      - name: ci/checkout-repo
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-
-      - name: ci/setup-go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "${{ env.GO_VERSION }}"
-          cache: true
-
-      - name: ci/coverage
-        run: make coverage
-
-      - name: ci/upload-coverage
-        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70 # v3.3.1
-        with:
-          files: server/coverage.txt
 
   test-rest-postgres11:
     runs-on: ubuntu-22.04
@@ -165,7 +105,6 @@ jobs:
 
   e2e-cypress-tests-pinned:
     runs-on: ubuntu-latest-4-cores
-    if: github.ref_name == 'master'
     needs:
       - lint
     services:
@@ -292,7 +231,6 @@ jobs:
 
   e2e-cypress-tests-master:
     runs-on: ubuntu-latest-4-cores
-    if: github.ref_name == 'master'
     needs:
       - lint
     services:
