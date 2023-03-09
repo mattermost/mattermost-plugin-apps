@@ -1,5 +1,7 @@
 name: ci
 on:
+  schedule:
+    - cron: "0 0 * * *"
   pull_request:
   push:
     branches:
@@ -47,14 +49,18 @@ jobs:
       - name: ci/check-diff-on-webapp-i18n-files
         run: git --no-pager diff --exit-code assets/i18n/* || (echo "Please run \"make i18n-extract-server\" and commit the changes in the generated files." && exit 1)
 
-  dist:
+  # Do NOT run on master since we are going to rebuild on the CD workflow
+  # Do NOT run on scheduled runs . No need for the binaries everynight
+  build:
     runs-on: ubuntu-22.04
-    if: github.ref_name != 'master' # No need to run dist here as it will run during the cd workflow
+    if: ${{ !(github.ref_name == 'master' || github.event_name == 'schedule') }}
     needs:
       - lint
     steps:
       - name: ci/checkout-repo
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: 0 # We need these for proper release notes
 
       - name: ci/setup-go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -62,7 +68,7 @@ jobs:
           go-version: "${{ env.GO_VERSION }}"
           cache: true
 
-      - name: ci/ensure-build-on-all-platforms
+      - name: ci/build
         run: make dist
 
       - name: ci/generate-release-notes
@@ -74,7 +80,7 @@ jobs:
             git log --pretty='format:- %h %s' --abbrev-commit --no-decorate --no-color $(git describe --tags --abbrev=0 $(git describe --tags --abbrev=0)^)..HEAD >> dist/release-notes.md
           fi
 
-      - name: ci/persist-build-artifacts
+      - name: ci/upload-artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: dist
@@ -100,8 +106,9 @@ jobs:
       - name: ci/test
         run: make test
 
-  coverage:
+  coverage: # Do NOT run on scheduled runs
     runs-on: ubuntu-22.04
+    if: ${{ !(github.event_name == 'schedule') }}
     needs:
       - lint
     steps:
@@ -163,9 +170,9 @@ jobs:
           MM_SERVER_PATH: ${{ github.workspace }}/mattermost-server
         run: make test-rest-api
 
-  e2e-cypress-tests-pinned:
+  e2e-cypress-tests-pinned: # Run only on master push and scheduled runs
     runs-on: ubuntu-latest-4-cores
-    if: github.ref_name == 'master'
+    if: ${{ github.ref_name == 'master' || github.event_name == 'schedule' }}
     needs:
       - lint
     services:
@@ -290,9 +297,9 @@ jobs:
           cd test/e2e
           npm run test
 
-  e2e-cypress-tests-master:
+  e2e-cypress-tests-master: # Run only on master push and scheduled runs
     runs-on: ubuntu-latest-4-cores
-    if: github.ref_name == 'master'
+    if: ${{ github.ref_name == 'master' || github.event_name == 'schedule' }}
     needs:
       - lint
     services:
