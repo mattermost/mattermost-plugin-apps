@@ -35,6 +35,11 @@ endif
 .PHONY: all
 all: check-style test dist
 
+.PHONY: deps
+deps:
+	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
+	@$(GO) install github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.0
+
 ## Runs eslint and golangci-lint
 .PHONY: check-style
 check-style: webapp/node_modules
@@ -46,13 +51,8 @@ ifneq ($(HAS_WEBAPP),)
 endif
 
 ifneq ($(HAS_SERVER),)
-	@if ! [ -x "$$(command -v golangci-lint)" ]; then \
-		echo "golangci-lint is not installed. Please see https://github.com/golangci/golangci-lint#install for installation instructions."; \
-		exit 1; \
-	fi; \
-
 	@echo Running golangci-lint
-	golangci-lint run ./...
+	golangci-lint run ./... --verbose
 endif
 
 ## Builds the server, if it exists, for all supported architectures, unless MM_SERVICESETTINGS_ENABLEDEVELOPER is set
