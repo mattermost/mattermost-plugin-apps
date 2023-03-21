@@ -47,17 +47,19 @@ func (th *Helper) InstallAppWithCleanup(app *goapp.App) {
 		call:               th.Call,
 	}
 
-	var userClientApp *appclient.Client
-	app.HandleCall("/internal/get_token/user", func(cr goapp.CallRequest) apps.CallResponse {
-		userClientApp = cr.AsActingUser()
-		return apps.NewTextResponse("OK")
-	})
+	if installed.GrantedPermissions.Contains(apps.PermissionActAsUser) {
+		var userClientApp *appclient.Client
+		app.HandleCall("/internal/get_token/user", func(cr goapp.CallRequest) apps.CallResponse {
+			userClientApp = cr.AsActingUser()
+			return apps.NewTextResponse("OK")
+		})
 
-	c := apps.NewCall("/internal/get_token/user").ExpandActingUserClient()
-	_ = th.asUser.happyCall(app.Manifest.AppID, apps.CallRequest{Call: *c})
+		c := apps.NewCall("/internal/get_token/user").ExpandActingUserClient()
+		_ = th.asUser.happyCall(app.Manifest.AppID, apps.CallRequest{Call: *c})
 
-	require.NotNil(th.T, userClientApp)
-	th.UserClientApp = userClientApp
+		require.NotNil(th.T, userClientApp)
+		th.UserClientApp = userClientApp
+	}
 
 	th.asUser2 = appClient{
 		name:               "user2",
