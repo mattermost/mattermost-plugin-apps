@@ -265,6 +265,7 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 			bot.Username = user.Username
 
 			if user.GetDisplayName(model.ShowFullName) != app.DisplayName {
+				// The app has changed its display name
 				bot.DisplayName = app.DisplayName
 				bot.Description = fmt.Sprintf("Bot account for `%s` App.", app.DisplayName)
 
