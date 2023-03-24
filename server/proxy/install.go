@@ -276,7 +276,10 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 				}
 
 				r.Log.Debugw("app install flow: patching existing Bot Account", "username", bot.Username, "id", bot.UserId)
-				mm.Bot.Patch(bot.UserId, &patchData)
+				bot, err = mm.Bot.Patch(bot.UserId, &patchData)
+				if err != nil {
+					return err
+				}
 			}
 
 			r.Log.Debugw("app install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
