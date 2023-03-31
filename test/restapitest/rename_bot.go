@@ -1,11 +1,12 @@
 package restapitest
 
 import (
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
+	"github.com/stretchr/testify/require"
+
 	"github.com/mattermost/mattermost-server/v6/model"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
 )
 
 func testRenameBot(th *Helper) {
