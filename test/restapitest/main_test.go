@@ -41,6 +41,7 @@ func TestRESTAPI(t *testing.T) {
 		"static":        testStatic,
 		"notify":        testNotify,
 		"uninstall":     testUninstall,
+		"rename_bot":    testRenameBot,
 	} {
 		th.CleanRun(name, testF)
 	}
