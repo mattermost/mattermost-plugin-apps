@@ -15,6 +15,7 @@ on:
 env:
   TERM: xterm
   GO_VERSION: 1.19.6
+  MM_RUDDER_PLUGINS_PROD:  ${{ secrets.MM_RUDDER_PLUGINS_PROD }}
 
 jobs:
   build:
