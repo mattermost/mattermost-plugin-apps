@@ -39,6 +39,7 @@ func TestRESTAPI(t *testing.T) {
 		"webhook_path":  testWebhookPath,
 		"subscriptions": testSubscriptions,
 		"static":        testStatic,
+		"timer":         testTimer,
 		"notify":        testNotify,
 		"uninstall":     testUninstall,
 		"rename_bot":    testRenameBot,

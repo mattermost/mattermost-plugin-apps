@@ -112,8 +112,8 @@ func testUninstall(th *Helper) {
 		require.Len(th, info.Apps, 1)
 		info.Apps[uninstallID].AppKVCountByUserID = nil
 		require.EqualValues(th, store.KVDebugInfo{
-			Total:             2013,
-			AppsTotal:         7,
+			Total:             2014,
+			AppsTotal:         8,
 			InstalledAppCount: 1,
 			ManifestCount:     1,
 			OAuth2StateCount:  0,
@@ -124,7 +124,7 @@ func testUninstall(th *Helper) {
 				"uninstalltest": {
 					AppKVCount:            4,
 					AppKVCountByNamespace: map[string]int{"": 1, "p1": 2, "p2": 1},
-					TokenCount:            2,
+					TokenCount:            3,
 					UserCount:             1,
 				},
 			},
