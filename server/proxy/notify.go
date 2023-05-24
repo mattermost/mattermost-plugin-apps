@@ -195,6 +195,12 @@ func (p *Proxy) NotifyUserTeam(member *model.TeamMember, actor *model.User, join
 // NotifyChannelCreated handles plugin's ChannelHasBeenCreated callback. It emits
 // "channel_created" notifications to subscribed apps.
 func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
+	// If the newly created channel is a DM, there is no teamID.
+	// Do not notify apps in this case.
+	if teamID == "" {
+		return
+	}
+
 	p.notifyAll(
 		apps.Event{
 			Subject: apps.SubjectChannelCreated,
