@@ -83,7 +83,7 @@ func subsKey(e apps.Event) (string, error) {
 func (s subscriptionStore) Get(e apps.Event) ([]Subscription, error) {
 	key, err := subsKey(e)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to generate event key")
 	}
 
 	stored := &StoredSubscriptions{}
