@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
@@ -104,7 +104,7 @@ func TestExpand(t *testing.T) {
 			tcs: map[string]TC{
 				"happy with API GetUser": {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetUser(userID).Times(1).Return(actingUser(), nil)
+						client.EXPECT().GetUser(gomock.Any(), userID).Times(1).Return(actingUser(), nil)
 					},
 					expect: map[string]interface{}{
 						"all":      expected(apps.ExpandedContext{ActingUser: actingUser()}),
@@ -122,7 +122,7 @@ func TestExpand(t *testing.T) {
 				},
 				"error GetUser fail": {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetUser(userID).Times(1).Return(nil, utils.ErrForbidden)
+						client.EXPECT().GetUser(gomock.Any(), userID).Times(1).Return(nil, utils.ErrForbidden)
 					},
 					expect: map[string]interface{}{
 						"+all":     "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
@@ -155,7 +155,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(&channelMember, nil)
+						client.EXPECT().GetChannelMember(gomock.Any(), channelID, userID).Times(1).Return(&channelMember, nil)
 					},
 					expect: map[string]interface{}{
 						"+id":     expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
@@ -191,7 +191,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetChannelMember(channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
+						client.EXPECT().GetChannelMember(gomock.Any(), channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[string]interface{}{
 						"+all": "failed to expand required channel_member: failed to get channel membership: ERROR",
@@ -208,7 +208,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(&teamMember, nil)
+						client.EXPECT().GetTeamMember(gomock.Any(), teamID, userID).Times(1).Return(&teamMember, nil)
 					},
 					expect: map[string]interface{}{
 						"+id":     expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
@@ -244,7 +244,7 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
-						client.EXPECT().GetTeamMember(teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
+						client.EXPECT().GetTeamMember(gomock.Any(), teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
 					expect: map[string]interface{}{
 						"+all": "failed to expand required team_member: failed to get team membership: ERROR",
@@ -267,6 +267,7 @@ func TestExpand(t *testing.T) {
 					for level, expected := range tc.expect {
 						t.Run(level, func(t *testing.T) {
 							ctrl := gomock.NewController(t)
+
 							client := mock_proxy.NewMockExpandGetter(ctrl)
 							if tc.expectClientCalls != nil {
 								tc.expectClientCalls(client)

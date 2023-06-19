@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/utils/fileutils"
+	"github.com/mattermost/mattermost/server/v8/channels/utils/fileutils"
 )
 
 // FindDir looks for the given directory in nearby ancestors relative to the current working

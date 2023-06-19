@@ -9,12 +9,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-api/cluster"
-	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
-	"github.com/mattermost/mattermost-plugin-api/i18n"
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/mattermost/mattermost/server/public/plugin/cluster"
+	"github.com/mattermost/mattermost/server/public/plugin/experimental/bot/logger"
+	mmtelemetry "github.com/mattermost/mattermost/server/public/plugin/experimental/telemetry"
+	"github.com/mattermost/mattermost/server/public/plugin/i18n"
+	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/builtin"
@@ -77,7 +78,19 @@ func (p *Plugin) OnActivate() (err error) {
 	if err != nil {
 		log.WithError(err).Warnw("failed to start telemetry client.")
 	}
-	p.tracker = telemetry.NewTelemetry(nil)
+
+	p.tracker = telemetry.NewTelemetry(
+		mmtelemetry.NewTracker(
+			p.telemetryClient,
+			p.API.GetDiagnosticId(),
+			p.API.GetServerVersion(),
+			manifest.Id,
+			manifest.Version,
+			"appsFramework",
+			mmtelemetry.NewTrackerConfig(p.API.GetConfig()),
+			logger.New(p.API),
+		),
+	)
 
 	// Configure the plugin.
 	confService, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
@@ -167,14 +180,9 @@ func (p *Plugin) OnConfigurationChange() error {
 		return nil
 	}
 
-	enableDiagnostics := false
-	if config := p.API.GetConfig(); config != nil {
-		if configValue := config.LogSettings.EnableDiagnostics; configValue != nil {
-			enableDiagnostics = *configValue
-		}
+	if p.tracker != nil {
+		p.tracker.ReloadConfig(mmtelemetry.NewTrackerConfig(p.API.GetConfig()))
 	}
-	updatedTracker := mmtelemetry.NewTracker(p.telemetryClient, p.API.GetDiagnosticId(), p.API.GetServerVersion(), manifest.Id, manifest.Version, "appsFramework", enableDiagnostics)
-	p.tracker.UpdateTracker(updatedTracker)
 
 	mm := pluginapi.NewClient(p.API, p.Driver)
 	var sc config.StoredConfig

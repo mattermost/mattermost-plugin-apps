@@ -3,7 +3,7 @@ package main
 import (
 	root "github.com/mattermost/mattermost-plugin-apps"
 
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
 var manifest = root.Manifest

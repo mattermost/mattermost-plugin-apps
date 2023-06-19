@@ -5,10 +5,11 @@
 package mock_proxy
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	model "github.com/mattermost/mattermost-server/v6/model"
+	model "github.com/mattermost/mattermost/server/public/model"
 )
 
 // MockExpandGetter is a mock of ExpandGetter interface.
@@ -35,91 +36,91 @@ func (m *MockExpandGetter) EXPECT() *MockExpandGetterMockRecorder {
 }
 
 // GetChannel mocks base method.
-func (m *MockExpandGetter) GetChannel(arg0 string) (*model.Channel, error) {
+func (m *MockExpandGetter) GetChannel(arg0 context.Context, arg1 string) (*model.Channel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChannel", arg0)
+	ret := m.ctrl.Call(m, "GetChannel", arg0, arg1)
 	ret0, _ := ret[0].(*model.Channel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChannel indicates an expected call of GetChannel.
-func (mr *MockExpandGetterMockRecorder) GetChannel(arg0 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetChannel(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockExpandGetter)(nil).GetChannel), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockExpandGetter)(nil).GetChannel), arg0, arg1)
 }
 
 // GetChannelMember mocks base method.
-func (m *MockExpandGetter) GetChannelMember(arg0, arg1 string) (*model.ChannelMember, error) {
+func (m *MockExpandGetter) GetChannelMember(arg0 context.Context, arg1, arg2 string) (*model.ChannelMember, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChannelMember", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetChannelMember", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*model.ChannelMember)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChannelMember indicates an expected call of GetChannelMember.
-func (mr *MockExpandGetterMockRecorder) GetChannelMember(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetChannelMember(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelMember", reflect.TypeOf((*MockExpandGetter)(nil).GetChannelMember), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelMember", reflect.TypeOf((*MockExpandGetter)(nil).GetChannelMember), arg0, arg1, arg2)
 }
 
 // GetPost mocks base method.
-func (m *MockExpandGetter) GetPost(arg0 string) (*model.Post, error) {
+func (m *MockExpandGetter) GetPost(arg0 context.Context, arg1 string) (*model.Post, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPost", arg0)
+	ret := m.ctrl.Call(m, "GetPost", arg0, arg1)
 	ret0, _ := ret[0].(*model.Post)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPost indicates an expected call of GetPost.
-func (mr *MockExpandGetterMockRecorder) GetPost(arg0 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetPost(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockExpandGetter)(nil).GetPost), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockExpandGetter)(nil).GetPost), arg0, arg1)
 }
 
 // GetTeam mocks base method.
-func (m *MockExpandGetter) GetTeam(arg0 string) (*model.Team, error) {
+func (m *MockExpandGetter) GetTeam(arg0 context.Context, arg1 string) (*model.Team, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTeam", arg0)
+	ret := m.ctrl.Call(m, "GetTeam", arg0, arg1)
 	ret0, _ := ret[0].(*model.Team)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTeam indicates an expected call of GetTeam.
-func (mr *MockExpandGetterMockRecorder) GetTeam(arg0 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetTeam(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeam", reflect.TypeOf((*MockExpandGetter)(nil).GetTeam), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeam", reflect.TypeOf((*MockExpandGetter)(nil).GetTeam), arg0, arg1)
 }
 
 // GetTeamMember mocks base method.
-func (m *MockExpandGetter) GetTeamMember(arg0, arg1 string) (*model.TeamMember, error) {
+func (m *MockExpandGetter) GetTeamMember(arg0 context.Context, arg1, arg2 string) (*model.TeamMember, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTeamMember", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetTeamMember", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*model.TeamMember)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTeamMember indicates an expected call of GetTeamMember.
-func (mr *MockExpandGetterMockRecorder) GetTeamMember(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetTeamMember(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeamMember", reflect.TypeOf((*MockExpandGetter)(nil).GetTeamMember), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeamMember", reflect.TypeOf((*MockExpandGetter)(nil).GetTeamMember), arg0, arg1, arg2)
 }
 
 // GetUser mocks base method.
-func (m *MockExpandGetter) GetUser(arg0 string) (*model.User, error) {
+func (m *MockExpandGetter) GetUser(arg0 context.Context, arg1 string) (*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUser", arg0)
+	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
 	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUser indicates an expected call of GetUser.
-func (mr *MockExpandGetterMockRecorder) GetUser(arg0 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockExpandGetter)(nil).GetUser), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockExpandGetter)(nil).GetUser), arg0, arg1)
 }

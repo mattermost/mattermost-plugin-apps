@@ -1,19 +1,20 @@
 package proxy
 
 import (
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
+	"golang.org/x/net/context"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 )
 
 type ExpandGetter interface {
-	GetChannel(channelID string) (*model.Channel, error)
-	GetChannelMember(channelID, userID string) (*model.ChannelMember, error)
-	GetPost(postID string) (*model.Post, error)
-	GetTeam(teamID string) (*model.Team, error)
-	GetTeamMember(teamID, userID string) (*model.TeamMember, error)
-	GetUser(userID string) (*model.User, error)
+	GetChannel(ctx context.Context, channelID string) (*model.Channel, error)
+	GetChannelMember(ctx context.Context, channelID, userID string) (*model.ChannelMember, error)
+	GetPost(ctx context.Context, postID string) (*model.Post, error)
+	GetTeam(ctx context.Context, teamID string) (*model.Team, error)
+	GetTeamMember(ctx context.Context, teamID, userID string) (*model.TeamMember, error)
+	GetUser(ctx context.Context, userID string) (*model.User, error)
 }
 
 type expandHTTPGetter struct {
@@ -26,8 +27,8 @@ func newExpandHTTPGetter(conf config.Config, token string) *expandHTTPGetter {
 	return &expandHTTPGetter{client}
 }
 
-func (h *expandHTTPGetter) GetUser(userID string) (*model.User, error) {
-	user, _, err := h.mm.GetUser(userID, "")
+func (h *expandHTTPGetter) GetUser(ctx context.Context, userID string) (*model.User, error) {
+	user, _, err := h.mm.GetUser(ctx, userID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +36,8 @@ func (h *expandHTTPGetter) GetUser(userID string) (*model.User, error) {
 	return user, nil
 }
 
-func (h *expandHTTPGetter) GetChannel(channelID string) (*model.Channel, error) {
-	channel, _, err := h.mm.GetChannel(channelID, "")
+func (h *expandHTTPGetter) GetChannel(ctx context.Context, channelID string) (*model.Channel, error) {
+	channel, _, err := h.mm.GetChannel(ctx, channelID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +45,8 @@ func (h *expandHTTPGetter) GetChannel(channelID string) (*model.Channel, error) 
 	return channel, nil
 }
 
-func (h *expandHTTPGetter) GetChannelMember(channelID, userID string) (*model.ChannelMember, error) {
-	channelMember, _, err := h.mm.GetChannelMember(channelID, userID, "")
+func (h *expandHTTPGetter) GetChannelMember(ctx context.Context, channelID, userID string) (*model.ChannelMember, error) {
+	channelMember, _, err := h.mm.GetChannelMember(ctx, channelID, userID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +54,8 @@ func (h *expandHTTPGetter) GetChannelMember(channelID, userID string) (*model.Ch
 	return channelMember, nil
 }
 
-func (h *expandHTTPGetter) GetTeam(teamID string) (*model.Team, error) {
-	team, _, err := h.mm.GetTeam(teamID, "")
+func (h *expandHTTPGetter) GetTeam(ctx context.Context, teamID string) (*model.Team, error) {
+	team, _, err := h.mm.GetTeam(ctx, teamID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +63,8 @@ func (h *expandHTTPGetter) GetTeam(teamID string) (*model.Team, error) {
 	return team, nil
 }
 
-func (h *expandHTTPGetter) GetTeamMember(teamID, userID string) (*model.TeamMember, error) {
-	teamMember, _, err := h.mm.GetTeamMember(teamID, userID, "")
+func (h *expandHTTPGetter) GetTeamMember(ctx context.Context, teamID, userID string) (*model.TeamMember, error) {
+	teamMember, _, err := h.mm.GetTeamMember(ctx, teamID, userID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +72,8 @@ func (h *expandHTTPGetter) GetTeamMember(teamID, userID string) (*model.TeamMemb
 	return teamMember, nil
 }
 
-func (h *expandHTTPGetter) GetPost(postID string) (*model.Post, error) {
-	post, _, err := h.mm.GetPost(postID, "")
+func (h *expandHTTPGetter) GetPost(ctx context.Context, postID string) (*model.Post, error) {
+	post, _, err := h.mm.GetPost(ctx, postID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -88,27 +89,27 @@ func newExpandRPCGetter(c *pluginapi.Client) *expandRPCGetter {
 	return &expandRPCGetter{c}
 }
 
-func (r *expandRPCGetter) GetUser(userID string) (*model.User, error) {
+func (r *expandRPCGetter) GetUser(_ context.Context, userID string) (*model.User, error) {
 	return r.mm.User.Get(userID)
 }
 
-func (r *expandRPCGetter) GetChannel(channelID string) (*model.Channel, error) {
+func (r *expandRPCGetter) GetChannel(_ context.Context, channelID string) (*model.Channel, error) {
 	return r.mm.Channel.Get(channelID)
 }
 
-func (r *expandRPCGetter) GetChannelMember(channelID, userID string) (*model.ChannelMember, error) {
+func (r *expandRPCGetter) GetChannelMember(_ context.Context, channelID, userID string) (*model.ChannelMember, error) {
 	return r.mm.Channel.GetMember(channelID, userID)
 }
 
-func (r *expandRPCGetter) GetTeam(teamID string) (*model.Team, error) {
+func (r *expandRPCGetter) GetTeam(_ context.Context, teamID string) (*model.Team, error) {
 	return r.mm.Team.Get(teamID)
 }
 
-func (r *expandRPCGetter) GetTeamMember(teamID, userID string) (*model.TeamMember, error) {
+func (r *expandRPCGetter) GetTeamMember(_ context.Context, teamID, userID string) (*model.TeamMember, error) {
 	return r.mm.Team.GetMember(teamID, userID)
 }
 
-func (r *expandRPCGetter) GetPost(postID string) (*model.Post, error) {
+func (r *expandRPCGetter) GetPost(_ context.Context, postID string) (*model.Post, error) {
 	return r.mm.Post.GetPost(postID)
 }
 
@@ -138,7 +139,7 @@ func newExpandSelfGetter(mm *pluginapi.Client, memberUser *model.User, cm *model
 	}
 }
 
-func (g *expandSelfGetter) GetUser(userID string) (*model.User, error) {
+func (g *expandSelfGetter) GetUser(_ context.Context, userID string) (*model.User, error) {
 	// Bypass permission checks, since the user is self. Use the cached data if
 	// available.
 	if g.memberUser != nil && g.memberUser.Id == userID {
@@ -147,7 +148,7 @@ func (g *expandSelfGetter) GetUser(userID string) (*model.User, error) {
 	return g.mm.User.Get(userID)
 }
 
-func (g *expandSelfGetter) GetChannel(channelID string) (*model.Channel, error) {
+func (g *expandSelfGetter) GetChannel(_ context.Context, channelID string) (*model.Channel, error) {
 	// Bypass permission checks, since the user is/just was in the channel. Use
 	// the cached data if available.
 	if g.channel != nil && g.channel.Id == channelID {
@@ -156,7 +157,7 @@ func (g *expandSelfGetter) GetChannel(channelID string) (*model.Channel, error) 
 	return g.mm.Channel.Get(channelID)
 }
 
-func (g *expandSelfGetter) GetChannelMember(channelID, userID string) (*model.ChannelMember, error) {
+func (g *expandSelfGetter) GetChannelMember(_ context.Context, channelID, userID string) (*model.ChannelMember, error) {
 	// Bypass permission checks, since the user is/just was in the channel. Use
 	// the cached data if available.
 	if g.cm != nil && g.cm.ChannelId == channelID && g.cm.UserId == userID {
@@ -165,13 +166,13 @@ func (g *expandSelfGetter) GetChannelMember(channelID, userID string) (*model.Ch
 	return g.mm.Channel.GetMember(channelID, userID)
 }
 
-func (g *expandSelfGetter) GetTeam(teamID string) (*model.Team, error) {
+func (g *expandSelfGetter) GetTeam(_ context.Context, teamID string) (*model.Team, error) {
 	// Bypass permission checks, since the user is the subscriber and is/just
 	// was in the team.
 	return g.mm.Team.Get(teamID)
 }
 
-func (g *expandSelfGetter) GetTeamMember(teamID, userID string) (*model.TeamMember, error) {
+func (g *expandSelfGetter) GetTeamMember(_ context.Context, teamID, userID string) (*model.TeamMember, error) {
 	// Bypass permission checks, since the user is/just was in the team. Use the
 	// cached data if available.
 	if g.tm != nil && g.tm.TeamId == teamID && g.tm.UserId == userID {

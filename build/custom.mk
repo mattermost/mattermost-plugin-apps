@@ -7,7 +7,7 @@ ifdef MM_RUDDER_PLUGINS_PROD
 	RUDDER_WRITE_KEY = $(MM_RUDDER_PLUGINS_PROD)
 endif
 
-LDFLAGS += -X "github.com/mattermost/mattermost-plugin-api/experimental/telemetry.rudderWriteKey=$(RUDDER_WRITE_KEY)"
+LDFLAGS += -X "github.com/mattermost/mattermost/server/public/plugin/experimental/telemetry.rudderWriteKey=$(RUDDER_WRITE_KEY)"
 
 BUILD_DATE = $(shell date -u)
 BUILD_HASH = $(shell git rev-parse HEAD)

@@ -10,7 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	apps "github.com/mattermost/mattermost-plugin-apps/apps"
 	incoming "github.com/mattermost/mattermost-plugin-apps/server/incoming"
-	model "github.com/mattermost/mattermost-server/v6/model"
+	model "github.com/mattermost/mattermost/server/public/model"
 )
 
 // MockSessionStore is a mock of SessionStore interface.
