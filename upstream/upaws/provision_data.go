@@ -202,7 +202,7 @@ func (pd *DeployData) Validate() error {
 
 	if len(pd.Manifest.AWSLambda.Functions) != len(pd.LambdaFunctions) {
 		result = multierror.Append(result,
-			errors.New("different number of functions in the manifest and in the bundle"))
+			errors.Errorf("different number of functions in the manifest and in the bundle: expected %d, found %d", len(pd.Manifest.AWSLambda.Functions), len(pd.LambdaFunctions)))
 	}
 
 	for _, function := range pd.Manifest.AWSLambda.Functions {
@@ -213,11 +213,11 @@ func (pd *DeployData) Validate() error {
 		}
 		if data.Handler != function.Handler {
 			result = multierror.Append(result,
-				errors.New("mismatched handler"))
+				errors.Errorf("mismatched handler: expected %s, found %s", function.Handler, data.Handler))
 		}
 		if data.Runtime != function.Runtime {
 			result = multierror.Append(result,
-				errors.New("mismatched runtime"))
+				errors.Errorf("mismatched runtime: expected %s, found %s", function.Runtime, data.Runtime))
 		}
 	}
 
