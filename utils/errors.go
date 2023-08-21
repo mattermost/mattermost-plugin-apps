@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/mattermost/mattermost/server/public/plugin/i18n"
+	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 	"github.com/pkg/errors"
 )
 

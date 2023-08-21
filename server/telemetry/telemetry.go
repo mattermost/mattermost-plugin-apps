@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	mmtelemetry "github.com/mattermost/mattermost/server/public/plugin/experimental/telemetry"
+	mmtelemetry "github.com/mattermost/mattermost/server/public/pluginapi/experimental/telemetry"
 )
 
 type Telemetry struct {

@@ -11,11 +11,11 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
-	"github.com/mattermost/mattermost/server/public/plugin/cluster"
-	"github.com/mattermost/mattermost/server/public/plugin/experimental/bot/logger"
-	mmtelemetry "github.com/mattermost/mattermost/server/public/plugin/experimental/telemetry"
-	"github.com/mattermost/mattermost/server/public/plugin/i18n"
-	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
+	"github.com/mattermost/mattermost/server/public/pluginapi"
+	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
+	"github.com/mattermost/mattermost/server/public/pluginapi/experimental/bot/logger"
+	mmtelemetry "github.com/mattermost/mattermost/server/public/pluginapi/experimental/telemetry"
+	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
 	"github.com/mattermost/mattermost-plugin-apps/server/builtin"

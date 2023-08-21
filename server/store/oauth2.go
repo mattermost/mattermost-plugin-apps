@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
+	"github.com/mattermost/mattermost/server/public/pluginapi"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils"

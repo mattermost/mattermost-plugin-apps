@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 
 	"github.com/mattermost/mattermost/server/public/model"
-	"github.com/mattermost/mattermost/server/public/plugin/i18n"
-	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
 	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
+	"github.com/mattermost/mattermost/server/public/pluginapi"
+	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/mattermost/mattermost/server/v8/platform/services/configservice"
 

@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"github.com/mattermost/mattermost/server/public/model"
-	"github.com/mattermost/mattermost/server/public/plugin/pluginapi"
+	"github.com/mattermost/mattermost/server/public/pluginapi"
 	"golang.org/x/net/context"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"

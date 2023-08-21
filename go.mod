@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-getter v1.6.2
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mattermost/mattermost/server/public v0.0.8-0.20230808080038-0753def44509
+	github.com/mattermost/mattermost/server/public v0.0.8
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20230808080038-0753def44509
 	github.com/nicksnyder/go-i18n/v2 v2.2.1
 	github.com/openfaas/faas-cli v0.0.0-20230119133646-fea2bf5a6d0c
