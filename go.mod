@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-getter v1.6.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattermost/mattermost/server/public v0.0.8
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20230808080038-0753def44509
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20230821092930-95b76e42ad62
 	github.com/nicksnyder/go-i18n/v2 v2.2.1
 	github.com/openfaas/faas-cli v0.0.0-20230119133646-fea2bf5a6d0c
 	github.com/pkg/errors v0.9.1
@@ -46,7 +46,6 @@ require (
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.5.0 // indirect
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/blevesearch/bleve/v2 v2.3.8 // indirect
 	github.com/blevesearch/bleve_index_api v1.0.5 // indirect
@@ -83,6 +82,7 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.5.4 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.16.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/geo v0.0.0-20230421003525-6adc56603217 // indirect
