@@ -156,7 +156,7 @@ jobs:
         with:
           repository: mattermost/mattermost-server
           path: mattermost-server
-          ref: v7.7.0
+          ref: v8.1.0-rc2
 
       - name: ci/setup-go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
