@@ -4,6 +4,7 @@
 package restapitest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -11,8 +12,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mattermost/mattermost-server/v6/api4"
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/v8/channels/api4"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -154,7 +155,7 @@ type appClient struct {
 func (th *Helper) createTestUser() *model.User {
 	testUsername := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
 	testEmail := fmt.Sprintf("%s@test.test", testUsername)
-	u, resp, err := th.ServerTestHelper.SystemAdminClient.CreateUser(&model.User{
+	u, resp, err := th.ServerTestHelper.SystemAdminClient.CreateUser(context.Background(), &model.User{
 		Username: testUsername,
 		Email:    testEmail,
 		Password: "Pa$$word11",
@@ -163,7 +164,7 @@ func (th *Helper) createTestUser() *model.User {
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("created test user @%s (%s)", u.Username, u.Id)
 	th.Cleanup(func() {
-		_, err := th.ServerTestHelper.SystemAdminClient.DeleteUser(u.Id)
+		_, err := th.ServerTestHelper.SystemAdminClient.DeleteUser(context.Background(), u.Id)
 		require.NoError(th, err)
 		th.Logf("deleted test user @%s (%s)", u.Username, u.Id)
 	})
@@ -172,7 +173,7 @@ func (th *Helper) createTestUser() *model.User {
 
 func (th *Helper) createTestChannel(client *model.Client4, teamID string) *model.Channel {
 	testName := fmt.Sprintf("test_%v", rand.Int()) //nolint:gosec
-	ch, resp, err := client.CreateChannel(&model.Channel{
+	ch, resp, err := client.CreateChannel(context.Background(), &model.Channel{
 		Name:   testName,
 		Type:   model.ChannelTypePrivate,
 		TeamId: teamID,
@@ -181,7 +182,7 @@ func (th *Helper) createTestChannel(client *model.Client4, teamID string) *model
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("created test channel %s (%s)", ch.Name, ch.Id)
 	th.Cleanup(func() {
-		_, err := th.ServerTestHelper.SystemAdminClient.DeleteChannel(ch.Id)
+		_, err := th.ServerTestHelper.SystemAdminClient.DeleteChannel(context.Background(), ch.Id)
 		require.NoError(th, err)
 		th.Logf("deleted test channel @%s (%s)", ch.Name, ch.Id)
 	})
@@ -190,7 +191,7 @@ func (th *Helper) createTestChannel(client *model.Client4, teamID string) *model
 
 func (th *Helper) createTestTeam() *model.Team {
 	testName := fmt.Sprintf("test%v", rand.Int()) //nolint:gosec
-	team, resp, err := th.ServerTestHelper.SystemAdminClient.CreateTeam(&model.Team{
+	team, resp, err := th.ServerTestHelper.SystemAdminClient.CreateTeam(context.Background(), &model.Team{
 		Name:        testName,
 		DisplayName: testName,
 		Type:        model.TeamOpen,
@@ -199,7 +200,7 @@ func (th *Helper) createTestTeam() *model.Team {
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("created test team %s (%s)", team.Name, team.Id)
 	th.Cleanup(func() {
-		_, err := th.ServerTestHelper.SystemAdminClient.SoftDeleteTeam(team.Id)
+		_, err := th.ServerTestHelper.SystemAdminClient.SoftDeleteTeam(context.Background(), team.Id)
 		require.NoError(th, err)
 		th.Logf("deleted test team @%s (%s)", team.Name, team.Id)
 	})
@@ -207,7 +208,7 @@ func (th *Helper) createTestTeam() *model.Team {
 }
 
 func (th *Helper) addChannelMember(channel *model.Channel, user *model.User) *model.ChannelMember {
-	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddChannelMember(channel.Id, user.Id)
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.AddChannelMember(context.Background(), channel.Id, user.Id)
 	require.NoError(th, err)
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("added user @%s (%s) to channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
@@ -215,7 +216,7 @@ func (th *Helper) addChannelMember(channel *model.Channel, user *model.User) *mo
 }
 
 func (th *Helper) addTeamMember(team *model.Team, user *model.User) *model.TeamMember {
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(team.Id, user.Id)
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.AddTeamMember(context.Background(), team.Id, user.Id)
 	require.NoError(th, err)
 	api4.CheckCreatedStatus(th, resp)
 	th.Logf("added user @%s (%s) to team %s (%s)", user.Username, user.Id, team.Name, team.Id)
@@ -223,49 +224,49 @@ func (th *Helper) addTeamMember(team *model.Team, user *model.User) *model.TeamM
 }
 
 func (th *Helper) removeUserFromChannel(channel *model.Channel, user *model.User) {
-	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(channel.Id, user.Id)
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveUserFromChannel(context.Background(), channel.Id, user.Id)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("removed user @%s (%s) from channel %s (%s)", user.Username, user.Id, channel.Name, channel.Id)
 }
 
 func (th *Helper) removeTeamMember(team *model.Team, user *model.User) {
-	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(team.Id, user.Id)
+	resp, err := th.ServerTestHelper.SystemAdminClient.RemoveTeamMember(context.Background(), team.Id, user.Id)
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	th.Logf("removed user @%s (%s) from team %s (%s)", user.Username, user.Id, team.Name, team.Id)
 }
 
 func (th *Helper) getUser(userID string) *model.User {
-	user, resp, err := th.ServerTestHelper.SystemAdminClient.GetUser(userID, "")
+	user, resp, err := th.ServerTestHelper.SystemAdminClient.GetUser(context.Background(), userID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return user
 }
 
 func (th *Helper) getChannel(channelID string) *model.Channel {
-	channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(channelID, "")
+	channel, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannel(context.Background(), channelID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return channel
 }
 
 func (th *Helper) getChannelMember(channelID, userID string) *model.ChannelMember {
-	cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(channelID, userID, "")
+	cm, resp, err := th.ServerTestHelper.SystemAdminClient.GetChannelMember(context.Background(), channelID, userID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return cm
 }
 
 func (th *Helper) getTeam(channelID string) *model.Team {
-	team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(channelID, "")
+	team, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeam(context.Background(), channelID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return team
 }
 
 func (th *Helper) getTeamMember(teamID, userID string) *model.TeamMember {
-	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(teamID, userID, "")
+	tm, resp, err := th.ServerTestHelper.SystemAdminClient.GetTeamMember(context.Background(), teamID, userID, "")
 	require.NoError(th, err)
 	api4.CheckOKStatus(th, resp)
 	return tm

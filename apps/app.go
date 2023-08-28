@@ -6,7 +6,7 @@ package apps
 import (
 	"encoding/json"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // App describes an App installed on a Mattermost instance. App should be

@@ -4,13 +4,15 @@
 package restapitest
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/v6/api4"
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
+
+	"github.com/mattermost/mattermost/server/v8/channels/api4"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -95,13 +97,13 @@ func testNotify(th *Helper) {
 	// Make sure the bot is a team and a channel member to be able to
 	// subscribe and be notified; the user already is, and sysadmin can see
 	// everything.
-	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(th.ServerTestHelper.BasicTeam.Id, th.LastInstalledApp.BotUserID)
+	tm, resp, err := th.ServerTestHelper.Client.AddTeamMember(context.Background(), th.ServerTestHelper.BasicTeam.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicTeam.Id, tm.TeamId)
 	require.Equal(th, th.LastInstalledApp.BotUserID, tm.UserId)
 	api4.CheckCreatedStatus(th, resp)
 
-	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(th.ServerTestHelper.BasicChannel.Id, th.LastInstalledApp.BotUserID)
+	cm, resp, err := th.ServerTestHelper.Client.AddChannelMember(context.Background(), th.ServerTestHelper.BasicChannel.Id, th.LastInstalledApp.BotUserID)
 	require.NoError(th, err)
 	require.Equal(th, th.ServerTestHelper.BasicChannel.Id, cm.ChannelId)
 	require.Equal(th, th.LastInstalledApp.BotUserID, cm.UserId)
