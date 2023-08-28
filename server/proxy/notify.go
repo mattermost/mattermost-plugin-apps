@@ -216,25 +216,30 @@ func (p *Proxy) NotifyChannelCreated(teamID, channelID string) {
 }
 
 func (p *Proxy) notifyAll(event apps.Event, uac apps.UserAgentContext, match func(store.Subscription) bool, getter ExpandGetter) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
-	defer cancel()
-	r := p.NewIncomingRequest().WithCtx(ctx)
-	r.Log = r.Log.With(event)
+	log := p.conf.NewBaseLogger().With("event", event)
 
 	subs, err := p.store.Subscription.Get(event)
 	if err != nil {
-		r.Log.WithError(err).Errorf("notify: failed to load subscriptions")
+		log.WithError(err).Errorf("notify: failed to load subscriptions")
 		return
 	}
 
 	for _, sub := range subs {
 		if match == nil || match(sub) {
-			go p.invokeNotify(r, event, sub,
-				&apps.Context{
-					Subject:          event.Subject,
-					UserAgentContext: uac,
-				},
-				getter)
+			sub := sub
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), config.RequestTimeout)
+				defer cancel()
+				r := p.NewIncomingRequest().WithCtx(ctx)
+				r.Log = log
+
+				p.invokeNotify(r, event, sub,
+					&apps.Context{
+						Subject:          event.Subject,
+						UserAgentContext: uac,
+					},
+					getter)
+			}()
 		}
 	}
 }
