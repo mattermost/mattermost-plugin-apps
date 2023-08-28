@@ -21,7 +21,7 @@ import (
 )
 
 // Note: run
-// set export MM_SERVER_PATH="<go path>/src/github.com/mattermost/mattermost-server"
+// set export MM_SERVER_PATH="<go path>/src/github.com/mattermost/mattermost/server"
 // command (or equivalent) before running the tests
 var pluginID = "com.mattermost.apps"
 
@@ -51,7 +51,7 @@ type Caller func(apps.AppID, apps.CallRequest) *apps.CallResponse
 func NewHelper(t *testing.T, apps ...*goapp.App) *Helper {
 	// Check environment
 	require.NotEmpty(t, os.Getenv("MM_SERVER_PATH"),
-		"MM_SERVER_PATH is not set, please set it to the path of your mattermost-server clone")
+		"MM_SERVER_PATH is not set, please set it to the path of your mattermost mono repo clone")
 
 	// Unset SiteURL, just in case it's set
 	err := os.Unsetenv("MM_SERVICESETTINGS_SITEURL")
