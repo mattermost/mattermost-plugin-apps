@@ -1,10 +1,11 @@
 package appclient
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
@@ -187,8 +188,8 @@ func (c *Client) Call(creq apps.CallRequest) (*apps.CallResponse, error) {
 	return cresp, nil
 }
 
-func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
-	createdPost, res, err := c.Client4.CreatePost(post)
+func (c *Client) CreatePost(ctx context.Context, post *model.Post) (*model.Post, error) {
+	createdPost, res, err := c.Client4.CreatePost(ctx, post)
 	if err != nil {
 		return nil, err
 	}
@@ -200,18 +201,18 @@ func (c *Client) CreatePost(post *model.Post) (*model.Post, error) {
 	return createdPost, nil
 }
 
-func (c *Client) DM(userID string, format string, args ...interface{}) (*model.Post, error) {
-	return c.DMPost(userID, &model.Post{
+func (c *Client) DM(ctx context.Context, userID string, format string, args ...interface{}) (*model.Post, error) {
+	return c.DMPost(ctx, userID, &model.Post{
 		Message: fmt.Sprintf(format, args...),
 	})
 }
 
-func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
+func (c *Client) DMPost(ctx context.Context, userID string, post *model.Post) (*model.Post, error) {
 	if c.userID == "" {
 		return nil, errors.New("empty sender user_id, perhaps Call does not expand acting_user")
 	}
 
-	channel, res, err := c.CreateDirectChannel(c.userID, userID)
+	channel, res, err := c.CreateDirectChannel(ctx, c.userID, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get direct channel")
 	}
@@ -221,5 +222,5 @@ func (c *Client) DMPost(userID string, post *model.Post) (*model.Post, error) {
 	}
 
 	post.ChannelId = channel.Id
-	return c.CreatePost(post)
+	return c.CreatePost(ctx, post)
 }

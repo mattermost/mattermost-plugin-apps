@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -110,7 +111,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 
 	teamID := ""
 	if teamName != "" {
-		team, _, err := asActingUser.GetTeamByName(teamName, "")
+		team, _, err := asActingUser.GetTeamByName(context.Background(), "", "")
 		if err != nil || team == nil {
 			return apps.NewErrorResponse(err)
 		}
@@ -134,7 +135,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 		apps.SubjectChannelCreated:
 		sub.TeamID = teamID
 		if teamID != "" {
-			_, _, err := asActingUser.AddTeamMember(teamID, creq.Context.BotUserID)
+			_, _, err := asActingUser.AddTeamMember(context.Background(), teamID, creq.Context.BotUserID)
 			if err != nil {
 				return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to team"))
 			}
@@ -151,7 +152,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 	}
 
 	if creq.Context.Channel.Type == model.ChannelTypeOpen || creq.Context.Channel.Type == model.ChannelTypePrivate {
-		_, _, err := asActingUser.AddChannelMember(creq.Context.Channel.Id, creq.Context.BotUserID)
+		_, _, err := asActingUser.AddChannelMember(context.Background(), creq.Context.Channel.Id, creq.Context.BotUserID)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to channel"))
 		}
@@ -181,7 +182,7 @@ func handleUnsubscribe(creq *apps.CallRequest) apps.CallResponse {
 func ensureNotifyChannel(creq *apps.CallRequest) error {
 	client := appclient.AsActingUser(creq.Context)
 
-	channel, _, err := client.GetChannelByName("test-app-notifications", creq.Context.Team.Id, "")
+	channel, _, err := client.GetChannelByName(context.Background(), "test-app-notifications", creq.Context.Team.Id, "")
 	if err != nil {
 		appErr, ok := err.(*model.AppError)
 		if !ok || appErr.StatusCode != http.StatusNotFound {
@@ -190,7 +191,7 @@ func ensureNotifyChannel(creq *apps.CallRequest) error {
 	}
 
 	if channel == nil {
-		channel, _, err = client.CreateChannel(&model.Channel{
+		channel, _, err = client.CreateChannel(context.Background(), &model.Channel{
 			TeamId:      creq.Context.Team.Id,
 			Type:        model.ChannelTypePrivate,
 			DisplayName: "Test App Notifications",
@@ -201,7 +202,7 @@ func ensureNotifyChannel(creq *apps.CallRequest) error {
 		}
 	}
 
-	_, _, err = client.AddChannelMember(channel.Id, creq.Context.BotUserID)
+	_, _, err = client.AddChannelMember(context.Background(), channel.Id, creq.Context.BotUserID)
 	if err != nil {
 		return errors.Wrap(err, "failed to add bot to notification channel")
 	}
@@ -219,12 +220,12 @@ func handleNotify(creq *apps.CallRequest) apps.CallResponse {
 		Message: fmt.Sprintf("Received notification, `Context`:\n```json\n%s\n```\n", utils.Pretty(creq.Context)),
 	}
 
-	team, _, err := client.GetTeamByName(testTeamName, "")
+	team, _, err := client.GetTeamByName(context.Background(), testTeamName, "")
 	if err != nil {
 		Log.Debugf("failed to look up team %s: %v", testTeamName, err)
 	}
 
-	channel, _, err := client.GetChannelByName(testChannelName, team.Id, "")
+	channel, _, err := client.GetChannelByName(context.Background(), testChannelName, team.Id, "")
 	if err != nil {
 		Log.Debugf("failed to look up notification channel: %v", err)
 	}
@@ -232,7 +233,7 @@ func handleNotify(creq *apps.CallRequest) apps.CallResponse {
 	if channel != nil {
 		post.ChannelId = channel.Id
 
-		_, err = client.CreatePost(post)
+		_, err = client.CreatePost(context.Background(), post)
 		if err != nil {
 			Log.Debugf("failed to create post in global channel: %v", err)
 		}
@@ -248,7 +249,7 @@ func handleNotify(creq *apps.CallRequest) apps.CallResponse {
 			}
 		}
 
-		_, err = client.CreatePost(post)
+		_, err = client.CreatePost(context.Background(), post)
 		if err != nil {
 			Log.Debugf("failed to create post in channel: %v", err)
 		}

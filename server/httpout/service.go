@@ -6,7 +6,7 @@ package httpout
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v6/services/httpservice"
+	"github.com/mattermost/mattermost/server/v8/platform/services/httpservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"

@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	mmtelemetry "github.com/mattermost/mattermost-plugin-api/experimental/telemetry"
+	mmtelemetry "github.com/mattermost/mattermost/server/public/pluginapi/experimental/telemetry"
 )
 
 type Telemetry struct {
@@ -14,8 +14,8 @@ func NewTelemetry(tracker mmtelemetry.Tracker) *Telemetry {
 	}
 }
 
-func (t *Telemetry) UpdateTracker(tracker mmtelemetry.Tracker) {
-	t.tracker = tracker
+func (t *Telemetry) ReloadConfig(config mmtelemetry.TrackerConfig) {
+	t.tracker.ReloadConfig(config)
 }
 
 func (t *Telemetry) TrackInstall(appID, appType string) {

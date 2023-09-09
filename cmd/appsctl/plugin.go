@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -33,7 +34,10 @@ var pluginDeployCmd = &cobra.Command{
 			return err
 		}
 
-		m, err := installPlugin(appClient, bundlePath)
+		ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+		defer cancel()
+
+		m, err := installPlugin(ctx, appClient, bundlePath)
 		if err != nil {
 			return err
 		}

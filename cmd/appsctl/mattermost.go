@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
@@ -46,19 +47,19 @@ func updateMattermost(appClient *appclient.Client, m apps.Manifest, deployType a
 	return nil
 }
 
-func installPlugin(appClient *appclient.Client, bundlePath string) (*apps.Manifest, error) {
+func installPlugin(ctx context.Context, appClient *appclient.Client, bundlePath string) (*apps.Manifest, error) {
 	f, err := os.Open(bundlePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open the plugin bundle")
 	}
 	defer f.Close()
 
-	pluginManifest, _, err := appClient.UploadPluginForced(f)
+	pluginManifest, _, err := appClient.UploadPluginForced(ctx, f)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to upload the plugin to Mattermost")
 	}
 
-	_, err = appClient.EnablePlugin(pluginManifest.Id)
+	_, err = appClient.EnablePlugin(ctx, pluginManifest.Id)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to enable plugin on Mattermost")
 	}

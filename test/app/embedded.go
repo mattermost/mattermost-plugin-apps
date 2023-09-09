@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -80,7 +82,7 @@ func handleCreateEmbedded(creq *apps.CallRequest) apps.CallResponse {
 		},
 	})
 
-	_, err := client.CreatePost(p)
+	_, err := client.CreatePost(context.Background(), p)
 	if err != nil {
 		return apps.NewErrorResponse(err)
 	}
