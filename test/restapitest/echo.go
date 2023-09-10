@@ -80,6 +80,9 @@ func testEcho(th *Helper) {
 					AppPath:       "/plugins/com.mattermost.apps/apps/" + string(echoID),
 					DeveloperMode: true,
 				},
+				UserAgentContext: apps.UserAgentContext{
+					UserAgent: "test",
+				},
 			},
 		}, echoResp)
 	})
