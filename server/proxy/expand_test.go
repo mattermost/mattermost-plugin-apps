@@ -299,4 +299,38 @@ func TestExpand(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Should preserve user_agent and track_as_submit fields after the context is expanded", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		client := mock_proxy.NewMockExpandGetter(ctrl)
+		conf := config.NewTestConfigService(&config.Config{
+			DeveloperMode:     true,
+			MattermostSiteURL: "https://test.mattermost.test",
+		}).WithMattermostConfig(model.Config{
+			ServiceSettings: model.ServiceSettings{
+				SiteURL: model.NewString("https://test.mattermost.test"),
+			},
+		})
+
+		p := &Proxy{
+			conf: conf,
+		}
+
+		r := incoming.NewRequest(conf, nil).WithDestination(app.AppID)
+
+		e := apps.Expand{}
+
+		testContext := apps.Context{}
+		testUserAgentContext := apps.UserAgentContext{
+			UserAgent:     "webapp",
+			TrackAsSubmit: true,
+		}
+		testContext.UserAgentContext = testUserAgentContext
+
+		expandedContext, err := p.expandContext(r, app, &testContext, &e, client)
+		require.NoError(t, err)
+
+		require.EqualValues(t, testUserAgentContext.UserAgent, expandedContext.UserAgentContext.UserAgent)
+		require.EqualValues(t, testUserAgentContext.TrackAsSubmit, expandedContext.UserAgentContext.TrackAsSubmit)
+	})
 }
