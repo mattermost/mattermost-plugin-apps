@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -152,13 +153,13 @@ func Send(w http.ResponseWriter, req *http.Request) {
 	if ok && v != nil {
 		message += fmt.Sprintf(" ...and %s!", v)
 	}
-	_, err := appclient.AsBot(c.Context).DM(c.Context.ActingUser.Id, message)
+	_, err := appclient.AsBot(c.Context).DM(context.Background(), c.Context.ActingUser.Id, message)
 	if err != nil {
 		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to send bot DM")))
 		return
 	}
 
-	_, err = appclient.AsActingUser(c.Context).DM(c.Context.BotUserID, "Hello, bot!")
+	_, err = appclient.AsActingUser(c.Context).DM(context.Background(), c.Context.BotUserID, "Hello, bot!")
 	if err != nil {
 		_ = httputils.WriteJSON(w, apps.NewErrorResponse(errors.Wrap(err, "Failed to respond to bot")))
 		return

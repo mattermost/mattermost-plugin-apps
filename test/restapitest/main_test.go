@@ -6,8 +6,8 @@ package restapitest
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v6/api4"
-	"github.com/mattermost/mattermost-server/v6/testlib"
+	"github.com/mattermost/mattermost/server/v8/channels/api4"
+	"github.com/mattermost/mattermost/server/v8/channels/testlib"
 )
 
 var mainHelper *testlib.MainHelper

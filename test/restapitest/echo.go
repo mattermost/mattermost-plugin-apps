@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/goapp"
@@ -79,6 +79,9 @@ func testEcho(th *Helper) {
 				ExpandedContext: apps.ExpandedContext{
 					AppPath:       "/plugins/com.mattermost.apps/apps/" + string(echoID),
 					DeveloperMode: true,
+				},
+				UserAgentContext: apps.UserAgentContext{
+					UserAgent: "test",
 				},
 			},
 		}, echoResp)

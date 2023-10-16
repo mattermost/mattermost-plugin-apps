@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 
 	"github.com/pkg/errors"
@@ -52,7 +53,7 @@ var send = goapp.MakeBindableFormOrPanic("send",
 			message += " ...and " + custom + "!"
 		}
 
-		_, err := creq.AsBot().DM(creq.Context.ActingUser.Id, message)
+		_, err := creq.AsBot().DM(context.Background(), creq.Context.ActingUser.Id, message)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to send DM to user"))
 		}

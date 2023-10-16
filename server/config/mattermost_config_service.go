@@ -6,8 +6,9 @@ package config
 import (
 	"crypto/ecdsa"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/configservice"
+	"github.com/mattermost/mattermost/server/public/model"
+
+	"github.com/mattermost/mattermost/server/v8/platform/services/configservice"
 )
 
 type mattermostConfigService struct {

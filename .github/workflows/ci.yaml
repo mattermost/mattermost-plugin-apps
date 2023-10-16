@@ -151,12 +151,12 @@ jobs:
       - name: ci/checkout-repo
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
 
-      - name: ci/checkout-mattermost-server-repo
+      - name: ci/checkout-mattermost-mono-repo
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          repository: mattermost/mattermost-server
-          path: mattermost-server
-          ref: v7.7.0
+          repository: mattermost/mattermost
+          path: mattermost
+          ref: v8.1.0
 
       - name: ci/setup-go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -167,7 +167,7 @@ jobs:
       - name: ci/test-with-db
         env:
           MM_SERVICESETTINGS_ENABLEDEVELOPER: true
-          MM_SERVER_PATH: ${{ github.workspace }}/mattermost-server
+          MM_SERVER_PATH: ${{ github.workspace }}/mattermost/server
         run: make test-rest-api
 
   e2e-cypress-tests-pinned: # Run only on master push and scheduled runs
@@ -216,7 +216,7 @@ jobs:
         ports:
           - 9200:9200
       mattermost-server:
-        image: mattermost/mattermost-enterprise-edition:release-7.7
+        image: mattermost/mattermost-enterprise-edition:release-8.1
         env:
           DB_HOST: postgres
           DB_PORT_NUMBER: 5432

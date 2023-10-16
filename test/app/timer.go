@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/apps/appclient"
@@ -78,14 +79,14 @@ func handleCreateTimer(creq *apps.CallRequest) apps.CallResponse {
 	}
 
 	if creq.Context.Team != nil {
-		_, _, err = client.AddTeamMember(creq.Context.Team.Id, creq.Context.BotUserID)
+		_, _, err = client.AddTeamMember(context.Background(), creq.Context.Team.Id, creq.Context.BotUserID)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to team"))
 		}
 	}
 
 	if creq.Context.Channel.Type == model.ChannelTypeOpen || creq.Context.Channel.Type == model.ChannelTypePrivate {
-		_, _, err = client.AddChannelMember(creq.Context.Channel.Id, creq.Context.BotUserID)
+		_, _, err = client.AddChannelMember(context.Background(), creq.Context.Channel.Id, creq.Context.BotUserID)
 		if err != nil {
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to add bot to channel"))
 		}
@@ -116,7 +117,7 @@ func handleExecuteTimer(creq *apps.CallRequest) apps.CallResponse {
 			}
 		}
 
-		_, err := client.CreatePost(post)
+		_, err := client.CreatePost(context.Background(), post)
 		if err != nil {
 			Log.Debugf("failed to create post in channel: %v", err)
 		}

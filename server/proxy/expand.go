@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	appspath "github.com/mattermost/mattermost-plugin-apps/apps/path"
@@ -214,7 +214,10 @@ func (e *expander) expand(expand *apps.Expand) (*apps.Context, error) {
 	}
 
 	// Cleanup fields that must not go to the app.
-	e.Context.UserAgentContext = apps.UserAgentContext{}
+	e.Context.UserAgentContext = apps.UserAgentContext{
+		UserAgent:     e.UserAgentContext.UserAgent,
+		TrackAsSubmit: e.UserAgentContext.TrackAsSubmit,
+	}
 	e.Context.UserID = ""
 
 	return &e.Context, nil
@@ -243,7 +246,7 @@ func (e *expander) expandUser(userPtr **model.User, userID string) expandFunc {
 			return errors.New("internal unreachable error: nil userPtr")
 		}
 
-		user, err := e.getter.GetUser(userID)
+		user, err := e.getter.GetUser(e.r.Ctx(), userID)
 		if err != nil {
 			return errors.Wrapf(err, "id: %s", userID)
 		}
@@ -272,7 +275,7 @@ func (e *expander) expandChannelMember(level apps.ExpandLevel) error {
 		return errors.New("no user ID or channel ID to expand")
 	}
 
-	cm, err := e.getter.GetChannelMember(channelID, userID)
+	cm, err := e.getter.GetChannelMember(e.r.Ctx(), channelID, userID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get channel membership")
 	}
@@ -286,7 +289,7 @@ func (e *expander) expandChannel(level apps.ExpandLevel) error {
 		return errors.New("no channel ID to expand")
 	}
 
-	channel, err := e.getter.GetChannel(channelID)
+	channel, err := e.getter.GetChannel(e.r.Ctx(), channelID)
 	if err != nil {
 		if level == apps.ExpandID {
 			// Always expand Channel and Team IDs to make `bot_left_channel`
@@ -311,7 +314,7 @@ func (e *expander) expandTeam(level apps.ExpandLevel) error {
 		return errors.New("no team ID to expand")
 	}
 
-	team, err := e.getter.GetTeam(teamID)
+	team, err := e.getter.GetTeam(e.r.Ctx(), teamID)
 	if err != nil {
 		if level == apps.ExpandID {
 			// Always expand Team ID to make `bot_left_team` works. This really
@@ -338,7 +341,7 @@ func (e *expander) expandTeamMember(level apps.ExpandLevel) error {
 		return errors.New("no user ID or channel ID to expand")
 	}
 
-	tm, err := e.getter.GetTeamMember(teamID, userID)
+	tm, err := e.getter.GetTeamMember(e.r.Ctx(), teamID, userID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get team membership")
 	}
@@ -352,7 +355,7 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 			return errors.New("no post ID to expand")
 		}
 
-		post, err := e.getter.GetPost(postID)
+		post, err := e.getter.GetPost(e.r.Ctx(), postID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get post %s", postID)
 		}

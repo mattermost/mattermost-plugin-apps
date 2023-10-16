@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
 
@@ -14,6 +16,10 @@ var (
 )
 
 var log = utils.MustMakeCommandLogger(zapcore.InfoLevel)
+
+const (
+	commandTimeout = 2 * time.Minute
+)
 
 var (
 	dockerRegistry        string
