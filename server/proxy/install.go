@@ -263,6 +263,25 @@ func (p *Proxy) ensureBotNamed(r *incoming.Request, app *apps.App, icon io.Reade
 		} else {
 			bot.UserId = user.Id
 			bot.Username = user.Username
+
+			if user.GetDisplayName(model.ShowFullName) != app.DisplayName {
+				// The app has changed its display name
+				bot.DisplayName = app.DisplayName
+				bot.Description = fmt.Sprintf("Bot account for `%s` App.", app.DisplayName)
+
+				patchData := model.BotPatch{
+					Username:    &bot.Username,
+					DisplayName: &bot.DisplayName,
+					Description: &bot.Description,
+				}
+
+				r.Log.Debugw("app install flow: patching existing Bot Account", "username", bot.Username, "id", bot.UserId)
+				bot, err = mm.Bot.Patch(bot.UserId, &patchData)
+				if err != nil {
+					return err
+				}
+			}
+
 			r.Log.Debugw("app install flow: using existing Bot Account", "username", bot.Username, "id", bot.UserId)
 		}
 	}

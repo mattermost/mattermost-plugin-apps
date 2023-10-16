@@ -42,6 +42,7 @@ func TestRESTAPI(t *testing.T) {
 		"timer":         testTimer,
 		"notify":        testNotify,
 		"uninstall":     testUninstall,
+		"rename_bot":    testRenameBot,
 	} {
 		th.CleanRun(name, testF)
 	}
