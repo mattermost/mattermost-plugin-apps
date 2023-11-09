@@ -6,9 +6,9 @@
 
 ## Contents
 - [Overview](#overview)
-- [Running the Tests](#running-the-tests)
 - End User Guide
     - [Develop an App](#develop-an-app)
+- [Running the Tests](#running-the-tests)
 - [Deploying and Installing Apps](#deploying-and-installing-apps)
 
 ## Overview
@@ -16,6 +16,10 @@
 This plugin serves as the core of the Mattermost Apps Framework. It extends the Mattermost server's API to allow for the creation of feature-rich integrations, with functionality supported on the Mattermost web client and mobile client. Take a look at the [app developer documentation](https://developers.mattermost.com/integrate/apps) for more information.
 
 Join the [Mattermost Apps channel](https://community.mattermost.com/core/channels/mattermost-apps) on our community server to discuss technical details and use cases for the app you're creating.
+
+## Develop an App
+
+Refer to the [Mattermost Apps Quick Start Guide](https://developers.mattermost.com/integrate/apps/quickstart/) for instructions on how to use the development environment and examples in the [mattermost/mattermost-app-examples](https://github.com/mattermost/mattermost-app-examples) repository.
 
 ## Running the Tests
 
@@ -51,6 +55,4 @@ make test-e2e
 
 See [documentation](https://developers.mattermost.com/integrate/apps/deploy/)
 
-## Develop an App
 
-Refer to the [Mattermost Apps Quick Start Guide](https://developers.mattermost.com/integrate/apps/quickstart/) for instructions on how to use the development environment and examples in the [mattermost/mattermost-app-examples](https://github.com/mattermost/mattermost-app-examples) repository.
