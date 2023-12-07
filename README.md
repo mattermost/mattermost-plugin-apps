@@ -18,7 +18,7 @@ Join the [Mattermost Apps channel](https://community.mattermost.com/core/channel
 
 ## Deploying and Installing Apps
 
-See [documentation](https://developers.mattermost.com/integrate/apps/deploy/)
+See [documentation](https://developers.mattermost.com/integrate/apps/)
 
 ## Develop an App
 
