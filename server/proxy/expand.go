@@ -488,7 +488,7 @@ func (e *expander) consistencyCheck() error {
 	}
 
 	if e.ExpandedContext.Channel != nil {
-		if e.UserAgentContext.TeamID != "" && e.ExpandedContext.Channel.Type != model.ChannelTypeDirect && e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
+		if e.UserAgentContext.TeamID != "" && e.ExpandedContext.Channel.Type != model.ChannelTypeDirect && e.ExpandedContext.Channel.Type != model.ChannelTypeGroup && e.ExpandedContext.Channel.TeamId != e.UserAgentContext.TeamID {
 			return errors.Errorf("expanded channel's team ID %s is different from user agent context %s",
 				e.ExpandedContext.Channel.TeamId, e.UserAgentContext.TeamID)
 		}
