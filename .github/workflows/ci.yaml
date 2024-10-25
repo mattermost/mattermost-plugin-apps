@@ -175,7 +175,7 @@ jobs:
   e2e-cypress-tests-pinned: # Run only on master push and scheduled runs
     runs-on: ubuntu-latest-4-cores
     # Disabled broken test
-    if: ${{ false && github.ref_name == 'master' || github.event_name == 'schedule' }} 
+    if: ${{ false && ( github.ref_name == 'master' || github.event_name == 'schedule' ) }} 
     needs:
       - lint
     services:
@@ -303,7 +303,7 @@ jobs:
   e2e-cypress-tests-master: # Run only on master push and scheduled runs
     runs-on: ubuntu-latest-4-cores
     # Disabled broken test
-    if: ${{ false && github.ref_name == 'master' || github.event_name == 'schedule' }} 
+    if: ${{ false && ( github.ref_name == 'master' || github.event_name == 'schedule' ) }} 
     needs:
       - lint
     services:
