@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository is deprecated and no longer maintained. For more information about the transition to the Plugin Framework, please see the [official announcement](https://forum.mattermost.com/t/transition-from-apps-framework-to-plugin-framework-in-mattermost-v10/19330). Refer to the official Mattermost documentation for current integration solutions.
+
 # Mattermost Apps Framework Plugin
 
 ![CircleCI branch](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-apps/master.svg)
@@ -18,7 +21,7 @@ Join the [Mattermost Apps channel](https://community.mattermost.com/core/channel
 
 ## Deploying and Installing Apps
 
-See [documentation](https://developers.mattermost.com/integrate/apps/)
+See [legacy documentation](https://github.com/mattermost/mattermost-developer-documentation/blob/a47fef0b3848eff9be54ca58f0b875958cd4421b/site/content/integrate/apps/_index.md)
 
 ## Develop an App
 
