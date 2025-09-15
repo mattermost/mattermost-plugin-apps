@@ -8,6 +8,7 @@ import (
 )
 
 // static is preloaded with the contents of the ./static directory.
+//
 //go:embed static
 var static embed.FS
 
@@ -39,7 +40,7 @@ var set = goapp.MakeBindableFormOrPanic("set",
 		Fields: []apps.Field{
 			{
 				Name:          "prefix",
-				Description:   "The namespace prefix to use, just 2 charachters, don't even ask why...",
+				Description:   "The namespace prefix to use, just 2 characters, don't even ask why...",
 				TextMaxLength: 2,
 			},
 			{
@@ -89,7 +90,7 @@ var get = goapp.MakeBindableFormOrPanic("get",
 		Fields: []apps.Field{
 			{
 				Name:          "prefix",
-				Description:   "The namespace prefix to use, just 2 charachters, don't even ask why...",
+				Description:   "The namespace prefix to use, just 2 characters, don't even ask why...",
 				TextMaxLength: 2,
 			},
 			{
