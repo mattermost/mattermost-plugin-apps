@@ -140,8 +140,6 @@ func (p *Proxy) InstallApp(r *incoming.Request, cc apps.Context, appID apps.AppI
 		}
 	}
 
-	p.conf.Telemetry().TrackInstall(string(app.AppID), string(app.DeployType))
-
 	p.dispatchRefreshBindingsEvent(r.ActingUserID())
 
 	return app, message, nil

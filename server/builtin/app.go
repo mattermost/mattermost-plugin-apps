@@ -295,7 +295,7 @@ func (a *builtinApp) checkConfigValid(call *apps.Call, loc *i18n.Localizer) erro
 		return nil
 	}
 
-	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+	oauthEnabled := a.conf.MattermostConfig().ServiceSettings.EnableOAuthServiceProvider
 
 	if oauthEnabled == nil || !*oauthEnabled {
 		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)

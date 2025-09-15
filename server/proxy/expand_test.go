@@ -261,7 +261,7 @@ func TestExpand(t *testing.T) {
 						MattermostSiteURL: "https://test.mattermost.test",
 					}).WithMattermostConfig(model.Config{
 						ServiceSettings: model.ServiceSettings{
-							SiteURL: model.NewString("https://test.mattermost.test"),
+							SiteURL: model.NewPointer("https://test.mattermost.test"),
 						},
 					})
 					for level, expected := range tc.expect {
@@ -308,7 +308,7 @@ func TestExpand(t *testing.T) {
 			MattermostSiteURL: "https://test.mattermost.test",
 		}).WithMattermostConfig(model.Config{
 			ServiceSettings: model.ServiceSettings{
-				SiteURL: model.NewString("https://test.mattermost.test"),
+				SiteURL: model.NewPointer("https://test.mattermost.test"),
 			},
 		})
 

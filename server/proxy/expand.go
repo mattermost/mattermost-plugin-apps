@@ -367,9 +367,9 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 func (e *expander) expandLocale(level apps.ExpandLevel) error {
 	confService := e.r.Config()
 	if e.ExpandedContext.ActingUser != nil {
-		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig().Config(), e.ExpandedContext.ActingUser)
+		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig(), e.ExpandedContext.ActingUser)
 	} else {
-		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig().Config(), e.r.ActingUserID())
+		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig(), e.r.ActingUserID())
 	}
 	return nil
 }

@@ -13,8 +13,6 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
-	"github.com/mattermost/mattermost/server/public/pluginapi/experimental/bot/logger"
-	mmtelemetry "github.com/mattermost/mattermost/server/public/pluginapi/experimental/telemetry"
 	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/appservices"
@@ -25,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-apps/server/proxy"
 	"github.com/mattermost/mattermost-plugin-apps/server/session"
 	"github.com/mattermost/mattermost-plugin-apps/server/store"
-	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
@@ -42,9 +39,6 @@ type Plugin struct {
 
 	httpIn  *httpin.Service
 	httpOut httpout.Service
-
-	telemetryClient mmtelemetry.Client
-	tracker         *telemetry.Telemetry
 }
 
 func NewPlugin(pluginManifest model.Manifest) *Plugin {
@@ -74,32 +68,18 @@ func (p *Plugin) OnActivate() (err error) {
 		return errors.Wrap(err, "failed to load localization files")
 	}
 
-	p.telemetryClient, err = mmtelemetry.NewRudderClient()
-	if err != nil {
-		log.WithError(err).Warnw("failed to start telemetry client.")
-	}
-
-	p.tracker = telemetry.NewTelemetry(
-		mmtelemetry.NewTracker(
-			p.telemetryClient,
-			p.API.GetDiagnosticId(),
-			p.API.GetServerVersion(),
-			manifest.Id,
-			manifest.Version,
-			"appsFramework",
-			mmtelemetry.NewTrackerConfig(p.API.GetConfig()),
-			logger.New(p.API),
-		),
-	)
-
 	// Configure the plugin.
-	confService, err := config.MakeService(mm, p.manifest, botUserID, p.tracker, i18nBundle, log)
+	confService, err := config.MakeService(mm, p.manifest, botUserID, i18nBundle, log)
 	if err != nil {
 		log.WithError(err).Infow("failed to load initial configuration")
 		return errors.Wrap(err, "failed to load initial configuration")
 	}
 	p.conf = confService
 	log = p.conf.NewBaseLogger()
+
+	if !p.conf.MattermostConfig().FeatureFlags.AppsEnabled {
+		return errors.New("AppsEnabled feature flag is set to fals. Please enable it using MM_FEATUREFLAGS_AppsEnabled=true")
+	}
 
 	conf := p.conf.Get()
 	log.With(conf).Debugw("configured the plugin.")
@@ -164,13 +144,6 @@ func (p *Plugin) OnDeactivate() error { //nolint:golint,unparam
 	conf := p.conf.Get()
 	p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(config.WebSocketEventPluginDisabled, conf.GetPluginVersionInfo(), &model.WebsocketBroadcast{})
 
-	if p.telemetryClient != nil {
-		err := p.telemetryClient.Close()
-		if err != nil {
-			p.API.LogWarn("OnDeactivate: failed to close telemetryClient", "error", err.Error())
-		}
-	}
-
 	return nil
 }
 
@@ -178,10 +151,6 @@ func (p *Plugin) OnConfigurationChange() error {
 	if p.conf == nil {
 		// pre-activate, nothing to do.
 		return nil
-	}
-
-	if p.tracker != nil {
-		p.tracker.ReloadConfig(mmtelemetry.NewTrackerConfig(p.API.GetConfig()))
 	}
 
 	mm := pluginapi.NewClient(p.API, p.Driver)

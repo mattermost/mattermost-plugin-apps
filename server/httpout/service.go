@@ -6,7 +6,8 @@ package httpout
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost/server/v8/platform/services/httpservice"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/httpservice"
 
 	"github.com/mattermost/mattermost-plugin-apps/server/config"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
@@ -31,13 +32,21 @@ var _ httpservice.HTTPService = (*service)(nil)
 
 func NewService(conf config.Service) Service {
 	return &service{
-		HTTPService: httpservice.MakeHTTPService(conf.MattermostConfig()),
+		HTTPService: httpservice.MakeHTTPService(&configGetter{conf.MattermostConfig}),
 		conf:        conf,
 	}
 }
 
+type configGetter struct {
+	getConfig func() *model.Config
+}
+
+func (cg *configGetter) Config() *model.Config {
+	return cg.getConfig()
+}
+
 func (s *service) Configure(_ config.Config, _ utils.Logger) error {
-	s.HTTPService = httpservice.MakeHTTPService(s.conf.MattermostConfig())
+	s.HTTPService = httpservice.MakeHTTPService(&configGetter{s.conf.MattermostConfig})
 	return nil
 }
 

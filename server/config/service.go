@@ -14,9 +14,6 @@ import (
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
-	"github.com/mattermost/mattermost/server/v8/platform/services/configservice"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/upstream/upaws"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
@@ -28,9 +25,8 @@ type Configurable interface {
 type Service interface {
 	Get() Config
 	MattermostAPI() *pluginapi.Client
-	MattermostConfig() configservice.ConfigService
+	MattermostConfig() *model.Config
 	I18N() *i18n.Bundle
-	Telemetry() *telemetry.Telemetry
 	NewBaseLogger() utils.Logger
 	SystemDefaultFlags() (devMode, allowHTTPApps bool)
 
@@ -45,21 +41,19 @@ type service struct {
 	botUserID      string
 	mm             *pluginapi.Client
 	i18n           *i18n.Bundle
-	telemetry      *telemetry.Telemetry
 
 	lock             *sync.RWMutex
 	conf             *Config
 	mattermostConfig *model.Config
 }
 
-func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, telemetry *telemetry.Telemetry, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
+func MakeService(mm *pluginapi.Client, pliginManifest model.Manifest, botUserID string, i18nBundle *i18n.Bundle, log utils.Logger) (Service, error) {
 	s := &service{
 		pluginManifest: pliginManifest,
 		botUserID:      botUserID,
 		mm:             mm,
 		lock:           &sync.RWMutex{},
 		i18n:           i18nBundle,
-		telemetry:      telemetry,
 	}
 
 	sc := StoredConfig{}
@@ -203,11 +197,7 @@ func (s *service) I18N() *i18n.Bundle {
 	return s.i18n
 }
 
-func (s *service) Telemetry() *telemetry.Telemetry {
-	return s.telemetry
-}
-
-func (s *service) MattermostConfig() configservice.ConfigService {
+func (s *service) MattermostConfig() *model.Config {
 	s.lock.RLock()
 	mmconf := s.mattermostConfig
 	s.lock.RUnlock()
@@ -215,9 +205,7 @@ func (s *service) MattermostConfig() configservice.ConfigService {
 	if mmconf == nil {
 		mmconf = s.reloadMattermostConfig()
 	}
-	return &mattermostConfigService{
-		mmconf: mmconf,
-	}
+	return mmconf
 }
 
 func (s *service) reloadMattermostConfig() *model.Config {
