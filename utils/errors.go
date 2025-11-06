@@ -11,7 +11,7 @@ var ErrInvalid = errors.New("invalid input")
 var ErrNotFound = errors.New("not found")
 var ErrUnauthorized = errors.New("unauthorized")
 
-func NewError(source error, args ...interface{}) error {
+func NewError(source error, args ...any) error {
 	s, _ := args[0].(string)
 	err, _ := args[0].(error)
 
@@ -30,11 +30,11 @@ func NewError(source error, args ...interface{}) error {
 	}
 }
 
-func NewAlreadyExistsError(args ...interface{}) error { return NewError(ErrAlreadyExists, args...) }
-func NewForbiddenError(args ...interface{}) error     { return NewError(ErrForbidden, args...) }
-func NewInvalidError(args ...interface{}) error       { return NewError(ErrInvalid, args...) }
-func NewNotFoundError(args ...interface{}) error      { return NewError(ErrNotFound, args...) }
-func NewUnauthorizedError(args ...interface{}) error  { return NewError(ErrUnauthorized, args...) }
+func NewAlreadyExistsError(args ...any) error { return NewError(ErrAlreadyExists, args...) }
+func NewForbiddenError(args ...any) error     { return NewError(ErrForbidden, args...) }
+func NewInvalidError(args ...any) error       { return NewError(ErrInvalid, args...) }
+func NewNotFoundError(args ...any) error      { return NewError(ErrNotFound, args...) }
+func NewUnauthorizedError(args ...any) error  { return NewError(ErrUnauthorized, args...) }
 
 type LocError []*i18n.LocalizeConfig
 
@@ -45,9 +45,9 @@ func (err LocError) Error(bundle *i18n.Bundle, loc *i18n.Localizer) string {
 	errStr := ""
 	for _, e := range err {
 		if e.TemplateData == nil {
-			e.TemplateData = map[string]interface{}{}
+			e.TemplateData = map[string]any{}
 		}
-		e.TemplateData.(map[string]interface{})["Error"] = errStr
+		e.TemplateData.(map[string]any)["Error"] = errStr
 		errStr = bundle.LocalizeWithConfig(loc, e)
 	}
 

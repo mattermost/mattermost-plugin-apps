@@ -28,12 +28,12 @@ func TestLoggable(t *testing.T) {
 	}
 
 	for name, test := range map[string]struct {
-		In            interface{}
-		ExpectedProps []interface{}
+		In            any
+		ExpectedProps []any
 	}{
 		"simple Config": {
 			In: simpleConfig,
-			ExpectedProps: []interface{}{
+			ExpectedProps: []any{
 				"version", "v1.2.3",
 				"commit", "1234567",
 				"build_date", "date-is-just-a-string",

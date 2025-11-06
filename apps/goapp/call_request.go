@@ -53,12 +53,12 @@ func (creq CallRequest) GetValue(name, defaultValue string) string {
 }
 
 func (creq CallRequest) StringValue(name string) (string, bool) {
-	value := func(m map[string]interface{}, n string) (string, bool) {
+	value := func(m map[string]any, n string) (string, bool) {
 		s, ok := m[n].(string)
 		if ok {
 			return s, true
 		}
-		opt, ok := creq.Values[n].(map[string]interface{})
+		opt, ok := creq.Values[n].(map[string]any)
 		if ok {
 			if v, ok2 := opt["value"].(string); ok2 {
 				return v, true
@@ -71,7 +71,7 @@ func (creq CallRequest) StringValue(name string) (string, bool) {
 		return s, true
 	}
 
-	if stateInterfaces, ok := creq.CallRequest.State.(map[string]interface{}); ok {
+	if stateInterfaces, ok := creq.CallRequest.State.(map[string]any); ok {
 		if s, found := value(stateInterfaces, name); found {
 			return s, true
 		}
@@ -91,7 +91,7 @@ func (creq CallRequest) BoolValue(name string) (value, found bool) {
 		return false, false
 	}
 
-	isBool := func(v interface{}) (bool, bool) {
+	isBool := func(v any) (bool, bool) {
 		if b, ok := v.(bool); ok {
 			return b, true
 		}
@@ -110,13 +110,13 @@ func (creq CallRequest) BoolValue(name string) (value, found bool) {
 		return b, true
 	}
 
-	if opt, ok := creq.Values[name].(map[string]interface{}); ok {
+	if opt, ok := creq.Values[name].(map[string]any); ok {
 		if v, ok2 := isBool(opt["value"]); ok2 {
 			return v, true
 		}
 	}
 
-	if state, ok := creq.CallRequest.State.(map[string]interface{}); ok && len(state) > 0 {
+	if state, ok := creq.CallRequest.State.(map[string]any); ok && len(state) > 0 {
 		if b, ok2 := isBool(state[name]); ok2 {
 			return b, true
 		}

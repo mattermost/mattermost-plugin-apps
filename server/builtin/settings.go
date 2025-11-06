@@ -84,7 +84,7 @@ func (a *builtinApp) settingsForm(r *incoming.Request, creq apps.CallRequest) ap
 				ID:    "modal.overrides.description",
 				Other: "Current system settings: developer mode: **{{.DeveloperMode}}**, allow HTTP apps: **{{.AllowHTTPApps}}**",
 			},
-			TemplateData: map[string]interface{}{
+			TemplateData: map[string]any{
 				"DeveloperMode": defaultDevMode,
 				"AllowHTTPApps": defaultAllowHTTP,
 			},

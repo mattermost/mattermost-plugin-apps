@@ -273,7 +273,7 @@ func (s *service) StoreConfig(sc StoredConfig, log utils.Logger) error {
 		return err
 	}
 
-	out := map[string]interface{}{}
+	out := map[string]any{}
 	utils.Remarshal(&out, sc)
 
 	// TODO test that SaveConfig will always cause OnConfigurationChange->c.Refresh

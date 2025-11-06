@@ -72,7 +72,7 @@ func testEcho(th *Helper) {
 			Call: apps.Call{
 				Path: "/echo",
 			},
-			Values: map[string]interface{}{
+			Values: map[string]any{
 				"name": "value",
 			},
 			Context: apps.Context{

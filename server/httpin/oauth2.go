@@ -19,7 +19,7 @@ func (s *Service) RemoteOAuth2Connect(r *incoming.Request, w http.ResponseWriter
 
 func (s *Service) RemoteOAuth2Complete(r *incoming.Request, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
-	urlValues := map[string]interface{}{}
+	urlValues := map[string]any{}
 	for key := range q {
 		urlValues[key] = q.Get(key)
 	}

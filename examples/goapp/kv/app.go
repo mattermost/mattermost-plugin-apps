@@ -121,7 +121,7 @@ var get = goapp.MakeBindableFormOrPanic("get",
 			client = creq.AsActingUser()
 		}
 
-		var value interface{}
+		var value any
 		err := client.KVGet(prefix, key, &value)
 		if err != nil {
 			return apps.NewTextResponse("Error: %v", err)

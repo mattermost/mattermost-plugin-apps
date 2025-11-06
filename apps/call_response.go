@@ -58,7 +58,7 @@ type CallResponse struct {
 	RefreshBindings bool `json:"refresh_bindings,omitempty"`
 
 	// Used in CallResponseTypeOK to return the displayble, and JSON results
-	Data interface{} `json:"data,omitempty"`
+	Data any `json:"data,omitempty"`
 
 	// Used in CallResponseTypeNavigate
 	NavigateToURL      string `json:"navigate_to_url,omitempty"`
@@ -78,14 +78,14 @@ func NewErrorResponse(err error) CallResponse {
 	}
 }
 
-func NewDataResponse(data interface{}) CallResponse {
+func NewDataResponse(data any) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeOK,
 		Data: data,
 	}
 }
 
-func NewTextResponse(format string, args ...interface{}) CallResponse {
+func NewTextResponse(format string, args ...any) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeOK,
 		Text: fmt.Sprintf(format, args...),
@@ -148,8 +148,8 @@ func (cresp CallResponse) String() string {
 	}
 }
 
-func (cresp CallResponse) Loggable() []interface{} {
-	props := []interface{}{"response_type", string(cresp.Type)}
+func (cresp CallResponse) Loggable() []any {
+	props := []any{"response_type", string(cresp.Type)}
 
 	switch cresp.Type {
 	case CallResponseTypeError:

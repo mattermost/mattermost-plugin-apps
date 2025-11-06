@@ -28,7 +28,7 @@ type Call struct {
 	Expand *Expand `json:"expand,omitempty"`
 
 	// Custom data that will be passed to the function in JSON, "as is".
-	State interface{} `json:"state,omitempty"`
+	State any `json:"state,omitempty"`
 }
 
 func (c *Call) UnmarshalJSON(data []byte) error {
@@ -43,9 +43,9 @@ func (c *Call) UnmarshalJSON(data []byte) error {
 
 	// Need a type that is just like Call, but without UnmarshalJSON
 	structValue := struct {
-		Path   string      `json:"path,omitempty"`
-		Expand *Expand     `json:"expand,omitempty"`
-		State  interface{} `json:"state,omitempty"`
+		Path   string  `json:"path,omitempty"`
+		Expand *Expand `json:"expand,omitempty"`
+		State  any     `json:"state,omitempty"`
 	}{}
 	err = json.Unmarshal(data, &structValue)
 	if err != nil {
@@ -83,7 +83,7 @@ func (c Call) ExpandActingUserClient() *Call {
 	return &c
 }
 
-func (c Call) WithState(state interface{}) *Call {
+func (c Call) WithState(state any) *Call {
 	c.State = state
 	return &c
 }
@@ -126,8 +126,8 @@ func (c *Call) PartialCopy() *Call {
 	}
 
 	// Only know how to clone map values for State.
-	if state, ok := clone.State.(map[string]interface{}); ok {
-		cloneState := map[string]interface{}{}
+	if state, ok := clone.State.(map[string]any); ok {
+		cloneState := map[string]any{}
 		for k, v := range state {
 			cloneState[k] = v
 		}
@@ -154,8 +154,8 @@ func (c Call) String() string {
 	return s
 }
 
-func (c Call) Loggable() []interface{} {
-	props := []interface{}{"call_path", c.Path}
+func (c Call) Loggable() []any {
+	props := []any{"call_path", c.Path}
 	if c.Expand != nil {
 		props = append(props, "call_expand", c.Expand.String())
 	}

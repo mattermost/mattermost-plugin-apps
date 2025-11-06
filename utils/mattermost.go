@@ -12,7 +12,7 @@ func CodeBlock(in string) string {
 	return fmt.Sprintf("\n```\n%s\n```\n", in)
 }
 
-func JSONBlock(in interface{}) string {
+func JSONBlock(in any) string {
 	return "\n```json\n" + Pretty(in) + "\n```\n"
 }
 

@@ -106,8 +106,8 @@ func checkForForbiddenPath(app *apps.App, path string) error {
 }
 
 // <>/<> TODO: need to cleanup creq (Context) here? or assume it's good as is?
-func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *apps.Context, valuePairs ...interface{}) apps.CallResponse {
-	values := map[string]interface{}{}
+func (p *Proxy) call(r *incoming.Request, app *apps.App, call apps.Call, cc *apps.Context, valuePairs ...any) apps.CallResponse {
+	values := map[string]any{}
 	for len(valuePairs) > 0 {
 		if len(valuePairs) == 1 {
 			return apps.NewErrorResponse(

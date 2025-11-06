@@ -34,7 +34,7 @@ func newKVApp(t testing.TB) *goapp.App {
 		},
 	)
 
-	params := func(creq goapp.CallRequest) (client *appclient.Client, prefix, key string, value interface{}) {
+	params := func(creq goapp.CallRequest) (client *appclient.Client, prefix, key string, value any) {
 		prefix, _ = creq.StringValue("prefix")
 		key, ok := creq.StringValue("key")
 		if !ok {
@@ -58,7 +58,7 @@ func newKVApp(t testing.TB) *goapp.App {
 	app.HandleCall("/get",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, prefix, key, _ := params(creq)
-			v := map[string]interface{}{}
+			v := map[string]any{}
 			err := client.KVGet(prefix, key, &v)
 			require.NoError(t, err)
 			return apps.NewTextResponse(utils.ToJSON(v))
@@ -83,7 +83,7 @@ func newKVApp(t testing.TB) *goapp.App {
 	return app
 }
 
-func kvCall(th *Helper, path string, asBot bool, prefix, key string, value interface{}) apps.CallResponse {
+func kvCall(th *Helper, path string, asBot bool, prefix, key string, value any) apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path),
 		Values: model.StringInterface{
@@ -120,7 +120,7 @@ func testKV(th *Helper) {
 		api4.CheckUnauthorizedStatus(th, resp)
 		assert.False(changed)
 
-		var out map[string]interface{}
+		var out map[string]any
 		resp, err = client.KVGet("p", "id", &out)
 		assert.Error(err)
 		api4.CheckUnauthorizedStatus(th, resp)

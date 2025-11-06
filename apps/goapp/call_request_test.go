@@ -25,7 +25,7 @@ func TestCallRequestJSON(t *testing.T) {
 				},
 			},
 		},
-		Values: map[string]interface{}{
+		Values: map[string]any{
 			"testkey": "testvalue",
 		},
 	}

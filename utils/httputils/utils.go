@@ -74,14 +74,14 @@ func ErrorToStatus(err error) int {
 
 // WriteJSONStatus encodes and writes out an object, with a custom response
 // status code.
-func WriteJSONStatus(w http.ResponseWriter, statusCode int, v interface{}) error {
+func WriteJSONStatus(w http.ResponseWriter, statusCode int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(v)
 }
 
 // WriteJSON encodes and writes out an object, with a 200 response status code.
-func WriteJSON(w http.ResponseWriter, v interface{}) error {
+func WriteJSON(w http.ResponseWriter, v any) error {
 	return WriteJSONStatus(w, http.StatusOK, v)
 }
 
@@ -102,7 +102,7 @@ func DoHandleData(ct string, data []byte) http.HandlerFunc {
 
 // DoHandleJSON returns an http.HandleFunc that serves a data chunk with a
 // specified content-type.
-func DoHandleJSON(v interface{}) http.HandlerFunc {
+func DoHandleJSON(v any) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		_ = WriteJSON(w, v)
 	}

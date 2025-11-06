@@ -411,7 +411,7 @@ func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 		return errors.Wrap(err, "no data for user_id: "+userID)
 	}
 
-	var v interface{}
+	var v any
 	if err = json.Unmarshal(data, &v); err != nil {
 		return errors.Wrapf(err, "user_id: "+userID)
 	}

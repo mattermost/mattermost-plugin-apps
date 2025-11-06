@@ -45,7 +45,7 @@ func (m *MockExpandGetter) GetChannel(arg0 context.Context, arg1 string) (*model
 }
 
 // GetChannel indicates an expected call of GetChannel.
-func (mr *MockExpandGetterMockRecorder) GetChannel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetChannel(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockExpandGetter)(nil).GetChannel), arg0, arg1)
 }
@@ -60,7 +60,7 @@ func (m *MockExpandGetter) GetChannelMember(arg0 context.Context, arg1, arg2 str
 }
 
 // GetChannelMember indicates an expected call of GetChannelMember.
-func (mr *MockExpandGetterMockRecorder) GetChannelMember(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetChannelMember(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelMember", reflect.TypeOf((*MockExpandGetter)(nil).GetChannelMember), arg0, arg1, arg2)
 }
@@ -75,7 +75,7 @@ func (m *MockExpandGetter) GetPost(arg0 context.Context, arg1 string) (*model.Po
 }
 
 // GetPost indicates an expected call of GetPost.
-func (mr *MockExpandGetterMockRecorder) GetPost(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetPost(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockExpandGetter)(nil).GetPost), arg0, arg1)
 }
@@ -90,7 +90,7 @@ func (m *MockExpandGetter) GetTeam(arg0 context.Context, arg1 string) (*model.Te
 }
 
 // GetTeam indicates an expected call of GetTeam.
-func (mr *MockExpandGetterMockRecorder) GetTeam(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetTeam(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeam", reflect.TypeOf((*MockExpandGetter)(nil).GetTeam), arg0, arg1)
 }
@@ -105,7 +105,7 @@ func (m *MockExpandGetter) GetTeamMember(arg0 context.Context, arg1, arg2 string
 }
 
 // GetTeamMember indicates an expected call of GetTeamMember.
-func (mr *MockExpandGetterMockRecorder) GetTeamMember(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetTeamMember(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeamMember", reflect.TypeOf((*MockExpandGetter)(nil).GetTeamMember), arg0, arg1, arg2)
 }
@@ -120,7 +120,7 @@ func (m *MockExpandGetter) GetUser(arg0 context.Context, arg1 string) (*model.Us
 }
 
 // GetUser indicates an expected call of GetUser.
-func (mr *MockExpandGetterMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExpandGetterMockRecorder) GetUser(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockExpandGetter)(nil).GetUser), arg0, arg1)
 }

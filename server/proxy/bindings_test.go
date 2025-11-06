@@ -535,7 +535,7 @@ func TestRefreshBindingsEventAfterCall(t *testing.T) {
 				RefreshBindings: true,
 			},
 			checkExpectation: func(testApi *plugintest.API) {
-				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: "userid"}).Once()
+				testApi.On("PublishWebSocketEvent", config.WebSocketEventRefreshBindings, map[string]any{}, &model.WebsocketBroadcast{UserId: "userid"}).Once()
 			},
 		},
 		{

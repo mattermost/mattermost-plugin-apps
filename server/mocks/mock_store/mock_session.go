@@ -45,7 +45,7 @@ func (m *MockSessionStore) Delete(arg0 apps.AppID, arg1 string) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockSessionStoreMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSessionStore)(nil).Delete), arg0, arg1)
 }
@@ -59,7 +59,7 @@ func (m *MockSessionStore) DeleteAllForApp(arg0 *incoming.Request, arg1 apps.App
 }
 
 // DeleteAllForApp indicates an expected call of DeleteAllForApp.
-func (mr *MockSessionStoreMockRecorder) DeleteAllForApp(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) DeleteAllForApp(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllForApp", reflect.TypeOf((*MockSessionStore)(nil).DeleteAllForApp), arg0, arg1)
 }
@@ -73,7 +73,7 @@ func (m *MockSessionStore) DeleteAllForUser(arg0 *incoming.Request, arg1 string)
 }
 
 // DeleteAllForUser indicates an expected call of DeleteAllForUser.
-func (mr *MockSessionStoreMockRecorder) DeleteAllForUser(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) DeleteAllForUser(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllForUser", reflect.TypeOf((*MockSessionStore)(nil).DeleteAllForUser), arg0, arg1)
 }
@@ -88,7 +88,7 @@ func (m *MockSessionStore) Get(arg0 apps.AppID, arg1 string) (*model.Session, er
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockSessionStoreMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSessionStore)(nil).Get), arg0, arg1)
 }
@@ -103,7 +103,7 @@ func (m *MockSessionStore) ListForApp(arg0 apps.AppID) ([]*model.Session, error)
 }
 
 // ListForApp indicates an expected call of ListForApp.
-func (mr *MockSessionStoreMockRecorder) ListForApp(arg0 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) ListForApp(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForApp", reflect.TypeOf((*MockSessionStore)(nil).ListForApp), arg0)
 }
@@ -118,7 +118,7 @@ func (m *MockSessionStore) ListForUser(arg0 *incoming.Request, arg1 string) ([]*
 }
 
 // ListForUser indicates an expected call of ListForUser.
-func (mr *MockSessionStoreMockRecorder) ListForUser(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) ListForUser(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForUser", reflect.TypeOf((*MockSessionStore)(nil).ListForUser), arg0, arg1)
 }
@@ -132,7 +132,7 @@ func (m *MockSessionStore) Save(arg0 apps.AppID, arg1 string, arg2 *model.Sessio
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockSessionStoreMockRecorder) Save(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockSessionStoreMockRecorder) Save(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockSessionStore)(nil).Save), arg0, arg1, arg2)
 }

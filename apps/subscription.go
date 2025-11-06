@@ -168,8 +168,8 @@ func (e Event) validate(appendTo error) error {
 	return appendTo
 }
 
-func (sub Subscription) Loggable() []interface{} {
-	props := []interface{}{"subject", sub.Subject}
+func (sub Subscription) Loggable() []any {
+	props := []any{"subject", sub.Subject}
 	if len(sub.ChannelID) > 0 {
 		props = append(props, "channel_id", sub.ChannelID)
 	}
@@ -179,8 +179,8 @@ func (sub Subscription) Loggable() []interface{} {
 	return props
 }
 
-func (e Event) Loggable() []interface{} {
-	props := []interface{}{"subject", string(e.Subject)}
+func (e Event) Loggable() []any {
+	props := []any{"subject", string(e.Subject)}
 	if e.ChannelID != "" {
 		props = append(props, "channel_id", e.ChannelID)
 	}

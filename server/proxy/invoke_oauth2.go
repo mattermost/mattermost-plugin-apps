@@ -40,7 +40,7 @@ func (p *Proxy) InvokeGetRemoteOAuth2ConnectURL(r *incoming.Request) (string, er
 	return connectURL, nil
 }
 
-func (p *Proxy) InvokeCompleteRemoteOAuth2(r *incoming.Request, urlValues map[string]interface{}) error {
+func (p *Proxy) InvokeCompleteRemoteOAuth2(r *incoming.Request, urlValues map[string]any) error {
 	app, err := p.getEnabledDestination(r)
 	if err != nil {
 		return err

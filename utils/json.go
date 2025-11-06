@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-func ToJSON(in interface{}) string {
+func ToJSON(in any) string {
 	bb, err := json.Marshal(in)
 	if err != nil {
 		return ""
@@ -12,7 +12,7 @@ func ToJSON(in interface{}) string {
 	return string(bb)
 }
 
-func Pretty(in interface{}) string {
+func Pretty(in any) string {
 	bb, err := json.MarshalIndent(in, "", "  ")
 	if err != nil {
 		return ""
@@ -20,7 +20,7 @@ func Pretty(in interface{}) string {
 	return string(bb)
 }
 
-func Remarshal(dst, src interface{}) {
+func Remarshal(dst, src any) {
 	data, _ := json.Marshal(src)
 	_ = json.Unmarshal(data, dst)
 }

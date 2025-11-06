@@ -94,7 +94,7 @@ func WithExpand(expand apps.Expand) BindableOption {
 	})
 }
 
-func WithState(state interface{}) BindableOption {
+func WithState(state any) BindableOption {
 	return optionWithActionPtr(func(b *BindableAction) {
 		b.submit.State = state
 	})

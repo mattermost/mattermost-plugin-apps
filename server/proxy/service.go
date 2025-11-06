@@ -62,7 +62,7 @@ type API interface {
 	GetApp(*incoming.Request) (*apps.App, error)
 	GetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	InvokeCall(*incoming.Request, apps.CallRequest) (*apps.App, apps.CallResponse)
-	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]interface{}) error
+	InvokeCompleteRemoteOAuth2(_ *incoming.Request, urlValues map[string]any) error
 	InvokeGetBindings(*incoming.Request, apps.Context) ([]apps.Binding, error)
 	InvokeGetRemoteOAuth2ConnectURL(*incoming.Request) (string, error)
 	InvokeGetStatic(_ *incoming.Request, path string) (io.ReadCloser, int, error)

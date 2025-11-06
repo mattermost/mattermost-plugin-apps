@@ -43,7 +43,7 @@ func newUninstallApp(th *Helper) *goapp.App {
 				require.NotEqual(th, creq.Context.BotUserID, creq.Context.ActingUser.Id, "must be called as the user running the InstallApp API, not as the bot")
 
 				// Create KV data
-				testv := map[string]interface{}{"field": "test-value"}
+				testv := map[string]any{"field": "test-value"}
 				setKV := func(client *appclient.Client, prefix, key string) {
 					changed, err := client.KVSet(prefix, key, testv)
 					require.True(th, changed)
@@ -94,7 +94,7 @@ func testUninstall(th *Helper) {
 		th.Run(fmt.Sprintf("add %v garbage KV entries", n), func(th *Helper) {
 			cresp := th.HappyAdminCall(builtin.AppID, apps.CallRequest{
 				Call:   *apps.NewCall(builtin.PathDebugStorePollute).WithExpand(apps.Expand{ActingUser: apps.ExpandSummary}),
-				Values: map[string]interface{}{"count": fmt.Sprintf("%v", n)},
+				Values: map[string]any{"count": fmt.Sprintf("%v", n)},
 			})
 			require.Equal(th, apps.CallResponseTypeOK, cresp.Type)
 		})

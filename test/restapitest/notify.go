@@ -164,7 +164,7 @@ func testNotify(th *Helper) {
 func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.Event, expand apps.Expand) {
 	cresp := appclient.happyCall(appID, apps.CallRequest{
 		Call: *apps.NewCall("/subscribe").ExpandActingUserClient(),
-		Values: map[string]interface{}{
+		Values: map[string]any{
 			"sub": apps.Subscription{
 				Event: event,
 				Call:  *apps.NewCall("/notify").WithExpand(expand),
@@ -176,7 +176,7 @@ func (th *Helper) subscribeAs(appclient appClient, appID apps.AppID, event apps.
 	th.Cleanup(func() {
 		cresp := appclient.happyCall(appID, apps.CallRequest{
 			Call: *apps.NewCall("/unsubscribe").ExpandActingUserClient(),
-			Values: map[string]interface{}{
+			Values: map[string]any{
 				"sub": apps.Subscription{
 					Event: event,
 				},

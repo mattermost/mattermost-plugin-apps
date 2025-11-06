@@ -27,7 +27,7 @@ func (s *Service) GetBindings(r *incoming.Request, w http.ResponseWriter, req *h
 
 	apiTestFlag := q.Get("test") != ""
 	if apiTestFlag {
-		testOut := map[string]interface{}{
+		testOut := map[string]any{
 			"bindings": bindings,
 		}
 		if err != nil {
