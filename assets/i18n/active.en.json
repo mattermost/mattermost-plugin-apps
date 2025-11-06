@@ -132,8 +132,6 @@
   "modal.install_consent.header.locations": "- Add the following elements to the **Mattermost User Interface**:",
   "modal.install_consent.header.permissions": "- Access **Mattermost API** with the following permissions:",
   "modal.install_consent.title": "Install App {{.DisplayName}}",
-  "modal.kv.edit.submit.deleted": "Deleted:\n```\nKey: {{.Key}}\n```\n",
-  "modal.kv.edit.submit.stored": "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
   "modal.kv.edit.title": "Edit app's KV record",
   "modal.overrides.description": "Current system settings: developer mode: **{{.DeveloperMode}}**, allow HTTP apps: **{{.AllowHTTPApps}}**",
   "modal.overrides.modal_label": "Overrides for developer mode and HTTP apps",
