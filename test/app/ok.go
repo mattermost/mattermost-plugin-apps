@@ -15,7 +15,7 @@ func initHTTPOK(r *mux.Router) {
 }
 
 func handleOK(creq *apps.CallRequest) apps.CallResponse {
-	return apps.NewTextResponse("```\n%s\n```\n", utils.Pretty(creq))
+	return apps.NewTextResponseFmt("```\n%s\n```\n", utils.Pretty(creq))
 }
 
 func handleOKEmpty(_ *apps.CallRequest) apps.CallResponse {

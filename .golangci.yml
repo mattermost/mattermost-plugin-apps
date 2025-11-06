@@ -65,10 +65,6 @@ linters:
       - linters:
           - revive
         text: "receiver-naming:"
-      # Ignore non-constant format string warnings
-      - linters:
-          - govet
-        text: "printf: non-constant format string"
       # Ignore unparam warnings about always receiving same value
       - linters:
           - unparam

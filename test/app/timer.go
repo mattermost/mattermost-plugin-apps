@@ -97,7 +97,7 @@ func handleCreateTimer(creq *apps.CallRequest) apps.CallResponse {
 		return apps.NewErrorResponse(errors.Wrap(err, "failed to create timer"))
 	}
 
-	return apps.NewTextResponse("Successfully set a timer to `%v`.", at.String())
+	return apps.NewTextResponseFmt("Successfully set a timer to `%v`.", at.String())
 }
 
 func handleExecuteTimer(creq *apps.CallRequest) apps.CallResponse {

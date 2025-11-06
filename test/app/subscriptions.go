@@ -148,7 +148,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 			return apps.NewErrorResponse(err)
 		}
 
-		return apps.NewTextResponse("Successfully unsubscribed from `%v` notifications.", subject)
+		return apps.NewTextResponseFmt("Successfully unsubscribed from `%v` notifications.", subject)
 	}
 
 	if creq.Context.Channel.Type == model.ChannelTypeOpen || creq.Context.Channel.Type == model.ChannelTypePrivate {
@@ -168,7 +168,7 @@ func handleSubscription(creq *apps.CallRequest, subscribe bool) apps.CallRespons
 		return apps.NewErrorResponse(err)
 	}
 
-	return apps.NewTextResponse("Successfully subscribed to `%v` notifications.", subject)
+	return apps.NewTextResponseFmt("Successfully subscribed to `%v` notifications.", subject)
 }
 
 func handleSubscribe(creq *apps.CallRequest) apps.CallResponse {

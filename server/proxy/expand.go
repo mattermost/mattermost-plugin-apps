@@ -413,7 +413,7 @@ func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 
 	var v any
 	if err = json.Unmarshal(data, &v); err != nil {
-		return errors.Wrapf(err, "user_id: "+userID)
+		return errors.Wrapf(err, "user_id: %v", userID)
 	}
 	e.ExpandedContext.OAuth2.User = v
 	return nil

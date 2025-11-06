@@ -2,7 +2,6 @@ package appclient
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -201,9 +200,9 @@ func (c *Client) CreatePost(ctx context.Context, post *model.Post) (*model.Post,
 	return createdPost, nil
 }
 
-func (c *Client) DM(ctx context.Context, userID string, format string, args ...any) (*model.Post, error) {
+func (c *Client) DM(ctx context.Context, userID string, msg string) (*model.Post, error) {
 	return c.DMPost(ctx, userID, &model.Post{
-		Message: fmt.Sprintf(format, args...),
+		Message: msg,
 	})
 }
 

@@ -77,9 +77,9 @@ var set = goapp.MakeBindableFormOrPanic("set",
 		}
 		changed, err := client.KVSet(prefix, key, value)
 		if err != nil {
-			return apps.NewTextResponse("Error: %v", err)
+			return apps.NewTextResponseFmt("Error: %v", err)
 		}
-		return apps.NewTextResponse("Stored a value in the KV store: prefix: %q, key: %q, value: %q, changed: %v", prefix, key, value, changed)
+		return apps.NewTextResponseFmt("Stored a value in the KV store: prefix: %q, key: %q, value: %q, changed: %v", prefix, key, value, changed)
 	},
 )
 
@@ -124,8 +124,8 @@ var get = goapp.MakeBindableFormOrPanic("get",
 		var value any
 		err := client.KVGet(prefix, key, &value)
 		if err != nil {
-			return apps.NewTextResponse("Error: %v", err)
+			return apps.NewTextResponseFmt("Error: %v", err)
 		}
-		return apps.NewTextResponse("Read a value from the KV store: prefix: %q, key: %q, value: %#v", prefix, key, value)
+		return apps.NewTextResponseFmt("Read a value from the KV store: prefix: %q, key: %q, value: %#v", prefix, key, value)
 	},
 )

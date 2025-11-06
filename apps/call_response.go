@@ -85,7 +85,14 @@ func NewDataResponse(data any) CallResponse {
 	}
 }
 
-func NewTextResponse(format string, args ...any) CallResponse {
+func NewTextResponse(text string) CallResponse {
+	return CallResponse{
+		Type: CallResponseTypeOK,
+		Text: text,
+	}
+}
+
+func NewTextResponseFmt(format string, args ...any) CallResponse {
 	return CallResponse{
 		Type: CallResponseTypeOK,
 		Text: fmt.Sprintf(format, args...),

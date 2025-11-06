@@ -58,6 +58,6 @@ var send = goapp.MakeBindableFormOrPanic("send",
 			return apps.NewErrorResponse(errors.Wrap(err, "failed to send DM to user"))
 		}
 
-		return apps.NewTextResponse("Created a post in your DM channel. Message: `%s`.", message)
+		return apps.NewTextResponseFmt("Created a post in your DM channel. Message: `%s`.", message)
 	},
 )

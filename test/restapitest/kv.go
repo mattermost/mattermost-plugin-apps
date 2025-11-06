@@ -69,7 +69,7 @@ func newKVApp(t testing.TB) *goapp.App {
 			client, prefix, key, value := params(creq)
 			changed, err := client.KVSet(prefix, key, value)
 			require.NoError(t, err)
-			return apps.NewTextResponse("%v", changed)
+			return apps.NewTextResponseFmt("%v", changed)
 		})
 
 	app.HandleCall("/delete",
