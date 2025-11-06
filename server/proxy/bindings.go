@@ -97,7 +97,7 @@ func (p *Proxy) GetBindings(r *incoming.Request, cc apps.Context) (ret []apps.Bi
 func (p *Proxy) dispatchRefreshBindingsEvent(userID string) {
 	if userID != "" {
 		p.conf.MattermostAPI().Frontend.PublishWebSocketEvent(
-			config.WebSocketEventRefreshBindings, map[string]interface{}{}, &model.WebsocketBroadcast{UserId: userID})
+			config.WebSocketEventRefreshBindings, map[string]any{}, &model.WebsocketBroadcast{UserId: userID})
 	}
 }
 

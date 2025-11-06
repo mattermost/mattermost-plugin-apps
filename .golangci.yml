@@ -1,62 +1,103 @@
+version: "2"
 run:
-  timeout: 5m
   modules-download-mode: readonly
-
-linters-settings:
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/mattermost/mattermost-plugin-apps
-  govet:
-    check-shadowing: true
-    enable-all: true
-    disable:
-      - fieldalignment
-  misspell:
-    locale: US
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - bodyclose
     - errcheck
     - gocritic
-    - gofmt
-    - goimports
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
-    - staticcheck
-    - stylecheck
     - revive
-    - typecheck
+    - staticcheck
     - unconvert
-    - unused
     - unparam
+    - unused
     - whitespace
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - bodyclose
-        - scopelint # https://github.com/kyoh86/scopelint/issues/4
-    - path: test/restapitest
-      linters:
-        - bodyclose
-        - unused
-        - unparam
-        - staticcheck
-    - path: /
-      linters:
-        - staticcheck
-      text: "BotJoined"
-    - path: /
-      linters:
-        - staticcheck
-      text: "BotLeft"
-
-
+  settings:
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - bodyclose
+          - scopelint
+        path: _test\.go
+      - linters:
+          - bodyclose
+          - staticcheck
+          - unparam
+          - unused
+        path: test/restapitest
+      - linters:
+          - staticcheck
+        path: /
+        text: BotJoined
+      # The follow execptions got added as part of the migration to go1.24.
+      # We should revisit them in the future.
+      - linters:
+          - staticcheck
+        path: /
+        text: BotLeft
+      # Ignore QF1008: embedded field selector suggestions
+      - linters:
+          - staticcheck
+        text: "QF1008: could remove embedded field"
+      # Ignore unused parameter suggestions
+      - linters:
+          - revive
+        text: "unused-parameter:"
+      # Ignore receiver naming suggestions
+      - linters:
+          - revive
+        text: "receiver-naming:"
+      # Ignore unparam warnings about always receiving same value
+      - linters:
+          - unparam
+        text: "always receives"
+      # Ignore G115 integer overflow conversion warnings
+      - linters:
+          - gosec
+        text: "G115: integer overflow conversion"
+      # Ignore QF1008 selector simplification suggestions
+      - linters:
+          - staticcheck
+        text: "QF1008: could simplify selectors"
+      # Ignore var-naming warnings
+      - linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/mattermost/mattermost-plugin-apps
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

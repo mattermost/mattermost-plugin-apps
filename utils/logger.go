@@ -16,40 +16,40 @@ const ErrorKey = "error"
 
 type Logger interface {
 	// from zap.SugaredLogger
-	Debugf(template string, args ...interface{})
-	Debugw(msg string, keysAndValues ...interface{})
-	Warnf(template string, args ...interface{})
-	Warnw(msg string, keysAndValues ...interface{})
-	Infof(template string, args ...interface{})
-	Infow(msg string, keysAndValues ...interface{})
-	Errorf(template string, args ...interface{})
-	Errorw(msg string, keysAndValues ...interface{})
-	Fatalf(template string, args ...interface{})
-	Fatalw(msg string, keysAndValues ...interface{})
+	Debugf(template string, args ...any)
+	Debugw(msg string, keysAndValues ...any)
+	Warnf(template string, args ...any)
+	Warnw(msg string, keysAndValues ...any)
+	Infof(template string, args ...any)
+	Infow(msg string, keysAndValues ...any)
+	Errorf(template string, args ...any)
+	Errorw(msg string, keysAndValues ...any)
+	Fatalf(template string, args ...any)
+	Fatalw(msg string, keysAndValues ...any)
 
 	// implemented here to provide a consistent interface, without using
 	// *zap.SugaredLogger
 	WithError(error) Logger
-	With(args ...interface{}) Logger
+	With(args ...any) Logger
 }
 
 type NilLogger struct{}
 
 var _ Logger = NilLogger{}
 
-func (NilLogger) Debugf(string, ...interface{}) {}
-func (NilLogger) Debugw(string, ...interface{}) {}
-func (NilLogger) Warnf(string, ...interface{})  {}
-func (NilLogger) Warnw(string, ...interface{})  {}
-func (NilLogger) Infof(string, ...interface{})  {}
-func (NilLogger) Infow(string, ...interface{})  {}
-func (NilLogger) Errorf(string, ...interface{}) {}
-func (NilLogger) Errorw(string, ...interface{}) {}
-func (NilLogger) Fatalf(string, ...interface{}) {}
-func (NilLogger) Fatalw(string, ...interface{}) {}
+func (NilLogger) Debugf(string, ...any) {}
+func (NilLogger) Debugw(string, ...any) {}
+func (NilLogger) Warnf(string, ...any)  {}
+func (NilLogger) Warnw(string, ...any)  {}
+func (NilLogger) Infof(string, ...any)  {}
+func (NilLogger) Infow(string, ...any)  {}
+func (NilLogger) Errorf(string, ...any) {}
+func (NilLogger) Errorw(string, ...any) {}
+func (NilLogger) Fatalf(string, ...any) {}
+func (NilLogger) Fatalw(string, ...any) {}
 
-func (l NilLogger) WithError(error) Logger          { return l }
-func (l NilLogger) With(args ...interface{}) Logger { return l }
+func (l NilLogger) WithError(error) Logger  { return l }
+func (l NilLogger) With(args ...any) Logger { return l }
 
 type logger struct {
 	*zap.SugaredLogger
@@ -65,12 +65,12 @@ func (l *logger) WithError(err error) Logger {
 }
 
 type HasLoggable interface {
-	Loggable() []interface{}
+	Loggable() []any
 }
 
 // expandWith expands anything that implements LogProps into name, value pairs.
-func expandWith(args []interface{}) []interface{} {
-	var with []interface{}
+func expandWith(args []any) []any {
+	var with []any
 
 	expectKeyOrProps := true
 	for _, v := range args {
@@ -94,7 +94,7 @@ func expandWith(args []interface{}) []interface{} {
 	return with
 }
 
-func (l *logger) With(args ...interface{}) Logger {
+func (l *logger) With(args ...any) Logger {
 	return &logger{
 		SugaredLogger: l.SugaredLogger.With(expandWith(args)...),
 	}
@@ -136,13 +136,13 @@ func MustMakeCommandLogger(level zapcore.Level) Logger {
 	}
 }
 
-func LogDigest(i interface{}) string {
+func LogDigest(i any) string {
 	if s, ok := i.(string); ok {
 		return s
 	}
 
 	var keys []string
-	if m, ok := i.(map[string]interface{}); ok {
+	if m, ok := i.(map[string]any); ok {
 		for key := range m {
 			keys = append(keys, key)
 		}

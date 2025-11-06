@@ -33,7 +33,7 @@ var openfaasDeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy a Mattermost app to OpenFaaS or faasd",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		bundlePath := args[0]
 		gateway := os.Getenv(upopenfaas.EnvGatewayURL)
 

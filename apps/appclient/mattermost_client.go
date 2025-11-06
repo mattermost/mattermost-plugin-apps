@@ -2,7 +2,6 @@ package appclient
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -45,7 +44,7 @@ func NewClient(token, mattermostSiteURL string) *Client {
 	return &c
 }
 
-func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
+func (c *Client) KVSet(prefix, id string, in any) (bool, error) {
 	changed, res, err := c.ClientPP.KVSet(prefix, id, in)
 	if err != nil {
 		return false, err
@@ -58,7 +57,7 @@ func (c *Client) KVSet(prefix, id string, in interface{}) (bool, error) {
 	return changed, nil
 }
 
-func (c *Client) KVGet(prefix, id string, ref interface{}) error {
+func (c *Client) KVGet(prefix, id string, ref any) error {
 	res, err := c.ClientPP.KVGet(prefix, id, ref)
 	if err != nil {
 		return err
@@ -149,7 +148,7 @@ func (c *Client) StoreOAuth2App(oauth2App apps.OAuth2App) error {
 	return nil
 }
 
-func (c *Client) StoreOAuth2User(ref interface{}) error {
+func (c *Client) StoreOAuth2User(ref any) error {
 	res, err := c.ClientPP.StoreOAuth2User(ref)
 	if err != nil {
 		return err
@@ -162,7 +161,7 @@ func (c *Client) StoreOAuth2User(ref interface{}) error {
 	return nil
 }
 
-func (c *Client) GetOAuth2User(ref interface{}) error {
+func (c *Client) GetOAuth2User(ref any) error {
 	res, err := c.ClientPP.GetOAuth2User(ref)
 	if err != nil {
 		return err
@@ -201,9 +200,9 @@ func (c *Client) CreatePost(ctx context.Context, post *model.Post) (*model.Post,
 	return createdPost, nil
 }
 
-func (c *Client) DM(ctx context.Context, userID string, format string, args ...interface{}) (*model.Post, error) {
+func (c *Client) DM(ctx context.Context, userID string, msg string) (*model.Post, error) {
 	return c.DMPost(ctx, userID, &model.Post{
-		Message: fmt.Sprintf(format, args...),
+		Message: msg,
 	})
 }
 

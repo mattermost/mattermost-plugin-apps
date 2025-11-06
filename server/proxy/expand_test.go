@@ -84,7 +84,7 @@ func TestExpand(t *testing.T) {
 		base              apps.Context
 		noActingUser      bool
 		expectClientCalls func(*mock_proxy.MockExpandGetter)
-		expect            map[string]interface{} // string for err.Error, or apps.ExpandedContext for success
+		expect            map[string]any // string for err.Error, or apps.ExpandedContext for success
 	}
 
 	expected := func(ec apps.ExpandedContext) apps.ExpandedContext {
@@ -106,7 +106,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetUser(gomock.Any(), userID).Times(1).Return(actingUser(), nil)
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"all":      expected(apps.ExpandedContext{ActingUser: actingUser()}),
 						"summary":  expected(apps.ExpandedContext{ActingUser: actingUserSummary}),
 						"+all":     expected(apps.ExpandedContext{ActingUser: actingUser()}),
@@ -116,7 +116,7 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"happy no API": {
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"": expected(apps.ExpandedContext{}),
 					},
 				},
@@ -124,7 +124,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetUser(gomock.Any(), userID).Times(1).Return(nil, utils.ErrForbidden)
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all":     "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
 						"+summary": "failed to expand required acting_user: id: user4567890123456789012345: forbidden",
 						"all":      expected(apps.ExpandedContext{}),
@@ -132,14 +132,14 @@ func TestExpand(t *testing.T) {
 					},
 				},
 				"error invalid": {
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"garbage":  `"garbage" is not a known expand level`,
 						"+garbage": `"garbage" is not a known expand level`,
 					},
 				},
 				"error no ID": {
 					noActingUser: true,
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+id":  `failed to expand required acting_user: no user ID to expand`,
 						"+all": `failed to expand required acting_user: no user ID to expand`,
 					},
@@ -157,7 +157,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetChannelMember(gomock.Any(), channelID, userID).Times(1).Return(&channelMember, nil)
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+id":     expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
 						"id":      expected(apps.ExpandedContext{ChannelMember: &channelMemberIDOnly}),
 						"summary": expected(apps.ExpandedContext{ChannelMember: &channelMember}),
@@ -168,7 +168,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"": expected(apps.ExpandedContext{}),
 					},
 				},
@@ -177,12 +177,12 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{ChannelID: channelID},
 					},
 					noActingUser: true,
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
 					},
 				},
 				"error no channel ID": {
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required channel_member: no user ID or channel ID to expand",
 					},
 				},
@@ -193,7 +193,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetChannelMember(gomock.Any(), channelID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required channel_member: failed to get channel membership: ERROR",
 					},
 				},
@@ -210,7 +210,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetTeamMember(gomock.Any(), teamID, userID).Times(1).Return(&teamMember, nil)
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+id":     expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
 						"id":      expected(apps.ExpandedContext{TeamMember: &teamMemberIDOnly}),
 						"+all":    expected(apps.ExpandedContext{TeamMember: &teamMember}),
@@ -221,7 +221,7 @@ func TestExpand(t *testing.T) {
 					base: apps.Context{
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"": expected(apps.ExpandedContext{}),
 					},
 				},
@@ -230,12 +230,12 @@ func TestExpand(t *testing.T) {
 						UserAgentContext: apps.UserAgentContext{TeamID: teamID},
 					},
 					noActingUser: true,
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
 				"no team ID": {
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required team_member: no user ID or channel ID to expand",
 					},
 				},
@@ -246,7 +246,7 @@ func TestExpand(t *testing.T) {
 					expectClientCalls: func(client *mock_proxy.MockExpandGetter) {
 						client.EXPECT().GetTeamMember(gomock.Any(), teamID, userID).Times(1).Return(nil, errors.New("ERROR"))
 					},
-					expect: map[string]interface{}{
+					expect: map[string]any{
 						"+all": "failed to expand required team_member: failed to get team membership: ERROR",
 					},
 				},
@@ -261,7 +261,7 @@ func TestExpand(t *testing.T) {
 						MattermostSiteURL: "https://test.mattermost.test",
 					}).WithMattermostConfig(model.Config{
 						ServiceSettings: model.ServiceSettings{
-							SiteURL: model.NewString("https://test.mattermost.test"),
+							SiteURL: model.NewPointer("https://test.mattermost.test"),
 						},
 					})
 					for level, expected := range tc.expect {
@@ -308,7 +308,7 @@ func TestExpand(t *testing.T) {
 			MattermostSiteURL: "https://test.mattermost.test",
 		}).WithMattermostConfig(model.Config{
 			ServiceSettings: model.ServiceSettings{
-				SiteURL: model.NewString("https://test.mattermost.test"),
+				SiteURL: model.NewPointer("https://test.mattermost.test"),
 			},
 		})
 

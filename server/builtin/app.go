@@ -111,7 +111,7 @@ type builtinApp struct {
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) upstream.Upstream {
 	a := &builtinApp{
 		conf:           conf,
 		proxy:          proxy,
@@ -295,7 +295,7 @@ func (a *builtinApp) checkConfigValid(call *apps.Call, loc *i18n.Localizer) erro
 		return nil
 	}
 
-	oauthEnabled := a.conf.MattermostConfig().Config().ServiceSettings.EnableOAuthServiceProvider
+	oauthEnabled := a.conf.MattermostConfig().ServiceSettings.EnableOAuthServiceProvider
 
 	if oauthEnabled == nil || !*oauthEnabled {
 		integrationManagementPage := fmt.Sprintf("%s/admin_console/integrations/integration_management", a.conf.Get().MattermostSiteURL)

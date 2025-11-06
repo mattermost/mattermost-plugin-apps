@@ -18,7 +18,7 @@ type CallRequest struct {
 	Call
 
 	// Values are all values entered by the user.
-	Values map[string]interface{} `json:"values,omitempty"`
+	Values map[string]any `json:"values,omitempty"`
 
 	// Context of execution, see the Context type for more information.
 	Context Context `json:"context,omitempty"`
@@ -48,11 +48,11 @@ func (creq *CallRequest) UnmarshalJSON(data []byte) error {
 	// Need a type that is just like CallRequest, but without Call to avoid
 	// recursion.
 	structValue := struct {
-		Values        map[string]interface{} `json:"values,omitempty"`
-		Context       Context                `json:"context,omitempty"`
-		RawCommand    string                 `json:"raw_command,omitempty"`
-		SelectedField string                 `json:"selected_field,omitempty"`
-		Query         string                 `json:"query,omitempty"`
+		Values        map[string]any `json:"values,omitempty"`
+		Context       Context        `json:"context,omitempty"`
+		RawCommand    string         `json:"raw_command,omitempty"`
+		SelectedField string         `json:"selected_field,omitempty"`
+		Query         string         `json:"query,omitempty"`
 	}{}
 	err = json.Unmarshal(data, &structValue)
 	if err != nil {
@@ -98,7 +98,7 @@ func (creq *CallRequest) GetValue(name, defaultValue string) string {
 		return s
 	}
 
-	opt, ok := creq.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]any)
 	if ok {
 		if v, ok2 := opt["value"].(string); ok2 {
 			return v
@@ -113,7 +113,7 @@ func (creq *CallRequest) BoolValue(name string) bool {
 		return false
 	}
 
-	isBool := func(v interface{}) (bool, bool) {
+	isBool := func(v any) (bool, bool) {
 		if b, ok := v.(bool); ok {
 			return b, true
 		}
@@ -132,7 +132,7 @@ func (creq *CallRequest) BoolValue(name string) bool {
 		return b
 	}
 
-	opt, ok := creq.Values[name].(map[string]interface{})
+	opt, ok := creq.Values[name].(map[string]any)
 	if ok {
 		if v, ok2 := isBool(opt["value"]); ok2 {
 			return v
@@ -153,8 +153,8 @@ func (creq CallRequest) String() string {
 	return s
 }
 
-func (creq CallRequest) Loggable() []interface{} {
-	props := append([]interface{}{}, creq.Call, creq.Context)
+func (creq CallRequest) Loggable() []any {
+	props := append([]any{}, creq.Call, creq.Context)
 	if len(creq.Values) > 0 {
 		props = append(props, "values", utils.LogDigest(creq.Values))
 	}

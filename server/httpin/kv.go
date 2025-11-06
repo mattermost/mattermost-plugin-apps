@@ -54,7 +54,7 @@ func (s *Service) KVPut(r *incoming.Request, w http.ResponseWriter, req *http.Re
 		httputils.WriteErrorIfNeeded(w, err)
 		return
 	}
-	_ = httputils.WriteJSON(w, map[string]interface{}{
+	_ = httputils.WriteJSON(w, map[string]any{
 		"changed": changed,
 	})
 }

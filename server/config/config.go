@@ -83,8 +83,8 @@ func (conf Config) StaticURL(appID apps.AppID, name string) string {
 	return conf.AppURL(appID) + "/" + path.Join(appspath.StaticFolder, name)
 }
 
-func (conf Config) GetPluginVersionInfo() map[string]interface{} {
-	return map[string]interface{}{
+func (conf Config) GetPluginVersionInfo() map[string]any {
+	return map[string]any{
 		"version": conf.PluginManifest.Version,
 	}
 }
@@ -100,8 +100,8 @@ func (conf *Config) InfoTemplateData() map[string]string {
 	}
 }
 
-func (conf Config) Loggable() []interface{} {
-	return append([]interface{}{},
+func (conf Config) Loggable() []any {
+	return append([]any{},
 		"version", conf.PluginManifest.Version,
 		"commit", conf.BuildHashShort,
 		"build_date", conf.BuildDate,

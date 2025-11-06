@@ -267,7 +267,7 @@ func (th *Helper) requireEqualChannel(level apps.ExpandLevel, expected, got *mod
 		clone := *channel
 		clone.UpdateAt = 0
 		if clone.Props == nil {
-			clone.Props = map[string]interface{}{}
+			clone.Props = map[string]any{}
 		}
 		clone.LastPostAt = 0
 		clone.LastRootPostAt = 0

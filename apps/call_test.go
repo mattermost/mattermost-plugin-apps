@@ -30,7 +30,7 @@ func TestUnmarshalCall(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, &apps.Call{
 		Path: "/test",
-		State: map[string]interface{}{
+		State: map[string]any{
 			"key": "value",
 		},
 		Expand: &apps.Expand{
@@ -92,7 +92,7 @@ func TestMarshalCallResponse(t *testing.T) {
 	data, err := json.Marshal(res.Form.Fields[0])
 	require.NoError(t, err)
 
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	err = json.Unmarshal(data, &m)
 
 	require.NoError(t, err)

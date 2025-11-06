@@ -109,7 +109,7 @@ type OAuth2App struct {
 
 	// Data allows apps to store custom data in their OAuth configuration. A
 	// frequent use case is storing app-level service account credentials.
-	Data interface{} `json:"data,omitempty"`
+	Data any `json:"data,omitempty"`
 }
 
 // ListedApp is a Mattermost App listed in the Marketplace containing metadata.

@@ -18,7 +18,7 @@ func TestRemarshal(t *testing.T) {
 		TestArray []int
 	}
 
-	var tMap = map[string]interface{}{}
+	var tMap = map[string]any{}
 	tStruct := testT{
 		TestStr:       "test-str",
 		TestInt:       10,
@@ -29,13 +29,13 @@ func TestRemarshal(t *testing.T) {
 	}
 
 	Remarshal(&tMap, tStruct)
-	require.EqualValues(t, map[string]interface{}{
+	require.EqualValues(t, map[string]any{
 		"TestStr":         "test-str",
 		"TestInt":         float64(10),
 		"testJsonCamel":   "test-json-camel",
 		"test_json_snake": "test-json-snake",
-		"TestStruct":      map[string]interface{}{"A": "a", "B": "b"},
-		"TestArray":       []interface{}{float64(0), float64(1), float64(2)},
+		"TestStruct":      map[string]any{"A": "a", "B": "b"},
+		"TestArray":       []any{float64(0), float64(1), float64(2)},
 	}, tMap)
 
 	ts := testT{}

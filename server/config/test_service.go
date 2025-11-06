@@ -8,19 +8,15 @@ import (
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 	"github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
-	"github.com/mattermost/mattermost/server/v8/platform/services/configservice"
-
-	"github.com/mattermost/mattermost-plugin-apps/server/telemetry"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
 
 type TestService struct {
-	config    Config
-	i18n      *i18n.Bundle
-	log       utils.Logger
-	mm        *pluginapi.Client
-	mmconfig  model.Config
-	telemetry *telemetry.Telemetry
+	config   Config
+	i18n     *i18n.Bundle
+	log      utils.Logger
+	mm       *pluginapi.Client
+	mmconfig model.Config
 }
 
 var _ Service = (*TestService)(nil)
@@ -41,11 +37,10 @@ func NewTestService(testConfig *Config) (*TestService, *plugintest.API) {
 	i18nBundle, _ := i18n.InitBundle(testAPI, filepath.Join("assets", "i18n"))
 
 	return &TestService{
-		config:    *testConfig,
-		i18n:      i18nBundle,
-		log:       utils.NewTestLogger(),
-		mm:        pluginapi.NewClient(testAPI, testDriver),
-		telemetry: telemetry.NewTelemetry(nil),
+		config: *testConfig,
+		i18n:   i18nBundle,
+		log:    utils.NewTestLogger(),
+		mm:     pluginapi.NewClient(testAPI, testDriver),
 	}, testAPI
 }
 
@@ -75,12 +70,8 @@ func (s *TestService) I18N() *i18n.Bundle {
 	return s.i18n
 }
 
-func (s *TestService) Telemetry() *telemetry.Telemetry {
-	return s.telemetry
-}
-
-func (s *TestService) MattermostConfig() configservice.ConfigService {
-	return &mattermostConfigService{&s.mmconfig}
+func (s *TestService) MattermostConfig() *model.Config {
+	return &s.mmconfig
 }
 
 func (s *TestService) Reconfigure(StoredConfig, bool, ...Configurable) error {

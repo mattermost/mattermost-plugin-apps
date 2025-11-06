@@ -29,7 +29,7 @@ func TestLoggable(t *testing.T) {
 	}
 	var fullCall = Call{
 		Path: "/some-path",
-		State: map[string]interface{}{
+		State: map[string]any{
 			"key1": "confidential1",
 			"key2": "confidential2",
 		},
@@ -47,12 +47,12 @@ func TestLoggable(t *testing.T) {
 	var fullCallRequest = CallRequest{
 		Call:    fullCall,
 		Context: simpleContext,
-		Values: map[string]interface{}{
+		Values: map[string]any{
 			"vkey1": "confidential1",
 			"vkey2": "confidential2",
 		},
 	}
-	var testData = map[string]interface{}{
+	var testData = map[string]any{
 		"A": "test",
 		"B": 99,
 	}
@@ -70,13 +70,13 @@ func TestLoggable(t *testing.T) {
 	}
 
 	for name, test := range map[string]struct {
-		In             interface{}
-		ExpectedProps  []interface{}
+		In             any
+		ExpectedProps  []any
 		ExpectedString string
 	}{
 		"Context": {
 			In: simpleContext,
-			ExpectedProps: []interface{}{
+			ExpectedProps: []any{
 				"bot_user_id", "id_of_bot_user",
 				"bot_access_token", "***nXYZ",
 			},
@@ -84,14 +84,14 @@ func TestLoggable(t *testing.T) {
 		},
 		"Call simple": {
 			In: simpleCall,
-			ExpectedProps: []interface{}{
+			ExpectedProps: []any{
 				"call_path", "/some-path",
 			},
 			ExpectedString: "/some-path",
 		},
 		"Call full": {
 			In: fullCall,
-			ExpectedProps: []interface{}{
+			ExpectedProps: []any{
 				"call_path", "/some-path",
 				"call_expand", "acting_user_access_token:all,channel:summary,oauth2_app:all,user:all",
 				"call_state", "key1,key2",
@@ -100,37 +100,37 @@ func TestLoggable(t *testing.T) {
 		},
 		"CallRequest simple": {
 			In:             simpleCallRequest,
-			ExpectedProps:  []interface{}{simpleCall, simpleContext},
+			ExpectedProps:  []any{simpleCall, simpleContext},
 			ExpectedString: "call: /some-path, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user",
 		},
 		"CallRequest full": {
 			In:             fullCallRequest,
-			ExpectedProps:  []interface{}{fullCall, simpleContext, "values", "vkey1,vkey2"},
+			ExpectedProps:  []any{fullCall, simpleContext, "values", "vkey1,vkey2"},
 			ExpectedString: "call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2, context: bot_access_token: ***nXYZ, bot_user_id: id_of_bot_user, values: vkey1,vkey2",
 		},
 		"CallResponse text": {
 			In:             NewTextResponse("test"),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_text", "test"},
+			ExpectedProps:  []any{"response_type", "ok", "response_text", "test"},
 			ExpectedString: "OK: test",
 		},
 		"CallResponse JSON data": {
 			In:             NewDataResponse(testData),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
+			ExpectedProps:  []any{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type map[string]interface {}, value: map[A:test B:99]",
 		},
 		"CallResponse byte data": {
 			In:             NewDataResponse([]byte("12345")),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
+			ExpectedProps:  []any{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type []uint8, value: [49 50 51 52 53]",
 		},
 		"CallResponse text data": {
 			In:             NewDataResponse("12345"),
-			ExpectedProps:  []interface{}{"response_type", "ok", "response_data", "omitted for logging"},
+			ExpectedProps:  []any{"response_type", "ok", "response_data", "omitted for logging"},
 			ExpectedString: "OK: data type string, value: 12345",
 		},
 		"CallResponse form": {
 			In:             NewFormResponse(testForm),
-			ExpectedProps:  []interface{}{"response_type", "form", "response_form", "omitted for logging"},
+			ExpectedProps:  []any{"response_type", "form", "response_form", "omitted for logging"},
 			ExpectedString: `Form: omitted for logging`,
 		},
 		"CallResponse navigate": {
@@ -139,7 +139,7 @@ func TestLoggable(t *testing.T) {
 				NavigateToURL:      "http://x.y.z",
 				UseExternalBrowser: true,
 			},
-			ExpectedProps:  []interface{}{"response_type", "navigate", "response_url", "http://x.y.z", "use_external_browser", true},
+			ExpectedProps:  []any{"response_type", "navigate", "response_url", "http://x.y.z", "use_external_browser", true},
 			ExpectedString: `Navigate to: "http://x.y.z", using external browser`,
 		},
 		"CallResponse call": {
@@ -147,7 +147,7 @@ func TestLoggable(t *testing.T) {
 				Type: CallResponseTypeCall,
 				Call: &fullCall,
 			},
-			ExpectedProps:  []interface{}{"response_type", "call", "response_call", "/some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2"},
+			ExpectedProps:  []any{"response_type", "call", "response_call", "/some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2"},
 			ExpectedString: `Call: /some-path, expand: acting_user_access_token:all,channel:summary,oauth2_app:all,user:all, state: key1,key2`,
 		},
 	} {

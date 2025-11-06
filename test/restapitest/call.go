@@ -122,7 +122,7 @@ func testCalls(th *Helper) {
 			Call: *apps.NewCall(builtin.PathDebugKVInfo).WithExpand(apps.Expand{
 				ActingUser: apps.ExpandSummary,
 			}),
-			Values: map[string]interface{}{
+			Values: map[string]any{
 				builtin.FieldAppID: uninstallID,
 			},
 		}

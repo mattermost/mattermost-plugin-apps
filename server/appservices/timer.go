@@ -27,8 +27,8 @@ func (t storedTimer) Key(appID apps.AppID, at int64) string {
 	return string(appID) + t.UserID + strconv.FormatInt(at, 10)
 }
 
-func (t storedTimer) Loggable() []interface{} {
-	props := []interface{}{"user_id", t.UserID}
+func (t storedTimer) Loggable() []any {
+	props := []any{"user_id", t.UserID}
 	props = append(props, "app_id", t.AppID)
 	if t.ChannelID != "" {
 		props = append(props, "call_team_id", t.TeamID)
@@ -65,7 +65,7 @@ func (a *AppServices) CreateTimer(r *incoming.Request, t apps.Timer) error {
 	return nil
 }
 
-func (a *AppServices) ExecuteTimer(key string, props interface{}) {
+func (a *AppServices) ExecuteTimer(key string, props any) {
 	t, ok := props.(storedTimer)
 	if !ok {
 		a.log.Debugw("Timer contained unknown props. Inoring the timer.", "key", key, "props", props)

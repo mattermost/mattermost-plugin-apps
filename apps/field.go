@@ -56,7 +56,7 @@ type Field struct {
 	ReadOnly   bool      `json:"readonly,omitempty"`
 
 	// Present (default) value of the field
-	Value interface{} `json:"value,omitempty"`
+	Value any `json:"value,omitempty"`
 
 	// Field description. Used in modal and autocomplete.
 	Description string `json:"description,omitempty"`

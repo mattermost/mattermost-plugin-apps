@@ -57,14 +57,14 @@ func (c *ClientPP) SetOAuthToken(token string) {
 	c.AuthType = model.HeaderBearer
 }
 
-func (c *ClientPP) KVSet(prefix, id string, in interface{}) (bool, *model.Response, error) {
+func (c *ClientPP) KVSet(prefix, id string, in any) (bool, *model.Response, error) {
 	r, err := c.DoAPIPOST(c.kvpath(prefix, id), utils.ToJSON(in)) // nolint:bodyclose
 	if err != nil {
 		return false, model.BuildResponse(r), err
 	}
 	defer c.closeBody(r)
 
-	var out map[string]interface{}
+	var out map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&out); err != nil {
 		return false, model.BuildResponse(r), errors.Wrap(err, "failed to decode response")
 	}
@@ -74,7 +74,7 @@ func (c *ClientPP) KVSet(prefix, id string, in interface{}) (bool, *model.Respon
 	return changed, model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) KVGet(prefix, id string, ref interface{}) (*model.Response, error) {
+func (c *ClientPP) KVGet(prefix, id string, ref any) (*model.Response, error) {
 	r, err := c.DoAPIGET(c.kvpath(prefix, id), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
@@ -172,7 +172,7 @@ func (c *ClientPP) StoreOAuth2App(oauth2App apps.OAuth2App) (*model.Response, er
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) StoreOAuth2User(ref interface{}) (*model.Response, error) {
+func (c *ClientPP) StoreOAuth2User(ref any) (*model.Response, error) {
 	r, err := c.DoAPIPOST(c.apipath(appspath.OAuth2User), utils.ToJSON(ref)) // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err
@@ -182,7 +182,7 @@ func (c *ClientPP) StoreOAuth2User(ref interface{}) (*model.Response, error) {
 	return model.BuildResponse(r), nil
 }
 
-func (c *ClientPP) GetOAuth2User(ref interface{}) (*model.Response, error) {
+func (c *ClientPP) GetOAuth2User(ref any) (*model.Response, error) {
 	r, err := c.DoAPIGET(c.apipath(appspath.OAuth2User), "") // nolint:bodyclose
 	if err != nil {
 		return model.BuildResponse(r), err

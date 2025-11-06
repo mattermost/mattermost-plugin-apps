@@ -179,7 +179,7 @@ func checkJWT(req *http.Request, creq *apps.CallRequest) error {
 	jwtoken := strings.TrimPrefix(authValue, "Bearer ")
 	claims := apps.JWTClaims{}
 
-	_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(jwtoken, &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("%w: %v", ErrUnexpectedSignMethod, token.Header["alg"])
 		}

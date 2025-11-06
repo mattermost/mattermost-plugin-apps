@@ -58,7 +58,7 @@ func (u *Upstream) invoke(ctx context.Context, app apps.App, creq apps.CallReque
 }
 
 // post does not close resp.Body, it's the caller's responsibility
-func (u *Upstream) post(ctx context.Context, url string, msg interface{}) (*http.Response, error) {
+func (u *Upstream) post(ctx context.Context, url string, msg any) (*http.Response, error) {
 	piper, pipew := io.Pipe()
 	go func() {
 		encodeErr := json.NewEncoder(pipew).Encode(msg)

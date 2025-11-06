@@ -367,9 +367,9 @@ func (e *expander) expandPost(postPtr **model.Post, postID string) expandFunc {
 func (e *expander) expandLocale(level apps.ExpandLevel) error {
 	confService := e.r.Config()
 	if e.ExpandedContext.ActingUser != nil {
-		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig().Config(), e.ExpandedContext.ActingUser)
+		e.ExpandedContext.Locale = utils.GetLocaleWithUser(confService.MattermostConfig(), e.ExpandedContext.ActingUser)
 	} else {
-		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig().Config(), e.r.ActingUserID())
+		e.ExpandedContext.Locale = utils.GetLocale(confService.MattermostAPI(), confService.MattermostConfig(), e.r.ActingUserID())
 	}
 	return nil
 }
@@ -411,9 +411,9 @@ func (e *expander) expandOAuth2User(level apps.ExpandLevel) error {
 		return errors.Wrap(err, "no data for user_id: "+userID)
 	}
 
-	var v interface{}
+	var v any
 	if err = json.Unmarshal(data, &v); err != nil {
-		return errors.Wrapf(err, "user_id: "+userID)
+		return errors.Wrapf(err, "user_id: %v", userID)
 	}
 	e.ExpandedContext.OAuth2.User = v
 	return nil

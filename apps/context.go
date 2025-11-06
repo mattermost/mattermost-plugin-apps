@@ -112,7 +112,7 @@ type OAuth2Context struct {
 	ConnectURL  string `json:"connect_url,omitempty"`
 	CompleteURL string `json:"complete_url,omitempty"`
 
-	User interface{} `json:"user,omitempty"`
+	User any `json:"user,omitempty"`
 }
 
 func (c Context) String() string {
@@ -135,14 +135,14 @@ func (c Context) String() string {
 	return out
 }
 
-func (c Context) Loggable() []interface{} {
+func (c Context) Loggable() []any {
 	_, props := c.loggable()
 	return props
 }
 
-func (c Context) loggable() (map[string]string, []interface{}) {
+func (c Context) loggable() (map[string]string, []any) {
 	display := map[string]string{}
-	props := []interface{}{}
+	props := []any{}
 	add := func(f, v string) {
 		if v != "" {
 			display[f] = v

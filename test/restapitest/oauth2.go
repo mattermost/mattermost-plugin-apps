@@ -27,13 +27,13 @@ var testOAuth2App = apps.OAuth2App{
 	ClientID:      "client-id",
 	ClientSecret:  "client-secret",
 	RemoteRootURL: "http://test.test/test",
-	Data: map[string]interface{}{
+	Data: map[string]any{
 		"test_bool":   true,
 		"test_string": "test",
 	},
 }
 
-var testOAuth2User = map[string]interface{}{
+var testOAuth2User = map[string]any{
 	"test_bool":   true,
 	"test_string": "test",
 }
@@ -53,7 +53,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 		},
 	)
 
-	params := func(creq goapp.CallRequest) (client *appclient.Client, value interface{}) {
+	params := func(creq goapp.CallRequest) (client *appclient.Client, value any) {
 		asBot, _ := creq.BoolValue("as_bot")
 		value = model.StringInterface{
 			"test-name": "test-data",
@@ -70,7 +70,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	}
 
 	largeJSON := struct {
-		Fields []interface{}
+		Fields []any
 	}{}
 	for {
 		data, err := json.Marshal(largeJSON)
@@ -84,7 +84,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	app.HandleCall("/get-user",
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, _ := params(creq)
-			v := map[string]interface{}{}
+			v := map[string]any{}
 			err := client.GetOAuth2User(&v)
 			return respond(utils.ToJSON(v), err)
 		})
@@ -100,7 +100,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 		func(creq goapp.CallRequest) apps.CallResponse {
 			client, value := params(creq)
 			if value == nil {
-				value = map[string]interface{}{}
+				value = map[string]any{}
 			}
 			oapp := apps.OAuth2App{}
 			utils.Remarshal(&oapp, value)
@@ -153,7 +153,7 @@ func newOAuth2App(t *testing.T) *goapp.App {
 	return app
 }
 
-func oauth2Call(th *Helper, path string, value interface{}) *apps.CallResponse {
+func oauth2Call(th *Helper, path string, value any) *apps.CallResponse {
 	creq := apps.CallRequest{
 		Call: *apps.NewCall(path).
 			WithExpand(apps.Expand{
@@ -164,7 +164,7 @@ func oauth2Call(th *Helper, path string, value interface{}) *apps.CallResponse {
 	creq.Call.Expand.ActingUser = apps.ExpandSummary
 	creq.Call.Expand.ActingUserAccessToken = apps.ExpandAll
 	if value != nil {
-		creq.Values = map[string]interface{}{
+		creq.Values = map[string]any{
 			"value": value,
 		}
 	}
@@ -240,13 +240,13 @@ func testOAuth2(th *Helper) {
 		err := json.Unmarshal([]byte(cresp.Text), &creq)
 		require.NoError(th, err)
 		require.EqualValues(th, &testOAuth2App, &creq.Context.ExpandedContext.OAuth2.OAuth2App)
-		require.EqualValues(th, map[string]interface{}{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
+		require.EqualValues(th, map[string]any{"test_bool": true, "test_string": "test"}, creq.Context.ExpandedContext.OAuth2.User)
 	})
 
 	th.Run("Error unauthenticated requests are rejected", func(th *Helper) {
 		client := th.CreateUnauthenticatedClientPP()
 
-		in := map[string]interface{}{
+		in := map[string]any{
 			"test_bool":   true,
 			"test_string": "test",
 		}
@@ -254,7 +254,7 @@ func testOAuth2(th *Helper) {
 		require.Error(th, err)
 		api4.CheckUnauthorizedStatus(th, resp)
 
-		var out map[string]interface{}
+		var out map[string]any
 		resp, err = client.GetOAuth2User(&out)
 		require.Error(th, err)
 		api4.CheckUnauthorizedStatus(th, resp)
@@ -268,7 +268,7 @@ func testOAuth2(th *Helper) {
 		th.Cleanup(cleanupOAuth2User(th))
 
 		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
+		cresp := oauth2Call(th, "/store-user", map[string]any{
 			"test_bool":   true,
 			"test_string": "test",
 		})
@@ -296,7 +296,7 @@ func testOAuth2(th *Helper) {
 		th.Cleanup(cleanupOAuth2User(th))
 
 		// set a "previous" value.
-		cresp := oauth2Call(th, "/store-user", map[string]interface{}{
+		cresp := oauth2Call(th, "/store-user", map[string]any{
 			"test_bool":   true,
 			"test_string": "test",
 		})
@@ -371,7 +371,7 @@ func testOAuth2(th *Helper) {
 
 		// try to store.
 		creq.Call = *apps.NewCall("/store-user")
-		creq.Values["value"] = map[string]interface{}{
+		creq.Values["value"] = map[string]any{
 			"test_bool":   true,
 			"test_string": "test",
 		}

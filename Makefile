@@ -144,7 +144,7 @@ all: check-style test dist
 
 .PHONY: deps
 deps:
-	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
+	@$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1
 	@$(GO) install github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.0
 
 ## Runs eslint and golangci-lint

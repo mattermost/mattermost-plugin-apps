@@ -96,7 +96,7 @@ func (p *plugin) Write(e zapcore.Entry, fields []zapcore.Field) error {
 		w = p.logger.Warn
 	}
 
-	pairs := []interface{}{}
+	pairs := []any{}
 	for k, f := range p.fields {
 		switch {
 		case f.Integer != 0:

@@ -33,7 +33,7 @@ func (p *Proxy) InvokeRemoteWebhook(r *incoming.Request, httpCallRequest apps.HT
 		return err
 	}
 
-	var datav interface{}
+	var datav any
 	err = json.Unmarshal([]byte(httpCallRequest.Body), &datav)
 	if err != nil {
 		// if the data can not be decoded as JSON, send it "as is", as a string.
@@ -52,7 +52,7 @@ func (p *Proxy) InvokeRemoteWebhook(r *incoming.Request, httpCallRequest apps.HT
 	return upstream.Notify(r.Ctx(), up, *app, apps.CallRequest{
 		Call:    call,
 		Context: *cc,
-		Values: map[string]interface{}{
+		Values: map[string]any{
 			"headers":    httpCallRequest.Headers,
 			"data":       datav,
 			"httpMethod": httpCallRequest.HTTPMethod,
