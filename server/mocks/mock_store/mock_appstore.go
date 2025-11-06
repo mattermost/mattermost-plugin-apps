@@ -47,7 +47,7 @@ func (m *MockAppStore) AsList(arg0 store.FilterOpt) []apps.App {
 }
 
 // AsList indicates an expected call of AsList.
-func (mr *MockAppStoreMockRecorder) AsList(arg0 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) AsList(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsList", reflect.TypeOf((*MockAppStore)(nil).AsList), arg0)
 }
@@ -61,7 +61,7 @@ func (m *MockAppStore) AsMap(arg0 store.FilterOpt) map[apps.AppID]apps.App {
 }
 
 // AsMap indicates an expected call of AsMap.
-func (mr *MockAppStoreMockRecorder) AsMap(arg0 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) AsMap(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsMap", reflect.TypeOf((*MockAppStore)(nil).AsMap), arg0)
 }
@@ -75,7 +75,7 @@ func (m *MockAppStore) Configure(arg0 config.Config, arg1 utils.Logger) error {
 }
 
 // Configure indicates an expected call of Configure.
-func (mr *MockAppStoreMockRecorder) Configure(arg0, arg1 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Configure(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockAppStore)(nil).Configure), arg0, arg1)
 }
@@ -89,7 +89,7 @@ func (m *MockAppStore) Delete(arg0 *incoming.Request, arg1 apps.AppID) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockAppStoreMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAppStore)(nil).Delete), arg0, arg1)
 }
@@ -104,7 +104,7 @@ func (m *MockAppStore) Get(arg0 apps.AppID) (*apps.App, error) {
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAppStoreMockRecorder) Get(arg0 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAppStore)(nil).Get), arg0)
 }
@@ -112,7 +112,7 @@ func (mr *MockAppStoreMockRecorder) Get(arg0 any) *gomock.Call {
 // InitBuiltin mocks base method.
 func (m *MockAppStore) InitBuiltin(arg0 ...apps.App) {
 	m.ctrl.T.Helper()
-	varargs := []any{}
+	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
 	}
@@ -120,7 +120,7 @@ func (m *MockAppStore) InitBuiltin(arg0 ...apps.App) {
 }
 
 // InitBuiltin indicates an expected call of InitBuiltin.
-func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) InitBuiltin(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitBuiltin", reflect.TypeOf((*MockAppStore)(nil).InitBuiltin), arg0...)
 }
@@ -134,7 +134,7 @@ func (m *MockAppStore) Save(arg0 *incoming.Request, arg1 apps.App) error {
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockAppStoreMockRecorder) Save(arg0, arg1 any) *gomock.Call {
+func (mr *MockAppStoreMockRecorder) Save(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockAppStore)(nil).Save), arg0, arg1)
 }

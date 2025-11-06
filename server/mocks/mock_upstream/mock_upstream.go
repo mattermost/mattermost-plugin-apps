@@ -47,7 +47,7 @@ func (m *MockUpstream) GetStatic(arg0 context.Context, arg1 apps.App, arg2 strin
 }
 
 // GetStatic indicates an expected call of GetStatic.
-func (mr *MockUpstreamMockRecorder) GetStatic(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockUpstreamMockRecorder) GetStatic(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockUpstream)(nil).GetStatic), arg0, arg1, arg2)
 }
@@ -62,7 +62,7 @@ func (m *MockUpstream) Roundtrip(arg0 context.Context, arg1 apps.App, arg2 apps.
 }
 
 // Roundtrip indicates an expected call of Roundtrip.
-func (mr *MockUpstreamMockRecorder) Roundtrip(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockUpstreamMockRecorder) Roundtrip(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Roundtrip", reflect.TypeOf((*MockUpstream)(nil).Roundtrip), arg0, arg1, arg2, arg3)
 }
