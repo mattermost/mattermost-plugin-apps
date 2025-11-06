@@ -78,7 +78,7 @@ func (p *Plugin) OnActivate() (err error) {
 	log = p.conf.NewBaseLogger()
 
 	if !p.conf.MattermostConfig().FeatureFlags.AppsEnabled {
-		return errors.New("AppsEnabled feature flag is set to fals. Please enable it using MM_FEATUREFLAGS_AppsEnabled=true")
+		return errors.New("AppsEnabled feature flag is set to false. Please enable it using MM_FEATUREFLAGS_AppsEnabled=true")
 	}
 
 	conf := p.conf.Get()
