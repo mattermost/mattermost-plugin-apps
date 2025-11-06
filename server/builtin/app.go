@@ -111,7 +111,7 @@ type builtinApp struct {
 
 var _ upstream.Upstream = (*builtinApp)(nil)
 
-func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) *builtinApp {
+func NewBuiltinApp(conf config.Service, proxy proxy.Service, appservices appservices.Service, httpOut httpout.Service, sessionService session.Service) upstream.Upstream {
 	a := &builtinApp{
 		conf:           conf,
 		proxy:          proxy,

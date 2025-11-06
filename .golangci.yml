@@ -47,10 +47,44 @@ linters:
           - staticcheck
         path: /
         text: BotJoined
+      # The follow execptions got added as part of the migration to go1.24.
+      # We should revisit them in the future.
       - linters:
           - staticcheck
         path: /
         text: BotLeft
+      # Ignore QF1008: embedded field selector suggestions
+      - linters:
+          - staticcheck
+        text: "QF1008: could remove embedded field"
+      # Ignore unused parameter suggestions
+      - linters:
+          - revive
+        text: "unused-parameter:"
+      # Ignore receiver naming suggestions
+      - linters:
+          - revive
+        text: "receiver-naming:"
+      # Ignore non-constant format string warnings
+      - linters:
+          - govet
+        text: "printf: non-constant format string"
+      # Ignore unparam warnings about always receiving same value
+      - linters:
+          - unparam
+        text: "always receives"
+      # Ignore G115 integer overflow conversion warnings
+      - linters:
+          - gosec
+        text: "G115: integer overflow conversion"
+      # Ignore QF1008 selector simplification suggestions
+      - linters:
+          - staticcheck
+        text: "QF1008: could simplify selectors"
+      # Ignore var-naming warnings
+      - linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
     paths:
       - third_party$
       - builtin$

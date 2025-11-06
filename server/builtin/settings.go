@@ -418,12 +418,12 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 		}
 	}
 
-	switch {
-	case wantOverrides == "use":
+	switch wantOverrides {
+	case "use":
 		sc.DeveloperModeOverride = &developerModeOverride
 		sc.AllowHTTPAppsOverride = &allowHTTPAppsOverride
 
-	case wantOverrides == "none":
+	case "none":
 		sc.DeveloperModeOverride = nil
 		sc.AllowHTTPAppsOverride = nil
 
@@ -485,12 +485,4 @@ func (a *builtinApp) settingsSave(r *incoming.Request, creq apps.CallRequest) ap
 
 	creq.Values[fLog] = "use"
 	return a.settingsForm(r, creq)
-}
-
-func getSelectedValue(trueOtion, falseOption apps.SelectOption, value bool) apps.SelectOption {
-	if value {
-		return trueOtion
-	}
-
-	return falseOption
 }

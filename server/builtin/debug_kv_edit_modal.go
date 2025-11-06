@@ -7,58 +7,11 @@ import (
 	"fmt"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/incoming"
 	"github.com/mattermost/mattermost-plugin-apps/utils"
 )
-
-func (a *builtinApp) debugKVEditModal(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
-	action := creq.GetValue(fAction, "")
-	newValue := creq.GetValue(fNewValue, "")
-	key, _ := creq.State.(string)
-	loc := a.newLocalizer(creq)
-
-	mm := a.conf.MattermostAPI()
-	switch action {
-	case "store":
-		_, err := mm.KV.Set(key, []byte(newValue))
-		if err != nil {
-			return apps.NewErrorResponse(err)
-		}
-		return apps.NewTextResponse(
-			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-				DefaultMessage: &i18n.Message{
-					ID:    "modal.kv.edit.submit.stored",
-					Other: "Stored:\n```\nKey: {{.Key}}\n\n{{.Value}}\n```\n",
-				},
-				TemplateData: map[string]string{
-					"Key":   key,
-					"Value": newValue,
-				},
-			}))
-
-	case "delete":
-		err := mm.KV.Delete(key)
-		if err != nil {
-			return apps.NewErrorResponse(err)
-		}
-		return apps.NewTextResponse(
-			a.conf.I18N().LocalizeWithConfig(loc, &i18n.LocalizeConfig{
-				DefaultMessage: &i18n.Message{
-					ID:    "modal.kv.edit.submit.deleted",
-					Other: "Deleted:\n```\nKey: {{.Key}}\n```\n",
-				},
-				TemplateData: map[string]string{
-					"Key": key,
-				},
-			}))
-
-	default:
-		return apps.NewErrorResponse(errors.Errorf("don't know what to do: %q", action))
-	}
-}
 
 func (a *builtinApp) debugKVEditModalForm(_ *incoming.Request, creq apps.CallRequest) apps.CallResponse {
 	key, _ := creq.State.(string)

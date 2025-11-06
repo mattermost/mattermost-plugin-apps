@@ -10,7 +10,7 @@ import (
 )
 
 func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
-	delete := func(typ string, name Name, del func(Name) error) error {
+	cleanup := func(typ string, name Name, del func(Name) error) error {
 		err := del(name)
 		if err != nil {
 			if !errors.Is(err, utils.ErrNotFound) {
@@ -46,18 +46,18 @@ func CleanAWS(asAdmin Client, accessKeyID string, log utils.Logger) error {
 		}
 	}
 
-	err = delete("access keys", DefaultUserName, func(name Name) error {
+	err = cleanup("access keys", DefaultUserName, func(name Name) error {
 		return asAdmin.DeleteAccessKeys(name, accessKeyID)
 	})
 	if err != nil {
 		return err
 	}
 
-	err = delete("group", DefaultGroupName, asAdmin.DeleteGroup)
+	err = cleanup("group", DefaultGroupName, asAdmin.DeleteGroup)
 	if err != nil {
 		return err
 	}
-	err = delete("user", DefaultUserName, asAdmin.DeleteUser)
+	err = cleanup("user", DefaultUserName, asAdmin.DeleteUser)
 	if err != nil {
 		return err
 	}
